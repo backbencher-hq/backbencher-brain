@@ -2,7 +2,7 @@
 # Run in PowerShell: irm https://backbencher.cc/install.ps1 | iex
 #
 # Two install channels, in this order:
-#   1. npm — `npm install -g backbencher-brain`. PRIMARY path: the package is
+#   1. npm — `npm install -g @backbencher/brain`. PRIMARY path: the package is
 #      published for every release, so the binary and the package always agree.
 #   2. GitHub release binary — only when npm is unavailable, or when the caller
 #      asks for it with BB_INSTALL_CHANNEL=release. The asset must exist for
