@@ -7,12 +7,12 @@
   "passed": 15,
   "failed": 0,
   "negativeCases": 5,
-  "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
+  "currentCommit": "cc19ec499e7da953a42695f8ace0dacf38951ba2",
   "verifierCommand": "npx tsx script/m41/verify-seo-onboarding.ts",
   "evidenceFile": "S2.json",
   "ownerConfirmationsFile": "S2-OWNER-CONFIRMATIONS.json",
-  "generatedAt": "2026-11-09T14:43:11.366Z",
-  "deployLag": "open",
+  "generatedAt": "2026-11-15T21:57:39.025Z",
+  "deployLag": "closed",
   "canonicalRoutes": [
     "https://backbencher.cc",
     "https://backbencher.cc/docs",
@@ -80,12 +80,6 @@
     "https://backbencher.cc/editors",
     "https://backbencher.cc/install",
     "https://backbencher.cc/languages",
-    "https://backbencher.cc/privacy",
-    "https://backbencher.cc/support",
-    "https://backbencher.cc/terms",
-    "https://backbencher.cc/tools"
-  ],
-  "laggingRoutes": [
     "https://backbencher.cc/languages/bash",
     "https://backbencher.cc/languages/c",
     "https://backbencher.cc/languages/clean",
@@ -135,13 +129,18 @@
     "https://backbencher.cc/languages/vue",
     "https://backbencher.cc/languages/xml",
     "https://backbencher.cc/languages/yaml",
-    "https://backbencher.cc/languages/zig"
+    "https://backbencher.cc/languages/zig",
+    "https://backbencher.cc/privacy",
+    "https://backbencher.cc/support",
+    "https://backbencher.cc/terms",
+    "https://backbencher.cc/tools"
   ],
+  "laggingRoutes": [],
   "limitations": [
     "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
-    "The live sitemap equals the PREVIOUSLY deployed (pre-M56) route set, not the repository's canonical set: `deployLag=open`, 50 route(s) the deploy has not published yet are named in laggingRoutes. X1's post-deploy re-run closes this; the state is recorded, never silently accepted.",
+    "The live sitemap equals the repository's canonical route set: the deploy has caught up with the M56 IA, so the lag M41.S2 recorded against the pre-M56 deploy is closed.",
     "Live checks fail rather than skip when the network is unreachable: the failure is recorded with its reason (status=0 plus the socket error) and the remaining checks still run, so a transient outage cannot crash the run or be mistaken for a pass.",
-    "DNS is checked via dns.google (Google's own resolver) \u2014 the authoritative path for GSC verification.",
+    "DNS is checked via dns.google (Google's own resolver) — the authoritative path for GSC verification.",
     "Brave has no verification protocol; acceptance of the submit-url form is the only available signal."
   ]
 }

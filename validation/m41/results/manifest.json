@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-11-15T21:21:48.004Z",
+  "updatedAt": "2026-11-15T21:55:00.090Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -224,8 +224,8 @@
       "evidence": {
         "evidenceFile": "D1.json",
         "status": "verified",
-        "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
-        "generatedAt": "2026-11-09T14:39:59.058Z",
+        "currentCommit": "cc19ec499e7da953a42695f8ace0dacf38951ba2",
+        "generatedAt": "2026-11-15T21:53:10.105Z",
         "passed": 18,
         "failed": 0,
         "negativeCases": 3,
@@ -266,7 +266,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-15T21:21:48.004Z",
-    "contentSha256": "c30b60bf4282aac0bfc02cbbb9d3137f5df3de27ab06d04e06d74f99e3c69c43"
+    "sealedAt": "2026-11-15T21:55:00.090Z",
+    "contentSha256": "26f1a782386679d9526f0fe3995bcfb6ee8959acf803ab7044283e30f96b8a0d"
   }
 }
