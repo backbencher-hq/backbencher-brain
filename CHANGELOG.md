@@ -2,8 +2,11 @@
 
 ## 0.1.4 — the security tool reports leads it can defend
 
-Owner-facing release. Every claim below was verified on a clean worktree at the
-release commit, not on a working tree that carried unfinished language work.
+Owner-facing release. Every claim below was verified on the release tree: `npm test`,
+the three security gates, `verify:fast` (all gates), the full fixture corpus, and the
+packaged-tarball smoke. The in-flight TypeScript and C++ analyzer work present in the
+tree at the time of this build is included; those two lanes were not finished, so their
+claims here are limited to what the gates measured.
 
 - **`bb_security` is a lead generator, not a vulnerability scanner.** It reports
   lexical source→sink token pairs over the indexed symbols, and the description,
