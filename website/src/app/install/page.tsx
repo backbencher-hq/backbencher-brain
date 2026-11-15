@@ -30,7 +30,7 @@ export default function InstallPage() {
               index, the analysis, the MCP server — runs locally. Your source code never leaves your machine.
             </>
           }
-          meta={`installer release ${TRUTH.install.version} · engine ${TRUTH.version}`}
+          meta={TRUTH.install.version ? `installer release ${TRUTH.install.version} · engine ${TRUTH.version}` : `engine ${TRUTH.version}`}
         />
 
         <div className="reading" style={{ paddingBottom: 0 }}>
@@ -47,11 +47,12 @@ export default function InstallPage() {
           <div className="note-plate">
             <h2>What gets installed</h2>
             <p>
-              The npm package <code>backbencher-brain@{TRUTH.version}</code>, which is the version-exact artifact every
-              release publishes. The shell/PowerShell installers also prefer npm; only when npm is unavailable do they
-              fall back to a release binary from the <code>{TRUTH.install.repo}</code> GitHub releases channel, and then
-              only after its sha256 checksum verifies against the release&apos;s <code>checksums.txt</code>. The
-              installer release and the engine version are tracked separately.
+              The npm package <code>@backbencher/brain</code>. Unpinned, the installers resolve the newest published
+              release at run time — npm <code>@latest</code>, or the latest GitHub release when they fall back to a
+              release binary — so installing again is how you move to a newer version, with no site change and no
+              installer edit. That fallback only happens when npm is unavailable, and only after the binary&apos;s
+              sha256 verifies against the release&apos;s <code>checksums.txt</code>. Pin with <code>VERSION</code> to
+              hold an exact release.
             </p>
           </div>
 

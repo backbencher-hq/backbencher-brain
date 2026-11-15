@@ -172,14 +172,21 @@ for (const [from, to] of [
   )
 }
 
-const installVersion = read("website/src/data/truth.generated.ts").match(/install: \{[\s\S]*?version: "([^"]+)"/)?.[1] ?? ""
+// The installer resolves the newest published release at run time (npm @latest, or
+// the GitHub "latest" release), so TRUTH.install.version is EMPTY by design. A
+// non-empty value would mean the installer is pinned and would need a site change per
+// release, so the gate asserts the unpinned contract rather than a version string.
+const installVersion = read("website/src/data/truth.generated.ts").match(/install: \{[\s\S]*?version: "([^"]*)"/)?.[1] ?? ""
 const installRepo = read("website/src/data/truth.generated.ts").match(/repo: "([^"]+)"/)?.[1] ?? ""
-check("T3: install page states the REAL installer version from truth", installVersion !== "" && installHtml.includes(installVersion), installVersion)
+check("T3: installer is version-less, so installs resolve the newest release", installVersion === "", installVersion || "(empty = newest at run time)")
+check("T3: install page states the engine version", installHtml.includes(`engine ${version}`))
+check("T3: install page offers the unpinned installer command", installHtml.includes("https://backbencher.cc/install.sh | bash"))
+check("T3: install page states the npm package is unpinned by default", installHtml.includes("npm install -g @backbencher/brain"))
 check("T3: install page states the REAL installer release repo from truth", installRepo !== "" && installHtml.includes(installRepo), installRepo)
 check("T3: install page quotes both real installer commands", installHtml.includes("https://backbencher.cc/install.sh | bash") && installHtml.includes("https://backbencher.cc/install.ps1 | iex"))
 check(
-  "T3: install page distinguishes installer channel from engine version",
-  installHtml.includes(`installer release ${read("website/src/data/truth.generated.ts").match(/install: \{[^}]*version: "([^"]+)"/)?.[1] ?? ""}`) && installHtml.includes(`engine ${version}`),
+  "T3: install page keeps the installer channel distinct from the engine version",
+  installHtml.includes(`engine ${version}`) && !/installer release \d+\.\d+\.\d+/.test(installHtml),
   `installer release + engine ${version}`,
 )
 

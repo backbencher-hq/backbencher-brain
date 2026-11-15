@@ -19,7 +19,7 @@ export const TRUTH = {
   },
   cliCommands: ["doctor","health","help","index","mcp","onboard","projects","search","setup","stats","status","tool","upgrade","version"],
   install: {
-    version: "0.1.0",
+    version: "",
     repo: "backbencher-hq/backbencher-brain",
   },
   tools: [

@@ -25,9 +25,9 @@ PINNED=0
 if [ -n "${VERSION:-}" ]; then PINNED=1; fi
 # The release this installer was cut for. Keep in step with package.json:
 # script/m41/generate-site-truth.ts parses this line for the install page.
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-}"
 REPO="backbencher-hq/backbencher-brain"
-NPM_PACKAGE="backbencher-brain"
+NPM_PACKAGE="@backbencher/brain"
 INSTALL_DIR="${HOME}/.local/bin"
 CHANNEL="${BB_INSTALL_CHANNEL:-auto}"
 

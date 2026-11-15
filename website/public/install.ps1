@@ -17,9 +17,9 @@
 $ErrorActionPreference = "Stop"
 
 $VersionPinned = [bool]$env:VERSION
-$Version = if ($env:VERSION) { $env:VERSION } else { "0.1.0" }
+$Version = if ($env:VERSION) { $env:VERSION } else { "" }
 $Repo = "backbencher-hq/backbencher-brain"
-$NpmPackage = "backbencher-brain"
+$NpmPackage = "@backbencher/brain"
 $Channel = if ($env:BB_INSTALL_CHANNEL) { $env:BB_INSTALL_CHANNEL } else { "auto" }
 $InstallDir = "$HOME\.local\bin"
 $TempDir = [System.IO.Path]::GetTempPath()

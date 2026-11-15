@@ -196,10 +196,15 @@ const cliCommands = [...new Set([...cliSrc.matchAll(/program\s*\n\s*\.command\("
 // --- installer facts (what the install scripts ACTUALLY serve) -----------------
 // Parsed from the shipped install.sh so the install page states reality.
 const installSh = read("website/public/install.sh")
-const installerVersion = installSh.match(/VERSION="\$\{VERSION:-([0-9][0-9.]*)\}"/)?.[1]
+// An EMPTY default is the intended state: the installer then resolves the newest
+// published version at run time (npm @latest, or the GitHub "latest" release), so a
+// release never needs a site redeploy. A NON-empty default must still be a real
+// version, because it would be installed verbatim.
+const installerVersion =
+  installSh.match(/VERSION="\$\{VERSION:-([0-9][0-9.]*)\}"/)?.[1] ?? ""
 const installerRepo = installSh.match(/REPO="([^"]+)"/)?.[1]
-if (!installerVersion || !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(installerVersion)) {
-  fail(`install.sh default VERSION missing or malformed: ${String(installerVersion)}`)
+if (installerVersion !== "" && !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(installerVersion)) {
+  fail(`install.sh default VERSION malformed: ${String(installerVersion)} (leave empty to install the newest release)`)
 }
 if (!installerRepo || !/^[A-Za-z0-9-]+\/[A-Za-z0-9_.-]+$/.test(installerRepo)) {
   fail(`install.sh REPO missing or malformed: ${String(installerRepo)}`)
