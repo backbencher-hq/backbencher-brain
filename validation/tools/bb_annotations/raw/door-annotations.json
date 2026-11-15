@@ -1,0 +1,2353 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_annotations",
+  "phase": "Phase A audit",
+  "measuredAt": "2026-11-03T16:39:11.379Z",
+  "currentCommit": "unknown",
+  "door": {
+    "command": "node validation/tools/bb_annotations/work/mcp-door.mjs",
+    "childCommand": "npx tsx validation/tools/bb_annotations/work/mcp-server-child.mts /home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture",
+    "env": {
+      "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/bbdata",
+      "BB_NO_AUTO_REFRESH": "1"
+    },
+    "protocolVersion": "2024-11-05",
+    "serverInfo": {
+      "name": "backbencher-brain",
+      "version": "0.3.0"
+    }
+  },
+  "workspace": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture",
+  "projectId": "e6ed52d398a5575a083816f5b4097ad5e013df2e",
+  "storeBefore": {
+    "exists": true,
+    "files": {
+      "brain.db": {
+        "bytes": 557056,
+        "sha256": "c55a8df466f4eda80384088f1d727a77e6fe489bb06fedc465e61d11c37790f0"
+      }
+    }
+  },
+  "storeAfter": {
+    "exists": true,
+    "files": {
+      "brain.db": {
+        "bytes": 557056,
+        "sha256": "c55a8df466f4eda80384088f1d727a77e6fe489bb06fedc465e61d11c37790f0"
+      },
+      "brain.db-shm": {
+        "bytes": 32768,
+        "sha256": "50e0fadf680d1a7be43aa33c50c71a2966d576bb94785bc6467f74a5e75f3e57"
+      },
+      "brain.db-wal": {
+        "bytes": 206032,
+        "sha256": "13785520c3e4ebb64657c3c5a95317b649674e106d53f8e4bc2231fbc50f8887"
+      }
+    }
+  },
+  "toolsAdvertised": [
+    "bb_search",
+    "bb_ask",
+    "bb_health",
+    "bb_patterns",
+    "bb_security",
+    "bb_visualize",
+    "bb_migrate",
+    "bb_analyze",
+    "bb_doc",
+    "bb_edit",
+    "bb_index",
+    "bb_graph",
+    "bb_impact",
+    "bb_cross_language",
+    "bb_annotate",
+    "bb_annotations"
+  ],
+  "calls": [
+    {
+      "tool": "bb_annotations",
+      "args": {},
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for this project yet\"\n}",
+      "parsed": {
+        "symbol": null,
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for this project yet"
+      },
+      "elapsedMs": 40.171,
+      "rawResultBytes": 344,
+      "id": "A1"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Widget"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'Widget' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": "Widget",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'Widget' — absence declared, never guessed"
+      },
+      "elapsedMs": 41.423,
+      "rawResultBytes": 375,
+      "id": "A2"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/alpha.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'src/alpha.ts' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'src/alpha.ts' — absence declared, never guessed"
+      },
+      "elapsedMs": 40.325,
+      "rawResultBytes": 388,
+      "id": "A3"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/alpha.ts",
+        "includeNameLevel": true
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": true,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'src/alpha.ts' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/alpha.ts",
+        "includeNameLevel": true,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'src/alpha.ts' — absence declared, never guessed"
+      },
+      "elapsedMs": 40.374,
+      "rawResultBytes": 386,
+      "id": "A4"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Widget",
+        "path": "src/alpha.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'Widget' in 'src/alpha.ts' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": "Widget",
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'Widget' in 'src/alpha.ts' — absence declared, never guessed"
+      },
+      "elapsedMs": 40.702,
+      "rawResultBytes": 403,
+      "id": "A5"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "target": "Widget"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'Widget' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": "Widget",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'Widget' — absence declared, never guessed"
+      },
+      "elapsedMs": 41.566,
+      "rawResultBytes": 375,
+      "id": "A6"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "query": "Widget"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'Widget' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": "Widget",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'Widget' — absence declared, never guessed"
+      },
+      "elapsedMs": 41.284,
+      "rawResultBytes": 375,
+      "id": "A7"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "Widget",
+        "body": "name-level note about Widget"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n    \"symbol_name\": \"Widget\",\n    \"symbol_path\": null,\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"name-level note about Widget\",\n    \"time_created\": 1793723949712,\n    \"time_updated\": 1793723949712\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": null,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"Widget\"\n    ],\n    \"statement\": \"'Widget' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"no path given — a NAME-level note, shown for the symbol wherever it appears\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+          "symbol_name": "Widget",
+          "symbol_path": null,
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "name-level note about Widget",
+          "time_created": 1793723949712,
+          "time_updated": 1793723949712
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": null,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "Widget"
+          ],
+          "statement": "'Widget' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+        }
+      },
+      "elapsedMs": 60.959,
+      "rawResultBytes": 960,
+      "id": "W1"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "Widget",
+        "path": "src/alpha.ts",
+        "body": "alpha copy of Widget"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n    \"symbol_name\": \"Widget\",\n    \"symbol_path\": \"src/alpha.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"alpha copy of Widget\",\n    \"time_created\": 1793723949774,\n    \"time_updated\": 1793723949774\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"Widget\"\n    ],\n    \"statement\": \"'Widget' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/alpha.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+          "symbol_name": "Widget",
+          "symbol_path": "src/alpha.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "alpha copy of Widget",
+          "time_created": 1793723949774,
+          "time_updated": 1793723949774
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "Widget"
+          ],
+          "statement": "'Widget' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/alpha.ts'"
+        }
+      },
+      "elapsedMs": 42.794,
+      "rawResultBytes": 937,
+      "id": "W2"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "buildThing",
+        "path": "src/alpha.ts",
+        "body": "buildThing note in alpha"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n    \"symbol_name\": \"buildThing\",\n    \"symbol_path\": \"src/alpha.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"buildThing note in alpha\",\n    \"time_created\": 1793723949818,\n    \"time_updated\": 1793723949818\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"buildThing\"\n    ],\n    \"statement\": \"'buildThing' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/alpha.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+          "symbol_name": "buildThing",
+          "symbol_path": "src/alpha.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "buildThing note in alpha",
+          "time_created": 1793723949818,
+          "time_updated": 1793723949818
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "buildThing"
+          ],
+          "statement": "'buildThing' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/alpha.ts'"
+        }
+      },
+      "elapsedMs": 40.417,
+      "rawResultBytes": 953,
+      "id": "W3"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "buildThing",
+        "path": "src/gamma.ts",
+        "body": "buildThing note in gamma"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29\",\n    \"symbol_name\": \"buildThing\",\n    \"symbol_path\": \"src/gamma.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"buildThing note in gamma\",\n    \"time_created\": 1793723949858,\n    \"time_updated\": 1793723949858\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"buildThing\"\n    ],\n    \"statement\": \"'buildThing' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/gamma.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+          "symbol_name": "buildThing",
+          "symbol_path": "src/gamma.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "buildThing note in gamma",
+          "time_created": 1793723949858,
+          "time_updated": 1793723949858
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "buildThing"
+          ],
+          "statement": "'buildThing' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/gamma.ts'"
+        }
+      },
+      "elapsedMs": 42.392,
+      "rawResultBytes": 953,
+      "id": "W4"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "duplicate",
+        "path": "src/alpha.ts",
+        "body": "duplicate note in alpha"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n    \"symbol_name\": \"duplicate\",\n    \"symbol_path\": \"src/alpha.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"duplicate note in alpha\",\n    \"time_created\": 1793723949901,\n    \"time_updated\": 1793723949901\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"duplicate\"\n    ],\n    \"statement\": \"'duplicate' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/alpha.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+          "symbol_name": "duplicate",
+          "symbol_path": "src/alpha.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "duplicate note in alpha",
+          "time_created": 1793723949901,
+          "time_updated": 1793723949901
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "duplicate"
+          ],
+          "statement": "'duplicate' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/alpha.ts'"
+        }
+      },
+      "elapsedMs": 40.691,
+      "rawResultBytes": 949,
+      "id": "W5"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "duplicate",
+        "path": "src/beta.ts",
+        "body": "duplicate note in beta"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0\",\n    \"symbol_name\": \"duplicate\",\n    \"symbol_path\": \"src/beta.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"duplicate note in beta\",\n    \"time_created\": 1793723949941,\n    \"time_updated\": 1793723949941\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"duplicate\"\n    ],\n    \"statement\": \"'duplicate' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/beta.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+          "symbol_name": "duplicate",
+          "symbol_path": "src/beta.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "duplicate note in beta",
+          "time_created": 1793723949941,
+          "time_updated": 1793723949941
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "duplicate"
+          ],
+          "statement": "'duplicate' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/beta.ts'"
+        }
+      },
+      "elapsedMs": 42.304,
+      "rawResultBytes": 946,
+      "id": "W6"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "Widget.render",
+        "body": "qualified-name note about Widget.render"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n    \"symbol_name\": \"Widget.render\",\n    \"symbol_path\": null,\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"qualified-name note about Widget.render\",\n    \"time_created\": 1793723949984,\n    \"time_updated\": 1793723949984\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": null,\n    \"matchedAs\": [\n      \"qualifiedName\"\n    ],\n    \"matchedNames\": [\n      \"Widget.render\"\n    ],\n    \"statement\": \"'Widget.render' matches 1 indexed qualified name(s) and no plain name, so this note renders for a symbol that carries it as a qualified name.\",\n    \"pathNote\": \"no path given — a NAME-level note, shown for the symbol wherever it appears\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+          "symbol_name": "Widget.render",
+          "symbol_path": null,
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "qualified-name note about Widget.render",
+          "time_created": 1793723949984,
+          "time_updated": 1793723949984
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": null,
+          "matchedAs": [
+            "qualifiedName"
+          ],
+          "matchedNames": [
+            "Widget.render"
+          ],
+          "statement": "'Widget.render' matches 1 indexed qualified name(s) and no plain name, so this note renders for a symbol that carries it as a qualified name.",
+          "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+        }
+      },
+      "elapsedMs": 42.723,
+      "rawResultBytes": 1027,
+      "id": "W7"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "ghostSymbol",
+        "body": "note on a name the index never publishes"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n    \"symbol_name\": \"ghostSymbol\",\n    \"symbol_path\": null,\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"note on a name the index never publishes\",\n    \"time_created\": 1793723950028,\n    \"time_updated\": 1793723950028\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": false,\n    \"nameMatched\": false,\n    \"pathMatched\": true,\n    \"fileMatched\": null,\n    \"matchedAs\": [],\n    \"matchedNames\": [],\n    \"statement\": \"no indexed symbol carries the name 'ghostSymbol' as either a name or a qualified name, so NO editor surface will show this note — it is stored and readable through bb_annotations only. Re-index the project, or annotate a name the index publishes.\",\n    \"pathNote\": \"no path given — a NAME-level note, shown for the symbol wherever it appears\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+          "symbol_name": "ghostSymbol",
+          "symbol_path": null,
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "note on a name the index never publishes",
+          "time_created": 1793723950028,
+          "time_updated": 1793723950028
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": false,
+          "nameMatched": false,
+          "pathMatched": true,
+          "fileMatched": null,
+          "matchedAs": [],
+          "matchedNames": [],
+          "statement": "no indexed symbol carries the name 'ghostSymbol' as either a name or a qualified name, so NO editor surface will show this note — it is stored and readable through bb_annotations only. Re-index the project, or annotate a name the index publishes.",
+          "pathNote": "no path given — a NAME-level note, shown for the symbol wherever it appears"
+        }
+      },
+      "elapsedMs": 40.632,
+      "rawResultBytes": 1081,
+      "id": "W8"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "layout",
+        "path": "./src/alpha.ts",
+        "body": "dot-prefixed path write"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n    \"symbol_name\": \"layout\",\n    \"symbol_path\": \"src/alpha.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"dot-prefixed path write\",\n    \"time_created\": 1793723950067,\n    \"time_updated\": 1793723950067\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"layout\"\n    ],\n    \"statement\": \"'layout' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/alpha.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+          "symbol_name": "layout",
+          "symbol_path": "src/alpha.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "dot-prefixed path write",
+          "time_created": 1793723950067,
+          "time_updated": 1793723950067
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "layout"
+          ],
+          "statement": "'layout' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/alpha.ts'"
+        }
+      },
+      "elapsedMs": 45.15,
+      "rawResultBytes": 940,
+      "id": "W9"
+    },
+    {
+      "tool": "bb_annotate",
+      "args": {
+        "symbol": "Gadget",
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture/src/beta.ts",
+        "body": "absolute-path write"
+      },
+      "isError": false,
+      "text": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n    \"symbol_name\": \"Gadget\",\n    \"symbol_path\": \"src/beta.ts\",\n    \"author_class\": \"agent\",\n    \"tool_identity\": \"bb_annotate(mcp)\",\n    \"body\": \"absolute-path write\",\n    \"time_created\": 1793723950114,\n    \"time_updated\": 1793723950114\n  },\n  \"provenance\": \"author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.\",\n  \"surfacing\": {\n    \"editor\": true,\n    \"nameMatched\": true,\n    \"pathMatched\": true,\n    \"fileMatched\": true,\n    \"matchedAs\": [\n      \"name\"\n    ],\n    \"matchedNames\": [\n      \"Gadget\"\n    ],\n    \"statement\": \"'Gadget' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.\",\n    \"pathNote\": \"path resolved to the indexed spelling 'src/beta.ts'\"\n  }\n}",
+      "parsed": {
+        "stored": true,
+        "annotation": {
+          "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+          "symbol_name": "Gadget",
+          "symbol_path": "src/beta.ts",
+          "author_class": "agent",
+          "tool_identity": "bb_annotate(mcp)",
+          "body": "absolute-path write",
+          "time_created": 1793723950114,
+          "time_updated": 1793723950114
+        },
+        "provenance": "author_class is enforced 'agent' for tool writes — recorded, not claimed. tool_identity is the caller's own label: recorded verbatim, never verified.",
+        "surfacing": {
+          "editor": true,
+          "nameMatched": true,
+          "pathMatched": true,
+          "fileMatched": true,
+          "matchedAs": [
+            "name"
+          ],
+          "matchedNames": [
+            "Gadget"
+          ],
+          "statement": "'Gadget' matches 1 indexed symbol name(s), so this note renders in the editor hover section and graph badge.",
+          "pathNote": "path resolved to the indexed spelling 'src/beta.ts'"
+        }
+      },
+      "elapsedMs": 40.717,
+      "rawResultBytes": 934,
+      "id": "W10"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Widget"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_created\": 1793723949712,\n      \"time_updated\": 1793723949712\n    }\n  ],\n  \"count\": 2,\n  \"totalCountIfKnown\": 2,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "Widget",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          },
+          {
+            "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+            "symbol_name": "Widget",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "name-level note about Widget",
+            "time_created": 1793723949712,
+            "time_updated": 1793723949712
+          }
+        ],
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.865,
+      "rawResultBytes": 1012,
+      "id": "R1"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Widget",
+        "path": "src/alpha.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_created\": 1793723949712,\n      \"time_updated\": 1793723949712\n    }\n  ],\n  \"count\": 2,\n  \"totalCountIfKnown\": 2,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "Widget",
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          },
+          {
+            "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+            "symbol_name": "Widget",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "name-level note about Widget",
+            "time_created": 1793723949712,
+            "time_updated": 1793723949712
+          }
+        ],
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.954,
+      "rawResultBytes": 1022,
+      "id": "R2"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Widget.render"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Widget.render\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n      \"symbol_name\": \"Widget.render\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"qualified-name note about Widget.render\",\n      \"time_created\": 1793723949984,\n      \"time_updated\": 1793723949984\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "Widget.render",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "qualified-name note about Widget.render",
+            "time_created": 1793723949984,
+            "time_updated": 1793723949984
+          }
+        ],
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 41.747,
+      "rawResultBytes": 685,
+      "id": "R3"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "render"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"render\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n      \"symbol_name\": \"Widget.render\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"qualified-name note about Widget.render\",\n      \"time_created\": 1793723949984,\n      \"time_updated\": 1793723949984\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "render",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "qualified-name note about Widget.render",
+            "time_created": 1793723949984,
+            "time_updated": 1793723949984
+          }
+        ],
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 41.256,
+      "rawResultBytes": 678,
+      "id": "R4"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "ghostSymbol"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"ghostSymbol\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": false,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n      \"symbol_name\": \"ghostSymbol\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"note on a name the index never publishes\",\n      \"time_created\": 1793723950028,\n      \"time_updated\": 1793723950028\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "ghostSymbol",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": false,
+        "annotations": [
+          {
+            "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+            "symbol_name": "ghostSymbol",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "note on a name the index never publishes",
+            "time_created": 1793723950028,
+            "time_updated": 1793723950028
+          }
+        ],
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 43.183,
+      "rawResultBytes": 683,
+      "id": "R5"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/alpha.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    }\n  ],\n  \"count\": 4,\n  \"totalCountIfKnown\": 4,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          }
+        ],
+        "count": 4,
+        "totalCountIfKnown": 4,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 43.547,
+      "rawResultBytes": 1742,
+      "id": "R6"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/alpha.ts",
+        "includeNameLevel": true
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": true,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n      \"symbol_name\": \"ghostSymbol\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"note on a name the index never publishes\",\n      \"time_created\": 1793723950028,\n      \"time_updated\": 1793723950028\n    },\n    {\n      \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n      \"symbol_name\": \"Widget.render\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"qualified-name note about Widget.render\",\n      \"time_created\": 1793723949984,\n      \"time_updated\": 1793723949984\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_created\": 1793723949712,\n      \"time_updated\": 1793723949712\n    }\n  ],\n  \"count\": 7,\n  \"totalCountIfKnown\": 7,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/alpha.ts",
+        "includeNameLevel": true,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+            "symbol_name": "ghostSymbol",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "note on a name the index never publishes",
+            "time_created": 1793723950028,
+            "time_updated": 1793723950028
+          },
+          {
+            "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "qualified-name note about Widget.render",
+            "time_created": 1793723949984,
+            "time_updated": 1793723949984
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          },
+          {
+            "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+            "symbol_name": "Widget",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "name-level note about Widget",
+            "time_created": 1793723949712,
+            "time_updated": 1793723949712
+          }
+        ],
+        "count": 7,
+        "totalCountIfKnown": 7,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.232,
+      "rawResultBytes": 2825,
+      "id": "R7"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "./src/alpha.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    }\n  ],\n  \"count\": 4,\n  \"totalCountIfKnown\": 4,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          }
+        ],
+        "count": 4,
+        "totalCountIfKnown": 4,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 41.399,
+      "rawResultBytes": 1742,
+      "id": "R8"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_annotations/work/probe-fixture/src/alpha.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    }\n  ],\n  \"count\": 4,\n  \"totalCountIfKnown\": 4,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          }
+        ],
+        "count": 4,
+        "totalCountIfKnown": 4,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.396,
+      "rawResultBytes": 1742,
+      "id": "R9"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/alpha.ts",
+        "symbol": "duplicate"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"duplicate\",\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "duplicate",
+        "path": "src/alpha.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          }
+        ],
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.464,
+      "rawResultBytes": 681,
+      "id": "R10"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {},
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    },\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n      \"symbol_name\": \"ghostSymbol\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"note on a name the index never publishes\",\n      \"time_created\": 1793723950028,\n      \"time_updated\": 1793723950028\n    },\n    {\n      \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n      \"symbol_name\": \"Widget.render\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"qualified-name note about Widget.render\",\n      \"time_created\": 1793723949984,\n      \"time_updated\": 1793723949984\n    },\n    {\n      \"id\": \"bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in beta\",\n      \"time_created\": 1793723949941,\n      \"time_updated\": 1793723949941\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/gamma.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in gamma\",\n      \"time_created\": 1793723949858,\n      \"time_updated\": 1793723949858\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_created\": 1793723949712,\n      \"time_updated\": 1793723949712\n    }\n  ],\n  \"count\": 10,\n  \"totalCountIfKnown\": 10,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+            "symbol_name": "Gadget",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "absolute-path write",
+            "time_created": 1793723950114,
+            "time_updated": 1793723950114
+          },
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+            "symbol_name": "ghostSymbol",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "note on a name the index never publishes",
+            "time_created": 1793723950028,
+            "time_updated": 1793723950028
+          },
+          {
+            "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "qualified-name note about Widget.render",
+            "time_created": 1793723949984,
+            "time_updated": 1793723949984
+          },
+          {
+            "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in beta",
+            "time_created": 1793723949941,
+            "time_updated": 1793723949941
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/gamma.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in gamma",
+            "time_created": 1793723949858,
+            "time_updated": 1793723949858
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          },
+          {
+            "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+            "symbol_name": "Widget",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "name-level note about Widget",
+            "time_created": 1793723949712,
+            "time_updated": 1793723949712
+          }
+        ],
+        "count": 10,
+        "totalCountIfKnown": 10,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 42.917,
+      "rawResultBytes": 3885,
+      "id": "R11"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": 3
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    },\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n      \"symbol_name\": \"ghostSymbol\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"note on a name the index never publishes\",\n      \"time_created\": 1793723950028,\n      \"time_updated\": 1793723950028\n    }\n  ],\n  \"count\": 3,\n  \"totalCountIfKnown\": 10,\n  \"truncated\": true,\n  \"truncationReason\": \"limit 3 reached; 10 annotations match this query — raise limit (max 200) or narrow the filter.\",\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+            "symbol_name": "Gadget",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "absolute-path write",
+            "time_created": 1793723950114,
+            "time_updated": 1793723950114
+          },
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+            "symbol_name": "ghostSymbol",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "note on a name the index never publishes",
+            "time_created": 1793723950028,
+            "time_updated": 1793723950028
+          }
+        ],
+        "count": 3,
+        "totalCountIfKnown": 10,
+        "truncated": true,
+        "truncationReason": "limit 3 reached; 10 annotations match this query — raise limit (max 200) or narrow the filter.",
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 41.055,
+      "rawResultBytes": 1473,
+      "id": "R12"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": 200
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    },\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n      \"symbol_name\": \"ghostSymbol\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"note on a name the index never publishes\",\n      \"time_created\": 1793723950028,\n      \"time_updated\": 1793723950028\n    },\n    {\n      \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n      \"symbol_name\": \"Widget.render\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"qualified-name note about Widget.render\",\n      \"time_created\": 1793723949984,\n      \"time_updated\": 1793723949984\n    },\n    {\n      \"id\": \"bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in beta\",\n      \"time_created\": 1793723949941,\n      \"time_updated\": 1793723949941\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/gamma.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in gamma\",\n      \"time_created\": 1793723949858,\n      \"time_updated\": 1793723949858\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_created\": 1793723949712,\n      \"time_updated\": 1793723949712\n    }\n  ],\n  \"count\": 10,\n  \"totalCountIfKnown\": 10,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+            "symbol_name": "Gadget",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "absolute-path write",
+            "time_created": 1793723950114,
+            "time_updated": 1793723950114
+          },
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+            "symbol_name": "ghostSymbol",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "note on a name the index never publishes",
+            "time_created": 1793723950028,
+            "time_updated": 1793723950028
+          },
+          {
+            "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "qualified-name note about Widget.render",
+            "time_created": 1793723949984,
+            "time_updated": 1793723949984
+          },
+          {
+            "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in beta",
+            "time_created": 1793723949941,
+            "time_updated": 1793723949941
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/gamma.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in gamma",
+            "time_created": 1793723949858,
+            "time_updated": 1793723949858
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          },
+          {
+            "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+            "symbol_name": "Widget",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "name-level note about Widget",
+            "time_created": 1793723949712,
+            "time_updated": 1793723949712
+          }
+        ],
+        "count": 10,
+        "totalCountIfKnown": 10,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.784,
+      "rawResultBytes": 3885,
+      "id": "R13"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "duplicate"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"duplicate\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in beta\",\n      \"time_created\": 1793723949941,\n      \"time_updated\": 1793723949941\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    }\n  ],\n  \"count\": 2,\n  \"totalCountIfKnown\": 2,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "duplicate",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in beta",
+            "time_created": 1793723949941,
+            "time_updated": 1793723949941
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          }
+        ],
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.842,
+      "rawResultBytes": 1027,
+      "id": "R14"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/beta.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/beta.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    },\n    {\n      \"id\": \"bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in beta\",\n      \"time_created\": 1793723949941,\n      \"time_updated\": 1793723949941\n    }\n  ],\n  \"count\": 2,\n  \"totalCountIfKnown\": 2,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/beta.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+            "symbol_name": "Gadget",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "absolute-path write",
+            "time_created": 1793723950114,
+            "time_updated": 1793723950114
+          },
+          {
+            "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in beta",
+            "time_created": 1793723949941,
+            "time_updated": 1793723949941
+          }
+        ],
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 43.602,
+      "rawResultBytes": 1022,
+      "id": "R15"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "buildThing"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"buildThing\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/gamma.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in gamma\",\n      \"time_created\": 1793723949858,\n      \"time_updated\": 1793723949858\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    }\n  ],\n  \"count\": 2,\n  \"totalCountIfKnown\": 2,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "buildThing",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/gamma.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in gamma",
+            "time_created": 1793723949858,
+            "time_updated": 1793723949858
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          }
+        ],
+        "count": 2,
+        "totalCountIfKnown": 2,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 41.3,
+      "rawResultBytes": 1034,
+      "id": "R16"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Gadget",
+        "path": "src/beta.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"Gadget\",\n  \"path\": \"src/beta.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": "Gadget",
+        "path": "src/beta.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": true,
+        "annotations": [
+          {
+            "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+            "symbol_name": "Gadget",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "absolute-path write",
+            "time_created": 1793723950114,
+            "time_updated": 1793723950114
+          }
+        ],
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.492,
+      "rawResultBytes": 669,
+      "id": "R17"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "nope-not-indexed"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": \"nope-not-indexed\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": false,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no annotations stored for 'nope-not-indexed' — absence declared, never guessed\"\n}",
+      "parsed": {
+        "symbol": "nope-not-indexed",
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": true,
+        "storeAbsent": false,
+        "symbolIndexed": false,
+        "annotations": [],
+        "count": 0,
+        "totalCountIfKnown": 0,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": true,
+        "absenceNote": "no annotations stored for 'nope-not-indexed' — absence declared, never guessed"
+      },
+      "elapsedMs": 40.313,
+      "rawResultBytes": 396,
+      "id": "R18"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": "src/gamma.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": \"src/gamma.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/gamma.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in gamma\",\n      \"time_created\": 1793723949858,\n      \"time_updated\": 1793723949858\n    }\n  ],\n  \"count\": 1,\n  \"totalCountIfKnown\": 1,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": "src/gamma.ts",
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/gamma.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in gamma",
+            "time_created": 1793723949858,
+            "time_updated": 1793723949858
+          }
+        ],
+        "count": 1,
+        "totalCountIfKnown": 1,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 43.125,
+      "rawResultBytes": 677,
+      "id": "R19"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "   "
+      },
+      "isError": false,
+      "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf\",\n      \"symbol_name\": \"Gadget\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"absolute-path write\",\n      \"time_created\": 1793723950114,\n      \"time_updated\": 1793723950114\n    },\n    {\n      \"id\": \"bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210\",\n      \"symbol_name\": \"layout\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"dot-prefixed path write\",\n      \"time_created\": 1793723950067,\n      \"time_updated\": 1793723950067\n    },\n    {\n      \"id\": \"bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df\",\n      \"symbol_name\": \"ghostSymbol\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"note on a name the index never publishes\",\n      \"time_created\": 1793723950028,\n      \"time_updated\": 1793723950028\n    },\n    {\n      \"id\": \"bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e\",\n      \"symbol_name\": \"Widget.render\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"qualified-name note about Widget.render\",\n      \"time_created\": 1793723949984,\n      \"time_updated\": 1793723949984\n    },\n    {\n      \"id\": \"bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/beta.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in beta\",\n      \"time_created\": 1793723949941,\n      \"time_updated\": 1793723949941\n    },\n    {\n      \"id\": \"bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885\",\n      \"symbol_name\": \"duplicate\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"duplicate note in alpha\",\n      \"time_created\": 1793723949901,\n      \"time_updated\": 1793723949901\n    },\n    {\n      \"id\": \"bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/gamma.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in gamma\",\n      \"time_created\": 1793723949858,\n      \"time_updated\": 1793723949858\n    },\n    {\n      \"id\": \"bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271\",\n      \"symbol_name\": \"buildThing\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"buildThing note in alpha\",\n      \"time_created\": 1793723949818,\n      \"time_updated\": 1793723949818\n    },\n    {\n      \"id\": \"bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": \"src/alpha.ts\",\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"alpha copy of Widget\",\n      \"time_created\": 1793723949774,\n      \"time_updated\": 1793723949774\n    },\n    {\n      \"id\": \"bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7\",\n      \"symbol_name\": \"Widget\",\n      \"symbol_path\": null,\n      \"author_class\": \"agent\",\n      \"tool_identity\": \"bb_annotate(mcp)\",\n      \"body\": \"name-level note about Widget\",\n      \"time_created\": 1793723949712,\n      \"time_updated\": 1793723949712\n    }\n  ],\n  \"count\": 10,\n  \"totalCountIfKnown\": 10,\n  \"truncated\": false,\n  \"truncationReason\": null,\n  \"declaredAbsent\": false,\n  \"absenceNote\": null\n}",
+      "parsed": {
+        "symbol": null,
+        "path": null,
+        "includeNameLevel": false,
+        "nameLevelIncluded": false,
+        "storeAbsent": false,
+        "symbolIndexed": null,
+        "annotations": [
+          {
+            "id": "bbann-688e15690faf10f03613c1f5937a19b2fbb5a5fc8516931aee03922f57b7f4bf",
+            "symbol_name": "Gadget",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "absolute-path write",
+            "time_created": 1793723950114,
+            "time_updated": 1793723950114
+          },
+          {
+            "id": "bbann-18c4bdf5864e42d57fe530a994c55cb5b5ce72429d5bf78b46810f037e578210",
+            "symbol_name": "layout",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "dot-prefixed path write",
+            "time_created": 1793723950067,
+            "time_updated": 1793723950067
+          },
+          {
+            "id": "bbann-e4243f64814f3dbe622c4527417fceb16ac26748c092b6589b1346e367db86df",
+            "symbol_name": "ghostSymbol",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "note on a name the index never publishes",
+            "time_created": 1793723950028,
+            "time_updated": 1793723950028
+          },
+          {
+            "id": "bbann-80614f67e57a2284e143825be19c7fc6693b7a14638ed99ed728790e0411784e",
+            "symbol_name": "Widget.render",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "qualified-name note about Widget.render",
+            "time_created": 1793723949984,
+            "time_updated": 1793723949984
+          },
+          {
+            "id": "bbann-b9b637534afb9d1b813691a5de839a36c443f921a33444dbff11084e775c41f0",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/beta.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in beta",
+            "time_created": 1793723949941,
+            "time_updated": 1793723949941
+          },
+          {
+            "id": "bbann-5e259f9e441e9da5e046455fb04c2c240abb7bbdb543f9e7ddf3881bd63e0885",
+            "symbol_name": "duplicate",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "duplicate note in alpha",
+            "time_created": 1793723949901,
+            "time_updated": 1793723949901
+          },
+          {
+            "id": "bbann-25349f28e9a80e24ea6072fd10810b442d9bbfc76ea6c2a23d9276155789cf29",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/gamma.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in gamma",
+            "time_created": 1793723949858,
+            "time_updated": 1793723949858
+          },
+          {
+            "id": "bbann-e245c5330b1c448a851511523b5fe379d5d41b600abebe8836a4d7fd7d9c8271",
+            "symbol_name": "buildThing",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "buildThing note in alpha",
+            "time_created": 1793723949818,
+            "time_updated": 1793723949818
+          },
+          {
+            "id": "bbann-6278023805336d3abcdddbbfdd0e00aa0eac732d1cb53dca0522b13929b82fb2",
+            "symbol_name": "Widget",
+            "symbol_path": "src/alpha.ts",
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "alpha copy of Widget",
+            "time_created": 1793723949774,
+            "time_updated": 1793723949774
+          },
+          {
+            "id": "bbann-a41c3f1302ce05b59001d73b7cebdff203b65d6b99e6b756c580901ecac966f7",
+            "symbol_name": "Widget",
+            "symbol_path": null,
+            "author_class": "agent",
+            "tool_identity": "bb_annotate(mcp)",
+            "body": "name-level note about Widget",
+            "time_created": 1793723949712,
+            "time_updated": 1793723949712
+          }
+        ],
+        "count": 10,
+        "totalCountIfKnown": 10,
+        "truncated": false,
+        "truncationReason": null,
+        "declaredAbsent": false,
+        "absenceNote": null
+      },
+      "elapsedMs": 40.333,
+      "rawResultBytes": 3885,
+      "id": "R20"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": 0
+      },
+      "isError": true,
+      "text": "bb_annotations: limit must be a number between 1 and 200",
+      "parsed": null,
+      "elapsedMs": 42.185,
+      "rawResultBytes": 56,
+      "id": "X1"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": 201
+      },
+      "isError": true,
+      "text": "bb_annotations: limit must be a number between 1 and 200",
+      "parsed": null,
+      "elapsedMs": 41.956,
+      "rawResultBytes": 56,
+      "id": "X2"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": -1
+      },
+      "isError": true,
+      "text": "error: bb_annotations: limit must be non-negative",
+      "parsed": null,
+      "elapsedMs": 40.933,
+      "rawResultBytes": 49,
+      "id": "X3"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": "5"
+      },
+      "isError": true,
+      "text": "error: bb_annotations: limit must be number",
+      "parsed": null,
+      "elapsedMs": 40.571,
+      "rawResultBytes": 43,
+      "id": "X4"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "limit": 1.5
+      },
+      "isError": true,
+      "text": "error: bb_annotations: limit must be a whole number (got 1.5)",
+      "parsed": null,
+      "elapsedMs": 41.556,
+      "rawResultBytes": 61,
+      "id": "X5"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "bogus": 1
+      },
+      "isError": true,
+      "text": "error: bb_annotations: unknown or irrelevant options: bogus — accepted options: symbol, path, limit, includeNameLevel (aliases accepted: target, query)",
+      "parsed": null,
+      "elapsedMs": 40.216,
+      "rawResultBytes": 153,
+      "id": "X6"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "symbol": "Widget",
+        "target": "Other"
+      },
+      "isError": true,
+      "text": "error: bb_annotations: symbol and target are aliases with different values (\"Widget\" vs \"Other\") — pass one",
+      "parsed": null,
+      "elapsedMs": 40.836,
+      "rawResultBytes": 109,
+      "id": "X7"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "path": 5
+      },
+      "isError": true,
+      "text": "error: bb_annotations: path must be string",
+      "parsed": null,
+      "elapsedMs": 40.374,
+      "rawResultBytes": 42,
+      "id": "X8"
+    },
+    {
+      "tool": "bb_annotations",
+      "args": {
+        "includeNameLevel": "true"
+      },
+      "isError": true,
+      "text": "error: bb_annotations: includeNameLevel must be boolean",
+      "parsed": null,
+      "elapsedMs": 40.809,
+      "rawResultBytes": 55,
+      "id": "X9"
+    }
+  ],
+  "checks": [
+    {
+      "id": "A1",
+      "description": "declared absence (no annotations stored for this project yet)",
+      "ok": true,
+      "detail": {
+        "text": "{\n  \"symbol\": null,\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncation"
+      }
+    },
+    {
+      "id": "A2",
+      "description": "declared absence (no annotations stored for 'Widget')",
+      "ok": true,
+      "detail": {
+        "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"truncat"
+      }
+    },
+    {
+      "id": "A3",
+      "description": "declared absence (no annotations stored for 'src/alpha.ts')",
+      "ok": true,
+      "detail": {
+        "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": false,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \""
+      }
+    },
+    {
+      "id": "A4",
+      "description": "declared absence (no annotations stored for 'src/alpha.ts')",
+      "ok": true,
+      "detail": {
+        "text": "{\n  \"symbol\": null,\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": true,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": null,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n  \"tr"
+      }
+    },
+    {
+      "id": "A5",
+      "description": "declared absence (no annotations stored for 'Widget' in 'src/alpha.ts')",
+      "ok": true,
+      "detail": {
+        "text": "{\n  \"symbol\": \"Widget\",\n  \"path\": \"src/alpha.ts\",\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [],\n  \"count\": 0,\n  \"totalCountIfKnown\": 0,\n  \"truncated\": false,\n"
+      }
+    },
+    {
+      "id": "A6",
+      "description": "symbol alias `target` is accepted and normalized",
+      "ok": true,
+      "detail": "Widget"
+    },
+    {
+      "id": "A7",
+      "description": "symbol alias `query` is accepted and normalized",
+      "ok": true,
+      "detail": "Widget"
+    },
+    {
+      "id": "W1",
+      "description": "name-level write stores a NULL path",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "id": "W2",
+      "description": "file-scoped write stores the canonical relative path",
+      "ok": true,
+      "detail": "src/alpha.ts"
+    },
+    {
+      "id": "W9",
+      "description": "dot-prefixed write path canonicalizes to the index spelling",
+      "ok": true,
+      "detail": "src/alpha.ts"
+    },
+    {
+      "id": "W10",
+      "description": "absolute write path canonicalizes to the index spelling",
+      "ok": true,
+      "detail": "src/beta.ts"
+    },
+    {
+      "id": "W7",
+      "description": "qualified-name write is stored",
+      "ok": true,
+      "detail": "Widget.render"
+    },
+    {
+      "id": "R1",
+      "description": "symbol name returns the name-level note and the file-scoped note",
+      "ok": true,
+      "detail": [
+        "Widget",
+        "Widget"
+      ]
+    },
+    {
+      "id": "R2",
+      "description": "symbol+path returns that file's copy plus the name-level note about the symbol",
+      "ok": true,
+      "detail": [
+        "Widget",
+        "Widget"
+      ]
+    },
+    {
+      "id": "R3",
+      "description": "contract: reading by a symbol's QUALIFIED name finds the note written under it",
+      "ok": true,
+      "detail": {
+        "observed": [
+          "Widget.render"
+        ],
+        "text": "{\n  \"symbol\": \"Widget.render\",\n  \"path\": null,\n  \"includeNameLevel\": false,\n  \"nameLevelIncluded\": true,\n  \"storeAbsent\": false,\n  \"symbolIndexed\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bbann-80"
+      }
+    },
+    {
+      "id": "R4",
+      "description": "contract: reading by a simple name finds notes written under its qualified name",
+      "ok": true,
+      "detail": {
+        "observed": [
+          "Widget.render"
+        ]
+      }
+    },
+    {
+      "id": "R5",
+      "description": "unindexed name falls back to the literal stored name",
+      "ok": true,
+      "detail": [
+        "ghostSymbol"
+      ]
+    },
+    {
+      "id": "R6",
+      "description": "path-only read returns that file's own notes and not the project's name-level notes",
+      "ok": true,
+      "detail": {
+        "count": 4,
+        "paths": [
+          "src/alpha.ts",
+          "src/alpha.ts",
+          "src/alpha.ts",
+          "src/alpha.ts"
+        ]
+      }
+    },
+    {
+      "id": "R7",
+      "description": "includeNameLevel adds the name-level notes to a path-only read",
+      "ok": true,
+      "detail": {
+        "count": 7
+      }
+    },
+    {
+      "id": "R8",
+      "description": "dot-prefixed read path is canonicalized before filtering",
+      "ok": true,
+      "detail": {
+        "count": 4,
+        "path": "src/alpha.ts"
+      }
+    },
+    {
+      "id": "R9",
+      "description": "absolute read path is canonicalized before filtering",
+      "ok": true,
+      "detail": {
+        "count": 4,
+        "path": "src/alpha.ts"
+      }
+    },
+    {
+      "id": "R10",
+      "description": "symbol+path selects exactly that file's copy",
+      "ok": true,
+      "detail": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R11",
+      "description": "project-wide read returns every note with its true total",
+      "ok": true,
+      "detail": {
+        "count": 10,
+        "total": 10
+      }
+    },
+    {
+      "id": "R12",
+      "description": "limit truncation is declared with a true total and a reason",
+      "ok": true,
+      "detail": {
+        "count": 3,
+        "total": 10,
+        "reason": "limit 3 reached; 10 annotations match this query — raise limit (max 200) or narrow the filter."
+      }
+    },
+    {
+      "id": "R13",
+      "description": "limit at the declared cap is a complete page",
+      "ok": true,
+      "detail": {
+        "count": 10
+      }
+    },
+    {
+      "id": "R14",
+      "description": "symbol name shared by two files returns both files' notes",
+      "ok": true,
+      "detail": [
+        "duplicate",
+        "duplicate"
+      ]
+    },
+    {
+      "id": "R15",
+      "description": "path-only read of a second file is independent",
+      "ok": true,
+      "detail": {
+        "count": 2
+      }
+    },
+    {
+      "id": "R16",
+      "description": "symbol name declared in two files returns both",
+      "ok": true,
+      "detail": [
+        "buildThing",
+        "buildThing"
+      ]
+    },
+    {
+      "id": "R17",
+      "description": "symbol+path narrows a multi-file name to one file",
+      "ok": true,
+      "detail": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R18",
+      "description": "absence for an unindexed, unannotated name is declared",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "id": "R19",
+      "description": "path-only read stays scoped to one file",
+      "ok": true,
+      "detail": {
+        "count": 1
+      }
+    },
+    {
+      "id": "R20",
+      "description": "blank symbol is treated as omitted (project-wide read)",
+      "ok": true,
+      "detail": {
+        "symbol": null,
+        "count": 10
+      }
+    },
+    {
+      "id": "R11-order",
+      "description": "project-wide rows are ordered newest-first deterministically",
+      "ok": true,
+      "detail": {
+        "first": "Gadget",
+        "last": "Widget"
+      }
+    },
+    {
+      "id": "X1",
+      "description": "limit 0 is a declared refusal",
+      "ok": true,
+      "detail": "bb_annotations: limit must be a number between 1 and 200"
+    },
+    {
+      "id": "X2",
+      "description": "limit above the declared cap is a declared refusal",
+      "ok": true,
+      "detail": "bb_annotations: limit must be a number between 1 and 200"
+    },
+    {
+      "id": "X3",
+      "description": "negative limit is a declared refusal naming the rule",
+      "ok": true,
+      "detail": "error: bb_annotations: limit must be non-negative"
+    },
+    {
+      "id": "X4",
+      "description": "limit of the wrong JSON type is a declared refusal",
+      "ok": true,
+      "detail": "error: bb_annotations: limit must be number"
+    },
+    {
+      "id": "X6",
+      "description": "unknown option is refused and the accepted options are named",
+      "ok": true,
+      "detail": "error: bb_annotations: unknown or irrelevant options: bogus — accepted options: symbol, path, limit, includeNameLevel (aliases accepted: target, query)"
+    },
+    {
+      "id": "X7",
+      "description": "conflicting alias and canonical symbol is refused",
+      "ok": true,
+      "detail": "error: bb_annotations: symbol and target are aliases with different values (\"Widget\" vs \"Other\") — pass one"
+    },
+    {
+      "id": "X8",
+      "description": "wrong JSON type for path is refused",
+      "ok": true,
+      "detail": "error: bb_annotations: path must be string"
+    },
+    {
+      "id": "X9",
+      "description": "wrong JSON type for includeNameLevel is refused",
+      "ok": true,
+      "detail": "error: bb_annotations: includeNameLevel must be boolean"
+    },
+    {
+      "id": "X5",
+      "description": "fractional limit is either refused with a named rule or answers the floored page",
+      "ok": true,
+      "detail": {
+        "isError": true,
+        "text": "error: bb_annotations: limit must be a whole number (got 1.5)"
+      }
+    },
+    {
+      "id": "L1",
+      "description": "tools/list advertises bb_annotations with its schema",
+      "ok": true,
+      "detail": [
+        "symbol",
+        "path",
+        "limit",
+        "includeNameLevel"
+      ]
+    },
+    {
+      "id": "L2",
+      "description": "stdout carries JSON-RPC frames only (no pollution)",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "L3",
+      "description": "the paired write door stores the rows the read door reports",
+      "ok": true,
+      "detail": {
+        "W1": true,
+        "W2": true,
+        "W3": true,
+        "W4": true,
+        "W5": true,
+        "W6": true,
+        "W7": true,
+        "W8": true,
+        "W9": true,
+        "W10": true
+      }
+    }
+  ],
+  "summary": {
+    "checks": 45,
+    "passed": 45,
+    "failed": 0,
+    "failedIds": []
+  },
+  "stderrTail": ""
+}

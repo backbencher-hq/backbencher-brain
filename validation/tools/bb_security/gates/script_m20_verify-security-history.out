@@ -1,0 +1,24 @@
+[brain] ✓ worker pool available — using parallel indexing with 45s timeouts
+[INFO] [12:25:56] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [12:25:56] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [12:25:56] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  Resolving cross-file relationships...
+  ✓ resolved in 9ms [plan=linear largest-intermediate=1]
+  Enriching relationships with architectural context...
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [12:25:56] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"2c30e888","danglingSources":1,"totalRelationships":2}
+  enriching enriching 50%
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 6ms
+  Computing gravity scores...
+  ✓ gravity in 2ms
+  Analyzing taint flows & security...
+[INFO] [12:25:56] [project-health] project health computed {"projectId":"2c30e888829359f67dfbde042c9a47ed234c22e1","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(13ms)
+  ✓ health check in 5ms
+  · index health: 100% — embedding coverage deferred until the embedding drain finishes
+  ✓ vector blobs: 0/0 promoted in 2ms
+  ✓ planner stats (ANALYZE) in 0ms
+
+SECURITY S3: PASS (37/37, 5/5 negatives)

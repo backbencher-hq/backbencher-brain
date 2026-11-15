@@ -2,12 +2,12 @@
   "instrument": "markdown ruling-table adjudication (validation/m14/fixtures/markdown/ruling-table-adjudication.ts)",
   "whatThisIs": "the procedure of script/m14/ontology-coverage-gate.ts applied to the whole admitted population, over the arbiter's own ruling table, with instrument A stated against the UNION of both pinned grammars",
   "whatThisIsNot": "the arbiter's output. The arbiter was run twice on this corpus and both runs were killed by the shared self-destruct at src/ast/engine.ts:1411 before printing a verdict.",
-  "corpusRoot": "$HOME/fixtures/repositories",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
   "admittedByGateTest": 17456,
   "census": {
     "instrument": "markdown whole-corpus census (validation/m14/fixtures/markdown/whole-corpus-census.ts)",
     "entryPoint": "parseFile (src/ast/pool-worker.ts)",
-    "corpusRoot": "$HOME/fixtures/repositories",
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
     "population": {
       "admissionTest": "detectLanguageFromPath(abs, text) === \"markdown\" — the arbiter's test",
       "admittedByExtension": 17456,

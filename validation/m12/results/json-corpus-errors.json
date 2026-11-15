@@ -1,6 +1,6 @@
 {
   "analyzer": "json",
-  "corpus": "$HOME/roslyn",
+  "corpus": "/home/ishaq2321/roslyn",
   "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
   "extension": "*.json",
   "files": 133,

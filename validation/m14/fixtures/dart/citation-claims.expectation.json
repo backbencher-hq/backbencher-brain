@@ -1,0 +1,21 @@
+{
+  "fixtureId": "dart/citation-claims",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The DEFAULT-STATE (flag-off) half of the citation-claim contract: `BB_DART_CITATION` is off in the committed arm, so a listed bare name must carry NO `languageNamespace` metadata. This is the byte-identical-off pin — the flag-ON half (claims present, policy present, unlisted/lowercase unmarked, drift assertion) lives in script/m14/dart-citation-fixtures.ts because the fixture runner cannot set a per-fixture flag. Running THIS fixture with BB_DART_CITATION=1 would fail by design: the committed arm does not set the flag.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "Listed", "kind": "class" },
+    { "name": "NotListed", "kind": "class" },
+    { "name": "listedTypeUse", "kind": "function" },
+    { "name": "lowercaseVocabMember", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "target": "override", "meta.isAnnotation": true, "meta.languageNamespace": null, "note": "LISTED annotation, flag off: the annotation reference exists and carries NO claim metadata." },
+    { "type": "references", "target": "NotListed", "meta.isAnnotation": true, "meta.languageNamespace": null, "note": "UNLISTED annotation: never claimed." },
+    { "type": "instantiates", "target": "Duration", "meta.languageNamespace": null, "note": "LISTED capitalized type use, flag off: no claim." }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "override", "meta.languageNamespace": ["override"], "note": "the flag-off state must not claim." }
+  ]
+}

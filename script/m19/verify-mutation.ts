@@ -84,7 +84,7 @@ async function main() {
     // temporary source-level substitution instead.
     const gatePath = path.join(ROOT, "script/m19/verify-closure-gate.ts")
     const gateBackup = readFileSync(gatePath, "utf8")
-    // The needle used to be the literal `"$HOME/aspnetcore"`, which is the
+    // The needle used to be the literal `"/home/ishaq2321/aspnetcore"`, which is the
     // string verify-closure-gate.ts no longer contains now that it resolves through
     // script/lib/optional-corpus.ts. A replace() that matches nothing returns the source
     // UNCHANGED, so this mutation had quietly stopped mutating anything: the gate ran

@@ -4,6 +4,31 @@ The first launch pass covers TypeScript, JavaScript, C++, C, Python, Java, Kotli
 
 The pass uses Backbencher's own symbol search, graph traversal, and file-scoped analysis to locate and prioritize code. Regressions are reproduced against source and the production AST entry point, with compiler checks where available. A stale indexed answer can locate a candidate for inspection. Current source and runtime checks determine the verdict.
 
+## Current TypeScript status
+
+This section is the current checkpoint; the follow-ups below retain historical
+results and may list gaps that a later pass addressed.
+
+| Area | Verified scope | Remaining boundary |
+| --- | --- | --- |
+| Call identity | Exact caller and call-site offsets through storage and graph | Broader corpus adjudication |
+| Fields and inheritance | Scoped fields, concrete same-file parents, shadow/write barriers | Qualified, nested and cross-file hierarchy identity |
+| Alias origins | Lexical, conditional, destructured and redeclared bindings | Arbitrary call effects and parameter-pattern projections |
+| Container writes | Explicit object/array slot writes, direct member writes, simple container aliases | Dynamic reads, array mutator calls, projected/conditional container alias identities |
+| Loop alias origins | For-of array values, patterns, existing/var bindings, stored/spread arrays | Custom iterators, generator/call-return and asynchronous value resolution |
+
+The container-write pass checks 52 exact call sites, 25 executed scenarios and
+eight source mutations through direct storage, bb graph and real workers with
+incremental origin changes and restoration. Ordinary/logical assignments,
+nested paths, assignment patterns/defaults, dynamic write keys, closure writes
+and direct `box.held.item`/`box[0].item` writes are covered. Positive controls
+preserve different keys, parent objects, lexical shadows and rest-copy sources.
+The loop-alias extension adds 40 exact call sites, 20 runtime scenarios and five
+source mutations. It distinguishes for-in keys from for-of values and array
+indices from named/noncanonical/out-of-range numeric properties. Real-worker
+iterable removal/restoration and offset edits pass. TypeScript remains active;
+these bounded checks do not certify whole programs.
+
 ## Latest TypeScript repeated-binding follow-up
 
 Repeated `var` declarations now contribute all initializers to alias provenance

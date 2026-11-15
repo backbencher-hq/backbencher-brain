@@ -1,0 +1,121 @@
+{
+  "fixtureId": "go/return-type-shapes",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the `references` edge for a function's RESULT TYPES in BOTH shapes the grammar allows. tree-sitter-go's node-types.json gives a function/method/func_literal a `result` field that is EITHER one type node (`type_identifier`, `pointer_type`, `slice_type`, `map_type`, `channel_type`, `qualified_type`, `function_type`) OR a `parameter_list`. Go's spec writes a single result with no parentheses and two or more inside them, so the parenthesised form reaches the `parameter_declaration` case in extractDeclaredTypeRefs and the BARE form reached no case at all. Measured over a 200-file stride sample of go-stdlib: 262 bare-result sites in 46 files produced 265 expected edges and 1 published (0.4%); 156 parenthesised sites in 33 files produced 167 expected and 162 published (97.0%). The bare form is Go's dominant signature spelling, so this is the majority of the surface and it was silent. Rows are authored from the grammar and the spec; the line numbers come from this file's own text.",
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "BareIdentifier",
+      "target": "Alpha",
+      "line_number": 27,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BarePointer",
+      "target": "Alpha",
+      "line_number": 30,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BareSlice",
+      "target": "Alpha",
+      "line_number": 33,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BareMapValue",
+      "target": "Alpha",
+      "line_number": 36,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BareChannel",
+      "target": "Alpha",
+      "line_number": 39,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BareFuncValue",
+      "target": "Alpha",
+      "line_number": 42,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BareQualified",
+      "target": "Writer",
+      "line_number": 45,
+      "meta.relationshipType": "return_type",
+      "meta.qualifiedType": "io.Writer"
+    },
+    {
+      "type": "references",
+      "from": "ParenPair",
+      "target": "Alpha",
+      "line_number": 48,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "ParenPointerPair",
+      "target": "Alpha",
+      "line_number": 51,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "ParenNamedResult",
+      "target": "Alpha",
+      "line_number": 54,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "Method",
+      "target": "Alpha",
+      "line_number": 57,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "PointerMethod",
+      "target": "Beta",
+      "line_number": 60,
+      "meta.relationshipType": "return_type"
+    },
+    {
+      "type": "references",
+      "from": "BareIdentifier",
+      "target": "Alpha",
+      "confidenceMin": 0.95
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "OnlyError",
+      "target": "error"
+    },
+    {
+      "type": "references",
+      "from": "OnlyInt",
+      "target": "int"
+    },
+    {
+      "type": "references",
+      "from": "OnlyString",
+      "target": "string"
+    },
+    {
+      "type": "references",
+      "from": "BareIdentifier",
+      "target": "io.Writer"
+    }
+  ]
+}

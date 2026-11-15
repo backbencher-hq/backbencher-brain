@@ -24,7 +24,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const OUT = "validation/m14/tmp/swift-import-export-probe.json"
 const FULL = process.argv.includes("--full")
 

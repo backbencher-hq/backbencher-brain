@@ -1,0 +1,31 @@
+{
+ "files": 18364,
+ "zeroByte": 60,
+ "commentOnly": 87,
+ "realContent": 18217,
+ "commentOnlyEmpty": 85,
+ "commentOnlyNonEmpty": 2,
+ "gateCounter": 141,
+ "commentOnlySample": [
+  "ansible/lib/ansible/galaxy/data/default/collection/meta/runtime.yml",
+  "ansible/test/integration/targets/check_mode/roles/test_always_run/meta/main.yml",
+  "ansible/test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/plugins/modules/uses_leaf_mu_flat_import.yml",
+  "ansible/test/integration/targets/hash/roles/test_hash_behaviour/meta/main.yml",
+  "ansible/test/integration/targets/roles_arg_spec/roles/empty_file/meta/argument_specs.yml",
+  "dart-sdk/pkg/analyzer_cli/test/data/analysis_options.yaml",
+  "dart-sdk/pkg/analyzer_cli/test/data/no_lints_project/analysis_options.yaml",
+  "dart-sdk/pkg/front_end/test/id_testing/data/directory_testing/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/both_packages_and_json/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_empty/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_wrong/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_wrong_2/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_wrong_3/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_wrong_4/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_no_default_version/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_non_package_default_version/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_non_package_no_default_version/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/package_to_high_default_version/pubspec.yaml",
+  "dart-sdk/pkg/front_end/test/language_versioning/data/parts_disagreeing_has_package/pubspec.yaml"
+ ]
+}

@@ -1,0 +1,151 @@
+{
+  "tier": "T0-api-vector",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+  "projectId": "24cb6a202c39689cc13693683c490bbb9ced1f80",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
+  "embeddingDisabled": false,
+  "route": "handler (source door): createToolHandlers().bb_ask",
+  "argv": [
+    "T0-api-vector",
+    "/home/ishaq2321/mcp/backbencher-brain/test/fixtures/polyglot",
+    "validation/tools/bb_ask/t0-latency-api.json"
+  ],
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_ask/bbdata/t0api",
+    "BB_NO_AUTO_REFRESH": "1",
+    "BB_EMBEDDING_DISABLED": null,
+    "BB_VECTOR_SCAN_CAP": null
+  },
+  "warmupMs": 2052.77,
+  "warmupChars": 407,
+  "runs": [
+    {
+      "query": "how does request handling work in this codebase",
+      "ms": 2005.49,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "0% (0/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "no-matching-model-embeddings",
+        "scanned": "0/20000",
+        "candidates": "0",
+        "embeddingTimeout": "2000ms (fell back to local-word-vectors-v3)",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "793",
+        "lines": "9"
+      }
+    },
+    {
+      "query": "where is the index lock acquired",
+      "ms": 2004.35,
+      "isError": false,
+      "facts": {
+        "method": "keyword-fallback",
+        "queryModel": "none",
+        "indexModel": "none",
+        "embeddingCoverage": "0% (0/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "reason": "no-matching-model-embeddings",
+        "scanned": "0/20000",
+        "candidates": "0",
+        "embeddingTimeout": "2000ms (fell back to local-word-vectors-v3)",
+        "provenance": "unknown via quick-answer@intelligence (none); unknowns: Query may refer to behavior not captured by the AST index.",
+        "confidence": "0.1",
+        "chars": "793",
+        "lines": "9"
+      }
+    },
+    {
+      "query": "how are tool descriptors registered",
+      "ms": 1710.73,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "scanned": "9/20000",
+        "filtered": "9",
+        "candidates": "9",
+        "ranking": "non-discriminative (2 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "2832",
+        "lines": "79"
+      }
+    },
+    {
+      "query": "what parses the configuration file",
+      "ms": 185.68,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "scanned": "9/20000",
+        "filtered": "9",
+        "candidates": "9",
+        "ranking": "non-discriminative (4 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "2831",
+        "lines": "79"
+      }
+    },
+    {
+      "query": "how does the search engine rank results",
+      "ms": 224.76,
+      "isError": false,
+      "facts": {
+        "method": "vector",
+        "queryModel": "nvidia/nemotron-3-embed-1b",
+        "indexModel": "nvidia/nemotron-3-embed-1b",
+        "dimension": "2048",
+        "embeddingCoverage": "69% (9/13 symbols embedded in this model space)",
+        "libraryCoverage": "69% (9/13 across all models)",
+        "scanned": "9/20000",
+        "filtered": "9",
+        "candidates": "9",
+        "ranking": "non-discriminative (4 within the margin of the best)",
+        "provenance": "semantic_candidate via quick-answer@intelligence (retrieval); unknowns: The natural-language query is matched by similarity, not parsed for intent.",
+        "chars": "2799",
+        "lines": "76"
+      }
+    }
+  ],
+  "exactName": null,
+  "indexFiles": {
+    "before": {
+      "db": {
+        "size": 598016,
+        "mtimeMs": 1793571700242
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571781357
+      }
+    },
+    "after": {
+      "db": {
+        "size": 598016,
+        "mtimeMs": 1793571700242
+      },
+      "wal": {
+        "size": 0,
+        "mtimeMs": 1793571781357
+      }
+    },
+    "dbUnchanged": true
+  },
+  "p50": 1710.73,
+  "p95": 2005.49,
+  "max": 2005.49,
+  "generatedAt": "2026-11-02T00:13:14.939Z"
+}

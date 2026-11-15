@@ -1,0 +1,35 @@
+{
+  "fixtureId": "groovy/quoted-callee-paren-call-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M49 G9 (#841). Pins a PARENTHESISED call whose callee is a single-quoted string. Groovy's single-quoted string lexes as `character_literal` (the #742 residual — it is not Java's one-character char), and `method_invocation`'s two `name` choices listed `string_literal` but NOT `character_literal`, so the paren form of a quoted callee had no rule at all: the construct, and with it the whole enclosing class body, collapsed into error recovery. The command (paren-less) form always worked because `_juxt_function_name` reaches it through `$.primary_expression`, and `\"$quoted\"(...)` always worked because that is a real `string_literal` — that asymmetry is what makes this a grammar gap and not a lexer one. Found by the G9 construct-ranked census, then reduced from grails-core: end-to-end/spring-dependency-management/grails-app/controllers/UrlMappings.groovy (`'/500'(view: '/error')`, `'/404'(view: '/notFound')`), and the same shape in the Constraints DSL (`'in'(list)`, `'*'(value)`) and Hibernate mapping builders (`'user-type'(name: 'x')`). MEASURED, grails-core @ a83f8748, all 6,564 tracked *.groovy through the production pipeline, identical instrument on both sides and only the wasm differing (sha256 5a1d1b21d71f -> ff8ad33d3e66): parse-failing 370 -> 322 with the failing-file SETS compared file by file — 48 FIXED, 0 REGRESSED; missing tokens ';' 150 -> 130, 'identifier' 36 -> 32, '}' 25 -> 17; clean files 6,194 -> 6,242; crashes 0, pipeline mismatches 0 on both sides. On the bounded affected set (the 370-file union of both sides' failing sets plus a 400-file deterministic clean control, list kept at validation/m59/results/g841-g9-filelist.txt) parse-failing 370 -> 322 again and relationships 62,824 -> 64,652. FOUR of those 770 files show a per-file relationship DECREASE, and each was adjudicated by printing both edge sets (script/m14/tmp/w23-rel-loss-probe.ts) rather than counted: every lost edge is an artifact of the error-recovery parse — `uses getAllInternal -> 'in'(identityName` (a target that is raw recovered text), and `calls Test multi-delete events -> \"Test insert events\"` (a quoted test method 'calling' its siblings) — and for EACH of the four files, neutralizing the single-quoted callee (rewriting it to the double-quoted form, which both builds always parsed) makes the two builds emit IDENTICAL edge sets: 728/728, 137/137, 134/134, 138/138 with 0 differences in either direction. So no relationship loss is attributable to the grammar change; the file-level deltas are the difference between an error-recovery parse and a clean one. PIN: this fixture through the production analyzer, pre-fix vs post-fix, with the PRE-FIX build (sha256 5a1d1b21d71f) emitting ZERO symbols and ZERO relationships — hasError=true, so nothing in the file survived — and the post-fix build emitting 3 symbols and 13 relationships. The quoted callee is emitted as the call TARGET text exactly as the command form and the double-quoted form already were (`MappingCfg -> '/500'`, confidence 0.7, evidenceClass usage_contextual), which is why the expectation below pins the quoted spelling rather than a normalized name. The parenthesised form must NOT be typed as a `juxt_call` (that metadata belongs to the paren-less command chain), which is what `forbidRelationships` records. NOT fixed here, on purpose: a NUMERIC callee (`404(view: '/x')`) still fails — it is not valid Groovy, and it is the control that bounds the change rather than a residual to chase. `authoredBeforeAnalyzerRun` is false because the expectation was read off the live emission; the counts above are its provenance.",
+  "expectSymbols": [
+    { "name": "MappingCfg", "kind": "class" },
+    { "name": "mappings", "kind": "property", "note": "PRE-FIX this property did not exist: the whole class body collapsed" },
+    { "name": "controls", "kind": "method", "note": "PRE-FIX absent, same collapse" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "MappingCfg", "target": "'/500'", "line_number": 13, "note": "the UrlMappings corpus shape: a quoted callee in the paren form, inside a closure in a class body" },
+    { "type": "calls", "from": "MappingCfg", "target": "'/404'", "line_number": 14 },
+    { "type": "calls", "from": "MappingCfg", "target": "'in'", "line_number": 15, "note": "the Constraints DSL shape" },
+    { "type": "calls", "from": "MappingCfg", "target": "'*'", "line_number": 16, "note": "a quoted callee that is not an identifier at all — the reason this is a grammar rule and not a name normalization" },
+    { "type": "calls", "from": "MappingCfg", "target": "'user-type'", "line_number": 17, "note": "Hibernate mapping builder shape, named argument" },
+    { "type": "calls", "from": "MappingCfg", "target": "\"double\"", "line_number": 18, "note": "CONTROL: the double-quoted callee — a real string_literal — always parsed and always emitted this target" },
+    { "type": "calls", "from": "MappingCfg", "target": "'/command'", "line_number": 19, "note": "CONTROL: the paren-less command form, which reached the quoted callee through _juxt_function_name all along" },
+    { "type": "calls", "from": "MappingCfg", "target": "length", "line_number": 19, "note": "CONTROL: the argument's own member call, unchanged" },
+    { "type": "calls", "from": "controls", "target": "'name'", "line_number": 24, "note": "the same paren form in a method body, with a numeric argument" },
+    { "type": "calls", "from": "controls", "target": "\"$quoted\"", "line_number": 25, "note": "CONTROL: a quoted name in the paren form, unchanged" },
+    { "type": "calls", "from": "controls", "target": "'in'", "line_number": 26 },
+    { "type": "contains", "from": "MappingCfg", "target": "mappings", "line_number": 12, "note": "PRE-FIX absent" },
+    { "type": "contains", "from": "MappingCfg", "target": "controls", "line_number": 22, "note": "PRE-FIX absent" }
+  ],
+  "forbidSymbols": [
+    { "name": "script", "kind": "property", "note": "the pre-fix collapse leaked the file's own name as a synthetic scope" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "MappingCfg", "target": "'/500'", "meta.relationshipType": "juxt_call", "note": "the PARENTHESISED form is a call edge; juxt_call metadata belongs to the paren-less command chain only (row 19 is the only juxt_call in this file)" },
+    { "type": "calls", "from": "MappingCfg", "target": "'in'", "meta.relationshipType": "juxt_call", "note": "same rule for the Constraints DSL line" },
+    { "type": "uses", "from": "(script)", "target": "'/500'", "note": "PRE-FIX: with nothing parsed, the quoted callee could only leak as a raw read in the synthetic script scope" },
+    { "type": "calls", "from": "(script)", "target": "'in'", "note": "PRE-FIX: same" }
+  ]
+}

@@ -44,8 +44,8 @@
 import { readdirSync, statSync, readFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
-const REPO = process.env.BB_REPO || "$HOME/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const REPO = process.env.BB_REPO || "/home/ishaq2321/backbencher-brain"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const DIRS = (process.env.BB_CORPUS_DIR || "clj-kondo").split(",")
 const LIMIT = Number(process.env.BB_LIMIT || 0)
 const EXT = [".clj", ".cljs", ".cljc"]

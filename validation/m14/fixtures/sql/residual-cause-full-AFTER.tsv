@@ -1,0 +1,963 @@
+type	srcFile	line	target	bucket	metadataKeys	qualified	externalKind
+uses	boundary/internal/clientcache/internal/db/schema_reset.sql		sqlite_master	absentEverywhere	tableReference,evidenceClass,operations		
+uses	boundary/internal/db/schema/internal/edition/testdata/three/1/01_add_table.up.sql		tree	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_hst	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library_hst	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/100/01_credential_vault_ldap_library.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_mapping_override	absentEverywhere	constraint,column,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/101/02_credential_vault_password_library.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/15/01_wh_rename_key_columns.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/01_wh_credential_dimension.up.sql		wh_dim_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/01_wh_credential_dimension.up.sql		wh_dim_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/16/03_wh_credential_dimension.up.sql		new_table	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/16/03_wh_credential_dimension.up.sql		new_table	absentEverywhere	tableReference,evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/04_wh_credential_dimension.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/04_wh_credential_dimension.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/04_wh_credential_dimension.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/04_wh_credential_dimension.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/05_wh_credential_dimension.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/05_wh_credential_dimension.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/05_wh_credential_dimension.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/16/05_wh_credential_dimension.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/26/01_wh_network_address_dimensions.up.sql		wh_dim_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/27/02_wh_session_facts.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/27/02_wh_session_facts.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/27/02_wh_session_facts.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/27/02_wh_session_facts.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/30/04_kms_keys.up.sql		kms_deprecated_root_key	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/30/04_kms_keys.up.sql		kms_deprecated_root_key_version	absentEverywhere	tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/36/01_vault_library_map_username_password.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	operation,documented,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/36/02_vault_private_library.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/36/02_vault_private_library.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/39/02_vault_ssh_private_key_override.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/39/02_vault_ssh_private_key_override.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/41/01_worker_filter_vault_cred_store.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/41/01_worker_filter_vault_cred_store.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/42/01_ssh_private_key_passphrase.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/42/01_ssh_private_key_passphrase.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/44/01_credentials.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/44/01_credentials.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/49/01_vault_credentials.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/49/01_vault_credentials.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/49/01_vault_credentials.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/56/02_add_data_key_foreign_key_references.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/56/02_add_data_key_foreign_key_references.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql		constraint_column_usage	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.constraint_column_usage	informationSchema
+uses	boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql		referential_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.referential_constraints	informationSchema
+uses	boundary/internal/db/schema/migrations/oss/postgres/56/03_create_kms_key_destructions.up.sql		key_column_usage	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.key_column_usage	informationSchema
+calls	boundary/internal/db/schema/migrations/oss/postgres/60/03_wh_sessions.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/60/03_wh_sessions.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/60/03_wh_sessions.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/60/03_wh_sessions.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/61/01_fix_wh_upsert_credential_group.up.sql		new_table	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/61/01_fix_wh_upsert_credential_group.up.sql		new_table	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/63/02_add_ssh_cert_to_vault_cred_library_view.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/63/02_add_ssh_cert_to_vault_cred_library_view.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/65/01_ldap.up.sql		auth_ldap_group_entry_search	absentEverywhere	operation,documented,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/65/01_ldap.up.sql		auth_ldap_group_entry_search	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/65/01_ldap.up.sql		auth_ldap_group_entry_search	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/65/01_ldap.up.sql		auth_ldap_group_entry_search	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/76/01_ldap.up.sql		auth_ldap_group_entry_search	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/78/01_ssh_signed_certs_additional_valid_principals.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/78/01_ssh_signed_certs_additional_valid_principals.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/02_wh_upsert_user_refact.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/02_wh_upsert_user_refact.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/02_wh_upsert_user_refact.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/02_wh_upsert_user_refact.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/04_wh_auth_token_insert.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/04_wh_auth_token_insert.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/05_wh_auth_token_update.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/05_wh_auth_token_update.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/06_wh_auth_token_delete.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/84/06_wh_auth_token_delete.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		connection_connected_time_key	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		connection_closed_time_key	absentEverywhere	tableReference,evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/89/01_remove_session_connection_state.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/92/02_session_state_tstzrange.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/92/02_session_state_tstzrange.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/92/02_session_state_tstzrange.up.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/schema/migrations/oss/postgres/92/02_session_state_tstzrange.up.sql		wh_time_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/98/02_username_password_domain_vault.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/98/02_username_password_domain_vault.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/98/02_username_password_domain_vault.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	operation,tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	operation,documented,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	triggerTarget,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_hst	absentEverywhere	operation,tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_hst	absentEverywhere	operation,documented,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_hst	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_deleted	absentEverywhere	operation,tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_deleted	absentEverywhere	operation,documented,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_mapping_override	absentEverywhere	operation,tableReference,evidenceClass,operations		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_mapping_override	absentEverywhere	operation,documented,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	operation,tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	operation,documented,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	triggerTarget,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	triggerTarget,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_library_username_password_mapping_override	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	operation,tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	operation,documented,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	triggerTarget,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	triggerTarget,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	operation,tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	operation,documented,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	triggerTarget,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	triggerTarget,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library_hst	absentEverywhere	tableReference,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	triggerTarget,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	triggerTarget,evidenceClass		
+references	boundary/internal/db/schema/migrations/oss/postgres/99/01_credential_vault_library_refactor.up.sql		credential_vault_generic_library	absentEverywhere	triggerTarget,evidenceClass		
+uses	boundary/internal/db/sqltest/initdb.d/01_colors_persona.sql		credential_vault_generic_library	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/initdb.d/03_widgets_persona.sql		credential_vault_generic_library	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/initdb.d/03_widgets_persona.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/initdb.d/03_widgets_persona.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/initdb.d/03_widgets_persona.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	operation,tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass,operations		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_issue_credentials.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_issue_credentials.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_issue_credentials.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_issue_credentials.sql		credential_vault_generic_library_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_ssh_private_key_mapping_override.sql		credential_vault_generic_library_ssh_private_key_mapping_ovrd	absentEverywhere	tableReference,evidenceClass,operations		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_ssh_private_key_mapping_override.sql		credential_vault_generic_library_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_username_password_domain_mapping_ovrd.sql		credential_vault_generic_library_usern_pass_domain_mapping_ovrd	absentEverywhere	tableReference,evidenceClass,operations		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_username_password_domain_mapping_ovrd.sql		credential_vault_generic_library_mapping_override	absentEverywhere	tableReference,evidenceClass		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_username_password_mapping_override.sql		credential_vault_generic_library_username_password_mapping_ovrd	absentEverywhere	tableReference,evidenceClass,operations		
+uses	boundary/internal/db/sqltest/tests/credential/vault/credential_vault_library_username_password_mapping_override.sql		credential_vault_generic_library_mapping_override	absentEverywhere	tableReference,evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/hourly_sessions_all.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/hourly_sessions_all.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/hourly_sessions_last_3_hours.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/hourly_sessions_last_3_hours.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/hourly_sessions_last_7_days.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/hourly_sessions_last_7_days.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_active_users.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_active_users.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_active_users_all.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_active_users_all.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_active_users_all_timezone.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_active_users_all_timezone.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_sessions_all.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_sessions_all.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_sessions_all.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_sessions_all.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_timezone.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/monthly_timezone.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/update_sessions_pending_daily_snapshot.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/update_sessions_pending_daily_snapshot.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/update_sessions_pending_daily_snapshot.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/hcp/billing/update_sessions_pending_daily_snapshot.sql		wh_time_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/sqltest/tests/pagination/credential_library.sql		credential_vault_generic_library	absentEverywhere	tableReference,evidenceClass,operations		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/constraints.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/constraints.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/delete.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/delete.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/insert.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/insert.sql		wh_time_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/update.sql		wh_date_key	absentEverywhere	evidenceClass		
+calls	boundary/internal/db/sqltest/tests/wh/auth_token/update.sql		wh_time_key	absentEverywhere	evidenceClass		
+uses	boundary/internal/db/sqltest/tests/wh/credential_dimension/session_multiple_sessions.sql		credential_vault_generic_library	absentEverywhere	operation,tableReference,evidenceClass,operations		
+uses	boundary/internal/db/sqltest/tests/wh/credential_dimension/three_credentials_one_change.sql		credential_vault_generic_library	absentEverywhere	operation,tableReference,evidenceClass		
+uses	dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/src/org/jkiss/dbeaver/ui/editors/sql/preferences/format_preview.sql		TABLE1	absentEverywhere	tableReference,evidenceClass,operations		
+uses	dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/src/org/jkiss/dbeaver/ui/editors/sql/preferences/format_preview.sql		JT1	absentEverywhere	tableReference,evidenceClass		
+uses	dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/src/org/jkiss/dbeaver/ui/editors/sql/preferences/format_preview.sql		JT2	absentEverywhere	tableReference,evidenceClass		
+uses	dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/src/org/jkiss/dbeaver/ui/editors/sql/preferences/format_preview.sql		table1	absentEverywhere	tableReference,evidenceClass		
+uses	dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/src/org/jkiss/dbeaver/ui/editors/sql/preferences/format_preview.sql		table2	absentEverywhere	tableReference,evidenceClass		
+uses	dbeaver/plugins/org.jkiss.dbeaver.ui.editors.sql/src/org/jkiss/dbeaver/ui/editors/sql/preferences/format_preview.sql		table3	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day02.sql		w	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		xfields	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		mfields	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		afields	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		sfields	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		msfields	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		part1	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day04.sql		part2	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day06.sql		field	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day06.sql		startpos	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day06.sql		part1	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day06.sql		directions	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day08.sql		field	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day08.sql		maxdimensions	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		part1	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		part2	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		free	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		files	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		placenext	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		nextfree	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		part2placement	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		toplace	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		state	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day09.sql		gaps	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day10.sql		paths	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day10.sql		results	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day10.sql		part1	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day12.sql		flood	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day12.sql		neighbors	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		simulation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		movement	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		simulation2	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		walls	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		robots2	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		startpos	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		state	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		shift	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		tmp2	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day15.sql		canmove	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		startpos	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		part1steps	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		turns	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		agg	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		directions	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day16.sql		walls	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day17.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+calls	duckdb/benchmark/aoc24/queries/day17.sql		xor	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day18.sql		flood	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day19.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		numvalues	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		minlen	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		answers	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		costs	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		neighbors_movement	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		flood	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		prev	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		rawdistances	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day21.sql		neighbors_digits	absentEverywhere	tableReference,evidenceClass		
+calls	duckdb/benchmark/aoc24/queries/day22.sql		xor	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day23.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day24.sql		part2	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day24.sql		gates	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day24.sql		assignments	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/aoc24/queries/day24.sql		tmp	queryLocalBinding-textHint	tableReference,evidenceClass		
+calls	duckdb/benchmark/aoc24/queries/day24.sql		xor	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q01.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q01.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q01.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q01.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		TaxRecordView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		CreditCardView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q02.sql		CategoryView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		CreditCardView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		TaxRecordView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q03.sql		CategoryView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		CategoryView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		CreditCardView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q04.sql		TaxRecordView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q05.sql		TaxRecordView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q05.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q05.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q05.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q05.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q05.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q06.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q06.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q06.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q06.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q06.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q06.sql		CategoryView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		TaxRecordView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		CreditCardView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q07.sql		CategoryView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		CreditCardView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		OrderView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		OrderItemView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		CustomerView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		AddressView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		TaxRecordView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		ProductView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/appian_benchmarks/queries/q08.sql		CategoryView	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/in_memory_db/tpch/native/load_native.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/in_memory_db/tpch/native/load_native.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/in_memory_db/tpch/native/load_native.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/in_memory_db/tpch/native/load_native.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/in_memory_db/tpch/native/load_native.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/in_memory_db/tpch/native/load_native.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/load_tpch.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/load_tpch.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/load_tpch.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/load_tpch.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/load_tpch.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ingestion/load_tpch.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/large/ingestion/tpch/load_tpch_sf10.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/large/ingestion/tpch/load_tpch_sf10.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/ldbc/queries/bi-3.sql		tagClass	absentEverywhere	tableReference,evidenceClass		
+calls	duckdb/benchmark/realnest/hep/queries/q06_1.sql		HistogramBin	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/realnest/hep/queries/q06_2.sql		HistogramBin	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/realnest/hep/queries/q08.sql		lepton_pairs	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/realnest/hep/queries/q08.sql		processed_pairs	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/realnest/hep/queries/q08.sql		other_max_pt	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/realnest/micro/load.sql		singleMu	absentEverywhere	operation,tableReference,evidenceClass		
+calls	duckdb/benchmark/recursive_cte/aoc2022/load/day23.sql		aoc2022_day23_v2	queryLocalBinding-textHint	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/ldbc/dvr.sql		dvr	absentEverywhere	tableReference,qualified,evidenceClass	recurring.dvr	
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day09.sql		aoc2022_day09_follow	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day11.sql		aoc2022_day11_throws	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day11.sql		aoc2022_day11_round	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day11.sql		aoc2022_day11_rounds	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12.sql		visited_positions	queryLocalBinding-textHint	tableReference,evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12.sql		aoc2022_day12_height	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12_using_key.sql		candidates	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12_using_key.sql		path_finding	absentEverywhere	tableReference,qualified,evidenceClass	recurring.path_finding	
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day12_using_key.sql		aoc2022_day12_height	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql		candidates	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql		hops	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.hops	
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day16_using_key.sql		distances	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql		state	queryLocalBinding-textHint	tableReference,evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql		aoc2022_day19_max_minerals	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql		aoc2022_day19_wait	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql		aoc2022_day19_sub	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql		aoc2022_day19_add	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day19.sql		aoc2022_day19_mul	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day20.sql		aoc2022_day20_modulo	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day20.sql		aoc2022_day20_move	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day20_using_key.sql		aoc2022_day20_modulo	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day20_using_key.sql		aoc2022_day20_move	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day22.sql		direction	absentEverywhere	tableReference,qualified,evidenceClass	run.direction	
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day22.sql		aoc2022_day22_width	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day22.sql		aoc2022_day22_height	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23.sql		aoc2022_day23_directions	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23.sql		aoc2022_day23_rotate	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23.sql		aoc2022_day23_add	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23.sql		aoc2022_day23_propose	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23.sql		aoc2022_day23_direction	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23.sql		aoc2022_day23_v2	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23_using_key.sql		aoc2022_day23_directions	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23_using_key.sql		aoc2022_day23_rotate	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23_using_key.sql		aoc2022_day23_add	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23_using_key.sql		aoc2022_day23_propose	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23_using_key.sql		aoc2022_day23_direction	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day23_using_key.sql		aoc2022_day23_v2	absentEverywhere	evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/performance/aoc2022_day24.sql		aoc2022_day24_modulo	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day16_using_key.sql		best	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day16_using_key.sql		turns	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day16_using_key.sql		oriented	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day16_using_key.sql		best_cost	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day16_using_key.sql		best_path	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day20.sql		from_start	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day20.sql		maximum_steps	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day20_using_key.sql		from_start	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/aoc2024_day20_using_key.sql		from_end	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql		parse	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.parse	
+uses	duckdb/benchmark/recursive_cte/queries/performance/asql_cyk_using_key.sql		candidates	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/bfs.sql		bfs	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/connected_components.sql		cc	absentEverywhere	tableReference,qualified,evidenceClass	recurring.cc	
+uses	duckdb/benchmark/recursive_cte/queries/performance/direct_probe_dense.sql		state	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.state	
+uses	duckdb/benchmark/recursive_cte/queries/performance/direct_probe_sparse.sql		state	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.state	
+uses	duckdb/benchmark/recursive_cte/queries/performance/dvr.sql		dvr	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		where.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		🔄	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		assignment.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		start.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		where.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		gather.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		where.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		emit.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_community_detection.sql		jump.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		where.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		🔄	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		assignment.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		start.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		emit.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_connected_components.sql		jump.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_generations.sql		🔄	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_generations.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_k_core_using_key.sql		k_core	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.k_core	
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql		assignment.5	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql		🔄	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql		assignment.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql		start.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql		fork.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_kmeans.sql		fork.3	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_life.sql		emit.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_life.sql		emit.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_life.sql		jump.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_life.sql		jump.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_life.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.101	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		emit.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		jump.6	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		jump.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		jump.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		jump.3	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		jump.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		jump.5	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		issynced.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.38	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.47	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.50	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.5	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.51	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.52	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.7	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.53	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.54	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.56	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.57	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.58	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.9	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.59	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.10	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		merge.3	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.60	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.11	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.61	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.12	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.6	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.8	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.64	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		start.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		merge.5	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		fork.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.65	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.66	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.62	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.14	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.63	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.68	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.15	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.69	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.70	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.71	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.17	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.72	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.73	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.75	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.76	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.77	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.19	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.78	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.16	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.18	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.20	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.29	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.87	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.88	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.89	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.90	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.91	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.92	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.86	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.30	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.93	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.31	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.95	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.33	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.96	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.97	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.99	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.35	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.83	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		assignment.85	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.26	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.32	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.34	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		where.36	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/flummi_ray.sql		merge.7	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/game_of_life_offsets.sql		initial	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/game_of_life_offsets.sql		game_of_life	absentEverywhere	tableReference,qualified,evidenceClass	recurring.game_of_life	
+uses	duckdb/benchmark/recursive_cte/queries/performance/game_of_life_offsets.sql		offsets	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/kmeans.sql		start_centroids	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/kmeans.sql		kmeans	absentEverywhere	tableReference,qualified,evidenceClass	recurring.kmeans	
+uses	duckdb/benchmark/recursive_cte/queries/performance/kmeans.sql		centroids	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/kmeans.sql		params	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/pagerank.sql		pagerank	absentEverywhere	tableReference,qualified,evidenceClass	recurring.pagerank	
+uses	duckdb/benchmark/recursive_cte/queries/performance/pagerank.sql		edge_degrees	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/partial_probe_five_epochs.sql		state	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.state	
+uses	duckdb/benchmark/recursive_cte/queries/performance/partial_probe_single_epoch.sql		state	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.state	
+uses	duckdb/benchmark/recursive_cte/queries/performance/partial_probe_sparse.sql		state	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.state	
+uses	duckdb/benchmark/recursive_cte/queries/performance/partial_probe_sparse_large.sql		state	queryLocalBinding-textHint	tableReference,qualified,evidenceClass	recurring.state	
+uses	duckdb/benchmark/recursive_cte/queries/performance/using_key_union_all_fan_in.sql		bfs	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/performance/using_key_union_fan_in.sql		bfs	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/bellman_ford.sql		bellman	absentEverywhere	tableReference,qualified,evidenceClass	recurring.bellman	
+uses	duckdb/benchmark/recursive_cte/queries/smoke/connected_components.sql		cc	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/dvr.sql		dvr	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		where.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		🔄	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		assignment.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		assignment.3	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		merge.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		start.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		emit.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_bfs.sql		jump.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_counter.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		where.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		🔄	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		assignment.3	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		start.2	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		jump.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_k_core.sql		emit.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_paths.sql		start.1	absentEverywhere	tableReference,quotedName,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/flummi_paths.sql		assignment.4	absentEverywhere	tableReference,quotedName,evidenceClass		
+calls	duckdb/benchmark/recursive_cte/queries/smoke/flummi_paths.sql		ARGMIN	absentEverywhere	evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/game_of_life.sql		initial	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/game_of_life.sql		game_of_life	absentEverywhere	tableReference,qualified,evidenceClass	recurring.game_of_life	
+uses	duckdb/benchmark/recursive_cte/queries/smoke/kmeans.sql		start_centroids	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/recursive_cte/queries/smoke/kmeans.sql		kmeans	absentEverywhere	tableReference,qualified,evidenceClass	recurring.kmeans	
+uses	duckdb/benchmark/recursive_cte/queries/smoke/kruskal.sql		kruskal	absentEverywhere	tableReference,qualified,evidenceClass	recurring.kruskal	
+uses	duckdb/benchmark/recursive_cte/queries/smoke/pagerank.sql		pagerank	absentEverywhere	tableReference,qualified,evidenceClass	recurring.pagerank	
+uses	duckdb/benchmark/tpch/or_filter_pushdown/load.sql		lineitem_sf1	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch/or_filter_pushdown/load.sql		lineitem_sf10	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch/or_filter_pushdown/load.sql		lineitem	absentEverywhere	tableReference,evidenceClass,operations		
+uses	duckdb/benchmark/tpch/or_filter_pushdown/load.sql		orders_sf1	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch/or_filter_pushdown/load.sql		orders_sf10	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch/or_filter_pushdown/load.sql		orders	absentEverywhere	tableReference,evidenceClass,operations		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q01.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q02.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q02.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q02.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q02.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q03.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q03.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q04.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q04.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q05.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q05.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q05.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q05.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q06.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q07.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q07.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q07.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q07.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q08.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q08.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q08.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q08.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q08.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q09.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q09.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q09.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q09.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q09.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q09.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q10.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q10.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q10.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q11.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q11.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q11.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q12.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q12.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q13.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q14.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q14.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q15.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q15.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q16.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q16.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q16.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q17.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q17.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q18.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q18.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q19.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q19.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q20.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q20.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q20.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q20.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q20.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q21.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q21.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q21.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q21.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/benchmark/tpch_plan_cost/queries/q22.sql		orders	absentEverywhere	tableReference,evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/05.sql		ROLLUP	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/14.sql		ROLLUP	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/18.sql		ROLLUP	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/22.sql		rollup	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/67.sql		rollup	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/70.sql		rollup	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/77.sql		ROLLUP	absentEverywhere	evidenceClass		
+calls	duckdb/extension/tpcds/dsdgen/queries/86.sql		rollup	absentEverywhere	evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q01.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q02.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q02.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q02.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q02.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q03.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q03.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q04.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q04.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q05.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q05.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q05.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q05.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q06.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q07.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q07.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q07.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q07.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q08.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q08.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q08.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q08.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q08.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q09.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q09.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q09.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q09.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q09.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q09.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q10.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q10.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q10.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q11.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q11.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q11.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q12.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q12.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q13.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q14.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q14.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q15.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q15.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q16.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q16.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q16.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q17.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q17.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q18.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q18.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q19.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q19.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q20.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q20.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q20.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q20.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q20.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q21.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q21.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q21.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q21.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/extension/tpch/dbgen/queries/q22.sql		orders	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/test/api/serialized_plans/queries.sql		lineitem	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/test/api/serialized_plans/queries.sql		part	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/test/api/serialized_plans/queries.sql		supplier	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/test/api/serialized_plans/queries.sql		partsupp	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/test/api/serialized_plans/queries.sql		nation	absentEverywhere	tableReference,evidenceClass		
+uses	duckdb/test/api/serialized_plans/queries.sql		orders	absentEverywhere	tableReference,evidenceClass		
+calls	duckdb/test/sql/storage_version/generate_storage_version.sql		test_all_types	absentEverywhere	evidenceClass		
+calls	duckdb/test/sql/storage_version/generate_storage_version.sql		GROUPING_ID	absentEverywhere	evidenceClass		
+calls	duckdb/test/sql/storage_version/generate_storage_version.sql		SETS	absentEverywhere	evidenceClass		
+references	gql-gqlgen/_examples/mini-habr-with-subscriptions/migrations/001_create_tables.up.sql		posts	absentEverywhere	constraint,column,evidenceClass		
+references	gql-gqlgen/_examples/mini-habr-with-subscriptions/migrations/001_create_tables.up.sql		comments	absentEverywhere	constraint,column,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/agents-seed.sql		agents	absentEverywhere	operation,tableReference,evidenceClass,operations		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/agents-seed.sql		memory_journal	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/mail-seed.sql		agents	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/mail-seed.sql		messages	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/mail-seed.sql		message_recipients	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/memory-seed.sql		memory_curated	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/memory-seed.sql		memory_journal	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/seed.sql		tasks	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/seed.sql		dependencies	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/seed.sql		labels	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/seed.sql		comments	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/seed.sql		events	absentEverywhere	operation,tableReference,evidenceClass		
+uses	gql-graphql-platform/src/Nitro/CommandLine/test/e2e/fixtures/seed.sql		child_counters	absentEverywhere	operation,tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/citus_table_metadata.sql		citus_tables	absentEverywhere	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/12_to_13.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+calls	hasura-engine/server/src-rsr/migrations/13_to_12.sql		pat	absentEverywhere	evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/13_to_14.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/13_to_14.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/13_to_14.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/13_to_14.sql		views	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.views	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/13_to_14.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/19_to_20.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/19_to_20.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/19_to_20.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/19_to_20.sql		views	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.views	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/20_to_19.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/20_to_19.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/20_to_19.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/20_to_19.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/20_to_19.sql		views	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.views	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/21_to_22.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/21_to_22.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/22_to_21.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/22_to_21.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/22_to_23.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/22_to_23.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/22_to_23.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/22_to_23.sql		views	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.views	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/22_to_23.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/22_to_23.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/23_to_22.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/23_to_22.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/23_to_22.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/23_to_22.sql		views	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.views	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/23_to_22.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/23_to_22.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/24_to_25.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/25_to_24.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/25_to_26.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/26_to_25.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/26_to_25.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/29_to_28.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/29_to_28.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/29_to_28.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/29_to_28.sql		views	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.views	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/38_to_39.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/39_to_38.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/41_to_40.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/42_to_43.sql		inject_table_defaults	absentEverywhere	operation,tableReference,qualified,evidenceClass	hdb_catalog.inject_table_defaults	
+uses	hasura-engine/server/src-rsr/migrations/43_to_42.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/43_to_42.sql		key_column_usage	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.key_column_usage	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/43_to_42.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/43_to_42.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/migrations/43_to_42.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	hasura-engine/server/src-rsr/migrations/6_to_7.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+calls	hasura-engine/server/src-rsr/migrations/7_to_8.sql		pat	absentEverywhere	evidenceClass		
+uses	hasura-engine/server/src-rsr/mssql/mssql_source_migrations/3_to_4.sql		default_constraints	absentEverywhere	tableReference,qualified,evidenceClass	sys.default_constraints	
+calls	hasura-engine/server/src-rsr/mssql/mssql_source_migrations/3_to_4.sql		EXEC	absentEverywhere	evidenceClass		
+uses	hasura-engine/server/src-rsr/mssql/mssql_table_metadata.sql		objects	absentEverywhere	tableReference,qualified,evidenceClass	sys.objects	
+uses	hasura-engine/server/src-rsr/mssql/mssql_table_metadata.sql		types	absentEverywhere	tableReference,qualified,evidenceClass	sys.types	
+uses	hasura-engine/server/src-rsr/mssql/mssql_table_metadata.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	sys.columns	informationSchema
+uses	hasura-engine/server/src-rsr/mssql/mssql_table_metadata.sql		WITHOUT_ARRAY_WRAPPER	absentEverywhere	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/pg_function_metadata.sql		ordinality	queryLocalBinding-textHint	tableReference,evidenceClass		
+uses	hasura-engine/server/src-rsr/pg_function_metadata.sql		pronargdefaults	absentEverywhere	tableReference,qualified,evidenceClass	function.pronargdefaults	
+uses	hasura-engine/server/src-rsr/pg_function_metadata.sql		function_oid	absentEverywhere	tableReference,qualified,evidenceClass	function.function_oid	
+uses	hasura-engine/server/src-rsr/pg_function_metadata.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	kong/spec/fixtures/perf/500services-each-4-routes.sql		workspaces	absentEverywhere	operation,tableReference,evidenceClass		
+uses	kong/spec/fixtures/perf/500services-each-4-routes.sql		routes	absentEverywhere	operation,tableReference,evidenceClass		
+uses	kong/spec/fixtures/perf/500services-each-4-routes.sql		services	absentEverywhere	operation,tableReference,evidenceClass		
+calls	nim/tests/stdlib/somesql.sql		anon43	absentEverywhere	evidenceClass		
+uses	nvim-treesitter/tests/indent/sql/case.sql		tab	absentEverywhere	tableReference,evidenceClass		
+uses	nvim-treesitter/tests/indent/sql/cte.sql		tab	absentEverywhere	tableReference,evidenceClass		
+uses	nvim-treesitter/tests/indent/sql/insert.sql		mytable	absentEverywhere	operation,tableReference,evidenceClass		
+uses	nvim-treesitter/tests/indent/sql/select.sql		tab	absentEverywhere	tableReference,evidenceClass		
+imports	postgrest/test/io/fixtures/big_schema.sql		../../orioledb.sql	absentEverywhere	psqlInclude,includeKind,relativeToScript,fileDependency,line,evidenceClass		
+calls	postgrest/test/io/fixtures/big_schema.sql		varying	absentEverywhere	evidenceClass		
+uses	postgrest/test/io/fixtures/big_schema.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	postgrest/test/io/fixtures/big_schema.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+calls	postgrest/test/io/fixtures/big_schema.sql		varying	absentEverywhere	evidenceClass		
+uses	postgrest/test/io/fixtures/big_schema.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	postgrest/test/io/fixtures/big_schema.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+calls	postgrest/test/io/fixtures/big_schema.sql		varying	absentEverywhere	evidenceClass		
+calls	postgrest/test/io/fixtures/big_schema.sql		varying	absentEverywhere	evidenceClass		
+uses	postgrest/test/io/fixtures/big_schema.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	postgrest/test/io/fixtures/big_schema.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+imports	postgrest/test/io/fixtures/load.sql		../../orioledb.sql	absentEverywhere	psqlInclude,includeKind,relativeToScript,fileDependency,line,evidenceClass		
+references	postgrest/test/io/fixtures/schema.sql		PARAMETER	absentEverywhere	operation,privilege,evidenceClass		
+imports	postgrest/test/load/fixtures.sql		../orioledb.sql	absentEverywhere	psqlInclude,includeKind,relativeToScript,fileDependency,line,evidenceClass		
+imports	postgrest/test/observability/fixtures/load.sql		../../orioledb.sql	absentEverywhere	psqlInclude,includeKind,relativeToScript,fileDependency,line,evidenceClass		
+imports	postgrest/test/pgbench/fixtures.sql		../spec/fixtures/load.sql	absentEverywhere	psqlInclude,includeKind,relativeToScript,fileDependency,line,evidenceClass		
+imports	postgrest/test/spec/fixtures/load.sql		../../orioledb.sql	absentEverywhere	psqlInclude,includeKind,relativeToScript,fileDependency,line,evidenceClass		
+instantiates	postgrest/test/spec/fixtures/schema.sql		composite_domain	absentEverywhere	operation,construction,constructor,evidenceClass		
+references	postgrest/test/spec/fixtures/schema.sql		child_entities_view	absentEverywhere	operation,documented,evidenceClass		
+calls	postgrest/test/spec/fixtures/schema.sql		is_valid	absentEverywhere	evidenceClass		
+calls	postgrest/test/spec/fixtures/schema.sql		special_agg	absentEverywhere	qualified,evidenceClass	v2.special_agg	
+calls	postgrest/test/spec/fixtures/schema.sql		plain_agg	absentEverywhere	qualified,evidenceClass	v2.plain_agg	
+instantiates	postgrest/test/spec/fixtures/schema.sql		composite_domain	absentEverywhere	operation,construction,constructor,evidenceClass		
+calls	postgrest/test/spec/fixtures/schema.sql		is_valid	absentEverywhere	evidenceClass		
+calls	postgrest/test/spec/fixtures/schema.sql		is_valid	absentEverywhere	evidenceClass		
+references	postgrest/test/spec/fixtures/schema.sql		languages	absentEverywhere	constraint,column,evidenceClass		
+references	proxicall/database/archive/2025/0017_add_create_invalidation_triggers.sql		business_rules	absentEverywhere	triggerTarget,evidenceClass		
+uses	proxicall/database/archive/2025/0017_add_create_invalidation_triggers.sql		triggers	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.triggers	informationSchema
+uses	proxicall/database/archive/2025/003_connection_management_system.sql		set_session_code	absentEverywhere	operation,tableReference,evidenceClass		
+calls	proxicall/database/archive/2025/003_connection_management_system.sql		set_session_code	absentEverywhere	evidenceClass		
+calls	proxicall/database/archive/2025/003_connection_management_system.sql		set_session_code	absentEverywhere	triggerAction,evidenceClass		
+uses	proxicall/database/archive/2025/20251211_content_system_overhaul.sql		business_content_submissions	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/database/archive/2025/20251211_content_system_overhaul.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+uses	proxicall/database/archive/2025/20251211_content_system_overhaul.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/archive/2025/20251211_content_system_overhaul.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/archive/2026/20260116_connection_tables.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/archive/2026/20260125_create_oms_tables.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/archive/2026/20260129_pms_c1_3_rls_tests.sql		routines	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.routines	informationSchema
+uses	proxicall/database/archive/2026/20260129_pms_c1_3_rls_tests.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain_v2.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260130_pms_c1_2_hash_chain_v2.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260130_pms_c1_4_tests.sql		routines	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.routines	informationSchema
+calls	proxicall/database/archive/2026/20260130_pms_c2_5_webhook_events.sql		deposit_money	absentEverywhere	evidenceClass		
+references	proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql		pms_audit_log_id_seq	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql		pms_security_alerts_id_seq	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql		pms_get_user_audit_logs	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/archive/2026/20260131_pms_audit_logging_system.sql		pms_get_audit_summary	absentEverywhere	operation,privilege,evidenceClass		
+uses	proxicall/database/archive/2026/20260131_pms_balance_integrity_checksums.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260131_pms_balance_integrity_checksums.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260131_pms_c7_1_bank_accounts.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/database/archive/2026/20260131_pms_c7_1_bank_accounts.sql		secrets	extKind:platform	operation,tableReference,qualified,external,evidenceClass	vault.secrets	platform
+uses	proxicall/database/archive/2026/20260131_pms_c7_1_bank_accounts.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+calls	proxicall/database/archive/2026/20260131_pms_exchange_rates.sql		x	queryLocalBinding-textHint	evidenceClass		
+references	proxicall/database/archive/2026/20260131_pms_performance_indexes.sql		pms_alerts	absentEverywhere	dependency,indexOn,evidenceClass		
+references	proxicall/database/archive/2026/20260131_pms_performance_indexes.sql		pms_alerts	absentEverywhere	dependency,indexOn,evidenceClass		
+uses	proxicall/database/archive/2026/20260202_pms_oms_order_payment.sql		businesses	absentEverywhere	tableReference,evidenceClass		
+uses	proxicall/database/archive/2026/20260202_pms_oms_order_payment.sql		wallet_transactions	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/database/archive/2026/20260202_pms_oms_order_payment.sql		businesses	absentEverywhere	tableReference,evidenceClass		
+uses	proxicall/database/archive/2026/20260204_add_ad_tracking_events.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/archive/202607/20260717_inventory_rls_cascade.sql		table_constraints	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_constraints	informationSchema
+references	proxicall/database/migrations/20260220_fix_rejection_triggers_delete_to_update.sql		business_rules	absentEverywhere	triggerTarget,evidenceClass		
+references	proxicall/database/migrations/20260220_fix_rejection_triggers_delete_to_update.sql		business_rules	absentEverywhere	triggerTarget,evidenceClass		
+calls	proxicall/database/migrations/20260308_create_core_coms_tables.sql		set_session_code	absentEverywhere	evidenceClass		
+calls	proxicall/database/migrations/20260308_create_core_coms_tables.sql		set_session_code	absentEverywhere	triggerAction,evidenceClass		
+uses	proxicall/database/migrations/20260309_rls_coms_subtypes.sql		connection_glows	absentEverywhere	operation,tableReference,evidenceClass		
+references	proxicall/database/migrations/20260309_rls_coms_subtypes.sql		connection_glows	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260309_rls_coms_subtypes.sql		connection_glows	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260309_rls_coms_subtypes.sql		connection_glows	absentEverywhere	policyOn,evidenceClass		
+calls	proxicall/database/migrations/20260310_rls_wms_cms_discovery.sql		_drop_all_policies	absentEverywhere	evidenceClass		
+uses	proxicall/database/migrations/20260310_rls_wms_cms_discovery.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/migrations/20260310_rls_wms_cms_discovery.sql		_drop_all_policies	absentEverywhere	operation,tableReference,evidenceClass		
+calls	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		_drop_all_policies	absentEverywhere	evidenceClass		
+uses	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	operation,tableReference,evidenceClass		
+references	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		business_rules	absentEverywhere	policyOn,evidenceClass		
+uses	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/migrations/20260311_rls_sensitive_tables.sql		_drop_all_policies	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/database/migrations/20260312_rls_fix_business_advertisements.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+calls	proxicall/database/migrations/20260312_rls_fix_business_advertisements.sql		_drop_all_policies	absentEverywhere	evidenceClass		
+uses	proxicall/database/migrations/20260312_rls_fix_business_advertisements.sql		_drop_all_policies	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/database/migrations/20260613_coms_p13_3_rls_audit_fix.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/migrations/20260613_coms_p13_4_data_retention.sql		job	absentEverywhere	tableReference,qualified,evidenceClass	cron.job	
+uses	proxicall/database/migrations/20260707_drop_business_rules.sql		business_rules	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.connection_queue_votes	
+references	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+uses	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		queue_sessions	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.queue_sessions	
+uses	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		queue_items	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.queue_items	
+uses	proxicall/database/migrations/20260819080000_coms_queue_tables.sql		queue_votes	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.queue_votes	
+calls	proxicall/database/migrations/20260822_g1_money_table_rls.sql		_m14_g1_drop_all_policies	absentEverywhere	evidenceClass		
+uses	proxicall/database/migrations/20260822_g1_money_table_rls.sql		_m14_g1_drop_all_policies	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/database/migrations/20260826_m14_v17_exchange_contract.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/migrations/20260915_fms_resolve_business_limit.sql		routine_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.routine_privileges	informationSchema
+uses	proxicall/database/migrations/20260915_fms_subscription_business_attribution.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+references	proxicall/database/migrations/20260922_m21_3028_admin_document_access_events.sql		admin_document_access_events_id_seq	absentEverywhere	operation,privilege,evidenceClass		
+uses	proxicall/database/migrations/20260924_m17b_3066_reviews_moderation_rls.sql		table_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_privileges	informationSchema
+uses	proxicall/database/migrations/20260924_m17b_3066_reviews_moderation_rls.sql		column_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.column_privileges	informationSchema
+calls	proxicall/database/schema.sql		set_session_code	absentEverywhere	evidenceClass		
+calls	proxicall/database/schema.sql		set_session_code	absentEverywhere	triggerAction,evidenceClass		
+uses	proxicall/database/schema.sql		connection_queue_votes	absentEverywhere	operation,tableReference,evidenceClass		
+references	proxicall/database/schema.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/schema.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/schema.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/schema.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/database/schema.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+uses	proxicall/database/schema_snapshot_facts.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/schema_snapshot_facts.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/verify_fms_business_attribution.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/verify_m14_3089_orphan_charges.sql		tables	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.tables	informationSchema
+uses	proxicall/database/verify_m17b_3066_reviews_rls.sql		table_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_privileges	informationSchema
+uses	proxicall/database/verify_m17b_3066_reviews_rls.sql		column_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.column_privileges	informationSchema
+references	proxicall/database/verify_m95_2988_conversation_core.sql		public	extKind:implicitSchema	operation,privilege,external,evidenceClass		implicitSchema
+references	proxicall/database/verify_m95_2989_safety_core.sql		public	extKind:implicitSchema	operation,privilege,external,evidenceClass		implicitSchema
+uses	proxicall/database/verify_m95_2989_safety_core.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+references	proxicall/database/verify_m95_2989_safety_core.sql		auth	absentEverywhere	operation,privilege,evidenceClass		
+uses	proxicall/database/verify_m95_2996_message_velocity.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/verify_m95_2996_message_velocity.sql		role_table_grants	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.role_table_grants	informationSchema
+uses	proxicall/database/verify_m95_2997_outbox.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/database/verify_m95_2997_outbox.sql		role_table_grants	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.role_table_grants	informationSchema
+references	proxicall/database/verify_m95_2998_realtime.sql		auth	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/verify_m95_3003_inbox_grants.sql		public	extKind:implicitSchema	operation,privilege,external,evidenceClass		implicitSchema
+references	proxicall/database/verify_m95_3003_inbox_grants.sql		auth	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/verify_m95_3004_report_flow.sql		public	extKind:implicitSchema	operation,privilege,external,evidenceClass		implicitSchema
+references	proxicall/database/verify_m95_3004_report_flow.sql		auth	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/verify_m95_3005_blocks.sql		public	extKind:implicitSchema	operation,privilege,external,evidenceClass		implicitSchema
+references	proxicall/database/verify_m95_3005_blocks.sql		auth	absentEverywhere	operation,privilege,evidenceClass		
+references	proxicall/database/verify_m95_3025_business_reports_rls.sql		public	extKind:implicitSchema	operation,privilege,external,evidenceClass		implicitSchema
+references	proxicall/database/verify_m95_3025_business_reports_rls.sql		auth	absentEverywhere	operation,privilege,evidenceClass		
+uses	proxicall/supabase/migrations/20260804000000_pms_bank_accounts_encryption.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/supabase/migrations/20260804000000_pms_bank_accounts_encryption.sql		bank_accounts_update	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/supabase/migrations/20260804000000_pms_bank_accounts_encryption.sql		bank_accounts_delete	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/supabase/migrations/20260804000000_pms_bank_accounts_encryption.sql		secrets	extKind:platform	operation,tableReference,qualified,external,evidenceClass	vault.secrets	platform
+uses	proxicall/supabase/migrations/20260804000000_pms_bank_accounts_encryption.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+calls	proxicall/supabase/migrations/20260804020000_fix_vault_api_functions.sql		create_secret	extKind:platform	qualified,external,evidenceClass	vault.create_secret	platform
+uses	proxicall/supabase/migrations/20260804020000_fix_vault_api_functions.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/supabase/migrations/20260804020000_fix_vault_api_functions.sql		decrypted_secrets	extKind:platform	tableReference,qualified,external,evidenceClass	vault.decrypted_secrets	platform
+uses	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.connection_queue_votes	
+references	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+references	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		connection_queue_votes	absentEverywhere	policyOn,evidenceClass		
+uses	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		queue_sessions	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.queue_sessions	
+uses	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		queue_items	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.queue_items	
+uses	proxicall/supabase/migrations/20260819080000_coms_queue_tables.sql		queue_votes	absentEverywhere	operation,tableReference,qualified,evidenceClass	public.queue_votes	
+calls	proxicall/supabase/migrations/20260822052000_g1_money_table_rls.sql		_m14_g1_drop_all_policies	absentEverywhere	evidenceClass		
+uses	proxicall/supabase/migrations/20260822052000_g1_money_table_rls.sql		_m14_g1_drop_all_policies	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/supabase/migrations/20260826040000_m14_v17_exchange_contract.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/supabase/migrations/20260830040000_m14_wallet_checksum_unification.sql		businesses	absentEverywhere	tableReference,evidenceClass		
+uses	proxicall/supabase/migrations/20260830040000_m14_wallet_checksum_unification.sql		wallet_transactions	absentEverywhere	operation,tableReference,evidenceClass		
+uses	proxicall/supabase/migrations/20260830040000_m14_wallet_checksum_unification.sql		businesses	absentEverywhere	tableReference,evidenceClass		
+uses	proxicall/supabase/migrations/20260915010000_fms_resolve_business_limit.sql		routine_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.routine_privileges	informationSchema
+uses	proxicall/supabase/migrations/20260915040000_fms_subscription_business_attribution.sql		columns	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.columns	informationSchema
+uses	proxicall/supabase/migrations/20260924000000_m17b_3066_reviews_moderation_rls.sql		table_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.table_privileges	informationSchema
+uses	proxicall/supabase/migrations/20260924000000_m17b_3066_reviews_moderation_rls.sql		column_privileges	extKind:informationSchema	tableReference,qualified,external,evidenceClass	information_schema.column_privileges	informationSchema
+uses	sqlite/ext/wasm/sql/001-sudoku.sql		digits	absentEverywhere	tableReference,evidenceClass		
+uses	sqlite/test/fptest01.sql		i2	absentEverywhere	tableReference,evidenceClass		
+uses	sqlite/test/import01.sql		t2	absentEverywhere	tableReference,evidenceClass		
+uses	sqlite/test/import01.sql		t3	absentEverywhere	tableReference,evidenceClass		
+uses	sqlite/test/modeA.sql		t2	absentEverywhere	operation,tableReference,evidenceClass		
+uses	sqlite/test/modeA.sql		new_table	absentEverywhere	operation,tableReference,evidenceClass		
+uses	sqlite/test/shell-prompt.sql		prompt	absentEverywhere	operation,tableReference,qualified,evidenceClass	END.testcase.prompt	

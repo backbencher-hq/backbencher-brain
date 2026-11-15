@@ -1,0 +1,27 @@
+{
+  "fixtureId": "csharp/framework-detection",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CONV-CS-2 (#751): csharp had NO framework detection at all — metadata.detectedFrameworks was undefined while python emits [] (empty payload shell) and java a string; the metadata key itself was not family-uniform. The mechanism mirrors the java sibling (using-root prefixes + base types + attribute names feeding a fixed-priority list; the array is emitted in detection-priority order so import order can never change it). This fixture carries three simultaneous marker families and the exact detectedFrameworks/frameworkPatterns payload is pinned (expectMetadata), while forbidFrameworks guards the five families whose markers are absent — a substring over-match or a fabricated framework fails. The framework-none fixture pins the empty shell ([] not undefined).",
+  "expectSymbols": [
+    { "name": "HomeController", "kind": "class" },
+    { "name": "Index", "kind": "method" },
+    { "name": "AppDb", "kind": "class" },
+    { "name": "HomeTests", "kind": "class" },
+    { "name": "IndexWorks", "kind": "method" }
+  ],
+  "expectPrimaryFramework": ["ASP.NET Core"],
+  "expectFrameworks": ["ASP.NET Core", "Entity Framework Core", "xUnit"],
+  "forbidFrameworks": ["Unity", "WPF", "Windows Forms", "NUnit", "MSTest"],
+  "expectMetadata": [
+    {
+      "detectedFrameworks": ["ASP.NET Core", "Entity Framework Core", "xUnit"],
+      "frameworkPatterns": [
+        { "framework": "ASP.NET Core", "patterns": ["mvc_pattern", "api_endpoints"] },
+        { "framework": "Entity Framework Core", "patterns": ["orm_mapping", "repository_pattern"] },
+        { "framework": "xUnit", "patterns": ["test_framework"] }
+      ],
+      "hasFrameworkIntelligence": true
+    }
+  ]
+}

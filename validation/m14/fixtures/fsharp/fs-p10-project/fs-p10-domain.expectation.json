@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "fixture": "fsharp/fs-p10-project/fs-p10-domain.fs",
+  "authoredFrom": "FS-P16 (fsharp lane, 2026-10-09) — the sibling half of the project-index fixture pair, read off the analyzer's measured output.",
+  "note": "This file is the index's INPUT, and it is analyzed too (every source in a sub-directory fixture is). Its expectations are the ones the index reads out of it — `Animal` and `Kennel` as classes, `ITagged` as an interface, `Speak`/`Tag`/`Best` as the member names the refinement's name set is built from. The `calls Kennel.Best -> Fixture.Project.Domain.Animal` row is SAME-FILE and predates the index; it is pinned here so the pair's two directions are visibly different: this file needs no index and the sibling cannot resolve without one.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    { "name": "Fixture.Project.Domain", "kind": "module" },
+    { "name": "Animal", "kind": "class", "ownerName": "Fixture.Project.Domain" },
+    { "name": "Speak", "kind": "method", "ownerName": "Animal" },
+    { "name": "ITagged", "kind": "interface", "ownerName": "Fixture.Project.Domain" },
+    { "name": "Tag", "kind": "method", "ownerName": "ITagged" },
+    { "name": "Kennel", "kind": "class", "ownerName": "Fixture.Project.Domain" },
+    { "name": "Best", "kind": "method", "ownerName": "Kennel" },
+    { "name": "Helpers", "kind": "module", "ownerName": "Fixture.Project.Domain" },
+    { "name": "render", "kind": "function", "ownerName": "Helpers" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "Kennel.Best",
+      "target": "Fixture.Project.Domain.Animal",
+      "meta.targetResolution": "in-file-declaration",
+      "comment": "In-file, and it must stay that way: the refinement only touches classes whose reason is 'not this file'. `Animal` is declared two lines up, so the index has nothing to add and a run that 'refined' it would be re-labelling a resolution as a cross-file one."
+    },
+    {
+      "type": "contains",
+      "source": "Fixture.Project.Domain.Helpers",
+      "target": "Helpers.render",
+      "meta.targetResolution": "published-identity",
+      "comment": "FS-P17's two channels have to come from somewhere: this is the declaration whose NAME the index records and whose module header the qualified path is built from. Pinned on the analyzer's side here, and on the index's side in `project-index-spec.ts` (which asserts the name set), because the two readers of one tree agreeing is the property the refinement relies on."
+    },
+    {
+      "type": "contains",
+      "source": "Fixture.Project.Domain.ITagged",
+      "target": "ITagged.Tag",
+      "meta.targetResolution": "published-identity",
+      "comment": "ITagged published as an INTERFACE and its member contained by it. `interface` here is the ANALYZER's kind for an abstract-member clause, which is the cross-reader agreement the index now matches: the spec's `kindResolver` resolves the same clause to `interface`, where before it read `class` (FS-P16; pinned in `project-index-spec.ts`)."
+    }
+  ]
+}

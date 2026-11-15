@@ -1,0 +1,51 @@
+{
+  "fixtureId": "rust/relationship-kinds",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Completeness sections B/D: pins the relationship kinds absent from the other rust fixtures — uses (field access), references (where-clause bound), extends (trait supertrait), exports (pub fn with axum route attr) — each with its #419-D evidence tier (usage_contextual for uses; reference_qualified for the where-bound; structural for extends/exports). A regression that drops any kind or tier fails this fixture.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "trait"
+    },
+    {
+      "name": "lookup",
+      "kind": "function"
+    },
+    {
+      "name": "status",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "id",
+      "meta.evidenceClass": "usage_contextual"
+    },
+    {
+      "type": "references",
+      "target": "String",
+      "meta.evidenceClass": "reference_qualified"
+    },
+    {
+      "type": "extends",
+      "target": "Display",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "target": "Send",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "exports",
+      "target": "/status",
+      "meta.evidenceClass": "structural"
+    }
+  ],  "expectFrameworks": [
+   "actix_web",
+   "serde",
+   "tokio"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "fixtureId": "cpp/destructor-definition-published",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "CP3 (loss audit) — a destructor is a declaration the SOURCE writes, not a compiler-managed artifact. The rule this replaces excluded every destructor from the symbol set (\"compiler-managed lifecycle members; exclude them from the declaration symbol set\", matching the universal contract's focus on user declarations), which cost 15 destructor DEFINITIONS corpus-wide and left every edge naming one unresolvable — and dropped the destructor from its class's `contains` edge, so `contains lexer -> ~lexer` did not exist at all. MEASURED, corpus-wide: destructor definitions unpublished 15 -> 0, methods +22, and the +22 are exactly the destructor declarations and definitions the source spells with `~` (verified line by line, not by name pattern). (1) BOTH SPELLINGS ARE PUBLISHED. The in-class declaration `~lexer();` is published like every other member declaration — kind method, owner `lexer`, same name — and it is what carries the containment edge; the out-of-line definition `lexer::~lexer() { … }` is a SECOND symbol for the same declaration with its own range, exactly the declaration/definition pair every other member function already produces (`expectSymbolCount` pins 2, so a regression that publishes one of them fails here; no cpp fixture used `expectUniqueIds` before and symbols carry no `id` field, so the count is the honest channel for that). (2) THE NAME KEEPS THE SOURCE SPELLING. `~lexer`, not a normalized token: the `~` spelling collides with nothing, while a constructor's spelling IS the class name and would collide with the class symbol — which is why constructors and destructors do not share a normalization rule. (3) THE BODY OWNS ITS READS. Every read in the out-of-line body is sourced at `~lexer` (`uses ~lexer -> depth_`, `uses ~lexer -> pos_`), and in the class-defined destructor at `~scope_guard` — never at the class. The forbid on `uses lexer -> depth_` is the assertion that separates the two, because the pre-fix state DID attribute such a read to the class whenever some other member owned the body, and the difference is invisible if only the positive side is pinned.",
+  "expectSymbols": [
+    { "name": "lexer", "kind": "class", "ownerName": null },
+    { "name": "pos_", "kind": "property", "ownerName": "lexer" },
+    { "name": "depth_", "kind": "property", "ownerName": "lexer" },
+    { "name": "~lexer", "kind": "method", "ownerName": "lexer", "meta.isDestructor": true, "meta.isDeclaration": true },
+    { "name": "~lexer", "kind": "method", "ownerName": "lexer", "meta.isDestructor": true },
+    { "name": "scope_guard", "kind": "class", "ownerName": null },
+    { "name": "armed_", "kind": "property", "ownerName": "scope_guard" },
+    { "name": "~scope_guard", "kind": "method", "ownerName": "scope_guard", "meta.isDestructor": true }
+  ],
+  "expectSymbolCount": [
+    { "name": "~lexer", "equals": 2 },
+    { "name": "~scope_guard", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "lexer", "target": "~lexer" },
+    { "type": "contains", "from": "scope_guard", "target": "~scope_guard" },
+    { "type": "uses", "from": "~lexer", "target": "depth_" },
+    { "type": "uses", "from": "~lexer", "target": "pos_" },
+    { "type": "uses", "from": "~scope_guard", "target": "armed_" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "lexer", "target": "depth_" },
+    { "type": "uses", "from": "lexer", "target": "pos_" },
+    { "type": "uses", "from": "scope_guard", "target": "armed_" },
+    {"type": "uses", "from": "lexer", "target": "lexer::depth_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "lexer", "target": "lexer::pos_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "scope_guard", "target": "scope_guard::armed_", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "fixtureId": "cpp/multiline-attribute-line-base-920",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60-C (#920). The engine's C/C++ preprocessing blanks `__attribute__((...))` and `__declspec(...)` before parsing. Those two are the ONLY patterns there that can match ACROSS a newline, and they were blanked with `\" \".repeat(match.length)` — which keeps the byte count but DESTROYS every newline inside the match. Every node after such an attribute then lands one (or more) rows too high in the tree the analyzers walk. Measured at `zig/lib/libtsan/tsan_rtl.cpp`: the raw web-tree-sitter parse puts `bool OnFinalize(bool failed);` (written on 59) at row 58, while ASTEngine.parseTree reported row 57 — and the M59 Tier A oracle found 682 of 38,566 cpp relationships claiming a line that does not contain the name they claim (c 101; 783 together). This fixture pins the contract at the smallest size that can show it: one attribute spanning lines 9-10, then declarations and uses whose lines are read off the file. Lines BEFORE the attribute (the include on 7) are unaffected and deliberately not forbidden — the shift starts at the destroyed newline, which is the point of the fixture. The `contains Payload -> size` pin also fixes the edge's line to the CHILD's own declaration line (14), not the struct's opening line (13), which is the second reading of the same row. SCOPE OF THIS FIXTURE, stated so it is not read as more than it is: the M14 fixture runner parses the fixture text itself (`getParser(...).parse(content)`) and calls `analyzer.analyze` on that tree — for every language except vue/svelte it does NOT go through `parseFile`, so it never runs the engine's C/C++ blanking and CANNOT see #920 by construction. This fixture therefore pins the analyzer's own line choices on a file that carries the shape (and that `contains` takes the child's line); the engine contract itself is gated by `script/m14/verify-attr-line-base-920.ts` (`bun run audit:attr-line-base`), which compares `ASTEngine.parseTree` against a raw parse of the same bytes and self-tests that the check catches the pre-fix blanking.  M14 ONTOLOGY (2026-10-04): `#include` is C++'s FILE INCLUSION and is now a first-class `imports` edge \u2014 the same kind, with the same metadata, the C lane already emits for the identical construct (pinned there by c/macro-composed-include, reverted there by the `c/include-kind-downgraded` mutant). The measured reason: the one consumer that answers \"what does this module depend on\" is the LSP usages file-level section, which filters on `relationship_type IN ('imports','exports')` (src/lsp/graph_request.ts, src/lsp/graph_usages.ts), so a C++ include was invisible to it no matter what its metadata said. A LABEL move, not an edge move \u2014 5,404 include sites in 905 corpus files, 5,118 distinct module names, and the include-dependency row count is identical before and after. Every row is still asserted with its line, its metadata and (where pinned) its exact count, and the `references` label is FORBIDDEN so a downgrade fails the fixture rather than only moving a number in a census. A `using`-dependency row stays `references`: an include dependency and a using-dependency are two facts, and only the first is file inclusion.",
+  "expectSymbols": [
+    { "name": "exposed", "kind": "function" },
+    { "name": "Payload", "kind": "class" },
+    { "name": "size", "kind": "property" },
+    { "name": "helper", "kind": "function" },
+    { "name": "use", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "global", "target": "cstddef", "line_number": 7 },
+    { "type": "contains", "from": "Payload", "target": "size", "line_number": 14 },
+    { "type": "calls", "from": "use", "target": "helper", "line_number": 22 },
+    { "type": "uses", "from": "use", "target": "size", "line_number": 22 },
+    { "type": "calls", "from": "use", "target": "exposed", "line_number": 23 }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Payload", "target": "size", "line_number": 13, "note": "PRE-FIX (#920): every line after the multi-line attribute is one too small — `size` is declared on 14" },
+    { "type": "calls", "from": "use", "target": "helper", "line_number": 21, "note": "PRE-FIX (#920): `helper(p->size)` is written on 22" },
+    { "type": "uses", "from": "use", "target": "size", "line_number": 21, "note": "PRE-FIX (#920): `p->size` is written on 22" },
+    { "type": "calls", "from": "use", "target": "exposed", "line_number": 22, "note": "PRE-FIX (#920): `exposed(p->size)` is written on 23" },
+    { "type": "references", "target": "cstddef", "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses, and the reason a silent relabel cannot pass." },
+    {"type": "contains", "from": "Payload", "target": "Payload::size", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type": "uses", "from": "use", "target": "Payload::size", "note": "SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
+  ]
+}

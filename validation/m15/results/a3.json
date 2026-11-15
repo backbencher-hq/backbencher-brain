@@ -1,0 +1,12 @@
+{
+  "issue": "bb_ask comment and string safety",
+  "code": "A3",
+  "tool": "bb_ask",
+  "title": "comment/string safety",
+  "verified": true,
+  "checks": 1,
+  "passed": 2,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-11-05T04:20:31.944Z"
+}

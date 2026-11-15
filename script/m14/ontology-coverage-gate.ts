@@ -85,7 +85,7 @@ import { JSON_RULED } from "./json-ruled"
 // reversal the table now carries.
 import { PYTHON_RULED } from "./python-ruled"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 /** The lane is the first NON-FLAG argument: `--self-test` / `--coverage` must not be read as a lane
  *  name, or `gate --self-test` would look for a language called `--self-test` and exit 2. */
 const LANG = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "bash"

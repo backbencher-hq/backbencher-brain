@@ -1,0 +1,37 @@
+[INFO] [02:59:08] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8ws4tw8"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8xwa418"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8y96d85"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8xbhs36"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8ynvcwv"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8yzn4s7"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8we1qf4"}
+[INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8zfeoya"}
+[BB-PARSE-ERR] graphql | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/ApolloFederation/test/ApolloFederation.ImplementationFirst/__snapshots__/PageConnectionCompositeSchemaTests.PageConnection_Field_With_CompositeSourceSchema_Builds_Schema.graphql | memory access out of bounds
+[BB-PARSE-ERR] graphql | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/ImplicitOpenWorldTool.graphql | memory access out of bounds
+[INFO] [02:59:16] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60acm8mcl0"}
+[INFO] [02:59:29] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60aiocl54w"}
+[INFO] [02:59:44] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60apdnc8hk"}
+walk: 1905 newly walked, 0 already done, 0 skipped bad, of 1905 admitted (fresh=true)
+triple buffer: 156709 rows for 156709 counted edges
+[INFO] [02:59:51] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60asfuyjw8"}
+{
+ "admittedFiles": 1905,
+ "filesParsed": 1905,
+ "filesWithParseError": 0,
+ "symbols": 91437,
+ "relationships": 156709,
+ "types": [
+  "calls 0 inFile null% proj null% lo07 null%",
+  "uses 49261 inFile 15.86% proj 17.28% lo07 0%",
+  "contains 42686 inFile 100% proj 100% lo07 0%",
+  "imports 170 inFile 0% proj 0% lo07 0%",
+  "references 47754 inFile 44.78% proj 44.98% lo07 0%",
+  "exports 10960 inFile 100% proj 100% lo07 0%",
+  "extends 0 inFile null% proj null% lo07 null%",
+  "implements 1710 inFile 96.73% proj 97.25% lo07 0%",
+  "overrides 4168 inFile 100% proj 100% lo07 0%",
+  "instantiates 0 inFile null% proj null% lo07 null%"
+ ]
+}
+[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/ApolloFederation/test/ApolloFederation.ImplementationFirst/__snapshots__/PageConnectionCompositeSchemaTests.PageConnection_Field_With_CompositeSourceSchema_Builds_Schema.graphql — exiting

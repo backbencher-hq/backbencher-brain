@@ -1,0 +1,61 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "675fa48f017a3646bdba71cc6bdc330a3ea6d0a957d902fd0dae9b2413406a92",
+    "sealedAt": "2026-11-06T05:17:39.000Z"
+  },
+  "checks": [
+    {
+      "description": "validator selftest actually run at emit time: rejections proven (missing fields, fake levels, banned terms, empty limitations, unbacked L5, determinism)",
+      "detail": "7/7 exercised by selftest()",
+      "id": "selftest-7",
+      "status": "pass"
+    },
+    {
+      "description": "same payload emitted twice into a temp dir is byte-identical apart from the per-run lineage timestamp",
+      "detail": "two emissions byte-identical apart from the lineage timestamp",
+      "id": "determinism",
+      "status": "pass"
+    },
+    {
+      "description": "existing harness-produced artifacts read back and confirmed schema-version 2",
+      "detail": "12 artifact(s) at schemaVersion 2",
+      "id": "adoption",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L2",
+  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "committedAt": "2026-11-06T00:17:39-05:00",
+  "data": {
+    "adoptionAdopted": 12,
+    "adoptionLegacy": [],
+    "determinismStrippedFields": [
+      "regeneratedAt"
+    ],
+    "limitationsJustification": "structural validator plus measured adoption; semantic verification is delegated to the mutation, differential and probe gates",
+    "probeArtifactValid": true,
+    "selftestExercised": true
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F2",
+  "layers": [
+    "evidence-infrastructure"
+  ],
+  "limitations": [
+    {
+      "description": "the harness validates structure and vocabulary; it cannot judge the semantic truth of a check description — mutation proofs, differential runs and owner spot-checks do that"
+    },
+    {
+      "description": "determinism compares emissions under the same repository state; it cannot prove a claim was measured rather than written, which is why each producer is now checked to actually run in the battery (M49.G8)"
+    },
+    {
+      "description": "adoption counts artifacts that carry schemaVersion 2; it does not assert how many artifacts there should be"
+    }
+  ],
+  "regeneratedAt": "2026-11-06T00:17:39-05:00",
+  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
+  "runtime": "node v22.22.1",
+  "schemaVersion": 2,
+  "title": "Evidence harness v2"
+}

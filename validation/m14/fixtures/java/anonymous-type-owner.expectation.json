@@ -1,0 +1,57 @@
+{
+  "fixtureId": "java/anonymous-type-owner",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #867 ruling (ownerName = innermost enclosing DECLARATION); the expectation's kind/owner spellings and edge lines were recorded from the post-ruling run. java already satisfied the ruling before it — this fixture's job is to hold java to it, since nothing pinned the anon type's owner for any language.",
+  "rationale": "M49/M37 #867. The census measured the four JVM analyzers disagreeing on which DECLARATION owns an anonymous type declared inside a method: java/groovy/scala said the method, kotlin said the class. Ruled: the innermost enclosing declaration, and kotlin was changed. Both contexts are pinned so the fixture cannot be satisfied by a blanket re-owning: a class-level literal is owned by the CLASS (first block) and an in-method literal by the METHOD (second block), and each crossed containment edge is forbidden.",
+  "expectSymbols": [
+    {
+      "name": "AnonOwner",
+      "kind": "class"
+    },
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "AnonOwner",
+      "comment": "#867 context 1: a class-level literal is owned by the class"
+    },
+    {
+      "name": "anonymous_Comparator",
+      "kind": "class",
+      "ownerName": "inMethod",
+      "comment": "#867 context 2: a method-local literal is owned by the method"
+    },
+    {
+      "name": "classLevel",
+      "comment": "control: a class-level FIELD is a member of the class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Runnable",
+      "line_number": 11
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Comparator",
+      "line_number": 14
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "AnonOwner",
+      "target": "anonymous_Comparator",
+      "comment": "#867 the defect direction: a method-local anonymous type attributed to the enclosing class (kotlin's pre-ruling behaviour)"
+    },
+    {
+      "type": "contains",
+      "from": "inMethod",
+      "target": "anonymous_Runnable",
+      "comment": "the mirror direction: a class-level anonymous type attributed to a method"
+    }
+  ]
+}

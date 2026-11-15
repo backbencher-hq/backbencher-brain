@@ -1,0 +1,41 @@
+{
+  "fixtureId": "c/layout-widths-from-ast-936",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The `memorySize` / `alignment` payload every struct and union symbol carries had never been checked against anything, because the lane's own fixtures were written FROM the analyzer's output -- a payload verified against itself is not verified. The first independent check, against `clang -Xclang -ast-dump=json` over redis, put the payload at 46.9% agreement while the member SETS the numbers were computed from were 97.1% identical. That split is the whole reason this fixture exists: it located the defect in the layout ARITHMETIC rather than in member extraction, which is a far smaller and more fixable thing. The arithmetic matched each member's type SPELLING against two hand-maintained whitelists (which had already drifted apart from each other), so every legal C primitive the author had not thought to enumerate fell through to a 4/4 default -- measured over the redis corpus, 1027 of 2056 member-type spellings, 50 percent, led by `long long` (130 occurrences, 8 bytes wide, computed as 4) and `unsigned char` (45, 1 byte wide, computed as 4). This fixture pins the widths that enumeration missed. Every expected size in the fixture header is CLANG's, taken from `clang -std=c11` on x86-64 SysV, because a layout fixture authored from the analyzer would have recorded the defect as the expectation. The shared fixture harness asserts symbols and relationships only, so what it pins here is that the fix did not disturb the symbol graph: the same types, members, typedef aliases, macro constant and enum member, the same `contains` containment edges, and the same `references` edges for each typedef'd type. The layout metadata itself is asserted by the C-owned lane gate (`script/m14/tmp/c-audit/verify-c-lane.ts`), which is the only place that can express it without modifying the shared harness.",
+  "expectSymbols": [
+    { "name": "WideLL", "kind": "struct", "note": "clang: 16 bytes / align 8. Two `long long`, the spelling the old table never had; it computed 4/4 each." },
+    { "name": "NarrowUC", "kind": "struct", "note": "clang: 2 bytes / align 1. Two `unsigned char`, also 4/4 before. Alignment 1 is correct here and is the control against a fix that assumed everything is 4-aligned." },
+    { "name": "MixedSI", "kind": "struct", "note": "clang: 8 bytes / align 4. `short int` + `unsigned int`." },
+    { "name": "fingerprint_t", "kind": "type", "note": "#937: a same-file alias of `uint16_t`, which the layout tables already knew. A file-local alias is NOT a cross-file problem, so C-D2 does not excuse it." },
+    { "name": "fp_alias_t", "kind": "type", "note": "#937: a CHAIN -- an alias of an alias. Resolved to the terminal primitive." },
+    { "name": "AliasPair", "kind": "struct", "note": "clang: 4 bytes / align 2. Both members are alias names, so the struct is 2+2, not the 4+4 the unresolved case produced." },
+    { "name": "ENTRIES", "kind": "constant", "note": "#939: an object-like macro used as an array DIMENSION. Before this the dimension defaulted to 1, which is a claim and not a default." },
+    { "name": "anonymous_enum", "kind": "enum", "note": "the documented contract: an anonymous enum is named by the symbol kind, and its constant SLOTS is the member." },
+    { "name": "SLOTS", "kind": "enum_member", "note": "#939: an ENUMERATOR used as an array dimension, the second form of the same defect." },
+    { "name": "MacroDims", "kind": "struct", "note": "clang: 7 bytes / align 1. `char fixed[3]` + `char slots[4]`." },
+    { "name": "LongDoubleRefused", "kind": "struct", "note": "clang: 16/16; the model publishes 4/4 with layoutUnknownMembers=1. `long double` is 8 on some ABIs, 12 on i386 and 16 here, so the model REFUSES it rather than guessing, and the refusal is MARKED. This is the counter-case that keeps a refusal from quietly becoming a guess." },
+    { "name": "FlexTail", "kind": "struct", "note": "#941: clang 4/4, model 4/4. A flexible array member `unsigned char data[]` contributes ZERO bytes per C99 6.7.2.1p16; the default of 1 invented a byte, and reading it back with `arraySize || 1` would have turned the deliberate 0 back into 1." },
+    { "name": "BitPacked", "kind": "struct", "note": "#944: clang 4/4 (two bitfields pack into one 32-bit unit); the model publishes 8/4 with layoutUnknownMembers=2. Bitfield packing is a real algorithm the model does not implement, so each bitfield is charged its declared type's width AND counted as unmeasured." },
+    { "name": "Plain", "kind": "struct", "note": "clang: 1 byte / align 1. The control that was always right." }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "global", "target": "WideLL", "note": "the typedef'd anonymous struct's own name is a type reference" },
+    { "type": "references", "from": "global", "target": "AliasPair" },
+    { "type": "references", "from": "global", "target": "MacroDims" },
+    { "type": "references", "from": "global", "target": "LongDoubleRefused" },
+    { "type": "references", "from": "global", "target": "FlexTail" },
+    { "type": "references", "from": "global", "target": "BitPacked" },
+    { "type": "uses", "from": "global", "target": "ENTRIES", "note": "#939: a macro read as an array dimension is still a macro USE -- resolving the value must not silence the reference" },
+    { "type": "uses", "from": "global", "target": "SLOTS", "note": "#939: and an enumerator read as a dimension likewise" },
+    { "type": "contains", "from": "WideLL", "target": "a" },
+    { "type": "contains", "from": "AliasPair", "target": "fp" },
+    { "type": "contains", "from": "FlexTail", "target": "data", "note": "#941: the flexible array member is still a MEMBER and must still be contained, even though it contributes no bytes to the size" },
+    { "type": "contains", "from": "BitPacked", "target": "iskey" },
+    { "type": "contains", "from": "Plain", "target": "c" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "global", "target": "stdint", "note": "the included header is a file-scope import, never a value read" },
+    { "type": "uses", "from": "WideLL", "target": "a", "note": "a member's own name is not a read of itself; the member set is unchanged by this wave and must stay that way" }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "fixtureId": "java/annotation-column-lines",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M59 (#825) follow-up, measured on grails-core Item.java. The mapped_column edge must claim the line where the column's NAME is written: the string literal when explicit (`@Column(name = \"user_name\")`), the field's declaration line when implicit (`@Column` alone, target = field name). The pre-fix behaviour — stamping the annotation's own line for an implicit target — is forbidden below.",
+  "expectSymbols": [
+    { "name": "Items", "kind": "class" },
+    { "name": "timestamp1" },
+    { "name": "user" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "Items.timestamp1", "target": "timestamp1", "line_number": 15, "meta.relationshipType": "mapped_column" },
+    { "type": "uses", "from": "Items.user", "target": "user_name", "line_number": 17, "meta.relationshipType": "mapped_column" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "Items.timestamp1", "target": "timestamp1", "line_number": 14, "note": "pre-fix: the @Column annotation line; the name timestamp1 is written nowhere on it" }
+  ]
+}

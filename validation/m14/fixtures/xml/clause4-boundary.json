@@ -1,0 +1,50 @@
+{
+  "instrument": "xml clause 4 \u2014 the four remaining edges, RULED with evidence rather than scored as fixed",
+  "at": "2026-10-11T10:25:00-04:00",
+  "revision": "385c734dd (includes 47a45a72c, the second-site leaf-reduction fix)",
+  "population": "libxslt, 1,143 files, ONE RUN PER ARM; gate-side numbers are whole-population (11,552 files) and separate",
+  "resultOnThisRevision": {
+    "violations": 0,
+    "toggleControl": {
+      "ownFilePassesEnabled": {
+        "violations": 4,
+        "calls": 0
+      },
+      "ownFilePassesDisabled": {
+        "violations": 147,
+        "calls": 138
+      },
+      "note": "the second-site fix does not move these counts; the re-run on the current revision reproduces the earlier pair exactly"
+    },
+    "reclassified": {
+      "boundaryNoSourceSymbol": 1,
+      "boundaryIntraDocumentIdRef": 3
+    }
+  },
+  "ruling1_idrefs": {
+    "count": 3,
+    "edges": [
+      "libxslt/tests/REC/stand-2.7-1.xml:1 xml-stylesheet -> #style1",
+      "libxslt/tests/REC/stand-2.7-2.xml:2 xml-stylesheet -> #transform",
+      "libxslt/tests/REC/stand-2.7-3.xml:2 xml-stylesheet -> #transform"
+    ],
+    "theyAreRealReferencesAndTheClassIsRight": "The W3C stand-2.7 association tests: each PI points at a fragment, and each document DECLARES that ID \u2014 `<xsl:stylesheet id=\"style1\">` in stand-2.7-1, `<xsl:transform id=\"transform\">` in stand-2.7-2 and -3. So `resolvable: in-document` is CORRECT: the referent is in the document.",
+    "whyUnboundIsCorrectToo": "A fragment IDREF names a NODE identified by an ID attribute, not a declaration of that NAME, so there is no symbol for a name-based resolver to find and `unbound` is the right store state. The edge is not a wrong binding and not a dangling reference.",
+    "predicateExceptionAdded": "the instrument now detects `#`-prefixed targets and bins them as `boundary.intraDocumentIdRef` instead of scoring them, because the class predicate (`in-document` must bind a same-file symbol) does not apply to a node reference. Count printed, never silently dropped."
+  },
+  "ruling2_noSourceSymbol": {
+    "count": 1,
+    "edge": "libxslt/tests/general/bug-110.xml:7 `&target;`",
+    "theAnalyzerIsRight": "bug-110.xml declares `<!ENTITY target SYSTEM \"bug-110.ent\">` in its internal subset; the analyzer emits `references root -> target @7` with role `entity_reference` and class `in-document`, and it PUBLISHES `target` as a symbol in that same file (line 3, via the `dtd_entity_declaration` contains edge).",
+    "whatTheStoreDoes": "the stored row is `rel:null:target:references:7` with `source_symbol_id` NULL and `target_symbol_id` pointing at `libxslt/tests/XSLTMark/tower.xsl:target:12` \u2014 a `with-param` symbol in ANOTHER file. With no source symbol the edge has NO OWN FILE, so own-file preference has nothing to prefer and the bare name `target` binds wherever it sorts first.",
+    "measuredScope": "in the same draw, rows with an unbound SOURCE and a literal `null` in the row id: 2 of 22,426 (one `contains`, one `references`); the enrichment pass itself warns `dangling source edges cannot be enriched: danglingSources 2, totalRelationships 4`.",
+    "fixShapeNotLanded": "the source must bind (the edge is emitted with source `root`, a symbol the store does not carry for that file), and the row-id construction must never interpolate `null` into the file position; a target declared as a DTD entity in the edge's own document should not be bound to a same-named symbol in another file at all. 2 rows per 1,143 files is the price of the gap, and the same family is what the earlier emitted-vs-stored ratio measured on `references` (100 emitted -> 91 stored)."
+  },
+  "whatThisMeansForTheVerdict": "clause 4's violated-type count is 0 after the own-file fix; these 4 are boundary cases the predicate cannot judge, each RULED with document-level evidence, and the one real defect among them (no-source-symbol) is in the shared indexer and is stated with its measured scope rather than folded into the fix that landed.",
+  "raw": [
+    "own-file-acceptance-head.json",
+    "recheck-enabled.json / recheck-control.json (current revision)",
+    "sis-refined.json",
+    "bug-110 one-file probe: .tmp-xml/bug110-store.mts output"
+  ]
+}

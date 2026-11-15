@@ -1,0 +1,46 @@
+{
+  "fixtureId": "kotlin/anon-type-not-file-primary-type",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the pre-declared contract (an anonymous type may never be the file's primary top-level type); the expectation records the post-ruling run's spelling. This is a SECOND defect class the #867 corpus sweep exposed — it was not in the issue, and it is measured, not assumed: kotlinx-coroutines/reactor/Flux.kt had 8 import edges attributed to anonymous_Subscription (owner=-) before the ruling.",
+  "rationale": "M49/M37 #867 follow-on, UPDATED by the M14 ontology wave (DERIV_OVERRIDES). Import references are emitted with the placeholder source `root` and then rewritten onto the file's primary top-level TYPE — a search that accepted any ownerless class/interface/enum symbol. Before the #867 ruling a top-level function's anonymous object had NO owner, so it qualified and claimed the whole file's imports. That half is unchanged and still pinned. The SECOND half changed: this file has no top-level class, and the pre-wave answer was to leave the literal `root` in a name-bearing field. Measured on a 200-file corpus draw, 302 relationship endpoints carried that literal — rule R7's runtime half, which validation/m60/symbol-sentinel-register.json records as outstanding project-wide. The rewrite now falls back to the compilation unit's own file name (`anon-type-not-file-primary-type`), which is a real identity. The DEFECT the fixture exists to catch is unchanged and is now pinned from both directions: a forbid on the anonymous type AND a forbid on the placeholder, so neither the pre-ruling attribution nor the pre-wave literal can come back.",
+  "expectSymbols": [
+    {
+      "name": "anonymous_Runnable",
+      "kind": "class",
+      "ownerName": "topLevel",
+      "comment": "#867: a top-level function's literal is owned by that function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "topLevel",
+      "target": "anonymous_Runnable",
+      "line_number": 16
+    },
+    {
+      "type": "references",
+      "from": "anon-type-not-file-primary-type",
+      "target": "kotlin.coroutines.Continuation",
+      "line_number": 13,
+      "meta.isImportDep": true,
+      "meta.evidenceClass": "import_based",
+      "comment": "no top-level class exists, so the import reference falls back to the compilation unit's own file name (M14 ontology wave) rather than the `root` placeholder literal; the anon type must still not take it"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "anonymous_Runnable",
+      "target": "kotlin.coroutines.Continuation",
+      "comment": "#867 the measured pre-ruling defect: the anonymous type claimed the file's import edge (Flux.kt x8)"
+    },
+    {
+      "type": "references",
+      "from": "root",
+      "target": "kotlin.coroutines.Continuation",
+      "comment": "R7: `root` is a placeholder literal in a name-bearing field. The fallback is the file's own name, so this row must never reappear."
+    }
+  ]
+}

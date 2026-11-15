@@ -1,0 +1,62 @@
+{
+  "fixtureId": "go/closure-package-scope",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SOURCE of a channel operation inside a FUNC LITERAL that initializes a NAMED PACKAGE-SCOPE var — the shape go/closure-channel-read does not cover, and the one that was wrong. `findContainingGoFunction` walks up for a `function_declaration` or `method_declaration` only, so a func literal had no containing function and the channel pass's `?? \"global\"` fallback answered a pseudo-source for work a named declaration owns: `var Handler = func() int { <-Ch; ... }` published `uses global -> Ch` instead of `Handler -> Ch`. Same shape as GOD11 (package-scope var attributed to `global`), the package-scope `instantiates` site, and the declared-type `resolveSource` gap through a func literal: one pass resolved the named ancestor and another fell through. THE RULE THE FIX IMPLEMENTS, stated because two narrower rules were tried and both were wrong: a func literal does not STOP the walk, it only stops it when the literal is the initializer of a NAMED PACKAGE-SCOPE var. A literal inside a function must keep climbing to its FUNCTION — the first cut stopped there and returned the LOCAL var's name, which LocalsAreNotSymbols makes an invalid source, and go/closure-channel-read failed with `closureInsideFunction -> c` missing until the climb-through was restored. A literal that is a call argument or a return value reaches the file and answers undefined, so the callers' own fallback applies. THE FOUR EXPECTED ROWS: (1) `Handler -> Ch` receive at :24 is the defect's own witness — a receive in a package-scope closure attributed to the closure's var. (2) `Sender -> Ch` send at :29 is the other operation type, so the fix is pinned for sends as well as receives. (3) `sendsAndReceives` is deliberately NOT in this file; the function case is pinned by go/closure-channel-read and duplicating it here would assert nothing new. (4) The CONTROL is the blank-identifier var: `var _ = func() int { <-Ch; ... }` at :35 has no name to attribute to, so `global -> Ch` is the honest answer and is pinned as an EXPECTED row rather than left implicit — a fix that claimed a name for `_` would fail here. NOT PINNED: confidence and tier (every channel-op row is 0.8/usage_contextual regardless of source, so pinning them asserts nothing about the attribution), and the `contains`/`exports` rows this file also produces (owned by other passes).",
+  "expectSymbols": [
+    { "name": "Ch", "kind": "variable" },
+    { "name": "Handler", "kind": "variable" },
+    { "name": "Sender", "kind": "variable" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "A receive inside a package-scope func literal attributes to the named var that owns it.",
+      "type": "uses",
+      "from": "Handler",
+      "target": "Ch",
+      "line_number": 24,
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "receive"
+    },
+    {
+      "comment": "The send half of the same construct: the rule covers both operation types.",
+      "type": "uses",
+      "from": "Sender",
+      "target": "Ch",
+      "line_number": 29,
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "send"
+    },
+    {
+      "comment": "CONTROL: a blank-identifier var has no name to attribute to, so `global` is the honest answer. A fix that claimed a name for `_` would fail here.",
+      "type": "uses",
+      "from": "global",
+      "target": "Ch",
+      "line_number": 35,
+      "meta.relationshipType": "go_channel_operation",
+      "meta.operationType": "receive"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "`global` is forbidden for the NAMED package-scope closure: that is the defect this fixture exists to prevent. Before the fix this exact row was published and the closure's own name was absent.",
+      "type": "uses",
+      "from": "global",
+      "target": "Ch",
+      "line_number": 24
+    },
+    {
+      "comment": "`global` is forbidden for the named send closure for the same reason.",
+      "type": "uses",
+      "from": "global",
+      "target": "Ch",
+      "line_number": 29
+    },
+    {
+      "comment": "A blank-identifier var cannot be the source of anything: `_` never resolves. Attributing the closure's read to a name the file does not declare would be worse than the pseudo-source.",
+      "type": "uses",
+      "from": "_",
+      "target": "Ch"
+    }
+  ]
+}

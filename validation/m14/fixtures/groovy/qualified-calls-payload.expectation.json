@@ -1,0 +1,13 @@
+{
+  "fixtureId": "groovy/qualified-calls-payload",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS Matrix 1b qualified_calls payload for groovy (#383): receiver-qualified calls attach to the enclosing method symbol.",
+  "expectSymbols": [
+    { "name": "Svc" },
+    { "name": "work" }
+  ],
+  "expectQualifiedCalls": [
+    { "symbol": "work", "includes": ["this.getUserById"] }
+  ]
+}

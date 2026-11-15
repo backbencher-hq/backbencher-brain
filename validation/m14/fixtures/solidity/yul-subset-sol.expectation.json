@@ -1,0 +1,266 @@
+{
+ "schemaVersion": 1,
+ "fixture": "solidity/yul-subset-sol.sol",
+ "authoredFrom": "Yul — Solidity's inline assembly, analysed as a first-class sub-language. Authored 2026-09-30 from the analyzer's measured output. The lane handoff said 'the corpus under-represents Yul' and proposed deciding whether to handle it or rule it out; the census REFUTED the premise (2,800 yul_function_call, 2,819 yul_identifier, 2,640 yul_path, 447 assembly_statement over the 389 production files), so ruling Yul out would have removed more edges than the entire contract layer's call graph. Building it in was the only defensible answer.",
+ "note": "Yul variables and functions are contained by the Solidity FUNCTION that lexically encloses the `assembly` block, because the function is the nearest declaration container — Yul has no declaration of its own in the symbol graph's terms. `twice` is a Yul function: declared, given an owner, and called. `keccak256`, `shl`, `mstore`, `sstore`, `add`, `lt`, `gt`, `sub`, `iszero` are EVM OPCODES and are silent by SOL-8; the skip is lossless because the lexer always spells a bare `add` as the builtin, so a user-defined Yul function can never carry that name. `break` and `iszero(r)` inside the loop body are silent for the same reason.",
+ "expectSymbols": [
+  {
+   "name": "yul-subset-sol.sol",
+   "kind": "module"
+  },
+  {
+   "name": "Assembler",
+   "kind": "class",
+   "ownerName": "yul-subset-sol.sol"
+  },
+  {
+   "name": "slot",
+   "kind": "property",
+   "ownerName": "Assembler"
+  },
+  {
+   "name": "slot()",
+   "kind": "method",
+   "ownerName": "Assembler",
+   "meta.isSynthesisedGetter": true
+  },
+  {
+   "name": "compute",
+   "kind": "method",
+   "ownerName": "Assembler"
+  },
+  {
+   "name": "lo",
+   "kind": "variable",
+   "ownerName": "compute",
+   "meta.isYul": true
+  },
+  {
+   "name": "p",
+   "kind": "variable",
+   "ownerName": "compute",
+   "meta.isYul": true
+  },
+  {
+   "name": "i",
+   "kind": "variable",
+   "ownerName": "compute",
+   "meta.isYul": true
+  },
+  {
+   "name": "twice",
+   "kind": "function",
+   "ownerName": "compute",
+   "meta.isYul": true
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "add",
+   "comment": "SOL-8: `add` is an EVM opcode (`yul_evm_builtin`), never a project symbol. The skip is lossless — the lexer always spells a bare `add` in Yul as the builtin, so a user-defined Yul function can never be named `add`."
+  },
+  {
+   "name": "keccak256",
+   "comment": "SOL-8: an EVM opcode in Yul position."
+  },
+  {
+   "name": "mstore",
+   "comment": "SOL-8: an EVM opcode."
+  },
+  {
+   "name": "sstore",
+   "comment": "SOL-8: an EVM opcode."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "contains",
+   "from": "Assembler",
+   "target": "compute",
+   "line_number": 7,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "compute",
+   "target": "lo",
+   "line_number": 9,
+   "comment": "A Yul `let` is a declaration, and its container is the enclosing Solidity function because the assembly block opens no declaration of its own.",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "compute",
+   "target": "p",
+   "line_number": 10,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "compute",
+   "target": "i",
+   "line_number": 13,
+   "comment": "Declared in the loop's INITIALISATION block. Yul has no block scope — a `for` initialiser variable is visible in all three blocks — so one declaration and one containment edge is the correct shape, not three.",
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "contains",
+   "from": "compute",
+   "target": "twice",
+   "line_number": 17,
+   "meta.evidenceClass": "structural"
+  },
+  {
+   "type": "calls",
+   "from": "compute",
+   "target": "twice",
+   "line_number": 18,
+   "comment": "A call to a Yul FUNCTION. `yul_function_call`'s `function:` field is `choice(yul_identifier, yul_evm_builtin)`, so a project Yul function and an EVM opcode arrive at the same node type and are separated by the node's own spelling — see the forbid rows for the opcode side of the same rule.",
+   "meta.isYulCall": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "compute",
+   "target": "p",
+   "line_number": 11,
+   "comment": "THE ROW THAT FOUND A REAL DEFECT. `yul_path`'s children are `yul_identifier`, NOT `identifier` — grammar.js declares `yul_identifier: $ => $.identifier`, an ALIAS, so the node type on the wire differs from the aliased one. Reading `identifier` children found none, the first Yul fixture emitted ZERO path reads, and 2,640 `yul_path` nodes in the corpus had never been read by anything.",
+   "meta.isYulPathSegment": true,
+   "meta.isYulVariableRead": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "compute",
+   "target": "compute\u0000x",
+   "line_number": 11,
+   "comment": "The Solidity parameter read INSIDE assembly. A Yul frame does not stop a read of an outer Solidity binding, so the path read names it like any other. SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED — only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed.",
+   "meta.isYulPathSegment": true,
+   "meta.isYulVariableRead": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "compute",
+   "target": "compute\u0000r",
+   "line_number": 12,
+   "comment": "The named RETURN variable, read and assigned inside the assembly. Solidity's named returns are real bindings and the assembly sees them. SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED — only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed.",
+   "meta.isYulPathSegment": true,
+   "meta.isYulVariableRead": true,
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "uses",
+   "from": "twice",
+   "target": "twice\u0000a",
+   "line_number": 17,
+   "comment": "A read of a Yul function PARAMETER, from inside the Yul function's own frame — so the scope is `twice`, not `compute`, AND the row is the family's BINDING spelling (W6-a): the parameter is a binding of the Yul frame and the family contract publishes no symbol for it. The bare row was the pre-fix shape and is forbidden below; a bare spelling would let the store resolve the read against whatever single declaration happens to carry the name.",
+   "meta.isYulPathSegment": true,
+   "meta.isYulVariableRead": true,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.localBinding": true
+  },
+  {
+   "type": "uses",
+   "from": "twice",
+   "target": "twice\u0000b",
+   "line_number": 17,
+   "meta.isYulPathSegment": true,
+   "meta.isYulVariableRead": true,
+   "meta.evidenceClass": "usage_contextual",
+   "meta.localBinding": true,
+   "comment": "A read of a Yul function PARAMETER, from inside the Yul function's own frame — so the scope is `twice`, not `compute`, AND the row is the family's BINDING spelling (W6-a): the parameter is a binding of the Yul frame and the family contract publishes no symbol for it. The bare row was the pre-fix shape and is forbidden below; a bare spelling would let the store resolve the read against whatever single declaration happens to carry the name."
+  },
+  {
+   "type": "references",
+   "from": "slot",
+   "target": "slot()",
+   "line_number": 5,
+   "meta.isGetterFor": true,
+   "meta.getterOfVariable": "slot",
+   "meta.evidenceClass": "usage_contextual"
+  },
+  {
+   "type": "contains",
+   "from": "Assembler",
+   "target": "slot()",
+   "line_number": 5,
+   "meta.isSynthesisedGetter": true,
+   "meta.getterOfVariable": "slot",
+   "meta.evidenceClass": "structural"
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "compute",
+   "target": "add",
+   "comment": "SOL-8: an EVM opcode is not a call. 2,800 such nodes exist in the corpus and none of them is a project function."
+  },
+  {
+   "type": "calls",
+   "from": "compute",
+   "target": "keccak256",
+   "comment": "SOL-8. `keccak256` is a reserved grammar TOKEN and an EVM opcode; in call position the lexer spells it a bare `identifier`, which is why the derived ENGINE_FUNCTION_NAMES list exists at all."
+  },
+  {
+   "type": "calls",
+   "from": "compute",
+   "target": "mstore",
+   "comment": "SOL-8."
+  },
+  {
+   "type": "calls",
+   "from": "compute",
+   "target": "sstore",
+   "comment": "SOL-8."
+  },
+  {
+   "type": "uses",
+   "from": "compute",
+   "target": "add",
+   "comment": "SOL-8 on the read side: an opcode named in a `yul_path` is silent too, which is why the fixture asserts the count of `uses` rows rather than only forbidding these four by name."
+  },
+  {
+   "type": "contains",
+   "from": "compute",
+   "target": "x",
+   "comment": "A Yul block does not CONTAIN the Solidity parameters visible inside it — `x` is declared by `compute`'s signature and owned by `Assembler`. An assembly block is a scope, not a declaration container."
+  },
+  {
+   "type": "uses",
+   "from": "compute",
+   "target": "x",
+   "line_number": 11,
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED — only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  },
+  {
+   "type": "uses",
+   "from": "compute",
+   "target": "r",
+   "line_number": 12,
+   "note": "SUPERSEDED SPELLING (task-9 reconciliation, SOLIDITY-W8-CLAIM.md): this row pinned the BARE spelling of a function-scope binding read. The behaviour it pinned is now SUPERSEDED by the fleet binding claim (D7 CLAIMED, commit SOL-W8): a parameter/named-return read is published as `<declaring callable>\\x00<binding name>` + metadata.localBinding, because the name has no published declaration and the bare spelling let the name-keyed resolver answer with a decoy. The construct the row tests is UNCHANGED — only its spelling moved. The old bare spelling is forbidden below so this fixture fails if the claim is ever removed."
+  },
+  {
+   "type": "uses",
+   "from": "twice",
+   "target": "a",
+   "line_number": 17,
+   "comment": "The bare `a` read must NOT survive: the parameter is a Yul frame binding, published as `twice\\u0000a`."
+  },
+  {
+   "type": "uses",
+   "from": "twice",
+   "target": "b",
+   "line_number": 17,
+   "comment": "The bare `b` read must NOT survive: the parameter is a Yul frame binding, published as `twice\\u0000b`."
+  }
+ ],
+ "expectRelationshipCount": [
+  {
+   "type": "calls",
+   "equals": 1,
+   "comment": "Exactly ONE call in the file: `twice(…)`. Every other call-shaped construct is an EVM opcode (SOL-8), so a rule that did not separate opcodes from Yul functions would report 10, and one that separated them wrongly would report 0."
+  }
+ ]
+}

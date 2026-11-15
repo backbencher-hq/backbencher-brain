@@ -1,0 +1,50 @@
+{
+  "gate": "M60.P1 line coverage (erlang)",
+  "at": "2026-10-01T08:53:55.442Z",
+  "corpora": [
+    "otp",
+    "rebar3",
+    "cowboy"
+  ],
+  "files": 4617,
+  "parsed": 4616,
+  "relationships": 974203,
+  "withLine": 974203,
+  "coveragePct": 100,
+  "symbols": 206699,
+  "symbolsWithStartLine": 206699,
+  "missingLine": 0,
+  "zeroLine": 0,
+  "outOfBounds": 0,
+  "blankLine": 0,
+  "symbolLineIncomplete": 0,
+  "symbolLineOutOfBounds": 0,
+  "byType": {
+    "references": {
+      "total": 209354,
+      "withLine": 209354
+    },
+    "contains": {
+      "total": 202405,
+      "withLine": 202405
+    },
+    "instantiates": {
+      "total": 13020,
+      "withLine": 13020
+    },
+    "calls": {
+      "total": 489292,
+      "withLine": 489292
+    },
+    "uses": {
+      "total": 59419,
+      "withLine": 59419
+    },
+    "implements": {
+      "total": 713,
+      "withLine": 713
+    }
+  },
+  "verdict": "PASS",
+  "note": "Re-measured after two analyzer corrections in the same session (ER-D38 narrowed to require evidence of damage; include directives counted as declarations). A line-coverage artifact is only worth what the code it measured is worth, so this is the final analyzer's number, not the earlier one."
+}

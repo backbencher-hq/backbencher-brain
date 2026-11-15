@@ -9,14 +9,14 @@
 process.env.BB_EMBEDDING_BATCH_LIMIT = "0"
 
 const repositories = [
-  { id: "mojo", path: "$HOME/fixtures/repositories/mojo", extensions: [".pm", ".pl"] },
-  { id: "powershell", path: "$HOME/fixtures/repositories/powershell", extensions: [".ps1"] },
-  { id: "phpunit", path: "$HOME/fixtures/repositories/phpunit", extensions: [".php"] },
-  { id: "luarocks", path: "$HOME/fixtures/repositories/luarocks", extensions: [".lua"] },
-  { id: "dplyr", path: "$HOME/fixtures/repositories/dplyr", extensions: [".r", ".R"] },
-  { id: "terraform", path: "$HOME/fixtures/repositories/terraform", extensions: [".tf", ".tfvars"] },
-  { id: "graphql_js", path: "$HOME/fixtures/repositories/graphql-js", extensions: [".graphql", ".gql"] },
-  { id: "vue_core", path: "$HOME/fixtures/repositories/vue-core", extensions: [".html", ".css"] },
+  { id: "mojo", path: "/home/ishaq2321/bb_tests/repositories/mojo", extensions: [".pm", ".pl"] },
+  { id: "powershell", path: "/home/ishaq2321/bb_tests/repositories/powershell", extensions: [".ps1"] },
+  { id: "phpunit", path: "/home/ishaq2321/bb_tests/repositories/phpunit", extensions: [".php"] },
+  { id: "luarocks", path: "/home/ishaq2321/bb_tests/repositories/luarocks", extensions: [".lua"] },
+  { id: "dplyr", path: "/home/ishaq2321/bb_tests/repositories/dplyr", extensions: [".r", ".R"] },
+  { id: "terraform", path: "/home/ishaq2321/bb_tests/repositories/terraform", extensions: [".tf", ".tfvars"] },
+  { id: "graphql_js", path: "/home/ishaq2321/bb_tests/repositories/graphql-js", extensions: [".graphql", ".gql"] },
+  { id: "vue_core", path: "/home/ishaq2321/bb_tests/repositories/vue-core", extensions: [".html", ".css"] },
 ]
 
 // Optional CLI arg: `bun script/m11-web-corpus.ts powershell` runs one repo,

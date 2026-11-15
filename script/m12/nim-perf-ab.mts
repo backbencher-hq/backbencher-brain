@@ -27,7 +27,7 @@ import * as path from "node:path"
 
 const ROOT = process.cwd()
 const REF = process.argv[2] ?? "HEAD"
-const REPO = process.argv[3] ?? "$HOME/fixtures/repositories/nim"
+const REPO = process.argv[3] ?? "/home/ishaq2321/bb_tests/repositories/nim"
 const N = parseInt(process.argv[4] ?? "200", 10)
 const TRIALS = parseInt(process.argv[5] ?? "3", 10)
 

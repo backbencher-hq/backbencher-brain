@@ -1,0 +1,103 @@
+{
+  "comment": "TOML-PUBLISH-SURFACE. LEAD RULING 2026-10-13: `exports` means a NAME THE UNIT PUBLISHES FOR OTHERS TO IMPORT, and a manifest key whose VALUE is a path/directory/coordinate is a publish-surface fact about an ARTIFACT — emitting one under `exports` is a TYPE ERROR IN EMISSION whose consumer-visible consequence is a dangling edge. The lane's census counts 174 such sites over the whole corpus with a name-list predicate; the analyzer now decides from the DATA, exactly as json does. POSITIVE CONTROL: `module = \"helpers\"` names `helpers`, which `[helpers]` declares in this same document, so ONE `exports` edge must be emitted and it must target that declaration. NEGATIVE PINS: `publish = \"build\"` (an output directory), `main = \"src/main.rs\"` (a path), `entrypoint = \"./run.sh\"` (a path), `exposed = \"org.example:artifact\"` (a coordinate) — each is publish-SHAPED by key and none names a declaration here, so none may emit. `expectRelationshipCount` holds the type's total at 1, so ANY extra `exports` edge fails this fixture no matter what it targets; without that pin a rule that emitted the four path sites would still satisfy a purely negative fixture. MEASURED over the whole admitted population this rule emits 0 edges (174 candidates, 0 whose value names a declaration), so this fixture is the rule's only firing proof — the corpus cannot supply one.",
+  "expectSymbols": [
+    {
+      "name": "publish-surface-and-paths",
+      "kind": "module",
+      "comment": "the FILE is the module, named from its stem"
+    },
+    {
+      "name": "module",
+      "kind": "property",
+      "comment": "a publish-surface key with a NAME value — this is the one that becomes an export"
+    },
+    {
+      "name": "helpers",
+      "kind": "namespace",
+      "comment": "the declaration the published name points at"
+    },
+    {
+      "name": "helpers.kind",
+      "kind": "property"
+    },
+    {
+      "name": "publish",
+      "kind": "property",
+      "comment": "publish-SHAPED, but its value is an output directory: no export"
+    },
+    {
+      "name": "main",
+      "kind": "property",
+      "comment": "publish-SHAPED, but its value is a path: no export"
+    },
+    {
+      "name": "entrypoint",
+      "kind": "property"
+    },
+    {
+      "name": "exposed",
+      "kind": "property"
+    },
+    {
+      "name": "build",
+      "kind": "namespace",
+      "comment": "the enclosing table of the measured coincidence"
+    },
+    {
+      "name": "build.base",
+      "kind": "property"
+    },
+    {
+      "name": "build.publish",
+      "kind": "property",
+      "comment": "THE COINCIDENCE: its value equals its own enclosing table's name"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "publish-surface-and-paths",
+      "target": "publish-surface-and-paths.helpers",
+      "line_number": 12,
+      "meta.isPublishSurfaceExport": true,
+      "meta.exportForm": "manifest_publish_surface",
+      "comment": "THE POSITIVE CONTROL. The source is the DOCUMENT (as json's is its root object) and the target is the DECLARATION the value names — a name another unit can import. Delete the data test and this edge disappears, which is what makes the fixture able to fail."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "exports",
+      "equals": 1,
+      "comment": "THE RULED DEFECT'S TRIPWIRE. Exactly one `exports` edge in this document: the four publish-SHAPED sites whose values are paths/directories/coordinates must emit none. Counted by TYPE, so an edge that targets a path, a directory, the bare value, or anything else still fails."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "build",
+      "comment": "`publish = \"build\"` is an OUTPUT DIRECTORY. The one project-wide name coincidence in the corpus is exactly this shape (docs/netlify.toml), and the ruling names it."
+    },
+    {
+      "type": "exports",
+      "target": "src/main.rs"
+    },
+    {
+      "type": "exports",
+      "target": "./run.sh"
+    },
+    {
+      "type": "exports",
+      "target": "org.example:artifact"
+    },
+    {
+      "type": "exports",
+      "target": "helpers",
+      "comment": "the BARE value is not the declaration's identity: an edge must name the published symbol (`<module>.helpers`), or a consumer following it reaches nothing."
+    },
+    {
+      "type": "exports",
+      "target": "publish-surface-and-paths.build",
+      "comment": "THE CORPUS'S ONE COINCIDENCE, IN A FIXTURE. `[build] publish = \"build\"` names the output directory, which shares the enclosing table's name; a test that only asked \"does the value name a declaration here?\" emitted this edge over the whole corpus (docs/netlify.toml -> docs.netlify.build). An export must reference something outside the site's own context."
+    }
+  ]
+}

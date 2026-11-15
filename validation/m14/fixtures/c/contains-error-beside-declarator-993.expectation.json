@@ -1,0 +1,20 @@
+{
+  "fixtureId": "c/contains-error-beside-declarator-993",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Pins #993: an ERROR node is not a declarator, and a name read out of one is not a member. Found by the lane's D4 whole-repo differential arm (script/m14/c-oracle-verify.ts --repo sqlite, 315/315 .c files): the analyzer published `contains sqlite3_kvvfs_methods -> sqlite3_vfs` (and `sqlite3_io_methods` twice) BESIDE the real members pVfs/pIoDb/pIoJrnl at src/os_kv.c:341-343. The source is `MAYBE_CONST sqlite3_vfs * pVfs;` where MAYBE_CONST is a file macro the parser cannot see, so recovery parses the UNKNOWN MACRO as the type, the REAL TYPE as an ERROR holding its identifier, and the real declarator separately; the field walk treated every non-type child as a declarator and descended the ERROR. Refusal class: #932/#985/#990's fabrication family (a TYPE published as a member), on the one walk that did not carry the file's own 'never read a declared name out of an ERROR' rule. The four positives are the controls: a fix that dropped every child beside an ERROR would lose the real members.",
+  "expectRelationships": [
+    { "type": "contains", "from": "kvvfs_methods", "target": "nBufferSize", "comment": "CONTROL: the ordinary member before the damaged shape." },
+    { "type": "contains", "from": "kvvfs_methods", "target": "pVfs", "comment": "THE REAL MEMBER beside the ERROR-displaced type — must survive the refusal." },
+    { "type": "contains", "from": "kvvfs_methods", "target": "pIoDb", "comment": "Same shape, second instance." },
+    { "type": "contains", "from": "kvvfs_methods", "target": "pIoJrnl", "comment": "Same shape, third instance (the corpus had it twice on `sqlite3_io_methods`, so the fixture pins the duplicate-name case too)." }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "kvvfs_methods", "target": "sqlite3_vfs", "comment": "THE PHANTOM: the TYPE the recovery displaced into an ERROR, published as a member. clang's independent reading of the same declaration has no such member." },
+    { "type": "contains", "from": "kvvfs_methods", "target": "sqlite3_io_methods", "comment": "THE PHANTOM, second spelling." },
+    { "type": "contains", "target": "MAYBE_CONST", "comment": "CONTROL: the macro token itself was already skipped as a type_identifier; pinned so a fix that changed WHICH child is skipped cannot publish it instead." }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "equals": 4, "note": "nBufferSize + pVfs + pIoDb + pIoJrnl. A mutant that keeps the phantom fails the forbid rows AND the count; a mutant that drops the neighbours fails the count." }
+  ]
+}

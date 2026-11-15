@@ -53,7 +53,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const LIMIT = Number(process.argv[2] ?? 120)
 const SIZE_CAP = 512 * 1024
 const WASM = path.join(process.cwd(), "wasm", "tree-sitter-css.wasm")

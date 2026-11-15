@@ -1,0 +1,15 @@
+{
+  "fixtureId": "scala/multiline-heritage",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The heritage ANCHOR question, made observable: with the clause on its own lines the DECLARATION line (7) and the PARENT's own line (8/9) are different numbers, so a handler that anchors on the declaration start (the pre-fix behaviour) cannot pass. Pinned by scala/extends-clause-start-line, which sets every heritage row's line to the source declaration line.",
+  "expectSymbols": [
+    { "name": "Parent" },
+    { "name": "Mixed" },
+    { "name": "Multi" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Multi", "target": "Parent", "line_number": 8, "note": "the parent's own line, not the declaration's" },
+    { "type": "mixes_in", "from": "Multi", "target": "Mixed", "line_number": 9, "note": "with-clause composition; same anchor rule" }
+  ]
+}

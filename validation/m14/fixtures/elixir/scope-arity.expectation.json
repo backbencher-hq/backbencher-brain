@@ -1,0 +1,14 @@
+{
+  "issue": "M49 W24 #17",
+  "note": "Scope-arity identity (review E7, VERIFIED): the function scope NAME was `${currentScope.name}.${name}` while the merge key (fnId) was `${name}/${arity}` — foo/1 and foo/2 bodies shared one call-source identity (`Mod.foo`) and merged, the EX2-U2 cross-module collision class one level down. The scope identity now carries the arity (`Mod.foo/1`), so arity-distinct bodies are distinguishable call sources; the defdelegate edge source (`delScope`) follows the same rule. The bare form is forbidden so reverting to the collision identity is caught. Symbols keep bare names + metadata.arity — only the scope identity and the edges sourced from it are qualified.",
+  "expectRelationships": [
+    { "type": "calls", "from": "ScopeArity.call_one/1", "target": "one_hop", "line_number": 3 },
+    { "type": "calls", "from": "ScopeArity.call_two/2", "target": "two_hop", "line_number": 7 },
+    { "type": "calls", "from": "ScopeDeleg.fetch/1", "target": "Store.fetch", "line_number": 20 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "ScopeArity.call_one", "target": "one_hop" },
+    { "type": "calls", "from": "ScopeArity.call_two", "target": "two_hop" },
+    { "type": "calls", "from": "ScopeDeleg.fetch", "target": "Store.fetch" }
+  ]
+}

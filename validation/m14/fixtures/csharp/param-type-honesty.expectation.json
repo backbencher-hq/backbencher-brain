@@ -1,0 +1,88 @@
+{
+  "fixtureId": "csharp/param-type-honesty",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The parameter-honesty pair of the R7 wave (M60.R7, the register's csharp entry `pType = … || this.extractTypeString(p) || \"unknown\"`), plus the same class in the fix's own new code. Three measured shapes, all of them a field holding something that is not what the field claims. (1) VARARGS WERE DROPPED: `params T[] name` is the one shape tree-sitter-c-sharp does not wrap in a `parameter` node — the `params` token, the array_type and the identifier are direct children of the parameter_list (script/m14/tmp/cs-params-modifier.ts) — so the named-`parameter` loop published NO parameter for it, and the loss was silent. Measured here: ParamsArray now publishes `rest:object[]`, ParamsAfterPlain `a:int, rest:string[]`, ParamsBuiltin `nums:int[]`. (2) NO PLACEHOLDER TYPE: `MissingLastType(int a, b)` and `MissingFirstType(a, int b)` are lists the recovery accepts with a missing type; the old code published `type: \"unknown\"` for the first and the parameter's OWN NAME for the second (extractTypeString's last-resort scan returns `b` / `a`), measured with script/m14/tmp/cs-param-type-probe.ts. Both now publish the parameter with NO type key at all. (3) NO BLANK NAME: for a nameless `params` parameter the grammar still inserts an empty `identifier` child (script/m14/tmp/cs-param-noname-tree.ts), so reading its text published `{ name: \"\" }`; measured here, NamelessParams now publishes NO parameter. The WELL-FORMED methods are the control — the fix may not degenerate into dropping varargs or dropping unresolvable-type parameters, which the `expect*` pins below enforce. Only reachable-on-recovery shapes are here, so the fixture carries a parse warning on purpose, exactly like csharp/literal-callee-recovery.",
+  "expectSymbols": [
+    { "name": "Probe", "kind": "class" },
+    { "name": "Well", "kind": "method", "ownerName": "Probe" },
+    { "name": "ParamsArray", "kind": "method", "ownerName": "Probe" },
+    { "name": "ParamsAfterPlain", "kind": "method", "ownerName": "Probe" },
+    { "name": "ParamsBuiltin", "kind": "method", "ownerName": "Probe" },
+    { "name": "ArrayParam", "kind": "method", "ownerName": "Probe" },
+    { "name": "NamelessParams", "kind": "method", "ownerName": "Probe" },
+    { "name": "MissingLastType", "kind": "method", "ownerName": "Probe" },
+    { "name": "MissingFirstType", "kind": "method", "ownerName": "Probe" }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "Well",
+      "parameters": [
+        { "name": "a", "type": "int" },
+        { "name": "b", "type": "string" },
+        { "name": "c", "type": "object" }
+      ],
+      "comment": "control: the ordinary list is unchanged by the round"
+    },
+    {
+      "symbol": "ParamsArray",
+      "parameters": [{ "name": "rest", "type": "object[]" }],
+      "comment": "the varargs parameter the named-only loop dropped entirely; the array type IS the published type, the way java models varargs"
+    },
+    {
+      "symbol": "ParamsAfterPlain",
+      "parameters": [
+        { "name": "a", "type": "int" },
+        { "name": "rest", "type": "string[]" }
+      ],
+      "comment": "a plain parameter followed by varargs: the loss was per-parameter, not per-list"
+    },
+    {
+      "symbol": "ParamsBuiltin",
+      "parameters": [{ "name": "nums", "type": "int[]" }],
+      "comment": "predefined_type inside the array type"
+    },
+    {
+      "symbol": "ArrayParam",
+      "parameters": [{ "name": "data", "type": "int[]" }],
+      "comment": "the control that separates the two array shapes: an ORDINARY array parameter was published before this round too (it IS wrapped in a `parameter` node), so the varargs fix must not become `drop array-typed parameters`"
+    },
+    {
+      "symbol": "MissingLastType",
+      "parameters": [{ "name": "b" }],
+      "comment": "control: the parameter still EXISTS with its real name; only the type is absent (`type` omitted here is the absence, not an unchecked key — the forbidParameters entry below is what convicts a reverted placeholder)"
+    },
+    {
+      "symbol": "MissingFirstType",
+      "parameters": [{ "name": "a" }, { "name": "b", "type": "int" }],
+      "comment": "the type-less parameter is the FIRST one, so the damage is not positional"
+    },
+    {
+      "symbol": "NamelessParams",
+      "parameters": [],
+      "comment": "control: a nameless `params` parameter publishes nothing at all — the source writes no name, so there is no parameter to name"
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "MissingLastType",
+      "types": ["unknown", "<unknown>", "b"],
+      "note": "the pre-fix pair: the placeholder literal `\"unknown\"`, and `\"b\"` — the parameter's OWN NAME returned by extractTypeString's last-resort scan. R7's class is a value in a name/value-bearing field that is not that value; a type field holding a name is the same defect one step worse."
+    },
+    {
+      "symbol": "MissingFirstType",
+      "types": ["unknown", "<unknown>", "a"],
+      "note": "the same class on the first position"
+    },
+    {
+      "symbol": "NamelessParams",
+      "names": ["", "unknown", "anonymous"],
+      "note": "the blank-name fabrication the params branch itself could publish: the grammar's recovery inserts an empty `identifier` child, so the node's text is \"\" and a name-bearing field then holds a blank — and the module's older fallback (`|| \"anonymous\"`) is the same class of invented name, so neither may appear for a parameter the source never names"
+    },
+    {
+      "symbol": "MissingLastType",
+      "names": ["unknown", "anonymous"],
+      "note": "the name-side placeholders: an unresolved type must not become an invented NAME either (the c lane's `name: \"unknown\"` is this exact shape, found by the same register)"
+    }
+  ]
+}

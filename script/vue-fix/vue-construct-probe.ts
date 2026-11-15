@@ -33,7 +33,7 @@ import { ASTEngine, getParser } from "../../src/ast/engine"
 
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPOS = (argOf("--repos") ?? "vuejs,vue-element-admin,element-plus").split(",").map((s) => s.trim()).filter(Boolean)
 const OUT = argOf("--json")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(1024 * 1024))

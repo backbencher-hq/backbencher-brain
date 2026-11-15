@@ -273,7 +273,7 @@ export const LANES: Record<string, LaneDecision> = {
         "P2 (#743b, grammar.js): a header name in a PREPROCESSOR-ARGUMENT position -- `__has_include(<vector>)`, `__has_include(\"meta\")` and the wrapper form `FMT_HAS_INCLUDE(<string_view>)`. Upstream parses every one of these as an ERROR node, because `<string_view>` is not a preproc expression: `<` would have to be a binary operator with a missing left operand. The shape reaches 16 files across the two cpp corpora, in the guard of every portable header. Scoped to the ARGUMENT position deliberately: `<` cannot BEGIN a `_preproc_expression` (the unary operators are `! ~ - +`), so there is no competing `<` token to lose the tie to at the start of an argument.",
       ],
       patchEvidence:
-        "Surface and behaviour A/B over three builds, re-runnable via `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` (artifact: validation/m14/results/archive/c-grammar-pin.json). WIRED vs a REBUILD of this committed patched source: named-type surface IDENTICAL in both directions (128 named types, zero difference either way) -- the byte sha256s differ, as they must, because a wasm build carries its emscripten version, compiler flags and section order; identity is claimed on surface and behaviour, which is what this gate measures. WIRED vs pristine tree-sitter-c@0.24.1's own published wasm: 3 named types present in WIRED and absent from pristine -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and ZERO the other way, which is the statement that the patch is live in the bytes this lane loads and is purely additive at the node-type level. 10-construct behavioural battery, WIRED == REBUILD on all 10, and the 3 `#743b` shapes are `damaged` under pristine and `clean` under both WIRED and REBUILD, while the two comparison shapes the patch could have broken (`#if A < B && C > D`, `#if MAX(A < B, C < D)`) and all 5 controls are `clean` under all three. The pristine and rebuilt wasms are kept at fixtures/c/grammar/ with a SHA256SUMS.txt so the A/B survives any network copy disappearing.",
+        "Surface and behaviour A/B over three builds, re-runnable via `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` (artifact: validation/m14/results/archive/c-grammar-pin.json). WIRED vs a REBUILD of this committed patched source: named-type surface IDENTICAL in both directions (128 named types, zero difference either way) -- the byte sha256s differ, as they must, because a wasm build carries its emscripten version, compiler flags and section order; identity is claimed on surface and behaviour, which is what this gate measures. WIRED vs pristine tree-sitter-c@0.24.1's own published wasm: 3 named types present in WIRED and absent from pristine -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and ZERO the other way, which is the statement that the patch is live in the bytes this lane loads and is purely additive at the node-type level. 10-construct behavioural battery, WIRED == REBUILD on all 10, and the 3 `#743b` shapes are `damaged` under pristine and `clean` under both WIRED and REBUILD, while the two comparison shapes the patch could have broken (`#if A < B && C > D`, `#if MAX(A < B, C < D)`) and all 5 controls are `clean` under all three. The pristine and rebuilt wasms are kept at bb_tests/c/grammar/ with a SHA256SUMS.txt so the A/B survives any network copy disappearing.",
     },
     source: {
       state: "vendored",
@@ -316,7 +316,7 @@ export const LANES: Record<string, LaneDecision> = {
       { path: "prebuilds/", why: "platform .node binaries; not parser source" },
       { path: "queries/highlights.scm, queries/tags.scm", why: "editor queries; the engine does not load them" },
       { path: "README.md", why: "upstream's readme, not required by any check" },
-      { path: "tree-sitter-c.wasm (the 0.24.1 tarball's own)", why: "kept instead at fixtures/c/grammar/pristine-tree-sitter-c-0.24.1.wasm, outside the repository, where the A/B can use it without the repo pinning a build it has decided against" },
+      { path: "tree-sitter-c.wasm (the 0.24.1 tarball's own)", why: "kept instead at bb_tests/c/grammar/pristine-tree-sitter-c-0.24.1.wasm, outside the repository, where the A/B can use it without the repo pinning a build it has decided against" },
     ],
   },
 
@@ -648,7 +648,7 @@ export const LANES: Record<string, LaneDecision> = {
       state: "vendored",
       dir: "grammars/tree-sitter-hcl",
       note:
-        "grammar.js + package.json + tree-sitter.json + LICENSE + README.md + CHANGELOG.md + PIN.md + src/ (grammar.json, node-types.json, scanner.c, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-hcl@64ad6278 kept at $HOME/fixtures/hcl/ts-grammars-hcl. Unlike haskell/elixir/fsharp, src/parser.c IS vendored (600 KB, small enough to keep), so the wired wasm is rebuildable from this directory alone with `tree-sitter build --wasm` and the pin is not only a hash.",
+        "grammar.js + package.json + tree-sitter.json + LICENSE + README.md + CHANGELOG.md + PIN.md + src/ (grammar.json, node-types.json, scanner.c, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-hcl@64ad6278 kept at /home/ishaq2321/bb_tests/hcl/ts-grammars-hcl. Unlike haskell/elixir/fsharp, src/parser.c IS vendored (600 KB, small enough to keep), so the wired wasm is rebuildable from this directory alone with `tree-sitter build --wasm` and the pin is not only a hash.",
     },
     decision:
       "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 121 ids / 64 named / 2 fields (key, val); the vendored src/node-types.json at 64ad6278 declares exactly 64 named types and exactly those 2 fields. The set difference is ZERO in both directions, which is the source-to-wasm proof the gate below re-measures. So the wired bytes ARE a build of this source and the Groovy situation — a vendored wasm that had drifted from upstream and needed manual repair — does NOT apply to HCL. 1.2.0 is also the only release of the only published HCL grammar package, the repository is not archived, and its last commit (2026-01-17) is the one that taught the grammar the `.tofu` extension this engine routes to hcl (language-detection.ts:47). There is nothing better to move to, so the pin's value is provenance and drift detection, not an upgrade.",
@@ -657,12 +657,12 @@ export const LANES: Record<string, LaneDecision> = {
         option: "hand-repair the wasm the way groovy's was repaired",
         measured:
           "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. HCL's does not — 0 missing and 0 extra node types against upstream, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
-        artifact: "fixtures/hcl/out/grammar-conformance.json",
+        artifact: "bb_tests/hcl/out/grammar-conformance.json",
       },
     ],
     evidence: [
       "validation/m60/grammar-survey.json",
-      "fixtures/hcl/out/grammar-conformance.json",
+      "bb_tests/hcl/out/grammar-conformance.json",
       "grammars/tree-sitter-hcl/PIN.md",
       "reviews/hcl/master-review.md",
     ],
@@ -731,19 +731,19 @@ export const LANES: Record<string, LaneDecision> = {
         option: "keep the pristine build and the two gaps open",
         measured:
           "REJECTED on measurement, having been the lane's position for a day. 11 ERROR nodes over 99 files, 9 invisible variable declarations, and error-recovery artefacts published as facts (a `?` as a name; `BOUNDARY_INSTALL_BINARY=1` as a name). The argument for it — that patching costs the identity proof — is answered by the patches adding no node type and no field, so the proof costs nothing.",
-        artifact: "fixtures/make/out/grammar-ab.json",
+        artifact: "bb_tests/make/out/grammar-ab.json",
       },
       {
         option: "hand-repair the wasm the way groovy's was repaired",
         measured:
           "unnecessary and wrong here: that repair exists because a vendored wasm had drifted from its source. This lane regenerates from source with a recorded toolchain and keeps the pristine build for A/B, so the drift cannot recur unobserved.",
-        artifact: "fixtures/make/out/grammar-ab.json",
+        artifact: "bb_tests/make/out/grammar-ab.json",
       },
     ],
     evidence: [
-      "fixtures/make/out/grammar-ab.json",
-      "fixtures/make/out/grammar-ab-product.json",
-      "fixtures/make/out/grammar-conformance.json",
+      "bb_tests/make/out/grammar-ab.json",
+      "bb_tests/make/out/grammar-ab-product.json",
+      "bb_tests/make/out/grammar-conformance.json",
       "grammars/tree-sitter-make/PIN.md",
       "reviews/make/master-review.md",
     ],
@@ -860,19 +860,19 @@ export const LANES: Record<string, LaneDecision> = {
         option: "keep the wired 1.2.1 build (sha ac0248ed)",
         measured:
           "identical trees on 275/275 mojo files vs a fresh 1.2.1 build; parse damage 4/275 files, 5 error nodes; the analyzer's fieldNodes() read recovers every payload the multi-child field hides, and 5,847 of 5,875 corpus files emit identically under 1.2.1 and 2.0.0",
-        artifact: "fixtures/perl/out/grammar-ab.json",
+        artifact: "bb_tests/perl/out/grammar-ab.json",
       },
       {
         option: "upstream 2.0.0 (npm source, freshly built)",
         measured:
           "unreachable payload sites 39,897 -> 1,419 and affected files 3,049 -> 564 of 5,875; 36 of the 41 affected field pairs eliminated; parse damage unchanged at 4/275; but 123 of 275 mojo trees differ, and a parenthesised `use Module (...)` argument list carries no field at all in 2.0.0, so a field-driven import read sees nothing until the analyzer descends through the wrapper",
-        artifact: "fixtures/perl/out/grammar-ab.json",
+        artifact: "bb_tests/perl/out/grammar-ab.json",
       },
     ],
     evidence: [
-      "fixtures/perl/out/grammar-ab.json",
-      "fixtures/perl/out/grammar-pin-survey.json",
-      "fixtures/perl/out/forward-compat-detail.json",
+      "bb_tests/perl/out/grammar-ab.json",
+      "bb_tests/perl/out/grammar-pin-survey.json",
+      "bb_tests/perl/out/forward-compat-detail.json",
       "reviews/perl/master-review.md",
     ],
     copies: [],
@@ -934,7 +934,7 @@ export const LANES: Record<string, LaneDecision> = {
         "`any { … }` — the proto2 MessageSet form inside a group. RULED, with the consequence measured rather than asserted. The specification deprecates MessageSet outright; it appears in 1 file of 108, and that file is `unittest_custom_options.proto`, the reference implementation's deliberate parser-breaking torture test. Consequence: 13 ERROR nodes in that one file. Every OTHER construct in that same file parses correctly in isolation — verified by extracting each and parsing it alone — so the errors reported on lines 338-341 are tree-sitter's RECOVERY misattributing damage from the `any { }` further down, not separate defects. A file using MessageSet loses that construct's fields, not the file.",
       ],
       patchEvidence:
-        "Measured on `protocolbuffers/protobuf` @ the pinned revision — the reference implementation's OWN 108 .proto files, 17,213 lines, which is the strongest correctness test available because the language's own descriptor.proto is the file every protobuf tool reads. Error progression on that corpus: upstream as published 62 files / 527 nodes; +FIX 1-2, 28 / 421; +FIX 3-5, 12 / 79; +FIX 6-8, 1 / 13. A 97.5% reduction in error nodes, and the 70-error failure on descriptor.proto is gone entirely. Each patch has its own case in fixtures/protobuf/out/grammar-gaps.json, and each was confirmed NECESSARY by building upstream and watching that construct fail there too. Artifacts: fixtures/protobuf/out/grammar-gaps.json, fixtures/protobuf/out/grammar-ab.json, fixtures/protobuf/out/extraction-ab.json.",
+        "Measured on `protocolbuffers/protobuf` @ the pinned revision — the reference implementation's OWN 108 .proto files, 17,213 lines, which is the strongest correctness test available because the language's own descriptor.proto is the file every protobuf tool reads. Error progression on that corpus: upstream as published 62 files / 527 nodes; +FIX 1-2, 28 / 421; +FIX 3-5, 12 / 79; +FIX 6-8, 1 / 13. A 97.5% reduction in error nodes, and the 70-error failure on descriptor.proto is gone entirely. Each patch has its own case in bb_tests/protobuf/out/grammar-gaps.json, and each was confirmed NECESSARY by building upstream and watching that construct fail there too. Artifacts: bb_tests/protobuf/out/grammar-gaps.json, bb_tests/protobuf/out/grammar-ab.json, bb_tests/protobuf/out/extraction-ab.json.",
       upstreamClaimVsMeasurement:
         "Upstream's README says \"The grammar should be complete. I've tested the grammar against some really large and nasty proto files and it passes.\" Measured: 62 of 108 files of protobuf's own corpus carried 527 ERROR nodes before patching. The claim is recorded because it was measured false, and because a 0-star, 0-fork repository created and last pushed on the same day is not a foundation to take on trust.",
     },
@@ -957,14 +957,14 @@ export const LANES: Record<string, LaneDecision> = {
         option: "keep upstream unmodified and document the eight gaps as boundaries",
         measured:
           "REJECTED on capability. 62 of 108 files of protobuf's own corpus carry error nodes before patching, and 70 of those are in descriptor.proto — the file every protobuf tool reads. A documented boundary is the right answer for a gap nobody can fix; a construct that breaks the language's own descriptor is not that. Two of the eight (editions, and `import option`) are not gaps in a rare corner at all: 52 of the 108 files declare an edition, so half the reference corpus is unreadable without FIX 1.",
-        artifact: "fixtures/protobuf/out/grammar-ab.json",
+        artifact: "bb_tests/protobuf/out/grammar-ab.json",
       },
     ],
     evidence: [
-      "fixtures/protobuf/out/grammar-census.json",
-      "fixtures/protobuf/out/grammar-gaps.json",
-      "fixtures/protobuf/out/grammar-ab.json",
-      "fixtures/protobuf/out/extraction-ab.json",
+      "bb_tests/protobuf/out/grammar-census.json",
+      "bb_tests/protobuf/out/grammar-gaps.json",
+      "bb_tests/protobuf/out/grammar-ab.json",
+      "bb_tests/protobuf/out/extraction-ab.json",
     ],
     copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-protobuf.wasm") }],
     notVendored: [
@@ -987,9 +987,9 @@ export const LANES: Record<string, LaneDecision> = {
         "ADDITIVE (upstream, not ours): `optional($.description)` on `schema_definition` and `optional($.directives)` on `variable_definition`",
       ],
       patchEvidence:
-        "Each FIX is one row of a 113-construct battery that names the specification section and states whether the construct is valid, so a failure can be classified as a GRAMMAR GAP (valid, rejected) or a CORRECT REJECTION (invalid, correctly rejected) rather than lumped together. Before/after on that battery: the previous wasm rejected 10 valid constructs, upstream `main` rejects 6, this build rejects 0, and all three reject the same 8 invalid constructs. The four FIXes were each confirmed to be necessary by building upstream and watching that construct fail there too. Artifacts: fixtures/graphql/out/grammar-gaps.json, fixtures/graphql/out/grammar-ab.json, fixtures/graphql/out/extraction-ab.json.",
+        "Each FIX is one row of a 113-construct battery that names the specification section and states whether the construct is valid, so a failure can be classified as a GRAMMAR GAP (valid, rejected) or a CORRECT REJECTION (invalid, correctly rejected) rather than lumped together. Before/after on that battery: the previous wasm rejected 10 valid constructs, upstream `main` rejects 6, this build rejects 0, and all three reject the same 8 invalid constructs. The four FIXes were each confirmed to be necessary by building upstream and watching that construct fail there too. Artifacts: bb_tests/graphql/out/grammar-gaps.json, bb_tests/graphql/out/grammar-ab.json, bb_tests/graphql/out/extraction-ab.json.",
       localCheckout:
-        "The upstream checkout the tree was vendored from is at $HOME/fixtures/graphql/grammar-rebuild (grammar.js + grammar.upstream.js as cloned), and the pristine copy that `port.py` reads is committed at grammars/tree-sitter-graphql/grammar.upstream.js.",
+        "The upstream checkout the tree was vendored from is at /home/ishaq2321/bb_tests/graphql/grammar-rebuild (grammar.js + grammar.upstream.js as cloned), and the pristine copy that `port.py` reads is committed at grammars/tree-sitter-graphql/grammar.upstream.js.",
     },
     source: {
       state: "vendored",
@@ -998,19 +998,19 @@ export const LANES: Record<string, LaneDecision> = {
         "grammar.upstream.js (bkegley/tree-sitter-graphql@ee5ce96, VERBATIM — the fixed input, so the port is idempotent) + port.py (the patch AS CODE: the rename table and the four anchored FIX hunks, each refusing to write a half-ported grammar) + grammar.js (the GENERATED patched grammar, which is what `tree-sitter generate` reads) + tree-sitter.json (ABI 15) + package.json (deliberately no `\"type\"` field: the repo root is `\"type\": \"module\"` and grammar.js is CommonJS `module.exports`, so without a local package.json the tree-sitter CLI cannot load it) + LICENSE (MIT) + README.md (the divergence record, the regeneration sequence, and what the patch bought) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c IS vendored (284 KB), the same call hcl made at 600 KB and the opposite of nim at 41 MB: `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn the gate red after any `tree-sitter generate`. Tracking it makes the wired wasm rebuildable from TRACKED files alone and keeps the recorded digests still across a regeneration that changed nothing else. The exact three-command sequence is in README.md. A `node_modules` symlink points at the tree-sitter CLI during a build and is not tracked.",
     },
     decision:
-      "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs — so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in fixtures/graphql/REVIEW.md §E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling — the one thing an upgrade must not do to this repository.",
+      "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs — so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in bb_tests/graphql/REVIEW.md §E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling — the one thing an upgrade must not do to this repository.",
     alternatives: [
       {
         option: "pin the previous wasm as-is and document the two gaps as boundaries (what docs/analyzers/graphql.md did)",
         measured:
           "REJECTED on evidence: 12 of 47 corpus files carry a grammar error under it, and the losses are not silent — on neo4j-graphql/.../apollo-federation-subgraph-compatibility/schema.graphql a described `extend type User` became ERROR and the analyzer published `anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires` (four invented references) while losing five real field symbols. A documented boundary is the right answer for a gap nobody can fix; a 12/47 error rate with phantom edges is not that.",
-        artifact: "fixtures/graphql/out/extraction-ab.json",
+        artifact: "bb_tests/graphql/out/extraction-ab.json",
       },
       {
         option: "upgrade to bkegley/tree-sitter-graphql main (ee5ce96) unmodified",
         measured:
           "REJECTED on capability, and this is the load-bearing measurement of the lane: upstream names its rules snake_case (`object_type_definition`). The analyzer, the m12 shape-safety census, the m14 and m60 lanes and every stored symbol row assume `ObjectTypeDefinition`. Building upstream unmodified and running the node-type set difference gives 72 node types gained and 72 lost with identical names apart from casing — i.e. every construct routes through the analyzer's default arm and the file yields nothing. It also leaves 6 of its own gaps (ext-schema-multi, ext-schema-directives-only, ext-scalar, desc-block-escaped-triple, field-two-directives, apollo-link).",
-        artifact: "fixtures/graphql/out/grammar-ab.json",
+        artifact: "bb_tests/graphql/out/grammar-ab.json",
       },
       {
         option: "hand-edit the vendored grammar.js in place, the way groovy's was hand-repaired",
@@ -1021,21 +1021,21 @@ export const LANES: Record<string, LaneDecision> = {
       {
         option: "patch the previous wasm's SOURCE, if it is available anywhere",
         measured:
-          "It is not, and that is the finding rather than a workaround: the previous wasm predates `optional($.description)` on `schema_definition` and `optional($.directives)` on `variable_definition`, so it was built from a commit bkegley no longer has a tag for and which the GitHub API does not surface. The previous wasm is kept byte-for-byte at fixtures/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm (sha256 9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27) so the A/B against it is reproducible forever.",
-        artifact: "fixtures/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
+          "It is not, and that is the finding rather than a workaround: the previous wasm predates `optional($.description)` on `schema_definition` and `optional($.directives)` on `variable_definition`, so it was built from a commit bkegley no longer has a tag for and which the GitHub API does not surface. The previous wasm is kept byte-for-byte at bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm (sha256 9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27) so the A/B against it is reproducible forever.",
+        artifact: "bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
       },
     ],
     evidence: [
       "grammars/tree-sitter-graphql/README.md",
       "grammars/tree-sitter-graphql/port.py",
-      "fixtures/graphql/REVIEW.md",
-      "fixtures/graphql/probe/grammar-gaps.mts",
-      "fixtures/graphql/probe/grammar-ab.mts",
-      "fixtures/graphql/probe/extraction-ab.mts",
-      "fixtures/graphql/run-all.sh",
-      "fixtures/graphql/out/grammar-gaps.json",
-      "fixtures/graphql/out/grammar-ab.json",
-      "fixtures/graphql/out/extraction-ab.json",
+      "bb_tests/graphql/REVIEW.md",
+      "bb_tests/graphql/probe/grammar-gaps.mts",
+      "bb_tests/graphql/probe/grammar-ab.mts",
+      "bb_tests/graphql/probe/extraction-ab.mts",
+      "bb_tests/graphql/run-all.sh",
+      "bb_tests/graphql/out/grammar-gaps.json",
+      "bb_tests/graphql/out/grammar-ab.json",
+      "bb_tests/graphql/out/extraction-ab.json",
       "docs/analyzers/graphql.md",
       "validation/m12/results/graphql-corpus-errors.json",
     ],
@@ -1067,7 +1067,7 @@ export const LANES: Record<string, LaneDecision> = {
       state: "vendored",
       dir: "grammars/tree-sitter-nim",
       note:
-        "grammar.js (1,600 lines) + scanner.c (the EXTERNAL SCANNER that owns Nim's layout state - _layout_start / _layout_end / _inhibit_layout_end; without it indentation-sensitive Nim does not parse) + tree-sitter.json + package.json + LICENSE (MPL-2.0) + README.md + queries/highlights.scm + test/corpus/*.txt (the grammar's own 72-case conformance suite, upstream-authored expectations, not generated) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: sourceVsWasmFor needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c (41 MB) is deliberately NOT vendored - `tree-sitter generate` rebuilds it from grammar.js + scanner.c - so `tree-sitter build --wasm` alone is not enough from this directory; the exact two-command sequence is in PIN.md. The upstream checkout the tree was vendored from is at $HOME/fixtures/nim/grammars/tree-sitter-nim-alaviss.",
+        "grammar.js (1,600 lines) + scanner.c (the EXTERNAL SCANNER that owns Nim's layout state - _layout_start / _layout_end / _inhibit_layout_end; without it indentation-sensitive Nim does not parse) + tree-sitter.json + package.json + LICENSE (MPL-2.0) + README.md + queries/highlights.scm + test/corpus/*.txt (the grammar's own 72-case conformance suite, upstream-authored expectations, not generated) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: sourceVsWasmFor needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c (41 MB) is deliberately NOT vendored - `tree-sitter generate` rebuilds it from grammar.js + scanner.c - so `tree-sitter build --wasm` alone is not enough from this directory; the exact two-command sequence is in PIN.md. The upstream checkout the tree was vendored from is at /home/ishaq2321/bb_tests/nim/grammars/tree-sitter-nim-alaviss.",
     },
     decision:
       "Pin the local rebuild, and the reason is a PROOF rather than a preference. (1) The vendored src/node-types.json declares exactly the named types the wired wasm materialises, and the wired wasm declares exactly the named types that source declares - zero in both directions, re-measured by this gate on every run. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build parses all 17 compiler-validated construct-matrix files with 0 ERROR and 0 MISSING, and every file in that matrix was first ACCEPTED by the real Nim 2.2.12 compiler (`nim check`), so a construct the compiler rejects could never be counted as evidence. (3) The grammar's own conformance suite passes 72/72 here. (4) The three other published tree-sitter-nim grammars were all cloned, generated and built, and each is rejected on a MEASURED ground: aMOPel cannot be loaded at all by the pinned runtime, haxscramper emits ZERO fields and 283 ERROR / 7 MISSING over the matrix because it transcribes the ABNF tokens of doc/grammar.txt as node types, and reo101 is a 9-line stub. (5) The external scanner makes a shared-parser lifecycle a live question rather than an assumption, so it was MEASURED: a fresh-parser-per-file reference against one shared parser over 47 files in two orders (file order, and a rotated order putting a different layout shape before each file) produced 0 differences in both, so the engine's cached-parser path is safe for nim and needs no lua-style isolation. Full table, the per-candidate numbers and the reproduction commands: grammars/tree-sitter-nim/PIN.md.",
@@ -1076,18 +1076,18 @@ export const LANES: Record<string, LaneDecision> = {
         option: "aMOPel/tree-sitter-nim @4900b68 (the second-most-starred nim grammar; 182 declared types)",
         measured:
           "generates and builds, but the resulting wasm CANNOT BE LOADED by the pinned runtime: web-tree-sitter 0.25.9 fails instantiation with `bad export type for 'tree_sitter_nim_external_scanner_create': undefined`. Reproduced in a dedicated process - the other two candidates showed the same message only because web-tree-sitter keys loaded grammars by the name they all share (`nim`), which is why the A/B runs one candidate per process. Wiring it would mean patching its external-scanner export, i.e. inventing the kind of patch the fsharp lane already has to carry.",
-        artifact: "fixtures/nim/grammar/ab-run.sh",
+        artifact: "bb_tests/nim/grammar/ab-run.sh",
       },
       {
         option: "haxscramper/tree-sitter-nim @c29c404",
         measured:
           "loads, but exposes 0 (ZERO) fields, and its 232 ids are named after the raw ABNF tokens of doc/grammar.txt (IND, DED, OP0..OP9, INT_LIT, STR_LIT, ...). 0/17 matrix files clean: 283 ERROR and 7 MISSING. With no fields, no extraction could address a name, a parameter list or a return type by grammar field, so the M12 AST-purity contract would be unreachable by construction rather than by effort.",
-        artifact: "fixtures/nim/grammar/ab-run.sh",
+        artifact: "bb_tests/nim/grammar/ab-run.sh",
       },
       {
         option: "reo101/tree-sitter-nim @d68239f",
         measured: "a 9-line stub whose grammar.js is a one-line `source_file` rule returning the literal hello, above a // TODO marker over the rules; 3 ids, 1 named type, a 1015-byte wasm, 38 ERROR over the matrix. Rejected on capability.",
-        artifact: "fixtures/nim/grammar/ab-run.sh",
+        artifact: "bb_tests/nim/grammar/ab-run.sh",
       },
       {
         option: "hand-patch the grammar the way groovy's was patched",
@@ -1099,8 +1099,8 @@ export const LANES: Record<string, LaneDecision> = {
     evidence: [
       "grammars/tree-sitter-nim/PIN.md",
       "docs/analyzers/nim.md",
-      "fixtures/nim/grammar/ab-run.sh",
-      "fixtures/nim/matrix/check-matrix.sh",
+      "bb_tests/nim/grammar/ab-run.sh",
+      "bb_tests/nim/matrix/check-matrix.sh",
       "validation/m12/results/nim-corpus-errors.json",
       "validation/m12/results/nim-corpus-complexity.json",
     ],
@@ -1109,11 +1109,11 @@ export const LANES: Record<string, LaneDecision> = {
       { path: "src/parser.c", why: "generated by `tree-sitter generate`; 41 MB; rebuildable from grammar.js + scanner.c" },
       { path: "src/tree_sitter/", why: "generated headers" },
       { path: "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, mise.toml, REUSE.toml, jsconfig.json", why: "native / package-manager bindings for platforms this product does not build for" },
-      //  "$HOME/fixtures/repositories" — the OTHER laptop's home directory — so
+      //  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
       //  each repo path below resolved to a filesystem that does not exist here and the leg
       //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
       //  candidates in order and names them all when none exists.
-      { path: "samples/cps, samples/nim", why: "upstream sample programs; not parser input for the product, whose corpus is $HOME/fixtures/repositories/nim" },
+      { path: "samples/cps, samples/nim", why: "upstream sample programs; not parser input for the product, whose corpus is /home/ishaq2321/bb_tests/repositories/nim" },
       { path: "test/highlight/", why: "the grammar's highlight assertions; they assert editor tokens, not parser structure" },
       { path: "tree-sitter-nim.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
     ],
@@ -1157,11 +1157,11 @@ export const LANES: Record<string, LaneDecision> = {
         "four GLR conflicts + right-associativity and dynamic rank on `as_clause`, all named at their declarations",
       ],
       patchEvidence:
-        "fixtures/grammar-repro/cases/*.vb -- one minimal repro per defect class, 27/27 green, and " +
-        "fixtures/probes/grammar-baseline.ts over four independent corpora with fixtures/validation/grammar-floor.json as the recorded floor. " +
+        "bb_tests/grammar-repro/cases/*.vb -- one minimal repro per defect class, 27/27 green, and " +
+        "bb_tests/probes/grammar-baseline.ts over four independent corpora with bb_tests/validation/grammar-floor.json as the recorded floor. " +
         "The corpus half is the load-bearing one: a change that kept every repro case GREEN and still cost the corpus " +
         "89.79 -> 32.49 % aggregate is exactly why the gate is differential rather than fixture-only. " +
-        "fixtures/grammar-repro/grammar-gate.sh runs both halves and fails on a floor drop.",
+        "bb_tests/grammar-repro/grammar-gate.sh runs both halves and fails on a floor drop.",
     },
     source: {
       state: "vendored",
@@ -1172,7 +1172,7 @@ export const LANES: Record<string, LaneDecision> = {
         "src/parser.c (29 MB) and the local build output stay ignored, the same call the perl lane made; the rebuild " +
         "path is `tree-sitter generate && tree-sitter build --wasm`, and the two tracked JSON files are the " +
         "digest-stable evidence that a regeneration changed nothing that matters. The pristine upstream grammar.js is " +
-        "kept at $HOME/fixtures/grammar-eval/tree-sitter-vbnet/grammar.js, so the patch set is diffable " +
+        "kept at /home/ishaq2321/bb_tests/grammar-eval/tree-sitter-vbnet/grammar.js, so the patch set is diffable " +
         "against its base rather than only readable in place.",
     },
     decision:
@@ -1186,7 +1186,7 @@ export const LANES: Record<string, LaneDecision> = {
       "two that exist and the only one measured to parse real VB.NET at all (the alternative measured 29.50 % clean on " +
       "the same draw), and it is NOT finished -- 90.89 % aggregate clean over 1185 files with 0 crash files, so roughly " +
       "one file in eleven still carries an ERROR. The gate's floor is the number that has to move, and the " +
-      "long-tail defect census (fixtures/probes/defect-census.ts) is the work list that has to shrink it.",
+      "long-tail defect census (bb_tests/probes/defect-census.ts) is the work list that has to shrink it.",
     alternatives: [
       {
         option: "leave `.vb` routed to `__generic__` and ship no grammar",
@@ -1205,7 +1205,7 @@ export const LANES: Record<string, LaneDecision> = {
           "corpora: 29.50 % clean on the 600-file P3D draw against vbnet's 58.50 % at the time of the bake-off, and " +
           "107 named node types against vbnet's 170. Its grammar also had no `supertypes` and no `word` token, both " +
           "of which the analyzer will want.",
-        artifact: "fixtures/probes/grammar-bakeoff.ts (both wasms, same draw, same loader)",
+        artifact: "bb_tests/probes/grammar-bakeoff.ts (both wasms, same draw, same loader)",
       },
       {
         option: "patch the WASM instead of the source, the way groovy's was patched",
@@ -1221,25 +1221,25 @@ export const LANES: Record<string, LaneDecision> = {
         measured:
           "rejected as a framing, accepted as a REQUIREMENT. 40 of P3D's 1880 .vb files are UTF-16 with a BOM " +
           "(Windows Forms Designer output), and read as UTF-8 they are one whole-file ERROR for ANY grammar. The " +
-          "corpus reader strips the BOM (fixtures/probes/vb-source.ts) so the grammar is measured on text, and the " +
+          "corpus reader strips the BOM (bb_tests/probes/vb-source.ts) so the grammar is measured on text, and the " +
           "product's own file reader is recorded as needing the same -- `readFileSync(path, 'utf8')` is not a correct " +
           "VB reader. That is a product gap, not a grammar repair, and conflating the two would have hidden it.",
-        artifact: "fixtures/validation/history/reading-02-confirm.json vs reading-03-lambdas.json",
+        artifact: "bb_tests/validation/history/reading-02-confirm.json vs reading-03-lambdas.json",
       },
     ],
     evidence: [
       "grammars/tree-sitter-vbnet/PIN.md",
       "reviews/vb/master-review.md",
-      "fixtures/validation/grammar-floor.json",
-      "fixtures/validation/history/",
-      "fixtures/grammar-repro/cases/",
-      "fixtures/probes/defect-census.ts",
+      "bb_tests/validation/grammar-floor.json",
+      "bb_tests/validation/history/",
+      "bb_tests/grammar-repro/cases/",
+      "bb_tests/probes/defect-census.ts",
     ],
     copies: [
       { label: "mirror", path: path.join(MIRROR, "tree-sitter-vbnet.wasm") },
       // The build output, kept beside the vendored source. It is byte-identical
       // to the wired bytes, so it doubles as proof that the copy step in
-      // fixtures/grammar-repro/repair-loop.sh is a copy and not a second build.
+      // bb_tests/grammar-repro/repair-loop.sh is a copy and not a second build.
       { label: "local build output (grammars/tree-sitter-vbnet)", path: path.join(ROOT, "grammars/tree-sitter-vbnet/tree-sitter-vbnet.wasm") },
     ],
     notVendored: [
@@ -1255,13 +1255,13 @@ export const LANES: Record<string, LaneDecision> = {
       kind: "local-rebuild-from-patched-vendored-source",
       base: { repo: "tree-sitter-grammars/tree-sitter-xml", version: "0.7.0", rev: "5000ae8f22d11fbe93939b05c1e37cf21117162d" },
       patches: [
-        "REPAIR 1 (scanner, `common/scanner.h` `scan_pi_content`): the trailing `advance_if_eq(lexer, '\\n')` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(lexer); else return false`, so its `else` ABORTS the caller — and the caller had already committed, past `mark_end`, on a lookahead whose value is irrelevant. A processing instruction with content therefore produced no `_pi_content` token, `<?target content?>` could not complete, and the parser wrapped the whole `<?...?>` in an ERROR node. It was not merely a lost declaration: with no XMLDecl present the enclosing `prolog` node disappeared too, taking any DOCTYPE in the same prolog with it. A 19-shape battery isolates it exactly: the construct parses iff the byte after `?>` is `\\n` (fixtures/xml/out/pi-rootcause.json). `check_word` and `scan_comment` keep `advance_if_eq`, where a mismatch correctly means \"not the token I was asked for\".",
+        "REPAIR 1 (scanner, `common/scanner.h` `scan_pi_content`): the trailing `advance_if_eq(lexer, '\\n')` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(lexer); else return false`, so its `else` ABORTS the caller — and the caller had already committed, past `mark_end`, on a lookahead whose value is irrelevant. A processing instruction with content therefore produced no `_pi_content` token, `<?target content?>` could not complete, and the parser wrapped the whole `<?...?>` in an ERROR node. It was not merely a lost declaration: with no XMLDecl present the enclosing `prolog` node disappeared too, taking any DOCTYPE in the same prolog with it. A 19-shape battery isolates it exactly: the construct parses iff the byte after `?>` is `\\n` (bb_tests/xml/out/pi-rootcause.json). `check_word` and `scan_comment` keep `advance_if_eq`, where a mismatch correctly means \"not the token I was asked for\".",
         "REPAIR 2 (grammar, `xml/grammar.js` `_intSubset`): the internal subset is now `repeat(choice($._markupdecl, $.conditionalSect, $._DeclSep))` over a named `_intSubsetItem` rule, and `conditionalSect` is declared. Upstream could not reach a conditional section from an internal subset at ANY version measured: 0.5.0-0.6.x declare `conditionalSect` in the `dtd` grammar and inline it, but `_intSubset` referenced `$._markupdecl`, which does not include it; 0.7.0, which the wired wasm matches exactly, does not declare it in the `xml` grammar at all. The failure was destructive, not silent: `<![INCLUDE[...]]>` wrapped the `doctypedecl` in an ERROR and the parser then took a LATER `Name` as the DTD's name, so the analyzer published a Type symbol literally named `INCLUDE`. The named `_intSubsetItem` is because tree-sitter rejects a rule that can match the empty string and XML 1.0 permits an empty internal subset; writing the repeat at each use site keeps the generated `node-types.json` free of a wrapper node.",
       ],
       patchEvidence:
-        "Two A/Bs, both over the whole pinned corpus, both re-runnable. (1) CONSTRUCT A/B: 29 shapes across the wired wasm, a build of upstream v0.5.0, a build of upstream HEAD v0.7.0, and this build — the wired wasm and upstream HEAD are byte-IDENTICAL in behaviour on all of them, which is what pins the pre-repair bytes as an unmodified upstream build (fixtures/xml/out/grammar-ab.json). (2) CORPUS A/B: 8,888 files / 33.6 MB / 6.69 M nodes across 6 repos, counting ERROR and MISSING per file: 31 files repaired, 2 files moved the wrong way, 8,855 unchanged, and corpus MISSING nodes 32 -> 10 (fixtures/xml/out/grammar-corpus-ab.json). BOTH regressions are adjudicated by measurement, not argument (fixtures/xml/out/regression-adjudication.json): `libxml2/test/valid/dtds/cond_sect2.dtd` is a STANDALONE DTD, whose root node type is `ERROR` under the wired grammar, under this build, and under every build measured — the `xml` grammar requires a document element and cannot represent a standalone DTD at all, so the file was never in the wired surface; and upstream's separate `dtd` grammar parses it with 0 ERROR nodes, which is filed as its own finding. `libxml2/test/errors/759573-2.xml` is libxml2's own FUZZER-REGRESSION corpus, a file the project keeps precisely because it must NOT parse; both sides reject it (root ERROR) and the repair traded one MISSING node for four more ERROR nodes, and a MISSING node is tree-sitter's recovery invention, the worse of the two signals.",
+        "Two A/Bs, both over the whole pinned corpus, both re-runnable. (1) CONSTRUCT A/B: 29 shapes across the wired wasm, a build of upstream v0.5.0, a build of upstream HEAD v0.7.0, and this build — the wired wasm and upstream HEAD are byte-IDENTICAL in behaviour on all of them, which is what pins the pre-repair bytes as an unmodified upstream build (bb_tests/xml/out/grammar-ab.json). (2) CORPUS A/B: 8,888 files / 33.6 MB / 6.69 M nodes across 6 repos, counting ERROR and MISSING per file: 31 files repaired, 2 files moved the wrong way, 8,855 unchanged, and corpus MISSING nodes 32 -> 10 (bb_tests/xml/out/grammar-corpus-ab.json). BOTH regressions are adjudicated by measurement, not argument (bb_tests/xml/out/regression-adjudication.json): `libxml2/test/valid/dtds/cond_sect2.dtd` is a STANDALONE DTD, whose root node type is `ERROR` under the wired grammar, under this build, and under every build measured — the `xml` grammar requires a document element and cannot represent a standalone DTD at all, so the file was never in the wired surface; and upstream's separate `dtd` grammar parses it with 0 ERROR nodes, which is filed as its own finding. `libxml2/test/errors/759573-2.xml` is libxml2's own FUZZER-REGRESSION corpus, a file the project keeps precisely because it must NOT parse; both sides reject it (root ERROR) and the repair traded one MISSING node for four more ERROR nodes, and a MISSING node is tree-sitter's recovery invention, the worse of the two signals.",
       localCheckout:
-        "The upstream checkouts the tree was vendored from are at $HOME/fixtures/xml/grammar/upstream (0.7.0 @ 5000ae8f, the base) and $HOME/fixtures/xml/grammar/probe-v0.5.0 (the older candidate, kept so the v0.5.0 build in the A/B stays reproducible). The pre-repair wired bytes are kept at $HOME/fixtures/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm (sha256 50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1) so the A/B against them is reproducible forever.",
+        "The upstream checkouts the tree was vendored from are at /home/ishaq2321/bb_tests/xml/grammar/upstream (0.7.0 @ 5000ae8f, the base) and /home/ishaq2321/bb_tests/xml/grammar/probe-v0.5.0 (the older candidate, kept so the v0.5.0 build in the A/B stays reproducible). The pre-repair wired bytes are kept at /home/ishaq2321/bb_tests/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm (sha256 50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1) so the A/B against them is reproducible forever.",
     },
     source: {
       state: "vendored",
@@ -1277,13 +1277,13 @@ export const LANES: Record<string, LaneDecision> = {
         option: "pin the pre-repair bytes as-is and document the two defects as boundaries (what docs/analyzers/xml.md does today)",
         measured:
           "REJECTED on capability, and the cost is the whole declaration vocabulary of a DTD. A content-bearing processing instruction is one of the most common constructs in XML, and it does not merely lose a symbol: with no XMLDecl present the enclosing `prolog` node is destroyed, so `<!DOCTYPE …>` in the same prolog is lost with it, and in a conditional section the parser picks a later `Name` as the DTD name and the analyzer publishes a Type symbol called `INCLUDE`. A documented boundary is right for a gap nobody can fix; this one is fixable in two lines and the fix is measured.",
-        artifact: "fixtures/xml/out/pi-rootcause.json",
+        artifact: "bb_tests/xml/out/pi-rootcause.json",
       },
       {
         option: "upgrade to upstream HEAD 0.7.0 unmodified",
         measured:
           "REJECTED, and this is the negative result worth keeping: the pre-repair wired bytes ALREADY ARE 0.7.0. Surface-identical (140 types, 2 fields, zero difference either way) and behaviourally identical on all 29 battery constructs, so the upgrade buys nothing — and it leaves both defects in place, because they are upstream's. Separately, 0.7.0's split of DTD into its own `dtd` grammar means the `xml` grammar alone cannot represent a standalone `.dtd` file at all (root node type ERROR, measured), which is filed as a separate finding rather than solved by a swap.",
-        artifact: "fixtures/xml/out/grammar-ab.json",
+        artifact: "bb_tests/xml/out/grammar-ab.json",
       },
       {
         option: "hand-edit the vendored grammar in place, the way groovy's was hand-repaired",
@@ -1295,36 +1295,36 @@ export const LANES: Record<string, LaneDecision> = {
         option: "wire upstream's separate `dtd` grammar as a second language for `.dtd`",
         measured:
           "NOT TAKEN, and recorded as owed rather than rejected. It is measurably the right grammar — it parses libxml2's `cond_sect1.dtd` and `cond_sect2.dtd`, which the `xml` grammar cannot represent at all (root ERROR, 11 and 8 ERROR nodes), with 0 ERROR nodes — but it is a new wired language, a new router entry, a new analyzer and a new lane, not a repair. The measurement is kept so the decision is revisit-able with numbers instead of a recollection.",
-        artifact: "fixtures/xml/out/regression-adjudication.json",
+        artifact: "bb_tests/xml/out/regression-adjudication.json",
       },
     ],
     evidence: [
-      "fixtures/xml/out/grammar-surface.json",
-      "fixtures/xml/out/grammar-conformance.json",
-      "fixtures/xml/out/grammar-ab.json",
-      "fixtures/xml/out/grammar-corpus-ab.json",
-      "fixtures/xml/out/regression-adjudication.json",
-      "fixtures/xml/out/pi-rootcause.json",
-      "fixtures/xml/out/tree-shapes.txt",
+      "bb_tests/xml/out/grammar-surface.json",
+      "bb_tests/xml/out/grammar-conformance.json",
+      "bb_tests/xml/out/grammar-ab.json",
+      "bb_tests/xml/out/grammar-corpus-ab.json",
+      "bb_tests/xml/out/regression-adjudication.json",
+      "bb_tests/xml/out/pi-rootcause.json",
+      "bb_tests/xml/out/tree-shapes.txt",
       "validation/m12/results/xml-shape-safety.json",
       "validation/m12/results/xml-corpus-errors.json",
       "reviews/xml/master-review.md",
     ],
     copies: [
-      { label: "pre-repair wired bytes", path: "$HOME/fixtures/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm" },
-      { label: "upstream 0.7.0 build (the base)", path: "$HOME/fixtures/xml/grammar/v070-xml.wasm" },
-      { label: "upstream 0.5.0 build (the older candidate)", path: "$HOME/fixtures/xml/grammar/v050-xml.wasm" },
-      { label: "upstream 0.7.0 dtd grammar build (NOT wired)", path: "$HOME/fixtures/xml/grammar/v070-dtd.wasm" },
+      { label: "pre-repair wired bytes", path: "/home/ishaq2321/bb_tests/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm" },
+      { label: "upstream 0.7.0 build (the base)", path: "/home/ishaq2321/bb_tests/xml/grammar/v070-xml.wasm" },
+      { label: "upstream 0.5.0 build (the older candidate)", path: "/home/ishaq2321/bb_tests/xml/grammar/v050-xml.wasm" },
+      { label: "upstream 0.7.0 dtd grammar build (NOT wired)", path: "/home/ishaq2321/bb_tests/xml/grammar/v070-dtd.wasm" },
     ],
   },
   sql: {
     wired: "wasm/tree-sitter-sql.wasm",
-    provenance: {"kind": "local-rebuild-from-patched-upstream-source", "base": {"package": "@derekstride/tree-sitter-sql", "version": "0.3.11"}, "patches": ["P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.", "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.", "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).", "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it."], "patchEvidence": "Shape A/B over 6 dialects plus the whole pinned corpus, re-runnable via fixtures/sql/probe/grammar-ab.mts: 9 shapes fixed, 0 regressions. Corpus tree level, pristine -> wired: error files 320 -> 256, error nodes 6533 -> 5544, 0 shape regressions (named UNIQUE, named FOREIGN KEY, DELETE ... USING, DELETE ... AS alias, GRANT on a table, GRANT ALL PRIVILEGES on a schema, REVOKE from a role, GRANT a column list, procedure with a dollar-quoted body). The field-set digest is IDENTICAL to pristine (c63f5b80...), which is the precise statement that the patch is purely additive at the node-type level: +57 node types, +57 unique names, and ZERO new field names.", "localCheckout": "Pristine upstream source at $HOME/fixtures/sql/grammar/pristine-src; the patched tree at $HOME/fixtures/sql/grammar/src; the pristine wasm kept at $HOME/fixtures/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."},
-    source: {"state": "not-obtainable-offline", "note": "NOT VENDORED, and not merely un-vendored: the exact source revision behind the wired bytes could not be recovered. `tree-sitter generate` on the patched tree at $HOME/fixtures/sql/grammar/src emits a 43,568,124-byte parser.c against the wired build's 43,456,567, so the wired bytes are pinned by sha256 + surface + provenance (the treatment perl gets) and this lane has NO offline source<->wasm proof. Pristine upstream source is kept at fixtures/sql/grammar/pristine-src and the patched tree at fixtures/sql/grammar/src; both are outside the repo, and the tree there is AHEAD of the wired bytes. Building and installing from it without a full A/B would change the lane's grammar unmeasured."},
+    provenance: {"kind": "local-rebuild-from-patched-upstream-source", "base": {"package": "@derekstride/tree-sitter-sql", "version": "0.3.11"}, "patches": ["P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.", "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.", "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).", "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it."], "patchEvidence": "Shape A/B over 6 dialects plus the whole pinned corpus, re-runnable via bb_tests/sql/probe/grammar-ab.mts: 9 shapes fixed, 0 regressions. Corpus tree level, pristine -> wired: error files 320 -> 256, error nodes 6533 -> 5544, 0 shape regressions (named UNIQUE, named FOREIGN KEY, DELETE ... USING, DELETE ... AS alias, GRANT on a table, GRANT ALL PRIVILEGES on a schema, REVOKE from a role, GRANT a column list, procedure with a dollar-quoted body). The field-set digest is IDENTICAL to pristine (c63f5b80...), which is the precise statement that the patch is purely additive at the node-type level: +57 node types, +57 unique names, and ZERO new field names.", "localCheckout": "Pristine upstream source at /home/ishaq2321/bb_tests/sql/grammar/pristine-src; the patched tree at /home/ishaq2321/bb_tests/sql/grammar/src; the pristine wasm kept at /home/ishaq2321/bb_tests/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."},
+    source: {"state": "not-obtainable-offline", "note": "NOT VENDORED, and not merely un-vendored: the exact source revision behind the wired bytes could not be recovered. `tree-sitter generate` on the patched tree at /home/ishaq2321/bb_tests/sql/grammar/src emits a 43,568,124-byte parser.c against the wired build's 43,456,567, so the wired bytes are pinned by sha256 + surface + provenance (the treatment perl gets) and this lane has NO offline source<->wasm proof. Pristine upstream source is kept at bb_tests/sql/grammar/pristine-src and the patched tree at bb_tests/sql/grammar/src; both are outside the repo, and the tree there is AHEAD of the wired bytes. Building and installing from it without a full A/B would change the lane's grammar unmeasured."},
     decision: "PIN THE PATCHED LOCAL REBUILD. This lane refused every published grammar alternative on G1 damage / G2 identity / G3 output and concluded 'sql needs a patch, not a swap' (reviews/m60-sql-grammar-l1xnan-047-refused.md, sections 7.3 and 8.5), so the grammar was patched from its own upstream source with the pristine build retained for A/B. A THIRD candidate (V3) was built, measured at three levels, and REJECTED: it cuts tree-level error files 320 -> 196 while 49/256 damaged files lose >=25% of their structure (worst -95.8%) and 0 files gain any, and at the PRODUCT level it is byte-identical to the wired bytes over all 441 corpus files (9,448 symbols, 12,447 relationships, 7,506 analyzer errors, 258 error files, identical for both). Full record: validation/m60/sql/v3-rejection.json. The wired bytes therefore stay V2, and the headline error-count win that would have justified shipping is exactly the aggregate measure-grammar-recovery.ts exists to catch.",
     alternatives: [{"option": "ship V3 (opaque `DO $$ ... $$` + the two hidden dollar-body branches removed)", "measured": "REJECTED. Zero product gain, real tree cost. See decision and validation/m60/sql/v3-rejection.json.", "artifact": "validation/m60/sql/v3-rejection.json", "rejected": true, "why": "It reaches 0 errors on `database/migrations/20260309_rls_coms_subtypes.sql` by swallowing 7 DO bodies opaquely, hiding 27 of 37 statements -- the CREATE POLICY declarations that migration exists to create -- while the product output stays identical to V2."}, {"option": "wire an upstream/published tree-sitter-sql build instead of patching 0.3.11", "measured": "REFUSED on measurement, per reviews/m60-sql-grammar-l1xnan-047-refused.md: 2 files newly damaged, 5 clean files changed shape (all 5 GAIN a `having` node the pinned build dropped), and -177 symbols / -441 pairs against the patch's +1813 / +2156, of which 138 of the 177 lost symbols are `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.", "artifact": "reviews/m60-sql-grammar-l1xnan-047-refused.md", "rejected": true, "why": "A swap that loses structure and manufactures phantom columns is not an upgrade."}],
-    evidence: ["fixtures/sql/REVIEW.md", "validation/m60/sql/v3-rejection.json", "fixtures/sql/probe/grammar-ab.mts", "script/m60/measure-grammar-recovery.ts", "script/m14/spec/sql-completeness.json"],
-    copies: [{"label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)", "path": "$HOME/fixtures/sql/grammar/pristine-sql.wasm"}, {"label": "V3 candidate (opaque DO, REJECTED)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v3.wasm"}, {"label": "V8 (WIRED: psql meta-commands as an extra, quoted LANGUAGE, C-language body)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v8.wasm"}, {"label": "V6 (plpgsql scaffolding; the previous wired bytes)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v6.wasm"}],
+    evidence: ["bb_tests/sql/REVIEW.md", "validation/m60/sql/v3-rejection.json", "bb_tests/sql/probe/grammar-ab.mts", "script/m60/measure-grammar-recovery.ts", "script/m14/spec/sql-completeness.json"],
+    copies: [{"label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)", "path": "/home/ishaq2321/bb_tests/sql/grammar/pristine-sql.wasm"}, {"label": "V3 candidate (opaque DO, REJECTED)", "path": "/home/ishaq2321/bb_tests/sql/grammar/patched-sql-v3.wasm"}, {"label": "V8 (WIRED: psql meta-commands as an extra, quoted LANGUAGE, C-language body)", "path": "/home/ishaq2321/bb_tests/sql/grammar/patched-sql-v8.wasm"}, {"label": "V6 (plpgsql scaffolding; the previous wired bytes)", "path": "/home/ishaq2321/bb_tests/sql/grammar/patched-sql-v6.wasm"}],
     notVendored: [{"path": "src/parser.c", "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"}, {"path": "src/grammar.json, src/node-types.json", "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"}, {"path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/", "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"}],
   },
     json: {

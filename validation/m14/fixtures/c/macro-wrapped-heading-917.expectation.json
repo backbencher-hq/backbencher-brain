@@ -1,0 +1,244 @@
+{
+  "fixtureId": "c/macro-wrapped-heading-917",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "#917: a MACRO-WRAPPED heading \u2014 `MACRO(ret, name)(params){ body }`. The heading stands where the declaration specifier belongs and is CALL-shaped, so the published grammar reads it as `MACRO(ret, name)` CALLED with `(params)` and leaves the body as an ORPHAN `compound_statement` (a direct child of the translation_unit, or of the ERROR / preproc_ifdef that swallowed the region). No `function_definition` exists, so the definition was never a symbol, its locals were published as FILE-SCOPE names, and every read in its body was attributed to `global`. Measured on sqlite: 235 such definitions across ext/wasm/libcmpp.c (86) and ext/jni/src/c/sqlite3-jni.c (149). MEASURED THROUGH THE PRODUCTION ENTRY, pre-fix vs post-fix, only `src/ast/real-c-analyzer.ts` differing. PRE-FIX symbols (8): cmpp_size_t@30, helperTarget@32, fileScope@34, `enum_member:BufSize@42`, `enum:anonymous_enum@42`, plain_stream@53, plain_control@78, helper_defined@83 \u2014 i.e. `cmpp_stream`, `1value_1text` and `cmpp_err_set` did NOT exist at all, and the wrapped body's anonymous enum leaked as a FILE-SCOPE symbol. PRE-FIX edges included `uses global->BufSize@43` and `contains anonymous_enum->BufSize@42` (the tree-truth oracle cannot derive either \u2014 that pair is the single unexplained row the whole 315-file sqlite c lane carried) and all three wrapped bodies' calls attributed to FILE SCOPE (`calls global->helperTarget@47/66/72`). POST-FIX: the three definitions exist as `function` symbols with their scope, return type and parameters, the leaked enum and its read are gone, and the same calls are attributed to the functions that make them (`calls cmpp_stream->helperTarget@47`, `calls 1value_1text->helperTarget@66`, `calls cmpp_err_set->helperTarget@72`). The three spellings are pinned because each reads the heading's own structure, never the source line: `(int, cmpp_stream)` \u2014 the declared name is the macro's LAST argument and the return type is the first comma-separated one; `S3JniApi(existing_binding(),jstring,1value_1text)` \u2014 the name is the THIRD argument and the lexer SPLITS it (`1` + `value_1text`) because an identifier cannot start with a digit, so the fragment is rejoined on adjacency; `CMPP__EXPORT(int, cmpp_err_set)( int rc, char const * zFmt, ... )` \u2014 a variadic list, where the grammar's recovery swallows the remaining parameters into one ERROR token, so the parameter payload is HONESTLY PARTIAL (only the variadic marker) while the definition itself is fully recovered. The CONTROLS carry the other half of the contract: `plain_stream` is the same body in an ORDINARY function (its enum must not leak either, and pre-fix it did not \u2014 the wrapped case now matches it), and `plain_control` is a call chain followed by a block INSIDE a function, which is two statements and must never become a definition (the recovery is gated on the scope, so no symbol is emitted for it and the call keeps its own attribution). NOT pinned, and merely declared: `calls global->CMPP__EXPORT@40` and `@71` are the call-shaped reading of the macro INVOCATION itself \u2014 measured IDENTICAL pre-fix and post-fix, a pre-existing artifact of the same grammar accident, so they are not enshrined here. NOT part of this class and deliberately absent: a heading whose macro's first argument is a POINTER type (`CMPP__EXPORT(void *, cmpp_mrealloc)(...){...}`, 6 sites in libcmpp.c) \u2014 there the heading parses as a DECLARATION that names the macro, so no orphan body exists at all; measured PRE-FIX and POST-FIX IDENTICAL and registered as its own defect.\n\n#961 SUPERSEDES PART OF THIS FIXTURE. The three forbids above -- `BufSize`, `PlainSize`, `anonymous_enum` -- recorded the harm CGD20 was papering over rather than the behaviour C wanted: they forbid a local enum's members from being published AT ALL, which is right when they would be owned by a placeholder and wrong once the type is qualified. They are replaced by positive rows asserting the correct shape, and the two unrelated forbids (`CMPP__EXPORT`, `S3JniApi` -- macro-mediated and phantom names) are untouched.",
+  "expectSymbols": [
+    {
+      "name": "cmpp_stream",
+      "kind": "function",
+      "scope": "global",
+      "visibility": "public",
+      "returnType": "int"
+    },
+    {
+      "name": "1value_1text",
+      "kind": "function",
+      "scope": "global",
+      "visibility": "public",
+      "returnType": "existing_binding()"
+    },
+    {
+      "name": "cmpp_err_set",
+      "kind": "function",
+      "scope": "global",
+      "visibility": "public",
+      "returnType": "int"
+    },
+    {
+      "name": "plain_stream",
+      "kind": "function",
+      "returnType": "int"
+    },
+    {
+      "name": "plain_control",
+      "kind": "function",
+      "returnType": "void"
+    },
+    {
+      "name": "helper_defined",
+      "kind": "function"
+    },
+    {
+      "name": "helperTarget",
+      "kind": "function"
+    },
+    {
+      "name": "fileScope",
+      "kind": "variable",
+      "visibility": "private"
+    },
+    {
+      "name": "cmpp_size_t",
+      "kind": "type"
+    },
+    {
+      "name": "BufSize",
+      "kind": "enum_member",
+      "ownerName": "cmpp_stream",
+      "note": "#961: a function-local type is published, QUALIFIED by its enclosing function. CGD20 dropped these as 'execution artifacts' and this fixture's forbids recorded the harm that dropping was papering over: an anonymous local enum published as the PLACEHOLDER `anonymous_enum` with `BufSize` and `PlainSize` owned by that name, which resolves to nothing -- two symbols with one name in one file, and file-scope EnumMembers. Qualifying the type fixes the leak at its CAUSE: the members are now owned by `cmpp_stream` / `plain_stream`, both real symbols. Owned by the enclosing function's enum, not by a placeholder and not file-scope."
+    },
+    {
+      "name": "PlainSize",
+      "kind": "enum_member",
+      "ownerName": "plain_stream",
+      "note": "#961: a function-local type is published, QUALIFIED by its enclosing function. CGD20 dropped these as 'execution artifacts' and this fixture's forbids recorded the harm that dropping was papering over: an anonymous local enum published as the PLACEHOLDER `anonymous_enum` with `BufSize` and `PlainSize` owned by that name, which resolves to nothing -- two symbols with one name in one file, and file-scope EnumMembers. Qualifying the type fixes the leak at its CAUSE: the members are now owned by `cmpp_stream` / `plain_stream`, both real symbols. The second anonymous local enum, disambiguated the same way."
+    },
+    {
+      "name": "cmpp_stream",
+      "kind": "enum",
+      "note": "#961: a function-local type is published, QUALIFIED by its enclosing function. CGD20 dropped these as 'execution artifacts' and this fixture's forbids recorded the harm that dropping was papering over: an anonymous local enum published as the PLACEHOLDER `anonymous_enum` with `BufSize` and `PlainSize` owned by that name, which resolves to nothing -- two symbols with one name in one file, and file-scope EnumMembers. Qualifying the type fixes the leak at its CAUSE: the members are now owned by `cmpp_stream` / `plain_stream`, both real symbols. The local enum itself, now a real symbol its members can be owned by."
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "cmpp_stream",
+      "equals": 2,
+      "note": "#961: the FUNCTION and the qualified local anonymous enum both publish under this name. Before #961 the local enum published as the placeholder `anonymous_enum`, so this was 1. See the note on the `cmpp_stream` expectSymbol row."
+    },
+    {
+      "name": "1value_1text",
+      "equals": 1
+    },
+    {
+      "name": "cmpp_err_set",
+      "equals": 1
+    },
+    {
+      "name": "BufSize",
+      "equals": 1,
+      "note": "#961: now published, owned by the qualified local enum."
+    },
+    {
+      "name": "PlainSize",
+      "equals": 1,
+      "note": "#961: now published, owned by the qualified local enum."
+    },
+    {
+      "name": "anonymous_enum",
+      "equals": 0,
+      "note": "#961: the PLACEHOLDER is still forbidden -- it names no resolvable symbol. What changed is that the local enums no longer NEED it."
+    },
+    {
+      "name": "CMPP__EXPORT",
+      "equals": 0
+    },
+    {
+      "name": "S3JniApi",
+      "equals": 0
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "cmpp_stream",
+      "parameters": [
+        {
+          "name": "inF",
+          "type": "cmpp_input_f"
+        },
+        {
+          "name": "inState",
+          "type": "void *"
+        }
+      ]
+    },
+    {
+      "symbol": "1value_1text",
+      "parameters": [
+        {
+          "name": "jValue",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "symbol": "cmpp_err_set",
+      "parameters": [
+        {
+          "name": "...",
+          "type": "variadic"
+        }
+      ]
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "cmpp_stream",
+      "names": [
+        "void",
+        "unknown"
+      ]
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "cmpp_stream",
+      "target": "helperTarget",
+      "meta.relationshipType": "c_function_call",
+      "note": "PRE-FIX this call was attributed to FILE SCOPE \u2014 the containment half of the fix."
+    },
+    {
+      "type": "calls",
+      "from": "1value_1text",
+      "target": "helperTarget",
+      "meta.relationshipType": "c_function_call",
+      "note": "the lexer-split mangled name is the definition's identity, so its body's reads/ calls belong to it."
+    },
+    {
+      "type": "calls",
+      "from": "cmpp_err_set",
+      "target": "helperTarget",
+      "meta.relationshipType": "c_function_call",
+      "note": "a variadic heading is recovered with its scope too \u2014 only the parameter PAYLOAD is partial."
+    },
+    {
+      "type": "calls",
+      "from": "plain_stream",
+      "target": "helperTarget",
+      "meta.relationshipType": "c_function_call",
+      "note": "CONTROL: an ordinary function was always attributed correctly."
+    },
+    {
+      "type": "calls",
+      "from": "plain_control",
+      "target": "helperTarget",
+      "meta.relationshipType": "c_function_call",
+      "note": "CONTROL: a call chain + block inside a function is NOT a definition \u2014 the call keeps the function that makes it, and no symbol is minted for it."
+    },
+    {
+      "type": "calls",
+      "from": "helper_defined",
+      "target": "cmpp_stream",
+      "meta.relationshipType": "c_function_call",
+      "note": "the recovered definition resolves at its call site."
+    },
+    {
+      "type": "uses",
+      "from": "helper_defined",
+      "target": "fileScope",
+      "meta.relationshipType": "identifier_usage"
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "existing_binding",
+      "meta.relationshipType": "c_function_call",
+      "note": "the 3-argument spelling's FIRST argument is an ordinary call and stays one; only the declared-name argument is a declaration."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "BufSize",
+      "note": "PRE-FIX: the read of a function-LOCAL enumerator, published at file scope because the body had no Function scope. This is the row the F5 c lane reported as unexplained."
+    },
+    {
+      "type": "contains",
+      "from": "anonymous_enum",
+      "target": "BufSize",
+      "note": "PRE-FIX: the containment half of the same leak."
+    },
+    {
+      "type": "calls",
+      "from": "global",
+      "target": "helperTarget",
+      "note": "PRE-FIX: every wrapped body's call attributed to file scope instead of the function that makes it."
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "1value_1text",
+      "note": "the declared NAME is a declaration, never a read \u2014 the heading's naming argument must not resolve against the symbol the recovery mints (measured: without this, the LATER heading's own name fabricated `uses` once an earlier site emitted the symbol \u2014 order-dependent)."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "CMPP__EXPORT"
+    },
+    {
+      "name": "S3JniApi"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "fixtureId": "python/base-shapes",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M60, the BASE position — #902's sibling, and the second defect the same allowlist rule fixes. `baseClassLeaf` listed `identifier`/`subscript`/`attribute` and then fell through to `namedChild(0)` for every other shape, so a base written as a CALL named the function being called: `class Computed(factory(\"FB\", \"a\"))` published `extends Computed -> factory`. A base that is a call names the anonymous class the call RETURNS; the factory is a function, not a class, and `Computed` does not inherit from it. The differential's oracle names only the three static shapes, so this was the python lane's next UNEXPLAINED edge on cython:python — the edge #902's fix exposed (measured: `extends T -> namedtuple`, Tools/dataclass_test_data/test_dataclasses.py:1637, `class T(namedtuple('Tbase', 'a')):`), and the ONLY one, because on the two pinned corpora the call shape occurs exactly once in 1937 base-list entries (513 files: identifier 1762, attribute 130, keyword_argument 24, subscript 20, call 1). The fixture holds all four shapes at once so the allowlist cannot be satisfied by refusing everything: Plain/Generic/Keyword must each still name their base, Computed must name nothing, and the keyword pin keeps PYD6 (`total=False` is a keyword argument, not a base) from regressing in the same edit. `Generic(Base[T])` additionally pins that the SUBSCRIPT's head is named — `Base`, not `Base[T]`.",
+  "expectSymbols": [
+    { "name": "Base", "kind": "class" },
+    { "name": "T", "kind": "class" },
+    { "name": "factory", "kind": "function" },
+    { "name": "Plain", "kind": "class" },
+    { "name": "Generic", "kind": "class" },
+    { "name": "Keyword", "kind": "class" },
+    { "name": "Computed", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Plain", "target": "Base", "comment": "the control: a plain base is still named" },
+    { "type": "extends", "from": "Generic", "target": "Base", "comment": "subscript names its HEAD — `Base`, never the spelling `Base[T]`" },
+    { "type": "extends", "from": "Keyword", "target": "Base", "comment": "the keyword argument beside a real base must not disturb it" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "Computed", "target": "factory", "comment": "the fabrication this fixture exists for: the FACTORY FUNCTION named as the parent class (the cython namedtuple shape)" },
+    { "type": "extends", "from": "Keyword", "target": "total", "comment": "PYD6: `total=False` is a keyword argument, not a base — the pre-fix blanket descent named it (requests/_types.py:157)" }
+  ]
+}

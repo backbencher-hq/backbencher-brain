@@ -1,0 +1,22 @@
+{
+  "fixtureId": "scala/enum-params",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCD6 family (M37 #598): enum class_parameters mirror class class_parameters (handleClass parity). (1) The enum gets a constructor symbol and val-param property symbols (mass) — previously NO constructor and NO mass field existed for `enum Planet(val mass: Double)`. (2) The enum param's type clause emits a declared_type ref SOURCED TO THE ENUM (root -> Double was the KAD6-style unattributed twin — the collectDeclaredTypeRefs resolveSource did not know enum_definition).",
+  "expectSymbols": [
+    { "name": "Planet", "kind": "enum" },
+    { "name": "constructor", "ownerName": "Planet" },
+    { "name": "mass", "ownerName": "Planet" },
+    { "name": "Earth", "kind": "enum_member" },
+    { "name": "Mars", "kind": "enum_member" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "from": "Planet", "target": "Double", "meta.relationshipType": "declared_type" },
+    { "type": "contains", "from": "Planet", "target": "Earth" },
+    { "type": "contains", "from": "Planet", "target": "mass" },
+    { "type": "instantiates", "from": "of", "target": "Planet", "meta.evidenceClass": "usage_contextual" }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "from": "root", "target": "Double" }
+  ]
+}

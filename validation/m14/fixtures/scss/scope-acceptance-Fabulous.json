@@ -1,0 +1,67 @@
+{
+  "repo": "Fabulous",
+  "files": 6,
+  "partition": {
+    "before": {
+      "imports": {
+        "unresolved": 5,
+        "total": 5
+      },
+      "exports": {
+        "resolved": 34,
+        "total": 34
+      },
+      "contains": {
+        "resolved": 234,
+        "total": 234
+      },
+      "uses": {
+        "resolved": 3,
+        "total": 3
+      },
+      "references": {
+        "resolved": 28,
+        "total": 28
+      },
+      "calls": {
+        "resolved": 2,
+        "total": 2
+      }
+    },
+    "after": {
+      "imports": {
+        "unresolved": 5,
+        "total": 5
+      },
+      "exports": {
+        "resolved": 34,
+        "total": 34
+      },
+      "contains": {
+        "resolved": 234,
+        "total": 234
+      },
+      "uses": {
+        "resolved": 3,
+        "total": 3
+      },
+      "references": {
+        "resolved": 28,
+        "total": 28
+      },
+      "calls": {
+        "resolved": 2,
+        "total": 2
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 5,
+    "before": {},
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 301,
+    "falseBindings": 0
+  }
+}

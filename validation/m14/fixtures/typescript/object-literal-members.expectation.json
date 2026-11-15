@@ -1,0 +1,28 @@
+{
+  "fixtureId": "typescript/object-literal-members",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M37.21 #611 W1/W2/W3 contracts. W1 (JD18-class): object-literal methods are symbols owned by the declaring variable (util.run, local.deep); calls attribute to the method itself (run->helper, deep->inside), never to the enclosing class method or module leaf — JS parity (probed 2026-09-08). W2: subscript callees (handlers[mode]()) are SKIPPED, no fabricated 'handlers[mode]' target — JS family contract; vue-core transform.ts had 2 such fabrications. W3 (J5): static blocks and property initializers attribute to the CLASS (Service->warm, Service->init, Service->Handler), not the module leaf.",
+  "expectSymbols": [
+    { "name": "Service" },
+    { "name": "boot" },
+    { "name": "run" },
+    { "name": "deep" },
+    { "name": "util" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "Service", "target": "init", "meta.evidenceClass": "usage_contextual" },
+    { "type": "calls", "source": "Service", "target": "warm" },
+    { "type": "instantiates", "source": "Service", "target": "Handler" },
+    { "type": "calls", "source": "boot", "target": "tag" },
+    { "type": "calls", "source": "deep", "target": "inside" },
+    { "type": "calls", "source": "run", "target": "deep" },
+    { "type": "calls", "source": "run", "target": "helper" },
+    { "type": "calls", "source": "run", "target": "setup" },
+    { "type": "calls", "target": "run" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "handlers[mode]" },
+    { "type": "calls", "source": "Service", "target": "inside" }
+  ]
+}

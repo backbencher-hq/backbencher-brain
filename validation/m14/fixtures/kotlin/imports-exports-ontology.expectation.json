@@ -1,0 +1,48 @@
+{
+  "fixtureId": "kotlin/imports-exports-ontology",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS KOTLIN4's two ontology edges, the two types the lane carried as payload but never as a graph edge (measured 0 edges each across a 200-file stratified corpus sample: ontology-coverage-gate read 8/10 for kotlin). (1) `imports`: one edge per import statement, source = the file's identity (its primary top-level type), target = the module path as the grammar spells it (the wildcard import's target is the module WITHOUT '.*', the same node-text fact the existing references edge and the differential oracle already read), line = the import statement, evidenceClass = import_based. (2) `exports`: one edge per public TOP-LEVEL declaration, derived from the ExportInfo rows so the edge and the payload cannot disagree. The forbids are the measured leak: a declaration in an executable body has no ownerName, so the pre-KOTLIN4 owner test could not tell it from a top-level declaration and 373 of 1,782 export rows across the corpus slice were local names (`class Foo` inside a @Test fun, a fun inside a lambda body). internal and private stay off the surface — Kotlin's `internal` is a module API, not a consumer one — and members stay off it too (membership rides contains).",
+  "expectSymbols": [
+    { "name": "Surface", "kind": "class" },
+    { "name": "topLevelApi", "kind": "function" },
+    { "name": "Scratch", "kind": "class" },
+    { "name": "helper", "kind": "function" }
+  ],
+  "expectImports": [
+    { "module": "java.util.List", "isNamespaceImport": false },
+    { "module": "kotlinx.coroutines.flow", "isNamespaceImport": true, "items": ["*"] }
+  ],
+  "expectExports": [
+    { "name": "Surface" },
+    { "name": "topLevelApi" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "Surface", "target": "java.util.List", "line_number": 3, "meta.evidenceClass": "import_based", "meta.isKotlinImport": true, "confidenceMin": 0.9 },
+    { "type": "imports", "from": "Surface", "target": "kotlinx.coroutines.flow", "line_number": 4, "meta.evidenceClass": "import_based", "meta.isWildcardImport": true, "confidenceMin": 0.9 },
+    { "type": "exports", "from": "Surface", "target": "Surface", "line_number": 6, "meta.evidenceClass": "structural", "meta.exportKind": "class", "confidenceMin": 1.0 },
+    { "type": "exports", "from": "Surface", "target": "topLevelApi", "line_number": 21, "meta.evidenceClass": "structural", "meta.exportKind": "function", "confidenceMin": 1.0 }
+  ],
+  "forbidExports": [
+    { "name": "Scratch" },
+    { "name": "helper" },
+    { "name": "moduleOnly" },
+    { "name": "filePrivate" },
+    { "name": "first" },
+    { "name": "hidden" },
+    { "name": "secret" },
+    { "name": "items" },
+    { "name": "localShape" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "Scratch" },
+    { "type": "exports", "target": "helper" },
+    { "type": "exports", "target": "moduleOnly" },
+    { "type": "exports", "target": "filePrivate" },
+    { "type": "exports", "target": "first" },
+    { "type": "exports", "target": "items" },
+    { "type": "exports", "target": "constructor" },
+    { "type": "imports", "target": "kotlinx.coroutines.flow.*" },
+    { "type": "imports", "target": "" }
+  ]
+}

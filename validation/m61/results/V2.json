@@ -1,0 +1,76 @@
+{
+  "issue": "M61.V2 gate serialization lock (issue #843)",
+  "code": "V2",
+  "milestone": "M61",
+  "status": "known-gap",
+  "checks": 32,
+  "passed": 31,
+  "failed": 1,
+  "realFailed": 1,
+  "failures": [
+    "L4: no evidence-shaped bare write outside the declared exclusions — script/m24/verify-hover-latency.ts: writeFileSync(path.join(ROOT, \"validation\", \"m24\", \"results\", \"L6.json\"), JSON.s | script/m28/verify-mcp-stdout.ts: writeFileSync(path.join(root, \"package.json\"), JSON.stringify({ name: \"bb-mcp-st | script/m28/verify-mcp-stdout.ts: writeFileSync(path.join(RESULTS, \"mcp-stdout.json\"), JSON.stringify(evidence, nu | script/m53/verify-r1-ladder.ts: writeFileSync(STATE_PATH, JSON.stringify({ commit: head, gates }, null, 2))"
+  ],
+  "checksList": [
+    "ok: L1: the holder process announced the lock (marker + lock file)",
+    "ok: L1: a contended acquisition is refused loudly",
+    "ok: L1: the refusal names the holder and the bounded wait",
+    "ok: L1: the refusal is not a steal — the holder's lock is untouched",
+    "ok: L1: the holder released (marker + lock file gone)",
+    "ok: L1: the lock is acquirable after the holder released",
+    "ok: L1: release clears the lock file",
+    "ok: L2: a dead-holder lock is refused as STALE",
+    "ok: L2: the stale lock is NOT stolen (still the dead holder's)",
+    "ok: L2: a live-holder lock past the declared age is refused as STALE",
+    "ok: L2: the declared override breaks the stale lock and reports brokeStale",
+    "ok: L2: after the deliberate break the dir is free",
+    "ok: L3: both writer processes exit 0 (the lock serialized them)",
+    "ok: L3: each writer completed its declared count",
+    "ok: L3: every sequence 0..199 appears exactly once (no two writers read the same head)",
+    "ok: L3: the final shared record verifies through the trusted read",
+    "ok: L3: the final record is the last committed sequence",
+    "ok: L3: no temp-file residue survives the concurrent writes",
+    "ok: L5: holder acquired the dir5 lock",
+    "ok: L5: writeSealed refuses under contention instead of writing unlocked",
+    "ok: L5: nothing was written while the lock was held",
+    "ok: L5: the holder released its lock after the refusal",
+    "ok: L4: the adoption scanner can fail (a bare write is reported; the same write under withLock is not)",
+    "FAIL: L4: no evidence-shaped bare write outside the declared exclusions — script/m24/verify-hover-latency.ts: writeFileSync(path.join(ROOT, \"validation\", \"m24\", \"results\", \"L6.json\"), JSON.s | script/m28/verify-mcp-stdout.ts: writeFileSync(path.join(root, \"package.json\"), JSON.stringify({ name: \"bb-mcp-st | script/m28/verify-mcp-stdout.ts: writeFileSync(path.join(RESULTS, \"mcp-stdout.json\"), JSON.stringify(evidence, nu | script/m53/verify-r1-ladder.ts: writeFileSync(STATE_PATH, JSON.stringify({ commit: head, gates }, null, 2))",
+    "ok: M: no-refusal (a disabled timeout branch lets a second PROCESS proceed)",
+    "ok: M: release-no-unlink",
+    "ok: M: no-stale-detect",
+    "ok: M: silent-steal",
+    "ok: M: write-unlocked",
+    "ok: M: write-unlocked (a lock-less write path writes while the lock is held)",
+    "ok: R: no lock file is left behind in the results dir",
+    "ok: R: this verifier's own evidence verifies through the trusted read"
+  ],
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "verifierCommand": "npx tsx script/m61/verify-lock.ts",
+  "evidenceFile": "V2.json",
+  "generatedAt": "2026-11-09T10:39:41.221Z",
+  "lock": {
+    "file": ".bb-gate.lock",
+    "defaultWaitMs": 5000,
+    "defaultStaleMs": 600000
+  },
+  "adoption": {
+    "writeSealed": "takes the dir lock around its temp+rename (script/lib/evidence.ts)",
+    "declaredExclusions": [
+      "verify-sealing fixtures",
+      "verify-lock fixtures",
+      "seal-legacy migration",
+      "codemod helpers",
+      "consent store (m25 auto-index)"
+    ]
+  },
+  "limitations": [
+    "The lock is advisory within this repository's tooling: a hand-run process that writes evidence without the library bypasses it; L4's adoption audit is what makes that visible (V4 generalizes it).",
+    "Stale detection uses pid liveness and declared age; a lock held by a live but wedged process is reported at the declared age threshold rather than detected instantly.",
+    "The concurrent-run proof uses two OS processes (real), not simulated threads; count is 2x100 writes, sized to finish inside the gate budget."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:39:41.221Z",
+    "contentSha256": "73191cc5130bc9c535a6f0e4913d5e985bb982c43e2aeaaf2de8558efbae95c8"
+  }
+}

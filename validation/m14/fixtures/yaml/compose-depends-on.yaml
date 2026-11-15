@@ -1,0 +1,13 @@
+# `depends_on` names a SIBLING record in the same file, so it is a real edge and it
+# resolves. The resolver reads an index built during the walk; it was a scan of the
+# whole shape index per reference, which is O(refs x symbols) and would not have shown
+# up on a small corpus.
+version: "3"
+services:
+  web:
+    image: nginx
+    depends_on:
+      - db
+      - absent
+  db:
+    image: postgres

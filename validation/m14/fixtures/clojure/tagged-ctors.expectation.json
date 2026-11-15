@@ -1,0 +1,16 @@
+{
+  "issue": "CLJ1",
+  "note": "C12/C13: `#Name[…]` / `#Name{…}` literals (Clojure 1.12 ctor syntax and record literals) name a TYPE — instantiates from the enclosing context (tag line). Payloads are reader DATA: `#my/tag (call-x)` must never emit a call to call-x, and a lowercase tag with a vector payload (`#my/tag [1 2]`) is a plain tagged literal, not a ctor — both forbidden. The ctor rule is the uppercase-final-segment heuristic (AST cannot resolve classes; same rule as the ->Cls idiom).",
+  "expectSymbols": [
+    { "name": "built", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "instantiates", "from": "clj.fixture.tags", "target": "Foo", "line_number": 3 },
+    { "type": "instantiates", "from": "clj.fixture.tags", "target": "clj.fixture.tags.Rec", "line_number": 4 },
+    { "type": "instantiates", "from": "built", "target": "Bar", "line_number": 8 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "target": "call-x" },
+    { "type": "instantiates", "target": "my/tag" }
+  ]
+}

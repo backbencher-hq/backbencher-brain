@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-13T18:49:35.215Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/bootstrap",
+  "admittedFiles": 125,
+  "sampledFiles": 120,
+  "parseCleanFiles": 120,
+  "counts": {
+    "files": 120,
+    "rows": 42612,
+    "emptyEndpoints": 0,
+    "nonNameTarget": 0,
+    "nonNameSource": 0,
+    "pathShaped": 0,
+    "importSpelling": 285,
+    "dotted": 3,
+    "keywordTarget": 0,
+    "longTarget": 0,
+    "withBindingSep": 12685
+  },
+  "note": "Emitted-endpoint validity, measured from the analyzer's own output. The terminal guard drops only EMPTY endpoints; this census asks whether a NON-EMPTY target is still a name. A dotted target is counted separately because `Lib.Base` is the legal qualified spelling the extends edge publishes — it is a naming question, not a defect.",
+  "examples": []
+}

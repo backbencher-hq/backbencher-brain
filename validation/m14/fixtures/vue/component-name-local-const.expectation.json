@@ -1,0 +1,58 @@
+{
+  "fixtureId": "vue/component-name-local-const",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RELABEL 2026-10-24 (extended vocabulary, Lead-ruled; the svelte precedent): the SFC template component-tag emission is `renders`, not `instantiates` — the host renderer mounts the component and no `new` exists in the source (types.ts Renders contract). This fixture's template-tag pins were converted `instantiates`->`renders` with every other field byte-identical; historical measurement counts inside this rationale still name the label they were measured under. F32 (2026-10-12), the `<script setup>` half — and the half that was wrong TWICE. This path read the `name:` value with `findChildByType(n, \"string\")`, so when the value was an identifier it found nothing: the name was not read AND no marker was set, which meant a component that named itself through a constant was indistinguishable from one that never named itself. F17's `declaredNameUnreadable` existed on the Options path only and is now set on both, which is the difference this fixture's sibling (vue/component-name-identifier, an IMPORTED identifier) relies on. The read itself is one hop and in-file: `const COMPONENT_NAME = 'SetupConstNamed'` above `defineOptions({ name: COMPONENT_NAME })`. Measured: 253 of the 724 unresolved component-usage `instantiates` edges on the 1,162-file draw are this shape — `ElInput` 59 edges, `ElSelect` 42, `ElSwitch` 33, 25 distinct names — every one of them invisible to a literal-only reader, while the lane published the stem (`input`, `select`). The instantiates row is asserted from the RENAMED identity because F16's re-point has to follow the name: the rename and the re-point are separate steps, and doing them in the wrong order is the defect F16 itself was written to fix (slider.vue published its Class as `ElSlider` while every member stayed owned by `slider`). `meta.nameFromLocalConst` is what the mutant `vue/local-const-name-revert` reverts from.",
+  "expectSymbols": [
+    {
+      "name": "SetupConstNamed",
+      "kind": "class",
+      "meta.isVueComponent": true,
+      "meta.nameFromLocalConst": "COMPONENT_NAME"
+    },
+    {
+      "name": "SetupConstNamed",
+      "kind": "class",
+      "meta.isScriptSetupComponent": true
+    },
+    {
+      "name": "SetupConstNamed",
+      "kind": "class",
+      "meta.moduleName": "component-name-local-const"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "component-name-local-const",
+      "kind": "class"
+    },
+    {
+      "name": "COMPONENT_NAME",
+      "kind": "class",
+      "note": "the constant holds the name; it is not the component"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "SetupConstNamed",
+      "target": "MyChild"
+    },
+    {
+      "type": "uses",
+      "from": "SetupConstNamed",
+      "target": "count"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "from": "component-name-local-const",
+      "target": "MyChild"
+    },
+    {
+      "source": "COMPONENT_NAME",
+      "comment": "F17's defect shape: no edge may be sourced at the VARIABLE that holds the name"
+    }
+  ]
+}

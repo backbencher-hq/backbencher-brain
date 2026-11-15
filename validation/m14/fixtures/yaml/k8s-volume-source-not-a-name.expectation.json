@@ -1,0 +1,137 @@
+{
+ "fixtureId": "yaml/k8s-volume-source-not-a-name",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": false,
+ "rationale": "A Kubernetes volume SOURCE is configuration, not a reference. Found by the M60 target-spelling census over kubernetes, which convicted the analyzer of a fabricated spelling: four `references` edges whose target was the bare integer `3` \u2014 the value of `defaultMode` inside `volumes[0].configMap`, reached because one walk collected every nested scalar of a volume-source payload. The same walk also invented a target for every `items[].key` and `items[].path` string under it. So the assertion here is NEGATIVE first: no resource reference may exist for a volume-source mapping, which is the half that was wrong. The positive half is asserted too, because 'stop emitting resource references' would pass this fixture and be a regression: the wrapper shapes, the scalar shorthands, the per-source naming keys (`name` for configMap, `secretName` for a SecretVolumeSource, `claimName` for a PVC volume) and the plain `serviceAccountName` must all still resolve. authoredBeforeAnalyzerRun is FALSE and the reason is recorded in the lane review: this fixture was authored AFTER the census found the defect, from a real corpus file, which is a weaker form of independence than a pre-registered prediction and is not claimed as more.",
+ "expectRelationships": [
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-cm",
+   "line_number": 19
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-cm-shorthand",
+   "line_number": 21
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-secret",
+   "line_number": 22
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-secret-shorthand",
+   "line_number": 24
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-pvc",
+   "line_number": 25
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-sa",
+   "line_number": 27
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "3",
+   "note": "The defect itself, asserted as a prohibition rather than as an absence. A count-based negative ('at most N resource refs') would have passed the pre-fix analyzer on any corpus where the volume source happened to hold few scalars, and the measured failure was exactly a count that looked reasonable. Naming the integer of `defaultMode` pins the invented target by value."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "420",
+   "note": "The same integer, from the SecretVolumeSource's own `defaultMode` \u2014 a second volume source in the same file, so the prohibition is not satisfied by dropping the first one."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "a",
+   "note": "An `items[].key` string. The pre-fix walk treated every nested scalar as a name, not only the integers."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "b/c",
+   "note": "An `items[].path` string \u2014 a target with a path separator, which is also how this class of invented edge would have escaped a spelling check that only looked for bare numbers."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "true",
+   "note": "The `optional: true` boolean. Included because a walk that skips non-strings would still have emitted the integers, and a fix that skipped only BOOLEANS would have passed the other four."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "my-secret-wrong",
+   "note": "Never emitted by the fixed analyzer. It pins that a `volumes[].secret: { name: \u2026 }` payload is NOT the SecretVolumeSource shape (`secretName` is) and is left unreferenced rather than guessed at."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "defaultMode",
+   "note": "A volume-source key, not a resource name. The mutant `volume-source-scanned-as-names` names the payload's child KEYS, which is how this class of invented edge is expressed at result level; the values (`3`, `420`) are the pre-fix analyzer's own invented targets and are forbidden above."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "items",
+   "note": "A sequence key of a ConfigMapVolumeSource."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "optional",
+   "note": "A boolean key of a SecretVolumeSource."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "readOnly",
+   "note": "A key of a PersistentVolumeClaim volume source."
+  },
+  {
+   "type": "references",
+   "meta.relationshipType": "yaml_resource_ref",
+   "target": "claimName",
+   "note": "The key that DOES name the PVC's claim \u2014 but the fixed analyzer emits its VALUE (`my-pvc`), asserted in expectRelationships, never the key name. A revert that names the key instead of reading the field is a different defect and is caught here rather than passing as coverage."
+  }
+ ],
+ "_shapesProbed": {
+  "note": "Each shape was probed directly against the analyzer before the fixture was written, because the fix introduced three key sets where there had been one and the first draft of the fix used `name` for a SecretVolumeSource, which is the EnvVarSource spelling and the wrong one for a volume. `volumes[].secret.secretName` is the API's shape; `volumes[].secret.name` is not, and is left unreferenced rather than guessed at.",
+  "probed": {
+   "volume-source-mapping-emits-nothing": true,
+   "configMapRef-name-wrapper": "my-cm",
+   "configMapRef-scalar-shorthand": "my-cm",
+   "secret-secretName-volume": "s",
+   "secret-name-volume-is-not-the-api-shape": null,
+   "secret-scalar-shorthand": "my-secret",
+   "secretRef-name-wrapper": "my-secret",
+   "persistentVolumeClaim-claimName": "my-pvc",
+   "persistentVolumeClaim-scalar-shorthand": "my-pvc",
+   "serviceAccountName-scalar": "my-sa"
+  }
+ },
+ "_childKeyProhibitions": {
+  "note": "The first draft of the mutant set for this defect reported SURVIVED while inventing NOTHING: it read `rel.from`/`rel.to` where the analyzer result spells them `source`/`target`, and it keyed children by the `contains` edge's parent instead of its source, so the owner read as `volumes` and matched no volume-source key. A vacuous mutant accuses the suite of a gap it never opened, which is why the fix is recorded here as well as in the transform: the prohibitions that catch the real defect are the value set, and the prohibitions that catch the mutant are the key set, and a fixture that carried only one of the two would have passed a broken instrument.",
+  "inventedChildKeyTargets": [
+   "claimName",
+   "defaultMode",
+   "items",
+   "optional",
+   "readOnly"
+  ]
+ }
+}

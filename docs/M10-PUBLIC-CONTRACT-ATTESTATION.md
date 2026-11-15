@@ -1,6 +1,6 @@
 # M10.07 Public Contract Attestation
 
-Issue: [#120](https://github.com/backbencher-hq/backbencher-brain/issues/120)
+Issue: [#120](https://github.com/ishaq2321/backbencher-brain/issues/120)
 Date: 2026-08-10
 Milestone: M10 — Intelligence Consolidation and Evidence Governance
 

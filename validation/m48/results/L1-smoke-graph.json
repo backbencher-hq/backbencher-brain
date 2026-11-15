@@ -1,0 +1,36 @@
+{
+  "status": "verified",
+  "commit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "checks": [
+    {
+      "name": "bb/graph leg: initialize succeeds",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "bb/graph: root resolves to greet",
+      "ok": true,
+      "detail": "{\"id\":\"sym-greet\",\"name\":\"greet\",\"symbolType\":\"method\",\"file\":\"main.ts\",\"filePath\":\"/tmp/bblsp-graph-ws-3UGUi6/main.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":0,\"isExternal\":false}"
+    },
+    {
+      "name": "bb/graph: callers found (main→greet)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "bb/graph: callees present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "bb/graph: schema mismatch is a declared error",
+      "ok": true,
+      "detail": "{\"code\":-32603,\"message\":\"bb/graph: schema version mismatch — request carries 1, server implements 2 (upgrade the client or pin bbLsp.graphSchemaVersion)\"}"
+    }
+  ],
+  "fixtureStats": {
+    "files": 1,
+    "symbols": 3,
+    "relationships": 1
+  }
+}

@@ -307,7 +307,7 @@ const ontologyName = (raw: string): Type | null => (LABEL_ALIASES[raw] as Type) 
  *  A gate that admits files the analyzer will not measure is measuring its own patience. */
 const SIZE_CAP = 1024 * 1024
 
-const DEFAULT_CORPUS_ROOT = "$HOME/fixtures/repositories"
+const DEFAULT_CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const CR = process.env.BB_CORPUS_ROOT ?? DEFAULT_CORPUS_ROOT
 
 /**
@@ -781,7 +781,7 @@ function projectFactsForDart(repoRoot: string, admitted: string[]): ProjectFacts
   const stack: string[] = [repoRoot]
   // A SYMLINKED DIRECTORY IS A DIRECTORY. `Dirent.isDirectory()` is FALSE for a symlink, so this walk
   // silently skipped every symlinked subtree. Found by sql-lane, whose LANE CENSUS dropped an ENTIRE
-  // REPOSITORY the same way — `repositories/proxicall -> $HOME/ProxiCall` — and measured the
+  // REPOSITORY the same way — `repositories/proxicall -> /home/ishaq2321/ProxiCall` — and measured the
   // loss on one unchanged population with only the walk fixed: **1,526 -> 1,965 files, 16,273 ->
   // 31,051 edges**, imports 38->53, references 2,092->5,966, contains 5,400->12,024. Every figure its
   // spec's gap prose carried was short by one whole repository.
@@ -3511,7 +3511,7 @@ function printReport(rep: Report, control: { ok: boolean; failures: string[] }) 
   console.log(`incoming gate — ${rep.lang}`)
   // THE CORPUS ROOT IS PART OF THE POPULATION CLAIM, and until 2026-10-20 the header did not say
   // which one it walked. Measured consequence: the corpus has TWO roots — the default
-  // (`$HOME/fixtures/repositories`, 199 repos) and the symlink farm the campaign's own
+  // (`/home/ishaq2321/bb_tests/repositories`, 199 repos) and the symlink farm the campaign's own
   // commands select with `BB_CORPUS_ROOT=$PWD/.corpus` (202 repos: the 199 plus three LOCAL
   // checkouts — `pixie`, `plack`, `tf-aws-components`). They are DIFFERENT POPULATIONS, and 24 of
   // the 48 lanes admit a different number of files under each (perl 427 vs 656; hcl 9,329 vs

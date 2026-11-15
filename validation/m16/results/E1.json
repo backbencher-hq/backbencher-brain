@@ -1,0 +1,23 @@
+{
+  "issue": "refactor renames every AST reference site, edge-independent",
+  "code": "E1",
+  "tool": "bb_edit",
+  "title": "E1",
+  "verified": true,
+  "checks": 9,
+  "passed": 9,
+  "failed": 0,
+  "negatives": 2,
+  "runLog": {
+    "validated": true,
+    "reindexed": true,
+    "warnings": [
+      "refactor prerequisite_tasks → prerequisite_tasks_renamed: 6 site(s) across 1 file(s)"
+    ],
+    "summary": {
+      "renamedFiles": 1,
+      "renamedSites": 6
+    }
+  },
+  "generatedAt": "2026-11-05T04:27:33.978Z"
+}

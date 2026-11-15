@@ -1,0 +1,148 @@
+{
+  "issue": "ELX-EXPORTS",
+  "note": "`overrides` measured GAP -> implemented. `defoverridable` is Elixir's override construct and the only one the language has: it marks definitions the module already published as extension points, and a later definition of the same name/arity replaces them, reaching the previous one through `super/1`. Measured: 26 forms in 14 of 559 corpus files, 65 name/arity pairs -> 18 edges in 2 files, both endpoints resolving 18/18. The edge is from the LATER definition to the PRIOR one, so both endpoints name the same function and `overridesLine` carries the declaration `super/1` reaches (bash BD8b records the FIRST declaration for every redefinition; the chain is more truthful here). Arity is part of the identity. A mark with nothing after it is an extension POINT, not an override. The MODULE form (`defoverridable Other.Mod`, 3 corpus sites) records the mark on the symbol and publishes NO edge: the definitions it marks live in another file and 'who points at me' is a subsystem that does not exist yet — declared as a limitation, not guessed at. Falsifier: mutant elixir/overrides-mark-without-prior, elixir/overrides-arity-blind, elixir/overrides-line-first-decl. A mark that PRECEDES the declaration it names produces no edge either: there is no prior definition to override.",
+  "expectSymbols": [
+    {
+      "name": "OverridesSurface",
+      "kind": "module"
+    },
+    {
+      "name": "sample",
+      "kind": "function",
+      "ownerName": "OverridesSurface"
+    },
+    {
+      "name": "with_default",
+      "kind": "function",
+      "ownerName": "OverridesSurface"
+    },
+    {
+      "name": "never_redefined",
+      "kind": "function",
+      "ownerName": "OverridesSurface"
+    },
+    {
+      "name": "OverridesRepeated",
+      "kind": "module"
+    },
+    {
+      "name": "OverridesAritySplit",
+      "kind": "module"
+    },
+    {
+      "name": "OverridesMacro",
+      "kind": "module"
+    },
+    {
+      "name": "overridable_macro",
+      "kind": "macro",
+      "ownerName": "OverridesMacro"
+    },
+    {
+      "name": "OverridesModuleForm",
+      "kind": "module"
+    },
+    {
+      "name": "OverridesNoPrior",
+      "kind": "module"
+    },
+    {
+      "name": "OverridesMarkFirst",
+      "kind": "module"
+    },
+    {
+      "name": "marked_first",
+      "kind": "function",
+      "ownerName": "OverridesMarkFirst"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "OverridesSurface.sample/0",
+      "target": "sample",
+      "line_number": 19,
+      "meta.overridesLine": 12,
+      "meta.markedLine": 16,
+      "meta.via": "defoverridable",
+      "meta.redefinition": true,
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesSurface.with_default/2",
+      "target": "with_default",
+      "line_number": 23,
+      "meta.overridesLine": 13
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesRepeated.counter/0",
+      "target": "counter",
+      "line_number": 36,
+      "meta.overridesLine": 32,
+      "meta.markedLine": 34
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesRepeated.counter/0",
+      "target": "counter",
+      "line_number": 40,
+      "meta.overridesLine": 36,
+      "meta.markedLine": 38
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesAritySplit.pick/1",
+      "target": "pick",
+      "line_number": 50,
+      "meta.overridesLine": 45
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesMacro.overridable_macro/1",
+      "target": "overridable_macro",
+      "line_number": 61,
+      "meta.overridesLine": 57
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "target": "never_redefined"
+    },
+    {
+      "type": "overrides",
+      "target": "never_declared"
+    },
+    {
+      "type": "overrides",
+      "target": "local_fun"
+    },
+    {
+      "type": "overrides",
+      "target": "OverridesModuleForm.Other"
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesAritySplit.pick/2",
+      "target": "pick"
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesRepeated.counter/0",
+      "target": "counter",
+      "line_number": 40,
+      "meta.overridesLine": 32
+    },
+    {
+      "type": "overrides",
+      "from": "OverridesSurface",
+      "target": "sample"
+    },
+    {
+      "type": "overrides",
+      "target": "marked_first"
+    }
+  ]
+}

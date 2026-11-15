@@ -1,0 +1,29 @@
+{
+  "fixtureId": "java/method-reference-receiver-shapes",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JLS 15.13 — the first operand of a method reference is an ExpressionName or a ReferenceType, and neither a method invocation nor a string literal is one. The analyzer named the receiver with extractJavaTypeBaseName, which returns the node's OWN TEXT for anything that is not a generic_type/scoped_type_identifier, so a receiver that is not a type produced an edge whose target was a CALL or a quoted STRING. Measured on the whole corpus: references -> \"newArrayList(v3(), v4())\" x2 (guava-testlib MultimapPutIterableTester.java L51/L64), references -> \"\\\"com.google.common.\\\"\" x2 (guava-tests WriteReplaceOverridesTest.java L59), references -> \"StandardTable.this\" x2 (guava StandardTable.java L808/L883). These survived the production path — pool-worker's filterNoiseRelationships bans {} backticks angle brackets and newlines in a target leaf, and a call's text carries none. Positive half: the shapes that ARE names must keep emitting, including the `identifier` shape the differential's references oracle audits (1000 of 1117 corpus method_reference nodes), so a fix that removed the fabrication cannot quietly remove the audited behaviour instead. Negative half: no references edge may name a shape that contains whitespace, a bracket, a quote or a `.this` leaf.",
+  "expectSymbols": [
+    { "name": "MethodReferenceShapes", "kind": "class" },
+    { "name": "byTypeName", "kind": "method" },
+    { "name": "byQualifiedTypeName", "kind": "method" },
+    { "name": "byGenericTypeName", "kind": "method" },
+    { "name": "byBoundInstanceReceiver", "kind": "method" },
+    { "name": "byQualifiedThis", "kind": "method" },
+    { "name": "byLocalVariable", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "byTypeName", "target": "Integer", "meta.relationshipType": "method_reference_receiver", "confidenceMin": 0.9 },
+    { "type": "references", "source": "byQualifiedTypeName", "target": "java.lang.Integer", "meta.relationshipType": "method_reference_receiver" },
+    { "type": "references", "source": "byGenericTypeName", "target": "java.util.Map.Entry", "meta.relationshipType": "method_reference_receiver" },
+    { "type": "references", "source": "byLocalVariable", "target": "local", "meta.relationshipType": "method_reference_receiver" },
+    { "type": "calls", "source": "byTypeName", "target": "parseInt", "confidenceMin": 0.8 },
+    { "type": "calls", "source": "byBoundInstanceReceiver", "target": "trim", "confidenceMin": 0.8 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "this" },
+    { "type": "references", "target": "MethodReferenceShapes.this" },
+    { "type": "references", "source": "byBoundInstanceReceiver", "target": "this" },
+    { "type": "references", "target": "trim()" }
+  ]
+}

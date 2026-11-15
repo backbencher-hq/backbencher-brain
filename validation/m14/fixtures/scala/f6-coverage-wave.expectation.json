@@ -1,0 +1,42 @@
+{
+  "fixtureId": "scala/f6-coverage-wave",
+  "language": "scala",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F6 fixture-coverage gate: exercises the 17 scala completeness-spec handled_verified node types that the analyzer actually references (grep-verified literals) and that no earlier fixture exercised. Every construct probe-verified against the pinned tree-sitter-scala grammar; expectation authored from the analyzer's verified emission on this file. Note: package_object emits NO symbol of its own (namespace wrapper; members become top-level), and file-scope import references attach to the first declared type - the import-edges contract.",
+  "expectSymbols": [
+    { "name": "BaseOp", "kind": "interface" },
+    { "name": "ExtraOp", "kind": "interface" },
+    { "name": "F6Decls", "kind": "interface" },
+    { "name": "F6Color", "kind": "enum" },
+    { "name": "F6Cache", "kind": "type" },
+    { "name": "F6Ops", "kind": "class" },
+    { "name": "Combined", "kind": "type" },
+    { "name": "Infix", "kind": "type" },
+    { "name": "raise" },
+    { "name": "pick" },
+    { "name": "show" },
+    { "name": "useInfix" },
+    { "name": "rename" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "F6Color", "target": "Red" },
+    { "type": "contains", "source": "F6Color", "target": "Green" },
+    { "type": "contains", "source": "F6Color", "target": "Mixed" },
+    { "type": "contains", "source": "F6Ops", "target": "Combined" },
+    { "type": "contains", "source": "F6Ops", "target": "Infix" },
+    { "type": "contains", "source": "F6Ops", "target": "raise" },
+    { "type": "contains", "source": "F6Ops", "target": "rename" },
+    { "type": "instantiates", "source": "raise", "target": "IllegalStateException" },
+    { "type": "references", "source": "Combined", "target": "BaseOp" },
+    { "type": "references", "source": "Combined", "target": "ExtraOp" },
+    { "type": "references", "source": "Infix", "target": "Int" },
+    { "type": "references", "source": "rename", "target": "LMO" },
+    { "type": "uses", "source": "rename", "target": "v" },
+    { "type": "references", "source": "root", "target": "scala.collection" },
+    { "type": "references", "source": "root", "target": "scala.collection.ListMap" }
+  ],
+  "expectComplexity": [
+    { "symbol": "raise", "equals": 5 },
+    { "symbol": "pick", "equals": 1 }
+  ]
+}

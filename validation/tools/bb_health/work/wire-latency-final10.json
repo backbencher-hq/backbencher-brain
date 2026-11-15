@@ -1,0 +1,20 @@
+{
+  "firstCallMs": 1387,
+  "warmMs": [
+    1500,
+    1758,
+    1498,
+    1376,
+    1486,
+    1127,
+    1244,
+    1028,
+    1114,
+    1271
+  ],
+  "warmMinMs": 1028,
+  "warmMaxMs": 1758,
+  "p50Ms": 1271,
+  "p95Ms": 1758,
+  "thisCallLine": "this call: total=381ms (freshness=48ms aggregates=121ms)"
+}

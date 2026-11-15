@@ -1,0 +1,406 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.42",
+  "code": "Sec3",
+  "tool": "bb_security",
+  "title": "bb_security: adversarial lead contract (unit + integration + e2e + corpus)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration",
+    "e2e",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "POSITIVE: the SQLi shape produces a stored lead",
+      "pass": true,
+      "detail": "leads=1 [\"typescript.sql.query\"]"
+    },
+    {
+      "name": "POSITIVE: the lead names the SQLi spec rule",
+      "pass": true,
+      "detail": "rule=typescript.sql.query type=sql_injection"
+    },
+    {
+      "name": "POSITIVE: the lead carries a lexical grade (high)",
+      "pass": true,
+      "detail": "severity=high"
+    },
+    {
+      "name": "POSITIVE: the lead is tier=leads / state=lead (never a finding)",
+      "pass": true,
+      "detail": "tier=leads state=lead"
+    },
+    {
+      "name": "POSITIVE: the lead is intra-symbol (source_symbol_id === sink_symbol_id, no stitching)",
+      "pass": true,
+      "detail": "src=588bf6311da4654b38d687851e6d9633012b70e0:src/app.ts:findUser:3 sink=588bf6311da4654b38d687851e6d9633012b70e0:src/app.ts:findUser:3"
+    },
+    {
+      "name": "POSITIVE: the lead carries source, sink and reach evidence (traceable to a rule)",
+      "pass": true,
+      "detail": "{\"ruleId\":\"typescript.sql.query\",\"vulnerability\":\"sql_injection\",\"severity\":\"high\",\"source\":{\"ruleId\":\"typescript.request\",\"byteStart\":61,\"byteEnd\":70,\"line\":2,\"text\":\"req.query\"},\"sink\":{\"ruleId\":\"typescript.sql.query\",\"byteStart\":142,\"byt"
+    },
+    {
+      "name": "POSITIVE: the default pipeline wrote no rows into the retired token table [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "brain_taint_flow rows=0"
+    },
+    {
+      "name": "NEGATIVE: a parameterized query produces NO lead (strict — was the known false positive) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "leads=0 rules=[]"
+    },
+    {
+      "name": "NEGATIVE: the safe query's answer satisfies the canonical lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "NEGATIVE: the safe query's project declares an empty store, not a clean result",
+      "pass": true,
+      "detail": "security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)"
+    },
+    {
+      "name": "NEGATIVE: no result line describes the safe query as a finding or a vulnerability [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING"
+    },
+    {
+      "name": "NEGATIVE: clean code produces no leads [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "leads=0"
+    },
+    {
+      "name": "lead-state: both language leads are stored",
+      "pass": true,
+      "detail": "leads=2 rules=[\"python.cmd.os_shell\",\"typescript.sql.query\"]"
+    },
+    {
+      "name": "lead-state: every lead is tier=leads and state=lead",
+      "pass": true,
+      "detail": "[\"leads/lead\",\"leads/lead\"]"
+    },
+    {
+      "name": "lead-state: no stored row claims a mitigated state (not emitted in Phase 1) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"lead\"]"
+    },
+    {
+      "name": "lead-state: each lead is attributed to its own file (no cross-language adjacency)",
+      "pass": true,
+      "detail": "[\"src/back.py\",\"src/front.ts\"]"
+    },
+    {
+      "name": "lead-state: no stored lead spans two symbols (intra-symbol only) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"316414a9b498661a7e2a293787c849b407350540:src/back.py:run:2|316414a9b498661a7e2a293787c849b407350540:src/back.py:run:2\",\"316414a9b498661a7e2a293787c849b407350540:src/front.ts:findUser:3|316414a9b498661a7e2a293787c849b407350540:src/front.ts:findUser:3\"]"
+    },
+    {
+      "name": "lead-state: the M72 store has no cross-language column [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "id,project_id,file_id,source_symbol_id,sink_symbol_id,vulnerability_type,severity,state,tier,rule_id,source_line,sink_line,evidence,time_created,time_updated"
+    },
+    {
+      "name": "lead-state: the answer renders both leads with lead labels and grades",
+      "pass": true,
+      "detail": "  [exec] lead: command injection @ src/back.py:4 <- source:3; rule=python.cmd.os_shell; symbol=run [reach: python.env -> cmd = os.environ.get('CMD')] |   [high] lead: sql injection @ src/front.ts:6 <- source:4; rule=typescript.sql.query; symbol=findUser [reach: typescript.request -> sql = 'SELECT * FROM users WHERE name = ' + name -> name = req.query.name]"
+    },
+    {
+      "name": "lead-state: the answer satisfies the canonical project-wide lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "lead-state: the answer never prints [critical] [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING"
+    },
+    {
+      "name": "lead-state: the answer makes no `confirmed` claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    },
+    {
+      "name": "lead-state: the answer makes no cross-language claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "clean"
+    },
+    {
+      "name": "POSITIVE: the Python CMDi shape produces a lead",
+      "pass": true,
+      "detail": "[{\"rule_id\":\"python.cmd.os_shell\",\"vulnerability_type\":\"command_injection\",\"severity\":\"critical\"}]"
+    },
+    {
+      "name": "POSITIVE: the Python lead names the os-shell spec rule",
+      "pass": true,
+      "detail": "rule=python.cmd.os_shell"
+    },
+    {
+      "name": "NEGATIVE: template-literal XSS is not overclaimed as a lead (declared lexical limit) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "leads=0 []"
+    },
+    {
+      "name": "CLI: the source door answers with the banner first",
+      "pass": true,
+      "detail": "exit=0 stderr="
+    },
+    {
+      "name": "CLI: the answer satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "CLI: the answer declares the tiers and the stored-lead census",
+      "pass": true,
+      "detail": "tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation | security leads: 1 stored lead(s)"
+    },
+    {
+      "name": "CLI: the lead is rendered as a lead with its rule",
+      "pass": true,
+      "detail": "  [high] lead: sql injection @ src/app.ts:6 <- source:4; rule=typescript.sql.query; symbol=findUser [reach: typescript.request -> sql = 'SELECT * FROM users WHERE name = ' + name -> name = req.query.name]"
+    },
+    {
+      "name": "CLI: the recordRun answer satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "CLI: recordRun states the recorded lead count",
+      "pass": true,
+      "detail": "1 leads recorded"
+    },
+    {
+      "name": "CLI: history returns the persisted lead",
+      "pass": true,
+      "detail": "{\"total\":1,\"engine\":\"m72-security-spec\"}"
+    },
+    {
+      "name": "CLI: history persists no retired-engine finding [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"m10.04\"]"
+    },
+    {
+      "name": "CLI: an unindexed project is refused by name",
+      "pass": true,
+      "detail": "exit=1 out=error: No index found for /tmp/bb-sec-cli-unindexed-Y4hTCG. Run: bb index \"/tmp/bb-sec-cli-unindexed-Y4hTCG\" (or restart bb mcp after indexing).\n"
+    },
+    {
+      "name": "CLI: a refused read does not create an index [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "created /tmp/m72-fin/projects/d406d67756b835a44771aa054838e4c8a8750466/brain.db"
+    },
+    {
+      "name": "MCP: the tool answers with the banner and tier declaration",
+      "pass": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads r"
+    },
+    {
+      "name": "MCP: the answer satisfies the canonical M72 lead contract",
+      "pass": true,
+      "detail": "clean"
+    },
+    {
+      "name": "MCP: the stored lead is rendered with the lead vocabulary",
+      "pass": true,
+      "detail": "  [exec] lead: command injection @ src/runner.py:4 <- source:3; rule=python.cmd.os_shell; symbol=run [reach: python.env -> cmd = os.environ.get('CMD')]"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): the scan completed and stored only lead rows",
+      "pass": true,
+      "detail": "leads=0 tiers=[]"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): every stored lead names a spec rule",
+      "pass": true,
+      "detail": "badRule=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): every stored lead resolves to an indexed file",
+      "pass": true,
+      "detail": "unresolved=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): every stored lead's file exists on disk",
+      "pass": true,
+      "detail": "missing=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): every stored lead belongs to a leads-tier language",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): no stored lead claims a mitigated state [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[]"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): no cross-symbol lead is stored (intra-symbol only) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "cross=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): the retired token table stayed empty [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "brain_taint_flow rows=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): the answer declares banner + tiers + stored census",
+      "pass": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING | tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation | leads tier: 1 language(s) present; lexical output only | security leads"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): the answer carries no [critical] [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads r"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): the scan completed and stored only lead rows",
+      "pass": true,
+      "detail": "leads=0 tiers=[]"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): every stored lead names a spec rule",
+      "pass": true,
+      "detail": "badRule=0"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): every stored lead resolves to an indexed file",
+      "pass": true,
+      "detail": "unresolved=0"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): every stored lead's file exists on disk",
+      "pass": true,
+      "detail": "missing=0"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): every stored lead belongs to a leads-tier language",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): no stored lead claims a mitigated state [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[]"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): no cross-symbol lead is stored (intra-symbol only) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "cross=0"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): the retired token table stayed empty [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "brain_taint_flow rows=0"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): the answer declares banner + tiers + stored census",
+      "pass": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING | tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation | leads tier: 2 language(s) present; lexical output only | security leads"
+    },
+    {
+      "name": "corpus graphql-js/website/pages (TypeScript): the answer carries no [critical] [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads r"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): the scan completed and stored only lead rows",
+      "pass": true,
+      "detail": "leads=0 tiers=[]"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): every stored lead names a spec rule",
+      "pass": true,
+      "detail": "badRule=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): every stored lead resolves to an indexed file",
+      "pass": true,
+      "detail": "unresolved=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): every stored lead's file exists on disk",
+      "pass": true,
+      "detail": "missing=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): every stored lead belongs to a leads-tier language",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): no stored lead claims a mitigated state [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[]"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): no cross-symbol lead is stored (intra-symbol only) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "cross=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): the retired token table stayed empty [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "brain_taint_flow rows=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): the answer declares banner + tiers + stored census",
+      "pass": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING | tiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation | not scanned by bb_security (no executable source model): make, markdown"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): the answer carries no [critical] [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING\ntiers: 0 scan / 36 leads / 17 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads r"
+    }
+  ],
+  "negativeCases": 25,
+  "summary": {
+    "total": 69,
+    "passed": 69,
+    "failed": 0
+  },
+  "decisions": {
+    "positives": "SQLi (TypeScript) and CMDi (Python) shapes produce stored leads rendered as leads with rule ids",
+    "negatives": "parameterized SQL, clean code, and template-literal XSS produce NO lead (strict; the retired detector's blind spot is gone)",
+    "retiredStore": "the default pipeline writes no brain_taint_flow rows (rollback-only table)",
+    "leadState": "every stored row is tier=leads/state=lead and intra-symbol; no cross-language claim exists in schema or answer",
+    "transports": "CLI via the source entry + MCP StdioClientTransport; unindexed projects are refused",
+    "corpus": "rake (Ruby), graphql-js (TS), rebar3 (Erlang): stored-lead invariants on real data, pass AND fail recorded"
+  },
+  "limitations": [
+    "The Phase-1 engine is intra-symbol, so a source/sink pair split across functions (or inside an anonymous callback) is not a lead; the fixtures place the pair in one named function, which is the shape the engine claims.",
+    "Corpus legs assert stored-lead INVARIANTS, not recall: a spec that does not cover a corpus's API can honestly produce zero leads, and that is recorded as a count, not a pass."
+  ],
+  "generatedAt": "2026-11-14T04:36:01.904Z"
+}

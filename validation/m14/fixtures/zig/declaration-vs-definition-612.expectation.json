@@ -1,0 +1,41 @@
+{
+  "fixtureId": "zig/declaration-vs-definition-612",
+  "language": "zig",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M37.19 (#612) store-phase. THIS grammar does NOT distinguish the two forms by node type: a tree dump on 2026-09-25 showed `extern fn run_engine() c_int;` and `pub fn call_it() c_int { ... }` both parse as `function_declaration` (the `function_signature` alternative the walk also accepts was not produced by either spelling). The body is the discriminator — a `block` child — and the walk already had the node in hand. Publishing the flag is what lets the store prefer the definition when a name is both declared and defined in another file. MEASURED ON THIS EXACT FILE by dumping the analyzer output through the fixture harness' own loader (wasm/tree-sitter-zig.wasm, RealZigAnalyzer): ffi_decl:15 isDeclaration=true, body_fn:17-19 ABSENT, Sig::call:22-24 ABSENT, Sig:21-25 ABSENT. Two-sided: a rule that marked every function fails the `forbidSymbols` half, and one that keyed off the node type alone would emit NOTHING here.",
+  "expectSymbols": [
+    {
+      "name": "ffi_decl",
+      "kind": "function",
+      "meta.isDeclaration": true,
+      "comment": "`extern fn ffi_decl() c_int;` — body-less. Same node type as the definition below, which is why the flag must be derived from the body."
+    },
+    {
+      "name": "body_fn",
+      "kind": "function",
+      "comment": "a `pub fn` with a `block` body"
+    },
+    {
+      "name": "call",
+      "kind": "method",
+      "ownerName": "Sig",
+      "comment": "a container member WITH a body"
+    },
+    {
+      "name": "Sig",
+      "kind": "struct"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "body_fn",
+      "meta.isDeclaration": true,
+      "comment": "NEGATIVE HALF: a `block` child means DEFINITION. This is the entry that fails if the body test is dropped and the node type alone is trusted (both spellings are `function_declaration`)."
+    },
+    {
+      "name": "call",
+      "meta.isDeclaration": true,
+      "comment": "NEGATIVE HALF: the flag must not leak to container members just because they are members."
+    }
+  ]
+}

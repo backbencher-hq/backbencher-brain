@@ -1,0 +1,123 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/assigned-flag-is-file-level.sh",
+ "authoredFrom": "BD11-file-level. `metadata.isAssignedInFile` is documented file-level — 'set when the file assigns the name under any owner' — and neither that sentence nor the field's NAME mentions position. It was evaluated MID-WALK against `declaredSymbols`, which the same walk fills, so the answer depended on how much of the file the walk had already passed: `echo \"before: $LATE\"` / `LATE=1` / `echo \"after: $LATE\"` published ABSENT at line 1 and TRUE at line 3. One file, one name, one declaration, two answers — a self-contradiction inside a single `parseFile` result, so no oracle is needed to call it a defect and a differential cannot see it, because the oracle never published the field. Measured over the 400-file hash-order sample (production `parseFile`, 4,133 admitted / 462,809 scanned / 120 repos, 0 degraded): 7,856 `uses` reads, 6,036 flagged (76.8%), 1,820 absent (23.2%); 37 SELF-CONTRADICTORY (file, target) pairs across 25 files — 193 edges saying not-assigned against 184 saying assigned — plus 15 SILENT-WRONG pairs (50 edges) declared after EVERY read of the name, and a control of 703 correctly-false pairs (1,577 edges) where the name is absent from the symbol table and absent is the right answer. 243 of 7,856 reads, 3.1%, carried a wrong answer (`probe-bash-assigned-flag-order.mts`).",
+ "expectSymbols": [
+  {
+   "name": "assigned-flag-is-file-level.sh",
+   "kind": "module"
+  },
+  {
+   "name": "LATE",
+   "kind": "variable",
+   "ownerName": "assigned-flag-is-file-level.sh"
+  },
+  {
+   "name": "reads_module_late",
+   "kind": "function",
+   "ownerName": "assigned-flag-is-file-level.sh"
+  },
+  {
+   "name": "reads_implicit",
+   "kind": "function",
+   "ownerName": "assigned-flag-is-file-level.sh"
+  },
+  {
+   "name": "IMPLICIT_TARGET",
+   "kind": "variable",
+   "ownerName": "assigned-flag-is-file-level.sh",
+   "note": "`read -r IMPLICIT_TARGET` is a binding site with no assignment node (extractImplicitBinding). The read at line 46 names it, and it is published at MODULE scope while the read sits inside `reads_implicit` — so the cross-scope suffix index over `declaredSymbols` is what answers, exactly as for `NAME=value`."
+  },
+  {
+   "name": "outer_shadow",
+   "kind": "function",
+   "ownerName": "assigned-flag-is-file-level.sh"
+  },
+  {
+   "name": "inner_shadow",
+   "kind": "function",
+   "ownerName": "assigned-flag-is-file-level.sh"
+  },
+  {
+   "name": "SHADOWED",
+   "kind": "variable",
+   "ownerName": "inner_shadow",
+   "note": "Declared only inside `inner_shadow`, and read from BOTH functions. The read in `outer_shadow` is the case a positional reading gets wrong twice over: it is in a different scope AND textually above the only declaration. It must still carry the flag, because the question is about the file."
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "assigned-flag-is-file-level.sh",
+   "target": "LATE",
+   "line_number": 30,
+   "meta.isAssignedInFile": true,
+   "note": "THE row. The read is ABOVE this file's only assignment of `LATE`, which is at line 31. Before the fix this edge carried no flag while line 32 — same file, same name, same declaration — carried one. An implementation that evaluated the predicate during the walk gets this row wrong, and one that evaluated it after the walk gets it right for the reason the field's name gives."
+  },
+  {
+   "type": "uses",
+   "from": "assigned-flag-is-file-level.sh",
+   "target": "assigned-flag-is-file-level.sh.LATE",
+   "line_number": 32,
+   "meta.isAssignedInFile": true,
+   "note": "The contrast row, and it is the same target on the same source one line either side of the declaration. Both rows are required: a fixture asserting only the AFTER case passes on the pre-fix analyzer, which is how this defect survived 26 fixtures and 34 mutants."
+  },
+  {
+   "type": "uses",
+   "from": "reads_module_late",
+   "target": "assigned-flag-is-file-level.sh.LATE",
+   "line_number": 39,
+   "meta.isAssignedInFile": true,
+   "note": "The read is inside a function and the assignment is at module scope — the case the contract's 'under any owner' clause exists for. A lookup keyed on the read's own scope cannot see it; this is the same row `bash/assigned-in-file` pins, kept here so this fixture is self-contained for the file-level claim rather than depending on another fixture for it."
+  },
+  {
+   "type": "uses",
+   "from": "reads_implicit",
+   "target": "IMPLICIT_TARGET",
+   "line_number": 46,
+   "meta.isAssignedInFile": true,
+   "note": "A binding the language creates with no assignment node, read from a scope that holds no declaration of it."
+  },
+  {
+   "type": "uses",
+   "from": "outer_shadow",
+   "target": "SHADOWED",
+   "line_number": 55,
+   "meta.isAssignedInFile": true,
+   "note": "Different scope AND textually above the only declaration in the file. This is the row that distinguishes 'does this file assign the name' from 'is the name assigned by the time control reaches this line' — the second question is real and useful, but it is a DIFFERENT field and this one does not claim to answer it."
+  },
+  {
+   "type": "uses",
+   "from": "inner_shadow",
+   "target": "inner_shadow.SHADOWED",
+   "line_number": 59,
+   "meta.isAssignedInFile": true
+  },
+  {
+   "type": "uses",
+   "from": "assigned-flag-is-file-level.sh",
+   "target": "FROM_THE_ENVIRONMENT",
+   "line_number": 67,
+   "meta.isAssignedInFile": null,
+   "note": "The ABSENT direction, pinned here as well as in `bash/assigned-in-file`. The field is emitted on true only, so this row must carry no key at all — an analyzer that emitted `isAssignedInFile: false` would be publishing a different contract, and one that emitted `true` unconditionally would pass every other row in this file. `meta.x: null` means 'this edge must NOT carry x' (M59), which is the only writable form of this assertion."
+  },
+  {
+   "type": "uses",
+   "from": "assigned-flag-is-file-level.sh",
+   "target": "ALSO_FROM_THE_ENVIRONMENT",
+   "line_number": 68,
+   "meta.isAssignedInFile": null,
+   "note": "Second absent case, so the negative direction is not pinned by a single row."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "target": "FROM_THE_ENVIRONMENT",
+   "from": "reads_module_late",
+   "meta.isAssignedInFile": true,
+   "note": "VACUOUS TODAY, and kept with that stated rather than deleted: this file has no read of `FROM_THE_ENVIRONMENT` from inside a function, so no implementation can produce this edge. It is here to fail loudly if a future change starts emitting `uses` edges for shell-supplied names from every scope, which would make the two null rows above pass for the wrong reason."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

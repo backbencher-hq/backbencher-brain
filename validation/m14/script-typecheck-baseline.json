@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "gate": "m14-script-typecheck-baseline",
+  "command": "tsc --noEmit -p tsconfig.scripts.json",
+  "declaredTotal": 0,
+  "byFile": {},
+  "measuredAt": "2026-10-08T11:47:02.416Z",
+  "measuredAtCommit": "d3543f36417948babaa602a2253a0010bb8cbc19",
+  "updateHistory": [
+    {
+      "at": "2026-10-07T23:28:34.076Z",
+      "commit": "e7488429975d682b7e507b8d43a4e829652fae5f",
+      "total": 180,
+      "note": "seeded after the 2026-10-07 sweep: 716 errors before 7a4dea86f, 262 after it, 192 after 28ec610eb, 180 after e74884299"
+    },
+    {
+      "at": "2026-10-08T01:47:17.401Z",
+      "commit": "d684cf37d71e7cc2c33e866258386f8c77ad2b3d",
+      "total": 162
+    },
+    {
+      "at": "2026-10-08T02:28:51.536Z",
+      "commit": "0c09062a39aac349a223d5c6ce9ff7c2087e7c62",
+      "total": 128,
+      "note": "m14/m12 batch: the declarations that lagged the data — a dead field arm in nameOf returning string[] from a string|null function, a clsName left possibly-null by an any-assignment, an unguarded null selector resolution, an untyped --dart-deps value, two as ScanEntry[] casts in census-truth, and three got arrays with no declared element type. 162 -> 128; A/B over 413 fixtures x 4 derivations: 0 drifts."
+    },
+    {
+      "at": "2026-10-08T02:57:28.219Z",
+      "commit": "57d85cc1864a8c63f35d4969b3f9bf37340c1820",
+      "total": 113,
+      "note": "m14 batch 3: a real TDZ crash in the python endpoint census (fileTextHas used before its declaration in a top-level tally), a duplicated LANGS registration in run-fixtures (ts1117), completeness-inventory's LangConfig drift (companionWasm undeclared, differentialCheck declared required for a lane that has no such check), and three any-inferred element types. 128 -> 113; HEAD crashes on the python case where the fix completes."
+    },
+    {
+      "at": "2026-10-08T11:47:02.409Z",
+      "commit": "d3543f36417948babaa602a2253a0010bb8cbc19",
+      "total": 0,
+      "note": "ZERO. 113 declared errors fixed, in lanes: declarations that lagged their data, imports that resolved to nothing (two of them real crashes/link errors), dead branches a nonexistent field kept alive, a duplicated lane, and the two globals tsconfig.scripts.json never saw. The gate gained a canary so a ZERO can be reported without also being the reading a compiler that never launched produces."
+    }
+  ]
+}

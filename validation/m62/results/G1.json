@@ -1,0 +1,70 @@
+{
+  "issue": "M62.G1",
+  "code": "G1",
+  "milestone": "M62",
+  "status": "known-gap",
+  "checks": 22,
+  "passed": 21,
+  "failed": 2,
+  "realFailed": 2,
+  "negativeCases": 8,
+  "mutantsCaught": 0,
+  "mutantsTotal": 0,
+  "currentCommit": "52d54dac5bb8a8ff0e5f99dd1ea1a75eb91d6cdc",
+  "sourceFingerprint": "c3cd0738a791767d7a2567d0dca04ecdb9c01f9cf2076b7beb0cc752bdee459e",
+  "sourceFingerprintAlgorithm": "sha256 over the covered paths in DECLARED ORDER; each path contributes <repo-relative path> NUL <64-hex sha256 of the file's RAW BYTES> NUL; per-file digest = script/m24/portability.ts sha256File() (node:crypto, no process spawn)",
+  "sourceFingerprintCovers": [
+    "script/m62/verify-governance.ts",
+    "docs/m62/M62-MASTER-PLAN.md",
+    "script/m62/governance_core.ts"
+  ],
+  "verifierCommand": "npx tsx script/m62/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-11-09T10:22:58.611Z",
+  "schemaVersion": 1,
+  "barReAudit": [
+    {
+      "code": "A1",
+      "ok": true,
+      "last": "A1: VERIFIED (76/76 passed, 9/9 mutants caught)"
+    },
+    {
+      "code": "A2",
+      "ok": true,
+      "last": "A2: VERIFIED (33/33 passed, 8/8 mutants caught)"
+    },
+    {
+      "code": "A3",
+      "ok": true,
+      "last": "A3: VERIFIED (26/26 passed, 2/2 mutants caught)"
+    },
+    {
+      "code": "D1",
+      "ok": true,
+      "last": "D1: VERIFIED (5/5 passed)"
+    }
+  ],
+  "prerequisites": [
+    {
+      "name": "M55 bar (the vector of most IDE surfaces)",
+      "status": "verified",
+      "commit": "10d92c441cacc69b6c8930888c8e93b77ede9950"
+    },
+    {
+      "name": "M61 bar (verifier machinery)",
+      "status": "known-gap",
+      "commit": "94493a5fd06a6347974de521918ac8ed35b65bdb"
+    }
+  ],
+  "healedEntries": [],
+  "ledgerStatus": "open",
+  "limitations": [
+    "The bar re-audit re-executes the M62 gates; the lane's deeper suites (m24/m26/m42/m44/m55) are re-earned by X1's lane audit and recorded in its evidence.",
+    "G1's own entry closure rule is enforced where the entry is written (this run), never judged by a sibling gate."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-09T10:22:58.612Z",
+    "contentSha256": "f5576f239bf1a310c4bbb6049636446910ece981f6ed6b76d3cc15f47887959c"
+  }
+}

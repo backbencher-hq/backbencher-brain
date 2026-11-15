@@ -1,0 +1,18 @@
+# A Kubernetes object reference names a declared resource. Multi-document streams are
+# where this resolves, and an unresolvable one says so with a reason and a sub-1.0
+# confidence rather than pretending.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+---
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: app
+      envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: not-declared-here

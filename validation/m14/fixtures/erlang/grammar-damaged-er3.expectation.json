@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "fixture": "erlang/grammar-damaged-er3.erl",
+  "authoredFrom": "ER-D38, from the FULL-corpus chunked dual lens. The last 55 disagreements were all analyzer-only edges in grammar-damaged files, and all of them were fabrications. The shape is wx's api_gen code-generation markup (`<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>`), which the Erlang grammar cannot read: wxListCtrl.erl returns 32 top-level ERROR nodes, loose call/atom/ann_type fragments between them, and not one fun_decl. What made the analyzer start deriving from the wreckage was an earlier fix in this same wave — ER-D32's file-path fallback for currentSource — which removed the only thing that had been stopping it (an undefined source). A fix can open a hole as easily as close one, and the fix did not come with a boundary. 12 files corpus-wide are in this state.",
+  "expectSymbols": [],
+  "expectSymbolCount": [
+    {
+      "equals": 0,
+      "note": "no symbol of any kind: a file with no declaration has nothing to publish"
+    }
+  ],
+  "expectRelationships": [],
+  "expectRelationshipCount": [
+    {
+      "equals": 0
+    }
+  ],
+  "expectErrors": [
+    {
+      "severity": "warning",
+      "message": "Erlang syntax MISSING node."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "some_module:some_function",
+      "note": "THE FABRICATION under test: the call survives in the wreckage and every line number around it is error recovery, not source"
+    },
+    {
+      "type": "references",
+      "target": "not_a_function",
+      "note": "ditto — no edge out of a file the grammar could not read"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "not_a_function",
+      "note": "the name is text in the file, not a declaration the grammar found"
+    },
+    {
+      "name": "some_function"
+    }
+  ],
+  "expectErrorCount": [
+    {
+      "equals": 3,
+      "note": "three errors for one unparseable construct; the count is reported so a change in how much the grammar can read is visible rather than silent"
+    }
+  ]
+}

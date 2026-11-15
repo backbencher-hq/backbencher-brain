@@ -1,0 +1,47 @@
+{
+ "fixtureId": "swift/member-value-reads",
+ "language": "swift",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "Ultimate (Swift last-first-pass) review wave: SW-A non-self member reads, SW-B enum-case construction, SW-D key-path members, SW-E type(of:) stdlib filter, SW-F projected values. Every pin probe-verified against both the analyzer and deriveSwiftEdges (+bare oracle) before pinning; lanes confirm the pair agrees on corpora.",
+ "expectSymbols": [
+  {"name": "Result", "kind": "enum"},
+  {"name": "success", "kind": "enum_member", "ownerName": "Result"},
+  {"name": "failure", "kind": "enum_member", "ownerName": "Result"},
+  {"name": "Store", "kind": "class"},
+  {"name": "items", "kind": "property", "ownerName": "Store"},
+  {"name": "count", "kind": "property", "ownerName": "Store"},
+  {"name": "shared", "kind": "property", "ownerName": "Store"},
+  {"name": "create", "kind": "method", "ownerName": "Store"},
+  {"name": "fetch", "kind": "method", "ownerName": "Store"},
+  {"name": "C", "kind": "class"},
+  {"name": "store", "kind": "property", "ownerName": "C"},
+  {"name": "useAll", "kind": "method", "ownerName": "C"},
+  {"name": "writeOnly", "kind": "method", "ownerName": "C"},
+  {"name": "V", "kind": "struct"},
+  {"name": "count", "kind": "property", "ownerName": "V"},
+  {"name": "bump", "kind": "method", "ownerName": "V"}
+ ],
+ "expectRelationships": [
+  {"type": "uses", "source": "useAll", "target": "count", "line_number": 20, "comment": "SW-A: store.items.count links read; M59.A7 — line 20 is the statement `let a = store.items.count`"},
+  {"type": "uses", "source": "useAll", "target": "items", "line_number": 20, "comment": "SW-A: member and subscript bases read"},
+  {"type": "calls", "source": "useAll", "target": "fetch", "line_number": 21, "comment": "chained call intact"},
+  {"type": "uses", "source": "useAll", "target": "box", "line_number": 21, "comment": "SW-A: intermediate links read"},
+  {"type": "uses", "source": "useAll", "target": "shared", "line_number": 22, "comment": "SW-A: static member reads"},
+  {"type": "calls", "source": "useAll", "target": "create", "line_number": 24, "comment": "SW-B: static factories stay calls"},
+  {"type": "calls", "source": "useAll", "target": "map", "line_number": 27, "comment": "member call intact"},
+  {"type": "uses", "source": "useAll", "target": "name", "line_number": 27, "comment": "SW-D: key-path members read"},
+  {"type": "uses", "source": "useAll", "target": "slot", "line_number": 28, "comment": "SW-D: key-path label values read"},
+  {"type": "uses", "source": "useAll", "target": "store", "line_number": 20, "comment": "bare member read (pre-existing machinery)"},
+  {"type": "instantiates", "source": "useAll", "target": "Result", "line_number": 23, "comment": "SW-B: enum-case construction builds; M59.A7 — its site is line 23 (`let e = Result.success(1)`)"},
+  {"type": "uses", "source": "bump", "target": "count", "line_number": 38, "comment": "SW-F: projected $count reads the member; its site is line 38 (`let b = $count`)"}
+ ],
+ "forbidRelationships": [
+  {"type": "calls", "source": "useAll", "target": "success", "comment": "SW-B: construction never dangles as a leaf call"},
+  {"type": "instantiates", "source": "useAll", "target": "Store", "comment": "SW-B: static factories never instantiate"},
+  {"type": "uses", "source": "writeOnly", "target": "slot", "comment": "SW-A: assignment LHS writes never read"},
+  {"type": "calls", "source": "useAll", "target": "type", "comment": "SW-E: type(of:) is stdlib, never user code"},
+  {"type": "uses", "source": "useAll", "target": "items", "line_number": 19, "comment": "M59.A7 line pin: 19 is `var store = Store()` — a DECLARATION line no read site sits on. The edge's line must be a site where `items` is actually read (20, from `store.items.count`)"},
+  {"type": "uses", "source": "bump", "target": "count", "line_number": 36, "comment": "M59.A7 line pin: 36 is `var count = 0` — the DECLARATION; the projected read `$count` is at 38"},
+  {"type": "calls", "source": "useAll", "target": "create", "line_number": 14, "comment": "M59.A7 line pin: 14 is `static func create()`'s own declaration — the call site is 24, and a callee's declaration is not the call site"}
+ ]
+}

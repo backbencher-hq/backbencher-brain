@@ -1,0 +1,52 @@
+{
+  "issue": "M60 clojure deep round — CLJ-D20 (the lane's last regex)",
+  "note": "`/^%(\\d+|&)?$/` decided whether a `#(…)` head was a parameter reference rather than a callee, and it was the last regex reviews/regex-policy.md carried for clojure — registered with the note \"mechanically convertible to a structural symbol-name check\". It is a char scan now (`isAnonArgShorthand`), and the conversion is PROVED, not asserted: script/m14/tmp/clj-regex-equiv.ts runs the regex and the scan over every `sym_lit` name in three corpora (633 files, 187,678 symbol nodes, 13,363 distinct names) plus a 42-case adversarial battery (`%%`, `%&x`, `%0`, `%00`, `Arabic-Indic-digit-one`, `% 1`, `%1a`, a twenty-digit `%…`) and reports 0 mismatches. The accepted-shorthand half pins the observable behaviour (no `calls` edge for `%`, `%&`, `%1`, `%2`, `%3`); the boundary is pinned from the other side, where `%&x` and `%1a` are NOT shorthands and so ARE read as callees — two deliberately malformed heads, kept because a greedy filter is only observable through them.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "target": "helper",
+      "line_number": 31,
+      "meta.isAnonShorthand": true
+    },
+    {
+      "type": "calls",
+      "target": "clojure.core/inc",
+      "line_number": 32,
+      "meta.isAnonShorthand": true
+    },
+    {
+      "type": "calls",
+      "target": "%&x",
+      "line_number": 35,
+      "meta.isAnonShorthand": true
+    },
+    {
+      "type": "calls",
+      "target": "%1a",
+      "line_number": 36,
+      "meta.isAnonShorthand": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "%"
+    },
+    {
+      "type": "calls",
+      "target": "%&"
+    },
+    {
+      "type": "calls",
+      "target": "%1"
+    },
+    {
+      "type": "calls",
+      "target": "%2"
+    },
+    {
+      "type": "calls",
+      "target": "%3"
+    }
+  ]
+}

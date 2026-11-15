@@ -1,0 +1,92 @@
+{
+  "fixtureId": "cpp/include-name-924",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60/#924 (the cpp row of the R10 name-surface class, landed from the census's own files). The cpp analyzer extracted the include name as `text.slice(text.indexOf(\"include\") + 7)` over the WHOLE preproc_include node \u2014 so every trailing comment became part of the published module and of the include_dependency edge target: `#include <vector> // vector` published `vector // vector`. MEASURED through the production entry on the two pinned cpp corpora (script/m14/tmp/c924-include-ab.ts, fmt + nlohmann-json, 71 files, 1,567 published names): 876 of them carried whitespace, 438 include sites, all of them comment-glue; after the fix 4 remain and all four are a DIFFERENT class (`operator\"\" _json` user-defined-literal names, not includes). The A/B is one-directional: 724 distinct names renamed, 568 clean names gained, and 0 removed names whose comment-stripped form did not appear \u2014 no include was lost. The same block reported system-ness as `includePath.startsWith(\"<\")` on the STRIPPED name, where stripIncludeChars has already deleted the `<`, so no cpp include could ever be reported as a system one; both metadata fields now read the raw path node, which is what the C lane's getIncludePath has always done. The extraction is structural now (the `path` field, literal-only like C-D2), so the fixture also pins that a macro-COMPOSED argument publishes nothing \u2014 the c/macro-composed-include contract, previously unpinned for cpp. **Reverting mutant: `cpp/include-name-comment-glue`** (mutate-analyzer.ts) restores the text slice; this fixture is the only one that catches it.  M14 ONTOLOGY (2026-10-04): the include rows are now `imports` \u2014 C++'s file inclusion is a first-class `imports` edge, the same kind and metadata the C lane emits for the identical construct (c/macro-composed-include; reverted by the `c/include-kind-downgraded` mutant). The PRE-FIX rows in `forbidRelationships` move WITH the kind on purpose: a revert of the name extraction now produces an `imports` row whose target carries the comment glue, so a forbid row still written as `references` would not catch the revert it exists to catch. The `references` label on the CLEAN targets is forbidden separately, so a silent relabel back to `references` fails this fixture too.",
+  "expectSymbols": [
+    {
+      "name": "helper",
+      "kind": "function"
+    }
+  ],
+  "expectImports": [
+    {
+      "module": "vector",
+      "meta.isSystemInclude": true,
+      "comment": "`#include <vector>  // vector` on line 25 \u2014 the module is the path node's text, and `<...>` makes it a system include (before the fix this was `vector  // vector`, and isSystemInclude was false for every cpp include)."
+    },
+    {
+      "module": "local_header.h",
+      "meta.isSystemInclude": false,
+      "comment": "`#include \"local_header.h\"    /* local */` on line 26 \u2014 the block comment is not part of the name either, and a quoted include is not a system one."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "vector",
+      "line_number": 25,
+      "meta.relationshipType": "include_dependency",
+      "meta.isSystem": true,
+      "note": "the include_dependency edge carries the same corrected name; M59.A7 (#825) puts the row on the PATH node's line."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "line_number": 26,
+      "meta.isSystem": false,
+      "meta.relationshipType": "part_of_directive",
+      "meta.partRole": "part",
+      "note": "THE TARGET IS NOW PINNED, BECAUSE IT IS NOW STABLE. It was left unconstrained while it was a PATH - a path varies with the checkout, and pinning one would have made the fixture a test of the machine. It is now the part's MODULE SYMBOL (its file stem), the same on every machine and the only form the arbiter can bind: MEASURED path => 0 resolved of 4,612 and symbol => 383 resolved of 4,612, same population, same 2,000-file stride sample, the target's FORM the only variable. A CONSTRAINT THAT CAN NOW BE PINNED IS A CHECK THAT SHOULD NOW BE OWNED, so this fixture asserts the stem itself rather than merely that some part_of row exists.",
+      "target": "local_header",
+      "meta.partSymbol": "local_header"
+    }
+  ],
+  "forbidImports": [
+    {
+      "module": "vector  // vector",
+      "note": "PRE-FIX: the published module, comment glue included."
+    },
+    {
+      "module": "local_header.h    /* local */",
+      "note": "PRE-FIX: the block-comment form of the same defect."
+    },
+    {
+      "module": "MACRO_COMPOSED_HEADER",
+      "note": "the literal-only rule (C-D2): a macro-composed include argument is not a statically resolvable header name and publishes no module."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "vector  // vector",
+      "note": "PRE-FIX: the include_dependency target with the comment glued on."
+    },
+    {
+      "type": "imports",
+      "target": "local_header.h    /* local */",
+      "note": "PRE-FIX: the block-comment form."
+    },
+    {
+      "type": "imports",
+      "target": "MACRO_COMPOSED_HEADER",
+      "note": "a composed argument must not fabricate an include_dependency edge \u2014 mirrors c/macro-composed-include."
+    },
+    {
+      "type": "references",
+      "target": "vector",
+      "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses."
+    },
+    {
+      "type": "references",
+      "target": "local_header.h",
+      "note": "#910-for-cpp: the include dependency carried as `references` + metadata.isImport. Forbidding the OLD label is what makes this a regression gate for a downgrade rather than a note about one \u2014 the same discipline c/macro-composed-include uses."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "local_header.h",
+      "note": "A QUOTED include is not `imports` \u2014 it is `part_of`, and the NAME contract is unchanged: the target is never the comment-glued slice, it is the part's path built from the corrected specifier."
+    }
+  ]
+}

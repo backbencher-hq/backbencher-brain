@@ -1,0 +1,54 @@
+{
+  "fixtureId": "svelte/js-script-heritage",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M49 W12 svelte heritage wave. A PLAIN JS <script> (the corpus shape: svelte/tests/runtime-legacy/samples/attribute-casing-custom-element) declares custom-element classes with EXTERNAL bases plus a member (dotted) base. The analyzer merges the JS sub-analyzer's `extends` edges into the component result; the F5 oracle's generic walker matched TYPESCRIPT's class_heritage>extends_clause shape only, so tree-sitter-JAVASCRIPT's class_heritage (a bare expression child — no clause node) derived ZERO extends edges and the analyzer edge surfaced as fabrication (probe: analyzer [extends MyCustomElement->HTMLElement], oracle []). This fixture pins the analyzer side end-to-end through the production SFC path; the oracle side is pinned by F9-PROBE-JS-HERITAGE-EXTERNAL.",
+  "expectSymbols": [
+    {
+      "name": "MyCustomElement",
+      "kind": "class"
+    },
+    {
+      "name": "Extended",
+      "kind": "class"
+    },
+    {
+      "name": "Qualified",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "MyCustomElement",
+      "target": "HTMLElement"
+    },
+    {
+      "type": "extends",
+      "from": "Extended",
+      "target": "MyCustomElement"
+    },
+    {
+      "type": "extends",
+      "from": "Qualified",
+      "target": "Lib.Base"
+    },
+    {
+      "type": "contains",
+      "from": "MyCustomElement",
+      "target": "render"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "MyCustomElement",
+      "target": "MyCustomElement"
+    },
+    {
+      "type": "extends",
+      "from": "Qualified",
+      "target": "Lib"
+    }
+  ]
+}

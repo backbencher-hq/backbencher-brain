@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M64",
+  "issue": "M64.1",
+  "code": "H64X",
+  "tool": "bb_health",
+  "title": "M64 evidence census: every committed M64 document is this milestone's, schema-valid, and checked against a validator that can fail",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "the M64 results directory exists and holds evidence",
+      "pass": true,
+      "detail": "/home/ishaq2321/mcp/backbencher-brain/validation/m64/results"
+    },
+    {
+      "name": "every document in validation/m64/results declares the M64 milestone",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "every M64 document is schema-valid (9 documents)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no M64 document is left in validation/m13/results",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "forged `verified` with a failing check is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: verified claim has failed>0; verified claim has zero negative cases"
+    },
+    {
+      "name": "`verified` with no negative case is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: verified claim has zero negative cases"
+    },
+    {
+      "name": "another milestone's document is refused by name [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: milestone must be M64 — this document declares M13 and belongs in /home/ishaq2321/mcp/backbencher-brain/validation/m13/results; summary.total 4 != checks.length 6; summary.passed 4 != actual 6; negativeCases 0 is less than 2 checks marked negative"
+    },
+    {
+      "name": "an M13 issue number is refused on an M64 document [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: issue must match M64.NN; summary.total 4 != checks.length 7; summary.passed 4 != actual 7; negativeCases 0 is less than 3 checks marked negative"
+    },
+    {
+      "name": "an undeclared layer is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: layers must be a non-empty array of valid layers; summary.total 4 != checks.length 8; summary.passed 4 != actual 8; negativeCases 0 is less than 4 checks marked negative"
+    },
+    {
+      "name": "a summary that disagrees with its checks is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: summary.total 99 != checks.length 9; summary.passed 0 != actual 9; summary.failed 99 != actual 0; negativeCases 0 is less than 5 checks marked negative"
+    },
+    {
+      "name": "a tampered copy of h64.json (one check flipped, summary untouched) is refused [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "got: summary.passed 60 != actual 59; summary.failed 0 != actual 1"
+    },
+    {
+      "name": "h64.json itself validates (the tamper, not the document, is what failed)",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 7,
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0
+  },
+  "decisions": {
+    "home": "validation/m64/results is M64's corpus; `Harness` derives it from `milestone` (script/m13/harness.ts:resultsDirFor), so a reusing milestone cannot write into another's by accident",
+    "identity": "one document, one milestone — `milestone` and `issue` must agree, and a document declaring another milestone is refused by name and told where it belongs",
+    "falsifiability": "the validator's grip is proved on a REAL document from this corpus (tampered summary), not only on documents this gate constructs"
+  },
+  "limitations": [
+    "This census validates structure and identity, not truth: it cannot tell whether a check's assertion was the right one, which is what the per-family gates (verify-paths/verify-wire/…) are for.",
+    "The layer vocabulary is the shared one from the harness; a document may still name a layer its checks did not actually exercise, because a layer classifies WHERE the checks ran."
+  ],
+  "generatedAt": "2026-10-16T15:20:33.637Z"
+}

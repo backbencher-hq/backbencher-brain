@@ -1,0 +1,13 @@
+{
+  "status": "verified",
+  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m48/verify-p3-agreement.ts",
+  "evidenceFile": "P3.json",
+  "generatedAt": "2026-11-05T04:31:56.735Z",
+  "passed": 30,
+  "failed": 0,
+  "negativeCases": 5,
+  "failures": [],
+  "fixtureNote": "cross-file chain leaf/Service/alpha/b1/b2/c1/d1 — callers+impact+visualize+cross_language"
+}

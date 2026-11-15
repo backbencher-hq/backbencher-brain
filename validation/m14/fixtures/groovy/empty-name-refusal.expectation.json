@@ -1,0 +1,26 @@
+{
+  "fixtureId": "groovy/empty-name-refusal",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS R7's \"no empty names\" rule for the METHOD and TYPE declaration paths, where it was NOT enforced, and the two consequences of the same MISSING-identifier shape. A MISSING identifier node EXISTS with an empty `.text`, so an `if (nameNode)` guard does not catch it — the node is present, it is simply nameless. Measured on the pinned corpus before the fix (script/m60/groovy-ontology-census.ts, `emptySymbolNames`): 6 empty-named METHOD symbols, every one from the `@Unparsed` annotation shape, which the pinned grammar reads as `(method_declaration (modifiers (marker_annotation name: (identifier))) type: (type_identifier) name: (MISSING identifier) parameters: (formal_parameters))` — real files, not a synthetic shape: subprojects/groovy-groovysh GroovyCommands.groovy (2), src/test/groovy/groovy/StringTest.groovy (2), src/testFixtures/groovy/cli/ValSepI.groovy (1), subprojects/groovy-console MacOSXMenuBar.groovy (1). THREE rules, each with a measured cause: (1) no symbol may carry an empty name; (2) the field-read walk resolved the method name independently and `nameNode?.text ?? method` adopts `\"\"` because `??` falls through only on null/undefined, so every read in such a body was published as `uses \"\" -> length` — 11 such edges with an EMPTY SOURCE in GroovyCommands.groovy alone, unreadable and unresolvable; (3) that same walk mapped EVERY `constructor_declaration` to the literal `constructor`, so an ANNOTATED method with a parameter list — which the pinned grammar reads as a constructor node — emitted its symbol correctly as `method handler` and then attributed its body's reads to `constructor`, a name no symbol carries, so the row can never bind to the method it came from. `handler -> length` is pinned and `constructor -> length` is forbidden, and the fix is the same demotion the symbol path already applies (#841 round 3): a constructor node is a real constructor only when its name equals the enclosing type's.",
+  "expectSymbols": [
+    { "name": "ValSepI", "kind": "interface" },
+    { "name": "Reader", "kind": "class" },
+    { "name": "handler", "kind": "method", "ownerName": "Reader" },
+    { "name": "read", "kind": "method", "ownerName": "Reader" }
+  ],
+  "forbidSymbols": [
+    { "name": "" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "source": "Reader", "target": "handler" },
+    { "type": "uses", "source": "handler", "target": "length" },
+    { "type": "uses", "source": "read", "target": "length" }
+  ],
+  "forbidRelationships": [
+    { "from": "", "type": "uses" },
+    { "from": "", "type": "calls" },
+    { "type": "contains", "target": "" },
+    { "type": "uses", "source": "constructor", "target": "length" }
+  ]
+}

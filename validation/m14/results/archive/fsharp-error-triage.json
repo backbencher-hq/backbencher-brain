@@ -3,7 +3,7 @@
   "kind": "m60-fsharp-error-triage",
   "generatedAt": "2026-09-26T02:51:27.437Z",
   "roots": [
-    "$HOME/fixtures/repositories/fsharp/src"
+    "/home/ishaq2321/bb_tests/repositories/fsharp/src"
   ],
   "note": "Triage of the ERROR nodes the fsharp census counted (133/497 src files). Two measurements, neither derivable from the census: the construct clusters (ERROR node parent + first token + ancestor path) and the declaration-coverage ratio inside vs outside error regions — the ratio is the evidence, because locals legitimately carry no symbol, so an absolute count would be noise.",
   "totals": {

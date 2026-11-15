@@ -1,0 +1,8051 @@
+{
+  "gate": "M60.P1",
+  "title": "Payload-seam matrix — 33 declared fields × 33 onboarded languages × 4 seam stages",
+  "at": "2026-09-29T01:58:05.685Z",
+  "commit": "0da6ea37c7788df804e22e44bece27f414f1b2a8",
+  "measuredSources": {
+    "clean": false,
+    "dirty": [
+      "M src/ast/real-c-analyzer.ts",
+      " M src/ast/real-clojure-analyzer.ts",
+      " M src/ast/real-cpp-analyzer.ts",
+      " M src/ast/real-csharp-analyzer.ts",
+      " M src/ast/real-elixir-analyzer.ts",
+      " M src/ast/real-erlang-analyzer.ts",
+      " M src/ast/real-fsharp-analyzer.ts",
+      " M src/ast/real-zig-analyzer.ts"
+    ],
+    "rule": "emit is measured by reading the working tree, so a dirty measured source means this artifact describes a state that is not in any commit; a frame whose sources were dirty is a probe, not milestone evidence"
+  },
+  "method": "fields parsed from src/ast/types.ts; every needle verified against the live tree (fatal on mismatch, so the matrix cannot rot silently); emit measured per-language against src/ast/real-<lang>-analyzer.ts; store against parallel-indexer/schema-ddl; query against brain.sql/graph-engine/doc-engine/taint; tool against the MCP surface.",
+  "surface": {
+    "declaredFieldCount": 33,
+    "uniqueFields": 32,
+    "symbolFields": 22,
+    "relationshipFields": 11,
+    "languages": [
+      "c",
+      "clean",
+      "clojure",
+      "cpp",
+      "csharp",
+      "dart",
+      "elixir",
+      "erlang",
+      "fsharp",
+      "go",
+      "graphql",
+      "groovy",
+      "haskell",
+      "hcl",
+      "java",
+      "javascript",
+      "kotlin",
+      "lua",
+      "nim",
+      "objc",
+      "perl",
+      "php",
+      "python",
+      "ruby",
+      "rust",
+      "scala",
+      "svelte",
+      "swift",
+      "typescript",
+      "vb",
+      "vue",
+      "xml",
+      "zig"
+    ],
+    "emitCellCount": 1089
+  },
+  "undeclaredStoreBindings": [
+    {
+      "binding": "symbol.docstring",
+      "note": "bound at src/ast/parallel-indexer.ts:2220 (M35 pre-work) — docstring is NOT on UniversalSymbol; only java/python/r emit it"
+    },
+    {
+      "binding": "symbol.complexity",
+      "note": "bound at src/ast/parallel-indexer.ts:2195 (complexity column) — complexity is on FileMetadata, NOT on UniversalSymbol"
+    },
+    {
+      "binding": "symbol.isDeclaration",
+      "note": "#612: bound at src/ast/parallel-indexer.ts (is_declaration column) — isDeclaration is a WORKER-PAYLOAD field, narrowed from `metadata.isDeclaration` at the pool-worker seam and therefore NOT on UniversalSymbol either (see the `metadata` spec's store.via). Producers: c (since the HC1 review) + cpp/rust/zig (#612). Reader: the store-phase resolver (resolveTargetStmt), which orders definitions ahead of declarations."
+    }
+  ],
+  "totals": {
+    "fields": 32,
+    "alive": [
+      "name",
+      "kind",
+      "range",
+      "scope",
+      "visibility",
+      "isStatic",
+      "isAsync",
+      "isAbstract",
+      "parameters",
+      "returnType",
+      "decorators",
+      "genericParameters",
+      "qualified_calls",
+      "apiContractPath",
+      "ownerName",
+      "taintSources",
+      "taintSinks",
+      "metadata",
+      "source",
+      "target",
+      "from",
+      "to",
+      "fromSymbol",
+      "toSymbol",
+      "type",
+      "relationshipType",
+      "confidence",
+      "line_number"
+    ],
+    "alivePartial": [
+      "scope (25/33)",
+      "visibility (32/33)",
+      "isStatic (9/33)",
+      "isAsync (3/33)",
+      "isAbstract (9/33)",
+      "parameters (21/33)",
+      "returnType (16/33)",
+      "decorators (10/33)",
+      "genericParameters (8/33)",
+      "qualified_calls (5/33)",
+      "apiContractPath (2/33)",
+      "ownerName (32/33)",
+      "taintSources (1/33)",
+      "taintSinks (1/33)",
+      "from (5/33)",
+      "to (2/33)",
+      "fromSymbol (4/33)",
+      "toSymbol (4/33)",
+      "relationshipType (20/33)",
+      "confidence (32/33)",
+      "line_number (32/33)"
+    ],
+    "ruledDead": [
+      "comments",
+      "ownerKind",
+      "gravityScore",
+      "layer"
+    ],
+    "blocked": [],
+    "emitCellsAlive": 543,
+    "emitCellsDead": 513
+  },
+  "fields": [
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2180 (INSERT brain_symbol col 4)",
+      "queryReader": "doc-engine.ts:171, graph-engine.ts:299",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2078 -> symbol_type",
+      "queryReader": "graph-engine.ts:299, doc-engine.ts:171 (s.*)",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2085-2099 -> line_start/line_end/byte_start/byte_end",
+      "queryReader": "doc-engine.ts:171,175 (ORDER BY s.line_start)",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive",
+      "lineBase": "1-based (R6) — line_start/line_end are 1-based; the M59 oracle checks them against the source text",
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "storeBinding": "#837 FIXED: bound at INDEXER insertSymbol (scope_kind column) — the DDL + typed schema existed for years while the INSERT omitted them; bound 2026-09-14 by the M60.P1 enumeration, verified live (kotlin/dart scope rows non-null through the real pipeline, script/m14/tmp/scope837-verify.ts)",
+      "queryReader": "brain.sql.ts typed schema (data now exists to read)",
+      "emitByLangCount": 25,
+      "emitByLang": {
+        "c": true,
+        "clean": false,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": false,
+        "fsharp": true,
+        "go": false,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": false,
+        "perl": true,
+        "php": true,
+        "python": false,
+        "ruby": true,
+        "rust": false,
+        "scala": false,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": false,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 25/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": "Was BLOCKED (the only store-drop the enumeration found); the #837 binding landed the same day. The rot-check now REQUIRES the binding to exist — removing it re-fails the matrix."
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2191",
+      "queryReader": "brain.sql.ts schema; doc-engine.ts:171 (s.*)",
+      "emitByLangCount": 32,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": false,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 32/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2206 -> is_static",
+      "queryReader": "brain.sql.ts schema; carried by doc-engine.ts:171 SELECT s.*",
+      "emitByLangCount": 9,
+      "emitByLang": {
+        "c": true,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": true,
+        "dart": true,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": true,
+        "python": false,
+        "ruby": true,
+        "rust": false,
+        "scala": true,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": true,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 9/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2205 -> is_async",
+      "queryReader": "brain.sql.ts schema; carried by doc-engine.ts:171 SELECT s.*",
+      "emitByLangCount": 3,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": true,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": true,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 3/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2207 -> is_abstract",
+      "queryReader": "brain.sql.ts schema; carried by doc-engine.ts:171 SELECT s.*",
+      "emitByLangCount": 9,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": true,
+        "csharp": true,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": true,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": false,
+        "kotlin": true,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": true,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": true,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": true,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 9/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2192 -> parameters (json)",
+      "queryReader": "doc-engine.ts:171 (s.*)",
+      "emitByLangCount": 21,
+      "emitByLang": {
+        "c": true,
+        "clean": false,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": false,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": true,
+        "xml": false,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive (partial: 21/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2193 -> return_type",
+      "queryReader": "doc-engine.ts:203 (`returns ${symbol.return_type}`)",
+      "emitByLangCount": 16,
+      "emitByLang": {
+        "c": true,
+        "clean": false,
+        "clojure": false,
+        "cpp": true,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": true,
+        "fsharp": false,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": false,
+        "java": true,
+        "javascript": false,
+        "kotlin": true,
+        "lua": false,
+        "nim": true,
+        "objc": false,
+        "perl": false,
+        "php": true,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": true,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": false,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 16/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2200-2202 (annotations fallback when metadata absent)",
+      "queryReader": "doc-engine.ts:171 (s.*) + graph-engine annotation joins",
+      "emitByLangCount": 10,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": true,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": false,
+        "nim": true,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": true,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 10/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2208 -> generic_parameters (json)",
+      "queryReader": "brain.sql.ts schema; carried by doc-engine.ts:171 SELECT s.*",
+      "emitByLangCount": 8,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": true,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": true,
+        "go": false,
+        "graphql": false,
+        "groovy": true,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": false,
+        "kotlin": true,
+        "lua": false,
+        "nim": true,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": true,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 8/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "storeBinding": "NO binding — no comments column and no INSERT reference (the ruled doc channel is symbol.docstring, M35 pre-work, bound at 2220)",
+      "queryReader": "doc-engine.ts:171,175 (s.* includes docstring; lexical LIKE match at 175)",
+      "emitByLangCount": 10,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": true,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": true,
+        "graphql": false,
+        "groovy": true,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": false,
+        "nim": true,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": true,
+        "ruby": false,
+        "rust": false,
+        "scala": true,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": false,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "ruled-dead (no store channel; ruling recorded)",
+      "lineBase": null,
+      "ruling": "M60 plan §3 PoC + M35 pre-work: docstring is the ruled doc channel; comments has no store channel by design. The residual risk is recorded, not hidden: producers that fill only comments (10 languages) lose their doc payload at emit.",
+      "note": null
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2194 -> qualified_calls (json)",
+      "queryReader": "brain.sql.ts:89 schema; carried by doc-engine.ts:171 SELECT s.*",
+      "emitByLangCount": 5,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": true,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": false,
+        "kotlin": true,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": true,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 5/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2195 -> api_contract_path",
+      "queryReader": "graph/doc query layers (verified 2 files)",
+      "emitByLangCount": 2,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 2/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2097,2115 -> owner_symbol_id (resolved to a row id)",
+      "queryReader": "graph-engine.ts:148 owner-cascade + schema FK",
+      "emitByLangCount": 32,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": false,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 32/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "storeBinding": "NO binding — derivable from the owner row's symbol_type via owner_symbol_id",
+      "queryReader": "derivable via owner join (graph-engine.ts:148)",
+      "emitByLangCount": 29,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": false,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": false,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": false,
+        "scala": true,
+        "svelte": true,
+        "swift": false,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": false,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "ruled-dead (no store channel; ruling recorded)",
+      "lineBase": null,
+      "ruling": "Store drops it as redundant: the owner row already carries symbol_type, and graph-engine's owner-cascade reads it from there. Ruled-dead (derivable).",
+      "note": null
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2266-2268 -> brain_taint_flow (insertTaintSource)",
+      "queryReader": "taint.ts:94 (analyzeTaintFlows SELECT)",
+      "emitByLangCount": 1,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive (partial: 1/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": "Alive end-to-end for the languages that emit taints (typescript only) — per-language cells carry the real signal."
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2266-2268 -> brain_taint_flow",
+      "queryReader": "taint.ts:94",
+      "emitByLangCount": 1,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive (partial: 1/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2196 -> gravity_score (store computes complexity×visibility fallback)",
+      "queryReader": "doc-engine.ts:175,182 (ORDER BY s.gravity_score DESC)",
+      "emitByLangCount": 0,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": false,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "ruled-dead (no producer; ruling recorded)",
+      "lineBase": null,
+      "ruling": "M60 plan §3 PoC: no analyzer produces gravityScore; the store fallback (complexity × visibility) is the de-facto contract and doc-engine ranks on it. Ruled-dead as an analyzer payload.",
+      "note": null
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "storeBinding": "src/ast/parallel-indexer.ts:2197 -> layer (file-level fallback)",
+      "queryReader": "analysis layers (verified 2 query files)",
+      "emitByLangCount": 0,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": false,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "ruled-dead (no producer; ruling recorded)",
+      "lineBase": null,
+      "ruling": "No analyzer emits a per-symbol layer; the store's file-level fallback (symbol.layer || fileLayer) is the de-facto contract, cited from the binding itself. Ruled-dead as an analyzer payload.",
+      "note": null
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol+UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2198-2200 -> annotations (json), PLUS #612: the ONE metadata key the store phase itself reads gets a column of its own — `metadata.isDeclaration` is narrowed to `is_declaration` at the worker seam (pool-worker.ts, which for SYMBOLS used to drop the whole metadata object, exactly as it had for docstring/#35 and scope_kind/#837) and bound at the INSERT; name resolution orders by it so a definition wins over a declaration",
+      "queryReader": "doc-engine.ts:171 (s.*) + tool surface annotations; is_declaration is read by the store-phase resolver (parallel-indexer.ts resolveTargetStmt)",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive",
+      "lineBase": "1-based (R6) — `metadata.line`, `decoratorLine`/`decoratorLines`; only typescript and cpp write a `line` mirror, and null is the ruled absence state",
+      "ruling": null,
+      "note": "#612 widened this field's STORE claim without changing its shape: `annotations` is still the metadata JSON column and is still NULL at runtime for analyzer symbols (the worker drops the object), but `metadata.isDeclaration` now has a dedicated column and a reader. The runtime-absent annotations channel is recorded here rather than hidden — it is the same seam class as docstring (M35) and scope_kind (#837), and it is why three lanes' fixture pins for the declaration fact had to go through the worker payload instead of annotations."
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2429 -> source_symbol_id/source_external",
+      "queryReader": "graph-engine.ts:150+ JOINs",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (query-reachable; MCP surface does not name it)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2430s (targetName -> target_symbol_id/target_external)",
+      "queryReader": "graph-engine.ts:150+ JOINs",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (query-reachable; MCP surface does not name it)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2061,2429 — READ as an input alias, never persisted under its own name",
+      "queryReader": "graph-engine.ts:171,258 (edge objects built from symbol ids)",
+      "emitByLangCount": 5,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": true,
+        "dart": false,
+        "elixir": false,
+        "erlang": true,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": true,
+        "perl": false,
+        "php": true,
+        "python": false,
+        "ruby": false,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": false,
+        "vb": true,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 5/33 languages emit)",
+      "lineBase": null,
+      "ruling": "M60 plan §3 PoC: alias read by consumers, never produced. The graph layer rebuilds from/to from stored ids — the persisted shape is source/target. Ruled-dead.",
+      "note": null
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2062 + pool-worker.ts:370 — READ as an input alias",
+      "queryReader": "graph-engine.ts:171,259",
+      "emitByLangCount": 2,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": false,
+        "csharp": false,
+        "dart": false,
+        "elixir": true,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": false,
+        "ruby": true,
+        "rust": false,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": false,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 2/33 languages emit)",
+      "lineBase": null,
+      "ruling": "M60 plan §3 PoC: alias-read, never produced. Ruled-dead.",
+      "note": null
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2061,2429 alias read",
+      "queryReader": "graph-engine.ts:150+",
+      "emitByLangCount": 4,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": true,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": false,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 4/33 languages emit)",
+      "lineBase": null,
+      "ruling": "Alias-read, never produced; same contract as `from`. Ruled-dead.",
+      "note": null
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2062 + pool-worker.ts:370 alias read",
+      "queryReader": "graph-engine.ts:150+",
+      "emitByLangCount": 4,
+      "emitByLang": {
+        "c": false,
+        "clean": false,
+        "clojure": false,
+        "cpp": true,
+        "csharp": false,
+        "dart": false,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": false,
+        "go": false,
+        "graphql": false,
+        "groovy": false,
+        "haskell": false,
+        "hcl": false,
+        "java": false,
+        "javascript": false,
+        "kotlin": false,
+        "lua": false,
+        "nim": false,
+        "objc": false,
+        "perl": false,
+        "php": false,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": false,
+        "svelte": false,
+        "swift": false,
+        "typescript": false,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": false
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": false,
+      "verdict": "alive (partial: 4/33 languages emit)",
+      "lineBase": null,
+      "ruling": "Alias-read, never produced; same contract as `to`. Ruled-dead.",
+      "note": null
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2431 -> relationship_type",
+      "queryReader": "graph-engine.ts:150,213",
+      "emitByLangCount": 33,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2431 (alias accepted)",
+      "queryReader": "graph-engine.ts:258,266 (edge objects)",
+      "emitByLangCount": 20,
+      "emitByLang": {
+        "c": true,
+        "clean": false,
+        "clojure": false,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": false,
+        "erlang": false,
+        "fsharp": true,
+        "go": true,
+        "graphql": false,
+        "groovy": true,
+        "haskell": false,
+        "hcl": false,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": false,
+        "php": true,
+        "python": true,
+        "ruby": false,
+        "rust": true,
+        "scala": true,
+        "svelte": false,
+        "swift": true,
+        "typescript": true,
+        "vb": false,
+        "vue": false,
+        "xml": false,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive (partial: 20/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2567 -> confidence",
+      "queryReader": "graph-engine.ts:150 (5 query files verified)",
+      "emitByLangCount": 32,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": true,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": false,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive (partial: 32/33 languages emit)",
+      "lineBase": null,
+      "ruling": null,
+      "note": null
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "storeBinding": "src/ast/parallel-indexer.ts:2570-2573 -> line_number",
+      "queryReader": "graph-engine.ts:150,213",
+      "emitByLangCount": 32,
+      "emitByLang": {
+        "c": true,
+        "clean": true,
+        "clojure": true,
+        "cpp": true,
+        "csharp": true,
+        "dart": true,
+        "elixir": true,
+        "erlang": true,
+        "fsharp": true,
+        "go": true,
+        "graphql": true,
+        "groovy": true,
+        "haskell": false,
+        "hcl": true,
+        "java": true,
+        "javascript": true,
+        "kotlin": true,
+        "lua": true,
+        "nim": true,
+        "objc": true,
+        "perl": true,
+        "php": true,
+        "python": true,
+        "ruby": true,
+        "rust": true,
+        "scala": true,
+        "svelte": true,
+        "swift": true,
+        "typescript": true,
+        "vb": true,
+        "vue": true,
+        "xml": true,
+        "zig": true
+      },
+      "storeOk": true,
+      "queryOk": true,
+      "toolOk": true,
+      "verdict": "alive (partial: 32/33 languages emit)",
+      "lineBase": "1-based (R6) — the call site, checkable against the source; NULL means the site is not attributable, never 0",
+      "ruling": "M59.O2 — call-site line or NULL, never a fabricated 0. Producers (32 of 33): c, clean, clojure, cpp, csharp, dart, elixir, erlang, fsharp, go, graphql, groovy, hcl, java, javascript, kotlin, lua, nim, objc, perl, php, python, ruby, rust, scala, svelte, swift, typescript, vb, vue, xml, zig. The remaining 1 carry NULL by ruling, which is the ruled ALIVE shape.",
+      "note": null
+    }
+  ],
+  "emitCells": [
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "name",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "kind",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "range",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "scope",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "visibility",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "isStatic",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "isAsync",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "isAbstract",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "parameters",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "returnType",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "decorators",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "genericParameters",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "comments",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "qualified_calls",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "apiContractPath",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "ownerName",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "ownerKind",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "taintSources",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "taintSinks",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "gravityScore",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "layer",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "metadata",
+      "iface": "UniversalSymbol",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "source",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "target",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "from",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "to",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "fromSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "toSymbol",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": false
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "type",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": false
+    },
+    {
+      "field": "relationshipType",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": false
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "confidence",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "c",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "clean",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "clojure",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "cpp",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "csharp",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "dart",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "elixir",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "erlang",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "fsharp",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "go",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "graphql",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "groovy",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "haskell",
+      "alive": false
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "hcl",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "java",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "javascript",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "kotlin",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "lua",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "nim",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "objc",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "perl",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "php",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "python",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "ruby",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "rust",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "scala",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "svelte",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "swift",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "typescript",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "vb",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "vue",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "xml",
+      "alive": true
+    },
+    {
+      "field": "line_number",
+      "iface": "UniversalRelationship",
+      "lang": "zig",
+      "alive": true
+    }
+  ],
+  "foldNote": "Fold into M49 at X1: the jvm/web closure claims are true only with this matrix green; today's non-alive fields are recorded here as the remainder, not re-derived per milestone."
+}

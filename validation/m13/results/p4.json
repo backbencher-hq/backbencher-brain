@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.38",
+  "code": "P4",
+  "tool": "bb_patterns",
+  "title": "bb_patterns: integration + e2e (CLI + MCP) + real-repo corpus",
+  "verifiedState": "verified",
+  "layers": [
+    "e2e",
+    "corpus"
+  ],
+  "checks": [
+    {
+      "name": "CLI: output is not empty",
+      "pass": true,
+      "detail": "len=1011"
+    },
+    {
+      "name": "CLI: contains 'patterns' header",
+      "pass": true,
+      "detail": "patterns (17 found, 6 recorded) recorded run 05407e8d-3b6b-4721-986e-402f6e6f8ad0: new=6 repeated=0 resolved=0\n  [warning] god-class @ src/app.ts:7 (80%)\n  [info] orphaned_function @ src/app.ts:3 (70%"
+    },
+    {
+      "name": "CLI: contains 'recorded run'",
+      "pass": true,
+      "detail": "patterns (17 found, 6 recorded) recorded run 05407e8d-3b6b-4721-986e-402f6e6f8ad0: new=6 repeated=0 resolved=0\n  [warning] god-class @ src/app.ts:7 (80%)\n  [info] orphaned_function @ src/app.ts:3 (70%"
+    },
+    {
+      "name": "CLI: called symbol 'handleRequest' NOT flagged as orphaned [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "patterns (17 found, 6 recorded) recorded run 05407e8d-3b6b-4721-986e-402f6e6f8ad0: new=6 repeated=0 resolved=0\n  [warning] god-class @ src/app.ts:7 (80%)\n  [info] orphaned_function @ src/app.ts:3 (70%)\n  [info] orphaned_class @ src/app.ts:7 (70%)\n  [info] orphaned_function @ src/app.ts:2 (70%)\n  [in"
+    },
+    {
+      "name": "CLI: all-scope output has findings",
+      "pass": true,
+      "detail": "patterns (17 found, 6 recorded) recorded run 05407e8d-3b6b-4721-986e-402f6e6f8ad0: new=6 repeated=0 resolved=0\n  [warning] god-class @ src/app.ts:7 (80%)\n  [info] orphaned_function @ src/app.ts:3 (70%)\n  [info] orphaned_class @ src/app.ts:7 (70%)\n  [info] orphaned_function @ src/app.ts:2 (70%)\n  [in"
+    },
+    {
+      "name": "CLI orphaned: output mentions 'orphaned code'",
+      "pass": true,
+      "detail": "orphaned code (16 found):\n  orphaned_function complexFn — src/app.ts:3 (70%)\n  orphaned_class MegaClass — src/app.ts:7 (70%)\n  orphaned_function orphanedHelper — src/app.ts:2 (70%)\n  orphaned_function"
+    },
+    {
+      "name": "CLI orphaned: carries provenance",
+      "pass": true,
+      "detail": "orphaned code (16 found):\n  orphaned_function complexFn — src/app.ts:3 (70%)\n  orphaned_class MegaClass — src/app.ts:7 (70%)\n  orphaned_function orphanedHelper — src/app.ts:2 (70%)\n  orphaned_function a — src/app.ts:8 (70%)\n  orphaned_function b — src/app.ts:8 (70%)\n  orphaned_function c — src/app.t"
+    },
+    {
+      "name": "CLI orphaned: called symbol NOT in orphaned output [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "orphaned code (16 found):\n  orphaned_function complexFn — src/app.ts:3 (70%)\n  orphaned_class MegaClass — src/app.ts:7 (70%)\n  orphaned_function orphanedHelper — src/app.ts:2 (70%)\n  orphaned_function"
+    },
+    {
+      "name": "CLI history: returns JSON object with runs",
+      "pass": true,
+      "detail": "{\n  \"runs\": [\n    {\n      \"id\": \"05407e8d-3b6b-4721-986e-402f6e6f8ad0\",\n      \"projectId\": \"447304dffc47a37c49cca75e472397047149b9d6\",\n      \"kind\": \"patterns\",\n      \"status\": \"completed\",\n      \"eng"
+    },
+    {
+      "name": "CLI history: includes the recorded run",
+      "pass": true,
+      "detail": "{\n  \"runs\": [\n    {\n      \"id\": \"05407e8d-3b6b-4721-986e-402f6e6f8ad0\",\n      \"projectId\": \"447304dffc47a37c49cca75e472397047149b9d6\",\n      \"kind\": \"patterns\",\n      \"status\": \"completed\",\n      \"engineVersion\": \"m10.04\",\n      \"inputHash\": \"79a39139bad0651bad48e83113de79d9b4d175db24f1eac7ec191ebb9"
+    },
+    {
+      "name": "CLI default: includes patterns header",
+      "pass": true,
+      "detail": "patterns (17 found):\n  [warning] god-class @ src/app.ts:7 (80%)\n  [info] orphaned_function @ src/app.ts:3 (70%)\n  [info] orphaned_class @ src/app.ts:7 (70%)\n  [info] orphaned_function @ src/app.ts:2 ("
+    },
+    {
+      "name": "MCP orphaned: not error",
+      "pass": true,
+      "detail": "orphaned code (2 found):\n  orphaned_function dead — src/app.ts:2 (70%)\n  orphaned_function caller — src/app.ts:3 (70%)\n[scan: 2 orphan candidate(s) (orphaned_function=2); showing 2]\n[suppressed: nothi"
+    },
+    {
+      "name": "MCP orphaned: mentions provenance",
+      "pass": true,
+      "detail": "orphaned code (2 found):\n  orphaned_function dead — src/app.ts:2 (70%)\n  orphaned_function caller — src/app.ts:3 (70%)\n[scan: 2 orphan candidate(s) (orphaned_function=2); showing 2]\n[suppressed: nothing]\n[usage-evidence: refused 0 row(s) (selfLoop=0, inferred=0, lowConfidence=0); imports: 0 row(s), "
+    },
+    {
+      "name": "MCP orphaned: called function NOT flagged [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "orphaned code (2 found):\n  orphaned_function dead — src/app.ts:2 (70%)\n  orphaned_function caller — src/app.ts:3 (70%)\n[scan: 2 orphan candidate(s) (orphaned_function=2); showing 2]\n[suppressed: nothi"
+    },
+    {
+      "name": "MCP all: output contains patterns",
+      "pass": true,
+      "detail": "patterns (2 found):\n  [info] orphaned_function @ src/app.ts:2 (70%)\n  [info] orphaned_function @ src/app.ts:3 (70%)\n[scan: 2 finding(s) across orphaned_function=2; showing 2]"
+    },
+    {
+      "name": "MCP history: returns JSON object with runs",
+      "pass": true,
+      "detail": "{\n  \"runs\": [],\n  \"summary\": {\n    \"open\": 0,\n    \"resolved\": 0,\n    \"suppressed\": 0,\n    \"reopened\": 0,\n    \"mitigated\": 0,\n    \"stale\": 0\n  },\n  \"findings\": [],\n  \"findingsTotal\": 0,\n  \"findingsRetu"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): orphan report has provenance",
+      "pass": true,
+      "detail": "static_finding"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): orphan findings carry evidence",
+      "pass": true,
+      "detail": "findings=127 without-evidence=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): all-scope returns non-null patterns",
+      "pass": true,
+      "detail": "type=object"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): all-scope patterns carry evidence",
+      "pass": true,
+      "detail": "patterns=63 without-evidence=0"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): statistics returned",
+      "pass": true,
+      "detail": "{\"totalFound\":63,\"byType\":{\"orphaned_class\":12,\"orphaned_function\":42,\"god-class\":9},\"bySeverity\":{\"info\":54,\"warning\":9"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): pattern types are known categories",
+      "pass": true,
+      "detail": "god-class,orphaned_class,orphaned_function"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): every orphaned_* type is a real orphan rule",
+      "pass": true,
+      "detail": "orphaned_class,orphaned_function"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): no zero-confidence stubs [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "zero-conf patterns: 0"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): orphan report has provenance",
+      "pass": true,
+      "detail": "static_finding"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): orphan findings carry evidence",
+      "pass": true,
+      "detail": "findings=162 without-evidence=0"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): all-scope returns non-null patterns",
+      "pass": true,
+      "detail": "type=object"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): all-scope patterns carry evidence",
+      "pass": true,
+      "detail": "patterns=85 without-evidence=0"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): statistics returned",
+      "pass": true,
+      "detail": "{\"totalFound\":85,\"byType\":{\"orphaned_function\":8,\"orphaned_file\":2,\"god-class\":29,\"high-complexity-function\":36,\"long-pa"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): pattern types are known categories",
+      "pass": true,
+      "detail": "god-class,high-complexity-function,long-parameter-list,orphaned_function,framework-detected,orphaned_file"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): every orphaned_* type is a real orphan rule",
+      "pass": true,
+      "detail": "orphaned_function,orphaned_file"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): framework types detected in index → framework patterns emitted",
+      "pass": true,
+      "detail": "indexed frameworks=Markdown,drizzle,jest,zustand emitted=4"
+    },
+    {
+      "name": "corpus graphql-js/src (TypeScript): no zero-confidence stubs [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "zero-conf patterns: 0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): orphan report has provenance",
+      "pass": true,
+      "detail": "static_finding"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): orphan findings carry evidence",
+      "pass": true,
+      "detail": "findings=200 without-evidence=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): all-scope returns non-null patterns",
+      "pass": true,
+      "detail": "type=object"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): all-scope patterns carry evidence",
+      "pass": true,
+      "detail": "patterns=200 without-evidence=0"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): statistics returned",
+      "pass": true,
+      "detail": "{\"totalFound\":333,\"byType\":{\"orphaned_function\":65,\"god-class\":5,\"high-complexity-function\":178,\"long-parameter-list\":78"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): pattern types are known categories",
+      "pass": true,
+      "detail": "high-complexity-function,god-class,long-parameter-list,orphaned_function,framework-detected"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): every orphaned_* type is a real orphan rule",
+      "pass": true,
+      "detail": "orphaned_function"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): framework types detected in index → framework patterns emitted",
+      "pass": true,
+      "detail": "indexed frameworks=eunit,Erlang,rebar3,otp,cowboy emitted=1"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): no zero-confidence stubs [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "zero-conf patterns: 0"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): orphan report has provenance",
+      "pass": true,
+      "detail": "static_finding"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): orphan findings carry evidence",
+      "pass": true,
+      "detail": "findings=200 without-evidence=0"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): all-scope returns non-null patterns",
+      "pass": true,
+      "detail": "type=object"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): all-scope patterns carry evidence",
+      "pass": true,
+      "detail": "patterns=200 without-evidence=0"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): statistics returned",
+      "pass": true,
+      "detail": "{\"totalFound\":518,\"byType\":{\"orphaned_function\":412,\"orphaned_class\":15,\"high-complexity-function\":83,\"god-class\":5,\"lon"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): pattern types are known categories",
+      "pass": true,
+      "detail": "high-complexity-function,god-class,long-parameter-list,orphaned_function,orphaned_class,framework-detected"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): every orphaned_* type is a real orphan rule",
+      "pass": true,
+      "detail": "orphaned_function,orphaned_class"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): framework types detected in index → framework patterns emitted",
+      "pass": true,
+      "detail": "indexed frameworks=net_http emitted=1"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): no zero-confidence stubs [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "zero-conf patterns: 0"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): orphan report has provenance",
+      "pass": true,
+      "detail": "static_finding"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): orphan findings carry evidence",
+      "pass": true,
+      "detail": "findings=200 without-evidence=0"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): all-scope returns non-null patterns",
+      "pass": true,
+      "detail": "type=object"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): all-scope patterns carry evidence",
+      "pass": true,
+      "detail": "patterns=200 without-evidence=0"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): statistics returned",
+      "pass": true,
+      "detail": "{\"totalFound\":720,\"byType\":{\"orphaned_function\":708,\"high-complexity-function\":9,\"framework-detected\":3},\"bySeverity\":{\""
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): pattern types are known categories",
+      "pass": true,
+      "detail": "high-complexity-function,orphaned_function,framework-detected"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): every orphaned_* type is a real orphan rule",
+      "pass": true,
+      "detail": "orphaned_function"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): framework types detected in index → framework patterns emitted",
+      "pass": true,
+      "detail": "indexed frameworks=lens,hspec-quickcheck,servant emitted=2"
+    },
+    {
+      "name": "corpus cabal/Cabal/src (Haskell): no zero-confidence stubs [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "zero-conf patterns: 0"
+    }
+  ],
+  "negativeCases": 8,
+  "summary": {
+    "total": 60,
+    "passed": 60,
+    "failed": 0
+  },
+  "decisions": {
+    "transports": "compiled CLI via `node bin/bb tool bb_patterns`; MCP via StdioClientTransport → src/mcp/server.ts",
+    "corpus": "one sub-directory per major language family (Ruby, TypeScript, Erlang, Go, Haskell); every probe recorded",
+    "evidence": "every finding must carry non-empty evidence array; orphan findings must derive from canonical detectOrphans"
+  },
+  "limitations": [
+    "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
+    "Framework detection depends on the analyzer assigning framework_type; repos without detectable frameworks skip that class."
+  ],
+  "generatedAt": "2026-11-05T04:15:57.811Z"
+}

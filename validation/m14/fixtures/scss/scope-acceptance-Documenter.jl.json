@@ -1,0 +1,81 @@
+{
+  "repo": "Documenter.jl",
+  "files": 29,
+  "partition": {
+    "before": {
+      "imports": {
+        "unresolved": 69,
+        "total": 69
+      },
+      "contains": {
+        "resolved": 233,
+        "total": 233
+      },
+      "references": {
+        "ambDeclOnly": 202,
+        "resolved": 27,
+        "total": 229
+      },
+      "exports": {
+        "ambDeclOnly": 446,
+        "resolved": 58,
+        "total": 504
+      },
+      "extends": {
+        "resolved": 5,
+        "unresolved": 8,
+        "total": 13
+      },
+      "overrides": {
+        "ambDeclOnly": 5,
+        "total": 5
+      },
+      "calls": {
+        "resolved": 2,
+        "total": 2
+      }
+    },
+    "after": {
+      "imports": {
+        "unresolved": 69,
+        "total": 69
+      },
+      "contains": {
+        "resolved": 233,
+        "total": 233
+      },
+      "references": {
+        "resolved": 229,
+        "total": 229
+      },
+      "exports": {
+        "resolved": 504,
+        "total": 504
+      },
+      "extends": {
+        "resolved": 5,
+        "unresolved": 8,
+        "total": 13
+      },
+      "overrides": {
+        "resolved": 5,
+        "total": 5
+      },
+      "calls": {
+        "resolved": 2,
+        "total": 2
+      }
+    }
+  },
+  "theCollisionClass": {
+    "collidingNames": 198,
+    "before": {
+      "ambDeclOnly": 653
+    },
+    "after": {}
+  },
+  "falseBindings": {
+    "respelledEdgesChecked": 977,
+    "falseBindings": 4
+  }
+}

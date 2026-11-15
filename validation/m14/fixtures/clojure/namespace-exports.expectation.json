@@ -1,0 +1,22 @@
+{
+  "issue": "M60 relationship-ontology wave — CLJ-D53 (`exports`)",
+  "note": "An `ns` form's public interned vars are the namespace's export surface, and the language states that with no keyword — which is why a grammar inventory cannot see the construct and why the edge was absent for a whole wave. The `ExportInfo[]` was already derived correctly and nothing indexes it: `ParseResult.exports` is passed through `engine.ts` and read by no consumer, while `bb_graph` and `src/lsp/graph_usages.ts` read `exports` RELATIONSHIP rows out of `brain_relationship`. So the surface existed, was right, and was invisible to every graph consumer. The edges are emitted from the same `finalExports` set the `ExportInfo[]` comes from, so they inherit its exclusions exactly: no `declare` (CLJ-D23), no spec annotation a definition displaces (CLJ-D38), no private var, and one edge per surviving name.",
+  "expectRelationships": [
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-fn" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-var" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "Public-Proto" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "Public-Record" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "Public-Type" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-multi" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "public-once" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "from": "clj.fixture.exports", "target": "private-fn" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "annotated-private" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "private-var" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "declared-only" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "clj.fixture.exports" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "proto-method" },
+    { "type": "exports", "from": "clj.fixture.exports", "target": "f" }
+  ]
+}

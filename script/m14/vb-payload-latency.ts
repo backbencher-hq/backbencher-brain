@@ -11,7 +11,7 @@
  * `script/m60/payload-matrix.ts` enumerates the FIELD seams (which declared
  * fields are produced, stored and read), not the edge COUNT, and
  * `script/m14/ast-walk-cost.ts` — the one instrument that does measure a lane's
- * walk cost — has a hardcoded `CORPUS` of `$HOME/ishaq/fixtures/repositories`,
+ * walk cost — has a hardcoded `CORPUS` of `/home/sano/ishaq/bb_tests/repositories`,
  * which does not exist on this machine, and carries no vb sample. Both are
  * reported to master rather than edited.
  *
@@ -42,7 +42,7 @@ import { readdirSync, statSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { getParser } from "../../src/ast/engine"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const REPO = process.env.VB_CORPUS ?? "roslyn-vb"
 const DIR = join(CORPUS_ROOT, REPO)
 const LIMIT = Number(process.env.VB_NFILES ?? 300)

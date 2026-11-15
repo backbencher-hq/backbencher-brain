@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld10-qualified-and-recovery.sql",
+  "authoredFrom": "SQLD10 (M60 SQL wave, 2026-09-27). Each of the three losses was measured on /home/ishaq2321/ProxiCall @1f3e3567: the `calories` column published as a table dependency came from database/migrations/20260702_inventory_categories_nutrition_translations.sql; the five-column ADD COLUMN that published one of five is the same file; the nested-declaration loss is database/schema.sql, whose 158 create_table nodes after the damaged function are children of that function's body. The shapes are read off the grammar (probe: COMMENT ON COLUMN nests its table; ALTER gives one add_column per column), not off the analyzer.",
+  "comment": "The forbid rows are the regression pins. An expect-only fixture passes unchanged while `uses global->calories` is present, and passes unchanged while two of the five added columns are missing, because nothing in the expect rows would notice.",
+  "expectSymbols": [
+    {
+      "name": "inventory_items",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "inventory_items"
+    },
+    {
+      "name": "total",
+      "kind": "property",
+      "ownerName": "inventory_items"
+    },
+    {
+      "name": "calories",
+      "kind": "property",
+      "ownerName": "inventory_items",
+      "meta.addedByAlter": true
+    },
+    {
+      "name": "protein_g",
+      "kind": "property",
+      "ownerName": "inventory_items",
+      "meta.addedByAlter": true
+    },
+    {
+      "name": "carbs_g",
+      "kind": "property",
+      "ownerName": "inventory_items",
+      "meta.addedByAlter": true
+    },
+    {
+      "name": "after_damage",
+      "kind": "class",
+      "meta.type": "table"
+    },
+    {
+      "name": "id",
+      "kind": "property",
+      "ownerName": "after_damage"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "calories",
+      "ownerName": "inventory_items",
+      "equals": 1
+    },
+    {
+      "name": "protein_g",
+      "ownerName": "inventory_items",
+      "equals": 1
+    },
+    {
+      "name": "carbs_g",
+      "ownerName": "inventory_items",
+      "equals": 1
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "from": "sqld10-qualified-and-recovery.sql",
+      "target": "inventory_items"
+    },
+    {
+      "type": "uses",
+      "from": "sqld10-qualified-and-recovery.sql",
+      "target": "inventory_items"
+    },
+    {
+      "type": "contains",
+      "from": "inventory_items",
+      "target": "sqld10-qualified-and-recovery.sql::inventory_items.calories"
+    },
+    {
+      "type": "contains",
+      "from": "inventory_items",
+      "target": "sqld10-qualified-and-recovery.sql::inventory_items.protein_g"
+    },
+    {
+      "type": "contains",
+      "from": "inventory_items",
+      "target": "sqld10-qualified-and-recovery.sql::inventory_items.carbs_g"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "sqld10-qualified-and-recovery.sql",
+      "target": "total"
+    },
+    {
+      "type": "references",
+      "from": "sqld10-qualified-and-recovery.sql",
+      "target": "qty"
+    },
+    {
+      "type": "references",
+      "from": "sqld10-qualified-and-recovery.sql",
+      "target": "app"
+    },
+    {
+      "type": "uses",
+      "from": "sqld10-qualified-and-recovery.sql",
+      "target": "calories"
+    }
+  ],
+  "expectUniqueIds": [
+    {
+      "name": "id",
+      "ownerName": "inventory_items"
+    },
+    {
+      "name": "id",
+      "ownerName": "after_damage"
+    }
+  ],
+  "note": "`after_damage` is the nested-declaration row: it sits after a function the grammar cannot finish, so it is only reachable if the declaration sweep descends through a declaration. forbidRelationships on `app` is there because the first version of the COMMENT fix took parts[0] and edged the SCHEMA — the negative twin of the column error, and the reason the fix is 'second-to-last segment' rather than 'first'.",
+  "forbidErrors": [
+    {
+      "severity": "warning"
+    }
+  ],
+  "premiseChanged": "PREMISE CHANGED 2026-09-27, and the change is an improvement, not a relaxation. This fixture asserted `expectErrors: [{severity: warning}]` because the grammar could not parse the plpgsql body in the source, so the file was damaged and the recovery passes were what recovered the declarations. The shipped plpgsql scaffolding parses this shape, so the file is now CLEAN: the assertion is inverted to `forbidErrors`, which is a strictly stronger pin (all expected symbols AND zero errors, rather than symbols plus a warning that was always going to be there). The recovery passes are still pinned, on damage that a plpgsql grammar does not fix: script/m60/verify-sql-resync.ts fires on 19 real corpus files and asserts C1 reachable, C2 every firing recovers, C3 recovered ranges are file-absolute. The header comment below still describes the ORIGINAL defect and is kept as the record of why the fixture exists."
+}

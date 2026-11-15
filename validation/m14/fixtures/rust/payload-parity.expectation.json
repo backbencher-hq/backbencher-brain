@@ -1,0 +1,25 @@
+{
+  "fixtureId": "rust/payload-parity",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#383/#419-C/#419-D: qualified_calls payload, per-symbol complexity, evidence tiers on every edge, and file-level complexity field - all previously absent from the Rust analyzer.",
+  "expectSymbols": [
+    {
+      "name": "documented"
+    }
+  ],
+  "expectComplexity": [
+    {
+      "symbol": "documented",
+      "equals": 2
+    }
+  ],
+  "expectQualifiedCalls": [
+    {
+      "symbol": "documented",
+      "includes": [
+        "other"
+      ]
+    }
+  ]
+}

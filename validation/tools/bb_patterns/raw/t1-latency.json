@@ -1,0 +1,196 @@
+{
+  "tier": "T1",
+  "projectDir": ".perf-fixtures/bb-scale/n100",
+  "projectId": "a7d2214d3de0ee3134c30ffd876d358c6fd6b514",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+  "route": "handler (source door): createToolHandlers().bb_patterns — the same handler src/mcp/server.ts calls",
+  "env": {
+    "BB_DATA_DIR": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_patterns/bbdata/t1",
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "protocol": "warm: one excluded warmup per shape, then five measured calls; p50/p95 over the five; BB_NO_AUTO_REFRESH=1",
+  "indexBefore": {
+    "db": {
+      "bytes": 52342784,
+      "mtime": "2026-11-01T23:24:47.163Z"
+    },
+    "wal": {
+      "bytes": 0,
+      "mtime": "2026-11-01T23:25:43.644Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-01T23:25:43.645Z"
+    }
+  },
+  "shapes": [
+    {
+      "shape": "default-all",
+      "args": {},
+      "warmupMs": 3050.62,
+      "warmupChars": 1497,
+      "runs": [
+        {
+          "ms": 1432.41,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1 rule(s); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1497,
+            "lines": 22
+          }
+        },
+        {
+          "ms": 1293.74,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1 rule(s); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1497,
+            "lines": 22
+          }
+        },
+        {
+          "ms": 1748.91,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1 rule(s); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1497,
+            "lines": 22
+          }
+        },
+        {
+          "ms": 1021.83,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1 rule(s); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1497,
+            "lines": 22
+          }
+        },
+        {
+          "ms": 796.32,
+          "isError": false,
+          "facts": {
+            "censusHeader": "388",
+            "scan": "388 finding(s) across orphaned_function=176 high-complexity-function=121 orphaned_file=41 god-class=38 framework-detected=6 orphaned_class=5 long-parameter-list=1 rule(s); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1497,
+            "lines": 22
+          }
+        }
+      ],
+      "p50Ms": 1293.74,
+      "p95Ms": 1748.91,
+      "maxMs": 1748.91,
+      "minMs": 796.32,
+      "medianOfRuns": [
+        796.32,
+        1021.83,
+        1293.74,
+        1432.41,
+        1748.91
+      ],
+      "isError": false
+    },
+    {
+      "shape": "orphaned",
+      "args": {
+        "scope": "orphaned"
+      },
+      "warmupMs": 744.05,
+      "warmupChars": 1733,
+      "runs": [
+        {
+          "ms": 857.92,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1733,
+            "lines": 24
+          }
+        },
+        {
+          "ms": 778.29,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1733,
+            "lines": 24
+          }
+        },
+        {
+          "ms": 864.67,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1733,
+            "lines": 24
+          }
+        },
+        {
+          "ms": 673.78,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1733,
+            "lines": 24
+          }
+        },
+        {
+          "ms": 731.49,
+          "isError": false,
+          "facts": {
+            "censusHeader": "222",
+            "scan": "222 orphan candidate(s) (orphaned_function=176 orphaned_file=41 orphaned_class=5); showing 20 — raise `limit` to see more",
+            "displayRows": 20,
+            "chars": 1733,
+            "lines": 24
+          }
+        }
+      ],
+      "p50Ms": 778.29,
+      "p95Ms": 864.67,
+      "maxMs": 864.67,
+      "minMs": 673.78,
+      "medianOfRuns": [
+        673.78,
+        731.49,
+        778.29,
+        857.92,
+        864.67
+      ],
+      "isError": false
+    }
+  ],
+  "generatedAt": "2026-11-01T23:26:03.140Z",
+  "indexAfter": {
+    "db": {
+      "bytes": 52342784,
+      "mtime": "2026-11-01T23:24:47.163Z"
+    },
+    "wal": {
+      "bytes": 988832,
+      "mtime": "2026-11-01T23:26:16.416Z"
+    },
+    "shm": {
+      "bytes": 32768,
+      "mtime": "2026-11-01T23:26:14.094Z"
+    }
+  },
+  "readMovedIndex": true
+}

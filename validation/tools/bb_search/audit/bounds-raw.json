@@ -1,0 +1,115 @@
+{
+  "calls": [
+    {
+      "label": "__init__",
+      "projectId": "82a42b87206708afbb4230b4d2d784b2ff204c00",
+      "projectDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/work/project"
+    },
+    {
+      "label": "noindex.symbols",
+      "args": {
+        "query": "anything"
+      },
+      "isError": false,
+      "ms": 353.26,
+      "text": "no results for \"anything\"",
+      "parsed": null
+    },
+    {
+      "label": "symbols.limitHuge",
+      "args": {
+        "query": "pagedSymbol",
+        "limit": 100000
+      },
+      "isError": false,
+      "ms": 206.53,
+      "text": "pagedSymbol01 [function] src/paged.ts:1 (typescript)\npagedSymbol02 [function] src/paged.ts:2 (typescript)\npagedSymbol03 [function] src/paged.ts:3 (typescript)\npagedSymbol04 [function] src/paged.ts:4 (typescript)\npagedSymbol05 [function] src/paged.ts:5 (typescript)\npagedSymbol06 [function] src/paged.ts:6 (typescript)\npagedSymbol07 [function] src/paged.ts:7 (typescript)\npagedSymbol08 [function] src/paged.ts:8 (typescript)\npagedSymbol09 [function] src/paged.ts:9 (typescript)\npagedSymbol10 [function] src/paged.ts:10 (typescript)\npagedSymbol11 [function] src/paged.ts:11 (typescript)\npagedSymbol12 [function] src/paged.ts:12 (typescript)\npagedSymbol13 [function] src/paged.ts:13 (typescript)\npagedSymbol14 [function] src/paged.ts:14 (typescript)\npagedSymbol15 [function] src/paged.ts:15 (typescript)\npagedSymbol16 [function] src/paged.ts:16 (typescript)\npagedSymbol17 [function] src/paged.ts:17 (typescript)\npagedSymbol18 [function] src/paged.ts:18 (typescript)\npagedSymbol19 [function] src/paged.ts:19 (typescript)\npagedSymbol20 [function] src/paged.ts:20 (typescript)\npagedSymbol21 [function] src/paged.ts:21 (typescript)\npagedSymbol22 [function] src/paged.ts:22 (typescript)\npagedSymbol23 [function] src/paged.ts:23 (typescript)\npagedSymbol24 [function] src/paged.ts:24 (typescript)\npagedSymbol25 [function] src/paged.ts:25 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exactCaseVariant",
+      "args": {
+        "query": "HANDLEREQUEST",
+        "exact": true
+      },
+      "isError": false,
+      "ms": 57.55,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.exactAndRegex",
+      "args": {
+        "query": "^handle.*",
+        "regex": true,
+        "exact": true
+      },
+      "isError": false,
+      "ms": 327.85,
+      "text": "handleRequest [function] src/app.ts:5 (typescript)\nhandleResponse [function] src/app.ts:9 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regexCaseSensitive",
+      "args": {
+        "query": "^HANDLE",
+        "regex": true,
+        "caseSensitive": true
+      },
+      "isError": false,
+      "ms": 99.15,
+      "text": "no results for \"^HANDLE\"",
+      "parsed": null
+    },
+    {
+      "label": "symbols.regexUnicode",
+      "args": {
+        "query": "^UNICODE_Σ",
+        "regex": true
+      },
+      "isError": false,
+      "ms": 150.33,
+      "text": "UNICODE_ΣΊΣΥΦΟΣ [function] src/app.ts:29 (typescript)",
+      "parsed": null
+    },
+    {
+      "label": "content.termsInfo",
+      "args": {
+        "mode": "content",
+        "query": "how does handle request work"
+      },
+      "isError": false,
+      "ms": 50.14,
+      "text": "{\n  \"searchMode\": \"content\",\n  \"query\": \"how does handle request work\",\n  \"total\": 0,\n  \"returned\": 0,\n  \"staleCount\": 0,\n  \"freshCount\": 0,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\": 0,\n    \"stale\": 0,\n    \"missing\": 0,\n    \"staleRatio\": 0,\n    \"mode\": \"complete\",\n    \"remediation\": \"\"\n  },\n  \"results\": []\n}",
+      "parsed": {
+        "searchMode": "content",
+        "query": "how does handle request work",
+        "total": 0,
+        "returned": 0,
+        "staleCount": 0,
+        "freshCount": 0,
+        "truncated": false,
+        "freshness": {
+          "fresh": 0,
+          "stale": 0,
+          "missing": 0,
+          "staleRatio": 0,
+          "mode": "complete",
+          "remediation": ""
+        },
+        "results": []
+      }
+    },
+    {
+      "label": "symbols.astral",
+      "args": {
+        "query": "😀"
+      },
+      "isError": false,
+      "ms": 28.31,
+      "text": "no results for \"😀\"",
+      "parsed": null
+    }
+  ],
+  "serverStderr": ""
+}

@@ -34,7 +34,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 
 const files: { repo: string; rel: string; text: string }[] = []
 for (const e of readdirSync(CR)) {

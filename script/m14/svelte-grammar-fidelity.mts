@@ -20,7 +20,7 @@
 // THE CAUSE, named so a reader can check it. engine.ts resolveWasm() tries
 //   (1) require.resolve(relativePath)      <- the FILESYSTEM decides
 //   (2) hasWasmInRegistry / bbWasmCandidates  <- the REPO decides
-// and census.mts defaults REPO to $HOME/backbencher-brain, so a run
+// and census.mts defaults REPO to /home/ishaq2321/backbencher-brain, so a run
 // from any other checkout asks that checkout's filesystem first. In the main
 // checkout require.resolve throws (no tree-sitter-svelte in its node_modules)
 // and the registry supplies the repo grammar. In a worktree without
@@ -39,7 +39,7 @@ import { createHash } from "node:crypto"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || fileURLToPath(new URL("../..", import.meta.url))
-const CORPUS = process.env.BB_CORPUS || "$HOME/fixtures/repositories"
+const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
 const WANT_SCORE = process.env.SCORE === "1"
 const MAXBYTES = 512 * 1024
 
@@ -86,7 +86,7 @@ async function resolvedGrammarPath(): Promise<string> {
 
 function candidateGrammars(): string[] {
   const out: string[] = []
-  for (const root of [REPO, "$HOME/backbencher-brain"]) {
+  for (const root of [REPO, "/home/ishaq2321/backbencher-brain"]) {
     out.push(join(root, "wasm/tree-sitter-svelte.wasm"))
     out.push(join(root, "node_modules/tree-sitter-svelte/tree-sitter-svelte.wasm"))
   }

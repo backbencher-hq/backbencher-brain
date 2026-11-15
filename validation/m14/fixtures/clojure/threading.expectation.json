@@ -1,0 +1,16 @@
+{
+  "issue": "CLJ-ADV F13",
+  "note": "CLJ-D10 threading: every step is an invocation with THREAD-ADJUSTED arity (written + 1) — `(-> x (step1 1))` is step1/2, `(->> x (fltr odd?))` is fltr/2 (the `->>` ctor-branch collision), bare symbol steps emit arity 1, `cond->` tests walk normally while steps thread.",
+  "expectRelationships": [
+    { "type": "calls", "from": "f", "target": "step1", "line_number": 3, "meta.callArity": 2 },
+    { "type": "calls", "from": "f", "target": "step2", "line_number": 3, "meta.callArity": 1 },
+    { "type": "calls", "from": "f", "target": "step3", "line_number": 3, "meta.callArity": 1 },
+    { "type": "calls", "from": "g", "target": "fltr", "line_number": 5, "meta.callArity": 2 },
+    { "type": "calls", "from": "h", "target": "step4", "line_number": 7, "meta.callArity": 2 },
+    { "type": "calls", "from": "h", "target": "pred?", "line_number": 7, "meta.callArity": 1 }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "f", "target": "step1", "meta.callArity": 1 },
+    { "type": "calls", "from": "g", "target": "fltr", "meta.callArity": 1 }
+  ]
+}

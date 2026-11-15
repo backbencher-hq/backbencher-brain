@@ -1,0 +1,52 @@
+{
+  "instrument": "CAUSE 1 — the `imports` split (LOCAL vs EXTERNAL) with the ceiling in the gate's own columns",
+  "lane": "c",
+  "population": {
+    "admitted": 785,
+    "parsed": 785,
+    "failed": 0,
+    "repos": 1,
+    "repoFilter": [
+      "redis"
+    ]
+  },
+  "scope": "per PROJECT (the repository a file belongs to) — the gate's default",
+  "importsEdges": 3200,
+  "shapes": {
+    "colon": 3200
+  },
+  "theSplit": {
+    "LOCAL": 40,
+    "EXTERNAL": 3160
+  },
+  "asEmitted": {
+    "LOCAL": {
+      "unresolved": 40
+    },
+    "EXTERNAL": {
+      "unresolved": 3160
+    }
+  },
+  "ceiling_onTheLeaf": {
+    "LOCAL": {
+      "unresolved": 40
+    },
+    "EXTERNAL": {
+      "unresolved": 3160
+    }
+  },
+  "samples": {
+    "LOCAL": [
+      "../hiredis.h -> leaf ../hiredis.h",
+      "../async.h -> leaf ../async.h",
+      "../hiredis.h -> leaf ../hiredis.h",
+      "../async.h -> leaf ../async.h"
+    ],
+    "EXTERNAL": [
+      "fpconv_dtoa.h",
+      "fpconv_powers.h",
+      "stdbool.h",
+      "string.h"
+    ]
+  }
+}

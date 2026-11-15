@@ -1,0 +1,72 @@
+{
+  "fixtureId": "csharp/import-export-edges",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The two ontology types this lane had no verdict for. `imports` and `exports` are in the ontology, in the enum, and in the traversal default, and csharp emitted NEITHER: measured 0 of 269,352 relationships over 1,200 roslyn files carried either label, while the same files produced 8,941 `references` rows with `metadata.isImport === true` — the dependency existed and the graph had no label for it. So: (1) every `using` directive now also publishes an `imports` row, and (2) the assembly's public type surface, which the analyzer already computed into `result.exports` and published to no relationship at all, now publishes `exports` rows. Both pins below are written against decisions that are OBSERVABLE from the edge alone, because a fixture the pre-change analyzer would also have passed is not a fixture. The `importKind` pins are the reason: four import shapes share ONE grammar node (`using_directive`), and until this round the graph could not tell `using X;` from `using static X;` from `using A = X;` from `global using X;` — they were all one undifferentiated `references` row. Re-probed from the emitted rows after the change, in both directions: the four `importKind` values, the alias-metadata role, the two namespace spellings selecting the same export set, and the forbids for every shape that must NOT appear. The namespace-spelling pins exist because the first version of the exports rule reproduced a defect this lane had already fixed once: `!parentContext` cannot see a file-scoped namespace, so it exported those files' types and it also could not see a NESTED type, so `NestedPublic` was published as an assembly export. Both directions are pinned, and `NestedPublic` is pinned by name in the forbids.",
+  "expectSymbols": [
+    { "name": "PublicType", "kind": "class", "ownerName": "Acme.Surface", "visibility": "public" },
+    { "name": "NestedPublic", "kind": "class", "ownerName": "PublicType", "note": "the nested type IS a symbol; it is only the EXPORT that it is not" },
+    { "name": "InternalType", "kind": "class", "ownerName": "Acme.Surface", "visibility": "internal" },
+    { "name": "IPublicContract", "kind": "interface", "ownerName": "Acme.Surface" },
+    { "name": "IInternalContract", "kind": "interface", "ownerName": "Acme.Surface" },
+    { "name": "PublicEnum", "kind": "enum", "ownerName": "Acme.Surface" },
+    { "name": "InternalEnum", "kind": "enum", "ownerName": "Acme.Surface" },
+    { "name": "FileScopedPublic", "kind": "class", "ownerName": "Acme.FileScoped" },
+    { "name": "FileLocalType", "kind": "class", "ownerName": "Acme.FileScoped" }
+  ],
+  "expectImports": [
+    { "module": "System", "comment": "plain namespace import" },
+    { "module": "System.Collections.Generic", "comment": "dotted namespace import" },
+    { "module": "System.Math", "comment": "`using static` — the grammar has no using_static_directive; the target is still a namespace-shaped name" },
+    { "module": "System.Text", "comment": "alias form: the TARGET, never the alias" },
+    { "module": "System.IO", "comment": "`using global::System.IO;` — the `global::` qualifier is removed, so this is the same module as the unqualified spelling" },
+    { "module": "System.Threading", "comment": "`global using` — a compilation-wide import" },
+    { "module": "System.Environment", "comment": "`global using static` — the rarest of the four shapes" },
+    { "module": "System.Text.RegularExpressions", "comment": "`global using A = ...` — global AND aliased" },
+    { "module": "LegacyLib", "comment": "`extern alias LegacyLib;` is an import directive with its own node type (`extern_alias_directive`) and produced NOTHING before this round — no payload row, no relationship, no references edge" }
+  ],
+  "expectExports": [
+    { "name": "Acme.Surface.PublicType", "comment": "block-namespace form, public: exported under the FULLY QUALIFIED name, because `PublicType` alone is not a name this assembly exports" },
+    { "name": "Acme.Surface.IPublicContract", "comment": "an interface is an exported type exactly as a class is" },
+    { "name": "Acme.Surface.PublicEnum", "comment": "an enum is an exported type too — the enum branch's rule is stated, not inherited by luck" },
+    { "name": "Acme.FileScoped.FileScopedPublic", "comment": "THE PIN THAT MATTERS: the file-scoped namespace spelling selects the SAME set as the block form. The pre-fix guard could not see a file-scoped namespace at all and published 300 of 300 top-level declarations on the first 300 roslyn files (which are file-scoped-namespace files) as exports, under BARE names, including `internal` ones." }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "target": "System", "line_number": 18, "meta.importKind": "namespace", "meta.evidenceClass": "import_based", "meta.relationshipType": "using_import" },
+    { "type": "imports", "target": "System.Math", "line_number": 20, "meta.importKind": "static", "note": "`using static System.Math;` — a static-member import, NOT a namespace import. All four shapes share one node type, so this row is the only thing that tells them apart." },
+    { "type": "imports", "target": "System.Text", "line_number": 21, "meta.importKind": "alias", "meta.usingAlias": "Alias", "meta.isUsingAlias": true },
+    { "type": "imports", "target": "System.IO", "line_number": 22, "meta.importKind": "namespace", "note": "`using global::System.IO;` — the qualifier is stripped, so this is indistinguishable from `using System.IO;` on purpose" },
+    { "type": "imports", "target": "System.Threading", "line_number": 24, "meta.importKind": "global_namespace", "note": "`global using` binds for the whole COMPILATION, not for this file. That is a different dependency from `using System.Threading;` and the label now says so." },
+    { "type": "imports", "target": "System.Environment", "line_number": 25, "meta.importKind": "global_static" },
+    { "type": "imports", "target": "System.Text.RegularExpressions", "line_number": 26, "meta.importKind": "global_alias", "meta.usingAlias": "GlobalAlias" },
+    { "type": "imports", "target": "LegacyLib", "line_number": 28, "meta.importKind": "extern_alias", "meta.isExternAlias": true, "note": "an ASSEMBLY alias, not a namespace: `imports` only, never a `references` twin, because the differential's csharp truth does not derive this node" },
+    { "type": "exports", "target": "Acme.Surface.PublicType", "line_number": 33, "meta.evidenceClass": "structural", "meta.relationshipType": "assembly_public_surface", "note": "the line is the one the NAME is written on, not the declaration's first line — the doc comment sits above it" },
+    { "type": "exports", "target": "Acme.Surface.IPublicContract", "line_number": 47 },
+    { "type": "exports", "target": "Acme.Surface.PublicEnum", "line_number": 51 },
+    { "type": "exports", "target": "Acme.FileScoped.FileScopedPublic", "line_number": 63 },
+    { "type": "references", "target": "System.Text", "line_number": 21, "meta.isUsingDirective": true, "note": "the references twin SURVIVES: it is R9's audited reference graph and relabelling it would turn every audited C# reference edge into a MISSING row on the shared, master-owned compared set" },
+    { "type": "contains", "from": "Acme.Surface", "target": "InternalType", "note": "an internal type is still a member of its namespace; only the EXPORT is withheld" },
+    { "type": "contains", "from": "PublicType", "target": "NestedPublic", "note": "the nested type's unit is its enclosing type, and `contains` is where that fact lives" },
+    { "type": "exports", "target": "Acme.Inner.Doubled", "line_number": 82, "meta.evidenceClass": "structural", "note": "the nested-namespace shape: ONE spelling. `contains` publishes the namespace as `Acme.Inner` (the innermost declaration's own name, which already contains the outer one), and the export target agrees with it. The pre-fix value was `Acme.Outer.Acme.Inner.Doubled` — same type, two names in one result." },
+    { "type": "contains", "from": "Acme.Inner", "target": "Doubled" }
+  ],
+  "forbidRelationships": [
+    { "type": "imports", "target": "Alias", "note": "the ALIAS is a local binding, never the dependency — the CSD7/R1 fabrication this lane already fixed once for `references`, pinned again for `imports` because a new label is a new opportunity for it" },
+    { "type": "imports", "target": "GlobalAlias", "note": "same, on the `global using A = ...` form" },
+    { "type": "imports", "target": "System.Text.RegularExpressions<", "note": "a type EXPRESSION is not a module: D3 strips a generic alias's arguments off the module name, and the arguments are published separately as `references`, never welded into the import target" },
+    { "type": "exports", "target": "InternalType", "note": "`internal` is by definition not visible outside the assembly. The pre-fix rule published it as an export with `visibility: \"internal\"` carried as metadata — i.e. it exported a type while recording that it should not have." },
+    { "type": "exports", "target": "Acme.Surface.InternalType", "note": "the same, fully qualified — a forbid has to be stated per spelling, because the two are different strings and the matcher compares exactly" },
+    { "type": "exports", "target": "IInternalContract", "note": "an internal interface is not an export either" },
+    { "type": "exports", "target": "InternalEnum", "note": "the enum branch's rule is stated separately, so it is pinned separately" },
+    { "type": "exports", "target": "FileScopedInternal", "note": "and the file-scoped-namespace spelling of the same refusal" },
+    { "type": "exports", "target": "FileScoped.FileScopedInternal", "note": "qualified spelling" },
+    { "type": "exports", "target": "FileLocalType", "note": "`file`-scoped visibility is never an assembly surface" },
+    { "type": "exports", "target": "NestedPublic", "note": "a nested type is reachable only through its enclosing type, so it is not a member of the ASSEMBLY's surface. The first version of this rule published it — the fixture caught it, and the forbid is here so the fix cannot be undone by widening the visibility test alone." },
+    { "type": "exports", "target": "Acme.Surface.PublicType.NestedPublic", "note": "THE SPELLING THE ANALYZER ACTUALLY PUBLISHES. Added after the `csharp/export-nested-types-too` mutant SURVIVED: it added the edge under the fully-qualified name and the two forbids above named the bare and the `Owner.Member` forms, so neither matched. A forbid has to name the exact string, and a fixture that forbids a shape the code never emits forbids nothing." },
+    { "type": "exports", "target": "PublicType.NestedPublic", "note": "qualified spelling of the same refusal" },
+    { "type": "exports", "target": "Acme.Outer.Acme.Inner.Doubled", "note": "the DOUBLED prefix, pinned as a forbid so the one-spelling rule is held in the negative direction too: a namespace declaration already writes its full name, so no outer namespace may be re-applied to it" },
+    { "type": "exports", "target": "Outer.Inner.Doubled", "note": "and the third spelling this shape could produce — two of the three, so a rule that dropped a segment rather than doubling one is caught as well" },
+    { "type": "exports", "target": "PublicType", "note": "a BARE name is not an export name for a namespaced type: `PublicType` is not a name this assembly exports, `Acme.Surface.PublicType` is. This forbid is the whole reason the published name changed." },
+    { "type": "references", "target": "Alias", "note": "the pre-existing references-side forbid, restated here so a single fixture holds both labels of one directive" }
+  ]
+}

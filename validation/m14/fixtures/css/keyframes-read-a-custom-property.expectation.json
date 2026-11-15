@@ -1,0 +1,111 @@
+{
+  "fixtureId": "css/keyframes-read-a-custom-property",
+  "language": "css",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A `var()` inside a `@keyframes` block reads a custom property, and that read is a dependency of the ANIMATION. `currentSelector` is set only at a `rule_set` and a `keyframe_block` is not one, so every such read used to produce no edge: measured over the admitted corpus, 845 of them across 265 files, with the property declared elsewhere in the same file. Four cases are pinned — the plain case, a second animation, a property this file does NOT declare (the read is still the fact, and inventing an owner is not), and a `@keyframes` nested inside an `@media`, which must attribute to the keyframes and not to the media scope. The owner is the keyframes NAME, which is already published, so both ends resolve; `forbidRelationships` refuses any `references` edge sourced from a keyframe STOP (`to`, `50%`, `from`), because a stop is not a name anything can resolve to and naming it would be exactly the `global` phantom this lane removed once.",
+  "expectSymbols": [
+    {
+      "name": "slide",
+      "kind": "function"
+    },
+    {
+      "name": "fade",
+      "kind": "function"
+    },
+    {
+      "name": "never-declared",
+      "kind": "function"
+    },
+    {
+      "name": "nested-in-media",
+      "kind": "function"
+    },
+    {
+      "name": "--slide-to",
+      "kind": "variable"
+    },
+    {
+      "name": "--fade-op",
+      "kind": "variable"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "references",
+      "source": "slide",
+      "target": "fixtures/css/keyframes-read-a-custom-property::--slide-to",
+      "line_number": 24,
+      "meta.isKeyframeScopeRef": true,
+      "confidence": 1
+    },
+    {
+      "type": "references",
+      "source": "fade",
+      "target": "fixtures/css/keyframes-read-a-custom-property::--fade-op",
+      "line_number": 30,
+      "meta.isKeyframeScopeRef": true
+    },
+    {
+      "type": "references",
+      "source": "never-declared",
+      "target": "--absent",
+      "line_number": 36,
+      "meta.isKeyframeScopeRef": true
+    },
+    {
+      "type": "references",
+      "source": "nested-in-media",
+      "target": "fixtures/css/keyframes-read-a-custom-property::--fade-op",
+      "line_number": 43,
+      "meta.isKeyframeScopeRef": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "source": "to"
+    },
+    {
+      "type": "references",
+      "source": "50%"
+    },
+    {
+      "type": "references",
+      "source": "from"
+    },
+    {
+      "type": "references",
+      "source": "@media screen and (min-width: 100px)",
+      "target": "fixtures/css/keyframes-read-a-custom-property::--fade-op"
+    },
+    {
+      "type": "uses",
+      "target": "fixtures/css/keyframes-read-a-custom-property::slide"
+    },
+    {
+      "type": "contains",
+      "source": "slide"
+    },
+    {
+      "type": "contains",
+      "source": "fade"
+    },
+    {
+      "type": "contains",
+      "source": "nested-in-media"
+    },
+    {
+      "name": "to",
+      "kind": "class"
+    },
+    {
+      "name": "50%",
+      "kind": "class"
+    },
+    {
+      "name": "@keyframes slide",
+      "kind": "module"
+    }
+  ],
+  "_targetSpelling": "CSS-D15: a target that names a declaration THIS file publishes is spelled `<file-scope>::<name>`, where the scope is the file's project-relative path without its extension. The bare spelling stays for a target this file does not declare (a cross-file or external reference) and for `imports`, whose target is another file's module name."
+}

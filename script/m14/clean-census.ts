@@ -14,7 +14,7 @@ import path from "node:path"
 
 const ROOT = process.cwd()
 const ci = process.argv.indexOf("--corpus")
-const REPOS = ci > 0 ? process.argv[ci + 1] : "$HOME/fixtures/repositories"
+const REPOS = ci > 0 ? process.argv[ci + 1] : "/home/ishaq2321/bb_tests/repositories"
 const ji = process.argv.indexOf("--json")
 const JSON_OUT = ji > 0 ? process.argv[ji + 1] : ""
 

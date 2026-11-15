@@ -1,0 +1,92 @@
+{
+  "fixtureId": "c/fabricated-macro-name-991",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "The macro symbol's NAME was a name no `#define` in the file declares, and it was worse than unresolvable: it RESOLVED to a struct member. sqlite ext/wasm/libcmpp.c:5520 `#define CmppLvl_empty_m {/* .flags=0U, .lineNo=0U */}` -- a brace-enclosed, comment-bearing replacement list -- makes the grammar lose the macro name, and the `name:` field binds to `.flags`. The analyzer published a macro named `flags`, and `flags` is a real member nine hundred lines earlier (`cmpp_flag32_t flags;`, :448), so the lane gate's own P7-no-macro-named-member convicted it with 9 rows in that file. This is the fabrication shape #963 removed from `exports` (-> KERNEL_EXPORT) and #962 removed from `instantiates` (-> malloc): the published name has to be a name the source declares. Measured by script/m14/tmp/c-audit/c-macro-name.ts over 348 C-routed sqlite files and 4,472 `#define` nodes: the `name` field matches what the line spells in 4,466 and is fabricated in 6 (`flags`, `cmpp_size_t`, `cmpp__ListType_decl`, and `c` three times in rtree.c's `#if 0` Tcl-script shape), and in ALL SIX an ERROR child of the same node sits BEFORE the name field -- the structural test, which on this corpus coincides with the fabrication exactly. The CONTROLS are the point: an ordinary brace-enclosed replacement list parses clean and must keep its symbol, both macro spellings must keep theirs, and a MEMBER named after a macro this file does define must keep resolving -- the rule is not 'no member may share a macro's name', because redis's `double min, max;` 3,700 lines after `#define min(a, b)` is real and #931 pins it. The first version of this fixture's last control used an OBJECT-like macro for the 'a member may share a macro's name' row and the lane gate's P7-no-macro-named-member property caught it on the fixture itself, with `c991_member_named_after_macro.C991_flags_misnomer_m@L57 is named after an object-like macro, not a declarator`. The property was right and the fixture was wrong: an object-like macro is replaced wherever its identifier appears, so `unsigned X;` after `#define X 0` expands to `unsigned 0;` and is not valid C. The control is now a FUNCTION-LIKE macro, which is replaced only where `(` follows the name and therefore survives a member declarator -- which is exactly why #931's rule is restricted to object-like macros.",
+  "expectSymbols": [
+    {
+      "name": "C991_brace_ok",
+      "kind": "constant",
+      "note": "CONTROL: a brace-enclosed replacement list with no comment before the first designated initializer parses CLEAN. A test that refused every brace-bodied `#define` would lose it, and this row is what proves the test is structural rather than a blanket refusal."
+    },
+    {
+      "name": "C991_object_like",
+      "kind": "constant",
+      "note": "CONTROL: the everyday object-like macro"
+    },
+    {
+      "name": "C991_function_like",
+      "kind": "macro",
+      "note": "CONTROL: the everyday function-like macro"
+    },
+    {
+      "name": "C991_indirect_empty_m",
+      "kind": "constant",
+      "note": "CONTROL: a replacement list that is itself a function-like macro invocation"
+    },
+    {
+      "name": "C991_fn_misnomer_m",
+      "kind": "macro",
+      "note": "CONTROL: the FUNCTION-LIKE macro whose name the next two rows reuse. The FUNCTION-LIKE spelling is load-bearing -- see the rationale."
+    },
+    {
+      "name": "C991_fn_misnomer_m",
+      "kind": "property",
+      "note": "CONTROL, and the row P7 is really about: a member may legitimately share a FUNCTION-LIKE macro's name, because such a macro is replaced only where `(` follows the name. redis's `double min, max;` declared 3,700 lines after its own `#define min(a, b)` is real C and #931 pins it. An OBJECT-like macro in this position would make the fixture invalid C, and the gate said so."
+    },
+    {
+      "name": "C991_fn_misnomer_m2",
+      "kind": "property",
+      "note": "CONTROL: a second such member, so a fix that special-cased the first one fails"
+    },
+    {
+      "name": "flags",
+      "kind": "property",
+      "note": "the ORDINARY member at :31, which the analyzer is right about and which the fabricated macro used to shadow. Both names exist in the source; only one of them is a macro's name, and it is not this one."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "c991_S",
+      "target": "flags",
+      "line_number": 31
+    },
+    {
+      "type": "contains",
+      "from": "c991_S",
+      "target": "lineNo",
+      "line_number": 32
+    },
+    {
+      "type": "contains",
+      "from": "c991_member_named_after_macro",
+      "target": "C991_fn_misnomer_m",
+      "line_number": 70
+    },
+    {
+      "type": "contains",
+      "from": "c991_member_named_after_macro",
+      "target": "C991_fn_misnomer_m2",
+      "line_number": 71
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "C991_S_empty_m",
+      "kind": "any",
+      "note": "THE PINNED FORBID, and the one that is a REFUSAL rather than a rename. The macro's name is in the source text but NOT in the parse, and reading it back out of the text is the `#934` line-anchored inventory's job, not the AST's -- so the symbol is not minted here. The honest outcome is that the name is unresolvable rather than resolved to `.flags`."
+    },
+    {
+      "name": "flags",
+      "kind": "macro",
+      "note": "THE PINNED FORBID, positive direction. No `#define` in this file names `flags`; it is a member of `c991_S` at :31 and a designated initializer at :41. A macro symbol with this name is the defect #991 is about, and it is the shape the lane gate's P7 convicted 9 times in libcmpp.c."
+    },
+    {
+      "name": "lineNo",
+      "kind": "macro",
+      "note": "the same phantom one member along -- a rule that fixed only the FIRST identifier of the replacement list would leave this one"
+    }
+  ],
+  "forbidRelationships": []
+}

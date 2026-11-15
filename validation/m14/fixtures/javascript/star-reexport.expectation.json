@@ -1,0 +1,40 @@
+{
+  "fixtureId": "javascript/star-reexport",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The two star forms are DIFFERENT statements and they used to emit byte-identical records: `export * from './m'` REDISTRIBUTES every member of `./m` (a consumer of this file may import any of them), while `export * as ns from './m'` binds ONE name in this file and redistributes nothing. Measured before the fix through `parseFile` on one file per form: both produced the `imports` edge `./m:*` at 0.6 with `{isReExport: true, unresolved: true}` and nothing else, and read back out of a real index both produced the SAME `brain_import` row (`imported_name` = the module path, `imported_as` = NULL, `import_type` = 'named'). Two consequences, both measured rather than assumed: the namespace alias `ns` existed in no field anywhere, and a resolver reading a star edge as a redistribution would have invented an edge for every member of `./m` that this file does not export. The grammar marks the forms apart with a NAMED `namespace_export` child (`\"* as ns\"`), so the discriminator is a tree fact; the edge spelling, confidence and `unresolved` flag are all UNCHANGED, because the module dependency is the same fact in both statements.",
+  "expectSymbols": [],
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "./m:*",
+      "confidence": 0.6,
+      "line_number": 1,
+      "meta.unresolved": true,
+      "meta.isReExport": true,
+      "meta.starForm": "all",
+      "note": "a bare star: every member of ./m is redistributed, and no member name is written"
+    },
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "./m:*",
+      "confidence": 0.6,
+      "line_number": 2,
+      "meta.unresolved": true,
+      "meta.isReExport": true,
+      "meta.starForm": "namespace",
+      "meta.namespaceName": "ns",
+      "note": "the namespace form: ONE name bound in this module, nothing redistributed — which is what the resolver's star route must NOT follow"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "from": "(file)",
+      "target": "./m:ns",
+      "note": "pre-fix reading of the namespace form: `ns` is a name in THIS module, not a member of ./m"
+    }
+  ]
+}

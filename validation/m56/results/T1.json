@@ -1,0 +1,31 @@
+{
+  "issue": "M56.T1",
+  "code": "T1",
+  "milestone": "M56",
+  "status": "verified",
+  "checks": 29,
+  "passed": 29,
+  "failed": 0,
+  "negativeCases": 6,
+  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "verifierCommand": "npx tsx script/m56/verify-tools-truth.ts",
+  "evidenceFile": "T1.json",
+  "generatedAt": "2026-11-09T14:43:17.581Z",
+  "generatedArtifact": "website/src/data/tools.generated.ts",
+  "rendered": {
+    "tools": 16,
+    "surface": "tools page, docs table, homepage",
+    "build": "reused existing build"
+  },
+  "summary": {
+    "toolsTraced": 16,
+    "referencePagesTraced": 16,
+    "siteSourcesScanned": 74,
+    "generatorArtifacts": 18
+  },
+  "limitations": [
+    "The byte-identity proof runs the canonical generator (script/verify-tool-docs.ts); it therefore covers all 18 generated artifacts, not the site file alone.",
+    "Rendered checks reuse website/.next when it is newer than every site source, and rebuild otherwise (a fresh checkout always rebuilds).",
+    "N4 proves the rendered detectors are sensitive on synthetic HTML; N1/N2/N3 are real mutations. No end-to-end rebuild mutant is run here because M41.T2 already proves that class (N2) for the built site."
+  ]
+}

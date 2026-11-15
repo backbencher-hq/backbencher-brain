@@ -1,0 +1,31 @@
+{
+  "fixtureId": "rust/trait-impl-and-visibility",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#419-H parity: trait->Interface ownership for impl methods, Implements edge from the TYPE to the TRAIT, and Rust default-private visibility (only pub is public). Symbols previously had NO visibility field at all.",
+  "expectSymbols": [
+    {
+      "name": "Repository",
+      "kind": "trait"
+    },
+    {
+      "name": "PgRepository",
+      "kind": "struct"
+    },
+    {
+      "name": "get",
+      "kind": "method"
+    },
+    {
+      "name": "internal_helper",
+      "kind": "function",
+      "visibility": "private"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "target": "Repository"
+    }
+  ]
+}

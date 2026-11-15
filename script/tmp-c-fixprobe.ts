@@ -16,7 +16,7 @@ const p = new ParserClass()
 p.setLanguage(g)
 const anaMod: any = await import("../src/ast/real-c-analyzer")
 
-const CORPUS = "$HOME/fixtures/repositories/sqlite"
+const CORPUS = "/home/ishaq2321/bb_tests/repositories/sqlite"
 
 const chain = (n: any): string => {
   const out: string[] = []

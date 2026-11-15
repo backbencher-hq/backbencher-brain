@@ -1,0 +1,12 @@
+$opacity: 0.5;
+
+@function mix($upper, $lower) {
+  $red: color.channel($upper, 'red', $space: rgb) * $opacity +
+    color.channel($lower, 'red', $space: rgb) * (1 - $opacity);
+  @return $red;
+}
+
+.a {
+  color: mix(#f00, #00f);
+  opacity: $opacity;
+}

@@ -1,0 +1,13 @@
+{
+  "issue": "ELX-ADV X2",
+  "note": "Pattern positions are never constructions: case/fn clause patterns and `=`/`<-` LHS emit NO instantiates; only the real construction (`z = %Pong{}`) does.",
+  "expectRelationships": [
+    { "type": "instantiates", "from": "EP.run/1", "target": "Pong", "line_number": 9 }
+  ],
+  "forbidRelationships": [
+    { "type": "instantiates", "target": "Ping" },
+    { "type": "instantiates", "target": "Pong", "line_number": 4 },
+    { "type": "instantiates", "target": "Pong", "line_number": 7 },
+    { "type": "instantiates", "target": "Pong", "line_number": 8 }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "fixtureId": "javascript/decorator-declaration-lines-861",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #861 pre-declared contract; the numbers below were re-read off the #868 run and agree with the fixture's own CURRENT text (`@sealed` 34 / `class Service` 35, `@inject(\"db\")` 36 / `pool = 1` 37, `@sealed` 39 / `method()` 40). They moved by +2 when this file's header grew by the #868 note — re-measured, not shifted by arithmetic.",
+  "rationale": "M59 (#861), javascript half, CURRENT for the #868 round. This grammar nests decorators INSIDE the declaration (unlike typescript, where a method decorator is a class_body sibling) and does it for classes, fields AND methods — measured: class_declaration [decorator@32, class@33, ...], field_definition [decorator@34, property_identifier@35, ...], method_definition [decorator@37, property_identifier@38, ...]. So all three symbols and their `contains` lines named the decorator's line; fixed by skipping leading decorator children in nodeToRange, the same rule as typescript and scala (scala/declaration-lines-825) — that RANGE contract is unchanged and still pinned here. What CHANGED in this file at #868 is the decorator-ATTRIBUTION half, which this fixture deliberately left unpinned when the analyzer could not do it: it pinned `uses Service -> sealed` (32) and `uses method -> sealed` (37) as the only member-scoped trace of a decorator, with the rationale saying the metadata contract was measured and filed separately. #868 landed that contract, so those two rows are now the WRONG answer and have moved to forbidRelationships: a decorator's name is a `references` edge from the decorated symbol at the decorator's own line (the family rule — typescript's inDecoratorPosition, JVM annotations as metadata, the python oracle's PYD1), and the bare-read `uses` spelling is exactly what that rule deletes. The three `references` rows are added as expected, including the FIELD's (34) — the field path called no decorator collector at all before #868. Discriminating either way: re-adding the `uses` spelling fails against the forbid list, and losing the `references` edge fails against the expected list. 2026-10-18 CANONICAL VOCABULARY: the three decorator rows are now `decorates` (src/ast/types.ts landed RelationshipType.Decorates in df5a03eb2), not `references` — one row per decorator, source = the decorated declaration, target = the decorator name leaf, line = the decorator's own line. The near-miss forbid moved with them.",
+  "expectSymbols": [
+    {
+      "name": "Service",
+      "kind": "class"
+    },
+    {
+      "name": "pool",
+      "kind": "property",
+      "ownerName": "Service"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "Service"
+    },
+    {
+      "name": "sealed",
+      "kind": "function"
+    },
+    {
+      "name": "inject",
+      "kind": "function"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "Service",
+      "startLine": 35,
+      "comment": "the class name line; the decorator is on 34"
+    },
+    {
+      "symbol": "pool",
+      "startLine": 37,
+      "comment": "the field name line; the decorator is on 36"
+    },
+    {
+      "symbol": "method",
+      "startLine": 40,
+      "comment": "the method name line; the decorator is on 39 (this grammar nests it, typescript does not)"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "pool",
+      "line_number": 37
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "method",
+      "line_number": 40
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 34,
+      "comment": "#868: the class's own decorator, a REFERENCE from the class at the decorator's line"
+    },
+    {
+      "type": "decorates",
+      "from": "pool",
+      "target": "inject",
+      "line_number": 36,
+      "comment": "#868: the FIELD's decorator — the field path collected none before, so this row is new, not moved"
+    },
+    {
+      "type": "decorates",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 39,
+      "comment": "#868: the method's decorator, a reference from the METHOD"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "pool",
+      "line_number": 36,
+      "comment": "the decorator's line, pre-fix"
+    },
+    {
+      "type": "contains",
+      "from": "Service",
+      "target": "method",
+      "line_number": 39,
+      "comment": "the decorator's line, pre-fix"
+    },
+    {
+      "type": "uses",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 34,
+      "comment": "#868: the decorator's name as a bare READ from the class — the spelling #868 replaces with the reference edge (pinned as EXPECTED before #868, because it was the decorator's only trace)"
+    },
+    {
+      "type": "uses",
+      "from": "method",
+      "target": "sealed",
+      "line_number": 39,
+      "comment": "#868: same for the method's decorator"
+    },
+    {
+      "type": "calls",
+      "from": "Service",
+      "target": "inject",
+      "comment": "#868: the decorator invocation as a CALL by the enclosing class (the pre-fix row this round removes)"
+    },
+    {
+      "type": "decorates",
+      "from": "Service",
+      "target": "sealed",
+      "line_number": 35,
+      "comment": "2026-10-18 near-miss: borrowing the declaration's line for the DECORATES edge"
+    }
+  ]
+}

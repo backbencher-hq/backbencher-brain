@@ -1,0 +1,10 @@
+{
+  "tool": "validation/m14/go/go-incoming-resolve.ts",
+  "phase": "probe-no-regex",
+  "file": "validation/m14/go/go-incoming-resolve.ts",
+  "lines": 1731,
+  "populationFiles": 1,
+  "regexNodes": 0,
+  "hits": [],
+  "method": "tokenised with the tree-sitter-typescript grammar. Three node shapes: node.type === 'regex'; a new_expression whose constructor field is the identifier RegExp; and a call_expression whose callee property is match/matchAll/test/search/replaceAll on a non-literal receiver. The first draft sniffed string nodes for the text 'new RegExp' and convicted this file three times; that self-match is recorded here because a probe that convicts its own source is the failure this programme has already paid for twice."
+}

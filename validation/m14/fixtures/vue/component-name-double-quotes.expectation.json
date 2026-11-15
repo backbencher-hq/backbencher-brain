@@ -1,0 +1,18 @@
+{
+  "fixtureId": "vue/component-name-double-quotes",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CHARACTERIZATION fixture for the last of the six regexes removed from this analyzer: the `name:` value was unquoted with a character class that stripped every quote anywhere in the value, and is now read with the file's existing `unquote` helper, which strips SURROUNDING quotes of either style. The two agree for a `name:` option, which is always a string literal, and F8 makes that load-bearing: the component's ONE identity is this name, every component-owned edge sources it, and the store's symbol key is name+line, so an unstripped quote would publish the component under a name containing quote characters, unreachable as a target for every edge that sources it. Only `vue/options-rename-identity` (single quotes) covered this path, so the double-quoted spelling was untested. `label` is interpolated and `go` is bound, so the fixture also proves the renamed identity still sources the delegated edges.",
+  "expectSymbols": [
+    { "name": "DoubleQuoted", "kind": "class" },
+    { "name": "label", "kind": "property", "meta.isProp": true },
+    { "name": "go", "kind": "method", "ownerName": "DoubleQuoted" }
+  ],
+  "expectRelationships": [
+    { "source": "DoubleQuoted", "target": "label", "type": "uses" },
+    { "source": "DoubleQuoted", "target": "go", "type": "uses" }
+  ],
+  "forbidSymbols": [
+    { "name": "\"DoubleQuoted\"", "note": "an unstripped quote would publish the component under a name no edge can resolve" }
+  ]
+}

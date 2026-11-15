@@ -1,0 +1,13 @@
+{
+  "fixtureId": "groovy/overrides",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS overrides for groovy: Sub.speak overrides Base.speak.",
+  "expectSymbols": [
+    { "name": "Base" },
+    { "name": "Sub" }
+  ],
+  "expectRelationships": [
+    { "type": "overrides", "from": "Sub.speak", "targetEndsWith": "speak" }
+  ]
+}

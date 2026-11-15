@@ -1,0 +1,139 @@
+{
+  "fixtureId": "go/implements-params",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS (1) implements through PARAMETERIZED methods + pointer receivers and (2) embedded-interface method promotion (interface { Reader; Close() } promotes Read). Regression guards for the go wave deep-review defects (2026-08-29, terraform corpus): return-type scanners captured receiver/parameters as a fake return type (breaking signature comparison), and embedded interfaces parsed as constraint_elem were never emitted, so promoted methods were lost and a struct with only Close() was (wrongly) declared to implement ReadCloser (false positive).",
+  "expectSymbols": [
+    {
+      "name": "Notifier",
+      "kind": "interface"
+    },
+    {
+      "name": "Emitter",
+      "kind": "struct"
+    },
+    {
+      "name": "Notify",
+      "kind": "method"
+    },
+    {
+      "name": "ReadCloser",
+      "kind": "interface"
+    },
+    {
+      "name": "Worker",
+      "kind": "struct"
+    },
+    {
+      "name": "Runner2",
+      "kind": "interface"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "Emitter",
+      "target": "Notifier",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "FileOK",
+      "target": "ReadCloser",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "FileOK",
+      "target": "Reader",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "Worker",
+      "target": "Runner2",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "Shape",
+      "target": "Runner2",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "extends",
+      "source": "ReadCloser",
+      "target": "Reader",
+      "meta.relationshipType": "go_interface_embedding",
+      "meta.evidenceClass": "inferred"
+    },
+    {
+      "type": "implements",
+      "source": "RunnerFn",
+      "target": "Runner2",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "source": "HandlerImpl",
+      "target": "NamedResulter",
+      "meta.relationshipType": "go_interface_implementation",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "Notify",
+      "parameters": [
+        {
+          "type": "context.Context"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "implements",
+      "source": "Emitter",
+      "target": "Notifier",
+      "equals": 1
+    },
+    {
+      "type": "implements",
+      "source": "FileOK",
+      "target": "ReadCloser",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "source": "FileBad",
+      "target": "ReadCloser"
+    },
+    {
+      "type": "implements",
+      "source": "FileBad",
+      "target": "Reader"
+    },
+    {
+      "type": "implements",
+      "source": "PlainWorker",
+      "target": "Runner2"
+    },
+    {
+      "type": "implements",
+      "source": "Box",
+      "target": "GenericIface"
+    }
+  ]
+}

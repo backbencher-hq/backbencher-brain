@@ -4,7 +4,7 @@
 import { readFileSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 
-const ROOT = "$HOME/fixtures/repositories/cargo"
+const ROOT = "/home/ishaq2321/bb_tests/repositories/cargo"
 const NEW_WASM = "/tmp/ts-rust-npm/package/tree-sitter-rust.wasm"
 const MIN_BYTES = 1024
 

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "fixture": "sql/sqld8-range-and-ids.sql",
+  "authoredFrom": "SQLD8 (M60 SQL wave, 2026-09-26). The 0-based column defect was measured by bb_tests/sql/probe/contract-battery.mts case col-range-1-based-columns, which reported `ab` as [2,2,2,4] where the house contract is [2,3,2,5]; the seven sibling analyzers named above and the engine's own ParseError range establish the 1-based convention. The id collision was measured by the same harness's cases table-and-view-same-name and two-tables-same-name, which reported ids [\"t\",\"t\"] - the RSD3 class run-fixtures.ts already knows how to pin via expectUniqueIds.",
+  "comment": "expectSymbolRanges pins line AND column coherence together, so a fix that corrects one and not the other fails. expectUniqueIds is the family-standard channel for the collision.",
+  "expectSymbolRanges": [
+    {
+      "symbol": "ab",
+      "startLine": 18,
+      "startColumn": 3,
+      "endLine": 18,
+      "endColumn": 5
+    },
+    {
+      "symbol": "cd",
+      "startLine": 19,
+      "startColumn": 3,
+      "endLine": 19,
+      "endColumn": 5
+    }
+  ],
+  "expectUniqueIds": [
+    {
+      "name": "d8_samename"
+    },
+    {
+      "name": "d8_ranges"
+    }
+  ],
+  "expectSymbols": [
+    {
+      "name": "d8_ranges",
+      "kind": "class"
+    },
+    {
+      "name": "ab",
+      "kind": "property",
+      "ownerName": "d8_ranges"
+    },
+    {
+      "name": "cd",
+      "kind": "property",
+      "ownerName": "d8_ranges"
+    },
+    {
+      "name": "d8_samename",
+      "kind": "class"
+    }
+  ]
+}

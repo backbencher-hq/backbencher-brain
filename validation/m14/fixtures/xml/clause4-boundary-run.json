@@ -1,0 +1,243 @@
+{
+  "instrument": "xml store-side intent split — the line test where it is valid, a class predicate where it is not",
+  "runLabel": "ONE RUN, ONE INDEX — the store is order- and run-dependent (lane finding 2f2a5bb1f), so no figure here may be compared across runs without re-running",
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "repos": [
+      "libxslt"
+    ],
+    "filesDrawn": 1143,
+    "filesIndexed": 1143,
+    "indexMs": 264098,
+    "projectId": "92bc1d538c95831ad440c15e27d028b972e94d6a"
+  },
+  "scoping": {
+    "lineTestAppliesTo": [
+      "contains",
+      "exports"
+    ],
+    "lineTestIsNotApplicableTo": [
+      "references",
+      "calls",
+      "imports",
+      "overrides"
+    ],
+    "rule": "a line-based intent test is valid ONLY where the edge line IS the target symbol's line; for a read-site type this instrument applies the analyzer-class predicate instead and says so per row, so one type's exactness never implies another's"
+  },
+  "perType": {
+    "contains": {
+      "edges": 21488,
+      "bound": 21475,
+      "unbound": 13,
+      "sameFile": 18797,
+      "otherFile": 2678,
+      "predicate": "LINE (own file + own line)",
+      "classSplit": {
+        "(none)": {
+          "edges": 21488,
+          "bound": 21475,
+          "unbound": 13,
+          "sameFile": 18797,
+          "otherFile": 2678
+        }
+      },
+      "violations": 0,
+      "violationExamples": [],
+      "lineSplit": {
+        "intended": 17377,
+        "sameFileOffLine": 1420,
+        "arbitraryTwin": 2678,
+        "unbound": 13
+      }
+    },
+    "references": {
+      "edges": 436,
+      "bound": 247,
+      "unbound": 189,
+      "sameFile": 240,
+      "otherFile": 7,
+      "predicate": "CLASS (in-document must bind own file)",
+      "classSplit": {
+        "builtin": {
+          "edges": 181,
+          "bound": 1,
+          "unbound": 180,
+          "sameFile": 1,
+          "otherFile": 0
+        },
+        "in-document": {
+          "edges": 237,
+          "bound": 237,
+          "unbound": 0,
+          "sameFile": 236,
+          "otherFile": 1
+        },
+        "unresolved": {
+          "edges": 18,
+          "bound": 9,
+          "unbound": 9,
+          "sameFile": 3,
+          "otherFile": 6
+        }
+      },
+      "violations": 0,
+      "violationExamples": []
+    },
+    "calls": {
+      "edges": 400,
+      "bound": 400,
+      "unbound": 0,
+      "sameFile": 400,
+      "otherFile": 0,
+      "predicate": "CLASS (in-document must bind own file)",
+      "classSplit": {
+        "in-document": {
+          "edges": 400,
+          "bound": 400,
+          "unbound": 0,
+          "sameFile": 400,
+          "otherFile": 0
+        }
+      },
+      "violations": 0,
+      "violationExamples": []
+    },
+    "imports": {
+      "edges": 99,
+      "bound": 38,
+      "unbound": 61,
+      "sameFile": 2,
+      "otherFile": 36,
+      "predicate": "CLASS (in-document must bind own file)",
+      "classSplit": {
+        "external": {
+          "edges": 6,
+          "bound": 2,
+          "unbound": 4,
+          "sameFile": 0,
+          "otherFile": 2
+        },
+        "file": {
+          "edges": 90,
+          "bound": 36,
+          "unbound": 54,
+          "sameFile": 2,
+          "otherFile": 34
+        },
+        "in-document": {
+          "edges": 3,
+          "bound": 0,
+          "unbound": 3,
+          "sameFile": 0,
+          "otherFile": 0
+        }
+      },
+      "violations": 0,
+      "violationExamples": []
+    },
+    "overrides": {
+      "edges": 3,
+      "bound": 3,
+      "unbound": 0,
+      "sameFile": 3,
+      "otherFile": 0,
+      "predicate": "CLASS (in-document must bind own file)",
+      "classSplit": {
+        "in-document": {
+          "edges": 3,
+          "bound": 3,
+          "unbound": 0,
+          "sameFile": 3,
+          "otherFile": 0
+        }
+      },
+      "violations": 0,
+      "violationExamples": []
+    }
+  },
+  "violations": [],
+  "boundary": {
+    "noSourceSymbol": [
+      {
+        "type": "references",
+        "edge": "rel:null:target:references:7",
+        "sourceFile": "",
+        "source": "",
+        "target": "target",
+        "edgeLine": 7,
+        "analyzerClass": "in-document",
+        "role": "entity_reference",
+        "boundTo": {
+          "file": "libxslt/tests/XSLTMark/tower.xsl",
+          "name": "target",
+          "qname": "xsl:call-template.target",
+          "line": 12
+        },
+        "declaredInSourceFile": [],
+        "declaredElsewhere": [
+          {
+            "file": "libxslt/tests/XSLTMark/tower.xsl",
+            "line": 12,
+            "kind": "class"
+          },
+          {
+            "file": "libxslt/tests/XSLTMark/tower.xsl",
+            "line": 24,
+            "kind": "class"
+          },
+          {
+            "file": "libxslt/tests/XSLTMark/tower.xsl",
+            "line": 33,
+            "kind": "class"
+          },
+          {
+            "file": "libxslt/tests/XSLTMark/tower.xsl",
+            "line": 51,
+            "kind": "class"
+          }
+        ]
+      }
+    ],
+    "intraDocumentIdRef": [
+      {
+        "type": "imports",
+        "edge": "rel:92bc1d538c95831ad440c15e27d028b972e94d6a:libxslt/tests/REC/stand-2.7-1.xml:xml-stylesheet:1:#style1:imports:1",
+        "sourceFile": "libxslt/tests/REC/stand-2.7-1.xml",
+        "source": "xml-stylesheet",
+        "target": "#style1",
+        "edgeLine": 1,
+        "analyzerClass": "in-document",
+        "role": "consumer",
+        "boundTo": null,
+        "declaredInSourceFile": [],
+        "declaredElsewhere": []
+      },
+      {
+        "type": "imports",
+        "edge": "rel:92bc1d538c95831ad440c15e27d028b972e94d6a:libxslt/tests/REC/stand-2.7-2.xml:xml-stylesheet:2:#transform:imports:2",
+        "sourceFile": "libxslt/tests/REC/stand-2.7-2.xml",
+        "source": "xml-stylesheet",
+        "target": "#transform",
+        "edgeLine": 2,
+        "analyzerClass": "in-document",
+        "role": "consumer",
+        "boundTo": null,
+        "declaredInSourceFile": [],
+        "declaredElsewhere": []
+      },
+      {
+        "type": "imports",
+        "edge": "rel:92bc1d538c95831ad440c15e27d028b972e94d6a:libxslt/tests/REC/stand-2.7-3.xml:xml-stylesheet:2:#transform:imports:2",
+        "sourceFile": "libxslt/tests/REC/stand-2.7-3.xml",
+        "source": "xml-stylesheet",
+        "target": "#transform",
+        "edgeLine": 2,
+        "analyzerClass": "in-document",
+        "role": "consumer",
+        "boundTo": null,
+        "declaredInSourceFile": [],
+        "declaredElsewhere": []
+      }
+    ]
+  }
+}

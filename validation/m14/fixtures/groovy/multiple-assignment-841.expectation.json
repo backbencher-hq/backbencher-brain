@@ -1,0 +1,18 @@
+{
+  "fixtureId": "groovy/multiple-assignment-841",
+  "language": "groovy",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS #841 round 10: Groovy's MULTIPLE-ASSIGNMENT declaration `def (a, b) = expr`. The grammar had no such form, so the line was an ERROR and recovery swallowed the enclosing class — forbidErrors is the load-bearing assertion, as with every other #841 grammar pin. The form was taken from the corpus rather than invented: all six files carrying it use `def` WITH the form (ManyToOneBinderSpec, SimpleMapQuery, TransactionalTransformSpec, GrailsShadowLicenseTransform, CreateAppCommandSpec, AbstractS2UiDomainController), and AbstractS2UiDomainController.groovy declares TYPES inside the parentheses — `def (int max, int offset) = maxAndOffset()` — which is why the declarator is `optional(type) name` and not a bare identifier; the typed case is pinned explicitly below. The bare `(a, b) = …` tuple-ASSIGNMENT form is a different construct with no corpus instance and was deliberately not added. Corpus consequence at the rebuilt wasm (grails-core @ a83f8748, whole tracked corpus, production parseFile pipeline), run corpus-A/B-FIRST per reviews/m59-841-assert-comma-separator.md 7h: 265 -> 261, 4 fixed, 0 regressed, crashes 0, pipeline mismatches 0. NOTE: authoredBeforeAnalyzerRun is false — the expectation was authored from live emission via script/m14/tmp/g841-fixture-dump.ts.",
+  "forbidErrors": [{}],
+  "expectSymbols": [
+    { "name": "MultipleAssignment841", "kind": "class" },
+    { "name": "fromExpression", "kind": "method" },
+    { "name": "typedDeclarators", "kind": "method" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "source": "fromExpression", "target": "getBean" },
+    { "type": "calls", "source": "typedDeclarators", "target": "maxAndOffset" },
+    { "type": "contains", "source": "MultipleAssignment841", "target": "fromExpression" },
+    { "type": "contains", "source": "MultipleAssignment841", "target": "typedDeclarators" }
+  ]
+}

@@ -1,0 +1,938 @@
+{
+  "instrument": "m60-powershell-damage-inventory",
+  "question": "What ARE the production draw's ERROR and MISSING nodes, as an adjudicable list rather than a count?",
+  "draw": {
+    "repos": [
+      "powershell",
+      "ansible"
+    ],
+    "exts": [
+      "ps1",
+      "psm1",
+      "psd1"
+    ],
+    "excluded": "the language's own test/ parser torture tree",
+    "cap": 60,
+    "order": "hash of repo/relative-path, ascending"
+  },
+  "totals": {
+    "files": 73,
+    "damaged": 18,
+    "errorNodes": 82,
+    "missingNodes": 7
+  },
+  "distinctClasses": 51,
+  "classes": [
+    {
+      "key": "ERROR|1",
+      "count": 10,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.AddType.psm1",
+          "line": 118,
+          "column": 59,
+          "type": "ERROR",
+          "text": "1"
+        },
+        {
+          "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.AddType.psm1",
+          "line": 118,
+          "column": 59,
+          "type": "ERROR",
+          "text": "1"
+        },
+        {
+          "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.AddType.psm1",
+          "line": 136,
+          "column": 59,
+          "type": "ERROR",
+          "text": "1"
+        },
+        {
+          "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.AddType.psm1",
+          "line": 136,
+          "column": 59,
+          "type": "ERROR",
+          "text": "1"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|()",
+      "count": 9,
+      "files": 9,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 22,
+          "column": 15,
+          "type": "ERROR",
+          "text": "()"
+        },
+        {
+          "file": "lib/ansible/executor/powershell/module_wrapper.ps1",
+          "line": 11,
+          "column": 15,
+          "type": "ERROR",
+          "text": "()"
+        },
+        {
+          "file": "lib/ansible/executor/powershell/winrm_fetch_file.ps1",
+          "line": 6,
+          "column": 15,
+          "type": "ERROR",
+          "text": "()"
+        },
+        {
+          "file": "lib/ansible/executor/powershell/become_wrapper.ps1",
+          "line": 14,
+          "column": 15,
+          "type": "ERROR",
+          "text": "()"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$format",
+      "count": 5,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 209,
+          "column": 145,
+          "type": "ERROR",
+          "text": "$format"
+        },
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 211,
+          "column": 144,
+          "type": "ERROR",
+          "text": "$format"
+        },
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 224,
+          "column": 109,
+          "type": "ERROR",
+          "text": "$format"
+        },
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 235,
+          "column": 121,
+          "type": "ERROR",
+          "text": "$format"
+        }
+      ]
+    },
+    {
+      "key": "}",
+      "count": 4,
+      "files": 4,
+      "sample": [
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 1090,
+          "column": 177,
+          "type": "}",
+          "text": ""
+        },
+        {
+          "file": "build.psm1",
+          "line": 4950,
+          "column": 2,
+          "type": "}",
+          "text": ""
+        },
+        {
+          "file": "tools/ci.psm1",
+          "line": 1199,
+          "column": 2,
+          "type": "}",
+          "text": ""
+        },
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 316,
+          "column": 2,
+          "type": "}",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "ERROR|git --git-dir=\"$PSScriptRoot/.git\" remot",
+      "count": 3,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 60,
+          "column": 39,
+          "type": "ERROR",
+          "text": "git --git-dir=\"$PSScriptRoot/.git\" remote}"
+        },
+        {
+          "file": "build.psm1",
+          "line": 64,
+          "column": 39,
+          "type": "ERROR",
+          "text": "git --git-dir=\"$PSScriptRoot/.git\" remote get-url"
+        },
+        {
+          "file": "build.psm1",
+          "line": 76,
+          "column": 40,
+          "type": "ERROR",
+          "text": "git --git-dir=\"$PSScriptRoot/.git\" remote add $upstreamRemoteDefaultName"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|]",
+      "count": 3,
+      "files": 2,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 2731,
+          "column": 70,
+          "type": "ERROR",
+          "text": "]"
+        },
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 3217,
+          "column": 70,
+          "type": "ERROR",
+          "text": "]"
+        },
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 21,
+          "column": 2,
+          "type": "ERROR",
+          "text": "]"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|git --git-dir=\"$PSScriptRoot/.git\" descr",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 109,
+          "column": 36,
+          "type": "ERROR",
+          "text": "git --git-dir=\"$PSScriptRoot/.git\" describe --abbrev="
+        },
+        {
+          "file": "build.psm1",
+          "line": 161,
+          "column": 36,
+          "type": "ERROR",
+          "text": "git --git-dir=\"$PSScriptRoot/.git\" describe --dirty --abbrev="
+        }
+      ]
+    },
+    {
+      "key": "ERROR|./build.ps1 -Clean",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 1551,
+          "column": 9,
+          "type": "ERROR",
+          "text": "./build.ps1 -Clean"
+        },
+        {
+          "file": "build.psm1",
+          "line": 1561,
+          "column": 9,
+          "type": "ERROR",
+          "text": "./build.ps1 -Clean"
+        }
+      ]
+    },
+    {
+      "key": ">",
+      "count": 2,
+      "files": 2,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 2714,
+          "column": 59,
+          "type": ">",
+          "text": ""
+        },
+        {
+          "file": "tools/findMissingNotices.ps1",
+          "line": 277,
+          "column": 40,
+          "type": ">",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$installObtainUrl/",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 2728,
+          "column": 21,
+          "type": "ERROR",
+          "text": "$installObtainUrl/"
+        },
+        {
+          "file": "build.psm1",
+          "line": 2763,
+          "column": 32,
+          "type": "ERROR",
+          "text": "$installObtainUrl/"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|/$_",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 4877,
+          "column": 41,
+          "type": "ERROR",
+          "text": "/$_"
+        },
+        {
+          "file": "build.psm1",
+          "line": 4888,
+          "column": 41,
+          "type": "ERROR",
+          "text": "/$_"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$PublishFolder/",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 4878,
+          "column": 35,
+          "type": "ERROR",
+          "text": "$PublishFolder/"
+        },
+        {
+          "file": "build.psm1",
+          "line": 4889,
+          "column": 35,
+          "type": "ERROR",
+          "text": "$PublishFolder/"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|n`",
+      "count": 2,
+      "files": 2,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 1169,
+          "column": 85,
+          "type": "ERROR",
+          "text": "n`"
+        },
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 302,
+          "column": 65,
+          "type": "ERROR",
+          "text": "n`"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|n",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 313,
+          "column": 38,
+          "type": "ERROR",
+          "text": "n"
+        },
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 313,
+          "column": 57,
+          "type": "ERROR",
+          "text": "n"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$staging\\*",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 2518,
+          "column": 36,
+          "type": "ERROR",
+          "text": "$staging\\*"
+        },
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 2665,
+          "column": 36,
+          "type": "ERROR",
+          "text": "$staging\\*"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|[",
+      "count": 2,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 2731,
+          "column": 68,
+          "type": "ERROR",
+          "text": "["
+        },
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 3217,
+          "column": 68,
+          "type": "ERROR",
+          "text": "["
+        }
+      ]
+    },
+    {
+      "key": "ERROR|'%H",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 110,
+          "column": 99,
+          "type": "ERROR",
+          "text": "'%H"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|%b",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 141,
+          "column": 56,
+          "type": "ERROR",
+          "text": "%b"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$UpstreamRemote/",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/releaseTools.psm1",
+          "line": 978,
+          "column": 43,
+          "type": "ERROR",
+          "text": "$UpstreamRemote/"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|git --git-dir=\"$PSScriptRoot/.git\" fetch",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 84,
+          "column": 36,
+          "type": "ERROR",
+          "text": "git --git-dir=\"$PSScriptRoot/.git\" fetch --tags --quiet"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$psVersion = git --git-dir=\"$PSScriptRoo",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 774,
+          "column": 9,
+          "type": "ERROR",
+          "text": "$psVersion = git --git-dir=\"$PSScriptRoot/.git\" describe"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|Build\\n\\n        if (! (Test-Path -Path ",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 1551,
+          "column": 29,
+          "type": "ERROR",
+          "text": "Build\\n\\n        if (! (Test-Path -Path $outPath))"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|../System.Management.Automation/CoreCLR/",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 3286,
+          "column": 47,
+          "type": "ERROR",
+          "text": "../System.Management.Automation/CoreCLR/CorePsTypeCatalog.cs"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$PSScriptRoot\\*",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 3667,
+          "column": 19,
+          "type": "ERROR",
+          "text": "$PSScriptRoot\\*"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$src/*",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "build.psm1",
+          "line": 3743,
+          "column": 47,
+          "type": "ERROR",
+          "text": "$src/*"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|New-PADrive -Path $PSScriptRoot\\..\\src\\$",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/findMissingNotices.ps1",
+          "line": 282,
+          "column": 17,
+          "type": "ERROR",
+          "text": "New-PADrive -Path $PSScriptRoot\\..\\src\\$folder\\obj\\project.assets.json -Name"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|Output Directory",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": ".github/skills/analyze-pester-failures/scripts/analyze-pr-test-failures.ps1",
+          "line": 93,
+          "column": 13,
+          "type": "ERROR",
+          "text": "Output Directory"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|\" -ForegroundColor $colors",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": ".github/skills/analyze-pester-failures/scripts/analyze-pr-test-failures.ps1",
+          "line": 93,
+          "column": 41,
+          "type": "ERROR",
+          "text": "\" -ForegroundColor $colors"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|./PowerShell-Docker/build.ps1 -GenerateM",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 947,
+          "column": 15,
+          "type": "ERROR",
+          "text": "./PowerShell-Docker/build.ps1 -GenerateMatrixJson -FullJson"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|Channel preview | ConvertFrom",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 947,
+          "column": 76,
+          "type": "ERROR",
+          "text": "Channel preview | ConvertFrom"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|Json",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 947,
+          "column": 106,
+          "type": "ERROR",
+          "text": "Json"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|\"`n## ❌ Conflicts Detected`n`n\"\\n       ",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 1168,
+          "column": 32,
+          "type": "ERROR",
+          "text": "\"`n## ❌ Conflicts Detected`n`n\"\\n            $summaryContent += \"The following fi"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|in $filesWithConflicts",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 1171,
+          "column": 32,
+          "type": "ERROR",
+          "text": "in $filesWithConflicts"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|Merge conflict markers detected in $($fi",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 1197,
+          "column": 16,
+          "type": "ERROR",
+          "text": "Merge conflict markers detected in $($filesWithConflicts"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|) file(s)\"",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/ci.psm1",
+          "line": 1197,
+          "column": 78,
+          "type": "ERROR",
+          "text": ") file(s)\""
+        }
+      ]
+    },
+    {
+      "key": "ERROR|*Error:** $($failedLink.Error)`n`n\"\\n   ",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 302,
+          "column": 34,
+          "type": "ERROR",
+          "text": "*Error:** $($failedLink.Error)`n`n\"\\n            foreach ($occurrence in $failedL"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|in $failedLink",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 303,
+          "column": 34,
+          "type": "ERROR",
+          "text": "in $failedLink"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|\"`n## ✅ All links verified successfully!",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": ".github/actions/infrastructure/markdownlinks/Verify-MarkdownLinks.ps1",
+          "line": 310,
+          "column": 28,
+          "type": "ERROR",
+          "text": "\"`n## ✅ All links verified successfully!`n\"\\n    }\\n\\n    Write-Verbose -Verbose \"W"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|KB",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/AttackSurfaceAnalyzer/Run-AttackSurfaceAnalyzer.ps1",
+          "line": 457,
+          "column": 71,
+          "type": "ERROR",
+          "text": "KB"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|\"$RepoRoot/.git\" describe",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 217,
+          "column": 35,
+          "type": "ERROR",
+          "text": "\"$RepoRoot/.git\" describe"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|New-StagingFolder -StagingPath $Staging ",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 718,
+          "column": 5,
+          "type": "ERROR",
+          "text": "New-StagingFolder -StagingPath $Staging -PackageSourcePath $PackageSourcePath -R"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$BuildPath\\*",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 809,
+          "column": 28,
+          "type": "ERROR",
+          "text": "$BuildPath\\*"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|$dataDir/*",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 1869,
+          "column": 39,
+          "type": "ERROR",
+          "text": "$dataDir/*"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|New-StagingFolder -StagingPath $staging ",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "tools/packaging/packaging.psm1",
+          "line": 2501,
+          "column": 13,
+          "type": "ERROR",
+          "text": "New-StagingFolder -StagingPath $staging -PackageSourcePath $PackageSourcePath -R"
+        }
+      ]
+    },
+    {
+      "key": "]",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 17,
+          "column": 26,
+          "type": "]",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "key": "ERROR|,\\n    Justification",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 19,
+          "column": 7,
+          "type": "ERROR",
+          "text": ",\\n    Justification"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|ansible",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 311,
+          "column": 66,
+          "type": "ERROR",
+          "text": "ansible"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|tmp",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 311,
+          "column": 74,
+          "type": "ERROR",
+          "text": "tmp"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|\"",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 311,
+          "column": 102,
+          "type": "ERROR",
+          "text": "\""
+        }
+      ]
+    },
+    {
+      "key": "ERROR|\\n            try",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 311,
+          "column": 104,
+          "type": "ERROR",
+          "text": "\\n            try"
+        }
+      ]
+    },
+    {
+      "key": "ERROR|}\\n\\nprocess",
+      "count": 1,
+      "files": 1,
+      "sample": [
+        {
+          "file": "lib/ansible/executor/powershell/exec_wrapper.ps1",
+          "line": 741,
+          "column": 1,
+          "type": "ERROR",
+          "text": "}\\n\\nprocess"
+        }
+      ]
+    }
+  ],
+  "perRepo": {
+    "powershell": {
+      "files": 49,
+      "damaged": 8,
+      "errorNodes": 56,
+      "missingNodes": 6
+    },
+    "ansible": {
+      "files": 24,
+      "damaged": 10,
+      "errorNodes": 26,
+      "missingNodes": 1
+    }
+  },
+  "howToRead": "A class is a node type plus its source text. A MISSING row is a token the parser INSERTED, so it is a fabrication with no error attached - those are the rows worth reading first. A class with many sites and one shape is a fixable grammar class; a class with one site in a damaged region is usually recovery, not a language gap."
+}

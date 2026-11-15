@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H5",
+  "code": "H5",
+  "tool": "bb_health",
+  "title": "real-repo e2e (zig/src)",
+  "verified": true,
+  "checks": 4,
+  "passed": 4,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-05T04:23:12.395Z"
+}

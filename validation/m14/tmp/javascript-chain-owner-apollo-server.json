@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-13T02:49:03.172Z",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/apollo-server",
+  "tag": "apollo-server",
+  "admittedFiles": 13,
+  "sampledFiles": 13,
+  "parseCleanFiles": 13,
+  "totals": {
+    "files": 13,
+    "chains": 1383,
+    "typedChains": 392,
+    "segments": 2994,
+    "overAttributed": 392,
+    "resolvableWrong": 0,
+    "declaredElsewhere": 0
+  },
+  "note": "overAttributed = segments at index >= 1 of a chain whose ROOT identifier the file types with `new T()`. collectFieldAccessUses publishes owner=<root type> on EVERY segment of the chain (cur/head are taken from the root, outside the segment loop), but only index 0's receiver IS the typed root. resolvableWrong = those segments whose name the root's own type DECLARES in the same file, which is the exact condition under which the store's owner pass (resolveMemberTargetsByOwner) binds the edge to a declaration the receiver is not. declaredElsewhere = the name exists on a different class in the file, so the owner pass declines instead of binding.",
+  "examples": []
+}

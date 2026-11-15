@@ -1,0 +1,15 @@
+{
+  "fixtureId": "c/swallowed-definitions-907",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#907 (M60-C). The fixture is a REAL recovery shape, not a synthesised one: jq src/jv_print.c lines 219-396, where the switch case at L254 pairs `} else {` (L262) with a closing brace living inside a later `#ifdef USE_DECNUM` (L276), so the grammar's preprocessor scanner and the case body disagree about nesting and the `case` runs away to L394 — swallowing the two file-scope definitions after it (`jv_dumpf` at 389, `jv_dump` at 393) into the function body. Measured BEFORE the fix (negative control, script/m14/tmp/c907-fixture-check.ts): the analyzer emitted exactly one function symbol (`jv_dump_term`) and NEITHER swallowed definition; the two exist in the tree only as an ERROR holding a type node plus a bare function_declarator whose next non-space character is `{`. After the fix they are emitted at file scope. The invariant that makes the emission safe is that C has no nested functions, so a definition header inside a body can only be recovery glue for a file-scope definition; the discriminator is the character after the declarator (`{` = definition, `;`/`,`/`)` = prototype, call or initializer) — which is what keeps recovery-misparsed CALLS out, since the swallowed body holds `jv_dumpf(x, stdout, flags)` as a function_declarator too. Pinned here: the recovered symbols; `forbidSymbols` holds the shape that would mean the discriminator had been loosened (a call recovered as a definition).",
+  "expectSymbols": [
+    { "name": "jv_dump_term", "kind": "function" },
+    { "name": "jv_dumpf", "kind": "function" },
+    { "name": "jv_dump", "kind": "function" }
+  ],
+  "forbidSymbols": [
+    { "name": "jv_dumpf", "kind": "variable" },
+    { "name": "jv_dump", "kind": "variable" }
+  ]
+}

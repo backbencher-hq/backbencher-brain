@@ -1,0 +1,325 @@
+{
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "symbols": 310423,
+  "relationships": 820040,
+  "incomingTop": [
+    {
+      "name": "join",
+      "symbol_type": "constant",
+      "c": 21927
+    },
+    {
+      "name": "push",
+      "symbol_type": "function",
+      "c": 14797
+    },
+    {
+      "name": "String",
+      "symbol_type": "function",
+      "c": 14008
+    },
+    {
+      "name": "filter",
+      "symbol_type": "constant",
+      "c": 8817
+    },
+    {
+      "name": "map",
+      "symbol_type": "constant",
+      "c": 8607
+    },
+    {
+      "name": "includes",
+      "symbol_type": "property",
+      "c": 8030
+    },
+    {
+      "name": "stringify",
+      "symbol_type": "property",
+      "c": 7772
+    },
+    {
+      "name": "check",
+      "symbol_type": "property",
+      "c": 7595
+    },
+    {
+      "name": "has",
+      "symbol_type": "function",
+      "c": 7452
+    },
+    {
+      "name": "get",
+      "symbol_type": "method",
+      "c": 7233
+    },
+    {
+      "name": "readFileSync",
+      "symbol_type": "constant",
+      "c": 6825
+    },
+    {
+      "name": "slice",
+      "symbol_type": "constant",
+      "c": 6169
+    }
+  ],
+  "outgoingTop": [
+    {
+      "name": "Q",
+      "symbol_type": "class",
+      "c": 8000
+    },
+    {
+      "name": "uses",
+      "symbol_type": "class",
+      "c": 1833
+    },
+    {
+      "name": "uses",
+      "symbol_type": "class",
+      "c": 1833
+    },
+    {
+      "name": "disagreements",
+      "symbol_type": "property",
+      "c": 1800
+    },
+    {
+      "name": "disagreements",
+      "symbol_type": "property",
+      "c": 1800
+    },
+    {
+      "name": "unknownExtensions",
+      "symbol_type": "class",
+      "c": 1678
+    },
+    {
+      "name": "disagreements",
+      "symbol_type": "property",
+      "c": 800
+    },
+    {
+      "name": "main",
+      "symbol_type": "function",
+      "c": 784
+    },
+    {
+      "name": "perFileRelTypes",
+      "symbol_type": "property",
+      "c": 718
+    },
+    {
+      "name": "unknownExtensions",
+      "symbol_type": "class",
+      "c": 706
+    },
+    {
+      "name": "steps",
+      "symbol_type": "property",
+      "c": 690
+    },
+    {
+      "name": "__refRows",
+      "symbol_type": "property",
+      "c": 674
+    }
+  ],
+  "candidates": [
+    {
+      "name": "traverseGraph",
+      "type": "function",
+      "line": 500,
+      "incoming": 2,
+      "outgoing": 169
+    },
+    {
+      "name": "graphTraversal",
+      "type": "constant",
+      "line": 61,
+      "incoming": 75,
+      "outgoing": 0
+    },
+    {
+      "name": "classifyTier",
+      "type": "constant",
+      "line": 177,
+      "incoming": 33,
+      "outgoing": 0
+    },
+    {
+      "name": "getProjectId",
+      "type": "constant",
+      "line": 307,
+      "incoming": 672,
+      "outgoing": 0
+    },
+    {
+      "name": "relationshipFilterReason",
+      "type": "function",
+      "line": 70,
+      "incoming": 2,
+      "outgoing": 2
+    },
+    {
+      "name": "resolveGraphRootDetailed",
+      "type": "function",
+      "line": 1338,
+      "incoming": 5,
+      "outgoing": 17
+    },
+    {
+      "name": "matchedMember",
+      "type": "function",
+      "line": 476,
+      "incoming": 3,
+      "outgoing": 4
+    },
+    {
+      "name": "cascadeMatch",
+      "type": "function",
+      "line": 471,
+      "incoming": 5,
+      "outgoing": 3
+    },
+    {
+      "name": "nodeFromEdge",
+      "type": "function",
+      "line": 482,
+      "incoming": 3,
+      "outgoing": 13
+    },
+    {
+      "name": "likeContains",
+      "type": "function",
+      "line": 1421,
+      "incoming": 3,
+      "outgoing": 0
+    },
+    {
+      "name": "countUnattributedRows",
+      "type": "function",
+      "line": 390,
+      "incoming": 2,
+      "outgoing": 10
+    },
+    {
+      "name": "edgeMetadata",
+      "type": "function",
+      "line": 430,
+      "incoming": 3,
+      "outgoing": 4
+    }
+  ],
+  "classes": [
+    {
+      "name": "push",
+      "c": 4268
+    },
+    {
+      "name": "Node",
+      "c": 3270
+    },
+    {
+      "name": "UniversalSymbol",
+      "c": 465
+    },
+    {
+      "name": "UniversalRelationship",
+      "c": 250
+    },
+    {
+      "name": "ParseResult",
+      "c": 233
+    },
+    {
+      "name": "Error",
+      "c": 204
+    },
+    {
+      "name": "CrossLanguageSymbol",
+      "c": 172
+    },
+    {
+      "name": "on",
+      "c": 106
+    }
+  ],
+  "smallClasses": [
+    {
+      "name": "FreshnessResolver",
+      "c": 15
+    },
+    {
+      "name": "VisitContext",
+      "c": 15
+    },
+    {
+      "name": "ElixirContext",
+      "c": 15
+    },
+    {
+      "name": "Scope",
+      "c": 15
+    },
+    {
+      "name": "Query",
+      "c": 15
+    },
+    {
+      "name": "EvidenceInput",
+      "c": 15
+    },
+    {
+      "name": "gate/command/result",
+      "c": 15
+    },
+    {
+      "name": "gate/command/result",
+      "c": 15
+    }
+  ],
+  "methodRows": [
+    {
+      "name": "deriveCallSiteAddress",
+      "symbol_type": "function",
+      "c": 30
+    },
+    {
+      "name": "openByPath",
+      "symbol_type": "function",
+      "c": 30
+    },
+    {
+      "name": "unquote",
+      "symbol_type": "function",
+      "c": 30
+    },
+    {
+      "name": "identifierName",
+      "symbol_type": "method",
+      "c": 30
+    },
+    {
+      "name": "not",
+      "symbol_type": "function",
+      "c": 30
+    },
+    {
+      "name": "check",
+      "symbol_type": "function",
+      "c": 30
+    },
+    {
+      "name": "find",
+      "symbol_type": "function",
+      "c": 30
+    },
+    {
+      "name": "setAttribute",
+      "symbol_type": "method",
+      "c": 30
+    }
+  ]
+}

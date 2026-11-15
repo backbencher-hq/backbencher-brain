@@ -1,0 +1,70 @@
+{
+ "fixtureId": "dart/ruled-out-decorates",
+ "language": "dart",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "THE `decorates` RULING FIXTURE — dart has no APPLIED DECORATOR, only ANNOTATIONS, and the annotation is already published under the label it actually is. THE CONTRACT (`src/ast/types.ts:120-129`): a decorator is APPLIED TO a declaration; the edge is read as 'this declaration carries this decorator'; NOT `calls` (the decorated symbol does not invoke the decorator) and NOT `references` (a mention says nothing about application). THE QUESTION IS A CORPUS QUESTION, not a zero-emission question: does the dart corpus contain a construct that APPLIES A CALLABLE TO A DECLARATION — a real decorator — or only annotations that MARK a declaration? THE MEASURED ANSWER (`script/m14/dart-extended-constructs.ts`, the `decorates` section of `validation/m14/measurements/dart-extended-constructs-2026-10-21.json`): the count of annotation sites whose OWN ARGUMENTS MENTION THE DECLARATION THEY MARK is ZERO over the whole admitted population. In python the decorator RECEIVES the declaration (`@deco` -> `deco(f)`), which is what makes it an applied callable; dart's `annotation` node has no field for that, so it CANNOT be one. THE GRAMMAR HALF, MEASURED OVER BOTH BUILDS (the wired one and the newest available source): 0 of 219 named node types is a decorator-application type — `decorator`, `decorator_list`, `decorated_definition`, `decorated_class`, `decorated_function` are all ABSENT and the marker 'decorat' matches 0 node types in either build; the only near-miss is `annotation`, the node type this file exercises. THIS FIXTURE PINS BOTH DIRECTIONS. POSITIVE: the annotation IS published, with the RIGHT label — `references{isAnnotation, annotatedKind}` from the DECORATED DECLARATION to the ANNOTATION TYPE. NEGATIVE: `decorates` is NOT emitted, not even where an annotation is present, and not in either direction. The negative half is the half a prose ruling cannot fake: an analyzer that quietly started emitting `decorates` for every annotation would pass every positive row in this file and fail these. THE THREE SHAPES, each named: (1) a BARE MARKER — `@override`, the language's own passive marker; (2) a MARKER WITH ARGUMENTS — `@Deprecated('use Other instead')`, where a const constructor is invoked but the DECLARATION IS NOT AN ARGUMENT, so nothing is applied TO it; (3) a USER ANNOTATION — `@JsonKey(name: 'renamed')`, a configuration annotation, still passive. A dart annotation is NOT a python decorator: python's `@deco` REPLACES or WRAPS the declaration and the declaration is passed to it; dart's `@JsonKey(...)` is READ by a code generator or by the compiler, and the declaration is not an argument to anything.",
+ "expectSymbols": [
+  { "name": "ruled-out-decorates", "kind": "module" },
+  { "name": "Annotated", "kind": "class" },
+  { "name": "Configured", "kind": "class" },
+  { "name": "topLevel", "kind": "function" },
+  { "name": "field", "kind": "property", "ownerName": "Configured" },
+  { "name": "toString", "kind": "method", "ownerName": "Annotated" }
+ ],
+ "expectRelationships": [
+  {
+   "type": "references",
+   "source": "Annotated",
+   "target": "Deprecated",
+   "confidenceMin": 0.95,
+   "meta.isAnnotation": true,
+   "meta.annotatedKind": "class_definition",
+   "note": "POSITIVE 1 — A MARKER WITH ARGUMENTS. `@Deprecated('use Other instead')` invokes a const constructor, but the DECLARATION IS NOT AN ARGUMENT: nothing is applied to the class. The row is published as `references{isAnnotation}` — the label it really is — and NOT as `decorates`."
+  },
+  {
+   "type": "references",
+   "source": "toString",
+   "target": "override",
+   "confidenceMin": 0.95,
+   "meta.isAnnotation": true,
+   "meta.annotatedKind": "function_signature",
+   "note": "POSITIVE 2 — A BARE MARKER ON A MEMBER. `@override` is the language's own marker and carries no arguments at all; it is passive metadata."
+  },
+  {
+   "type": "references",
+   "source": "Configured",
+   "target": "JsonKey",
+   "confidenceMin": 0.95,
+   "meta.isAnnotation": true,
+   "meta.annotatedKind": "class_definition",
+   "note": "POSITIVE 3 — A USER ANNOTATION WITH NAMED ARGUMENTS. `@JsonKey(name: 'renamed')` is a configuration annotation read by a code generator: the class is not an argument to anything."
+  },
+  {
+   "type": "references",
+   "source": "field",
+   "target": "JsonKey",
+   "confidenceMin": 0.95,
+   "meta.isAnnotation": true,
+   "meta.annotatedKind": "declaration",
+   "note": "POSITIVE 4 — THE SAME USER ANNOTATION ON A FIELD. The carrier kind here is `declaration`, not `class_definition` or `function_signature`; a lane that published one carrier kind only would pass positives 1-3 and fail this."
+  },
+  {
+   "type": "references",
+   "source": "topLevel",
+   "target": "pragma",
+   "confidenceMin": 0.95,
+   "meta.isAnnotation": true,
+   "meta.annotatedKind": "function_signature",
+   "note": "POSITIVE 5 — A TOP-LEVEL FUNCTION's ANNOTATION. `@pragma('vm:prefer-inline')` — the third carrier kind, and the one that proves the rule is not class-only."
+  }
+ ],
+ "forbidRelationships": [
+  { "type": "decorates", "note": "THE RULING ITSELF. No annotation in this file — with arguments, bare, a core marker or a user's own — may publish a `decorates` row: a dart annotation ASSERTS PASSIVE METADATA and does not apply a callable to the declaration. A lane that published one would pass every positive row above." },
+  { "type": "decorates", "source": "Annotated", "note": "THE RULING, BY SOURCE — a class that CARRIES an annotation must not publish a `decorates` row. This is the row python publishes (`@deco` on a class) and the one dart does not: the construct is not the same thing." },
+  { "type": "decorates", "source": "toString", "note": "THE RULING, ON A MEMBER — the same for a method: the annotation marks the member, it does not apply a callable to it." },
+  { "type": "decorates", "target": "override", "note": "THE RULING, IN THE OTHER DIRECTION TOO. `@override` is the language's own marker; there is no callable to apply and no user class behind it. A lane that published a `decorates` row for a core marker would be inventing an applied callable that does not exist." },
+  { "type": "decorates", "target": "JsonKey", "note": "THE DECOY. `JsonKey` LOOKS like a decorator — a user's own class, applied to a declaration — and it is the nearest dart thing to python's `@deco`. It is still not one: the annotation is READ by the generator, the declaration is not passed to it, and the grammar's `annotation` node has no field for it. This forbid is what makes the ruling checkable rather than merely asserted." },
+  { "type": "decorates", "target": "Deprecated", "note": "THE SAME DECOY WITH A CONSTRUCTOR ARGUMENT: `@Deprecated('use Other instead')` invokes a const constructor with an argument, which is the closest dart gets to an applied callable — and the argument is a STRING, never the declaration." },
+  { "type": "calls", "source": "Annotated", "target": "Deprecated", "note": "AN ANNOTATION IS NOT A CALL OF THE DECLARATION. The enum says so explicitly: the decorated symbol does not invoke the decorator. Nothing in this file calls `Deprecated`." }
+ ]
+}

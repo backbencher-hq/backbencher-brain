@@ -1,0 +1,45 @@
+{
+  "fixtureId": "java/class-extends-implements",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JLS 8.1.4: superclass via extends is Inheritance; JLS 8.1.5: interface list via implements is Implementation. Both edges must exist with correct labels.",
+  "expectSymbols": [
+    {
+      "name": "TaskList",
+      "kind": "class"
+    },
+    {
+      "name": "run"
+    },
+    {
+      "name": "get"
+    },
+    {
+      "name": "size"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "TaskList",
+      "target": "AbstractList"
+    },
+    {
+      "type": "implements",
+      "from": "TaskList",
+      "target": "Runnable"
+    },
+    {
+      "type": "extends",
+      "from": "TaskList",
+      "targetEndsWith": "AbstractList",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "implements",
+      "from": "TaskList",
+      "targetEndsWith": "Runnable",
+      "meta.evidenceClass": "structural"
+    }
+  ]
+}

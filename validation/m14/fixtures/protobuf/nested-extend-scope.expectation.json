@@ -1,0 +1,173 @@
+{
+  "fixtureId": "protobuf/nested-extend-scope",
+  "language": "protobuf",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the one rule protobuf's resolution fixtures cannot otherwise see, and pins it in BOTH directions so it cannot be satisfied by a rule that merely prefers the closest declaration. A type written inside an `extend` block is resolved from where the block is WRITTEN, because `extend` opens no scope: the extended type is where the block's members go, not a scope their types are looked up in. The analyzer carried one value for both questions (`Ctx.owner`), so a reference inside a NESTED `extend` was resolved against a type the language never made a scope of. ROW 1 (`leaf_ref`) is the shape the reference implementation's own `unittest_custom_options.proto` uses: the block is nested inside `Nest.Leaf` and writes the name `Leaf`, so C++ lookup walks out from `nse.demo.Nest.Leaf` to the declaration `nse.demo.Nest.Leaf`. Pre-fix the analyzer emitted `nse.demo.Leaf`, an id published by no file in any repository. ROW 2 (`which_twin`) is the guard: the block is at FILE SCOPE and two types are named `Twin`, so a rule that always preferred the innermost declaration would answer `nse.demo.Dual.Twin` and be wrong. protoc answers `nse.demo.Twin`. ROW 3 (`shadow`) is the control: an ordinary field in the same message, resolving to the nested type, so a fix that broke in-file resolution for nested types would fail it. OWNERSHIP is asserted on both extension members, because a one-sided fix that moved the resolution scope by also moving ownership would produce two correct edges and one wrong `contains`. BOTH ROWS ARE ADJUDICATED BY THE REFERENCE COMPILER, not only by this lane: `protoc` 36.2 on this exact file reports `leaf_ref -> .nse.demo.Nest.Leaf` and `which_twin -> .nse.demo.Twin`, which are the two `uses` targets asserted below.",
+  "expectSymbols": [
+    {
+      "name": "nse.demo",
+      "kind": "namespace"
+    },
+    {
+      "name": "Nest",
+      "kind": "class",
+      "ownerName": "nse.demo",
+      "meta.id": "nse.demo.Nest"
+    },
+    {
+      "name": "Leaf",
+      "kind": "class",
+      "ownerName": "nse.demo.Nest",
+      "meta.id": "nse.demo.Nest.Leaf"
+    },
+    {
+      "name": "waldo",
+      "kind": "property",
+      "ownerName": "nse.demo.Nest.Leaf"
+    },
+    {
+      "name": "leaf_ref",
+      "kind": "property",
+      "ownerName": "google.protobuf.FieldOptions",
+      "meta.viaExtension": true
+    },
+    {
+      "name": "Dual",
+      "kind": "class",
+      "ownerName": "nse.demo",
+      "meta.id": "nse.demo.Dual"
+    },
+    {
+      "name": "Twin",
+      "kind": "class",
+      "ownerName": "nse.demo.Dual",
+      "meta.id": "nse.demo.Dual.Twin"
+    },
+    {
+      "name": "nested_value",
+      "kind": "property",
+      "ownerName": "nse.demo.Dual.Twin"
+    },
+    {
+      "name": "shadow",
+      "kind": "property",
+      "ownerName": "nse.demo.Dual"
+    },
+    {
+      "name": "which_twin",
+      "kind": "property",
+      "ownerName": "nse.demo.Dual",
+      "meta.viaExtension": true
+    },
+    {
+      "name": "Twin",
+      "kind": "class",
+      "ownerName": "nse.demo",
+      "meta.id": "nse.demo.Twin"
+    },
+    {
+      "name": "file_scope_value",
+      "kind": "property",
+      "ownerName": "nse.demo.Twin"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "nse.demo.Nest",
+      "target": "nse.demo.Nest.Leaf",
+      "line_number": 44
+    },
+    {
+      "type": "references",
+      "from": "nse.demo.Nest.Leaf.leaf_ref",
+      "target": "nse.demo.Nest.Leaf",
+      "line_number": 59,
+      "confidenceMin": 0.9,
+      "note": "THE row this fixture exists for. `Leaf` is written inside an `extend` block nested in `nse.demo.Nest.Leaf`, so it resolves from THAT scope: the candidate `nse.demo.Nest.Leaf.Leaf` does not exist, the walk steps out one scope and `nse.demo.Nest.Leaf` does, and that is the declaration. The pre-fix answer was `nse.demo.Leaf` \u2014 the package plus the name as written \u2014 because the walk had been handed `google.protobuf.FieldOptions`, every candidate derived from it fell outside the package subtree and was dropped, and nothing inside the subtree is named `Leaf`. `nse.demo.Leaf` is published by no file in any repository in the corpus. protoc 36.2, run on this fixture, reports this field's type as `.nse.demo.Nest.Leaf`."
+    },
+    {
+      "type": "contains",
+      "from": "google.protobuf.FieldOptions",
+      "target": "nse.demo.Nest.Leaf.leaf_ref",
+      "line_number": 59,
+      "meta.viaExtension": true,
+      "note": "The `extend` block is written INSIDE `nse.demo.Nest.Leaf`, so the extension's own name is `nse.demo.Nest.Leaf.leaf_ref` while the extendee `google.protobuf.FieldOptions` names the edge's SOURCE. `protoc` reads this member's extension name as `.nse.demo.Nest.Leaf.leaf_ref` with `extendee = .google.protobuf.FieldOptions` \u2014 read back from the descriptor set of this fixture, so the two fields are separately visible rather than inferred."
+    },
+    {
+      "type": "references",
+      "from": "nse.demo.which_twin",
+      "target": "nse.demo.Twin",
+      "line_number": 98,
+      "confidenceMin": 0.9,
+      "note": "THE guard row, and the reason this fixture is two rows. The `extend Dual` block is at FILE SCOPE and two declarations are named `Twin`: `nse.demo.Twin` and `nse.demo.Dual.Twin`. C++ lookup from the file-scope scope `nse.demo` finds `nse.demo.Twin` and stops; `nse.demo.Dual` is not an enclosing scope of a file-scope extend block. Pre-fix the walk was handed `nse.demo.Dual` and answered `nse.demo.Dual.Twin`. A rule stated as 'always prefer the innermost declaration' passes ROW 1 and fails this row, which is what makes this a rule about where the block is written rather than a rule about proximity. This is `unittest_delimited.proto`'s construction: it declares `editions_unittest.LengthPrefixed` at file scope and `editions_unittest.TestDelimited.LengthPrefixed` nested, then writes `LengthPrefixed lengthprefixed = 1004;` inside a file-scope `extend TestDelimited`. protoc answers `editions_unittest.LengthPrefixed`. The SOURCE of this edge is the extension itself, and pass 21 corrected its id: the `extend Dual` block is at file scope, so `protoc` names the extension `nse.demo.which_twin` with `extendee = .nse.demo.Dual`. The resolution TARGET is unchanged by that fix and is still `nse.demo.Twin` \u2014 which is the point of the row, since `nse.demo.Dual.which_twin` was a name `protoc` does not define."
+    },
+    {
+      "type": "contains",
+      "from": "nse.demo.Dual",
+      "target": "nse.demo.which_twin",
+      "line_number": 98,
+      "meta.viaExtension": true
+    },
+    {
+      "type": "references",
+      "from": "nse.demo.Dual.shadow",
+      "target": "nse.demo.Dual.Twin",
+      "line_number": 73,
+      "confidenceMin": 0.9,
+      "note": "The control. An ordinary field of `Dual` writing `Twin` resolves to the nested `nse.demo.Dual.Twin`, not the file-scope `nse.demo.Twin`, because the enclosing scope `nse.demo.Dual` has the nearer declaration. Present so a change that pushed in-file resolution outward through the package for every reference would fail here, and so ROW 2's answer cannot be read as 'always prefer the outermost' either."
+    },
+    {
+      "type": "contains",
+      "from": "nse.demo.Dual",
+      "target": "nse.demo.Dual.Twin",
+      "line_number": 69
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "references",
+      "from": "google.protobuf.FieldOptions.leaf_ref",
+      "target": "nse.demo.Leaf",
+      "note": "The pre-fix answer, forbidden explicitly. A forbidden row rather than only an absent requirement, so a regression that emitted BOTH the right and the wrong target fails instead of passing on the right one alone."
+    },
+    {
+      "type": "references",
+      "from": "nse.demo.Dual.which_twin",
+      "target": "nse.demo.Dual.Twin",
+      "note": "The pre-fix answer for the guard row, and the answer 'prefer the innermost declaration' gives. Forbidden so that rule cannot pass this fixture."
+    },
+    {
+      "type": "contains",
+      "from": "nse.demo.Dual",
+      "target": "nse.demo.Dual.which_twin",
+      "meta.viaExtension": true,
+      "note": "THE pass-21 pre-fix extension id, forbidden explicitly. `protoc` reads this member's extension name as `nse.demo.which_twin`; `Dual` is the extendee and appears only as the edge's source."
+    },
+    {
+      "type": "contains",
+      "from": "google.protobuf.FieldOptions",
+      "target": "google.protobuf.FieldOptions.leaf_ref",
+      "meta.viaExtension": true,
+      "note": "THE pass-21 pre-fix id for the same reason at a different nesting depth: the block is written inside `Nest.Leaf`, so the name follows the block, not the extendee."
+    },
+    {
+      "type": "uses",
+      "from": "nse.demo.Nest.Leaf.leaf_ref",
+      "target": "nse.demo.Nest.Leaf",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "nse.demo.which_twin",
+      "target": "nse.demo.Twin",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    },
+    {
+      "type": "uses",
+      "from": "nse.demo.Dual.shadow",
+      "target": "nse.demo.Dual.Twin",
+      "note": "supersession 2026-10-27: this row's label moved from uses to references per the 1:1 relabel rule (PB-REL-5's uses role retired; the fleet's type-position contract: a field's declared type NAMES a type the way a query would). The forbid pins the RETIRED label so a silent widening back to uses goes red."
+    }
+  ]
+}

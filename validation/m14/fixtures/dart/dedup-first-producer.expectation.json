@@ -1,0 +1,97 @@
+{
+  "fixtureId": "dart/dedup-first-producer",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "PINS WHAT THE STORE KEEPS WHEN ONE KEY HAS SEVERAL PRODUCERS — the behaviour arm14's falsified cell turned out to rest on. DARTD7 (real-dart-analyzer.ts:1147) collapses rows on `type|source|target|confidence` and keeps the FIRST per key; the LINE NUMBER is deliberately not in the key, so the surviving row's `line_number` is whichever producer the walk reached first. Until this fixture there was NO PIN on which line survives: the arm14 receipt says so in as many words, because retargeting a row can change which rows are first and which keys exist at all, and the suite's mutants cannot fail on that (they wrap analyzer output, so they cannot add a row). The three behaviours are (A) three producers of one key collapse to one row at the FIRST site's line; (B) a file can hold BOTH the bare and the spelled key for one member and one source, so the spelled row does not supersede the bare one; (C) the COLLAPSE — a typed METHOD parameter's read and a typed CLOSURE parameter's read of the same member in the same enclosing function are ONE key, which is exactly why the typed-receiver change retargeted a real site and still added nothing to this file's count. The lines are measured on the analyzer at HEAD rather than predicted, which is what `authoredBeforeAnalyzerRun: false` records; what makes them falsifiable is the mutant pair added with this fixture (a multiplicity regression, and a line reorder that moves the surviving row off the first producer).",
+  "expectSymbols": [
+    { "name": "dedup-first-producer", "kind": "module" },
+    { "name": "Element", "kind": "class" },
+    { "name": "id", "kind": "property", "ownerName": "Element" },
+    { "name": "poke", "kind": "method", "ownerName": "Element" },
+    { "name": "sink", "kind": "function", "scope": "" },
+    { "name": "threeSites", "kind": "function", "scope": "" },
+    { "name": "bareAndSpelled", "kind": "function", "scope": "" },
+    { "name": "collapses", "kind": "function", "scope": "" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "threeSites",
+      "target": "Element.poke",
+      "line_number": 37,
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "(A) THREE call sites of one key survive as ONE row, and the row's line is the FIRST producer's (37), not the second's (38) or the third's (39). The count pin below states the collapse; this pin states WHICH line the store reports for it — the pair is what a change to the walk order would break."
+    },
+    {
+      "type": "calls",
+      "from": "bareAndSpelled",
+      "target": "poke",
+      "line_number": 47,
+      "meta.receiverCause": "receiverTypeUnknown",
+      "note": "(B) CONTROL — an UNTYPED closure parameter. Its read is a DIFFERENT key from the spelled one below, which is why both rows exist in this file; nothing in the source names its type, so it must stay bare."
+    },
+    {
+      "type": "calls",
+      "from": "bareAndSpelled",
+      "target": "Element.poke",
+      "line_number": 50,
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "(B) the typed METHOD parameter's read, in the same function and from the same source symbol. Bare and spelled coexist: a retarget rewrites the site it reaches and does NOT delete the bare key from the file — which is the half of arm14's mechanism that a per-site reading gets right."
+    },
+    {
+      "type": "calls",
+      "from": "collapses",
+      "target": "Element.poke",
+      "line_number": 57,
+      "meta.qualifier": "chain",
+      "meta.receiverCause": null,
+      "note": "(C) THE COLLAPSE. Two DIFFERENT declarations in one source both spell `Element.poke` — the method parameter (line 57, typed before the typed-receiver change) and the closure parameter (line 60, typed BY it). They are ONE key, so the closure's retargeted row is DROPPED as a duplicate, and the line the store reports is the method parameter's. If a future dedup kept the later producer, the line here would be 60 and this pin fails; if it stopped deduping at all, the count pin below fails."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "threeSites",
+      "target": "poke",
+      "note": "the superseded bare spelling for a typed method parameter, forbidden so a rule that stopped reading the signature sibling could not pass by leaving this row behind"
+    },
+    {
+      "type": "calls",
+      "from": "collapses",
+      "target": "poke",
+      "note": "BOTH reads in `collapses` are typed — the method parameter by the signature, the closure parameter by the typed-receiver change. A bare row here means the closure's parameter lost the type the source writes, which is the exact regression the sibling fixture pins from the other side."
+    },
+    {
+      "type": "calls",
+      "from": "bareAndSpelled",
+      "target": "Element.poke",
+      "line_number": 47,
+      "note": "the untyped closure's read must never be reported as the SPELLED row: line 47 is the bare site, and a spelled row at that line would mean the rule started inferring a type for `(element) => …` from somewhere other than the source."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "threeSites",
+      "target": "Element.poke",
+      "equals": 1,
+      "note": "(A) three call sites, one row — DARTD7's collapse, pinned independently of any receiver work so a multiplicity regression is caught on its own."
+    },
+    {
+      "type": "calls",
+      "from": "collapses",
+      "target": "Element.poke",
+      "equals": 1,
+      "note": "(C) TWO producers of one key — a typed method parameter and a typed closure parameter — produce ONE row. THIS IS THE PIN THE CORPUS HAD NONE OF: on real code the same interaction moved the whole lane's edge total by +1,727 while every per-site rule stayed a rewrite (374-file A/B, 9 files changed in both directions). Here the count is small enough to state exactly."
+    },
+    {
+      "type": "calls",
+      "from": "bareAndSpelled",
+      "target": "poke",
+      "equals": 1,
+      "note": "(B) one untyped closure site, one bare row — the control's count, so the bare key cannot acquire a second producer unnoticed."
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "fixtureId": "r/F11-triple-colon",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "`R6:::R6Class` reaches another package's internals and `R6::R6Class` does not, but BOTH are class declarations: a rule that only matches a bare callee loses every namespaced class in the corpus, which is most of them. The second half of the file is the construction surface, and the two halves disagree on purpose. `Hidden$new()` and `Plain$new()` are `instantiates` edges at 0.9 -- 0.9 and not 1.0 because R's `new` is dynamic dispatch on a string and the analyzer can say a class named `Hidden` was constructed, not that the returned object is one. `NotDeclaredAnywhere$new()` is NOT: the CALL edge is still emitted, because the call happened, but an `instantiates` edge naming a class no file declares is the fabrication this workstream calls its most expensive mistake. So `calls use_it -> NotDeclaredAnywhere$new` is pinned PRESENT and `instantiates use_it -> NotDeclaredAnywhere` is pinned ABSENT, and those two pins together are the difference between an edge that records a call and an edge that asserts a fact about the world. `Odd`'s UNNAMED `list(1, function(x) x, real = function() 1)` holds a positional function with no name; publishing it as a method named after its own source text would create a member no R6 class has, so `1` is forbidden as a member and as a file-level symbol.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Hidden",
+      "kind": "class"
+    },
+    {
+      "name": "Plain",
+      "kind": "class"
+    },
+    {
+      "name": "Odd",
+      "kind": "class"
+    },
+    {
+      "name": "go",
+      "kind": "method",
+      "ownerName": "Hidden"
+    },
+    {
+      "name": "go",
+      "kind": "method",
+      "ownerName": "Plain"
+    },
+    {
+      "name": "real",
+      "kind": "method",
+      "ownerName": "Odd"
+    },
+    {
+      "name": "use_it",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Hidden",
+      "target": "go",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Plain",
+      "target": "go",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Odd",
+      "target": "real",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "R6",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "use_it",
+      "target": "Hidden$new",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "use_it",
+      "target": "Plain$new",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "use_it",
+      "target": "NotDeclaredAnywhere$new",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "instantiates",
+      "from": "use_it",
+      "target": "Hidden",
+      "confidenceMin": 0.9
+    },
+    {
+      "type": "instantiates",
+      "from": "use_it",
+      "target": "Plain",
+      "confidenceMin": 0.9
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "1",
+      "kind": "method"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "instantiates",
+      "from": "use_it",
+      "target": "NotDeclaredAnywhere"
+    },
+    {
+      "type": "contains",
+      "from": "Odd",
+      "target": "1"
+    },
+    {
+      "type": "contains",
+      "from": "global",
+      "target": "1"
+    }
+  ]
+}

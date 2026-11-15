@@ -228,7 +228,7 @@
     "M12 node-types compare": "passed — 35 live references, 0 phantom",
     "M12 corpus errors": "passed — 14/14 clean, 0 crashes, 0 error nodes, grammar residual PINNED TO ZERO",
     "M12 corpus measure": "passed — 630 symbols / 2,490 relationships",
-    "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in fixtures/make/out/grammar-ab.json.",
+    "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in bb_tests/make/out/grammar-ab.json.",
     "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately.",
     "F3 fixtures": "7/7 — the 7th (make/directive-flags) covers five constructs that previously had a code path and no test",
     "F4 mutants": "21/21 caught — 3 added, one per defect found by that fixture, including one that REPRODUCES the pre-fix output rather than reverting a line, because after the fix the defective relationship no longer exists to mutate",
@@ -274,7 +274,7 @@
     "spec": "script/m14/spec/make-completeness.json",
     "pin": "grammars/tree-sitter-make/PIN.md",
     "probes": "script/m14/tmp/make/ (tracked, re-runnable)",
-    "raw": "fixtures/make/out/*.json"
+    "raw": "bb_tests/make/out/*.json"
   },
   "issue": "M60 make wave — 17 defects, 44/44 types, A-H 8/8, differential 1.000000/1.000000",
   "fixtures": 7,

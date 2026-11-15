@@ -1,0 +1,58 @@
+{
+  "fixtureId": "vue/template-ternary-value",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "F10's negative-half guard, and the reason this fix is not the one-line rule it looks like. An identifier followed by a colon is a KEY in an object literal and a VALUE in a ternary, and the two are indistinguishable from the colon alone: in `show ? count : total` the `count` is the value the `?` selected. A F10 fix that reads the colon without tracking a pending `?` at that brace depth deletes every ternary-branch member read \u2014 a silent FALSE NEGATIVE, strictly worse than the false positive it removes, and invisible to vue/template-object-key's forbid rows, which would score it as a clean pass. So the ternary lives in its OWN fixture where every row is a require. `:x=\"{ count: count }\"` is the other half: the same name as key and value, where exactly one of the two occurrences is a read. The COMPUTED-key rows are the third trap: `[count]` names no property, so its content is a real member read, while `['count']` is a quoted string and must emit nothing. A key rule that skipped the whole bracket rather than the key POSITION loses the first and would pass every forbid-only fixture in the lane. `from` note: this component declares a `name:` option, so since F8 the ONE Class symbol is named `W` and every component-owned edge sources it \u2014 not the file stem `template-ternary-value`.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "show"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "count"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "total"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "flag"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "label"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "n"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "items"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "row"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "count"
+    },
+    {
+      "type": "uses",
+      "from": "W",
+      "target": "other"
+    }
+  ]
+}

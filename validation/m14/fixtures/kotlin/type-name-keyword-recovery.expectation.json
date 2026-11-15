@@ -1,0 +1,28 @@
+{
+  "fixtureId": "kotlin/type-name-keyword-recovery",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DERIV_EXPORTS_KOT4, the second R7 mechanism. The empty-name fix covers a name node that is PRESENT and zero-length; this covers a name node that carries a KEYWORD, which is what tree-sitter's recovery produces when IntelliJ context-parameter markup destroys a class header: the real name ends up inside an ERROR node and the constructor keyword arrives as a direct named child typed as a type_identifier, so a first-name-child scan reads the keyword as the name. Measured over the exact population of the construct — every tracked .kt/.kts containing the fixed string `context(`, 2,033 files, all parsed — the pre-fix analyzer published 2 CLASSES named `constructor` for files that declare `Foo`, and with them `exports (file) -> constructor` and `contains constructor -> constructor` rows. The rejection is type-declaration-ONLY because `constructor` is a Kotlin SOFT keyword and `fun constructor()` is legal: the control class at the bottom of the fixture pins that the function IS published, so the rule cannot be widened to functions by a later reader who sees only the first half. Also measured, and stated because it is the same lesson twice: a stride-13 walk of the WHOLE corpus found 0 occurrences of this defect in both the pre-fix and post-fix analyzer, because neither the fixed-string population nor the stride draw is the population that carries the construct — only the targeted one is.",
+  "expectSymbols": [
+    { "name": "Keeper", "kind": "class" },
+    { "name": "constructor", "kind": "method", "ownerName": "Keeper" }
+  ],
+  "expectSymbolCount": [
+    { "name": "constructor", "kind": "class", "equals": 0, "comment": "no TYPE may be named with a Kotlin keyword; the pre-fix state published `class constructor` twice over the construct's own corpus population" },
+    { "name": "constructor", "kind": "method", "equals": 1, "comment": "and the SOFT-keyword function beside it must still be published — this row is what stops the rule from being widened" }
+  ],
+  "expectErrorCount": [
+    { "atLeast": 1, "comment": "the markup is reported as a warning ParseError. The fixture comments are kept deliberately plain: with richer prose the pinned wasm's recovery parsed words out of the COMMENT (`Global -> type`), which is recovery noise, not contract" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Keeper", "target": "constructor", "comment": "the control half, at the level of edges: the legal soft-keyword function is a real member of a real class" },
+    { "type": "exports", "from": "(file)", "target": "Keeper" }
+  ],
+  "forbidSymbols": [
+    { "name": "Foo", "comment": "the class really is named Foo, but the recovery put that name inside an ERROR node, and reading a name out of error recovery would be a guess about intent published at the confidence of a real declaration (R7). The ParseError above reports the damaged header" }
+  ],
+  "forbidRelationships": [
+    { "type": "exports", "target": "constructor", "comment": "the measured pre-fix row: the file exported the keyword as if it were a declared name" },
+    { "type": "contains", "target": "constructor", "from": "constructor", "comment": "and the class contained itself under the keyword" }
+  ]
+}

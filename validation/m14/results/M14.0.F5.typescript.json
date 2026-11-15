@@ -1,0 +1,3753 @@
+{
+  "bbSeal": {
+    "alg": "sha256",
+    "contentSha256": "2d521cf4622ec12e3b58e80d50c4626085ab039a8a166c0f38b425bc9609ec87",
+    "sealedAt": "2026-10-18T06:20:29.000Z"
+  },
+  "checks": [
+    {
+      "description": "THIS lane's own analyzer and spec are this commit's",
+      "detail": "src/ast/real-typescript-analyzer.ts, script/m14/spec/typescript-completeness.json clean at head 52cd88953b",
+      "id": "differential-lane-code-inputs",
+      "status": "pass"
+    },
+    {
+      "description": "the SHARED oracle/harness that produced these rows is this commit's",
+      "detail": "shared harness clean at head 52cd88953b",
+      "id": "differential-harness-code-inputs",
+      "status": "pass"
+    },
+    {
+      "description": "typescript: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=4900 covered=4660 (95.1%) MISSING=240 | analyzer-edges=3853 unexplained=195 (5.1%) heuristic=0 hash=771c854fefb7fcdc",
+      "id": "differential-typescript",
+      "status": "fail"
+    },
+    {
+      "description": "element-plus:typescript: analyzer vs oracle agreement on the drawn file set",
+      "detail": "files=60 tree-truth=1566 covered=1489 (95.1%) MISSING=77 | analyzer-edges=1439 unexplained=49 (3.4%) heuristic=0 hash=02f7248d60f646f7",
+      "id": "differential-element-plus:typescript",
+      "status": "fail"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "52cd88953b79940732cbbfd4bd5206ea229ecdfc",
+  "committedAt": "2026-10-18T02:20:29-04:00",
+  "corpusPins": {
+    "element-plus": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+    "vue-core": "f8975657d7451d8e4291406427e6a8ae5e50c8d5"
+  },
+  "data": {
+    "codeInputs": {
+      "clean": false,
+      "dirty": [
+        "package.json",
+        "src/intelligence/migration/migration-engine.ts",
+        "src/intelligence/migration/migration-source.ts",
+        "src/lsp/navigation.ts",
+        "src/lsp/positions.ts",
+        "src/lsp/rich_hover.ts",
+        "src/mcp/tool-handlers.ts"
+      ],
+      "head": "52cd88953b79940732cbbfd4bd5206ea229ecdfc",
+      "laneDirt": [],
+      "otherDirt": [
+        "package.json",
+        "src/intelligence/migration/migration-engine.ts",
+        "src/intelligence/migration/migration-source.ts",
+        "src/lsp/navigation.ts",
+        "src/lsp/positions.ts",
+        "src/lsp/rich_hover.ts",
+        "src/mcp/tool-handlers.ts"
+      ],
+      "ownInputs": [
+        "src/ast/real-typescript-analyzer.ts",
+        "script/m14/spec/typescript-completeness.json"
+      ],
+      "sharedDirt": [],
+      "sharedInputs": [
+        "script/m14/differential.ts",
+        "script/m14/evidence-harness.ts"
+      ]
+    },
+    "report": {
+      "typescript": {
+        "analyzerEdges": 3853,
+        "coveragePct": 95.1,
+        "coveredByAnalyzer": 4660,
+        "explainableByTree": 3658,
+        "fabricationPct": 5.1,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 240,
+        "perf": {
+          "avgMsPerFile": 99,
+          "loadAvg1": 10.8,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 1805,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "771c854fefb7fcdc",
+        "samples": [
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/directives/vShow.spec.ts",
+            "from": "setup",
+            "label": "references",
+            "line": 187,
+            "target": "display"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/directives/vShow.spec.ts",
+            "from": "setup",
+            "label": "references",
+            "line": 193,
+            "target": "style"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/directives/vShow.spec.ts",
+            "from": "setup",
+            "label": "references",
+            "line": 231,
+            "target": "useDisplayStyle"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/directives/vShow.spec.ts",
+            "from": "setup",
+            "label": "references",
+            "line": 232,
+            "target": "compStyle"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/directives/vShow.spec.ts",
+            "from": "setup",
+            "label": "references",
+            "line": 233,
+            "target": "withoutDisplayStyle"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/directives/vShow.spec.ts",
+            "from": "setup",
+            "label": "references",
+            "line": 235,
+            "target": "isVisible"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "references",
+            "target": "mixin",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "references",
+            "target": "component",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "references",
+            "target": "directive",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "references",
+            "target": "filter",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "app",
+            "label": "references",
+            "target": "rootComponent",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "app",
+            "label": "references",
+            "target": "context",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "use",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "mixin",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "component",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "directive",
+            "label": "references",
+            "target": "context",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "directive",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "mount",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "unmount",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "provide",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "runWithContext",
+            "label": "references",
+            "target": "app",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "uses",
+            "target": "AppConfig",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "AppConfig",
+            "label": "uses",
+            "target": "OptionMergeFunction",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "AppContext",
+            "label": "uses",
+            "target": "AppConfig",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "ObjectPlugin",
+            "label": "uses",
+            "target": "PluginInstallFunction",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "FunctionPlugin",
+            "label": "uses",
+            "target": "PluginInstallFunction",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "FunctionPlugin",
+            "label": "uses",
+            "target": "ObjectPlugin",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "Plugin",
+            "label": "uses",
+            "target": "FunctionPlugin",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "Plugin",
+            "label": "uses",
+            "target": "ObjectPlugin",
+            "why": "type"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "component",
+            "label": "uses",
+            "line": 337,
+            "target": "name"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "onUnmount",
+            "label": "uses",
+            "line": 425,
+            "target": "cleanupFn"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "provide",
+            "label": "uses",
+            "line": 453,
+            "target": "key"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "references",
+            "line": 35,
+            "target": "AppConfig"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "App",
+            "label": "references",
+            "line": 38,
+            "target": "Plugin"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "AppConfig",
+            "label": "references",
+            "line": 128,
+            "target": "OptionMergeFunction"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "ObjectPlugin",
+            "label": "references",
+            "line": 213,
+            "target": "PluginInstallFunction"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "FunctionPlugin",
+            "label": "references",
+            "line": 216,
+            "target": "ObjectPlugin"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiCreateApp.ts",
+            "from": "Plugin",
+            "label": "references",
+            "line": 222,
+            "target": "FunctionPlugin"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/helpers/renderSlot.ts",
+            "from": "renderSlot",
+            "label": "uses",
+            "line": 103,
+            "target": "name"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-core/__tests__/transforms/vOn.spec.ts",
+            "from": "vnodeCall",
+            "label": "references",
+            "line": 524,
+            "target": "VNodeCall"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "withDirectives",
+            "label": "references",
+            "target": "modifiers",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveBinding",
+            "label": "uses",
+            "target": "DirectiveModifiers",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "ObjectDirective",
+            "label": "uses",
+            "target": "SSRDirectiveHook",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "Directive",
+            "label": "uses",
+            "target": "FunctionDirective",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveArguments",
+            "label": "uses",
+            "target": "Directive",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveArguments",
+            "label": "uses",
+            "target": "DirectiveModifiers",
+            "why": "type"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveBinding",
+            "label": "references",
+            "line": 37,
+            "target": "DirectiveModifiers"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveBinding",
+            "label": "references",
+            "line": 38,
+            "target": "ObjectDirective"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveHook",
+            "label": "references",
+            "line": 49,
+            "target": "DirectiveBinding"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "ObjectDirective",
+            "label": "references",
+            "line": 75,
+            "target": "DirectiveHook"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "ObjectDirective",
+            "label": "references",
+            "line": 94,
+            "target": "SSRDirectiveHook"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "Directive",
+            "label": "references",
+            "line": 112,
+            "target": "FunctionDirective"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/directives.ts",
+            "from": "DirectiveArguments",
+            "label": "references",
+            "line": 126,
+            "target": "Directive"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "AssetURLTagConfig",
+            "label": "references",
+            "target": "name",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "transformAssetUrl",
+            "label": "uses",
+            "target": "name",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "resolveOrRegisterImport",
+            "label": "uses",
+            "target": "existingIndex",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "resolveOrRegisterImport",
+            "label": "uses",
+            "target": "exp",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "getImportsExpressionExp",
+            "label": "uses",
+            "target": "name",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "hashExp",
+            "label": "uses",
+            "target": "name",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "(expr)",
+            "fullCallee": "(transformAssetUrl as Function)",
+            "label": "calls",
+            "target": "(transformAssetUrl as Function)"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-sfc/src/template/transformAssetUrl.ts",
+            "from": "resolveOrRegisterImport",
+            "label": "uses",
+            "line": 198,
+            "target": "context"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "references",
+            "target": "VNode",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "references",
+            "target": "NativeElements",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "references",
+            "target": "name",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "references",
+            "target": "ReservedProps",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "Element",
+            "label": "references",
+            "target": "VNode",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "IntrinsicElements",
+            "label": "references",
+            "target": "NativeElements",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "IntrinsicElements",
+            "label": "references",
+            "target": "name",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "IntrinsicAttributes",
+            "label": "references",
+            "target": "ReservedProps",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "uses",
+            "target": "Element",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "uses",
+            "target": "ElementClass",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "uses",
+            "target": "ElementAttributesProperty",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "uses",
+            "target": "IntrinsicElements",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/vue/jsx.d.ts",
+            "from": "JSX",
+            "label": "uses",
+            "target": "IntrinsicAttributes",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
+            "from": "el",
+            "label": "uses",
+            "target": "TestElement",
+            "why": "type"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
+            "from": "el",
+            "label": "references",
+            "line": 63,
+            "target": "TestElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
+            "from": "el",
+            "label": "references",
+            "line": 314,
+            "target": "HTMLSelectElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
+            "from": "option",
+            "label": "references",
+            "line": 334,
+            "target": "HTMLOptionElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/patchProps.spec.ts",
+            "from": "el",
+            "label": "references",
+            "line": 386,
+            "target": "HTMLInputElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/reactivity/__tests__/shallowReactive.spec.ts",
+            "from": "foo",
+            "label": "references",
+            "line": 62,
+            "target": "Ref"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/script/defineEmits.ts",
+            "from": "genRuntimeEmits",
+            "label": "uses",
+            "target": "emitsDecl",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/script/defineEmits.ts",
+            "from": "genRuntimeEmits",
+            "label": "uses",
+            "target": "modelEmitsDecl",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/compat/instanceEventEmitter.ts",
+            "from": "EventRegistry",
+            "label": "references",
+            "target": "event",
+            "why": "type"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/compat/instanceEventEmitter.ts",
+            "from": "eventRegistryMap",
+            "label": "references",
+            "line": 13,
+            "target": "EventRegistry"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiInject.ts",
+            "from": "provide",
+            "label": "references",
+            "target": "InjectionKey",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiInject.ts",
+            "from": "InjectionKey",
+            "label": "uses",
+            "target": "InjectionConstraint",
+            "why": "type"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiInject.ts",
+            "from": "inject",
+            "label": "uses",
+            "line": 80,
+            "target": "key"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/apiInject.ts",
+            "from": "InjectionKey",
+            "label": "references",
+            "line": 8,
+            "target": "InjectionConstraint"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiLifecycle.ts",
+            "from": "onErrorCaptured",
+            "label": "references",
+            "target": "Error",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiLifecycle.ts",
+            "from": "injectHook",
+            "label": "uses",
+            "target": "__weh",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiLifecycle.ts",
+            "from": "injectHook",
+            "label": "uses",
+            "target": "apiName",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/apiLifecycle.ts",
+            "from": "wrappedHook",
+            "label": "uses",
+            "target": "__weh",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "CompilerError",
+            "label": "references",
+            "target": "SyntaxError",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "createCompilerError",
+            "label": "references",
+            "target": "SyntaxError",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "createCompilerError",
+            "label": "references",
+            "target": "String",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "CoreCompilerError",
+            "label": "uses",
+            "target": "ErrorCodes",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "InferCompilerError",
+            "label": "uses",
+            "target": "ErrorCodes",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "InferCompilerError",
+            "label": "uses",
+            "target": "CoreCompilerError",
+            "why": "type"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "defaultOnWarn",
+            "label": "uses",
+            "line": 17,
+            "target": "msg"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "InferCompilerError",
+            "label": "references",
+            "line": 21,
+            "target": "CoreCompilerError"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "InferCompilerError",
+            "label": "references",
+            "line": 22,
+            "target": "CompilerError"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-core/src/errors.ts",
+            "from": "error",
+            "label": "references",
+            "line": 34,
+            "target": "InferCompilerError"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-dom/__tests__/nodeOps.spec.ts",
+            "from": "(expr)",
+            "fullCallee": "nodeOps.insertStaticContent!",
+            "label": "calls",
+            "target": "nodeOps.insertStaticContent!"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/nodeOps.spec.ts",
+            "from": "el",
+            "label": "references",
+            "line": 8,
+            "target": "HTMLSelectElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/__tests__/nodeOps.spec.ts",
+            "from": "option1",
+            "label": "references",
+            "line": 9,
+            "target": "HTMLOptionElement"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-dom/src/helpers/useCssVars.ts",
+            "from": "useCssVars",
+            "label": "references",
+            "target": "instance",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-dom/src/helpers/useCssVars.ts",
+            "from": "setVarsOnNode",
+            "label": "uses",
+            "target": "value",
+            "why": "expr"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/src/helpers/useCssVars.ts",
+            "from": "setVarsOnNode",
+            "label": "uses",
+            "line": 105,
+            "target": "key"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-dom/src/modules/events.ts",
+            "from": "createInvoker",
+            "label": "uses",
+            "target": "_vts",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-dom/src/modules/events.ts",
+            "from": "invoker",
+            "label": "uses",
+            "target": "_vts",
+            "why": "field"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/src/modules/events.ts",
+            "from": "patchEvent",
+            "label": "uses",
+            "line": 44,
+            "target": "veiKey"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-dom/src/modules/events.ts",
+            "from": "sanitizeEventValue",
+            "label": "uses",
+            "line": 159,
+            "target": "propName"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/reactivity/src/collectionHandlers.ts",
+            "from": "createInstrumentations",
+            "label": "references",
+            "target": "Symbol",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/reactivity/src/collectionHandlers.ts",
+            "from": "CollectionTypes",
+            "label": "uses",
+            "target": "WeakCollections",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/reactivity/src/collectionHandlers.ts",
+            "from": "createReadonlyMethod",
+            "label": "uses",
+            "target": "key",
+            "why": "expr"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/reactivity/src/collectionHandlers.ts",
+            "from": "CollectionTypes",
+            "label": "references",
+            "line": 21,
+            "target": "IterableCollections"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/reactivity/src/collectionHandlers.ts",
+            "from": "CollectionTypes",
+            "label": "references",
+            "line": 21,
+            "target": "WeakCollections"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/server-renderer/src/helpers/ssrRenderAttrs.ts",
+            "from": "ssrRenderAttrs",
+            "label": "references",
+            "target": "ssrRenderClass",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/server-renderer/src/helpers/ssrRenderAttrs.ts",
+            "from": "ssrRenderAttrs",
+            "label": "references",
+            "target": "ssrRenderStyle",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/server-renderer/src/helpers/ssrRenderAttrs.ts",
+            "from": "ssrRenderDynamicAttr",
+            "label": "uses",
+            "target": "attrKey",
+            "why": "expr"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/server-renderer/src/helpers/ssrRenderAttrs.ts",
+            "from": "ssrRenderDynamicAttr",
+            "label": "uses",
+            "line": 82,
+            "target": "value"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/server-renderer/src/helpers/ssrRenderAttrs.ts",
+            "from": "ssrRenderAttr",
+            "label": "uses",
+            "line": 97,
+            "target": "key"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "process",
+            "label": "references",
+            "target": "mount",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "process",
+            "label": "references",
+            "target": "mountToTarget",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "remove",
+            "label": "references",
+            "target": "i",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "moveTeleport",
+            "label": "references",
+            "target": "i",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "hydrateAnchor",
+            "label": "references",
+            "target": "vnode",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "isTeleport",
+            "label": "uses",
+            "target": "__isTeleport",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "resolveTarget",
+            "label": "uses",
+            "target": "targetSelector",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "TeleportImpl",
+            "label": "uses",
+            "target": "target",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "TeleportImpl",
+            "label": "uses",
+            "target": "targetAnchor",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "process",
+            "label": "uses",
+            "target": "target",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "process",
+            "label": "uses",
+            "target": "targetAnchor",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "moveTeleport",
+            "label": "uses",
+            "target": "targetAnchor",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "hydrateTeleport",
+            "label": "uses",
+            "target": "targetAnchor",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "hydrateAnchor",
+            "label": "uses",
+            "target": "targetAnchor",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "updateCssVars",
+            "label": "uses",
+            "target": "targetAnchor",
+            "why": "field"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "process",
+            "label": "uses",
+            "line": 269,
+            "target": "TOGGLE"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "process",
+            "label": "uses",
+            "line": 290,
+            "target": "TARGET_CHANGE"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "moveTeleport",
+            "label": "uses",
+            "line": 383,
+            "target": "REORDER"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "hydrateTeleport",
+            "label": "references",
+            "line": 490,
+            "target": "hydrateDisabledTeleport"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "hydrateTeleport",
+            "label": "references",
+            "line": 491,
+            "target": "hydrateAnchor"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "TeleportVNode",
+            "label": "references",
+            "line": 19,
+            "target": "TeleportProps"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "isTargetSVG",
+            "label": "references",
+            "line": 40,
+            "target": "SVGElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "isTargetMathML",
+            "label": "references",
+            "line": 43,
+            "target": "MathMLElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "mount",
+            "label": "references",
+            "line": 111,
+            "target": "TeleportVNode"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "TeleportImpl",
+            "label": "references",
+            "line": 369,
+            "target": "hydrateTeleport"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "targetNode",
+            "label": "references",
+            "line": 487,
+            "target": "TeleportTargetElement"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/components/Teleport.ts",
+            "from": "Teleport",
+            "label": "references",
+            "line": 540,
+            "target": "VNodeProps"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages-private/sfc-playground/vite.config.ts",
+            "from": "copyVuePlugin",
+            "label": "uses",
+            "target": "basename",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages-private/sfc-playground/vite.config.ts",
+            "from": "generateBundle",
+            "label": "uses",
+            "target": "basename",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages-private/sfc-playground/vite.config.ts",
+            "from": "copyFile",
+            "label": "uses",
+            "target": "basename",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "TemplateCompiler",
+            "label": "references",
+            "target": "source",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "PreProcessor",
+            "label": "references",
+            "target": "source",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "doCompileTemplate",
+            "label": "references",
+            "target": "ssr",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "doCompileTemplate",
+            "label": "references",
+            "target": "CompilerSSR",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "doCompileTemplate",
+            "label": "references",
+            "target": "compilerOptions",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "doCompileTemplate",
+            "label": "references",
+            "target": "isProd",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "compileTemplate",
+            "label": "uses",
+            "target": "preprocessLang",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "doCompileTemplate",
+            "label": "uses",
+            "target": "shortId",
+            "why": "expr"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "longId",
+            "label": "uses",
+            "target": "shortId",
+            "why": "expr"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "compileTemplate",
+            "label": "uses",
+            "line": 149,
+            "target": "options"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "doCompileTemplate",
+            "label": "uses",
+            "line": 256,
+            "target": "w"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/compiler-sfc/src/compileTemplate.ts",
+            "from": "SFCTemplateCompileOptions",
+            "label": "references",
+            "line": 56,
+            "target": "TemplateCompiler"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "target": "RendererNode",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "target": "RendererElement",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "target": "key",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "target": "ReactiveFlags",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "setupBlock",
+            "label": "references",
+            "target": "EMPTY_ARR",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "normalizeRef",
+            "label": "references",
+            "target": "isString",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "normalizeRef",
+            "label": "references",
+            "target": "isRef",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "normalizeRef",
+            "label": "references",
+            "target": "isFunction",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "normalizeRef",
+            "label": "references",
+            "target": "currentRenderingInstance",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "createBaseVNode",
+            "label": "references",
+            "target": "currentScopeId",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "createBaseVNode",
+            "label": "references",
+            "target": "currentRenderingInstance",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "cloned",
+            "label": "references",
+            "target": "ref",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "cloned",
+            "label": "references",
+            "target": "patchFlag",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "cloned",
+            "label": "references",
+            "target": "children",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "cloned",
+            "label": "references",
+            "target": "transition",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "normalizeChildren",
+            "label": "references",
+            "target": "currentRenderingInstance",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "mergeProps",
+            "label": "references",
+            "target": "i",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeNormalizedRefAtom",
+            "label": "uses",
+            "target": "VNodeRef",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeHook",
+            "label": "uses",
+            "target": "VNodeMountHook",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeHook",
+            "label": "uses",
+            "target": "VNodeUpdateHook",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeProps",
+            "label": "uses",
+            "target": "VNodeRef",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeProps",
+            "label": "uses",
+            "target": "VNodeMountHook",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeProps",
+            "label": "uses",
+            "target": "VNodeUpdateHook",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeArrayChildren",
+            "label": "uses",
+            "target": "VNodeChildAtom",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeChild",
+            "label": "uses",
+            "target": "VNodeChildAtom",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeChild",
+            "label": "uses",
+            "target": "VNodeArrayChildren",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeNormalizedChildren",
+            "label": "uses",
+            "target": "VNodeArrayChildren",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "uses",
+            "target": "VNodeNormalizedRef",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "createBaseVNode",
+            "label": "uses",
+            "target": "overwritingProp",
+            "why": "expr"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "Fragment",
+            "label": "references",
+            "line": 67,
+            "target": "VNodeProps"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeTypes",
+            "label": "references",
+            "line": 82,
+            "target": "Teleport"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeTypes",
+            "label": "references",
+            "line": 83,
+            "target": "TeleportImpl"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeNormalizedRefAtom",
+            "label": "references",
+            "line": 103,
+            "target": "VNodeRef"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeNormalizedRef",
+            "label": "references",
+            "line": 115,
+            "target": "VNodeNormalizedRefAtom"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeHook",
+            "label": "references",
+            "line": 120,
+            "target": "VNodeMountHook"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeHook",
+            "label": "references",
+            "line": 120,
+            "target": "VNodeUpdateHook"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeArrayChildren",
+            "label": "references",
+            "line": 141,
+            "target": "VNodeArrayChildren"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNodeArrayChildren",
+            "label": "references",
+            "line": 141,
+            "target": "VNodeChildAtom"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "line": 163,
+            "target": "VNodeTypes"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "line": 166,
+            "target": "VNodeNormalizedRef"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/vnode.ts",
+            "from": "VNode",
+            "label": "references",
+            "line": 180,
+            "target": "VNodeNormalizedChildren"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "references",
+            "target": "ComponentInternalOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "references",
+            "target": "computed",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "references",
+            "target": "provide",
+            "why": "resolved"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolveInjections",
+            "label": "references",
+            "target": "NOOP",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolveMergedOptions",
+            "label": "references",
+            "target": "extend",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithoutProps",
+            "label": "references",
+            "target": "TypeEmitsToOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "references",
+            "target": "ComponentObjectPropsOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "references",
+            "target": "ExtractDefaultPropTypes",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "Defaults",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "ComponentProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "LegacyOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "ComponentCustomOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "RenderFunction",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "uses",
+            "target": "RuntimeCompilerOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "uses",
+            "target": "Defaults",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "uses",
+            "target": "ComponentProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "uses",
+            "target": "ComponentOptionsBase",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsMixin",
+            "label": "uses",
+            "target": "ComponentOptionsBase",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "WatchOptionItem",
+            "label": "uses",
+            "target": "ObjectWatchOptionItem",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentWatchOptionItem",
+            "label": "uses",
+            "target": "WatchOptionItem",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentProvideOptions",
+            "label": "uses",
+            "target": "ObjectProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "LegacyOptions",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "LegacyOptions",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "LegacyOptions",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "LegacyOptions",
+            "label": "uses",
+            "target": "ComponentProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "MergedComponentOptions",
+            "label": "uses",
+            "target": "MergedComponentOptionsOverride",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "MergedComponentOptionsOverride",
+            "label": "uses",
+            "target": "MergedHook",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "OptionTypesType",
+            "label": "uses",
+            "target": "P",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "OptionTypesType",
+            "label": "uses",
+            "target": "B",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "OptionTypesType",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "OptionTypesType",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "OptionTypesType",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "OptionTypesType",
+            "label": "uses",
+            "target": "Defaults",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "uses",
+            "target": "get",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolveInjections",
+            "label": "uses",
+            "target": "from",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolveInjections",
+            "label": "uses",
+            "target": "default",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "createWatcher",
+            "label": "uses",
+            "target": "handler",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolveMergedOptions",
+            "label": "uses",
+            "target": "props",
+            "why": "field"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithoutProps",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithoutProps",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithoutProps",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithoutProps",
+            "label": "uses",
+            "target": "ComponentProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithoutProps",
+            "label": "uses",
+            "target": "ComponentOptionsBase",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithArrayProps",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithArrayProps",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithArrayProps",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithArrayProps",
+            "label": "uses",
+            "target": "ComponentProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithArrayProps",
+            "label": "uses",
+            "target": "ComponentOptionsBase",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "uses",
+            "target": "D",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "uses",
+            "target": "C",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "uses",
+            "target": "M",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "uses",
+            "target": "ComponentProvideOptions",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "uses",
+            "target": "Defaults",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsWithObjectProps",
+            "label": "uses",
+            "target": "ComponentOptionsBase",
+            "why": "type"
+          },
+          {
+            "dir": "MISSING",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "(expr)",
+            "fullCallee": "checkDuplicateProperties!",
+            "label": "calls",
+            "target": "checkDuplicateProperties!"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "createDuplicateChecker",
+            "label": "uses",
+            "line": 511,
+            "target": "type"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "uses",
+            "line": 574,
+            "target": "PROPS"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "uses",
+            "line": 609,
+            "target": "METHODS"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "uses",
+            "line": 641,
+            "target": "DATA"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "uses",
+            "line": 691,
+            "target": "COMPUTED"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "applyOptions",
+            "label": "references",
+            "line": 726,
+            "target": "registerLifecycleHook"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolveInjections",
+            "label": "uses",
+            "line": 830,
+            "target": "INJECT"
+          },
+          {
+            "confidence": 0.85,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "createWatcher",
+            "label": "uses",
+            "line": 896,
+            "target": "raw"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptionsBase",
+            "label": "references",
+            "line": 167,
+            "target": "RuntimeCompilerOptions"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentOptions",
+            "label": "references",
+            "line": 259,
+            "target": "ComponentOptionsBase"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "WatchOptionItem",
+            "label": "references",
+            "line": 339,
+            "target": "ObjectWatchOptionItem"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentWatchOptionItem",
+            "label": "references",
+            "line": 341,
+            "target": "WatchOptionItem"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentWatchOptions",
+            "label": "references",
+            "line": 343,
+            "target": "ComponentWatchOptionItem"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentProvideOptions",
+            "label": "references",
+            "line": 345,
+            "target": "ObjectProvideOptions"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "ComponentInjectOptions",
+            "label": "references",
+            "line": 349,
+            "target": "ObjectInjectOptions"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "LegacyOptions",
+            "label": "references",
+            "line": 409,
+            "target": "ComponentWatchOptions"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "MergedComponentOptions",
+            "label": "references",
+            "line": 459,
+            "target": "MergedComponentOptionsOverride"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "MergedComponentOptionsOverride",
+            "label": "references",
+            "line": 462,
+            "target": "MergedHook"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "getter",
+            "label": "references",
+            "line": 857,
+            "target": "publicThis"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/componentOptions.ts",
+            "from": "resolved",
+            "label": "references",
+            "line": 939,
+            "target": "MergedComponentOptions"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job1",
+            "label": "references",
+            "line": 16,
+            "target": "calls"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job1",
+            "label": "references",
+            "line": 52,
+            "target": "job2"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job1",
+            "label": "references",
+            "line": 53,
+            "target": "job3"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job2",
+            "label": "references",
+            "line": 58,
+            "target": "job4"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job2",
+            "label": "references",
+            "line": 59,
+            "target": "job5"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "cb1",
+            "label": "references",
+            "line": 126,
+            "target": "job1"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "cb1",
+            "label": "references",
+            "line": 146,
+            "target": "cb2"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "cb1",
+            "label": "references",
+            "line": 147,
+            "target": "cb3"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job2",
+            "label": "references",
+            "line": 178,
+            "target": "job6"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job1",
+            "label": "references",
+            "line": 220,
+            "target": "cb1"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "cb",
+            "label": "references",
+            "line": 275,
+            "target": "spy"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job",
+            "label": "references",
+            "line": 623,
+            "target": "count"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/__tests__/scheduler.spec.ts",
+            "from": "job1",
+            "label": "references",
+            "line": 698,
+            "target": "recurse"
+          },
+          {
+            "confidence": 0.95,
+            "dir": "UNEXPLAINED",
+            "file": "packages/runtime-core/src/index.ts",
+            "from": "warn",
+            "label": "references",
+            "line": 133,
+            "target": "_warn"
+          }
+        ],
+        "treeTruthEdges": 4900,
+        "unexplainedInAnalyzer": 195
+      }
+    },
+    "samplingRule": "seeded 60 files/language, scoped to typescript",
+    "scope": "typescript",
+    "scoped": true,
+    "secondCorpus": {
+      "mapping": {
+        "c": "jq",
+        "clean": "clean-stdlib",
+        "clojure": "clj-kondo",
+        "cpp": "nlohmann-json",
+        "csharp": "fsharp",
+        "css": "grails-core",
+        "dart": "dart-http",
+        "elixir": "phoenix",
+        "erlang": "otp",
+        "fsharp": "fsharp-data",
+        "go": "terraform",
+        "groovy": "geb",
+        "haskell": "hledger",
+        "hcl": "tf-aws-components",
+        "html": "sqlite",
+        "java": "clojure",
+        "javascript": "lodash",
+        "kotlin": "kotlinx-coroutines",
+        "make": "consul",
+        "markdown": "kubernetes",
+        "nim": "pixie",
+        "objc": "afnetworking",
+        "perl": "plack",
+        "php": "phpmyadmin",
+        "powershell": "ansible",
+        "python": "requests",
+        "ruby": "rack",
+        "rust": "cargo",
+        "scala": "cats-effect",
+        "svelte": "shadcn-svelte",
+        "swift": "alamofire",
+        "toml": "ripgrep",
+        "typescript": "element-plus",
+        "vue": "vue-element-admin",
+        "yaml": "ansible",
+        "zig": "zls"
+      },
+      "report": {
+        "element-plus:typescript": {
+          "analyzerEdges": 1439,
+          "coveragePct": 95.1,
+          "coveredByAnalyzer": 1489,
+          "explainableByTree": 1390,
+          "fabricationPct": 3.4,
+          "filesSampled": 60,
+          "heuristicUnexplained": 0,
+          "missingInAnalyzer": 77,
+          "perf": {
+            "avgMsPerFile": 17.8,
+            "loadAvg1": 10.2,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 220.7,
+            "samplesTimed": 60
+          },
+          "sampleSetHash": "02f7248d60f646f7",
+          "samples": [
+            {
+              "dir": "MISSING",
+              "file": "packages/components/slider/src/marker.ts",
+              "from": "setup",
+              "label": "uses",
+              "target": "label",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/slider/src/marker.ts",
+              "from": "setup",
+              "label": "uses",
+              "target": "style",
+              "why": "field"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/slider/src/marker.ts",
+              "from": "sliderMarkerProps",
+              "label": "references",
+              "line": 16,
+              "target": "CSSProperties"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tree/src/model/useKeydown.ts",
+              "from": "useKeydown",
+              "label": "references",
+              "target": "el$",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tree/src/model/useKeydown.ts",
+              "from": "treeItems",
+              "label": "references",
+              "target": "el$",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/utils/vue/props/runtime.ts",
+              "from": "buildProps",
+              "label": "references",
+              "target": "fromPairs",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/utils/vue/props/runtime.ts",
+              "from": "buildProps",
+              "label": "references",
+              "target": "Object",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/utils/vue/props/runtime.ts",
+              "from": "buildProp",
+              "label": "uses",
+              "target": "allowValuesText",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/utils/vue/props/runtime.ts",
+              "from": "_validator",
+              "label": "uses",
+              "target": "allowValuesText",
+              "why": "expr"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/utils/vue/props/runtime.ts",
+              "from": "isEpProp",
+              "label": "uses",
+              "line": 23,
+              "target": "epPropKey"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/utils/vue/props/runtime.ts",
+              "from": "buildProp",
+              "label": "uses",
+              "line": 83,
+              "target": "val"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/breadcrumb/src/instances.ts",
+              "from": "BreadcrumbItemInstance",
+              "label": "references",
+              "line": 4,
+              "target": "BreadcrumbItem"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/breadcrumb/src/instances.ts",
+              "from": "BreadcrumbInstance",
+              "label": "references",
+              "line": 6,
+              "target": "Breadcrumb"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/table/src/store/helper.ts",
+              "from": "getArrKeysValue",
+              "label": "references",
+              "line": 81,
+              "target": "props"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/directives/click-outside/index.ts",
+              "from": "createDocumentHandler",
+              "label": "uses",
+              "target": "popperRef",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/directives/click-outside/index.ts",
+              "from": "ClickOutside",
+              "label": "uses",
+              "target": "bindingFn",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/directives/click-outside/index.ts",
+              "from": "updated",
+              "label": "uses",
+              "target": "bindingFn",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/directives/click-outside/index.ts",
+              "from": "oldHandlerIndex",
+              "label": "uses",
+              "target": "bindingFn",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/focus-trap/__tests__/focus-trap.test.ts",
+              "from": "TrapChild",
+              "label": "uses",
+              "target": "childKls",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/focus-trap/__tests__/focus-trap.test.ts",
+              "from": "TrapChild",
+              "label": "uses",
+              "target": "AXIOM",
+              "why": "expr"
+            },
+            {
+              "confidence": 0.8,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/focus-trap/__tests__/focus-trap.test.ts",
+              "from": "createComponent",
+              "label": "references",
+              "line": 45,
+              "target": "TrapChild"
+            },
+            {
+              "confidence": 0.8,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/focus-trap/__tests__/focus-trap.test.ts",
+              "from": "findFocusContainer",
+              "label": "references",
+              "line": 51,
+              "target": "wrapper"
+            },
+            {
+              "confidence": 0.8,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/focus-trap/__tests__/focus-trap.test.ts",
+              "from": "preventDefault",
+              "label": "references",
+              "line": 259,
+              "target": "isDefaultPrevented"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/form/src/form.ts",
+              "from": "FormProps",
+              "label": "uses",
+              "target": "FormMetaProps",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/form/src/form.ts",
+              "from": "formEmits",
+              "label": "references",
+              "line": 201,
+              "target": "FormItemProp"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "renderContent",
+              "label": "uses",
+              "target": "TransferDataItem",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "uses",
+              "target": "TransferDataItem",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "uses",
+              "target": "renderContent",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "uses",
+              "target": "TransferFormat",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "uses",
+              "target": "TransferPropsAlias",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "transferEmits",
+              "label": "uses",
+              "target": "TransferDirection",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "renderContent",
+              "label": "references",
+              "line": 25,
+              "target": "H"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferCheckedState",
+              "label": "references",
+              "line": 41,
+              "target": "TransferKey"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "references",
+              "line": 80,
+              "target": "renderContent"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "references",
+              "line": 88,
+              "target": "TransferFormat"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "TransferProps",
+              "label": "references",
+              "line": 96,
+              "target": "TransferPropsAlias"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/transfer/src/transfer.ts",
+              "from": "transferEmits",
+              "label": "references",
+              "line": 243,
+              "target": "TransferDirection"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogProps",
+              "label": "references",
+              "target": "DialogContentProps",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogBeforeCloseFn",
+              "label": "uses",
+              "target": "DoneFn",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogProps",
+              "label": "uses",
+              "target": "DialogBeforeCloseFn",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogProps",
+              "label": "uses",
+              "target": "DialogTransition",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogConfigContext",
+              "label": "uses",
+              "target": "DialogTransition",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogBeforeCloseFn",
+              "label": "references",
+              "line": 15,
+              "target": "DoneFn"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogProps",
+              "label": "references",
+              "line": 34,
+              "target": "DialogBeforeCloseFn"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/dialog/src/dialog.ts",
+              "from": "DialogProps",
+              "label": "references",
+              "line": 98,
+              "target": "DialogTransition"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/mention/src/helper.ts",
+              "from": "getCursorPosition",
+              "label": "uses",
+              "line": 200,
+              "target": "element"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/overlay/src/overlay.ts",
+              "from": "overlayProps",
+              "label": "references",
+              "line": 19,
+              "target": "ClassValue"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/overlay/src/overlay.ts",
+              "from": "overlayProps",
+              "label": "references",
+              "line": 23,
+              "target": "ZIndexType"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/watermark/src/watermark.ts",
+              "from": "WatermarkProps",
+              "label": "uses",
+              "target": "WatermarkFontType",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/watermark/src/watermark.ts",
+              "from": "WatermarkProps",
+              "label": "references",
+              "line": 46,
+              "target": "WatermarkFontType"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/watermark/src/watermark.ts",
+              "from": "WatermarkInstance",
+              "label": "references",
+              "line": 119,
+              "target": "Watermark"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/timeline/src/timeline.ts",
+              "from": "setup",
+              "label": "references",
+              "target": "flattedChildren",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tooltip/src/trigger.ts",
+              "from": "UseTooltipTriggerProps",
+              "label": "references",
+              "target": "PopperTriggerProps",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tooltip/src/trigger.ts",
+              "from": "UseTooltipTriggerProps",
+              "label": "uses",
+              "target": "TooltipTriggerType",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tooltip/src/trigger.ts",
+              "from": "ElTooltipTriggerProps",
+              "label": "uses",
+              "target": "UseTooltipTriggerProps",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/tooltip/src/trigger.ts",
+              "from": "UseTooltipTriggerProps",
+              "label": "references",
+              "line": 19,
+              "target": "TooltipTriggerType"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/tooltip/src/trigger.ts",
+              "from": "ElTooltipTriggerProps",
+              "label": "references",
+              "line": 71,
+              "target": "UseTooltipTriggerProps"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/carousel/src/constants.ts",
+              "from": "CarouselItemContext",
+              "label": "uses",
+              "target": "CarouselItemStates",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/carousel/src/constants.ts",
+              "from": "CarouselContext",
+              "label": "uses",
+              "target": "CarouselItemContext",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/carousel/src/constants.ts",
+              "from": "CarouselItemContext",
+              "label": "references",
+              "line": 16,
+              "target": "CarouselItemStates"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/carousel/src/constants.ts",
+              "from": "CarouselContext",
+              "label": "references",
+              "line": 24,
+              "target": "CarouselItemContext"
+            },
+            {
+              "dir": "MISSING",
+              "file": "typings/env.d.ts",
+              "from": "App",
+              "label": "references",
+              "target": "INSTALLED_KEY",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "typings/env.d.ts",
+              "from": "JSX",
+              "label": "uses",
+              "target": "IntrinsicAttributes",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "typings/env.d.ts",
+              "from": "GlobalComponents",
+              "label": "uses",
+              "target": "Component",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "typings/env.d.ts",
+              "from": "GlobalComponents",
+              "label": "references",
+              "line": 27,
+              "target": "Component"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/utils/vue/validator.ts",
+              "from": "isValidDatePickType",
+              "label": "references",
+              "target": "datePickTypes",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/card/src/instance.ts",
+              "from": "CardInstance",
+              "label": "references",
+              "line": 3,
+              "target": "Card"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "_mount",
+              "label": "references",
+              "target": "LIST_ITEM_CLASS",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "_mount",
+              "label": "references",
+              "target": "LIST_ITEM_STYLE",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "countListItem",
+              "label": "references",
+              "target": "LIST_ITEM_CLASS",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "setup",
+              "label": "references",
+              "target": "INITIAL_VALUE",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "wrapper",
+              "label": "uses",
+              "target": "CONTAINER_STYLE",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "wrapper",
+              "label": "uses",
+              "target": "CUSTOM_DELAY",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "wrapper",
+              "label": "uses",
+              "target": "CUSTOM_DISTANCE",
+              "why": "expr"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts",
+              "from": "_mount",
+              "label": "uses",
+              "line": 48,
+              "target": "options"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/slider/src/composables/use-slider-button.ts",
+              "from": "(expr)",
+              "fullCallee": "enableFormat.value && formatTooltip.value!",
+              "label": "calls",
+              "target": "enableFormat.value && formatTooltip.value!"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/slider/src/composables/use-slider-button.ts",
+              "from": "useSliderButton",
+              "label": "uses",
+              "line": 82,
+              "target": "props"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/slider/src/composables/use-slider-button.ts",
+              "from": "enableFormat",
+              "label": "references",
+              "line": 27,
+              "target": "Function"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/gen-version.ts",
+              "from": "main",
+              "label": "references",
+              "target": "version",
+              "why": "resolved"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/test-utils/define-getter.ts",
+              "from": "defineGetter",
+              "label": "uses",
+              "line": 24,
+              "target": "prop"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/test-utils/define-getter.ts",
+              "from": "defineGetter",
+              "label": "uses",
+              "line": 24,
+              "target": "obj"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "update",
+              "label": "references",
+              "target": "placement",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "update",
+              "label": "references",
+              "target": "strategy",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "update",
+              "label": "references",
+              "target": "middleware",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "fn",
+              "label": "references",
+              "target": "arrowRef",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "fn",
+              "label": "references",
+              "target": "padding",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "getPositionDataWithUnit",
+              "label": "uses",
+              "target": "value",
+              "why": "expr"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "ElementRef",
+              "label": "references",
+              "line": 25,
+              "target": "unrefElement"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/hooks/use-floating/index.ts",
+              "from": "unrefEl",
+              "label": "references",
+              "line": 32,
+              "target": "ElementRef"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "useRender",
+              "label": "references",
+              "target": "getCurrentInstance",
+              "why": "type"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "useRender",
+              "label": "uses",
+              "target": "className",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "useRender",
+              "label": "uses",
+              "target": "forceClass",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "setColumnForcedProps",
+              "label": "uses",
+              "target": "className",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "setColumnForcedProps",
+              "label": "uses",
+              "target": "forceClass",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "forceClass",
+              "label": "uses",
+              "target": "className",
+              "why": "expr"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "useRender",
+              "label": "uses",
+              "line": 39,
+              "target": "props"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "useRender",
+              "label": "uses",
+              "line": 97,
+              "target": "column"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "useRender",
+              "label": "uses",
+              "line": 197,
+              "target": "data"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/table/src/table-column/render-helper.ts",
+              "from": "value",
+              "label": "references",
+              "line": 88,
+              "target": "source"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/color-picker-panel/src/composables/use-predefine.ts",
+              "from": "usePredefine",
+              "label": "references",
+              "target": "ref",
+              "why": "type"
+            },
+            {
+              "confidence": 0.8,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/color-picker-panel/src/composables/use-predefine.ts",
+              "from": "usePredefine",
+              "label": "references",
+              "line": 12,
+              "target": "parseColors"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/splitter/src/hooks/useResize.ts",
+              "from": "useResize",
+              "label": "uses",
+              "target": "confirmed",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/splitter/src/hooks/useResize.ts",
+              "from": "useResize",
+              "label": "uses",
+              "target": "index",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/splitter/src/hooks/useResize.ts",
+              "from": "onMoving",
+              "label": "uses",
+              "target": "confirmed",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/splitter/src/hooks/useResize.ts",
+              "from": "onMoving",
+              "label": "uses",
+              "target": "index",
+              "why": "field"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/splitter/src/hooks/useResize.ts",
+              "from": "mergedIndex",
+              "label": "uses",
+              "target": "index",
+              "why": "field"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/skeleton/src/skeleton-item.ts",
+              "from": "SkeletonItemInstance",
+              "label": "references",
+              "line": 53,
+              "target": "SkeletonItem"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "handleTouchStart",
+              "label": "references",
+              "target": "scrollable",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "handleTouchStart",
+              "label": "references",
+              "target": "navOffset",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "handleTouchMove",
+              "label": "references",
+              "target": "scrollable",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "handleTouchMove",
+              "label": "references",
+              "target": "isHorizontal",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "handleTouchMove",
+              "label": "references",
+              "target": "navOffset",
+              "why": "resolved"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "UseTabNavTouchParams",
+              "label": "uses",
+              "target": "Scrollable",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "UseTabNavTouchParams",
+              "label": "references",
+              "line": 21,
+              "target": "Scrollable"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/tabs/src/composables/use-tab-nav-touch.ts",
+              "from": "touchState",
+              "label": "references",
+              "line": 39,
+              "target": "TouchState"
+            },
+            {
+              "dir": "MISSING",
+              "file": "packages/components/time-picker/index.ts",
+              "from": "TimePickerInstance",
+              "label": "uses",
+              "target": "TimePickerExpose",
+              "why": "type"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/time-picker/index.ts",
+              "from": "TimePickerInstance",
+              "label": "references",
+              "line": 9,
+              "target": "TimePickerExpose"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/build-table.ts",
+              "from": "main",
+              "label": "uses",
+              "target": "row",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/build-table.ts",
+              "from": "main",
+              "label": "uses",
+              "target": "status",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/build-table.ts",
+              "from": "main",
+              "label": "uses",
+              "target": "table",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/build-table.ts",
+              "from": "table",
+              "label": "uses",
+              "target": "row",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/build-table.ts",
+              "from": "table",
+              "label": "uses",
+              "target": "status",
+              "why": "expr"
+            },
+            {
+              "dir": "MISSING",
+              "file": "scripts/build-table.ts",
+              "from": "row",
+              "label": "uses",
+              "target": "filename",
+              "why": "expr"
+            },
+            {
+              "confidence": 0.85,
+              "dir": "UNEXPLAINED",
+              "file": "scripts/build-table.ts",
+              "from": "main",
+              "label": "uses",
+              "line": 29,
+              "target": "prev"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/dropdown/__tests__/dropdown.test.ts",
+              "from": "content",
+              "label": "references",
+              "line": 57,
+              "target": "InstanceType"
+            },
+            {
+              "confidence": 0.95,
+              "dir": "UNEXPLAINED",
+              "file": "packages/components/dropdown/__tests__/dropdown.test.ts",
+              "from": "content",
+              "label": "references",
+              "line": 58,
+              "target": "ElTooltip"
+            }
+          ],
+          "treeTruthEdges": 1566,
+          "unexplainedInAnalyzer": 49
+        }
+      }
+    }
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F5.typescript",
+  "layers": [
+    "differential"
+  ],
+  "limitations": [
+    {
+      "description": "LANE-SCOPED artifact: this run measured 2 lane(s) (typescript, element-plus:typescript), not the canonical two-corpus sweep. Its rows are not the M14.0.F5 claim, which carries every gated lane."
+    },
+    {
+      "description": "second opinion is a clause-structure re-derivation from the same wasm grammars; a grammar bug shared by both paths would be invisible to this harness"
+    },
+    {
+      "description": "seeded sample of files per language, deterministic; not exhaustive over the corpus"
+    },
+    {
+      "description": "the code-input check is scoped to this lane's producers (src/ast/real-typescript-analyzer.ts, script/m14/spec/typescript-completeness.json, script/m14/differential.ts, script/m14/evidence-harness.ts); 7 OTHER measured input(s) are dirty in this checkout from other lanes (package.json, src/intelligence/migration/migration-engine.ts, src/intelligence/migration/migration-source.ts, src/lsp/navigation.ts, src/lsp/positions.ts, src/lsp/rich_hover.ts, …) and are recorded in data.codeInputs.otherDirt — they did not produce these rows, and their dirt belongs to their lanes' own artifacts"
+    }
+  ],
+  "regeneratedAt": "2026-10-18T02:20:29-04:00",
+  "regeneratedAtCommit": "52cd88953b79940732cbbfd4bd5206ea229ecdfc",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Differential corpus harness, LANE-SCOPED (typescript: typescript, element-plus:typescript) — NOT the canonical 47-language claim"
+}

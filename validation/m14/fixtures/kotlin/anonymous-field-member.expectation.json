@@ -1,0 +1,26 @@
+{
+  "fixtureId": "kotlin/anonymous-field-member",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "Source written first from the #866 pre-declared contract (java/groovy already satisfied it; kotlin was measured to violate BOTH halves). The expectation was recorded from the post-fix run only to get the spelling of kind/owner and the exact call lines right — the contract itself is the issue's, not the run's.",
+  "rationale": "M49/M37 #866: kotlin diverged from the family in two ways, both pinned here. (1) `val field` inside `object : Runnable { ... }` was dropped entirely — extractProperty's ancestor scan stopped only at class_declaration/object_declaration, so it walked PAST the object_literal, reached the enclosing function_declaration, and classified the member as a local. It is now a `property` symbol owned by anonymous_Runnable, matching java/groovy. (2) the initialiser's call was attributed to the OUTER method `build` (resolveCallSource had no object_literal boundary) while java/groovy/scala all say the anonymous type; the anon name now comes from the same derivation the symbol emitter uses, so the member symbol and its initialiser call cannot disagree. The `local` control pins the OTHER half of the same boundary: a method-local is not a project symbol. Call lines are pinned because the `local` call in build() is legitimately attributed to build.",
+  "expectSymbols": [
+    { "name": "AnonField", "kind": "class" },
+    { "name": "anonymous_Runnable", "kind": "class" },
+    { "name": "field", "kind": "property", "ownerName": "anonymous_Runnable", "comment": "#866 contract 1 (was absent before the fix)" },
+    { "name": "run", "kind": "method", "ownerName": "anonymous_Runnable" }
+  ],
+  "forbidSymbols": [
+    { "name": "local", "comment": "#866 control: a method-local is not a project symbol" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "anonymous_Runnable", "target": "field", "line_number": 14 },
+    { "type": "contains", "from": "anonymous_Runnable", "target": "run", "line_number": 15 },
+    { "type": "calls", "from": "anonymous_Runnable", "target": "target", "line_number": 14, "comment": "#866 contract 2 (was `build` before the fix)" },
+    { "type": "calls", "from": "build", "target": "target", "line_number": 12, "comment": "control: the method-LOCAL's call IS attributed to build" }
+  ],
+  "forbidRelationships": [
+    { "type": "calls", "from": "build", "target": "target", "line_number": 14, "comment": "the exact pre-fix misattribution: the field initialiser's call flattened onto the outer method" },
+    { "type": "contains", "from": "AnonField", "target": "field", "comment": "JD18 leak direction: members of an anonymous body never attribute to the enclosing type" }
+  ]
+}

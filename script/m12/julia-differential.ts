@@ -48,7 +48,7 @@ import { loadWebTreeSitter } from "../../src/util/wasm"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m12/results/julia-differential.json")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const WASM = path.join(ROOT, "wasm/tree-sitter-julia.wasm")
 /**
  * `--wasm=<path>` compares an ALTERNATIVE wasm against the same Julia oracle, which is how a

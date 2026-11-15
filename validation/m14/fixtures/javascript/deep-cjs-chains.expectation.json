@@ -1,0 +1,15 @@
+{
+  "fixtureId": "javascript/deep-cjs-chains",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CJS export chains deeper than one level below module.exports/exports were entirely dropped. Every segment below the base belongs to the public surface (dotted export names).",
+  "expectSymbols": [],
+  "expectExports": [
+    {
+      "name": "group.item"
+    },
+    {
+      "name": "nested.deep"
+    }
+  ]
+}

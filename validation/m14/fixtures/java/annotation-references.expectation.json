@@ -1,0 +1,51 @@
+{
+  "fixtureId": "java/annotation-references",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANNOTATION TYPE REFERENCES (M14 owner ruling 2026-10-18: 'annotations produce ZERO relationship rows - a real missing relationship'). An annotation is a TYPE mention (JLS 9.6 declares an annotation interface, JLS 9.7 uses it), so every annotation site owes a `references` edge to the annotation type under the label the analyzer already uses for every other type mention. The pinned grammar has TWO node types for one construct (`marker_annotation` = `@Override`, `annotation` = `@SuppressWarnings(\"x\")`, differing only by the argument list) and pre-fix BOTH emitted nothing to the relationship channel - the names reached `decorators`/`metadata.annotations` as payload only. Measured pre-fix on this exact fixture: 0 rows carrying `isAnnotation`. The Lead's census over a 203-file corpus draw: 1,475 `marker_annotation` + 119 `annotation` nodes, 0 relationship rows. Authored from Java semantics before observing the fix: every position Java permits an annotation in is pinned here (class, method, field single, field MULTI-DECLARATOR per JLS 8.3 one annotation annotates both variables, type-use JLS 9.7.4, formal parameter, local variable, enum constant, record component), plus the two spellings (bare leaf and fully qualified) and the repeated-annotation pair. Every expectation carries confidenceMin 0.95 because the spelling is written in the declaration, not inferred. THE FORBIDS are the four ways this emission can silently lie: a qualified annotation truncated to its leaf (a second spelling of one name), an annotation treated as an `import`, the `@` sigil kept in the target, and a parameter/local/record-component annotation attributed to a span that publishes no symbol (the annotation must be carried by the enclosing declaration, the same attribution the lane already uses for those positions' declared_type references).",
+  "expectSymbols": [
+    { "name": "AnnotationReferences", "kind": "class" },
+    { "name": "Audited" },
+    { "name": "Service", "kind": "class" },
+    { "name": "count" },
+    { "name": "first" },
+    { "name": "second" },
+    { "name": "names" },
+    { "name": "toString" },
+    { "name": "take" },
+    { "name": "args" },
+    { "name": "fq" },
+    { "name": "repeated" },
+    { "name": "Mode", "kind": "enum" },
+    { "name": "ONE", "kind": "enum_member" },
+    { "name": "Pair", "kind": "class" },
+    { "name": "left" },
+    { "name": "right" }
+  ],
+  "expectRelationships": [
+    { "type": "references", "source": "Service", "target": "Audited", "meta.relationshipType": "annotation", "meta.isAnnotation": true, "meta.annotatedKind": "class_declaration", "line_number": 9, "confidenceMin": 0.95 },
+    { "type": "references", "source": "count", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.isAnnotation": true, "meta.annotatedKind": "field_declaration", "line_number": 11, "confidenceMin": 0.95 },
+    { "type": "references", "source": "first", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "field_declaration", "line_number": 14 },
+    { "type": "references", "source": "second", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "field_declaration", "line_number": 14 },
+    { "type": "references", "source": "names", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "field_declaration", "line_number": 17 },
+    { "type": "references", "source": "toString", "target": "Override", "meta.relationshipType": "annotation", "meta.annotatedKind": "method_declaration", "line_number": 19 },
+    { "type": "references", "source": "take", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "formal_parameter", "line_number": 22 },
+    { "type": "references", "source": "take", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "local_variable_declaration", "line_number": 23 },
+    { "type": "references", "source": "args", "target": "SuppressWarnings", "meta.relationshipType": "annotation", "meta.annotatedKind": "method_declaration", "line_number": 27 },
+    { "type": "references", "source": "fq", "target": "java.lang.Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "method_declaration", "line_number": 31 },
+    { "type": "references", "source": "repeated", "target": "Audited", "meta.relationshipType": "annotation", "line_number": 35 },
+    { "type": "references", "source": "repeated", "target": "Deprecated", "meta.relationshipType": "annotation", "line_number": 36 },
+    { "type": "references", "source": "ONE", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "enum_constant", "line_number": 42 },
+    { "type": "references", "source": "Pair", "target": "Deprecated", "meta.relationshipType": "annotation", "meta.annotatedKind": "formal_parameter", "line_number": 45 }
+  ],
+  "forbidRelationships": [
+    { "type": "references", "target": "Deprecated", "meta.relationshipType": "annotation", "line_number": 31, "comment": "the file WROTE @java.lang.Deprecated, so the target carries that path; a leaf here is the truncation this fixture exists to forbid" },
+    { "type": "references", "target": "@Deprecated", "comment": "the target is the type NAME; the `@` sigil is syntax, not part of it" },
+    { "type": "references", "target": "@Override", "comment": "same rule for the marker form" },
+    { "type": "imports", "target": "Deprecated", "comment": "an annotation USE is a type mention, not a module dependency; `imports` is the import-declaration channel only" },
+    { "type": "imports", "target": "Audited", "comment": "same rule: @interface declaration + use add no imports edge" },
+    { "type": "references", "source": "Service", "target": "Deprecated", "meta.annotatedKind": "formal_parameter", "comment": "a parameter's annotation is carried by its METHOD (take), not by the enclosing type: a parameter publishes no symbol" },
+    { "type": "references", "source": "local", "target": "Deprecated", "comment": "a local variable publishes no symbol; its annotation must be carried by the enclosing method" },
+    { "type": "references", "source": "left", "target": "Deprecated", "comment": "a record COMPONENT's annotation is carried by the record declaration (Pair), the same attribution its declared_type reference uses" }
+  ]
+}

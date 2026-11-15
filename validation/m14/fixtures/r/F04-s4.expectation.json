@@ -1,0 +1,139 @@
+{
+  "fixtureId": "r/F04-s4",
+  "language": "r",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "S4 reaches the ontology through three different call shapes and the analyzer has to read all three. `setClass(\"Car\", contains = \"Vehicle\")` is inheritance: `Car` EXTENDS `Vehicle`. `setClass(\"Legacy\", representation(legacy_field = \"numeric\"))` is the OLD slot idiom -- `representation()` rather than `slots =` -- so a rule that only reads `slots` drops every pre-2000 class in the corpus, and Matrix is full of them. `setGeneric`/`setMethod`/`setValidity` are the method surface, and the pins assert `show` and `validity` as OWNED members of `Vehicle`. Two forbids matter: `Legacy` declares no base, so `extends Legacy -> Vehicle` would invent an inheritance R does not have, and `Car` inherits `Vehicle`'s slots rather than declaring them, so `contains Car -> wheels` would duplicate a fact the extends edge already carries. `speed` appears as BOTH a bare function and a Vehicle-owned method because R really does bind the name twice -- once from `setGeneric`, once from `setMethod` -- and the graph has to be able to say that.",
+  "expectNoParseErrors": true,
+  "expectSymbols": [
+    {
+      "name": "Vehicle",
+      "kind": "class"
+    },
+    {
+      "name": "Car",
+      "kind": "class"
+    },
+    {
+      "name": "Legacy",
+      "kind": "class"
+    },
+    {
+      "name": "wheels",
+      "kind": "property",
+      "ownerName": "Vehicle"
+    },
+    {
+      "name": "owner",
+      "kind": "property",
+      "ownerName": "Vehicle"
+    },
+    {
+      "name": "doors",
+      "kind": "property",
+      "ownerName": "Car"
+    },
+    {
+      "name": "legacy_field",
+      "kind": "property",
+      "ownerName": "Legacy"
+    },
+    {
+      "name": "show",
+      "kind": "method",
+      "ownerName": "Vehicle"
+    },
+    {
+      "name": "validity",
+      "kind": "method",
+      "ownerName": "Vehicle"
+    },
+    {
+      "name": "speed",
+      "kind": "function"
+    },
+    {
+      "name": "speed",
+      "kind": "method",
+      "ownerName": "Vehicle"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "Car",
+      "target": "Vehicle",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Vehicle",
+      "target": "wheels",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Vehicle",
+      "target": "owner",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Car",
+      "target": "doors",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Legacy",
+      "target": "legacy_field",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Vehicle",
+      "target": "show",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "contains",
+      "from": "Vehicle",
+      "target": "validity",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "speed",
+      "target": "compute_speed",
+      "confidenceMin": 1.0
+    },
+    {
+      "type": "calls",
+      "from": "speed",
+      "target": "standardGeneric",
+      "confidenceMin": 1.0
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Vehicle",
+      "kind": "variable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Legacy",
+      "target": "Vehicle"
+    },
+    {
+      "type": "extends",
+      "from": "Car",
+      "target": "Legacy"
+    },
+    {
+      "type": "contains",
+      "from": "Car",
+      "target": "wheels"
+    }
+  ]
+}

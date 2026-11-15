@@ -4,8 +4,8 @@
   "language": "php",
   "purpose": "phantom-symbol detection: can a differential prove this? NO — precision/recall only shows analyzer and oracle AGREE",
   "corpora": [
-    "$HOME/fixtures/repositories/phpunit",
-    "$HOME/fixtures/repositories/phpmyadmin"
+    "/home/ishaq2321/bb_tests/repositories/phpunit",
+    "/home/ishaq2321/bb_tests/repositories/phpmyadmin"
   ],
   "perCorpusSample": 600,
   "filesScanned": 1200,

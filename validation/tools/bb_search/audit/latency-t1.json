@@ -1,0 +1,112 @@
+{
+  "tier": "T1-synthetic",
+  "runtime": "compiled dist via node bin/bb mcp — node v22.22.1 (better-sqlite3)",
+  "projectDir": "/home/ishaq2321/mcp/backbencher-brain/.perf-fixtures/bb-scale/n100",
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_search/bbdata",
+  "env": {
+    "BB_NO_AUTO_REFRESH": "1"
+  },
+  "runsPerCall": 5,
+  "generatedAt": "2026-11-01T22:36:35.048Z",
+  "results": [
+    {
+      "label": "symbols.default",
+      "args": {
+        "query": "ABSENCE"
+      },
+      "isError": false,
+      "runs": [
+        10.29,
+        9.49,
+        8.73,
+        9.09,
+        8.46
+      ],
+      "p50": 9.09,
+      "p95": 10.29,
+      "min": 8.46,
+      "max": 10.29,
+      "warmTextHead": "navigationAbsence [function] t0012_server.ts:1411 (typescript)\ndeclaredAbsenceFor [function] t0008_rich_hover.ts:296 (ty"
+    },
+    {
+      "label": "content.default",
+      "args": {
+        "mode": "content",
+        "query": "ABSENCE_LOG_TYPE"
+      },
+      "isError": false,
+      "runs": [
+        40.88,
+        39.46,
+        35.49,
+        47.52,
+        40.6
+      ],
+      "p50": 40.6,
+      "p95": 47.52,
+      "min": 35.49,
+      "max": 47.52,
+      "warmTextHead": "{\n  \"searchMode\": \"content\",\n  \"query\": \"ABSENCE_LOG_TYPE\",\n  \"total\": 2,\n  \"returned\": 2,\n  \"staleCount\": 0,\n  \"freshCo"
+    },
+    {
+      "label": "symbol.default",
+      "args": {
+        "mode": "symbol",
+        "symbolName": "ABSENCE_LOG_TYPE"
+      },
+      "isError": false,
+      "runs": [
+        6.44,
+        6.65,
+        7.3,
+        6.21,
+        5.99
+      ],
+      "p50": 6.44,
+      "p95": 7.3,
+      "min": 5.99,
+      "max": 7.3,
+      "warmTextHead": "{\n  \"matches\": [\n    {\n      \"id\": \"a7d2214d3de0ee3134c30ffd876d358c6fd6b514:t0012_server.ts:ABSENCE_LOG_TYPE:401\",\n    "
+    },
+    {
+      "label": "file.default",
+      "args": {
+        "mode": "file",
+        "filePath": "t0000_document_highlight.ts"
+      },
+      "isError": false,
+      "runs": [
+        5.55,
+        6.93,
+        5.92,
+        5.74,
+        5.78
+      ],
+      "p50": 5.78,
+      "p95": 6.93,
+      "min": 5.55,
+      "max": 6.93,
+      "warmTextHead": "{\n  \"searchMode\": \"file\",\n  \"file\": \"t0000_document_highlight.ts\",\n  \"fileId\": \"a7d2214d3de0ee3134c30ffd876d358c6fd6b514"
+    },
+    {
+      "label": "regex.option",
+      "args": {
+        "query": "^ABSENCE_",
+        "regex": true
+      },
+      "isError": false,
+      "runs": [
+        564.45,
+        577.28,
+        577.9,
+        583.82,
+        559.01
+      ],
+      "p50": 577.28,
+      "p95": 583.82,
+      "min": 559.01,
+      "max": 583.82,
+      "warmTextHead": "ABSENCE_LOG_TYPE [constant] t0012_server.ts:401 (typescript)\nABSENCE_METHOD [constant] t0012_server.ts:396 (typescript)\n"
+    }
+  ]
+}

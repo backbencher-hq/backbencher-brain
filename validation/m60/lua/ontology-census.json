@@ -4,7 +4,7 @@
   "at": "2026-10-04T00:35:00.559Z",
   "commit": "14153d8e2a5f6910bff2899c7acde80046afe126",
   "corpus": {
-    "root": "$HOME/fixtures/repositories",
+    "root": "/home/ishaq2321/bb_tests/repositories",
     "method": "git ls-files '*.lua' per repo, sorted, first all per repo (deterministic, not random)",
     "filesDrawn": 3252,
     "repos": {

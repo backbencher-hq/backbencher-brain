@@ -1,0 +1,56 @@
+# Extended-type near-misses: every construct a keyword scan would mislabel.
+#
+# The four relationship types this lane RULES (decorates, renders, mixes_in, part_of) and
+# the implemented-but-corpus-unexercised `extends` are pinned at ZERO below
+# (expectRelationshipCount), while the honest label beside each near miss is pinned
+# positive: an extension member is `contains`, an interface supertype is `implements`,
+# a directive application is `uses`, and the `#import` convention is `imports`.
+#import "./fragments/user-fields.gql"
+
+"""A directive with a signature and NO body: the callable test fails on the half that
+matters - no implementation exists in the document to be applied."""
+directive @auth(role: Role = ADMIN) on OBJECT | FIELD_DEFINITION
+
+enum Role {
+  ADMIN
+  VIEWER
+}
+
+interface Node {
+  id: ID!
+}
+
+type User implements Node {
+  id: ID!
+  name: String @auth(role: VIEWER)
+}
+
+type Query {
+  me(id: ID!): User
+}
+
+# `extend type` is the SAME type continued: members, not an is-a edge.
+extend type Query {
+  friends: [User!]!
+}
+
+# `extend schema` adds a ROOT OPERATION - not a member set, not an inclusion.
+extend schema {
+  mutation: Mutation
+}
+
+type Mutation {
+  noop: Boolean
+}
+
+# An executable document is a REQUEST, not a rendered component.
+query GetMe {
+  me(id: "1") {
+    ...UserFields
+  }
+}
+
+fragment UserFields on User {
+  id
+  name @deprecated(reason: "use displayName")
+}

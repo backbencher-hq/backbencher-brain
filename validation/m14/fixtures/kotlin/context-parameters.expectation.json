@@ -1,0 +1,115 @@
+{
+  "fixtureId": "kotlin/context-parameters",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the Kotlin 2.2 CONTEXT-PARAMETER guard. `context(session: FirSession)` written above a declaration has no node in tree-sitter-kotlin: the header parses as a top-level call_expression whose callee is the soft keyword `context`, with an ERROR node standing in for each `: Type`. Before the guard the analyzer published `calls[Global -> context]` at 0.7 for every header \u2014 a DECLARATION stored as a CALL, sourced to a symbol no kotlin file declares. MEASURED on a 400-file stratified draw of bb_tests/repositories/kotlin@9b80c8ff: 20 headers in 4 files; 28 of that sample's 524 `Global` call edges.\n\nThe pins cover the four ways this guard can be wrong, because the over-corrections are all plausible and all different defects: (1) the header yields NO call edge at all; (2) the declaration UNDER the header keeps its own edges \u2014 a context parameter does not swallow the function written below it, and the call inside it is sourced to that function; (3) a REAL call to a user-declared function named `context` is still a call, because `context` is only a keyword in the header POSITION \u2014 `fun context(x: Int)` is a legal declaration; (4) the same holds for a header above a CLASS and above a PROPERTY, so the guard is not accidentally specific to functions.\n\n`normalizeName` is not a stdlib leaf, so the pins are about attribution and not about the stdlib filter.",
+  "expectSymbols": [
+    {
+      "name": "resolveValue",
+      "kind": "function"
+    },
+    {
+      "name": "RealContext",
+      "kind": "class"
+    },
+    {
+      "name": "resolve",
+      "kind": "method",
+      "ownerName": "RealContext"
+    },
+    {
+      "name": "computedLabel",
+      "kind": "property"
+    },
+    {
+      "name": "context",
+      "kind": "function"
+    },
+    {
+      "name": "realContextCall",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "resolveValue",
+      "target": "normalizeName",
+      "note": "the declaration UNDER a context header keeps its own call edge, sourced to itself. A guard that dropped the header's whole subtree would lose this."
+    },
+    {
+      "type": "calls",
+      "from": "resolve",
+      "target": "normalizeName",
+      "note": "a header above a CLASS does not swallow the class's methods"
+    },
+    {
+      "type": "calls",
+      "from": "computedLabel",
+      "target": "normalizeName",
+      "note": "a header above a PROPERTY: the top-level property owns its own initializer's call"
+    },
+    {
+      "type": "calls",
+      "from": "realContextCall",
+      "target": "context",
+      "note": "`context` is a SOFT keyword. A program may declare and call a function of that name, and the guard keys on the ERROR inside the argument list, not on the name \u2014 so this real call survives."
+    },
+    {
+      "type": "exports",
+      "from": "RealContext",
+      "target": "resolveValue",
+      "note": "a context parameter does not make the declaration non-exportable"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "context",
+      "source": "Global",
+      "note": "THE pin this fixture exists for: the context header is not a call"
+    },
+    {
+      "type": "calls",
+      "target": "context",
+      "source": "com.acme.ctx",
+      "note": "and it must not be attributed to the package either"
+    },
+    {
+      "type": "calls",
+      "target": "context",
+      "source": "resolveValue",
+      "note": "nor to the declaration it introduces"
+    },
+    {
+      "type": "calls",
+      "source": "Global",
+      "note": "no placeholder source anywhere in this file"
+    },
+    {
+      "type": "calls",
+      "source": "constructor",
+      "note": "and none of the other two placeholders the call walk has used"
+    },
+    {
+      "type": "references",
+      "source": "Global"
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ontology",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    },
+    {
+      "type": "exports",
+      "from": "root",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    },
+    {
+      "type": "exports",
+      "from": "com.acme.ctx",
+      "note": "task-9 supersession: package/root is not a declaration and cannot source an export"
+    }
+  ],
+  "authoredNote": " [TASK-9 KOTLIN4 SUPERSESSION 2026-10-19: the imports/exports SOURCE contract is the file identity \u2014 primary top-level type when the file declares one, else the compilation-unit base name (fleet defect fix: the package-identity export channel is REMOVED because the store's defensive filter drops package-named export sources, and package-sourced imports are replaced by identity-sourced rows). Targets/metadata/coverage are preserved; the superseded package/root source spellings are now FORBIDDEN, so the re-pin strengthens rather than weakens the pins.]"
+}

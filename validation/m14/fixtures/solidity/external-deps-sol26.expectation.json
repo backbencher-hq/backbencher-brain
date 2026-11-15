@@ -1,0 +1,56 @@
+{
+  "fixtureId": "solidity/external-deps-sol26",
+  "language": "solidity",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "SOL-26/27/28 — THREE DEPENDENCIES THE PROJECT DOES NOT DECLARE, each with the claim that answers it. (26) A call the classifier has already labelled `calleeKind: external` is a name neither this file NOR the project index declares; publishing `externalTarget` states exactly that, and the arbiter verifies it against the same name model (a claim is consulted only where `decls === 0`). MEASURED: 1,348 unresolved `calls`, dominated by forge-std helpers outside the corpus (the lane's W3). (27) `contract C is Test` where `kindUnresolved` says neither file nor index declares the base — 38 unresolved `extends`, led by `Test` 33. (28) An import path the project does not admit carries the source-path claim, whose polarity is the inverse of the file claim's. MEASURED EFFECT: wall 2,478 -> 1,275 (unresolved 1,348 -> 145, ambiguous unchanged 1,130, refuted 0).",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "check",
+      "target": "assertEq",
+      "line_number": 9,
+      "meta.calleeKind": "external",
+      "meta.externalTarget": true,
+      "meta.externalVia": "call",
+      "comment": "SOL-26 — a free call the classifier already found no declaration for. The claim is the classifier's own measurement, stated where the gate can verify it."
+    },
+    {
+      "type": "extends",
+      "from": "Probe",
+      "target": "Test",
+      "line_number": 7,
+      "meta.kindUnresolved": true,
+      "meta.externalTarget": true,
+      "meta.externalVia": "base",
+      "comment": "SOL-27 — a base contract neither this file nor the project declares (forge-std's Test). The row keeps its `inferred` tier AND the claim the project can answer."
+    },
+    {
+      "type": "imports",
+      "from": "external-deps-sol26.sol",
+      "target": "forge-std/Test.sol",
+      "line_number": 5,
+      "meta.sourcePathClaim": ["forge-std/Test.sol"],
+      "comment": "SOL-28 — nothing the project ADMITS resolves to this written path, which is the whole evidence the claim rests on."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "assertEq",
+      "meta.externalTarget": null,
+      "comment": "SOL-26 NEGATIVE: without the claim the row falls back to the wall it came from."
+    },
+    {
+      "type": "extends",
+      "target": "Test",
+      "meta.externalTarget": null,
+      "comment": "SOL-27 NEGATIVE."
+    },
+    {
+      "type": "imports",
+      "target": "forge-std/Test.sol",
+      "meta.sourcePathClaim": null,
+      "comment": "SOL-28 NEGATIVE."
+    }
+  ]
+}

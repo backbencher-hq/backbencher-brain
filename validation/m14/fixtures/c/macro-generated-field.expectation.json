@@ -1,0 +1,39 @@
+{
+  "fixtureId": "c/macro-generated-field",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A member the analyzer cannot NAME must be published as nothing, not under the macro's name. The pre-fix extractor fell through to the macro CALL node that stands where a member's declarator would be and published a `property` named after the macro: measured `cf_h2_proxy_ctx.BIT` five times and `tunnel_stream.BIT` three times in `curl/lib/cf-h2-proxy.c`, three more owners in the same directory, plus a `memorySize` computed from a field that does not exist. Recovering the real name is NOT available: whether the macro parameter lands in name position is a property of the macro's replacement list, which is C-D2's ruled-out territory, so the loss is declared rather than papered over with a name borrowed from the macro. The forbid rows are therefore the phantoms, and they are the reason this fixture exists: a phantom member is a symbol a reader can navigate to and that resolves to nothing. The three controls pin the readings that must not change -- a real bitfield, a one-line member, and a function-pointer member whose declarator is readable through the `(*name)` shape.",
+  "expectSymbols": [
+    { "name": "BIT", "kind": "macro" },
+    { "name": "MEMBER", "kind": "macro" },
+    { "name": "RESERVED", "kind": "constant", "note": "an object-like macro is a Constant; only function-like macros are Macro-kind" },
+    { "name": "flags", "kind": "struct" },
+    { "name": "a", "kind": "property", "ownerName": "flags" },
+    { "name": "b", "kind": "property", "ownerName": "flags" },
+    { "name": "real_bit", "kind": "property", "ownerName": "flags" },
+    { "name": "one_line", "kind": "property", "ownerName": "flags" },
+    { "name": "callback", "kind": "property", "ownerName": "flags" },
+    { "name": "with_no_argument", "kind": "struct" },
+    { "name": "keep", "kind": "property", "ownerName": "with_no_argument" },
+    { "name": "also_keep", "kind": "property", "ownerName": "with_no_argument" },
+    { "name": "member_macro", "kind": "struct" },
+    { "name": "head", "kind": "property", "ownerName": "member_macro" },
+    { "name": "tail", "kind": "property", "ownerName": "member_macro" }
+  ],
+  "forbidSymbols": [
+    { "name": "BIT", "kind": "property", "note": "THE DEFECT: a member named after the macro that stands where the declarator would be" },
+    { "name": "MEMBER", "kind": "property", "note": "THE DEFECT, two-argument spelling" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "flags", "target": "a" },
+    { "type": "contains", "from": "flags", "target": "real_bit", "note": "CONTROL: a real bitfield" },
+    { "type": "contains", "from": "flags", "target": "one_line", "note": "CONTROL: a one-line member" },
+    { "type": "contains", "from": "flags", "target": "callback", "note": "CONTROL: the declarator is readable inside the declarator" },
+    { "type": "contains", "from": "with_no_argument", "target": "keep" },
+    { "type": "contains", "from": "member_macro", "target": "tail" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "target": "BIT", "note": "THE DEFECT: a containment edge onto the macro's own name" },
+    { "type": "contains", "target": "MEMBER", "note": "THE DEFECT, two-argument spelling" }
+  ]
+}

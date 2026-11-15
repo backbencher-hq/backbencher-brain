@@ -1,0 +1,154 @@
+{
+  "mode": "cold",
+  "data": {
+    "tag": "lodash",
+    "cold": true,
+    "embeddings": 0,
+    "flushCompleted": true,
+    "rows": [
+      {
+        "id": "lodash-a1",
+        "query": "deep clone an object",
+        "negative": false,
+        "gold": "cloneDeep",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "`Object`",
+          "`“Object” Methods`",
+          "clone",
+          "object"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-a2",
+        "query": "delay calling a function until calls stop",
+        "negative": false,
+        "gold": "debounce",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "Reporting a security issue",
+          "<a href=\"https://lodash.com/\">lodash</a> <span>v4.18.1</span>",
+          "`Function`",
+          "`“Function” Methods`",
+          "object"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-a3",
+        "query": "limit how often a function can run",
+        "negative": false,
+        "gold": "throttle",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "Reporting a security issue",
+          "<a href=\"https://lodash.com/\">lodash</a> <span>v4.18.1</span>",
+          "run",
+          "run",
+          "run"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-a4",
+        "query": "split an array into smaller chunks",
+        "negative": false,
+        "gold": "chunk",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "`Array`",
+          "`“Array” Methods`",
+          "split"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-a5",
+        "query": "check if two values are deeply equal",
+        "negative": false,
+        "gold": "isEqual",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "values",
+          "if"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-s1",
+        "query": "trimStart",
+        "negative": false,
+        "gold": "trimStart",
+        "hit": true,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "trimStart"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-c1",
+        "query": "Creates an array of elements split into groups the length of size",
+        "negative": false,
+        "gold": "chunk",
+        "hit": false,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "Examples of Non-Vulnerabilities (out of scope)",
+          "Examples of Vulnerabilities (in scope)",
+          "`Array`",
+          "`“Array” Methods`",
+          "Elements Lodash Trusts"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      },
+      {
+        "id": "lodash-n1",
+        "query": "render html canvas and play video",
+        "negative": true,
+        "gold": null,
+        "hit": null,
+        "confidence": 0.2,
+        "evidenceClass": "semantic_candidate",
+        "sourceContexts": [
+          "code_block.html",
+          "Vulnerability Chaining and Gadgets",
+          "Step 3: Patch and release",
+          "Step 2: Review the Report and determine its severity",
+          "Step 1: Assign Security Report Coordinator (SRC) and consolidate the report"
+        ],
+        "answerExcerpt": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from ",
+        "answersHasFallbackNote": true,
+        "answersHasExplicitUnknown": true
+      }
+    ]
+  },
+  "generatedAt": "2026-08-24T23:50:57.975Z"
+}

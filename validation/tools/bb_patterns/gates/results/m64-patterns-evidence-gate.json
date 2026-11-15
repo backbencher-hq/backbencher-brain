@@ -1,0 +1,1 @@
+{"gate":"m64-patterns-evidence-gate","command":"bun run script/m64/verify-patterns-evidence-gate.ts","exitCode":0,"durationMs":5416,"logSha256":"f099f468680f0a4874553660cda69610f0e94d69c526dde397a4d6ad005e53df","log":"validation/tools/bb_patterns/gates/logs/m64-patterns-evidence-gate.log","recordedAt":"2026-11-03T04:20:23Z"}

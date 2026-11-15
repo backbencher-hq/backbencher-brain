@@ -1,0 +1,117 @@
+{
+  "fixtureId": "c/call-callee-must-be-a-name-954",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A `calls` edge must name a FUNCTION. This fixture exists to pin #954 and, equally, to record a fix that was implemented, measured, and then REVERTED because it contradicted a pinned contract -- because the reverted fix was the more obvious one and the next reader deserves to know why it is wrong. The call-edge fidelity probe reported ~4,000 call edges whose callee is a file-local macro and called them phantom. They are not: #908's ruling (c/function-like-macro-not-a-binding-908), derived from the M12 TRUTH, is explicit that 'the truth counts a macro invocation as calls (expr) AND uses (expr)', and that fixture expects `calls c908_read -> YY_INITIAL_VALUE` by name. Deleting the edge would have removed a fact the oracle demands, and the fixture failed on the first run after the change. The distinction the two pinned fixtures draw is sharp and not in the analyzer's favour everywhere: a REAL function-like macro INVOCATION gets a calls edge (#908, truth-driven), while a `#define` REPLACEMENT LIST that recovery reads as a call gets NEITHER, because a definition site is not an invocation (#912, pinned by c/call-shaped-declarator-912: the call-shaped text 'must not become a uses of a symbol either'). So the macro rule is about definition sites, not callees, and the analyzer was already right on both. The probe's model was the defect: it took the literal parse as ground truth, so a documented divergence read as a bug. #954, which stands: `#if PCRE2_CODE_UNIT_WIDTH == 8` published `calls pcre2_dfa_match -> \"8\"`. A number is not callable and no fixture requires that edge. Every earlier guard on that branch listed the shapes it RECOGNISED and let everything else fall through to the callee's text, so a callee that was none of the known shapes became a call target by default -- the wrong default for a field meant to hold a name. The test is the node type rather than a pattern on the text, because P11 holds this file to zero regex literals on its hottest path. The controls are the shapes that must survive: a plain call, a function-pointer MEMBER call, and a name that is both a macro and a real function.",
+  "expectSymbols": [
+    {
+      "name": "UNUSED",
+      "kind": "macro"
+    },
+    {
+      "name": "TWICE",
+      "kind": "macro"
+    },
+    {
+      "name": "alive_unit",
+      "kind": "macro",
+      "note": "a name that is BOTH a macro and a real function, which C permits"
+    },
+    {
+      "name": "WIDTH",
+      "kind": "constant"
+    },
+    {
+      "name": "helper",
+      "kind": "function"
+    },
+    {
+      "name": "alive_unit",
+      "kind": "function",
+      "note": "the real function of the same name; the call to it must survive"
+    },
+    {
+      "name": "keepalive",
+      "kind": "function"
+    },
+    {
+      "name": "damaged_while",
+      "kind": "function",
+      "note": "the DAMAGED-WHILE shape that actually reproduces the defect: a directive inside an expression. A directive with an ordinary body does not -- which is the difference the first version of this fixture missed and the gate's surviving mutant exposed."
+    },
+    {
+      "name": "real_call",
+      "kind": "function"
+    },
+    {
+      "name": "real_void_call",
+      "kind": "function"
+    },
+    {
+      "name": "genuine",
+      "kind": "function"
+    },
+    {
+      "name": "dispatch",
+      "kind": "struct"
+    },
+    {
+      "name": "handler",
+      "kind": "property"
+    },
+    {
+      "name": "via_pointer",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "helper",
+      "target": "UNUSED",
+      "note": "REVERTED-FIX CONTROL: this edge is REQUIRED by the pinned #908 truth ruling and must survive. A change that suppresses a macro-named callee is wrong here, and this row is why."
+    },
+    {
+      "type": "calls",
+      "from": "helper",
+      "target": "TWICE",
+      "note": "REVERTED-FIX CONTROL, the second half of the same ruling."
+    },
+    {
+      "type": "calls",
+      "from": "keepalive",
+      "target": "alive_unit",
+      "note": "CONTROL: the name is both a macro and a declared function, so this is a real call. curl's cf-socket.c has exactly this shape, and any rule keyed on the macro name alone deletes a real edge."
+    },
+    {
+      "type": "calls",
+      "from": "genuine",
+      "target": "real_call"
+    },
+    {
+      "type": "calls",
+      "from": "genuine",
+      "target": "real_void_call"
+    },
+    {
+      "type": "calls",
+      "from": "via_pointer",
+      "target": "handler",
+      "note": "CONTROL: a function-pointer MEMBER call keeps its target. #954's guard is on the callee NODE TYPE, and a field_expression callee is a recognised shape -- a blanket 'not a plain identifier' rule would delete this."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "damaged_while",
+      "target": "WIDTH",
+      "note": "#954: a preprocessor directive INSIDE an expression is not a call, and a macro in `#if` position is not a callee."
+    },
+    {
+      "type": "calls",
+      "from": "damaged_while",
+      "target": "8",
+      "note": "#954, THE DEFECT: a numeric literal is not a callee. libgit2's `#if PCRE2_CODE_UNIT_WIDTH == 8` published `calls pcre2_dfa_match -> \"8\"`, and every earlier guard on that branch let an unrecognised callee fall through to its text as the call target."
+    }
+  ]
+}

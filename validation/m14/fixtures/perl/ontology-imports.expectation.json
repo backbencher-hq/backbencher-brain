@@ -1,0 +1,104 @@
+{
+ "fixtureId": "perl/ontology-imports",
+ "language": "perl",
+ "authoredBeforeAnalyzerRun": true,
+ "authoredNote": "PERL-ONTOLOGY. Lines were read off the numbered source above and every `line_number` below is the line that NAMES the module, never the enclosing statement. Two shapes here had no fixture anywhere in the lane before this wave and both are the reason the file exists: `require` INSIDE A SUB (lines 12 and 14) and `use` INSIDE A SUB (line 18), because a pragma is lexically scoped and perl code writes it there. mojo's lib/Mojo/Util.pm says `use integer;` at lines 263, 296 and 492, all inside sub bodies.",
+ "rationale": "The `imports` LABEL did not exist for perl. The lane recorded 28,317 module loads as `ImportInfo` payload rows and ZERO relationships, and payload is not an edge: parallel-indexer writes `result.imports` into the `brain_import` TABLE and only `result.relationships` into `brain_relationship`, which is the table `bb_graph` reads. So for perl the dependency graph had no edges to traverse — a file's module dependencies existed and nothing could ask for them. (1) A PRAGMA IS A REAL MODULE and is emitted and TAGGED (`meta.isPragma`) rather than dropped: `strict` in particular is a hard prerequisite for the file to compile, and an edge set that quietly omitted the pragmas would disagree with the payload it is derived from. (2) `no strict 'refs'` (line 10) is NOT a dependency: `no` is the unnamed first token of the same node type as `use`, and recording it invents a dependency on a file that loads nothing. (3) `use 5.010` (line 11) is a LANGUAGE VERSION requirement — `metadata.perlVersion`, and an import named `5.010` would put a fake module in the dependency graph. (4) `require` at RUNTIME is a dependency and is 0.9 rather than 1.0, because `use` happens at COMPILE time with a written name and which of two modules loads is not decided by this file at parse time. (5) `require` and `use` inside a sub body are the shapes a file-scoped scan misses.",
+ "expectSymbols": [
+  {
+   "name": "loader",
+   "kind": "function"
+  },
+  {
+   "name": "guarded",
+   "kind": "function"
+  }
+ ],
+ "expectImports": [
+  {
+   "module": "strict"
+  },
+  {
+   "module": "warnings"
+  },
+  {
+   "module": "Mojo::Base"
+  },
+  {
+   "module": "Feature::Compat"
+  },
+  {
+   "module": "Runtime::Lazy",
+   "isDefault": false
+  },
+  {
+   "module": "integer"
+  }
+ ],
+ "forbidImports": [
+  {
+   "module": "refs",
+   "note": "pre-fix shape: `no strict 'refs'` recorded as a dependency"
+  },
+  {
+   "module": "5.010",
+   "note": "a language version requirement is not a module"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "imports",
+   "target": "strict",
+   "line_number": 6,
+   "confidenceMin": 1,
+   "meta.isImport": true,
+   "meta.fileLevel": true,
+   "meta.relationshipType": "use_module",
+   "meta.isPragma": true,
+   "meta.reasonCode": "use-module-load",
+   "meta.evidenceClass": "import_based",
+   "note": "tier: the source states this edge: a declaration or a written name, confidence >= 0.9"
+  },
+  {
+   "type": "imports",
+   "target": "Mojo::Base",
+   "line_number": 8,
+   "meta.relationshipType": "use_module",
+   "note": "a HERITAGE pragma is also a module dependency — `parent.pm` is perl core, so skipping these would publish a graph with the load missing"
+  },
+  {
+   "type": "imports",
+   "target": "Runtime::Lazy",
+   "line_number": 12,
+   "confidenceMax": 0.9,
+   "meta.relationshipType": "require_module",
+   "meta.reasonCode": "runtime-require",
+   "note": "a runtime `require` is a real dependency and is BELOW 1.0: which of two modules loads is not decided by this file"
+  },
+  {
+   "type": "imports",
+   "target": "Runtime::Inside",
+   "line_number": 14,
+   "meta.relationshipType": "require_module",
+   "note": "`require` INSIDE A SUB BODY — the shape a file-scoped scan misses. 39 such sites in mojo alone."
+  },
+  {
+   "type": "imports",
+   "target": "integer",
+   "line_number": 18,
+   "meta.isPragma": true,
+   "note": "`use` INSIDE A SUB BODY: a perl pragma is lexically scoped. mojo's lib/Mojo/Util.pm writes `use integer;` at lines 263, 296 and 492, all inside subs."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "imports",
+   "target": "refs",
+   "note": "the dependency-edge form of the `no strict 'refs'` defect"
+  },
+  {
+   "type": "imports",
+   "target": "5.010"
+  }
+ ]
+}

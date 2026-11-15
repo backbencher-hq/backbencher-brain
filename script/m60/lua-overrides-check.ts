@@ -8,7 +8,7 @@
  */
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const TARGETS = [
   "kong/kong/pdk/log.lua",                        // B1: serialize redefined at L946
   "kong/kong/observability/tracing/instrumentation.lua", // B1: wrap redefined at L180

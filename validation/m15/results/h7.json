@@ -1,0 +1,12 @@
+{
+  "issue": "M15.H7",
+  "code": "H7",
+  "tool": "bb_health",
+  "title": "evidence + gate + closure",
+  "verified": true,
+  "checks": 6,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 2,
+  "generatedAt": "2026-11-05T04:23:12.396Z"
+}

@@ -35,7 +35,7 @@ import { getParser } from "../../src/ast/engine"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories/objc"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories/objc"
 const OUT = path.join(ROOT, "validation/m60/results/objc-exports-census.json")
 
 /** Marker texts a declaration can carry in the specifier slot. Compared as exact

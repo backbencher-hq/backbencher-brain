@@ -1,0 +1,13 @@
+{
+  "fixtureId": "dart/library-unnamed",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the third library form. `library;` — an EMPTY `library_name` node in the grammar — declares a library whose name is unspecified, so the file stem the analyzer publishes here is ITS OWN CONVENTION and not the Dart spec's answer. It is the commonest directive form in this corpus (101 of 3,000 files, against 17 that declare a name), so if the empty-node case were dropped the library would silently fall back to being treated as implicit and this fixture fails. The node is published all the same: an unnamed library is still a library, and the imports edge below needs an endpoint.",
+  "expectSymbols": [
+    { "name": "library-unnamed", "kind": "module" },
+    { "name": "Unnamed", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "imports", "from": "library-unnamed", "target": "dart:async:*", "meta.evidenceClass": "import_based" }
+  ]
+}

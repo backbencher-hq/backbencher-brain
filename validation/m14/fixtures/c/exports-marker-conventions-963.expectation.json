@@ -1,0 +1,58 @@
+{
+  "fixtureId": "c/exports-marker-conventions-963",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "#963. Pins the `exports` relation across all four marker conventions that survive the C parse, and pins the two rules that keep the edge honest. (1) The SOURCE is the declared NAME, never the macro and never a type -- in the prefixed forms the macro's ARGUMENT IS A RETURN TYPE (`GIT_EXTERN(int)`), so reading it would publish `exports int -> GIT_EXTERN`, a type as an exported name, the same defect class #962 removed from `instantiates`. (2) The TARGET is the marker macro AS WRITTEN; the pre-#963 kernel edge targeted a synthesised constant `KERNEL_EXPORT` that appears in no source file anywhere, and the fixture pinned that fabrication. `curl_mime_type` is pinned under forbidRelationships as a DECLARED GRAMMAR LIMIT with its exact parse shape: a typedef return type stops `macro_prefixed_type_specifier` from forming, so marker and name are both lost and no structural rule can recover them.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "kernel_exported_symbol",
+      "target": "EXPORT_SYMBOL",
+      "line_number": 40,
+      "comment": "Kernel call form: the name IS the macro's first argument. The only convention the pre-#963 code handled, and it targeted a fabricated `KERNEL_EXPORT`."
+    },
+    {
+      "type": "exports",
+      "from": "curl_strequal",
+      "target": "CURL_EXTERN",
+      "line_number": 43,
+      "comment": "Userspace prefix over a primitive return type -- the form that reached no export branch at all before #963."
+    },
+    {
+      "type": "exports",
+      "from": "git_libgit2_version",
+      "target": "GIT_EXTERN",
+      "line_number": 69,
+      "comment": "Paren form, where the macro's argument IS THE RETURN TYPE. The published name is still the declarator's, not `int`. This convention carries libgit2's 907 corpus edges."
+    },
+    {
+      "type": "exports",
+      "from": "RedisModule_Alloc",
+      "target": "REDISMODULE_API",
+      "line_number": 73,
+      "comment": "Marker that expands to NOTHING: a bare token with no argument to misread. Carries redis's 14 corpus edges."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "int",
+      "comment": "THE trap #963 exists to close. In the paren form the macro's argument is the return type; publishing it would name a TYPE as the exported name."
+    },
+    {
+      "type": "exports",
+      "from": "CURL_EXTERN",
+      "comment": "The self-reference trap. When recovery splits a multi-line declaration, a declarator walk that keeps going reaches the marker itself and would publish `exports CURL_EXTERN -> CURL_EXTERN`."
+    },
+    {
+      "type": "exports",
+      "from": "curl_mime_type",
+      "comment": "DECLARED GRAMMAR LIMIT, pinned so it stays visible and cannot regress silently. With a typedef return type, `macro_prefixed_type_specifier` does not form: the parse yields `type_identifier \"CURL_EXTERN\"` + `identifier \"CURLcode\"`, destroying both the marker and the exported name. Recovering the name would mean reading text, not structure. No edge is the honest result."
+    },
+    {
+      "type": "exports",
+      "from": "CURLcode",
+      "comment": "The typedef is the RECOVERED declarator of the broken declaration above, not an exported name. A rule that stopped at the wrong node would publish this."
+    }
+  ]
+}

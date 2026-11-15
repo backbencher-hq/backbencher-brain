@@ -1,0 +1,372 @@
+{
+  "key": "graphql-js",
+  "repoPath": "/home/ishaq2321/bb_tests/repositories/graphql-js",
+  "language": "TypeScript/JavaScript",
+  "projectId": "18b0d5567b84edcae6dec4bfcc1faf8ac965e01e",
+  "connectMs": 6377,
+  "index": {
+    "files": 564,
+    "symbols": 13620,
+    "relationships": 61917,
+    "languages": [
+      {
+        "language": "typescript",
+        "files": 413
+      },
+      {
+        "language": "javascript",
+        "files": 77
+      },
+      {
+        "language": "json",
+        "files": 42
+      },
+      {
+        "language": "markdown",
+        "files": 12
+      },
+      {
+        "language": "yaml",
+        "files": 7
+      },
+      {
+        "language": "xml",
+        "files": 6
+      },
+      {
+        "language": "tsx",
+        "files": 4
+      },
+      {
+        "language": "graphql",
+        "files": 2
+      },
+      {
+        "language": "css",
+        "files": 1
+      }
+    ]
+  },
+  "targets": {
+    "file": "benchmark/github-schema.graphql",
+    "module": "benchmark",
+    "symbol": "GraphQLSchema",
+    "feature": "GraphQ",
+    "fallbackModuleFile": ".github/CONTRIBUTING.md"
+  },
+  "dbBefore": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 173117440,
+      "sha256": "a86ac53af7a8f0d3741189694a69634f04806ef4833dde3a2c3297d40d72e781"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 48632512,
+      "sha256": "33824f1f25697273aa37a5e7f83d9532fafce2bc25072eba65d77e02e4acb647"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 173117440,
+      "sha256": "a86ac53af7a8f0d3741189694a69634f04806ef4833dde3a2c3297d40d72e781"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 48632512,
+      "sha256": "33824f1f25697273aa37a5e7f83d9532fafce2bc25072eba65d77e02e4acb647"
+    }
+  },
+  "dbUnchanged": true,
+  "stderrTail": [
+    "[INFO] [11:16:49] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:16:49] [dependency-graph-visualizer] ✅ Graph Data Generated: 150 nodes, 616 links",
+    "[INFO] [11:16:49] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:16:49] [dependency-graph-visualizer] ✅ Graph Data Generated: 379 nodes, 2306 links"
+  ],
+  "cases": [
+    {
+      "name": "project text (default)",
+      "args": {},
+      "isError": false,
+      "ms": 223,
+      "bytes": 1734,
+      "nodes": 200,
+      "links": 968,
+      "truncated": true,
+      "totalNodesAvailable": 13620,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json",
+      "args": {
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 329,
+      "bytes": 917475,
+      "nodes": 200,
+      "links": 968,
+      "truncated": true,
+      "totalNodesAvailable": 13620,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project html regions",
+      "args": {
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 515,
+      "bytes": 940269,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project html force",
+      "args": {
+        "format": "html",
+        "layout": "force"
+      },
+      "isError": false,
+      "ms": 371,
+      "bytes": 940265,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "force",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "project json large budget",
+      "args": {
+        "format": "json",
+        "maxNodes": 1000,
+        "maxLinks": 20000
+      },
+      "isError": false,
+      "ms": 2089,
+      "bytes": 5532683,
+      "nodes": 1000,
+      "links": 5827,
+      "truncated": true,
+      "totalNodesAvailable": 13620,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json calls only",
+      "args": {
+        "format": "json",
+        "relationshipTypes": [
+          "calls"
+        ],
+        "maxNodes": 200
+      },
+      "isError": false,
+      "ms": 263,
+      "bytes": 190679,
+      "nodes": 200,
+      "links": 113,
+      "truncated": true,
+      "totalNodesAvailable": 13620,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file text",
+      "args": {
+        "scope": "file",
+        "target": "benchmark/github-schema.graphql",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 53,
+      "bytes": 1449,
+      "nodes": 200,
+      "links": 184,
+      "truncated": true,
+      "totalNodesAvailable": 3242,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "file json",
+      "args": {
+        "scope": "file",
+        "target": "benchmark/github-schema.graphql",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 112,
+      "bytes": 271274,
+      "nodes": 200,
+      "links": 184,
+      "truncated": true,
+      "totalNodesAvailable": 3242,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "module json",
+      "args": {
+        "scope": "module",
+        "target": "benchmark",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 100,
+      "bytes": 263089,
+      "nodes": 200,
+      "links": 176,
+      "truncated": true,
+      "totalNodesAvailable": 3301,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol text",
+      "args": {
+        "scope": "symbol",
+        "target": "GraphQLSchema",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 42,
+      "bytes": 1615,
+      "nodes": 62,
+      "links": 61,
+      "truncated": false,
+      "totalNodesAvailable": 1,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "symbol html",
+      "args": {
+        "scope": "symbol",
+        "target": "GraphQLSchema",
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 69,
+      "bytes": 211991,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": "regions",
+      "htmlSelfContained": true
+    },
+    {
+      "name": "feature json",
+      "args": {
+        "scope": "feature",
+        "target": "GraphQ",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 226,
+      "bytes": 576739,
+      "nodes": 200,
+      "links": 549,
+      "truncated": true,
+      "totalNodesAvailable": 228,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project json offset page 2",
+      "args": {
+        "format": "json",
+        "maxNodes": 50,
+        "offset": 50
+      },
+      "isError": false,
+      "ms": 153,
+      "bytes": 78614,
+      "nodes": 50,
+      "links": 66,
+      "truncated": true,
+      "totalNodesAvailable": 13620,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "project text includeTests false",
+      "args": {
+        "format": "text",
+        "includeTests": false
+      },
+      "isError": false,
+      "ms": 281,
+      "bytes": 1685,
+      "nodes": 200,
+      "links": 973,
+      "truncated": true,
+      "totalNodesAvailable": 13620,
+      "layout": "regions",
+      "htmlSelfContained": null
+    },
+    {
+      "name": "unknown scope refused",
+      "args": {
+        "scope": "galaxy"
+      },
+      "isError": true,
+      "ms": 2,
+      "bytes": 81,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "missing target refused",
+      "args": {
+        "scope": "symbol"
+      },
+      "isError": true,
+      "ms": 1,
+      "bytes": 60,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "maxNodes 0 refused",
+      "args": {
+        "maxNodes": 0
+      },
+      "isError": true,
+      "ms": 2,
+      "bytes": 222,
+      "nodes": 0,
+      "links": 0,
+      "truncated": null,
+      "totalNodesAvailable": null,
+      "layout": null,
+      "htmlSelfContained": null,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    }
+  ]
+}

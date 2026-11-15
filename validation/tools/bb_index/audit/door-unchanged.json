@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_index",
+  "door": "real MCP stdio (npx tsx src/mcp/server.ts --dir <fixture>)",
+  "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/work/t0-polyglot",
+  "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_index/bbdata",
+  "startedAt": "2026-11-03T05:12:40.293Z",
+  "cases": [
+    {
+      "label": "unchanged file call 1",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 119
+    },
+    {
+      "label": "unchanged file call 2",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 40
+    },
+    {
+      "label": "unchanged file call 3",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 23
+    },
+    {
+      "label": "unchanged file call 4",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 21
+    },
+    {
+      "label": "unchanged file call 5",
+      "arguments": {
+        "path": "src/agent-fresh.ts"
+      },
+      "isError": false,
+      "text": "{\n  \"mode\": \"file\",\n  \"path\": \"src/agent-fresh.ts\",\n  \"indexed\": 0,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"unchanged\": 1,\n  \"declined\": 0,\n  \"skipped\": 0,\n  \"outcome\": \"no-op\",\n  \"reason\": \"nothing changed: 1 file(s) already match the index (mtime, size and sha256 agree)\",\n  \"walCheckpointed\": false,\n  \"derived\": {\n    \"pass\": \"deferred\",\n    \"phases\": [],\n    \"repairedInEdges\": 0,\n    \"touchedSymbols\": 0\n  }\n}",
+      "ms": 16
+    }
+  ],
+  "stderr": "(node:48) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:61) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:73) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:73) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time.\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+  "toolsList": {
+    "count": 16,
+    "names": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "bbIndex": {
+      "descriptionLength": 1654,
+      "modes": [
+        "auto",
+        "file",
+        "dir",
+        "post"
+      ],
+      "required": [
+        "path"
+      ],
+      "pathDescription": "Project-relative file (reindex only that file) or directory (incremental index of changed files); for mode=post, the project root or a directory inside it whose derived phases should be re-run (a file path is refused). REQUIRED in every mode and checked rather than ignored. Must resolve INSIDE the project: both sides are resolved through realpath, so a symlink inside the project pointing out of it is refused too."
+    }
+  },
+  "finishedAt": "2026-11-03T05:13:07.618Z"
+}

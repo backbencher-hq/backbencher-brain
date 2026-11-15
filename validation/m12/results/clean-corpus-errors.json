@@ -1,6 +1,6 @@
 {
   "analyzer": "clean",
-  "corpus": "$HOME/fixtures/repositories/clean-stdlib",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/clean-stdlib",
   "corpusRepo": "clean-stdlib",
   "revision": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
   "extensions": [

@@ -1,0 +1,136 @@
+{
+  "fixtureId": "haskell/alias-module-claims",
+  "language": "haskell",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "HSA2 — A QUALIFIED CALL NAMES ITS MODULE THROUGH THE ALIAS. `T.toUpper` is `Data.Text.toUpper` and the file says so in its import list. Before this rule the row was a dotted target with NO reading at all: 25,131 unresolved `calls` over the population, led by Schema.column 562 · Fixture.fixture 423 · T.unpack 336 · Set.fromList 283 · J.toJSON 268. The claim is the fleet's moduleNamespace, verified against the PROJECT'S MODULE PATHS — the full path (`Data/Text.hs` → `Data.Text`), not the module's root — and it is FAIL-CLOSED: a module the project carries demotes to ext? and can never refute. MEASURED with the full-path verifier: unresolved 34,038 -> 9,231, extOK 27,522 -> 38,872, ext? 13,524 (project-module aliases), refuted 0. The twin is a call to a function this module declares: it must carry no claim.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "shout",
+      "target": "T.toUpper",
+      "line_number": 20,
+      "meta.isQualifiedCall": true,
+      "meta.externalTarget": true,
+      "meta.externalReason": "module-namespace",
+      "meta.externalSpecifier": "Data.Text",
+      "comment": "THE POSITIVE ROW. The alias is the file's own statement of the module; the claim names `Data.Text`, and the verifier asks whether the project carries `Data/Text.hs` (it does not) — so the row verifies instead of hanging."
+    },
+    {
+      "type": "calls",
+      "from": "sortIt",
+      "target": "L.sort",
+      "line_number": 23,
+      "meta.externalTarget": true,
+      "meta.externalSpecifier": "Data.List",
+      "comment": "second alias, so a fix that hard-coded one module cannot pass."
+    },
+    {
+      "type": "calls",
+      "from": "useLocal",
+      "target": "twice",
+      "line_number": 32,
+      "meta.externalTarget": null,
+      "comment": "THE LOCAL TWIN. `twice` is declared in this module, so the call is internal and must carry no claim — the guard is the file's own declaration table, not the call's shape."
+    },
+    {
+      "type": "imports",
+      "from": "AliasClaims",
+      "target": "Data.Text",
+      "line_number": 16,
+      "meta.externalTarget": true,
+      "meta.externalReason": "module-namespace",
+      "meta.externalSpecifier": "Data.Text",
+      "comment": "HSA7 — the import names its module and the project does not carry Data/Text.hs, so the claim verifies. The arbiter's own inferred importPath claim is NULLED when the module's owner is a declared name, which is why the lane publishes its own."
+    },
+    {
+      "type": "imports",
+      "from": "AliasClaims",
+      "target": "Data.Aeson",
+      "line_number": 35,
+      "meta.externalTarget": true,
+      "meta.externalSpecifier": "Data.Aeson",
+      "comment": "second module, so a fix cannot hard-code one."
+    },
+    {
+      "type": "implements",
+      "from": "Payload",
+      "target": "J.ToJSON",
+      "line_number": 38,
+      "meta.derived": true,
+      "meta.externalTarget": true,
+      "meta.externalReason": "module-namespace",
+      "meta.externalSpecifier": "Data.Aeson",
+      "comment": "HSA11 — a QUALIFIED class in an instance/deriving head names its module through the alias (`J` → `Data.Aeson`), exactly as a qualified call does."
+    },
+    {
+      "type": "uses",
+      "from": "Nickname",
+      "target": "Text",
+      "line_number": 40,
+      "meta.externalTarget": true,
+      "meta.externalVia": "type",
+      "comment": "HSA10 — a BARE capitalised type mention the module does not declare is a library type: `type Nickname = T.Text` publishes the leaf `Text`, and the claim states that the project declares no type of that spelling. The capitalised guard keeps variable reads out; the declaration table keeps the module's own types in."
+    },
+    {
+      "type": "extends",
+      "from": "Sortable",
+      "target": "Show",
+      "line_number": 46,
+      "meta.isSuperclass": true,
+      "meta.externalTarget": true,
+      "meta.externalVia": "superclass",
+      "comment": "HSA9 — a superclass the module does not declare is the same dependency shape as HSA1's instance class, one edge type over."
+    },
+    {
+      "type": "instantiates",
+      "from": "mkPayload",
+      "target": "Payload",
+      "line_number": 43,
+      "meta.externalTarget": null,
+      "comment": "THE LOCAL TWIN — the module's own constructor carries no claim, so the qualified-constructor rule cannot fire on it."
+    },
+    {
+      "type": "instantiates",
+      "from": "asJson",
+      "target": "J.String",
+      "line_number": 51,
+      "meta.isQualifiedConstructorApplication": true,
+      "meta.externalTarget": true,
+      "meta.externalReason": "module-namespace",
+      "meta.externalSpecifier": "Data.Aeson",
+      "comment": "HSA6 — a CONSTRUCTOR reached through an alias names its module, exactly as a qualified call does: `J.String` is `Data.Aeson.String`."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "twice",
+      "meta.externalTarget": true,
+      "comment": "THE FALSE-CLAIM NEGATIVE: claiming a call to this module's own function as a module dependency."
+    },
+    {
+      "type": "calls",
+      "target": "T.toUpper",
+      "meta.externalTarget": null,
+      "comment": "THE SILENCE NEGATIVE: without the claim the row falls back to the wall it came from."
+    },
+    {
+      "type": "uses",
+      "target": "Text",
+      "meta.externalTarget": null,
+      "comment": "HSA10 NEGATIVE: without the claim the type mention falls back to the wall."
+    },
+    {
+      "type": "extends",
+      "target": "Show",
+      "meta.externalTarget": null,
+      "comment": "HSA9 NEGATIVE."
+    },
+    {
+      "type": "implements",
+      "target": "J.ToJSON",
+      "meta.externalReason": null,
+      "comment": "HSA11 NEGATIVE: the qualified class must name its module."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "probe": "M54.756",
+  "milestone": "M54",
+  "issue": "#756",
+  "at": "2026-09-11T18:30:00.000Z",
+  "checks": 47,
+  "passed": 47,
+  "failed": 0,
+  "verifierCommand": "bun run script/m54/verify-737-738.ts && npx tsx script/m54/verify-737-738.ts",
+  "gateChain": "npm run verify:m54 (p1-fk 15/0, p2-stdio, 737-738 bun+node, closure 15/15)",
+  "status": "verified",
+  "commit": "pending",
+  "method": "#756 fix: auto-generated contains edges are BUFFERED during the symbol loop (bufferedContains) and flushed AFTER the file's full symbol loop completes, inside the same per-batch transaction and before the engine-relationship block. No semantic change to ids, counts, or dedup — pure reordering of the insert of the edge relative to the file's symbol rows. Root cause fixed: equal-priority forward references (e.g. namespace child owned by a same-file symbol sorting later under stable sort) made the edge INSERT precede its owner's row, tripping immediate FK checks under FK-ON.",
+  "gate": {
+    "legs": [
+      "bun",
+      "node (tsx, better-sqlite3/SQLite 3.49.2 — production runtime)"
+    ],
+    "proves": [
+      "hazard shape rejected under FK-ON (edge before owner row) — the original failure reproduced deterministically",
+      "real storeResults stores the forward-reference fixture without rollback, both runtimes",
+      "contains edge endpoints resolved to real symbol rows in the DB",
+      "source conformance: buffer declared inside per-file store, flush before relationship block, no immediate contains insert left",
+      "MUTATION detected: reverting to interleaved emission fails the gate (non-vacuous)"
+    ]
+  },
+  "coldIndexReceipt": {
+    "note": "Full cold index of this repo (2,930 files) under node+dist (production shape), after #756 fix. Compare with the pre-fix cold run recorded in A737_A738.json / #756 (22 FK batch rollbacks).",
+    "before": {
+      "rollbacks": 22,
+      "filesStored": 2730,
+      "symbols": 162129,
+      "relationships": 159075,
+      "state": "derived: full, ~200 files' data skipped by rollbacks"
+    },
+    "after": {
+      "rollbacks": 0,
+      "filesStored": 2971,
+      "symbols": 168001,
+      "relationships": 173857,
+      "durationSeconds": 213.9,
+      "state": "derived: full, no skipped files"
+    },
+    "markersInLog": "0 ROLLED BACK, 0 FK-DIAG",
+    "danglers": 0,
+    "caveat": "Pre-existing cosmetic bug unrelated to #756: the run summary's symbol-loss bucket mislabels all parsed files (appeared identically pre-fix)."
+  },
+  "downstream": [
+    "m54 P1 15/0",
+    "m40 A2 25/0",
+    "m21 R2 13/13",
+    "m13 H3 17/17",
+    "m54 X1 closure 15/15"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.576Z",
+    "contentSha256": "8d1ffdd55b6cb10a068cd5fcd0c941f9078f953f8e2c432a08646e2e7a18ba47"
+  }
+}

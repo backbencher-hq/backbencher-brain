@@ -1,0 +1,6 @@
+$x: 1 !default;
+
+.a {
+  $x: $x;
+  color: $x;
+}

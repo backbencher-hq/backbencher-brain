@@ -84,7 +84,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const LANG = "css"
 const CAP = 512 * 1024
 const SAMPLE = 120

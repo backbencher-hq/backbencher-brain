@@ -29,9 +29,9 @@ import { fileURLToPath } from "node:url"
 import * as path from "node:path"
 
 // ROOT is the CHECKOUT this script ships in, derived from the script's own location rather
-// than written down. It used to be the literal `$HOME/backbencher-brain`, which is a
+// than written down. It used to be the literal `/home/ishaq2321/backbencher-brain`, which is a
 // path a lane worktree does not have — so on `…/mcp/backbencher-brain` this gate died on its
-// FIRST import (`Cannot find module $HOME/backbencher-brain/src/ast/engine.ts`) and
+// FIRST import (`Cannot find module /home/ishaq2321/backbencher-brain/src/ast/engine.ts`) and
 // the lane had no line-contract reading at all while reading as "never run". An instrument is
 // only re-runnable where the checkout actually is; `validation/m14/fixtures/php/ruled-gate.ts`
 // derives its ROOT the same way for the same reason.
@@ -62,7 +62,7 @@ let files = 0, edges = 0, symbols = 0, parseErrFiles = 0
 let callables = 0, callablesWithComplexity = 0
 
 for (const repo of CORPORA) {
-  const dir = path.join("$HOME/fixtures/repositories", repo)
+  const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
   if (!existsSync(dir)) { console.error(`php-line-contract: corpus ${repo} missing at ${dir}`); process.exit(2) }
   const paths = execSync(`git ls-files -z -- '*.php'`, { cwd: dir, maxBuffer: 1 << 28 })
     .toString().split("\0").filter(Boolean).sort().map((f) => path.join(dir, f))

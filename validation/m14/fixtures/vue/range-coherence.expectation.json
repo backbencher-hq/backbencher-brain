@@ -1,0 +1,12 @@
+{
+  "fixtureId": "vue/range-coherence",
+  "language": "vue",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the review-wave H3 fix: script-symbol ranges are coherent across dimensions — SFC line (7) AND SFC byte index (76, ground truth) after adding the block byte base to the engine context. Previously lines were SFC but indices stayed script-local. Requires the expectSymbolRanges gate.",
+  "expectSymbols": [
+    { "name": "deep", "kind": "method" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "deep", "startLine": 7, "startIndex": 76 }
+  ]
+}

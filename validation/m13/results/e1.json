@@ -1,0 +1,826 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.06",
+  "code": "E1",
+  "tool": "bb_edit",
+  "title": "bb_edit: enforce mode-specific required fields at the boundary",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "e2e"
+  ],
+  "checks": [
+    {
+      "name": "write accepts filePath + content",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "write accepts filePath + newContent",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "write rejects missing filePath [negative: requires filePath]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "write rejects missing content/newContent [negative: requires content or newContent]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "write rejects empty filePath [negative: requires filePath]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "write rejects mode-irrelevant symbolName [negative: does not accept: symbolName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "update accepts symbolName + newContent",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "update rejects missing symbolName [negative: requires symbolName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "update rejects missing content/newContent [negative: requires newContent or content]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "update rejects mode-irrelevant position [negative: does not accept: position]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "insert accepts targetSymbolName + newContent + position",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "insert rejects missing targetSymbolName [negative: requires targetSymbolName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "insert rejects missing content/newContent [negative: requires newContent or content]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "insert rejects invalid position enum [negative: position must be one of]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "insert rejects mode-irrelevant symbolName [negative: does not accept: symbolName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "delete accepts symbolName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "delete rejects missing symbolName [negative: requires symbolName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "delete rejects mode-irrelevant newContent [negative: does not accept: newContent]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor accepts symbolName + newName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor rejects missing newName [negative: requires newName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "refactor rejects mode-irrelevant position [negative: does not accept: position]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "bb_edit rejects unknown fields [negative: unknown or irrelevant options]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "bb_edit rejects invalid mode [negative: mode must be one of]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write accepts dryRun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write accepts filePath",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write accepts content",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write accepts newContent",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write accepts format",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write accepts overwrite",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: write refuses symbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: symbolName — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses lineStart by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: lineStart — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses targetSymbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: targetSymbolName (targetSymbolName is accepted for insert) — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses position by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: position (position is accepted for insert) — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses newName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: newName (newName is accepted for refactor) — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses force by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: force (force is accepted for delete) — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses edits by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: edits (edits is accepted for batch) — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: write refuses files by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit write mode does not accept: files (files is accepted for batch) — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "matrix: update accepts dryRun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update accepts filePath",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update accepts symbolName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update accepts lineStart",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update accepts content",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update accepts newContent",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update accepts format",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: update refuses targetSymbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: targetSymbolName (targetSymbolName is accepted for insert) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: update refuses position by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: position (position is accepted for insert) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: update refuses newName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: newName (newName is accepted for refactor) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: update refuses force by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: force (force is accepted for delete) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: update refuses overwrite by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: overwrite (overwrite is accepted for write) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: update refuses edits by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: edits (edits is accepted for batch) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: update refuses files by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: files (files is accepted for batch) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: insert accepts dryRun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts filePath",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts targetSymbolName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts position",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts lineStart",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts content",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts newContent",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert accepts format",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: insert refuses symbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit insert mode does not accept: symbolName — accepted for insert: mode, dryRun, filePath, targetSymbolName, position, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: insert refuses newName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit insert mode does not accept: newName (newName is accepted for refactor) — accepted for insert: mode, dryRun, filePath, targetSymbolName, position, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: insert refuses force by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit insert mode does not accept: force (force is accepted for delete) — accepted for insert: mode, dryRun, filePath, targetSymbolName, position, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: insert refuses overwrite by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit insert mode does not accept: overwrite (overwrite is accepted for write) — accepted for insert: mode, dryRun, filePath, targetSymbolName, position, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: insert refuses edits by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit insert mode does not accept: edits (edits is accepted for batch) — accepted for insert: mode, dryRun, filePath, targetSymbolName, position, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: insert refuses files by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit insert mode does not accept: files (files is accepted for batch) — accepted for insert: mode, dryRun, filePath, targetSymbolName, position, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: delete accepts dryRun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: delete accepts filePath",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: delete accepts symbolName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: delete accepts lineStart",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: delete accepts force",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: delete accepts format",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: delete refuses content by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: content — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses newContent by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: newContent — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses targetSymbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: targetSymbolName (targetSymbolName is accepted for insert) — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses position by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: position (position is accepted for insert) — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses newName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: newName (newName is accepted for refactor) — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses overwrite by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: overwrite (overwrite is accepted for write) — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses edits by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: edits (edits is accepted for batch) — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: delete refuses files by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit delete mode does not accept: files (files is accepted for batch) — accepted for delete: mode, dryRun, filePath, symbolName, lineStart, force, format"
+    },
+    {
+      "name": "matrix: refactor accepts dryRun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: refactor accepts filePath",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: refactor accepts symbolName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: refactor accepts lineStart",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: refactor accepts newName",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: refactor accepts format",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: refactor refuses content by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: content — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses newContent by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: newContent — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses targetSymbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: targetSymbolName (targetSymbolName is accepted for insert) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses position by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: position (position is accepted for insert) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses force by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: force (force is accepted for delete) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses overwrite by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: overwrite (overwrite is accepted for write) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses edits by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: edits (edits is accepted for batch) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: refactor refuses files by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: files (files is accepted for batch) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "matrix: batch accepts dryRun",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: batch accepts edits",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: batch accepts files",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: batch accepts format",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: batch refuses filePath by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: filePath — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses symbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: symbolName — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses lineStart by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: lineStart — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses content by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: content — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses newContent by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: newContent — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses targetSymbolName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: targetSymbolName (targetSymbolName is accepted for insert) — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses position by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: position (position is accepted for insert) — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses newName by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: newName (newName is accepted for refactor) — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses force by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: force (force is accepted for delete) — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: batch refuses overwrite by name AND names the accepted set",
+      "pass": true,
+      "detail": "Error: bb_edit batch mode does not accept: overwrite (overwrite is accepted for write) — accepted for batch: mode, dryRun, edits, files, format"
+    },
+    {
+      "name": "matrix: every mode × schema-option cell is covered",
+      "pass": true,
+      "detail": "accepted=37/37 refused=47/47"
+    },
+    {
+      "name": "matrix: the accepted sets name only real schema options",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "matrix: a misplaced option names the mode that accepts it (update + position)",
+      "pass": true,
+      "detail": "Error: bb_edit update mode does not accept: position (position is accepted for insert) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "matrix: no hint is invented when several modes accept the option (write + lineStart) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_edit write mode does not accept: lineStart — accepted for write: mode, dryRun, filePath, content, newContent, format, overwrite"
+    },
+    {
+      "name": "overwrite: write accepts overwrite:true (replace whatever is there)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: write accepts overwrite:false (create-only)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: write accepts it on a dry run (the guard is reported by the plan)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: a non-boolean overwrite is refused, not coerced [negative: overwrite must be boolean]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "overwrite: the refusal does not read as an accepted write [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_edit: overwrite must be boolean"
+    },
+    {
+      "name": "overwrite: another mode refuses it by name and names the mode that takes it",
+      "pass": true,
+      "detail": "Error: bb_edit refactor mode does not accept: overwrite (overwrite is accepted for write) — accepted for refactor: mode, dryRun, filePath, symbolName, lineStart, newName, format"
+    },
+    {
+      "name": "batch: accepts a list of entries with no files (each names its own target)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: accepts the fan-out form (files supplies filePath)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: accepts a dry run of the whole call",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: accepts a write entry (no index needed by that ENTRY's plan)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a missing edits array [negative: requires a non-empty]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects an empty edits array [negative: requires a non-empty]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects an entry with no mode (it would pass every per-mode branch silently) [negative: batch entry 0 requires a mode of]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a nested batch [negative: must not itself be a batch]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a per-entry dryRun (the batch previews ONCE) [negative: must not set dryRun]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a per-entry format (the batch formats ONCE) [negative: must not set format]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects an entry naming its own filePath while files supplies them [negative: must not also name one]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a repeated path in files [negative: repeats a.ts]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a top-level symbolName (a batch carries no per-file options) [negative: does not accept: symbolName]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: rejects a top-level content [negative: does not accept: content]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: an entry's irrelevant option is refused BY NAME, with the entry index",
+      "pass": true,
+      "detail": "Error: bb_edit batch entry 0: update mode does not accept: position (position is accepted for insert) — accepted for update: mode, dryRun, filePath, symbolName, lineStart, content, newContent, format"
+    },
+    {
+      "name": "batch: an entry missing a field its own mode requires is refused (write needs content) [negative: requires content or newContent]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: the entry-index refusal does not read as a top-level mode error [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: bb_edit batch entry 0: update mode does not accept: position (position is accepted for insert) — accepted for update: mode, dryRun, filePath, symbolName,"
+    },
+    {
+      "name": "batch: a write entry with no filePath is valid under files",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "batch: the same write entry without files is refused (its mode requires filePath) [negative: requires filePath]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "wire description: the published description states the per-mode index rule",
+      "pass": true,
+      "detail": "n the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: and names the modes that DO resolve through the index",
+      "pass": true,
+      "detail": "n the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: the published description states the overwrite guard",
+      "pass": true,
+      "detail": "byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: and states what `overwrite: false` means",
+      "pass": true,
+      "detail": "n the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: the published description states the plan-to-commit pre-image check",
+      "pass": true,
+      "detail": "ommitted`, `restored`, and the pre/post byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: the published description states what `batch` does and that it is atomic",
+      "pass": true,
+      "detail": "d would discard the first, and that is refused by entry index. Every answer carries a per-file `envelope` (`planned`, `committed`, `restored`, and the pre/post byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: …that a refusal anywhere writes nothing",
+      "pass": true,
+      "detail": "d would discard the first, and that is refused by entry index. Every answer carries a per-file `envelope` (`planned`, `committed`, `restored`, and the pre/post byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: …that two entries on one file are refused",
+      "pass": true,
+      "detail": "d would discard the first, and that is refused by entry index. Every answer carries a per-file `envelope` (`planned`, `committed`, `restored`, and the pre/post byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "wire description: …and that the answer is per file (the envelope)",
+      "pass": true,
+      "detail": "d would discard the first, and that is refused by entry index. Every answer carries a per-file `envelope` (`planned`, `committed`, `restored`, and the pre/post byte counts), and a refused call carries the same envelope on the error, so \"is my working tree back?\" is answered per file rather than by one boolean. Unlike `write`, `batch` needs an index: the mode cannot promise of a list what a single entry's plan proves."
+    },
+    {
+      "name": "MCP server routes through validateToolArguments",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "compiled CLI routes through validateToolArguments",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "CLI accepts valid write dry-run",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"write\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-boundary-Pb4SOF/src/new.ts\",\n      \"before\": \"\",\n      \"after\": \"export "
+    },
+    {
+      "name": "CLI rejects write without filePath",
+      "pass": true,
+      "detail": "error: bb_edit write mode requires filePath\nCommand failed: node /home/ishaq2321/mcp/backbencher-brain/bin/bb tool bb_edit --dir /tmp/bb-edit-boundary-Pb4SOF --args {\"mode\":\"write\",\"content\":\"x\"}\nerro"
+    },
+    {
+      "name": "MCP accepts valid write dry-run",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"write\",\n  \"dryRun\": true,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-edit-boundary-Pb4SOF/src/mcp-new.ts\",\n      \"before\": \"\",\n      \"after\": \"exp"
+    },
+    {
+      "name": "MCP rejects write without filePath",
+      "pass": true,
+      "detail": "error: bb_edit write mode requires filePath"
+    }
+  ],
+  "negativeCases": 33,
+  "summary": {
+    "total": 151,
+    "passed": 151,
+    "failed": 0
+  },
+  "decisions": {
+    "authority": "src/mcp/tool-validation.ts validateEditArguments, called by validateToolArguments (single path)",
+    "requiredByMode": {
+      "write": "filePath + (content|newContent)",
+      "update": "symbolName + (newContent|content)",
+      "insert": "targetSymbolName + (newContent|content); position enum [before|after|inside-top|inside-bottom]",
+      "delete": "symbolName",
+      "refactor": "symbolName + newName"
+    },
+    "irrelevantRejected": "known schema fields that do not apply to the requested mode are rejected, not silently ignored",
+    "positionEnum": "enforced by validateProperty against the registry schema enum"
+  },
+  "limitations": [
+    "This verifies the boundary contract only; engine semantics (AST identity rename, per-language masking, rollback) are E2-E6.",
+    "The compiled CLI path requires a fresh build (bin/bb); the MCP path under Bun executes src/mcp/server.ts directly."
+  ],
+  "generatedAt": "2026-11-05T04:09:00.302Z"
+}

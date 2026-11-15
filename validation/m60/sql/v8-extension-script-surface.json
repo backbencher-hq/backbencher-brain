@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "artifact": "sql-v8-extension-script-surface",
+  "milestone": "M60",
+  "lane": "sql",
+  "role": "SHIPPED. The third grammar candidate to ship, and the first aimed at the extension-SCRIPT surface rather than at the plpgsql language.",
+  "date": "2026-09-27",
+  "target": {
+    "howItWasChosen": "The recall metric that had been driving this lane was corrected first (see recallMetricCorrection in v6-plpgsql-shipped.json): by distinct NAME, functions stood at 834/1170 and the count ratio had been pointing at tables. Classifying all 250 missing names by cause gave the actionable bucket: 156 were ordinary TOP-LEVEL declarations lost to cascade damage in a file the grammar could not parse, 93 were inside EXECUTE string literals (unrecoverable by design), 1 was in a body.",
+    "diagnosis": "Only 4 of 387 extension-corpus files parsed with zero errors. Clustering the ERROR spans by first-two-tokens and ranking by FILE COUNT put psql meta-commands first: the backslash-echo usage banner every extension install script opens with appeared in 301 of 302 damaged files, ahead of every SQL construct. A minimal repro made it a LOSS rather than noise: a backslash-set followed by CREATE FUNCTION yields create_function = 0.",
+    "alsoFixed": "LANGUAGE 'sql' (156 files) and the C-language body `AS 'modulename', 'symbolname'` (156 files), both of which left a trailing ERROR in every file that used them."
+  },
+  "shipped": {
+    "wired": {
+      "sha256": "486ec2159ecff99bfb94c1549c3e1306594b252f653e13d920e2fdddcff99369",
+      "bytes": 12555354,
+      "surface": { "ids": 826, "uniqueNames": 822, "namedIds": 594, "namedUnique": 590, "anonIds": 232, "anonUnique": 232, "fieldCount": 62 }
+    },
+    "patches": ["P6 psql meta-commands as an `extra`", "P7 quoted LANGUAGE", "P8 C-language two-literal body"]
+  },
+  "thePlacementDecision": {
+    "question": "A psql directive is not SQL, so where does it belong?",
+    "designsBuiltAndRejected": [
+      "1. A `program` item: a name token plus `repeat(token(/[^\\n\\\\;]+/))` of argument tokens. Ran the generator for 127 MINUTES without emitting a parse table.",
+      "2. A single collapsed token inside `program` (`token(seq('\\\\\\\\', /[A-Za-z_]+/, /[^\\n;]*/))`). Ran for 66 minutes, also without a table."
+    ],
+    "shipped": "An `extra`. The lexer skips the directive wherever it appears, so it never enters the LR automaton at all. Same measured outcome, a fraction of the table, and the more honest placement: modelling a psql directive as a statement would imply the analyzer should extract declarations from it.",
+    "lesson": "A token that can consume an arbitrary run of text is expensive inside the LR automaton no matter how few states its rule has, because it is ambiguous against `extras` and against every statement boundary at once. Two builds were spent learning that, and the abandoned attempts are recorded in grammar.js rather than deleted."
+  },
+  "measuredOutcome": {
+    "instrument": "a SELF-VERIFYING probe that prints the loaded grammar's node-type count before reporting symbol totals",
+    "filesParsingWithZeroErrors": { "V6": "4 / 387", "V8": "105 / 387" },
+    "functionSymbols": { "V6": 4252, "V8": 4394 },
+    "distinctFunctionNames": { "V6": "834 / 1170", "V8": "951 / 1170" },
+    "classSymbols": { "V6": 11, "V8": 13 }
+  },
+  "instrumentFlawFoundAgain": {
+    "what": "The engine resolves the wasm through an IN-MEMORY REGISTRY, so writing a different file to wasm/ inside a running process does not change the bytes the analyzer loads.",
+    "howItMisled": "Two probes disagreed on the same file (4,252 vs 4,394 function symbols) and I initially concluded V8 had REGRESSED recall, then concluded from a second faulty probe that it was neutral. The truth is that V8 is better on all three axes.",
+    "fix": "The committed probe loads the intended wasm, prints its `nodeTypeCount` as proof of what the engine actually got, and only then reports totals. One process per grammar AND a surface assertion.",
+    "note": "This is the THIRD time this flaw produced a wrong conclusion in this lane. It is recorded in the pin's patchEvidence as well, because a future reader comparing two builds by swapping the file will hit it again."
+  },
+  "gates": {
+    "contractBattery": "54/54",
+    "fixtureLane": "11/11",
+    "mutants": "13/13 caught",
+    "nodeTypeGate": "83 referenced, 0 dead, 0 unjustified",
+    "differential": "84/84 facts, precision 1.000, recall 1.000",
+    "resyncAndSweepGate": "C1-C3 + S1-S2, 5/5",
+    "perfGate": "P1-P5 pass",
+    "pinContract": "14/14 lanes match",
+    "typecheck": "0 errors"
+  },
+  "honestLimits": [
+    "282 of 387 extension files still contain at least one ERROR, so most of the cascade bucket remains. The next dominant shapes after this patch should be re-measured rather than assumed.",
+    "@placeholder@ templating (measured at 154 files) is NOT addressed. It needs a template token in identifier and type positions, which is invasive and was deliberately deferred rather than half-done.",
+    "93 of the originally-missing distinct names remain unrecoverable in principle: they are declared inside EXECUTE string literals whose names are composed at run time."
+  ],
+  "evidence": [
+    "bb_tests/sql/grammar/src/grammar.js",
+    "bb_tests/sql/grammar/src/grammar/statements/create-function.js",
+    "bb_tests/sql/grammar/patched-sql-v8.wasm",
+    "validation/m14/grammar-pins.json",
+    "script/m14/verify-grammar-pins.ts",
+    "bb_tests/sql/out/gen-v8.log"
+  ]
+}

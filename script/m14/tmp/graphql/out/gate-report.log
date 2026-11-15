@@ -1,0 +1,19 @@
+ontology coverage gate — graphql
+corpus: 1905 admitted files
+
+walk: 1905/1905 files (100.0%)  newly walked 0, resumed 1905
+
+type          status            detail
+------------------------------------------------------------------------------------------------------------------------
+calls         RULED-SOUND       NOT EMITTED; the grammar produced 57 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
+uses          RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+contains      RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+imports       RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+references    RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+exports       RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+extends       RULED-SOUND       NOT EMITTED; the construct occurs 0x on the parse tree. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
+implements    RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+overrides     RULED-UNJUSTIFIED NOT EMITTED and its construct is absent, but NO written ruling was found in the spec
+instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 57 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
+------------------------------------------------------------------------------------------------------------------------
+emitted 0/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 7

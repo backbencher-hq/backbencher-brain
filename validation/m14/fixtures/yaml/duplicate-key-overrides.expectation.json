@@ -1,0 +1,48 @@
+{
+ "fixtureId": "yaml/duplicate-key-overrides",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "`overrides` for a language with no methods. A duplicate mapping key is a replacement, and the analyzer already gives the two entries two identities — `root.child` and `root.child#2` — because one shared id made every relationship endpoint ambiguous (see duplicate-key-identity). That disambiguation is the whole reason this edge is possible: an edge needs two endpoints, and without it both endpoints would be the same path. The corpus measurement behind the verdict is 20 duplicate-key pairs in 17 of 16371 admitted yaml files, counted on the parse tree by comparing each pair's key against its EARLIER siblings in the same mapping. The chain is last-wins, not all-to-first: the third occurrence overrides the SECOND, because that is the entry the loader replaces. The two endpoints are a parse fact; the override SEMANTICS are loader behaviour rather than a grammar guarantee — YAML 1.2 leaves duplicate mapping keys undefined and GitHub Actions rejects them outright — so confidence is 0.8 with a reason code and evidenceClass `inferred`, while `resolved` is true because both endpoints are symbols of this file.",
+ "expectRelationships": [
+  {
+   "type": "overrides",
+   "from": "duplicate-key-overrides.root.child#2",
+   "target": "duplicate-key-overrides.root.child",
+   "confidenceMin": 0.7,
+   "confidenceMax": 0.8,
+   "meta.relationshipType": "yaml_duplicate_key",
+   "meta.duplicateKey": "child",
+   "meta.overriddenPath": "duplicate-key-overrides.root.child",
+   "meta.resolved": true,
+   "meta.evidenceClass": "inferred"
+  },
+  {
+   "type": "overrides",
+   "from": "duplicate-key-overrides.root.child#3",
+   "target": "duplicate-key-overrides.root.child#2",
+   "meta.overriddenPath": "duplicate-key-overrides.root.child#2",
+   "meta.occurrence": 3
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "overrides",
+   "from": "duplicate-key-overrides.root.child#3",
+   "target": "duplicate-key-overrides.root.child"
+  },
+  {
+   "type": "overrides",
+   "from": "duplicate-key-overrides.root.child#2",
+   "target": "duplicate-key-overrides.root.child#2"
+  },
+  {
+   "type": "overrides",
+   "from": "duplicate-key-overrides.root.child",
+   "target": "duplicate-key-overrides.root.child#2"
+  },
+  {
+   "type": "overrides",
+   "target": "duplicate-key-overrides.root.third"
+  }
+ ]
+}

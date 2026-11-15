@@ -1,0 +1,86 @@
+{
+  "comment": "THE SEAM'S LABELLING, for the relationship types html's OWN SOURCE CANNOT CONSTRUCT. `real-html-analyzer.ts` builds exactly two of the ten — `uses` and `contains` — which is why `extends`, `implements`, `overrides` and `exports` were all RULED for this lane on a corpus measurement. The measurement was wrong, and this fixture is the correction pinned. The instrument (grammar inventory over 1,180 documents: 20 distinct node types, none of them a type declaration, a member declaration, a supertype clause or a constructor; plus a parse-tree count over the seam's own 358 javascript sub-trees: 83 `class_declaration`, 31 `class_heritage`, 0 `implements_clause`, 0 `export_statement`) says the construct is real, and the falsifying number is where the FIRST measurement came from: the one corpus document carrying all of it is `go-stdlib/src/internal/trace/traceviewer/static/trace_viewer_full.html`, 2.6 MB, measured three times at 109,509 ms / 127,904 ms / over the 120,000 ms cap. When the cap fires the engine returns `2.0-basic-fallback` — 0 symbols, 0 relationships — and the corpus measures 0 of these four types. So the verdict for `extends`/`overrides`/`exports` is EMITTED-with-a-caveat, and the caveat is a property of the engine's timeout, not of the format. WHAT IS PINNED HERE is therefore the SHAPE OF THE DELEGATION rather than a count: that a relationship type html's own source cannot construct reaches an `.html` payload at all, and that every such row arrives labelled to the language that produced it. A delegated row that is not labelled to its source is invisible to exactly the reader who could fix it.",
+  "expectSymbols": [
+    { "name": "embedded-heritage", "kind": "module" },
+    { "name": "app", "kind": "class", "meta.tagName": "main" },
+    { "name": "TrackedShape", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "TrackedSeries", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "Unrelated", "kind": "class", "meta.htmlEmbedded": true, "meta.embeddedLang": "js" },
+    { "name": "describe", "kind": "method", "meta.embeddedLang": "js" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "THE PIN. `extends` is not one of the two types html's own source constructs, and here it is on an `.html` payload anyway, from the inline `<script>`'s own sub-tree. `embeddedLineOffset: 25` is the proof the row was re-based: the class is written on file line 31 and block line 6, so a row that had not been shifted would claim line 6.",
+      "type": "extends",
+      "from": "TrackedSeries",
+      "target": "TrackedShape",
+      "line_number": 31,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.embeddedLineOffset": 25,
+      "meta.evidenceClass": "structural",
+      "confidence": 1.0
+    },
+    {
+      "comment": "`overrides` likewise. `TrackedSeries.describe` REDECLARES `TrackedShape.describe`, so this is an override in the only sense the language has one — and both endpoints are real symbols in this file, which is not true of the 193 corpus rows this type produces (there the supertype is a Closure-compiled qualified name like `tr.v.d.Diagnostic`, so NEITHER end resolves). The row carries the delegate's own `reasonCode`, which is what honesty contract §4.1 asks for and what the 0.5-confidence corpus rows do not carry.",
+      "type": "overrides",
+      "from": "TrackedSeries.describe",
+      "target": "TrackedShape.describe",
+      "line_number": 32,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js",
+      "meta.reasonCode": "verified-in-file"
+    },
+    {
+      "comment": "`instantiates`: a `new X()` in an inline block is a constructor call the HTML grammar cannot express, and the target resolves to a symbol in the same file.",
+      "type": "instantiates",
+      "from": "embedded-heritage",
+      "target": "TrackedSeries",
+      "line_number": 40,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "comment": "`calls` is the type the seam existed to stop losing (HTML-G1): an inline `<script>` produced zero symbols, zero calls and zero imports before it, on 88.4% of corpus files.",
+      "type": "calls",
+      "from": "embedded-heritage",
+      "target": "describe",
+      "line_number": 42,
+      "meta.htmlEmbedded": true,
+      "meta.embeddedLang": "js"
+    },
+    {
+      "comment": "The seam's own `contains`, from the DOCUMENT to a delegate symbol. Owner is the document module because a top-level `class` in an inline block is a document-scope declaration, and the edge carries the member's own already-shifted line.",
+      "type": "contains",
+      "from": "embedded-heritage",
+      "target": "TrackedSeries",
+      "line_number": 31,
+      "meta.isEmbeddedCode": true,
+      "meta.embeddedLang": "js",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "A relationship from a delegate must not source from the synthetic module name the first cut of the merge passed as the delegate's file path. Every document-scope edge in the block sourced from a node that does not exist — the unresolvable-identity class, invisible because `real-html-analyzer.ts` constructs no `extends` at all.",
+      "from": "embedded"
+    },
+    {
+      "comment": "`Unrelated` extends nothing, so no `extends` row names it. `class X {}` with no supertype clause is not an `extends` and a table that inferred one would be manufacturing the very edge the html grammar has no node for.",
+      "type": "extends",
+      "target": "Unrelated"
+    },
+    {
+      "comment": "HTML HAS NO `implements` clause: 0 `implements_clause` nodes across the seam's 358 javascript sub-trees and 0 occurrences of the string in the corpus. An `implements` row here would be a fabricated edge.",
+      "type": "implements"
+    },
+    {
+      "comment": "An inline `<script>` with no `import`/`export` statement produces no `imports` relationship. `export_statement` count is 0 across the corpus's 358 javascript sub-trees.",
+      "type": "exports"
+    },
+    {
+      "comment": "The block's own TEXT is never a target: the seam reads AST nodes, never source text.",
+      "target": "class TrackedSeries extends TrackedShape"
+    }
+  ]
+}

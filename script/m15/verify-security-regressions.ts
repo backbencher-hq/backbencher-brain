@@ -6,8 +6,20 @@
 // under test. There is no hardcoded corpus path, so it runs anywhere with a Node
 // runtime.
 //
+// M72 PATH DECLARATION — THIS SUITE PINS THE RETIRED (ROLLBACK) TOKEN ENGINE.
+// The Phase-1 default pipeline runs the per-language spec engine and persists
+// leads into `brain_security_flow`; the old token detector is rollback-only under
+// `BB_SECURITY_LEGACY=1` (src/intelligence/security/rebuild/store.ts). Every
+// regression below names a defect in that retired engine or in the legacy answer
+// it renders, so the suite sets the rollback switch before indexing. The answer
+// vocabulary asserted here is the SAME demoted contract the default path uses
+// (`[exec|high|medium|low] lead:`, `N lead(s)`, `N leads recorded`, never
+// `[critical]`/`confirmed`); the default store/answer contract itself is gated by
+// script/m13/verify-security-{handler,adversarial}.ts and
+// script/m20/verify-security-history.ts.
+//
 // Run: npx tsx script/m15/verify-security-regressions.ts
-// Emits: validation/m15/results/xr1.json … xr6.json
+// Emits: validation/m15/results/xr1.json … xr7.json
 // Exit:  non-zero if ANY assertion in ANY section failed.
 
 import { writeFileSync, readFileSync, mkdtempSync, mkdirSync, rmSync, existsSync } from "node:fs"
@@ -29,6 +41,8 @@ if (!process.env.BB_DATA_DIR) {
   process.env.BB_DATA_DIR = path.join(laneRoot, "validation", "tools", "bb_security", "bbdata")
 }
 process.env.BB_NO_AUTO_REFRESH = "1"
+// Rollback switch: every section asserts the retired token engine's behaviour.
+process.env.BB_SECURITY_LEGACY = "1"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
@@ -379,16 +393,16 @@ write("xr1.json", { title: "severity normalization + hotspot severity", defect: 
       const text = out.content[0]!.text
       h.ck("XR2: handler emits a [scan: …] census line", /\[scan:/.test(text), text.slice(0, 220))
       h.ck("XR2: census line names the indexed flow count", text.includes("30 taint flow(s) indexed"), firstMatch(text, /\[scan:[^\n]*/))
-      h.ck("XR2: census line names the deduplicated finding census", text.includes("30 finding(s)"), firstMatch(text, /\[scan:[^\n]*/))
+      h.ck("XR2: census line names the deduplicated lead census", text.includes("30 lead(s)"), firstMatch(text, /\[scan:[^\n]*/))
       h.ck(
         "XR2: census line states how many findings are being shown",
-        text.includes(`showing ${SECURITY_FINDINGS_WINDOW} finding(s)`),
+        text.includes(`showing ${SECURITY_FINDINGS_WINDOW} lead(s)`),
         firstMatch(text, /\[scan:[^\n]*/),
       )
-      h.ck("XR2: exactly the display window of findings is listed", (text.match(/^ {2}\[(?:critical|high|medium|low|unknown)\]/gm) ?? []).length === SECURITY_FINDINGS_WINDOW, `listed=${(text.match(/^ {2}\[(?:critical|high|medium|low|unknown)\]/gm) ?? []).length}`)
+      h.ck("XR2: exactly the display window of leads is listed", (text.match(/^ {2}\[(?:exec|high|medium|low|unknown)\] lead:/gm) ?? []).length === SECURITY_FINDINGS_WINDOW, `listed=${(text.match(/^ {2}\[(?:exec|high|medium|low|unknown)\] lead:/gm) ?? []).length}`)
       h.nk(
         "XR2: handler does not present a truncated list as if it were the whole scan",
-        /showing 20 finding\(s\)/.test(text),
+        /showing 20 lead\(s\)/.test(text),
         "before the fix the 21st+ finding was simply absent with no count line",
       )
 
@@ -398,6 +412,7 @@ write("xr1.json", { title: "severity normalization + hotspot severity", defect: 
       // capped set is what caused silent resolution before.
       const rec1 = await handlers.bb_security({ recordRun: true }, ctx)
       h.ck("XR2: recordRun text reports a recorded run", rec1.content[0]!.text.includes("recorded run"), rec1.content[0]!.text.slice(0, 200))
+      h.ck("XR2: recordRun states the recorded count as leads", /^30 leads recorded$/m.test(rec1.content[0]!.text), firstMatch(rec1.content[0]!.text, /leads recorded/))
       const hist1 = await getAnalysisHistory(projectId, "security", 20)
       h.ck(
         "XR2: recordRun persisted the FULL census (30), not the 20-line display window",
@@ -442,17 +457,17 @@ write("xr1.json", { title: "severity normalization + hotspot severity", defect: 
       )
       h.ck(
         "XR2: when findings exceed the window the census says how many are shown",
-        !beyond || text.includes(`showing ${SECURITY_FINDINGS_WINDOW} finding(s)`),
+        !beyond || text.includes(`showing ${SECURITY_FINDINGS_WINDOW} lead(s)`),
         `censusTotal=${censusTotal} text=${firstMatch(text, /\[scan:[^\n]*/)}`,
       )
       h.ck(
         "XR2: the census line names the total finding count, not just the window",
-        !beyond || new RegExp(`→ ${censusTotal} finding\\(s\\)`).test(text),
+        !beyond || new RegExp(`→ ${censusTotal} lead\\(s\\)`).test(text),
         `censusTotal=${censusTotal} text=${firstMatch(text, /\[scan:[^\n]*/)}`,
       )
       h.ck(
         "XR2: a truncated list is never presented as the whole scan",
-        !beyond || /\[scan:[^\n]*; showing \d+ finding\(s\)\]/.test(text),
+        !beyond || /\[scan:[^\n]*; showing \d+ lead\(s\)\]/.test(text),
         `before the fix the response was a bare 20-line list with no count: ${firstMatch(text, /\[scan:[^\n]*/)}`,
       )
     }
@@ -515,7 +530,7 @@ write("xr2.json", { title: "truncation visibility + recordRun census", defect: "
       )
       h.ck(
         "XR3: the census line reports exactly the one indexed flow",
-        /\[scan: 1 taint flow\(s\) indexed → 1 finding\(s\)/.test(text),
+        /\[scan: 1 taint flow\(s\) indexed → 1 lead\(s\)/.test(text),
         firstMatch(text, /\[scan:[^\n]*/) ?? text.slice(0, 200),
       )
       h.ck(
@@ -670,13 +685,13 @@ write("xr4.json", { title: "history carries evidence, confidence and a stable fi
         firstMatch(text, /.*Command injection.*/),
       )
       h.ck(
-        "XR5: the critical observation keeps its real severity, not [info]",
-        /\[critical\] unvalidated sink/.test(text),
+        "XR5: the critical observation keeps its real severity (exec grade), not [info]",
+        /\[exec\] unvalidated sink/.test(text),
         firstMatch(text, /.*unvalidated sink.*/) ?? "no-sink-only-line",
       )
       h.nk("XR5: no observation is hardcoded to [info]", !/\[info\] unvalidated/.test(text), firstMatch(text, /.*\[info\].*/) ?? "")
       // The header and the body must agree.
-      h.ck("XR5: header counts the critical observation", /security: 1 critical/.test(text), text.split("\n")[0])
+      h.ck("XR5: the header counts the critical observation as a lexical exec grade", /lexical grades \(not risk\): 1 exec/.test(text), text.split("\n")[0])
       // B4: recordRun must show the observations too, marked as not persisted.
       const rec = await handlers.bb_security({ recordRun: true }, { projectPath: root, projectId })
       const recText = rec.content[0]!.text

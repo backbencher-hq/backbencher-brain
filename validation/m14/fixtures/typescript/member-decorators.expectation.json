@@ -1,0 +1,16 @@
+{
+  "fixtureId": "typescript/member-decorators",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "DECORATOR PLACEMENT IS ASYMMETRIC in this grammar family: field decorators attach INSIDE public_field_definition, but class decorators are children of export_statement/class_declaration and METHOD decorators are SIBLINGS in class_body preceding the method_definition. Symbols must carry decorators regardless of placement - NestJS/TypeORM/framework-pattern detection depends on it.",
+  "expectSymbols": [
+    { "name": "MyService", "kind": "class" },
+    { "name": "list", "kind": "method" },
+    { "name": "id", "kind": "property" }
+  ],
+  "expectDecorators": [
+    { "symbol": "MyService", "contains": "Injectable" },
+    { "symbol": "list", "contains": "Get" },
+    { "symbol": "id", "contains": "Column" }
+  ]
+}

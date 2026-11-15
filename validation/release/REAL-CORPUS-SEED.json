@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "what": "Real-corpus release seed: a multi-language workspace copied from real repositories under /home/ishaq2321/bb_tests/repositories, indexed into an isolated BB_DATA_DIR, then exercised through the CLI tool door (same handlers the MCP door uses).",
+  "generatedAt": "2026-11-03T00:43:08.018733+00:00",
+  "head": "e126dced8",
+  "workspace": {
+    "path": "validation/release/workspace",
+    "corpora": [
+      "graphql-js/src (JavaScript/TypeScript)",
+      "rake/lib (Ruby)",
+      "rebar3/apps (Erlang)"
+    ],
+    "files": 690
+  },
+  "index": {
+    "path": "validation/release/data (gitignored)",
+    "files": 622,
+    "linesOfCode": 173217,
+    "symbols": 13386,
+    "relationships": 73073,
+    "testFiles": 247,
+    "productionFiles": 375,
+    "languages": [
+      "typescript",
+      "erlang",
+      "ruby",
+      "markdown",
+      "make"
+    ]
+  },
+  "tools": [
+    {
+      "tool": "bb_analyze",
+      "outputBytes": 30780,
+      "parsedSummary": {
+        "root": {
+          "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+          "name": "buildSchema",
+          "symbolType": "function",
+          "file": "graphql-js/utilities/buildASTSchema.ts",
+          "line": 150,
+          "lineEnd": 163,
+          "language": "typescript",
+          "complexity": 1,
+          "isExternal": false
+        },
+        "mode": "callers",
+        "nodes": {
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+            "name": "buildSchema",
+            "symbolType": "function",
+            "file": "graphql-js/utilities/buildASTSchema.ts",
+            "line": 150,
+            "lineEnd": 163,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:36",
+            "name": "complete",
+            "symbolType": "function",
+            "file": "graphql-js/execution/__tests__/lists-test.ts",
+            "line": 36,
+            "lineEnd": 42,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildASTSchema-test.ts:cycleSDL:52",
+            "name": "cycleSDL",
+            "symbolType": "function",
+            "file": "graphql-js/utilities/__tests__/buildASTSchema-test.ts",
+            "line": 52,
+            "lineEnd": 54,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/buildClientSchema-test.ts:cycleIntrospection:37",
+            "name": "cycleIntrospection",
+            "symbolType": "function",
+            "file": "graphql-js/utilities/__tests__/buildClientSchema-test.ts",
+            "line": 37,
+            "lineEnd": 49,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts:sortSDL:11",
+            "name": "sortSDL",
+            "symbolType": "function",
+            "file": "graphql-js/utilities/__tests__/lexicographicSortSchema-test.ts",
+            "line": 11,
+            "lineEnd": 14,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/__tests__/printSchema-test.ts:expectPrintedSchema:33",
+            "name": "expectPrintedSchema",
+            "symbolType": "function",
+            "file": "graphql-js/utilities/__tests__/printSchema-test.ts",
+            "line": 33,
+            "lineEnd": 38,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts:buildAssertion:9",
+            "name": "buildAssertion",
+            "symbolType": "function",
+            "file": "graphql-js/validation/__tests__/NoDeprecatedCustomRule-test.ts",
+            "line": 9,
+            "lineEnd": 24,
+            "language": "typescript",
+            "complexity": 1,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildASTSchema:63",
+            "name": "buildASTSchema",
+            "symbolType": "function",
+            "file": "graphql-js/utilities/buildASTSchema.ts",
+            "line": 63,
+            "lineEnd": 114,
+            "language": "typescript",
+            "complexity": 8,
+            "isExternal": false,
+            "stale": false
+          },
+          "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580": {
+            "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/execution/__tests__/lists-test.ts:complete:580",
+            "name": "complete",
+            "symbolType": "function",
+            "file": "graphql-js/execution/__tests__/lists-test.ts",
+            "line": 580,
+            "lineEnd": 609,
+            "language": "typescript",
+            "complexity": 3,
+            "isExternal": false,
+            "stale": false
+          }
+        }
+      },
+      "errorText": ""
+    },
+    {
+      "tool": "bb_ask",
+      "outputBytes": 4462,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_cross_language",
+      "outputBytes": 4183,
+      "parsedSummary": {
+        "symbol": "GraphQLSchema",
+        "totalCountIfKnown": 3,
+        "truncated": false,
+        "facts": 2,
+        "pairCount": 1,
+        "language": "typescript"
+      },
+      "errorText": ""
+    },
+    {
+      "tool": "bb_doc",
+      "outputBytes": 11796,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_graph",
+      "outputBytes": 64255,
+      "parsedSummary": {
+        "symbol": "GraphQLSchema",
+        "root": {
+          "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/type/schema.ts:GraphQLSchema:189",
+          "name": "GraphQLSchema",
+          "symbolType": "class",
+          "file": "graphql-js/type/schema.ts",
+          "line": 189,
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/type/schema.ts",
+          "candidates": 1,
+          "match": "exact"
+        }
+      },
+      "errorText": ""
+    },
+    {
+      "tool": "bb_health",
+      "outputBytes": 976,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_impact",
+      "outputBytes": 8571,
+      "parsedSummary": {
+        "symbol": "buildSchema",
+        "root": {
+          "id": "6623498ebe135a8cab4c46270ea6737f1d4526e3:graphql-js/utilities/buildASTSchema.ts:buildSchema:150",
+          "name": "buildSchema",
+          "file": "graphql-js/utilities/buildASTSchema.ts",
+          "filePath": "/home/ishaq2321/mcp/backbencher-brain/validation/release/workspace/graphql-js/utilities/buildASTSchema.ts",
+          "line": 150,
+          "symbolType": "function",
+          "language": "typescript"
+        },
+        "shownCount": 6,
+        "totalCountIfKnown": 6,
+        "truncated": false
+      },
+      "errorText": ""
+    },
+    {
+      "tool": "bb_migrate",
+      "outputBytes": 1973,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_patterns",
+      "outputBytes": 881,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_search",
+      "outputBytes": 112,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_security",
+      "outputBytes": 3680,
+      "parsedSummary": null,
+      "errorText": ""
+    },
+    {
+      "tool": "bb_visualize",
+      "outputBytes": 1664,
+      "parsedSummary": null,
+      "errorText": "[INFO] [19:42:43] [dependency-graph-visualizer] \ud83c\udf10 Generating Polyglot Dependency Graph Data...\n[INFO] [19:42:43] [dependency-graph-visualizer] \u2705 Graph Data Generated: 399 nodes, 430 links"
+    }
+  ],
+  "notes": [
+    "Every call used HOME=.tmp-rel-home and BB_DATA_DIR=validation/release/data so the shared .bb-data/~/.bb indexes were never opened for write.",
+    "This seed was captured while the 16-tool campaign is still landing Phase B changes; the release integration run refreshes it on the settled tree.",
+    "bb_migrate first refused a wrong argument (`symbol`) with the accepted-options list; the recorded call uses the descriptor's own symbolName/targetLanguage contract."
+  ]
+}

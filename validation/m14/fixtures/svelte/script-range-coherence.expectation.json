@@ -1,0 +1,30 @@
+{
+  "fixtureId": "svelte/script-range-coherence",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Sv1 review wave H4: script-derived symbol ranges were script-relative (lines shifted, columns only when the range started on the script's first line, byte indices never). Hand-computed SFC mapping: <h1>T</h1>\\n is 10 bytes, <script>\\n is 9 bytes, raw_text starts at SFC index 19 (leading \\n + 29-byte import + \\n); `function work...` starts at SFC index 50, line 4, column 1, spanning 36 bytes (endIndex 86, endColumn 37).",
+  "expectSymbols": [
+    {
+      "name": "work",
+      "kind": "function"
+    }
+  ],
+  "expectSymbolRanges": [
+    {
+      "symbol": "work",
+      "startLine": 4,
+      "startColumn": 1,
+      "endLine": 4,
+      "endColumn": 37,
+      "startIndex": 50,
+      "endIndex": 86
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "work",
+      "target": "helper"
+    }
+  ]
+}

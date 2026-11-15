@@ -1,0 +1,63 @@
+{
+  "fixtureId": "dart/part-of-roles",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CANONICAL `part_of` (Lead commit df5a03eb2). The old shape was one `imports` row with `isPart`/`isPartOf` metadata, which (a) put a file-coupling directive on the dependency-import label whose targets the external-claim machinery verifies against pubspec facts, and (b) kept the ROLE in metadata — the one channel the store's resolver does not read — even though the two directives point in OPPOSITE directions. The replacement is per DIRECTIVE node, decision from the grammar: `part_of_directive` -> partRole \"part\" (this part file -> the library it belongs to), `part_directive` -> partRole \"library\" (this library -> the part file it lists). The target is the resolved project-relative path, the same resolution an import specifier gets. Boundaries pinned negative: the `import` in the same file stays `imports`; an unresolvable specifier publishes NO part_of row (the target must be a resolvable path, not a `uri:*` specifier); and the superseded `imports{isPart}` shape is forbidden for both roles so a partial relabel cannot pass by adding the new row while leaving the old one.",
+  "expectSymbols": [
+    { "name": "part-of-roles", "kind": "module" },
+    { "name": "PartRolesDemo", "kind": "class" }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "source": "part-of-roles",
+      "target": "fixtures/dart/part_role_part.dart",
+      "confidenceMin": 1.0,
+      "meta.partRole": "library",
+      "meta.evidenceClass": "import_based",
+      "note": "POSITIVE 1 — `part 'part_role_part.dart';` in the LIBRARY: this file lists that part. The target is the resolved path (the same spelling the target file's own library node publishes), never the raw specifier. partRole is the half a metadata-blind consumer needs."
+    },
+    {
+      "type": "part_of",
+      "source": "part-of-roles",
+      "target": "fixtures/dart/part_role_library.dart",
+      "confidenceMin": 1.0,
+      "meta.partRole": "part",
+      "meta.evidenceClass": "import_based",
+      "note": "POSITIVE 2 — `part of 'part_role_library.dart';` in the PART: this file belongs to that library. Same label, OPPOSITE direction from POSITIVE 1; the two rows together are what makes partRole load-bearing rather than cosmetic. A rule that keyed the role off the label alone (e.g. assuming every part_of means 'part') fails here while passing POSITIVE 1."
+    },
+    {
+      "type": "imports",
+      "target": "dart:async:*",
+      "note": "BOUNDARY — the real import directive in the same file still publishes `imports`, with its own specifier shape. The part relabel must not sweep import/export directives in."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "fixtures/dart/part_role_part.dart",
+      "note": "THE OLD SHAPE, role 1 — a library's part listing is no longer an imports row."
+    },
+    {
+      "type": "imports",
+      "target": "fixtures/dart/part_role_library.dart",
+      "note": "THE OLD SHAPE, role 2 — a part file's library directive is no longer an imports row."
+    },
+    {
+      "type": "part_of",
+      "target": "package:not_in_this_checkout/missing.dart:*",
+      "note": "NO ROW FOR AN UNRESOLVABLE SPECIFIER, and this is the pin that makes the rule falsifiable: the package is not in this checkout, so `dartImportTargetPath` returns null and nothing may be published. The old shape would have published an imports row ending in `:*` — asserting a coupling to a string no key space can answer."
+    },
+    {
+      "type": "imports",
+      "target": "package:not_in_this_checkout/missing.dart:*",
+      "note": "the same unresolvable directive must not fall back to being an import either."
+    },
+    {
+      "type": "part_of",
+      "source": "part-of-roles",
+      "target": "dart:async:*",
+      "note": "BOUNDARY NEGATIVE — an `import` must never be relabelled part_of, in either role. A fix that keyed on 'has a URI child' instead of the directive node would produce exactly this row."
+    }
+  ]
+}

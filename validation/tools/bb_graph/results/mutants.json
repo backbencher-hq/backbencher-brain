@@ -1,0 +1,72 @@
+{
+  "at": "2026-11-01T20:31:46.392036+00:00",
+  "tool": "bb_graph",
+  "mutants": [
+    {
+      "id": "M1-tier-ignores-stored-class",
+      "gate": "script/m28/verify-surface-parity.ts",
+      "runner": "tsx",
+      "expected": "fail",
+      "exit": 1,
+      "verdict": "CAUGHT",
+      "elapsedSeconds": 55
+    },
+    {
+      "id": "M2-cascade-plan-regression",
+      "gate": "script/m65/verify-graph-plan.ts",
+      "runner": "tsx",
+      "expected": "fail",
+      "exit": 1,
+      "verdict": "CAUGHT",
+      "elapsedSeconds": 29
+    },
+    {
+      "id": "M3-maxEdges-not-honored",
+      "gate": "script/verify-graph.ts",
+      "runner": "bun",
+      "expected": "fail",
+      "exit": 1,
+      "verdict": "CAUGHT",
+      "elapsedSeconds": 3
+    },
+    {
+      "id": "M4-edge-kind-default-narrowed",
+      "gate": "script/m65/verify-edge-kind-scoping.ts",
+      "runner": "bun",
+      "expected": "fail",
+      "exit": 1,
+      "verdict": "CAUGHT",
+      "elapsedSeconds": 4
+    },
+    {
+      "id": "M5-blind-spot-not-counted",
+      "gate": "script/m65/verify-graph-blindspots.ts",
+      "runner": "bun",
+      "expected": "fail",
+      "exit": 1,
+      "verdict": "CAUGHT",
+      "elapsedSeconds": 13
+    },
+    {
+      "id": "control-restored",
+      "gate": "diff",
+      "runner": "shell",
+      "expected": "pass",
+      "exit": 0,
+      "verdict": "CLEAN",
+      "elapsedSeconds": 0
+    },
+    {
+      "id": "control-green-again",
+      "gate": "script/verify-graph.ts",
+      "runner": "bun",
+      "expected": "pass",
+      "exit": 0,
+      "verdict": "CLEAN",
+      "elapsedSeconds": 4
+    }
+  ],
+  "caught": 5,
+  "clean": 2,
+  "missed": []
+}

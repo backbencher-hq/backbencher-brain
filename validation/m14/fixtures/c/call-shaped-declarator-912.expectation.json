@@ -1,0 +1,68 @@
+{
+  "fixtureId": "c/call-shaped-declarator-912",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "#912: a definition HEADER that recovery leaves as a CALL. jq src/builtin.c:2067 `static block gen_last_1(void) {` was never a symbol: the replacement text of `#define BINOP(name) CFUNC(f_ ## name, \"_\" #name, 3),` is itself call-shaped and, with a BARE `BINOPS` standing as a table entry, its argument list desynchronizes recovery — swallowing the rest of the table, the table's own `};`, the `#undef` block and the next definition's header, which survives only as an ERROR holding `static`, `block` and a `call_expression gen_last_1(void)`, with the body as a sibling `compound_statement`. Lines 38..139 of this fixture are jq's own text, verbatim (jq src/builtin.c:1969-2067 plus an abridged body). MEASURED THROUGH THE PRODUCTION ENTRY, pre-fix vs post-fix, only `src/ast/real-c-analyzer.ts` differing: jq (77 files) +1 symbol `2067:function:gen_last_1`, 0 symbols removed, 0 relationships changed; sqlite (357 files) BYTE-IDENTICAL — 24072 symbols and 141448 relationships on both sides — which is the evidence the arrival is inert where the shape does not occur. The gate is the damaged region's own tail carrying a reserved declaration word (`declarationSpecifierRunBefore`), NOT the looser #907 header test (`declarationHeaderPresent`): that one was measured and REFUSED, because it admits the 33 `#define osCloseHandle ((BOOL(WINAPI*)(HANDLE))aSyscall[1].pCurrent)` sites of sqlite os_win.c/os_unix.c — a macro's replacement text published as a function (+33 symbols, +4 resolved `uses` edges) — since the directive's own words supply the \"type\" token and the next table entry supplies the `{`. The two guards were also compared over the whole class jq+sqlite can present (434 .c/.h files): identical verdicts on every candidate, so the strict one is chosen on the class the comparison could not see. CONTROL B below is the arrive-and-refuse control for that refused class (measured: an ERROR holding the call at line 156, refused). CONTROL A pins the outcome for an invocation with a block and no declaration word. CONTROL C pins that a clean `static block f(void)` definition is published by the ordinary route with NO recovery metadata and is not claimed twice. At the FIXTURE level the same measurement holds symbol-and-edge by symbol-and-edge: with the HEAD analyzer and with the fixed one, the SOLE symbol difference is `gen_last_1` (absent then present, with its recovery metadata) and the 73 relationships are byte-identical. That pre-existing read of the heading's own call-shaped text — `calls global -> gen_last_1` at the definition line — is therefore IDENTICAL before and after (it is the call visitor's contract for any `call_expression`, and the oracle derives the same edge, F5 green), so it is deliberately NOT pinned here either way: this fixture claims the recovered SYMBOL and the refusals, and the review records that edge. Corpus lane with the recovery live: `[jq] c: files=45 tree-truth=2930 covered=2930 (100%) MISSING=0 | analyzer-edges=2931 unexplained=0 (0%) heuristic=0` and `[sqlite] c: files=60 tree-truth=7676 covered=7676 (100%) MISSING=0 | analyzer-edges=7676 unexplained=0 (0%) heuristic=0`.",
+  "expectSymbols": [
+    {
+      "name": "gen_last_1",
+      "kind": "function",
+      "visibility": "private",
+      "meta.recoveredFromGlue": true,
+      "meta.glueNameShape": "call-declarator",
+      "meta.glueArrival": "file-scope",
+      "meta.glueWrapped": false
+    },
+    {
+      "name": "gen_last_0",
+      "kind": "function",
+      "visibility": "private",
+      "note": "CONTROL C: a clean `static block f(void)` definition — the ordinary route, no recovery metadata."
+    },
+    { "name": "function_list", "kind": "variable", "visibility": "private" },
+    { "name": "second_list", "kind": "variable", "visibility": "private" },
+    { "name": "CFUNC", "kind": "macro" },
+    { "name": "CFUNC2", "kind": "macro" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "gen_last_1", "startLine": 136 },
+    { "symbol": "gen_last_0", "startLine": 147 },
+    { "symbol": "CFUNC", "startLine": 38 },
+    { "symbol": "CFUNC2", "startLine": 163 }
+  ],
+  "expectSymbolCount": [
+    { "name": "gen_last_1", "equals": 1 },
+    { "name": "gen_last_0", "equals": 1 },
+    { "name": "CFUNC", "equals": 1 },
+    { "name": "CFUNC2", "equals": 1 },
+    { "name": "FOREACH", "equals": 0 },
+    { "name": "osCloseHandle", "equals": 0 },
+    { "name": "handle", "equals": 0 },
+    { "name": "BINOPS", "equals": 0 },
+    { "name": "BINOPS2", "equals": 0 },
+    { "name": "BINOP", "equals": 0 },
+    { "name": "BINOP2", "equals": 0 },
+    { "name": "f_negate", "equals": 0 },
+    { "name": "f_dump", "equals": 0 },
+    { "name": "f_have_decnum", "equals": 0 },
+    { "name": "f_current_line", "equals": 0 },
+    { "name": "gen_last_1", "equals": 1 }
+  ],
+  "forbidSymbols": [
+    { "name": "FOREACH", "note": "CONTROL A: an invocation with a block and no declaration word — never a function." },
+    { "name": "osCloseHandle", "note": "CONTROL B: the #define replacement-text class the strict guard refuses (33 sqlite sites)." },
+    { "name": "BINOPS", "note": "the bare macro name standing as a table entry: a mention, never a symbol." },
+    { "name": "BINOPS2" },
+    { "name": "BINOP" },
+    { "name": "BINOP2" },
+    { "name": "handle" },
+    { "name": "f_negate" },
+    { "name": "f_dump" },
+    { "name": "f_have_decnum" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "global", "target": "osCloseHandle", "note": "CONTROL B: the macro name read as a VALUE. The call-shaped text is a `calls` read (the call visitor's contract, identical before and after); it must not become a `uses` of a symbol either." },
+    { "type": "uses", "from": "global", "target": "BINOPS" },
+    { "type": "uses", "from": "global", "target": "FOREACH" }
+  ]
+}

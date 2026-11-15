@@ -1,0 +1,31 @@
+{
+ "fixtureId": "objc/second-review",
+ "language": "objc",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "ObjC second-review wave: OC-F same-file enum cases read as values (case labels, comparisons, returns; NS_ENUM lives in headers behind macros), OC-G @protocol directive silence, OC-H file-scope function names as decay/read targets. Every pin probe-verified against both the analyzer and deriveObjcEdges before pinning; lanes confirm the pair agrees on corpora. OC-E BINDING SPELLING (family contract, DARTD8; `BINDING_SEP` + `metadata.localBinding`, src/ast/types.ts:190). A unit-local read names a binding, not a declaration: the store publishes no parameters or locals, so the bare name could never be answered, and where a same-named declaration existed elsewhere in the project the read was bound to THAT declaration. The pin below is the spelling the analyzer actually emits, read off `binding-spelling-dump.ts`. Pre-change copy preserved as `second-review.expectation.superseded-fb93f6f18.json`.",
+ "expectSymbols": [
+  {"name": "Shade", "kind": "enum"},
+  {"name": "Light", "kind": "enum_member", "ownerName": "Shade"},
+  {"name": "Dark", "kind": "enum_member", "ownerName": "Shade"},
+  {"name": "cfn", "kind": "function"},
+  {"name": "Valve", "kind": "class"},
+  {"name": "level", "kind": "property", "ownerName": "Valve"},
+  {"name": "shadeName:", "kind": "method", "ownerName": "Valve"},
+  {"name": "check:", "kind": "method", "ownerName": "Valve"},
+  {"name": "hooks", "kind": "method", "ownerName": "Valve"}
+ ],
+ "expectRelationships": [
+  {"type": "uses", "source": "shadeName:", "target": "Light", "comment": "OC-F: case labels read enum cases"},
+  {"type": "uses", "source": "shadeName:", "target": "Dark", "comment": "OC-F: case labels read enum cases"},
+  {"type": "uses", "source": "check:", "target": "Light", "comment": "OC-F: comparisons read enum cases"},
+  {"type": "uses", "source": "check:", "target": "Dark", "comment": "OC-F: returns read enum cases"},
+  {"type": "uses", "source": "hooks", "target": "cfn", "comment": "OC-H: function-pointer decay reads the function"},
+  {"type": "calls", "source": "hooks", "target": "cfn", "comment": "OC-H: direct invocation still calls (callee owns it)"},
+  {"type": "calls", "source": "hooks", "target": "conformsToProtocol:", "comment": "@protocol argument call intact"},
+  {"type": "uses", "source": "hooks", "target": "level", "comment": "OC-E regression cover: field reads intact"},
+  {"type": "uses", "source": "hooks", "target": "hooks\u0000v", "meta.localBinding": true, "comment": "OC-E regression cover: local reads intact"}
+ ],
+ "forbidRelationships": [
+  {"type": "calls", "source": "hooks", "target": "protocol", "comment": "OC-G: @protocol directives never invoke"}
+ ]
+}

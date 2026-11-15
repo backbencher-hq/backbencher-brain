@@ -1,0 +1,128 @@
+{
+  "fixtureId": "csharp/dotnet-citation-claims",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "task-37 follow-up 2: the committed `dotnet-platform-libraries` citation vocabulary. The seven MEASURED .NET/library namespaces publish the namespace claim + `strict-absent` on their `imports` edge; the two unlisted `System.*` imports publish NO marker, so the vocabulary is a closed list rather than a prefix shotgun. Refutation is the GATE's half and is pinned by the arm's strict-absent control (a project-declared namespace keeps the name model's answer / a resolved row is never displaced); this fixture pins the ANALYZER's half \u2014 the claim and its absence.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "target": "System.Text.Json",
+      "line_number": 9,
+      "meta.languageNamespace": [
+        "System.Text.Json"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "Newtonsoft.Json",
+      "line_number": 10,
+      "meta.languageNamespace": [
+        "Newtonsoft.Json"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "System.Xml",
+      "line_number": 11,
+      "meta.languageNamespace": [
+        "System.Xml"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "System.Net.Http.Json",
+      "line_number": 12,
+      "meta.languageNamespace": [
+        "System.Net.Http.Json"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "Microsoft.AspNetCore.Http.Json",
+      "line_number": 13,
+      "meta.languageNamespace": [
+        "Microsoft.AspNetCore.Http.Json"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "BenchmarkDotNet.Exporters.Csv",
+      "line_number": 14,
+      "meta.languageNamespace": [
+        "BenchmarkDotNet.Exporters.Csv"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "BenchmarkDotNet.Exporters.Json",
+      "line_number": 15,
+      "meta.languageNamespace": [
+        "BenchmarkDotNet.Exporters.Json"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent",
+      "meta.importKind": "namespace",
+      "meta.evidenceClass": "import_based"
+    },
+    {
+      "type": "imports",
+      "target": "System.Text",
+      "meta.languageNamespace": null,
+      "note": "NOT in the committed list: the edge EXISTS but carries NO marker \u2014 the vocabulary is a closed list, not a System.* prefix shotgun."
+    },
+    {
+      "type": "imports",
+      "target": "System",
+      "meta.languageNamespace": null,
+      "note": "the same refusal on the plain root import."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "System.Text",
+      "meta.languageNamespace": [
+        "System.Text"
+      ],
+      "note": "the widening this vocabulary must never do: System.Text is NOT a committed root."
+    },
+    {
+      "type": "imports",
+      "target": "System",
+      "meta.languageNamespace": [
+        "System"
+      ],
+      "note": "a bare `System` root would blanket every System.* namespace; never emitted."
+    },
+    {
+      "type": "imports",
+      "target": "System.Text.Json",
+      "meta.languageNamespace": [],
+      "note": "an EMPTY root list is not a claim: the list must be non-empty when the key is present."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "imports",
+      "equals": 9,
+      "note": "7 claimed + 2 unmarked = the file's nine using directives; a marker leaking onto either unlisted row breaks this count's companion forbid above."
+    }
+  ]
+}

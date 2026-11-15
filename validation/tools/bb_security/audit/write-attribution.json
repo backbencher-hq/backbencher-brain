@@ -1,0 +1,304 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_security",
+  "generatedAt": "2026-11-03T17:48:28.830Z",
+  "currentCommit": "5eae556d3974e84fdb45ac57f5d1827deb8c845d",
+  "command": "BB_DATA_DIR=… BB_NO_AUTO_REFRESH=1 npx tsx validation/tools/bb_security/work/probe-write-attribution.ts",
+  "observations": [
+    {
+      "id": "W-readwrite-open",
+      "projectId": "4f687d027e62b3991100baeb6aabdbe316937728",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/wattrib-rw",
+      "door": "fresh process: getRawInstance(projectId) [rw default] + 2 SELECTs",
+      "childExit": 0,
+      "childStdout": "{\"projectId\":\"4f687d027e62b3991100baeb6aabdbe316937728\",\"dataDir\":\"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/wattrib-rw\",\"readonly\":false,\"counts\":{\"files\":1,\"taintFlows\":3}}\n",
+      "dbDirBefore": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:33.181Z"
+        }
+      ],
+      "dbDirAfter": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:33.181Z"
+        }
+      ],
+      "diff": {
+        "headerBefore": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerAfter": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerChanged": [],
+        "pagesBefore": 117,
+        "pagesAfter": 117,
+        "changedPages": [],
+        "masterChanged": false,
+        "stat1Changed": false,
+        "journal": {
+          "before": "wal",
+          "after": "wal"
+        },
+        "schemaVersion": {
+          "before": 87,
+          "after": 87
+        },
+        "rowCountDiffs": [],
+        "wroteDb": false
+      }
+    },
+    {
+      "id": "R-readonly-open",
+      "projectId": "f1610657ae5f92706eae1a896c3db94fd1d4b9dd",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/wattrib-ro",
+      "door": "fresh process: getRawInstance(projectId, {readonly:true}) + SELECTs",
+      "childExit": 0,
+      "childStdout": "{\"projectId\":\"f1610657ae5f92706eae1a896c3db94fd1d4b9dd\",\"dataDir\":\"/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/wattrib-ro\",\"readonly\":true,\"counts\":{\"files\":1,\"taintFlows\":3}}\n",
+      "dbDirBefore": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:39.992Z"
+        }
+      ],
+      "dbDirAfter": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:39.992Z"
+        },
+        {
+          "name": "brain.db-shm",
+          "size": 32768,
+          "mtime": "2026-11-03T17:48:41.247Z"
+        },
+        {
+          "name": "brain.db-wal",
+          "size": 0,
+          "mtime": "2026-11-03T17:48:41.246Z"
+        }
+      ],
+      "diff": {
+        "headerBefore": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerAfter": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerChanged": [],
+        "pagesBefore": 117,
+        "pagesAfter": 117,
+        "changedPages": [],
+        "masterChanged": false,
+        "stat1Changed": false,
+        "journal": {
+          "before": "wal",
+          "after": "wal"
+        },
+        "schemaVersion": {
+          "before": 87,
+          "after": 87
+        },
+        "rowCountDiffs": [],
+        "wroteDb": false
+      }
+    },
+    {
+      "id": "M-mcp-default-call",
+      "projectId": "aa4be7aaea7ad6bee65a3a7f78a4f87542963921",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/wattrib-mcp",
+      "door": "MCP stdio: bb_security {}",
+      "call": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 2005,
+        "textBytes": 344,
+        "textHead": "security: 2 critical / 0 high / 0 medium / 0 low (2 resolved flows, 0 unvalidated sources, 0 mitigated)\n  [critical] SQL injection (safe) @ src/api.ts:7 <- database_read -> database_write\n  [critical] SQL injection (search) @ src/api.ts:3 <- database_read -> database_write\n[scan: 3 taint flow(s) ind"
+      },
+      "dbDirBefore": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:45.374Z"
+        }
+      ],
+      "dbDirAfter": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:45.374Z"
+        },
+        {
+          "name": "brain.db-shm",
+          "size": 32768,
+          "mtime": "2026-11-03T17:48:48.070Z"
+        },
+        {
+          "name": "brain.db-wal",
+          "size": 0,
+          "mtime": "2026-11-03T17:48:48.069Z"
+        }
+      ],
+      "diff": {
+        "headerBefore": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerAfter": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerChanged": [],
+        "pagesBefore": 117,
+        "pagesAfter": 117,
+        "changedPages": [],
+        "masterChanged": false,
+        "stat1Changed": false,
+        "journal": {
+          "before": "wal",
+          "after": "wal"
+        },
+        "schemaVersion": {
+          "before": 87,
+          "after": 87
+        },
+        "rowCountDiffs": [],
+        "wroteDb": false
+      }
+    },
+    {
+      "id": "M2-mcp-history-call",
+      "projectId": "2e2345373d836f28026ac05e781b4d7bbf92518b",
+      "dataDir": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_security/bbdata/wattrib-hist",
+      "door": "MCP stdio: bb_security {history:true}",
+      "call": {
+        "ok": true,
+        "isError": false,
+        "durationMs": 2091,
+        "textBytes": 367
+      },
+      "dbDirBefore": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:52.219Z"
+        }
+      ],
+      "dbDirAfter": [
+        {
+          "name": "brain.db",
+          "size": 479232,
+          "mtime": "2026-11-03T17:48:52.219Z"
+        },
+        {
+          "name": "brain.db-shm",
+          "size": 32768,
+          "mtime": "2026-11-03T17:48:54.327Z"
+        },
+        {
+          "name": "brain.db-wal",
+          "size": 0,
+          "mtime": "2026-11-03T17:48:54.326Z"
+        }
+      ],
+      "diff": {
+        "headerBefore": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerAfter": {
+          "changeCounter": 2,
+          "pageCount": 117,
+          "freelistTrunk": 0,
+          "freelistCount": 0,
+          "schemaCookie": 87,
+          "userVersion": 0,
+          "applicationId": 0,
+          "versionValidFor": 2,
+          "sqliteVersion": 3049002,
+          "bytes": 479232
+        },
+        "headerChanged": [],
+        "pagesBefore": 117,
+        "pagesAfter": 117,
+        "changedPages": [],
+        "masterChanged": false,
+        "stat1Changed": false,
+        "journal": {
+          "before": "wal",
+          "after": "wal"
+        },
+        "schemaVersion": {
+          "before": 87,
+          "after": 87
+        },
+        "rowCountDiffs": [],
+        "wroteDb": false
+      }
+    }
+  ]
+}

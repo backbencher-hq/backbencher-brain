@@ -1,0 +1,26 @@
+# The document-level contract: what happens when the document is NOT valid TOML,
+# and what a key that is valid but has no name does. Three rulings live here and
+# NONE of them had a fixture until this one — they were in the spec and the doc
+# with nothing behind them, which is exactly how a documented guarantee becomes a
+# stale sentence.
+
+# `"" = 1` is ACCEPTED by the grammar and names NOTHING. An identity needs a name,
+# so a key with an empty one has no symbol and no edge. It is not an error either —
+# the document parsed, and what it expressed has no referent.
+"" = 1
+
+# The parser cannot read `<<<>>`. tree-sitter wraps it in an ERROR node, and the
+# obligation is the same three-part contract html pins: the broken region is
+# REPORTED, it is NOT turned into a node, and the sections AROUND it still publish.
+[t]
+before = 1
+<<<<>>
+after = 2
+
+# A `[table]` whose header is a bare key containing a character outside TOML's
+# bare-key alphabet is not a parse error the analyzer invents — the GRAMMAR refuses
+# it, because TOML v1.0.0 restricts bare keys to A-Za-z0-9_- and a quoted key is
+# how anything else is written. A document that wants a Cyrillic key says
+# ["ключ"], and the quoted form is handled like any other quoted key.
+["ключ"]
+quoted_unicode = 3

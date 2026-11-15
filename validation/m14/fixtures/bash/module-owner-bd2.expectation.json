@@ -1,0 +1,153 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/module-owner-bd2.sh",
+ "authoredFrom": "BD2 (script-as-module). Authored from a probe of the post-fix analyzer 2026-09-26. The pre-wave owner was the literal string `global`, which `isIndexArtifactName` (src/ast/analysis-exclusions.ts:129) REJECTS as a symbol name — so every pre-wave top-level edge was unresolvable by construction, and 622 of 1432 edges on the pinned corpus had a source that no stored symbol could ever be.",
+ "expectSymbols": [
+  {
+   "name": "module-owner-bd2.sh",
+   "kind": "module"
+  },
+  {
+   "name": "SCRIPT_NAME",
+   "kind": "constant",
+   "ownerName": "module-owner-bd2.sh"
+  },
+  {
+   "name": "LOG_LEVEL",
+   "kind": "constant",
+   "ownerName": "module-owner-bd2.sh"
+  },
+  {
+   "name": "top_level_helper",
+   "kind": "function",
+   "ownerName": "module-owner-bd2.sh"
+  },
+  {
+   "name": "inner",
+   "kind": "variable",
+   "ownerName": "top_level_helper"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "module-owner-bd2.sh",
+   "target": "module-owner-bd2.sh.LOG_LEVEL",
+   "line_number": 8
+  },
+  {
+   "type": "uses",
+   "from": "top_level_helper",
+   "target": "top_level_helper.inner",
+   "line_number": 12
+  },
+  {
+   "type": "calls",
+   "from": "module-owner-bd2.sh",
+   "target": "docker",
+   "line_number": 15,
+   "meta.isFunctionCall": false,
+   "meta.isExternalCommand": true
+  },
+  {
+   "type": "calls",
+   "from": "module-owner-bd2.sh",
+   "target": "top_level_helper",
+   "line_number": 16,
+   "meta.isFunctionCall": true,
+   "meta.isExternalCommand": false
+  },
+  {
+   "type": "uses",
+   "from": "module-owner-bd2.sh",
+   "target": "module-owner-bd2.sh.LOG_LEVEL",
+   "line_number": 16
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-bd2.sh",
+   "target": "SCRIPT_NAME",
+   "line_number": 7
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-bd2.sh",
+   "target": "LOG_LEVEL",
+   "line_number": 8
+  },
+  {
+   "type": "contains",
+   "from": "module-owner-bd2.sh",
+   "target": "top_level_helper",
+   "line_number": 10
+  },
+  {
+   "type": "contains",
+   "from": "top_level_helper",
+   "target": "inner",
+   "line_number": 11
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "calls",
+   "from": "global",
+   "target": "docker"
+  },
+  {
+   "type": "uses",
+   "from": "global",
+   "target": "LOG_LEVEL"
+  },
+  {
+   "type": "contains",
+   "from": "global",
+   "target": "SCRIPT_NAME"
+  },
+  {
+   "type": "contains",
+   "from": "global",
+   "target": "top_level_helper"
+  },
+  {
+   "type": "calls",
+   "from": "global"
+  },
+  {
+   "type": "uses",
+   "from": "global"
+  },
+  {
+   "type": "contains",
+   "from": "global"
+  },
+  {
+   "type": "imports",
+   "from": "global"
+  },
+  {
+   "type": "references",
+   "from": "global"
+  },
+  {
+   "type": "exports",
+   "from": "global"
+  },
+  {
+   "type": "calls",
+   "target": "global"
+  }
+ ],
+ "expectParameters": [
+  {
+   "symbol": "top_level_helper",
+   "parameters": [
+    {
+     "name": "1",
+     "type": "any"
+    }
+   ]
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

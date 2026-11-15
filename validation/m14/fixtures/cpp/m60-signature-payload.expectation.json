@@ -1,0 +1,71 @@
+{
+  "fixtureId": "cpp/m60-signature-payload",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "M60.P1. This lane's documentation claimed `parameters`, `returnType` and `decorators` on C++ symbols while the M60 payload-seam matrix recorded all three as DEAD emit cells — the doc described a payload the analyzer never produced. The pins below are written from the MEASURED GRAMMAR SHAPES (dumped from the tree-sitter AST, quoted in the comments on each pin) and from C++ semantics, not scraped from analyzer output; they were then confirmed against it. Two of them are the strongest kind of pin here, because they fail on a REVERT rather than on a missing feature: (1) the parameter TYPE slice is taken at the NAME node, so `const std::string& name` pins as `const std::string&` — the pre-fix slice stopped at the declarator, whose text is `& name`, and published `const std::string`, a different C++ type that overloads differently; (2) a defaulted parameter is a distinct `optional_parameter_declaration` node, so `scale` is pinned at all, and skipping that node type loses every defaulted parameter in the corpus. `forbidParameters.types` pins the same slice from the negative side — the parameter's own NAME must never appear in its TYPE field, the last-resort-scan failure shape the csharp lane registered for exactly this reason.",
+  "expectSymbols": [
+    { "name": "configure", "kind": "method", "returnType": "void" },
+    { "name": "label", "kind": "method", "returnType": "std::string" },
+    { "name": "area", "kind": "method", "returnType": "double" },
+    { "name": "reset", "kind": "method", "returnType": "void" },
+    { "name": "sum", "kind": "method", "returnType": "int" },
+    { "name": "kAxes", "kind": "constant" }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "configure",
+      "parameters": [
+        { "name": "mode", "type": "int" },
+        { "name": "name", "type": "const std::string&" },
+        { "name": "scale", "type": "double", "isOptional": true }
+      ]
+    },
+    {
+      "symbol": "onResize",
+      "parameters": [
+        { "name": "width", "type": "int" },
+        { "name": "height", "type": "int" }
+      ]
+    },
+    {
+      "symbol": "variadic",
+      "parameters": [{ "name": "format", "type": "const char*" }]
+    },
+    {
+      "symbol": "constructor",
+      "ownerName": "Point",
+      "comment": "a constructor is NORMALIZED to the name `constructor`; ownerName is the only way to address one, which is why the decorator matcher needs it too",
+      "parameters": [
+        { "name": "x", "type": "int" },
+        { "name": "y", "type": "int" }
+      ]
+    },
+    {
+      "symbol": "constructor",
+      "ownerName": "Shape",
+      "parameters": [{ "name": "scale", "type": "double" }]
+    }
+  ],
+  "forbidParameters": [
+    { "symbol": "configure", "names": ["..."], "comment": "the variadic ellipsis is not in configure" },
+    { "symbol": "variadic", "names": ["..."], "comment": "a `...` has no name and no type; publishing it would put a name in the family parameter shape that a consumer cannot resolve" },
+    { "symbol": "variadic", "types": ["..."] },
+    { "symbol": "configure", "types": ["name", "scale"], "comment": "the parameter's own NAME must never appear in its TYPE field — the last-resort-type-scan failure shape (csharp lane R7)" },
+    { "symbol": "variadic", "types": ["format"] }
+  ],
+  "expectDecorators": [
+    { "symbol": "area", "contains": "virtual" },
+    { "symbol": "onResize", "contains": "override" },
+    { "symbol": "kAxes", "contains": "static" },
+    { "symbol": "kAxes", "contains": "constexpr" },
+    { "symbol": "constructor", "ownerName": "Shape", "contains": "explicit" },
+    { "symbol": "sum", "comment": "a method's trailing `const` is a child of its function_declarator, NOT of the declaration — a declaration-only scan publishes [] here, and `const` is on essentially every getter in the corpus", "contains": "const" },
+    { "symbol": "label", "contains": "const" },
+    { "symbol": "area", "contains": "const" }
+  ],
+  "forbidDecorators": [
+    { "symbol": "Point", "contains": "virtual", "comment": "`Point` is a plain struct: no modifier on it may be invented from its members'" },
+    { "symbol": "Shape", "contains": "static" },
+    { "symbol": "configure", "contains": "override", "comment": "configure overrides nothing; the field must not absorb a sibling's modifier" }
+  ]
+}

@@ -1,0 +1,513 @@
+{
+  "schemaVersion": 1,
+  "kind": "m14-graphql-extended-census",
+  "lane": "graphql",
+  "generatedAt": "2026-10-31T05:06:39.597Z",
+  "producedBy": "validation/m14/fixtures/graphql/extended-census.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "admittedFiles": 1911,
+    "repositories": 22,
+    "excluded": {
+      "tracked": 1915,
+      "absent": 0,
+      "overCap": 4,
+      "wrongLanguage": 0
+    },
+    "note": "the arbiter's own discovery loop: git-tracked, detectLanguageFromPath === graphql, at or under the 1 MB FULL_AST_LIMIT cap"
+  },
+  "grammar": {
+    "wasm": "wasm/tree-sitter-graphql.wasm",
+    "abi": 15,
+    "nodes": 2338690,
+    "parseFailures": 0,
+    "declaredTypes": 142,
+    "observedNamedTypes": {
+      "Name": 502668,
+      "Selection": 188932,
+      "Field": 184885,
+      "comma": 126339,
+      "Alias": 125040,
+      "NamedType": 76961,
+      "Type": 75809,
+      "Definition": 51536,
+      "SelectionSet": 46436,
+      "StringValue": 39104,
+      "ExecutableDefinition": 37455,
+      "FieldDefinition": 37394,
+      "OperationDefinition": 36293,
+      "Description": 34637,
+      "NonNullType": 31530,
+      "InputValueDefinition": 30545,
+      "Value": 14712,
+      "TypeSystemDefinition": 13734,
+      "TypeDefinition": 12758,
+      "comment": 12556,
+      "FieldsDefinition": 7976,
+      "ListType": 7526,
+      "ObjectTypeDefinition": 7299,
+      "EnumValue": 7232,
+      "ObjectField": 5668,
+      "Argument": 5411,
+      "EnumValueDefinition": 5382,
+      "ArgumentsDefinition": 5037,
+      "Arguments": 4114,
+      "FragmentName": 3821,
+      "Directive": 3747,
+      "ObjectValue": 3715,
+      "Directives": 3254,
+      "ImplementsInterfaces": 3179,
+      "FragmentSpread": 2656,
+      "InputFieldsDefinition": 2655,
+      "InputObjectTypeDefinition": 2655,
+      "UnionMemberTypes": 2538,
+      "TypeCondition": 2517,
+      "IntValue": 2087,
+      "Document": 1835,
+      "source_file": 1835,
+      "InlineFragment": 1391,
+      "EnumValuesDefinition": 1252,
+      "EnumTypeDefinition": 1251,
+      "OperationType": 1234,
+      "DirectiveLocation": 1167,
+      "DirectiveLocations": 1167,
+      "FragmentDefinition": 1162,
+      "Variable": 1124,
+      "DefaultValue": 1101,
+      "ListValue": 1030,
+      "TypeSystemDirectiveLocation": 927,
+      "ERROR": 820,
+      "BooleanValue": 688,
+      "DirectiveDefinition": 600,
+      "UnionTypeDefinition": 597,
+      "InterfaceTypeDefinition": 522,
+      "OperationTypeDefinition": 444,
+      "ScalarTypeDefinition": 434,
+      "SchemaDefinition": 376,
+      "TypeSystemExtension": 347,
+      "VariableDefinition": 342,
+      "TypeExtension": 252,
+      "ExecutableDirectiveLocation": 240,
+      "NullValue": 204,
+      "VariableDefinitions": 198,
+      "ObjectTypeExtension": 181,
+      "SchemaExtension": 95,
+      "InterfaceTypeExtension": 18,
+      "EnumTypeExtension": 15,
+      "FloatValue": 15,
+      "InputObjectTypeExtension": 15,
+      "UnionTypeExtension": 15,
+      "ScalarTypeExtension": 8
+    },
+    "observedAnonymousTokens": {
+      ":": 205025,
+      "{": 68993,
+      "}": 62485,
+      "\"\"\"": 44089,
+      "[": 34846,
+      "\"": 34128,
+      "!": 31620,
+      "(": 9384,
+      ")": 9379,
+      "]": 8626,
+      "type": 7484,
+      "@": 4384,
+      "...": 4050,
+      "on": 3174,
+      "input": 2678,
+      "|": 2675,
+      "implements": 1782,
+      "=": 1749,
+      "&": 1398,
+      "enum": 1271,
+      "$": 1239,
+      "fragment": 1166,
+      "query": 1003,
+      "union": 615,
+      "directive": 605,
+      "interface": 541,
+      "schema": 472,
+      "scalar": 444,
+      "false": 365,
+      "extend": 355,
+      "true": 326,
+      "repeatable": 235,
+      "FIELD_DEFINITION": 203,
+      "OBJECT": 189,
+      "mutation": 182,
+      "INTERFACE": 110,
+      "FIELD": 77,
+      "INPUT_FIELD_DEFINITION": 76,
+      "SCALAR": 68,
+      "SCHEMA": 64,
+      "ARGUMENT_DEFINITION": 61,
+      "INLINE_FRAGMENT": 59,
+      "FRAGMENT_SPREAD": 57,
+      "subscription": 54,
+      "ENUM": 48,
+      "INPUT_OBJECT": 39,
+      "ENUM_VALUE": 37,
+      "QUERY": 33,
+      "UNION": 32,
+      "MUTATION": 11,
+      "SUBSCRIPTION": 5,
+      "FRAGMENT_DEFINITION": 2,
+      "VARIABLE_DEFINITION": 2
+    },
+    "stems": {
+      "extends": [],
+      "decorates": [],
+      "renders": [],
+      "mixes_in": [],
+      "part_of": [],
+      "extensionAndSupertype": [
+        "EnumTypeExtension",
+        "ImplementsInterfaces",
+        "InputObjectTypeExtension",
+        "InputObjectTypeExtension_repeat1",
+        "InterfaceTypeExtension",
+        "ObjectTypeExtension",
+        "ScalarTypeExtension",
+        "SchemaExtension",
+        "TypeExtension",
+        "TypeSystemExtension",
+        "UnionTypeExtension",
+        "implements"
+      ]
+    }
+  },
+  "extends": {
+    "grammarHalf": "the wired build declares 142 node types; its only supertype production is ImplementsInterfaces (published as `implements`), and the schema-extension syntax HAS productions (TypeSystemExtension > TypeExtension > ObjectTypeExtension/…, SchemaExtension). No inheritance production exists; `extend` is member addition, not a supertype clause.",
+    "corpusHalf": {
+      "implementsClauses": 3179,
+      "implementsSupertypeInterfaceHere": 3121,
+      "implementsSupertypeObjectHere": 0,
+      "implementsSupertypeUnionOrScalarHere": 0,
+      "implementsSupertypeAmbiguousKindHere": 0,
+      "implementsSupertypeNotDeclaredHere": 58,
+      "implementsConditionMet": 0,
+      "typeSystemExtensions": 347,
+      "typeExtensions": 252,
+      "schemaExtensions": 95,
+      "typeExtensionSites": 252,
+      "typeExtensionSitesDeclaredHere": 76,
+      "typeExtensionSitesDeclaredElsewhere": 176,
+      "schemaExtensionSites": 95,
+      "typeExtensionSitesCarryingMembers": 247,
+      "typeExtensionSitesCarryingImplements": 5,
+      "extensionKinds": {
+        "EnumTypeExtension": 15,
+        "InputObjectTypeExtension": 15,
+        "InterfaceTypeExtension": 18,
+        "ObjectTypeExtension": 181,
+        "ScalarTypeExtension": 8,
+        "SchemaExtension": 95,
+        "UnionTypeExtension": 15
+      },
+      "extendsKeywordTokens": 355
+    },
+    "discriminator": "an extension ADDS MEMBERS to the SAME type: no second type is declared, no supertype is named, no file is included. It is therefore neither `extends` (no is-a), nor `mixes_in` (no distinct member-set provider composed into a supertype chain), nor `part_of` (no file inclusion). The members are published as `contains` with metadata.extension/inExtension, and the extension block itself is anonymous.",
+    "falsifier": {
+      "run": "npx tsx validation/m14/fixtures/graphql/extended-census.mts — re-read this artefact's extends.corpusHalf.implementsConditionMet and extension site counts",
+      "wouldFail": "implementsConditionMet >= 1 (a document in which an implements clause names a supertype the SAME document declares as an object/input/union/scalar — the analyzer's `extends` branch would then emit an edge), or an extension site composing a distinct NAMED member-set provider into a supertype chain (an is-a/member-set composition the analyzer does not publish)."
+    }
+  },
+  "decorates": {
+    "grammarHalf": "the wired build declares Directive and DirectiveDefinition productions, so directive syntax is grammar-expressible; what it does not declare is any body/implementation production inside a DirectiveDefinition.",
+    "counts": {
+      "directiveApplications": 3747,
+      "directiveApplicationsWithArguments": 2962,
+      "declarationContextApplications": 3535,
+      "executableContextApplications": 209,
+      "otherContextApplications": 3,
+      "directiveApplicationParents": {
+        "FieldDefinition": 1285,
+        "ObjectTypeDefinition": 811,
+        "InputValueDefinition": 480,
+        "EnumValueDefinition": 397,
+        "ScalarTypeDefinition": 109,
+        "SchemaExtension": 103,
+        "Field": 93,
+        "EnumTypeDefinition": 80,
+        "SchemaDefinition": 73,
+        "InputObjectTypeDefinition": 63,
+        "InlineFragment": 57,
+        "InterfaceTypeDefinition": 40,
+        "ObjectTypeExtension": 32,
+        "UnionTypeDefinition": 22,
+        "FragmentSpread": 19,
+        "OperationDefinition": 19,
+        "FragmentDefinition": 11,
+        "VariableDefinition": 10,
+        "InterfaceTypeExtension": 8,
+        "UnionTypeExtension": 8,
+        "ScalarTypeExtension": 8,
+        "EnumTypeExtension": 8,
+        "InputObjectTypeExtension": 8,
+        "ERROR": 3
+      },
+      "directiveDefinitions": 600,
+      "directiveDefinitionsWithArguments": 467,
+      "directiveDefinitionsWithImplementationBody": 0,
+      "directiveDefinitionsWithErrorChild": 9,
+      "directiveDefinitionChildPatterns": {
+        "ArgumentsDefinition+DirectiveLocations+Name": 243,
+        "DirectiveLocations+Name": 92,
+        "ArgumentsDefinition+Description+DirectiveLocations+Name": 217,
+        "Description+DirectiveLocations+ERROR+Name": 1,
+        "Description+DirectiveLocations+Name": 39,
+        "ArgumentsDefinition+DirectiveLocations+ERROR+Name": 7,
+        "DirectiveLocations+ERROR+Name": 1
+      },
+      "customDirectiveDefinitions": 561,
+      "specDirectiveDefinitions": 39,
+      "distinctAppliedDirectiveNames": 160,
+      "distinctDeclaredDirectiveNames": 160,
+      "applicationsDeclaredInSameDocument": 2182,
+      "applicationsNamingAnyDeclaredDefinition": 3131,
+      "applicationsNamingSpecBuiltin": 442,
+      "applicationsNamingUndeclaredDirective": 174,
+      "payloadShapingApplications": {
+        "defer": 29,
+        "stream": 2,
+        "live": 1
+      }
+    },
+    "callableTest": "an application names a directive DEFINITION, and a directive definition IS declared with arguments (467 of 600). But the composer side — the implementation — is NOT in the document: 0 of 600 definitions carry a body. So an application names a SIGNATURE/contract the server implements elsewhere, not an applied callable declared in the graph. That is exactly the csharp attribute case the fleet ruled ONTOLOGICAL (a decorator is an applied callable; an attribute is passive metadata).",
+    "falsifier": {
+      "run": "npx tsx validation/m14/fixtures/graphql/extended-census.mts — re-read decorates.counts.directiveDefinitionsWithImplementationBody and applicationsNamingAnyDeclaredDefinition",
+      "wouldFail": "directiveDefinitionsWithImplementationBody >= 1 (a directive definition carrying a body, i.e. an applied callable declared in the document), or a corpus site where a directive application is accompanied by an implementation body the analyzer can resolve to — either would retire the ontological ruling and return `decorates` to the denominator."
+    }
+  },
+  "renders": {
+    "grammarHalf": {
+      "stems": [],
+      "reading": "0 of the wired build's declared node types is a component/element render production."
+    },
+    "nearMisses": {
+      "operationDefinitions": 36293,
+      "operationFiles": 765,
+      "fragmentDefinitions": 1162,
+      "fragmentSpreads": 2656,
+      "inlineFragments": 1391,
+      "executableOnlyDocuments": 796,
+      "executableOnlyDocumentSamples": [
+        "priv/graphql/introspection.graphql",
+        "test/support/fixtures/language/kitchen-sink.graphql",
+        "example/genqlient.graphql",
+        "generate/testdata/errors/BindingWithIncorrectSelection.graphql",
+        "generate/testdata/errors/ConflictingDirectiveArguments.graphql",
+        "generate/testdata/errors/ConflictingDirectives.graphql",
+        "generate/testdata/errors/ConflictingEnumValues.graphql",
+        "generate/testdata/errors/ConflictingSelections.graphql",
+        "generate/testdata/errors/ConflictingTypeNameAndForFieldBind.graphql",
+        "generate/testdata/errors/ConflictingTypeNameAndGlobalBind.graphql",
+        "generate/testdata/errors/ConflictingTypeNameAndLocalBind.graphql",
+        "generate/testdata/errors/ConflictingTypeNames.graphql"
+      ],
+      "deferStreamApplications": 32,
+      "reading": "an executable operation is a REQUEST document (including persisted-query-style executable-only documents); a fragment/inline fragment is a selection, and @defer/@stream shape a payload. None constructs a component element naming a declared component — which is the contract's shape (Renders: target = the rendered COMPONENT)."
+    },
+    "falsifier": {
+      "run": "npx tsx validation/m14/fixtures/graphql/extended-census.mts — re-read renders.nearMisses and renders.grammarHalf.stems",
+      "wouldFail": "a corpus site where an element/component construct names a DECLARED component, or a component/element/render node type in the served build. Either retires the ruling and returns `renders` to the denominator."
+    }
+  },
+  "mixes_in": {
+    "grammarHalf": {
+      "stems": [],
+      "extensionStems": [
+        "EnumTypeExtension",
+        "ImplementsInterfaces",
+        "InputObjectTypeExtension",
+        "InputObjectTypeExtension_repeat1",
+        "InterfaceTypeExtension",
+        "ObjectTypeExtension",
+        "ScalarTypeExtension",
+        "SchemaExtension",
+        "TypeExtension",
+        "TypeSystemExtension",
+        "UnionTypeExtension",
+        "implements"
+      ],
+      "reading": "the build declares NO mixin/trait/with-clause/member-set production. It DOES declare the extension productions and ImplementsInterfaces, which is why the near miss is measured rather than waved away."
+    },
+    "nearMisses": {
+      "typeExtensionSites": 252,
+      "typeExtensionSitesDeclaredHere": 76,
+      "typeExtensionSitesDeclaredElsewhere": 176,
+      "schemaExtensionSites": 95,
+      "typeExtensionSitesCarryingMembers": 247,
+      "typeExtensionSitesCarryingImplements": 5,
+      "implementsClauses": 3179,
+      "reading": "an extension block is ANONYMOUS: it declares no type that could be the composing source, and it composes no DISTINCT member-set provider — its members belong to the extended type itself and are published as `contains`. `implements` is conformance (published as `implements`). 0 sites compose a named member set into a supertype chain, which is what `mixes_in` means."
+    },
+    "falsifier": {
+      "run": "npx tsx validation/m14/fixtures/graphql/extended-census.mts — re-read mixes_in.nearMisses",
+      "wouldFail": "an extension site composing a DISTINCT NAMED member-set provider into a supertype chain (a type whose supertype list names another type as a member-set provider), or a mixin/trait/member-set production in the served build."
+    }
+  },
+  "part_of": {
+    "grammarHalf": {
+      "stems": [],
+      "reading": "the build declares no include/import/part/paste production. `#import` is a COMMENT convention: the grammar produces a `comment` node whose text is English, and the lane's analyzer reads the convention and publishes it as `imports` (170 whole-population edges)."
+    },
+    "counts": {
+      "comments": 12556,
+      "importSites": 170,
+      "importFiles": 131,
+      "distinctTargets": 78,
+      "forms": {
+        "barePath": 11,
+        "typedFrom": 159
+      },
+      "targetsPresentOnDisk": 156,
+      "targetsSymbolShaped": 1,
+      "symbolShapedTargetSites": [
+        {
+          "file": "packages/import/tests/schema/fixtures/global/a.graphql",
+          "target": "shared"
+        }
+      ],
+      "symbolShapedTargetSitesNamingDeclaredSymbol": 0,
+      "declaredSymbolNamesInPopulation": 5976,
+      "samples": [
+        {
+          "file": "packages/plugin/__tests__/mocks/import-fragments/invalid-query-default.gql",
+          "line": 1,
+          "text": "#import './fragments/bar-fragment.gql'",
+          "target": "./fragments/bar-fragment.gql",
+          "present": true
+        },
+        {
+          "file": "packages/plugin/__tests__/mocks/import-fragments/invalid-query.gql",
+          "line": 1,
+          "text": "#import FooFields from \"./fragments/bar-fragment.gql\"",
+          "target": "./fragments/bar-fragment.gql",
+          "present": true
+        },
+        {
+          "file": "packages/plugin/__tests__/mocks/import-fragments/valid-query-default.gql",
+          "line": 3,
+          "text": "#  import  './fragments/foo-fragment.gql'",
+          "target": "./fragments/foo-fragment.gql",
+          "present": true
+        },
+        {
+          "file": "packages/plugin/__tests__/mocks/import-fragments/valid-query.gql",
+          "line": 3,
+          "text": "#  import  FooFields  from  \"./fragments/foo-fragment.gql\"",
+          "target": "./fragments/foo-fragment.gql",
+          "present": true
+        },
+        {
+          "file": "packages/plugin/__tests__/mocks/test-directives-with-import.graphql",
+          "line": 1,
+          "text": "#import './user-fields.graphql'",
+          "target": "./user-fields.graphql",
+          "present": true
+        },
+        {
+          "file": "packages/import/tests/documents/import-test/default/a.graphql",
+          "line": 1,
+          "text": "# import 'b.graphql'",
+          "target": "b.graphql",
+          "present": true
+        },
+        {
+          "file": "packages/import/tests/documents/import-test/default/b.graphql",
+          "line": 1,
+          "text": "# import 'c.graphql'",
+          "target": "c.graphql",
+          "present": true
+        },
+        {
+          "file": "packages/import/tests/documents/import-test/default/d.gql",
+          "line": 1,
+          "text": "#import 'with-nested-fragment.gql'",
+          "target": "with-nested-fragment.gql",
+          "present": true
+        }
+      ],
+      "topTargets": {
+        "b.graphql": 31,
+        "c.graphql": 16,
+        "a.graphql": 7,
+        "./b.graphql": 6,
+        "./1.model.graphql": 3,
+        "./10.model.graphql": 3,
+        "./2.model.graphql": 3,
+        "./3.model.graphql": 3,
+        "./4.model.graphql": 3,
+        "./5.model.graphql": 3,
+        "./6.model.graphql": 3,
+        "./7.model.graphql": 3,
+        "./8.model.graphql": 3,
+        "./9.model.graphql": 3,
+        "./c.graphql": 3,
+        "./import-me.graphql": 3,
+        "./level2.graphql": 3,
+        "./level3.graphql": 3,
+        "./level4.graphql": 3,
+        "d.graphql": 3
+      }
+    },
+    "falsifier": {
+      "run": "npx tsx validation/m14/fixtures/graphql/extended-census.mts — re-read part_of.counts.importSites and targetsSymbolShaped",
+      "wouldFail": "a corpus site where the inclusion target is a SYMBOL (a GraphQL name, not a file path) and the construct shares the including unit's scope — or a served build declaring an include/paste node type. Either retires the ruling and returns `part_of` to the denominator."
+    }
+  },
+  "controls": {
+    "extends": {
+      "implementsClauses": 3179,
+      "extendsKeywordTokens": 355,
+      "typeExtensionSites": 252,
+      "fires": true
+    },
+    "decorates": {
+      "directiveApplications": 3747,
+      "directiveDefinitions": 600,
+      "fires": true
+    },
+    "renders": {
+      "operationDefinitions": 36293,
+      "fragmentDefinitions": 1162,
+      "fires": true
+    },
+    "mixes_in": {
+      "typeExtensionSitesCarryingMembers": 247,
+      "typeExtensionSitesCarryingImplements": 5,
+      "fires": true
+    },
+    "part_of": {
+      "importSites": 170,
+      "comments": 12556,
+      "fires": true
+    },
+    "grammarInventory": {
+      "declaredTypes": 142,
+      "stems": {
+        "extends": [],
+        "decorates": [],
+        "renders": [],
+        "mixes_in": [],
+        "part_of": [],
+        "extensionAndSupertype": [
+          "EnumTypeExtension",
+          "ImplementsInterfaces",
+          "InputObjectTypeExtension",
+          "InputObjectTypeExtension_repeat1",
+          "InterfaceTypeExtension",
+          "ObjectTypeExtension",
+          "ScalarTypeExtension",
+          "SchemaExtension",
+          "TypeExtension",
+          "TypeSystemExtension",
+          "UnionTypeExtension",
+          "implements"
+        ]
+      },
+      "fires": true
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+ "fixtureId": "python/module-all-exports",
+ "language": "python",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "PY-12. `exports` is a relationship type the analyzer EMITS and that no python fixture pinned, while `requiredKinds` did not list it either — so nothing in the repository could see it. Two gates missing is how a relation survives a full review cycle: the fixture lane has nothing to assert and the completeness gate has nothing to require. `overrides` had the same hole (emitted 428 times over 150 ansible files, absent from requiredKinds) and it is the relation PY-6, PY-7 and PY-8 all concern. Adding both to requiredKinds turned section B red on `exports` alone, and this fixture is what closed it. `__all__` is pinned because it is the only export declaration python has: a module's public surface is stated in one list, read by every packaging tool and linter, and an analyzer that ignores it reports a surface the author explicitly contradicted. Six properties, four derived and two declared as BOUNDARIES with forbid rows so that closing a boundary later fails this fixture deliberately rather than silently. (1) A TUPLE is the same declaration as a list — measured over 400 pinned corpus files, 3 of 16 `__all__` assignments were tuples and produced no edge at all, so 19% of the declared surface was invisible for a reason that had nothing to do with the author. (2) A LEADING UNDERSCORE IS NOT A FILTER: `_private_function` is exported because the AUTHOR put it in `__all__`. A rule filtering on the underscore would drop it, and would agree with a correct lane only by accident. (3) A NAME inside the literal is not read: `_EXPORTED_BY_TUPLE` is a variable, and reading it is a data-flow question, not a read. (4) The SET is the claim, not the order — nothing here may depend on position. (5) DECLARED: an `__all__` built by CONCATENATION is not read, and nor is `__all__.extend(...)`. Both are forbid rows: a missing edge rather than a wrong one, and pinning the absence means implementing either one later has to update this file on purpose. A second harness invariant also applied here and is worth naming: the fixture runner refuses a module that exports the SAME name twice, so the two `__all__` assignments above carry disjoint names. That is a real constraint of the export surface rather than a harness quirk — `from mod import *` binds each name once — and it is why this fixture cannot demonstrate 'a later `__all__` overwrites an earlier one' by reusing a name. It demonstrates the opposite and more useful thing: BOTH assignments are read, so a module that builds its surface in two places publishes both halves.",
+ "expectRelationships": [
+  {
+   "type": "exports",
+   "from": "module_all_exports",
+   "target": "public_function",
+   "line_number": 32,
+   "note": "TUPLE spelling — read as of PY-14"
+  },
+  {
+   "type": "exports",
+   "from": "module_all_exports",
+   "target": "PublicClass",
+   "line_number": 32
+  },
+  {
+   "type": "exports",
+   "from": "module_all_exports",
+   "target": "also_public",
+   "line_number": 32
+  },
+  {
+   "type": "exports",
+   "from": "module_all_exports",
+   "target": "_private_function",
+   "line_number": 39,
+   "note": "the SECOND `__all__` is read too — a later assignment does not shadow an earlier one"
+  },
+  {
+   "type": "exports",
+   "from": "module_all_exports",
+   "target": "from_the_second_list",
+   "line_number": 39
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "from": "module_all_exports",
+   "target": "_EXPORTED_BY_TUPLE",
+   "note": "DECLARED BOUNDARY: a NAME in the literal is not read. It is a variable reference, and resolving it is a data-flow question rather than a syntactic read"
+  },
+  {
+   "from": "module_all_exports",
+   "target": "never_read_either",
+   "note": "DECLARED BOUNDARY: `__all__.extend([...])` is a method call on the list, not an assignment"
+  },
+  {
+   "from": "module_all_exports",
+   "target": "#concat_also_public",
+   "note": "DECLARED BOUNDARY: a concatenated `__all__` is a binary expression, not a list or tuple literal"
+  }
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "public_function",
+   "equals": 1
+  },
+  {
+   "name": "_private_function",
+   "equals": 1,
+   "note": "declared, and EXPORTED because the author put it in `__all__` — the underscore is not a filter"
+  },
+  {
+   "name": "also_public",
+   "equals": 1
+  },
+  {
+   "name": "from_the_second_list",
+   "equals": 1
+  },
+  {
+   "name": "PublicClass",
+   "equals": 1
+  },
+  {
+   "name": "_EXPORTED_BY_TUPLE",
+   "equals": 1,
+   "note": "a module-level assignment IS a declaration; the container is a symbol even though the string inside it is only an export"
+  }
+ ],
+ "forbidSymbols": [
+  {
+   "name": "a_name_in_dunder_all_that_this_module_never_defines",
+   "note": "an `__all__` entry is an export EDGE, not a declaration — publishing one as a symbol would invent a definition that does not exist"
+  }
+ ],
+ "_seamNote": {
+  "what": "Exports are derived SYNTACTICALLY: a `list` or `tuple` LITERAL assigned directly to `__all__`. Every `__all__` assignment in a file is read, so a later one does not shadow an earlier one — which is why `PublicClass` appears twice above.",
+  "why": "The syntactic scope is chosen so the relation cannot fabricate: resolving `_A + _B`, a name, or `.extend()` requires evaluating an expression, and an analyzer that guesses at a module's public surface from a partial read reports a surface the author did not state. The two boundaries are pinned with forbid rows rather than left as prose, so implementing either later has to update this fixture deliberately — a boundary nobody can fail is a boundary nobody will notice crossing. Every edge carries the STRING's own line rather than the assignment's, so a reader is sent to the name they are importing rather than to the list it sits in, and `evidenceClass: structural` because the link between a module and a name it declares is read from the module's own AST rather than inferred."
+ }
+}

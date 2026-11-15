@@ -1,0 +1,36 @@
+{
+  "rationale": "PINS the exports claim EVIDENCE for a NAMED default declaration: the exports row's target stays `default` (the ECMAScript public name) and the declaration name is published only as evidence (flat mirrors `defaultExportForm`/`defaultExportLocalName` plus the canonical `defaultExport` object, which the fixture runner cannot pin because it compares scalars/arrays). The forbid row pins the fabrication this lane already fixed once: targeting `fragment` would invent a public name the module does not export. A non-default export row must carry NO default-claim marker.",
+  "expectSymbols": [
+    {
+      "name": "fragment",
+      "kind": "function"
+    },
+    {
+      "name": "named",
+      "kind": "constant"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "default",
+      "meta.defaultExportForm": "named-declaration",
+      "meta.defaultExportLocalName": "fragment"
+    },
+    {
+      "type": "exports",
+      "target": "named",
+      "meta.defaultExportForm": null
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "fragment",
+      "comment": "the declaration name is EVIDENCE, never the public name"
+    }
+  ],
+  "fixtureId": "javascript/export-claim-default-named",
+  "language": "javascript",
+  "authoredBeforeAnalyzerRun": true
+}

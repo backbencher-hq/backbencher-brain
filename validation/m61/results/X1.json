@@ -1,0 +1,102 @@
+{
+  "issue": "M61.X1 program-closure audit (issue #849)",
+  "code": "X1",
+  "milestone": "M61",
+  "status": "known-gap",
+  "checks": 27,
+  "passed": 20,
+  "failed": 7,
+  "realFailed": 7,
+  "negatives": {
+    "total": 13,
+    "caught": 13
+  },
+  "checksList": [
+    "FAIL: X1: M61 governance re-executes green at this HEAD — M61.G1: KNOWN-GAP (28/44 checks (rc=1)",
+    "ok: X1: the ledger reads through the trusted path",
+    "ok: X1: the ledger validates whole (structure, closure, D-7)",
+    "ok: X1: every ledger entry is the derivation of the record it points at",
+    "FAIL: X1: m24 closure re-executes green — script/m24/verify-closure.ts — FAIL: X1: D1 evidence verified (claim levels + limitations)",
+    "FAIL: X1: m29 closure re-executes green — script/m29/verify-closure.ts — KNOWN-GAP (20/32 passed, 3 negatives)",
+    "FAIL: X1: m42 closure re-executes green — script/m42/verify-closure.ts — KNOWN-GAP (21/33 passed, 7 negatives)",
+    "FAIL: X1: m44 closure re-executes green — script/m44/verify-closure.ts — KNOWN-GAP (43/53 passed, 8 negatives)",
+    "FAIL: X1: m55 closure re-executes green — script/m55/verify-closure.ts — KNOWN-GAP — 35/44 passed, 5/5 mutants caught",
+    "FAIL: X1: the 41-gate lane ladder record is green AND fresh at this HEAD, with its can-fail proof — 127 lane file(s) changed since the ladder ran: ide/vscode/src/extension.ts, script/m24/doc-mutant-harness.mts, script/m24/doc-mutant-probe.mts",
+    "ok: X1: the known-gaps inventory regenerates byte-identically",
+    "ok: X1: the spot-check pack exists and names every issue",
+    "ok: X1: the pack states the verdict is the owner's, not the gate's",
+    "ok: M: a verified issue with no evidence block passes the ledger",
+    "ok: M: another lane's file passes D-7",
+    "ok: M: a hand-typed ledger entry passes the projection audit",
+    "ok: M: a hand-typed X1 ledger entry passes the projection audit",
+    "ok: M: the self-owned exemption leaks to a projected entry",
+    "ok: M: a ladder with a red gate passes the lane audit",
+    "ok: M: a ladder with no can-fail proof passes the lane audit",
+    "ok: M: a ladder pinned to a commit that is not an ancestor of HEAD passes",
+    "ok: M: a ladder whose lane changed underneath it passes",
+    "ok: M: a spot-check pack missing an issue passes",
+    "ok: M: an empty spot-check pack passes",
+    "ok: M: a hand-edited known-gaps inventory passes",
+    "ok: M: a missing known-gaps inventory passes",
+    "ok: X1: the ledger validates WHOLE with this run's own measured X1 entry"
+  ],
+  "currentCommit": "94493a5fd06a6347974de521918ac8ed35b65bdb",
+  "verifierCommand": "npx tsx script/m61/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-10-17T17:29:28.997Z",
+  "audit": {
+    "head": "94493a5fd06a6347974de521918ac8ed35b65bdb",
+    "governance": "M61.G1: KNOWN-GAP (28/44 checks",
+    "laneClosures": [
+      {
+        "lane": "m24",
+        "gate": "script/m24/verify-closure.ts",
+        "rc": 1,
+        "verdict": "FAIL: X1: D1 evidence verified (claim levels + limitations)"
+      },
+      {
+        "lane": "m29",
+        "gate": "script/m29/verify-closure.ts",
+        "rc": 1,
+        "verdict": "KNOWN-GAP (20/32 passed, 3 negatives)"
+      },
+      {
+        "lane": "m42",
+        "gate": "script/m42/verify-closure.ts",
+        "rc": 1,
+        "verdict": "KNOWN-GAP (21/33 passed, 7 negatives)"
+      },
+      {
+        "lane": "m44",
+        "gate": "script/m44/verify-closure.ts",
+        "rc": 1,
+        "verdict": "KNOWN-GAP (43/53 passed, 8 negatives)"
+      },
+      {
+        "lane": "m55",
+        "gate": "script/m55/verify-closure.ts",
+        "rc": 1,
+        "verdict": "KNOWN-GAP — 35/44 passed, 5/5 mutants caught"
+      }
+    ],
+    "ladder": {
+      "record": "validation/m53/results/R1.json",
+      "status": "verified",
+      "pin": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db"
+    },
+    "inventory": {
+      "file": "validation/m61/results/KNOWN-GAPS.md"
+    }
+  },
+  "limitations": [
+    "X1 is the auditor, so its own ledger entry is written from THIS run's measurements (the projection rule) and then validated whole — a pre-existing pin would make a fresh HEAD unverifiable, and the m29 self-referential-trap rationale applies.",
+    "The lane re-audit re-executes the five closure gates; the 41-gate ladder is read as the lane's machine record (green AND fresh by the shared relevance rule) rather than re-run — X1 re-running it would duplicate ~40 minutes, and the ladder's own refresh is covered by the lane's own gates.",
+    "The known-gaps inventory is byte-gated against a fresh generation: it carries the records' declared limitations and the residue censuses, not an opinion about them.",
+    "The verdict is the OWNER's (IDE Honesty Contract §8 rule 5). This gate proves the audit is complete and CAN FAIL; it never self-closes the milestone."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-17T17:29:28.998Z",
+    "contentSha256": "4dc98d578e5477fca1dc12d6efcd80ecc1ff661f4ffaf10b5345e5e1915e4ee8"
+  }
+}

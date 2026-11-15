@@ -1,0 +1,180 @@
+{
+ "schemaVersion": 1,
+ "fixture": "bash/ambiguous-target-resolution.sh",
+ "authoredFrom": "Authored 2026-10-03 from the MEASUREMENT in validation/m14/fixtures/bash/probe-bash-ambiguity.mts, which walked production parseFile over the 400-file hash-order sample and found 1,879 edges across five types naming a target that more than one published symbol in the same file answers to — 19.0% of all resolved `uses` targets. The incoming-edge instruction is explicit that this is the analyzer's problem and not the traversal code's: 'A TARGET THAT RESOLVES TO MORE THAN ONE PUBLISHED SYMBOL. The reverse walk picks one by a rule nobody chose... An ambiguous target is ONE edge attributed to ONE declaration. Counting it as N is how a name collision becomes a wrong refactor.'\n\nThree of the five types were already disambiguated before this fixture existed and are asserted here only as the control that they stay that way: `contains` puts the child's NAME line on the edge (nameLineOf, M60 #921), `exports` puts the declaration's line on it, and `overrides` carries `overridesLine` (verified to survive the pool-worker boundary on kubernetes/third_party/gimme/gimme and ohmyzsh/lib/clipboard.zsh). `uses` and `calls` put the USE SITE's line on the edge, which is a different line from the declaration, so the declaration was unrecoverable from the row. That is what `targetLine` fixes.\n\nThe rule under test is a lexical-scope chain walked OUTWARD: in the first scope that has a declaration of the name at or before the use site, the nearest such line is the answer, and the walk stops. `outerScope` and `innermostScope` are asserted separately because the difference between them IS the bug this fixture was written to catch: the first version of the rule had no scope chain at all and resolved `read_early`'s read of SHARED at line 45 to line 37, a declaration inside a DIFFERENT function. bash does not let one function's assignment shadow another's, and the edge was asserting a declaration that is not in effect there. The file also pins the ABSENCE rows: a name with one declaration in the file carries no target metadata at all, which is what keeps the added payload at 15.2% of `uses` edges instead of all of them.\n\nThe `gamma` block at the end and its two forbidden rows were added because a mutant SURVIVED the first version of this file: `bash/ambiguity-publishes-a-line-when-it-cannot-pick` takes the nearest candidate in the declined branch instead of declining, and every row the file had at that point still passed. The reason is structural rather than an oversight — with the correct rule in place, NO edge in the file reaches the declined branch, so the whole branch was unasserted. The file could not manufacture a tie (two declarations in one scope are impossible, since a second assignment is a reassignment) and that limitation is now written into the fixture's own source rather than left for a reader to assume.",
+ "expectSymbols": [
+  {
+   "name": "ambiguous-target-resolution.sh",
+   "kind": "module"
+  },
+  {
+   "name": "read_scope",
+   "kind": "function"
+  },
+  {
+   "name": "read_other",
+   "kind": "function"
+  },
+  {
+   "name": "read_early",
+   "kind": "function"
+  },
+  {
+   "name": "SHARED",
+   "kind": "variable",
+   "ownerName": "ambiguous-target-resolution.sh"
+  },
+  {
+   "name": "SHARED",
+   "kind": "variable",
+   "ownerName": "read_scope"
+  },
+  {
+   "name": "SHARED",
+   "kind": "variable",
+   "ownerName": "read_other"
+  },
+  {
+   "name": "SHARED",
+   "kind": "variable",
+   "ownerName": "read_early"
+  },
+  {
+   "name": "UNIQUE_ONLY_DECLARATION",
+   "kind": "variable"
+  },
+  {
+   "name": "SHAPES",
+   "kind": "variable",
+   "ownerName": "first"
+  },
+  {
+   "name": "SHAPES",
+   "kind": "variable",
+   "ownerName": "second"
+  },
+  {
+   "name": "alpha",
+   "kind": "function"
+  },
+  {
+   "name": "beta",
+   "kind": "function"
+  },
+  {
+   "name": "gamma",
+   "kind": "function"
+  }
+ ],
+ "expectRelationships": [
+  {
+   "type": "uses",
+   "from": "read_scope",
+   "target": "read_scope.SHARED",
+   "meta.targetLine": 30,
+   "meta.targetKind": "variable",
+   "meta.targetResolution": "innermostScope",
+   "note": "The declaration in the use's OWN function wins over the file-scope one at line 27, even though the file-scope declaration is the one a reader sees first when reading top to bottom. This is the row that separates a scope-aware rule from a nearest-line rule."
+  },
+  {
+   "type": "uses",
+   "from": "read_other",
+   "target": "read_other.SHARED",
+   "meta.targetLine": 37,
+   "meta.targetResolution": "innermostScope",
+   "note": "The same name in a second function resolves to that function's own declaration. An implementation that resolved by name-and-position alone would have to get BOTH of these right independently, and the earlier version of the rule got this one right by accident while getting read_early wrong."
+  },
+  {
+   "type": "uses",
+   "from": "read_early",
+   "target": "ambiguous-target-resolution.sh.SHARED",
+   "meta.targetLine": 27,
+   "meta.targetResolution": "outerScope",
+   "note": "THE row. read_early's own assignment to SHARED is at line 46, AFTER the read at line 45, so it is not in effect at the use site and the answer walks OUT to the file-scope declaration at line 27. The version of the rule without a scope chain answered 37 here — read_other's declaration, in a function that has nothing to do with this read. This row is what makes bash's function-local shadowing observable on the edge instead of a guess."
+  },
+  {
+   "type": "uses",
+   "from": "first",
+   "target": "first.SHAPES",
+   "meta.targetLine": 69,
+   "meta.targetResolution": "innermostScope",
+   "note": "targetKind is asserted to be the PUBLISHED kind. declare -a SHAPES=() publishes a `variable`, and the array/scalar fact travels on the symbol's isArray metadata instead — an earlier draft of this fixture asserted an `array` targetKind and was wrong, because a kind the index does not have is a join that finds nothing."
+  },
+  {
+   "type": "uses",
+   "from": "second",
+   "target": "second.SHAPES",
+   "meta.targetLine": 70,
+   "meta.targetResolution": "innermostScope",
+   "note": "The third declaration of SHAPES, in a third scope, at line 70. Three scopes, three different answers for one name — which is the whole finding in one row."
+  },
+  {
+   "type": "uses",
+   "from": "ambiguous-target-resolution.sh",
+   "target": "ambiguous-target-resolution.sh.SHAPES",
+   "meta.targetLine": 68,
+   "meta.targetResolution": "outerScope",
+   "note": "A FILE-SCOPE use of a name that three functions also declare. It resolves to line 68 (the module's declare -a) and not to line 70, which is later but belongs to second's body and never executes at file scope. This is the row a nearest-preceding-line rule gets wrong in the opposite direction from read_early: here the nearest line IS wrong and the scope is right."
+  },
+  {
+   "type": "uses",
+   "from": "gamma",
+   "target": "LATE_DECLARED",
+   "line_number": 83,
+   "meta.targetResolution": "ambiguousInFile",
+   "note": "The DECLINED branch, and the row the whole mechanism exists for. gamma reads LATE_DECLARED, which two OTHER functions declare and neither gamma nor the file declares, so there is no correct single declaration and the edge publishes the refusal and no line. Publishing the nearest of the two would be the invented attribution this is built to prevent: an edge naming one of several declarations and carrying its line as if it were the one is how a name collision becomes wrong refactoring advice. That failure loses resolution nowhere — it only ever ADDS a claim — so it is not reachable by a mutation of the happy path, and the two other round-5 mutants (scope chain removed, walk inverted) both lose resolution rather than fabricate it. This row is what makes the fabricator catchable."
+  }
+ ],
+ "forbidRelationships": [
+  {
+   "type": "uses",
+   "from": "ambiguous-target-resolution.sh",
+   "target": "UNIQUE_ONLY_DECLARATION",
+   "meta.targetLine": 56,
+   "note": "The ABSENCE row, and the payload constraint. UNIQUE_ONLY_DECLARATION (line 56) is declared exactly once in the file, so its `uses` edges are unambiguous and must carry NO target metadata at all. resolveDeclaration returns undefined when the candidate count is below two. An implementation that published the key unconditionally would pass every other row in this file and would attach three keys to all 80,851 `uses` edges on the corpus to say what the edge's target already said."
+  },
+  {
+   "type": "uses",
+   "from": "ambiguous-target-resolution.sh",
+   "target": "UNIQUE_ONLY_DECLARATION",
+   "meta.targetResolution": "outerScope",
+   "note": "The same absence stated from the other side: not even the resolution RULE is published for a non-ambiguous target. The key's presence is the signal that the target was ambiguous."
+  },
+  {
+   "type": "uses",
+   "from": "read_early",
+   "target": "SHARED",
+   "meta.targetLine": 37,
+   "note": "The defect this fixture was written to catch, kept as a forbidden row so a regression to the pre-scope-chain rule cannot pass. 37 is read_other's declaration, and the file's own read of SHARED on line 45 resolves to 27. An edge asserting it says read_early reads a variable another function assigns — bash has no such mechanism."
+  },
+  {
+   "type": "uses",
+   "from": "read_early",
+   "target": "SHARED",
+   "meta.targetLine": 46,
+   "note": "The other tempting wrong answer: read_early's OWN declaration, which is at line 46 and therefore not in effect at the read on line 45. Resolving a use to a declaration that has not happened yet is the same class of error as resolving it across a function boundary, and the file's comment about it is the assertion."
+  },
+  {
+   "type": "uses",
+   "from": "ambiguous-target-resolution.sh",
+   "target": "SHAPES",
+   "meta.targetLine": 70,
+   "note": "The module-scope use must not resolve to the nearest preceding line. 70 is second's declaration and executes only when second is called; at file scope the value in effect is the one declare -a set at 68."
+  },
+  {
+   "type": "uses",
+   "from": "gamma",
+   "target": "LATE_DECLARED",
+   "meta.targetLine": 81,
+   "note": "alpha's declaration is at line 81 and beta's at 79; the edge must name NEITHER. Together with the targetResolution row this is the pair that convicts bash/ambiguity-publishes-a-line-when-it-cannot-pick, which was CAUGHT by this row rather than by the read_early rows: with the correct rule those rows are never produced by the declined branch at all, so the fabricator reached green through them."
+  },
+  {
+   "type": "uses",
+   "from": "gamma",
+   "target": "LATE_DECLARED",
+   "meta.targetLine": 82,
+   "note": "beta's declaration at line 82, for the same reason. Two forbidden lines rather than one because the fabricator picks the MINIMUM, and a fixture that forbade only the other line would let it through."
+  }
+ ],
+ "_targetSpelling": "THE OWNER-QUALIFIED IDENTITY (2026-10-11, third spelling and the one that binds): a target naming a declaration THIS file holds is spelled `<OWNER>.<name>` — the alias `pool-worker.ts:1175` derives as `${scope}.${name}` — because THAT is the key a store built through `parseFile` can answer. The analyzer reaches it only where its own scope chain says the declaration is IN EFFECT at the edge's line and its KIND is one the edge can denote (a command resolves to a function or to PATH, never to a variable). A target naming nothing in this file keeps its bare spelling."
+}

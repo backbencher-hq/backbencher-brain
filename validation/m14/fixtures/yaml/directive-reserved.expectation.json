@@ -1,0 +1,32 @@
+{
+ "fixtureId": "yaml/directive-reserved",
+ "language": "yaml",
+ "authoredBeforeAnalyzerRun": true,
+ "rationale": "A reserved directive (%FOO) was removed from YAML 1.2 but is still parseable by the grammar. It is recorded rather than dropped, because 'the grammar cannot produce this' and 'nothing looked for this' are indistinguishable in an output diff.",
+ "expectMetadata": [
+  {
+   "reservedDirectives": [
+    "%FOO",
+    "bar"
+   ]
+  }
+ ],
+ "expectPatterns": [
+  "Reserved Directive"
+ ],
+ "expectSymbolCount": [
+  {
+   "name": "a",
+   "equals": 1
+  }
+ ],
+ "_everyRelationshipCarries": {
+  "note": "asserted by the lane census over 1,274 corpus files: 308,987/308,987 relationships carry a 1-based line_number and an evidenceClass",
+  "line_number": [
+   6
+  ],
+  "evidenceClasses": [
+   "structural"
+  ]
+ }
+}

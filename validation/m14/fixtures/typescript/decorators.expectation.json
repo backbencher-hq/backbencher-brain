@@ -1,0 +1,12 @@
+{
+  "fixtureId": "typescript/decorators",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Decorated class, decorated property members extract; decorator text preserved on symbols.",
+  "expectSymbols": [
+    { "name": "AppComponent" },
+    { "name": "title" },
+    { "name": "change" }
+  ],
+  "forbidRelationships": []
+}

@@ -1,0 +1,30 @@
+{
+  "issue": "A5",
+  "note": "A5 (task-35 Part B): `(require ns)` with an unquoted, unqualified symbol is a DYNAMIC argument (a local var), not a libspec — no `imports` edge may be emitted for it (the corpus case is `(doseq [ns public-namespaces] (require ns))`). Two-direction: the quoted static require keeps its import edge, and both the static and dynamic spellings keep the reference/name they legitimately have.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "fixture.dynamic-require",
+      "target": "clojure.string",
+      "line_number": 6
+    },
+    {
+      "type": "references",
+      "from": "fixture.dynamic-require",
+      "target": "clojure.string",
+      "line_number": 6
+    },
+    {
+      "type": "exports",
+      "from": "fixture.dynamic-require",
+      "target": "load-it",
+      "line_number": 8
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "imports",
+      "target": "ns"
+    }
+  ]
+}

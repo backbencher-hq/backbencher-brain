@@ -1,0 +1,256 @@
+{
+  "repo": "elixir",
+  "indexSeconds": 118.226,
+  "fileCount": 692,
+  "negatives": 1,
+  "perTool": {
+    "bb_search": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 16,
+      "args": "{\"mode\":\"file\",\"filePath\":\"lib/elixir/lib/file.ex\",\"query\":\"lib/elixir/lib/file.ex\"}",
+      "outHead": "{\"searchMode\":\"file\",\"file\":\"lib/elixir/lib/file.ex\",\"fileId\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex\",\"language\":\"elixir\",\"content\":\"#"
+    },
+    "bb_health": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 161,
+      "args": "{}",
+      "outHead": "\"project: /home/ishaq2321/bb_tests/repositories/elixir\\nprojectId: a0e74040fb5c01a56dabd69d78711044402b104e\\nfiles=692 symbols=14725 relationships=77697 imports"
+    },
+    "bb_ask": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 1062,
+      "args": "{\"query\":\"what does exists? do?\"}",
+      "outHead": "\"answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within that margin of the best. The similarity numbers below separa"
+    },
+    "bb_patterns": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 4801,
+      "args": "{\"scope\":\"orphaned\"}",
+      "outHead": "\"orphaned code (1621 found):\\n  orphaned_function supervise — lib/elixir/lib/supervisor/spec.ex:174 (70%)\\n  orphaned_class Logger.Backends.Console — lib/logger"
+    },
+    "bb_security": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 198,
+      "args": "{}",
+      "outHead": "\"security: 128 critical / 372 high / 0 medium / 0 low (144 resolved flows, 356 unvalidated sources, 0 mitigated)\\n  [critical] SQL injection (File) @ lib/elixir"
+    },
+    "bb_visualize": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 26,
+      "args": "{\"scope\":\"symbol\",\"target\":\"exists?\",\"format\":\"json\"}",
+      "outHead": "{\"scope\":\"symbol\",\"target\":\"exists?\",\"format\":\"json\",\"view\":\"graph\",\"layout\":\"regions\",\"nodes\":[{\"id\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/f"
+    },
+    "bb_migrate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 94,
+      "args": "{\"symbolName\":\"exists?\",\"targetLanguage\":\"go\",\"format\":\"json\"}",
+      "outHead": "{\"targetLanguage\":\"go\",\"plans\":[{\"componentName\":\"exists?\",\"symbolId\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:248\",\"sourceFile\""
+    },
+    "bb_analyze": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 100,
+      "args": "{\"mode\":\"stats\"}",
+      "outHead": "{\"files\":692,\"linesOfCode\":314874,\"avgFileSize\":14450.997109826589,\"avgFileSizeUnit\":\"bytes\",\"symbols\":14725,\"symbolsWithComplexity\":14725,\"avgComplexity\":4.707"
+    },
+    "bb_doc": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 99,
+      "args": "{\"mode\":\"symbol\",\"target\":\"exists?\",\"format\":\"markdown\",\"maxTokens\":1200}",
+      "outHead": "\"# symbol: exists?\\n\\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 29 source(s). No indexed evidence was found for: Limitation"
+    },
+    "bb_edit": {
+      "ok": false,
+      "declaredAbsent": false,
+      "ms": 810,
+      "args": "{\"mode\":\"update\",\"filePath\":\"lib/elixir/lib/file.ex\",\"symbolName\":\"exists?\",\"newContent\":\"export function exists?(): void { /* m48 c1 dry-run */ }\",\"dryRun\":true,\"format\":false}",
+      "outHead": "{\n  \"ok\": false,\n  \"mode\": \"update\",\n  \"error\": \"update exists?: newContent does not declare the symbol and no replaceable body block was found; pass the full declaration to replace it\",\n  \"rolledBack"
+    },
+    "bb_index": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 8889,
+      "args": "{\"path\":\"lib/elixir/lib/file.ex\",\"mode\":\"file\"}",
+      "outHead": "{\"mode\":\"file\",\"path\":\"lib/elixir/lib/file.ex\",\"indexed\":1,\"deleted\":0,\"errors\":0,\"outcome\":\"indexed\",\"derived\":{\"pass\":\"bounded\",\"phases\":[{\"name\":\"relationshi"
+    },
+    "bb_graph": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 82,
+      "args": "{\"symbol\":\"exists?\",\"maxDepth\":2}",
+      "outHead": "{\"symbol\":\"exists?\",\"root\":{\"id\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:248\",\"name\":\"exists?\",\"symbolType\":\"function\",\"file\":\""
+    },
+    "bb_impact": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 174,
+      "args": "{\"symbol\":\"exists?\"}",
+      "outHead": "{\"symbol\":\"exists?\",\"root\":{\"id\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:248\",\"name\":\"exists?\",\"file\":\"lib/elixir/lib/file.ex\","
+    },
+    "bb_cross_language": {
+      "ok": true,
+      "declaredAbsent": true,
+      "ms": 6,
+      "args": "{\"symbol\":\"exists?\"}",
+      "outHead": "{\"symbol\":\"exists?\",\"language\":\"elixir\",\"languages\":[\"elixir\"],\"copies\":[{\"id\":\"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:248\",\"sy"
+    },
+    "bb_annotate": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 2,
+      "args": "{\"symbol\":\"quoted_to_string\",\"body\":\"m48 c1 corpus note (elixir)\"}",
+      "outHead": "{\"stored\":true,\"annotation\":{\"id\":\"bbann-f7724220905be2d6c472b4d30d60c51860c734275e5152fca25d69e0183402f0\",\"symbol_name\":\"quoted_to_string\",\"symbol_path\":null,\""
+    },
+    "bb_annotations": {
+      "ok": true,
+      "declaredAbsent": false,
+      "ms": 3,
+      "args": "{\"symbol\":\"quoted_to_string\"}",
+      "outHead": "{\"symbol\":\"quoted_to_string\",\"path\":null,\"includeNameLevel\":true,\"annotations\":[{\"id\":\"bbann-f7724220905be2d6c472b4d30d60c51860c734275e5152fca25d69e0183402f0\",\""
+    }
+  },
+  "crossChecks": [
+    {
+      "tool": "bb_search",
+      "repo": "elixir",
+      "label": "search resolves repo symbol",
+      "pass": true,
+      "detail": "exists? [function] lib/elixir/lib/file.ex:248 (elixir)\nrelative_app_file_exists? [function] lib/mix/ rows=0"
+    },
+    {
+      "tool": "bb_search",
+      "repo": "elixir",
+      "label": "file mode returns indexed file",
+      "pass": true,
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"lib/elixir/lib/file.ex\",\n  \"fileId\": \"a0e74040fb5c01a56dabd69d78711044402b104e:lib/"
+    },
+    {
+      "tool": "bb_health",
+      "repo": "elixir",
+      "label": "health.files == SQL count (692)",
+      "pass": true,
+      "detail": "project: /home/ishaq2321/bb_tests/repositories/elixir\nprojectId: a0e74040fb5c01a56dabd69d78711044402b104e\nfiles=692 symb"
+    },
+    {
+      "tool": "bb_ask",
+      "repo": "elixir",
+      "label": "ask returns a substantive answer for an indexed symbol",
+      "pass": true,
+      "detail": "answer: Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within t"
+    },
+    {
+      "tool": "bb_patterns",
+      "repo": "elixir",
+      "label": "patterns orphaned scope returns structured output",
+      "pass": true,
+      "detail": "orphaned code (1621 found):\n  orphaned_function supervise — lib/elixir/lib/supervisor/spec.ex:174 (7"
+    },
+    {
+      "tool": "bb_security",
+      "repo": "elixir",
+      "label": "security scan returns structured output",
+      "pass": true,
+      "detail": "security: 128 critical / 372 high / 0 medium / 0 low (144 resolved flows, 356 unvalidated sources, 0"
+    },
+    {
+      "tool": "bb_visualize",
+      "repo": "elixir",
+      "label": "visualize resolves root symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"exists?\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": ["
+    },
+    {
+      "tool": "bb_migrate",
+      "repo": "elixir",
+      "label": "migrate references the requested symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"targetLanguage\": \"go\",\n  \"plans\": [\n    {\n      \"componentName\": \"exists?\",\n      \"symbolId\": \""
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "elixir",
+      "label": "analyze callers references the target symbol",
+      "pass": true,
+      "detail": "{\n  \"root\": {\n    \"id\": \"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:248"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "elixir",
+      "label": "analyze stats.files == SQL count (692)",
+      "pass": true,
+      "detail": "out files=692 sql=692"
+    },
+    {
+      "tool": "bb_analyze",
+      "repo": "elixir",
+      "label": "analyze stats.symbols == SQL count (14725)",
+      "pass": true,
+      "detail": "out symbols=14725 sql=14725"
+    },
+    {
+      "tool": "bb_doc",
+      "repo": "elixir",
+      "label": "doc returns markdown content",
+      "pass": true,
+      "detail": "# symbol: exists?\n\n1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 29"
+    },
+    {
+      "tool": "bb_edit",
+      "repo": "elixir",
+      "label": "dry-run leaves file untouched",
+      "pass": true,
+      "detail": "before=14bb93a6 after=14bb93a6"
+    },
+    {
+      "tool": "bb_index",
+      "repo": "elixir",
+      "label": "index single file reports the file",
+      "pass": true,
+      "detail": "{\n  \"mode\": \"file\",\n  \"path\": \"lib/elixir/lib/file.ex\",\n  \"indexed\": 1,\n  \"deleted\": 0,\n  \"errors\": 0,\n  \"outcome\": \"ind"
+    },
+    {
+      "tool": "bb_graph",
+      "repo": "elixir",
+      "label": "graph root == exists?",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"exists?\",\n  \"root\": {\n    \"id\": \"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:"
+    },
+    {
+      "tool": "bb_impact",
+      "repo": "elixir",
+      "label": "impact root == exists?",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"exists?\",\n  \"root\": {\n    \"id\": \"a0e74040fb5c01a56dabd69d78711044402b104e:lib/elixir/lib/file.ex:exists?:"
+    },
+    {
+      "tool": "bb_cross_language",
+      "repo": "elixir",
+      "label": "cross_language names the symbol or declares absence",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"exists?\",\n  \"language\": \"elixir\",\n  \"languages\": [\n    \"elixir\"\n  ],\n  \"copies\": [\n  "
+    },
+    {
+      "tool": "bb_annotate",
+      "repo": "elixir",
+      "label": "annotate write is declared success",
+      "pass": true,
+      "detail": "{\n  \"stored\": true,\n  \"annotation\": {\n    \"id\": \"bbann-261ba37002818a9731f7fe5037fa1ac40983926df2a27"
+    },
+    {
+      "tool": "bb_annotations",
+      "repo": "elixir",
+      "label": "annotations reflect the write",
+      "pass": true,
+      "detail": "{\n  \"symbol\": \"quoted_to_string\",\n  \"path\": null,\n  \"includeNameLevel\": true,\n  \"annotations\": [\n    {\n      \"id\": \"bban"
+    }
+  ],
+  "failures": []
+}

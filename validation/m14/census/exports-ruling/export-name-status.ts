@@ -49,7 +49,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs"
 import { basename, join } from "node:path"
 
 const ROOT = new URL("../../../../", import.meta.url).pathname
-const CR = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const JSON_OUT = argv.includes("--json")
 const fileArg = argv.find((a) => a.startsWith("--file="))?.slice("--file=".length)

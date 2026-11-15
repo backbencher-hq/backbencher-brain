@@ -44,7 +44,7 @@
  * a reader to trip on.
  *
  * Population: every git-tracked file the production ROUTER
- * (`detectLanguageFromPath`) maps to `r` in `$HOME/fixtures/repositories` —
+ * (`detectLanguageFromPath`) maps to `r` in `/home/ishaq2321/bb_tests/repositories` —
  * 2,184 files across 16 repositories, no sampling, no per-repo cap. Reproduce with
  *
  *     npx tsx validation/m14/fixtures/r/ontology-ten-types.ts     # counts + grammar inventory

@@ -1,0 +1,41 @@
+{
+  "fixtureId": "cpp/macro-decorated-class",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "D15: a class whose HEAD is decorated by a macro is still a class, and must be published as one. tree-sitter-cpp cannot read `class GTEST_API_ UnitTestImpl { ... };` and does not merely decline it — it recovers the whole declaration as a FUNCTION, with the specifier's `name` field holding the MACRO (`type_identifier GTEST_API_`), the real class name sitting beside it as a bare sibling `identifier`, and the class body as the function's `compound_statement`. Because the specifier then carries no body of its own, the forward-declaration rule declines it and THE CLASS IS NEVER PUBLISHED. Two things follow. The bare sibling reads as a function declarator, so the class's own name is published as a function. And the out-of-line definitions of that class's members (`Widget::reset() { ... }`) resolve their owner by the `Widget::` qualifier to whichever `Widget` symbol exists — the CONSTRUCTOR, which shares the class's name, so every member's body is owned by a one-line constructor declaration. MEASURED at HEAD: across the five pinned C++ corpora, 93 macro-decorated class declarations, 5 published, 88 lost; and in fmt/test/gtest/gmock-gtest-all.cc `UnitTestImpl` was published at `902-902`, the constructor's own declaration line, while owning 91 edges spread over lines 902-1354. After the fix all 93 publish, and `UnitTestImpl` spans `900-1355` with every one of those 91 edges inside it. What HEAD published for this very file, and what every row below pins against: `UnitTestImpl` as a FUNCTION at `27-27`, `value` as a function with no owner, `cached_` as a variable with no owner, and `Reporter` not published at all. `Reporter` is a STRUCT spelling, included because gtest, abseil and the catch2 self-test each spell their decorated classes both ways and a rule that recognised only `class` would half-fix the corpus. THE D11 CONTROL is the `class Widget f();` block and it is the reason the all-caps test is load-bearing rather than tidy: that member also has a class_specifier as the `type` field of a function_definition, and its compound_statement is a body too, so a detector that stopped at 'a specifier with no body of its own' would swallow it, publish a second class named `Widget`, and re-own the body. The two shapes differ exactly as the gate states them — there the specifier's `name` is `Widget`, a class name rather than a macro spelling, and `f` sits inside a `function_declarator` rather than as a bare sibling. `thing_lowercase` pins the negative direction again from the other side: a lowercase specifier name is not a macro spelling, so a detector loosened to any bodyless specifier is caught even when the sibling identifier happens to look like a name. `Plain` is the plain-class control, whose members were already owned correctly at HEAD.",
+  "expectSymbols": [
+    { "name": "UnitTestImpl", "kind": "class" },
+    { "name": "constructor", "kind": "constructor", "ownerName": "UnitTestImpl" },
+    { "name": "value", "kind": "method", "ownerName": "UnitTestImpl" },
+    { "name": "cached_", "kind": "property", "ownerName": "UnitTestImpl" },
+    { "name": "Reporter", "kind": "class" },
+    { "name": "count", "kind": "property", "ownerName": "Reporter" },
+    { "name": "Widget", "kind": "class" },
+    { "name": "f", "kind": "method", "ownerName": "Widget" },
+    { "name": "Plain", "kind": "class" },
+    { "name": "m", "kind": "method", "ownerName": "Plain" },
+    { "name": "thing_lowercase", "kind": "class" },
+    { "name": "y", "kind": "property", "ownerName": "thing_lowercase" }
+  ],
+  "expectSymbolRanges": [
+    { "symbol": "UnitTestImpl", "startLine": 25, "endLine": 32 },
+    { "symbol": "Reporter", "startLine": 35, "endLine": 37 }
+  ],
+  "expectSymbolCount": [
+    { "name": "UnitTestImpl", "equals": 1 },
+    { "name": "Widget", "equals": 1 }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "UnitTestImpl", "target": "constructor" },
+    { "type": "contains", "from": "UnitTestImpl", "target": "value" },
+    { "type": "contains", "from": "UnitTestImpl", "target": "cached_" },
+    { "type": "contains", "from": "Reporter", "target": "count" },
+    { "type": "contains", "from": "Widget", "target": "f" },
+    { "type": "contains", "from": "Plain", "target": "m" },
+    { "type": "contains", "from": "thing_lowercase", "target": "y" }
+  ],
+  "forbidSymbols": [
+    { "name": "GTEST_API_" },
+    { "name": "STDCALL_DECL" }
+  ]
+}

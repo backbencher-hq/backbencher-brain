@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "fixture": "json/Refs.json",
+  "authoredFrom": "BD-ref-target: a `$ref` names a LOCATION, not a symbol, so the target is `Refs.definitions.Node` and not the bare `Node`. Nothing guarantees the name at a location is unique - two documents in one file can each declare `spec` - while the location itself is. The SOURCE is the `$ref` occurrence's own path for the same reason, which is why one endpoint in this file resolves by qualifiedName rather than by name; that is recorded in the lane's gap note rather than papered over here. `contains` endpoints are QUALIFIED PATHS: this pin set was migrated from bare-name endpoints by a structure-preserving transformation (owner and child and line unchanged, spelling resolved against the fixture's own qualifiedName). The reason is measured, not stylistic: over a 202-file, 99-repo sample 32,660 of 66,032 `contains` edges (49.4%) named a target matching MORE THAN ONE published symbol, and the shared resolver declines a non-unique bare name, so those edges bound to no declaration at all. See meta.endpoints=qualified_path on the edge.",
+  "expectSymbols": [
+    {
+      "name": "$schema",
+      "kind": "property",
+      "ownerName": "Refs"
+    },
+    {
+      "name": "definitions",
+      "kind": "class",
+      "ownerName": "Refs"
+    },
+    {
+      "name": "Node",
+      "kind": "class",
+      "ownerName": "definitions"
+    },
+    {
+      "name": "type",
+      "kind": "property",
+      "ownerName": "Node"
+    },
+    {
+      "name": "properties",
+      "kind": "class",
+      "ownerName": "Refs"
+    },
+    {
+      "name": "child",
+      "kind": "class",
+      "ownerName": "properties"
+    },
+    {
+      "name": "$ref",
+      "kind": "property",
+      "ownerName": "child"
+    },
+    {
+      "name": "Refs",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Refs",
+      "target": "Refs.$schema",
+      "line_number": 2
+    },
+    {
+      "type": "contains",
+      "from": "Refs",
+      "target": "Refs.definitions",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Refs.definitions",
+      "target": "Refs.definitions.Node",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Refs.definitions.Node",
+      "target": "Refs.definitions.Node.type",
+      "line_number": 3
+    },
+    {
+      "type": "contains",
+      "from": "Refs",
+      "target": "Refs.properties",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "Refs.properties",
+      "target": "Refs.properties.child",
+      "line_number": 4
+    },
+    {
+      "type": "contains",
+      "from": "Refs.properties.child",
+      "target": "Refs.properties.child.$ref",
+      "line_number": 4
+    },
+    {
+      "type": "references",
+      "from": "Refs.properties.child.$ref",
+      "target": "Refs.definitions.Node",
+      "line_number": 4
+    }
+  ]
+}

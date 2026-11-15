@@ -38,7 +38,7 @@ import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/objc-wasm-ab.json")
 const REPOS = ["sdwebimage", "afnetworking", "Clyde"]
 

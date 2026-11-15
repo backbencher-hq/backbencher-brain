@@ -1,0 +1,17 @@
+{
+  "issue": "M15.H1",
+  "code": "H1",
+  "tool": "bb_health",
+  "title": "classification — real counts/freshness/warnings",
+  "verified": true,
+  "checks": 7,
+  "passed": 8,
+  "failed": 0,
+  "negatives": 1,
+  "generatedAt": "2026-08-23T17:16:14.286Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.335Z",
+    "contentSha256": "f5a056ff61c0babe356f8a10354530e0312630c97b56e8739941a31f09c89c9f"
+  }
+}

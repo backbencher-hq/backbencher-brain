@@ -1,0 +1,155 @@
+{
+  "generatedBy": "validation/m14/fixtures/xml/pereference-shape-probe.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "sampling": {
+    "method": "family-stratified deterministic round-robin over git-tracked files routed to xml by detectLanguageFromPath; identical method to ontology-census.mts",
+    "perRepoCap": 400,
+    "totalCap": 2500,
+    "repositoriesAdmittingXml": 110,
+    "sampled": 2500
+  },
+  "grammarFacts": {
+    "source": "grammars/tree-sitter-xml/xml/src/grammar.json",
+    "PEReference": "SEQ[STRING '%', SYMBOL Name, STRING ';']",
+    "Name": "PATTERN [a-zA-Z_][a-zA-Z0-9_:.\\u00b7-]*",
+    "PEDecl": "SEQ['<!ENTITY', S, '%', S, Name, S, (EntityValue|ExternalID), ...] — the `% name` VALUE FORM is a PEDecl, not a PEReference",
+    "consequence": "a Name cannot contain whitespace, so interior whitespace inside a PEReference is unreachable for any node the grammar built; only error recovery could produce it"
+  },
+  "wasmIdentity": {
+    "file": "wasm/tree-sitter-xml.wasm",
+    "bytes": 50255,
+    "md5": "1cf3a4f9a4bf6a28a88ab1a4004aa17b",
+    "note": "byte-identical to the registry entry `tree-sitter-xml/tree-sitter-xml.wasm` that src/ast/engine.ts resolveWasm writes to its per-process temp path, so this probe measured the PRODUCTION grammar and not a vendored copy that differs from it"
+  },
+  "corpus": {
+    "counts": {
+      "pereferenceNodes": 0,
+      "withNameChild": 0,
+      "withoutNameChild": 0,
+      "underErrorRegion": 0,
+      "startsWithPercent": 0,
+      "hasSemicolon": 0,
+      "semicolonAtIndexGt1": 0,
+      "interiorXmlWhitespace": 0,
+      "interiorJsOnlyWhitespace": 0,
+      "p0Publishes": 0,
+      "p1Publishes": 0,
+      "p2Publishes": 0,
+      "p0VsP1Disagreements": 0,
+      "p0VsP2Disagreements": 0
+    },
+    "childShapes": [],
+    "note": "a 0-node corpus compares nothing: both predicates agree because neither is asked. See `shapes` and `fixtures`."
+  },
+  "shapes": {
+    "counts": {
+      "nodes": 7,
+      "p0Publishes": 4,
+      "p1Publishes": 5,
+      "p2Publishes": 7,
+      "p0VsP1Disagreements": 1,
+      "p0VsP2Disagreements": 3,
+      "withNameChild": 7,
+      "withoutNameChild": 0,
+      "interiorXmlWhitespace": 1,
+      "interiorJsOnlyWhitespace": 1
+    },
+    "cases": [
+      {
+        "name": "reference-in-internal-subset",
+        "rows": [
+          "reference-in-internal-subset: \"%pe;\" children=[Name] err=false ref=\"pe\" P0=publish P1=publish P2=publish(\"pe\")"
+        ]
+      },
+      {
+        "name": "VALUE-FORM-%-name-quoted (what the old comment cites)",
+        "rows": [
+          "VALUE-FORM-%-name-quoted (what the old comment cites): \"% zz '&#60;\" children=[ERROR,Name,ERROR] err=false ref=\"zz '&#60\" P0=drop P1=drop P2=publish(\"zz\")"
+        ]
+      },
+      {
+        "name": "space-after-%-reference",
+        "rows": [
+          "space-after-%-reference: \"% pe;\" children=[ERROR,Name] err=false ref=\"pe\" P0=publish P1=publish P2=publish(\"pe\")"
+        ]
+      },
+      {
+        "name": "reference-inside-PEDecl-EntityValue",
+        "rows": [
+          "reference-inside-PEDecl-EntityValue: \"%other;\" children=[Name] err=false ref=\"other\" P0=publish P1=publish P2=publish(\"other\")"
+        ]
+      },
+      {
+        "name": "reference-in-elementdecl-position",
+        "rows": [
+          "reference-in-elementdecl-position: \"%pe\" children=[Name] err=false ref=\"\" P0=drop P1=drop P2=publish(\"pe\")"
+        ]
+      },
+      {
+        "name": "bare-%-no-name",
+        "rows": []
+      },
+      {
+        "name": "reference-with-tab-after-%",
+        "rows": [
+          "reference-with-tab-after-%: \"%\\tpe;\" children=[ERROR,Name] err=false ref=\"pe\" P0=publish P1=publish P2=publish(\"pe\")"
+        ]
+      },
+      {
+        "name": "reference-with-NBSP-inside (U+00A0: \\s matches, XML S does not)",
+        "rows": [
+          "reference-with-NBSP-inside (U+00A0: \\s matches, XML S does not): \"%p e;\" children=[Name,ERROR] err=false ref=\"p e\" P0=drop P1=publish P2=publish(\"p\")"
+        ]
+      }
+    ]
+  },
+  "fixtures": {
+    "counts": {
+      "nodes": 4,
+      "p0Publishes": 4,
+      "p1Publishes": 4,
+      "p2Publishes": 4,
+      "p0VsP1Disagreements": 0,
+      "p0VsP2Disagreements": 0,
+      "withNameChild": 4,
+      "withoutNameChild": 0,
+      "interiorXmlWhitespace": 0,
+      "interiorJsOnlyWhitespace": 0
+    },
+    "files": [
+      {
+        "name": "conditional-section.xml",
+        "rows": [
+          "conditional-section.xml: \"%mode;\" children=[Name] err=false ref=\"mode\" P0=publish P1=publish P2=publish(\"mode\")"
+        ]
+      },
+      {
+        "name": "xsd-parameter-entity-refs.xml",
+        "rows": [
+          "xsd-parameter-entity-refs.xml: \"%inner;\" children=[Name] err=false ref=\"inner\" P0=publish P1=publish P2=publish(\"inner\")",
+          "xsd-parameter-entity-refs.xml: \"%outer;\" children=[Name] err=false ref=\"outer\" P0=publish P1=publish P2=publish(\"outer\")",
+          "xsd-parameter-entity-refs.xml: \"%neverDeclared;\" children=[Name] err=false ref=\"neverDeclared\" P0=publish P1=publish P2=publish(\"neverDeclared\")"
+        ]
+      }
+    ]
+  },
+  "nameChildTypes": [
+    [
+      "Name",
+      11
+    ]
+  ],
+  "disagreements": [
+    "P0!=P2 VALUE-FORM-%-name-quoted (what the old comment cites): \"% zz '&#60;\" children=[ERROR,Name,ERROR] err=false ref=\"zz '&#60\" P0=drop P1=drop P2=publish(\"zz\")",
+    "P0!=P2 reference-in-elementdecl-position: \"%pe\" children=[Name] err=false ref=\"\" P0=drop P1=drop P2=publish(\"pe\")",
+    "P0!=P1 reference-with-NBSP-inside (U+00A0: \\s matches, XML S does not): \"%p e;\" children=[Name,ERROR] err=false ref=\"p e\" P0=drop P1=publish P2=publish(\"p\")",
+    "P0!=P2 reference-with-NBSP-inside (U+00A0: \\s matches, XML S does not): \"%p e;\" children=[Name,ERROR] err=false ref=\"p e\" P0=drop P1=publish P2=publish(\"p\")"
+  ],
+  "noNameExamples": [],
+  "interiorWhitespaceExamples": [
+    "VALUE-FORM-%-name-quoted (what the old comment cites): \"% zz '&#60;\" -> U+0020"
+  ],
+  "jsOnlyExamples": [
+    "reference-with-NBSP-inside (U+00A0: \\s matches, XML S does not): \"%p e;\" -> U+00A0"
+  ]
+}

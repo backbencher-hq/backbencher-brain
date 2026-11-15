@@ -1,12 +1,12 @@
 {
   "probe": "M59.ACC",
   "at": "2026-09-20T17:33:57.555Z",
-  "command": "$HOME/.nvm/versions/node/v22.22.1/bin/node $HOME/mcp/backbencher-brain/script/m59/acceptance-tool-callsites.ts",
+  "command": "/home/ishaq2321/.nvm/versions/node/v22.22.1/bin/node /home/ishaq2321/mcp/backbencher-brain/script/m59/acceptance-tool-callsites.ts",
   "commit": "5ec305ca07eaa4dcd06d6f77c461e147b786aee0",
   "treeModifiedInputs": 42,
   "dataDir": "/tmp/m59-acc-data-NiUMMz",
   "reused": false,
-  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "repo": "/home/ishaq2321/bb_tests/repositories/cats-effect",
   "fixtures": [
     {
       "lang": "java",

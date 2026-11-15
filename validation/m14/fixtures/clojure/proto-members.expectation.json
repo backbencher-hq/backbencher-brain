@@ -1,0 +1,151 @@
+{
+  "issue": "M60 clojure deep round — CLJ-D19 (declaration gate) + CLJ-D27 (type privacy)",
+  "note": "A protocol/interface signature and a method IMPLEMENTATION are DECLARATIONS, and no core-builtin gate belongs on them. The gate that dropped them was a leftover from C9, whose real fix was the null-prototype alias table — `toString` was never in the core list, so the gate never fired for the prototype-pollution class it was written for. What it did instead was delete real members: gvec.clj's `(definterface ArrayManager …)` declared `array`, `alength`, `aclone`, `aget`, `aset` and four of the five are core names, so the interface shipped with ONE method; `(definterface … (identity [x]))` shipped with none. The shapes below are the gvec/genclass shapes exactly, plus `get`/`key`/`count`, which the 723-name list would have swallowed as well. CLJ-D27 rides along: `^:private` on a defprotocol/defrecord/deftype name is the same privacy contract W24-mr3 established for def/defn, and the type branches never read it.",
+  "expectSymbols": [
+    {
+      "name": "ArrayManager",
+      "kind": "interface"
+    },
+    {
+      "name": "array",
+      "ownerName": "ArrayManager"
+    },
+    {
+      "name": "alength",
+      "ownerName": "ArrayManager"
+    },
+    {
+      "name": "identity",
+      "ownerName": "ArrayManager"
+    },
+    {
+      "name": "key",
+      "ownerName": "ArrayManager"
+    },
+    {
+      "name": "count",
+      "ownerName": "ArrayManager"
+    },
+    {
+      "name": "Sealed",
+      "kind": "interface",
+      "visibility": "private"
+    },
+    {
+      "name": "get",
+      "ownerName": "Sealed"
+    },
+    {
+      "name": "Box",
+      "kind": "class",
+      "visibility": "private"
+    },
+    {
+      "name": "identity",
+      "ownerName": "Box"
+    },
+    {
+      "name": "key",
+      "ownerName": "Box"
+    },
+    {
+      "name": "count",
+      "ownerName": "Box"
+    },
+    {
+      "name": "toString",
+      "ownerName": "Widget"
+    },
+    {
+      "name": "Widget",
+      "kind": "class",
+      "visibility": "private"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "ArrayManager",
+      "target": "alength"
+    },
+    {
+      "type": "contains",
+      "from": "ArrayManager",
+      "target": "identity"
+    },
+    {
+      "type": "contains",
+      "from": "ArrayManager",
+      "target": "key"
+    },
+    {
+      "type": "contains",
+      "from": "ArrayManager",
+      "target": "count"
+    },
+    {
+      "type": "contains",
+      "from": "Sealed",
+      "target": "get"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "identity"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "key"
+    },
+    {
+      "type": "contains",
+      "from": "Box",
+      "target": "count"
+    },
+    {
+      "type": "contains",
+      "from": "Widget",
+      "target": "toString"
+    },
+    {
+      "type": "implements",
+      "from": "Box",
+      "target": "Sealed"
+    },
+    {
+      "type": "implements",
+      "from": "Widget",
+      "target": "Object"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "identity"
+    },
+    {
+      "type": "calls",
+      "target": "toString"
+    },
+    {
+      "type": "calls",
+      "from": "ArrayManager",
+      "target": "alength"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Sealed",
+      "visibility": "public"
+    },
+    {
+      "name": "Box",
+      "visibility": "public"
+    },
+    {
+      "name": "Widget",
+      "visibility": "public"
+    }
+  ]
+}

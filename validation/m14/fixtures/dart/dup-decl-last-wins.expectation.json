@@ -1,0 +1,57 @@
+{
+  "fixtureId": "dart/dup-decl-last-wins",
+  "language": "dart",
+  "authoredBeforeAnalyzerRun": false,
+  "authoredNote": "The `contains` line below (28) and the parameter sets were TRANSCRIBED from a measured run (script/m14/tmp/dt-fixture-dump.ts) and checked against the source: 28 is `int foo(int first, int second) {` — the SECOND declaration, the one that runs — while 24 is the first declaration dart used to report. The parameter pins are the discriminating half: only the live declaration carries `second`, so a first-wins revert fails on the PAYLOAD, not merely on the line.",
+  "rationale": "M60 / #753 (DARTD20) — the family dup-key ruling, at BOTH scopes. One scope declaring the same callable twice is invalid Dart (a compile error), so the analyzer's answer for the shape is a deterministic family contract; python's #748 settled the family's with a measurement over 512 pinned files (21 of 25 duplicate-name scopes were declaration CHAINS, 3 branch ALTERNATIVES, exactly ONE genuine rebinding, whose language answer was LAST-WINS). dart carried the opposite (FIRST body wins), which put the symbol's range, parameters, return type and `contains` line on the declaration that does not run. Measured corpus extent of the shape (script/m14/tmp/dt-dup-census.ts, FULL extent, 2,547 files of both pinned corpora): ZERO genuine duplicate member names — every flag was a `X()`/`X.named()` constructor false positive (the constructor name FIELD is the class name), a legal `get`/`set` pair, or my first census's own container gap — and FIFTEEN genuine duplicate TOP-LEVEL callables in test files, which dart emitted as TWO symbols apiece. Both scopes now share one helper (`registerCallable`): one symbol per (scope,name,kind), the LAST declaration owning it. Pinned by expectSymbolCount (exactly one `foo` in D, exactly one `top`), expectParameters (the surviving symbol carries the second declaration's parameters), the contains line at the second declaration, and forbids on the first declaration's line for both. Reverting mutant: dart/dup-decl-first-wins.",
+  "expectSymbols": [
+    { "name": "D", "kind": "class" },
+    { "name": "foo", "kind": "method", "ownerName": "D" },
+    { "name": "top", "kind": "function" }
+  ],
+  "expectSymbolCount": [
+    { "name": "foo", "ownerName": "D", "kind": "method", "equals": 1 },
+    { "name": "foo", "ownerName": "D", "equals": 1 },
+    { "name": "top", "equals": 1 }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "foo",
+      "ownerName": "D",
+      "parameters": [{ "name": "first" }, { "name": "second" }],
+      "comment": "the LIVE declaration's parameters: the first declaration has one (`int foo(int first)`)"
+    },
+    {
+      "symbol": "top",
+      "parameters": [{ "name": "first" }, { "name": "second" }],
+      "comment": "program scope, same ruling: dart used to emit TWO `top` symbols, one per declaration"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "D",
+      "target": "D.foo",
+      "line_number": 28,
+      "comment": "the SECOND `foo` declaration (line 28) — the body that runs and the symbol that survives"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "D",
+      "target": "D.foo",
+      "line_number": 24,
+      "note": "the MEASURED pre-fix position: the FIRST declaration (line 24), whose body the analyzer used to keep"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "foo",
+      "kind": "method",
+      "ownerName": "D",
+      "meta.isGetter": true,
+      "comment": "an accessor-shaped `foo` would mean the second declaration was read as something it is not (the shape the dedup key exists to separate)"
+    }
+  ]
+}

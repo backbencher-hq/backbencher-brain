@@ -1,0 +1,123 @@
+{
+  "fixtureId": "hcl/terragrunt-include",
+  "language": "hcl",
+  "authoredBeforeAnalyzerRun": true,
+  "authoredNote": "Authored BEFORE the `part_of` reading landed, so the pre-change run is a FAILING run (2 expected `part_of` edges, 0 actual) and a regression is visible. Line numbers were transcribed from the numbered source before any run: the `path` KEY's line is the site of the target name \u2014 6 (`path = \"terragrunt-root.hcl\"`), 11 (`path = \"./lib/terragrunt-library.hcl\"`) \u2014 matching this analyzer's own attribute-keyed convention for `imports`/`overrides`/`inherits`. The four near misses (computed path 17, interpolated template 22, unnamed include 27, remote-state config path 35) and the two read-only neighbours (read_terragrunt_config 42, module source 48) were checked to produce NO `part_of` row after the change.",
+  "rationale": "`part_of` is the textual-inclusion relation: the included unit's members become members of the INCLUDING document's configuration. terragrunt `include` is the one HCL construct that does that \u2014 terragrunt MERGES the included file's blocks into the child config (measured over the whole admitted population: 287 include blocks, 279 literal `path` values of which 28 name an existing tracked file, 8 computed; script/m14/hcl-extended-census.ts). The edge's target is the INCLUDED FILE'S ROOT-MODULE SYMBOL (its file stem \u2014 the same spelling `documentName()` gives every HCL file's root symbol), never the written path: the arbiter resolves a target string against symbol names and has no space for a filesystem path, and a path target resolves 0 rows. The written path is kept in `metadata.partPath` where a reader can check it against the source line, and `metadata.partRole` is MANDATORY on every `part_of` row. The near misses are pinned as FORBIDS rather than expected absences, because each is a DIFFERENT fact that a careless walker would publish as this one: a function-call path and an interpolated path are computed values (no file this parse can name), an include with no `path` names nothing, `terraform_remote_state` READS another stack's state (not a splice of it), `read_terragrunt_config()` READS a config at runtime, and a `module` block is a separate unit addressed `module.NAME.*` (inclusion by reference, never a textual merge \u2014 the module/`source` split the lane measured separately: 2,042 sites, 941 local, 496 registry, 193 vcs). An `include` whose written path names a file ABSENT from the project is deliberately NOT refused here: absence is not knowable in a pure AST pass, so those sites are published and counted as the arm's unresolved wall rather than guessed away.",
+  "expectSymbols": [
+    {
+      "name": "terragrunt-include",
+      "kind": "module",
+      "note": "the document root symbol; the SOURCE of every part_of row"
+    },
+    {
+      "name": "include.root",
+      "kind": "class",
+      "note": "the include block is still a block symbol: part_of and contains are different facts and both are kept"
+    },
+    {
+      "name": "include.library",
+      "kind": "class"
+    },
+    {
+      "name": "terraform_remote_state.vpc",
+      "kind": "class"
+    },
+    {
+      "name": "fixture",
+      "kind": "module"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "terragrunt-include",
+      "target": "terragrunt-root",
+      "line_number": 6,
+      "meta.partRole": "library",
+      "meta.partPath": "terragrunt-root.hcl",
+      "meta.partSymbol": "terragrunt-root",
+      "meta.isHclIncludePart": true,
+      "meta.hclSite": "terragrunt-include",
+      "meta.evidenceClass": "include_literal",
+      "note": "the plain case: a literal path naming a file, so the edge's target is that file's root-module symbol (stem), and the written path is carried in metadata"
+    },
+    {
+      "type": "part_of",
+      "from": "terragrunt-include",
+      "target": "terragrunt-library",
+      "line_number": 11,
+      "meta.partPath": "./lib/terragrunt-library.hcl",
+      "note": "a relative path with a directory component: the target is still the BASENAME's stem, not the path \u2014 `./lib/terragrunt-library.hcl` is not a symbol"
+    },
+    {
+      "type": "contains",
+      "from": "include.root",
+      "target": "include.root.path",
+      "line_number": 6,
+      "note": "the path attribute is still contained by its block: a part_of edge and a containment edge are different facts and both are kept"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "line_number": 17,
+      "note": "COMPUTED PATH. `path = find_in_parent_folders()` names no file at parse time; a part_of whose target is the expression would be an edge to nothing. Pinned by line so no glob forbid can hide a legitimate edge elsewhere"
+    },
+    {
+      "type": "part_of",
+      "target": "find_in_parent_folders()",
+      "note": "the expression-as-target variant of the same fabrication, in case a future rule publishes the raw expression text"
+    },
+    {
+      "type": "part_of",
+      "line_number": 22,
+      "note": "INTERPOLATED PATH. The static halves of `\"${get_terragrunt_dir()}/root.hcl\"` are not a filename; the target here is a value computed at runtime"
+    },
+    {
+      "type": "part_of",
+      "target": "root",
+      "note": "THE TEMPLATE-LITERAL LEAK. Reading the `template_literal` child of an interpolated quoted_template yields the static segment; publishing `root` from line 22 would be a name this parse cannot know"
+    },
+    {
+      "type": "part_of",
+      "line_number": 27,
+      "note": "ABSENT TARGET \u2014 the grammar permits `include` with no `path` attribute; a block that names no file includes nothing"
+    },
+    {
+      "type": "part_of",
+      "from": "terraform_remote_state.vpc",
+      "note": "a remote-state data source READS another stack's state; it does not splice that stack's configuration into this file"
+    },
+    {
+      "type": "part_of",
+      "line_number": 35,
+      "note": "the remote state's own `config.path` names a STATE FILE, not a configuration unit: reading state is not textual inclusion"
+    },
+    {
+      "type": "part_of",
+      "target": "../vpc/terraform.tfstate",
+      "note": "a part_of to a state file would assert a splice of serialized state into this config \u2014 a fact the tree contradicts"
+    },
+    {
+      "type": "part_of",
+      "line_number": 42,
+      "note": "`read_terragrunt_config()` is a FUNCTION CALL that reads a config at runtime; the call's argument is a path expression, not a spliced unit"
+    },
+    {
+      "type": "part_of",
+      "target": "common.hcl",
+      "note": "the function's argument must not be published as a part either: 0 rows for this name anywhere in the fixture"
+    },
+    {
+      "type": "part_of",
+      "from": "fixture",
+      "note": "MODULE INCLUSION IS NOT A TEXTUAL SPLICE. A module source is a separate unit addressed `module.NAME.*`; it earns `imports`, never `part_of` \u2014 the discriminator this lane measured on 2,042 module-source sites"
+    },
+    {
+      "type": "part_of",
+      "target": "./lib/terragrunt-library.hcl",
+      "note": "PATH-SHAPED TARGET. The arbiter resolves target strings against symbol names; the written path belongs in metadata.partPath, never in the target"
+    }
+  ]
+}

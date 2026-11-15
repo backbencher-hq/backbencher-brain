@@ -1,0 +1,630 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.59",
+  "code": "V5",
+  "tool": "bb_visualize",
+  "title": "bb_visualize: every published option changes the answer (handler-level)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "control: project scope returns the fixture's symbols",
+      "pass": true,
+      "detail": "7"
+    },
+    {
+      "name": "control: src/ symbols are present by default",
+      "pass": true,
+      "detail": "src/api/parse.ts,src/util/edit_distance.ts,src/utilities/format_helpers.ts,src/api/handlers.ts,test/app.test.ts,src/pricing.py"
+    },
+    {
+      "name": "control: the test symbol is present by default",
+      "pass": true,
+      "detail": "src/api/parse.ts,src/util/edit_distance.ts,src/utilities/format_helpers.ts,src/api/handlers.ts,test/app.test.ts,src/pricing.py"
+    },
+    {
+      "name": "control: vendor/ is excluded by the DEFAULT patterns",
+      "pass": true,
+      "detail": "{\"vendor\":1}"
+    },
+    {
+      "name": "control: default patterns are the documented twelve",
+      "pass": true,
+      "detail": "[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"]"
+    },
+    {
+      "name": "excludePatterns: no returned symbol sits under the excluded segment",
+      "pass": true,
+      "detail": "vendor/lib.ts,test/app.test.ts"
+    },
+    {
+      "name": "excludePatterns: the exclusion is attributed to the caller's segment",
+      "pass": true,
+      "detail": "{\"src\":6}"
+    },
+    {
+      "name": "excludePatterns: `patterns` is the caller's list, not the defaults",
+      "pass": true,
+      "detail": "[\"src\"]"
+    },
+    {
+      "name": "excludePatterns: the option is what removed src/ (control kept it) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "7 -> 2"
+    },
+    {
+      "name": "excludePatterns: composes with scope (the scope matched, the filter removed)",
+      "pass": true,
+      "detail": "available=3 nodes=0"
+    },
+    {
+      "name": "excludePatterns: the scoped-away symbols are declared, not silently empty",
+      "pass": true,
+      "detail": "3 symbol(s) match this query but none survived the projection — absence declared, never guessed"
+    },
+    {
+      "name": "excludePatterns: the segment is what removed them (control kept the module) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "nodes=3"
+    },
+    {
+      "name": "includeTests:false removes the test symbol",
+      "pass": true,
+      "detail": "src/api/parse.ts,src/util/edit_distance.ts,src/utilities/format_helpers.ts,src/api/handlers.ts,src/pricing.py"
+    },
+    {
+      "name": "includeTests:false is declared on `excluded`",
+      "pass": true,
+      "detail": "false"
+    },
+    {
+      "name": "includeTests:false counts the removed test symbols",
+      "pass": true,
+      "detail": "1 -> 2"
+    },
+    {
+      "name": "includeTests:false is what removed it (control returned it) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "src/api/parse.ts,src/util/edit_distance.ts,src/utilities/format_helpers.ts,src/api/handlers.ts,test/app.test.ts,src/pricing.py"
+    },
+    {
+      "name": "includeTests:true keeps test sources and says so",
+      "pass": true,
+      "detail": "src/api/parse.ts,src/util/edit_distance.ts,src/utilities/format_helpers.ts,src/api/handlers.ts,test/app.test.ts,src/pricing.py"
+    },
+    {
+      "name": "languages: every returned node is of the requested language",
+      "pass": true,
+      "detail": "[\"typescript\"]"
+    },
+    {
+      "name": "languages: the applied filter is echoed",
+      "pass": true,
+      "detail": "[\"typescript\"]"
+    },
+    {
+      "name": "languages: the filter narrows the declared available count",
+      "pass": true,
+      "detail": "8 -> 7"
+    },
+    {
+      "name": "languages: the value is folded to the index's own spelling",
+      "pass": true,
+      "detail": "6 vs 6 / [\"typescript\"]"
+    },
+    {
+      "name": "languages: folding is what saved it (the mixed-case value is not stored verbatim) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "[\"typescript\"]"
+    },
+    {
+      "name": "languages: an unknown value is refused",
+      "pass": true,
+      "detail": "bb_visualize: unknown languages: klingon — this index stores python, typescript. languages are matched case-insensitivel"
+    },
+    {
+      "name": "languages: and the refusal names the stored set",
+      "pass": true,
+      "detail": "bb_visualize: unknown languages: klingon — this index stores python, typescript. languages are matched case-insensitively, and a value the index does not contain is reported as an error rather than as"
+    },
+    {
+      "name": "languages: an unknown value is never answered as an empty project [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown languages: klingon — this index stores python, typescript. languages are matched case-insensitivel"
+    },
+    {
+      "name": "relationshipTypes: only the requested kind is drawn",
+      "pass": true,
+      "detail": "[\"calls\"]"
+    },
+    {
+      "name": "relationshipTypes: the applied filter is echoed",
+      "pass": true,
+      "detail": "[\"calls\"]"
+    },
+    {
+      "name": "relationshipTypes: no filter means no filter is claimed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "null"
+    },
+    {
+      "name": "relationshipTypes: the filter bites (default draws other kinds too) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "2 -> 1"
+    },
+    {
+      "name": "relationshipTypes: the value is folded to the index's own spelling",
+      "pass": true,
+      "detail": "[\"calls\"]"
+    },
+    {
+      "name": "relationshipTypes: an unknown kind is refused",
+      "pass": true,
+      "detail": "bb_visualize: unknown relationshipTypes: call — this index stores calls, exports, imports. relationshipTypes are matched"
+    },
+    {
+      "name": "relationshipTypes: the refusal names the stored vocabulary",
+      "pass": true,
+      "detail": "bb_visualize: unknown relationshipTypes: call — this index stores calls, exports, imports. relationshipTypes are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "relationshipTypes: a typo is not answered as `complete for this node set` with no edges [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown relationshipTypes: call — this index stores calls, exports, imports. relationshipTypes are matched case-insensitively,"
+    },
+    {
+      "name": "symbolKinds: only the requested kinds are returned",
+      "pass": true,
+      "detail": "[\"function\"]"
+    },
+    {
+      "name": "symbolKinds: the applied filter is echoed",
+      "pass": true,
+      "detail": "[\"function\"]"
+    },
+    {
+      "name": "symbolKinds: the value is folded to the index's own spelling",
+      "pass": true,
+      "detail": "[\"function\"]"
+    },
+    {
+      "name": "symbolKinds: an unknown kind is refused, naming the stored set",
+      "pass": true,
+      "detail": "bb_visualize: unknown symbolKinds: wizard — this index stores function. symbolKinds are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "symbolKinds: a kind this index does not hold is an error, not an empty graph",
+      "pass": true,
+      "detail": "bb_visualize: unknown symbolKinds: class — this index stores function. symbolKinds are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero re"
+    },
+    {
+      "name": "symbolKinds: and it does not claim the project is empty [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown symbolKinds: class — this index stores function. symbolKinds are matched case-insensitively, and a value the index doe"
+    },
+    {
+      "name": "kindCensus: the census accounts for every returned node",
+      "pass": true,
+      "detail": "census=7 nodes=7"
+    },
+    {
+      "name": "kindCensus: the DEFAULT text format states the composition",
+      "pass": true,
+      "detail": "returned kinds: function 7 — no kind filter was passed, so this is the composition the index's own ranking produced"
+    },
+    {
+      "name": "kindCensus: with no kind filter it says so",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "kindCensus: a filtered answer names the filter beside the census",
+      "pass": true,
+      "detail": "returned kinds: function 7 (filtered by symbolKinds=[function])"
+    },
+    {
+      "name": "kindCensus: the language census is stated too",
+      "pass": true,
+      "detail": "returned languages: typescript 6, python 1"
+    },
+    {
+      "name": "maxNodes: the node budget is applied",
+      "pass": true,
+      "detail": "3"
+    },
+    {
+      "name": "maxNodes: the cut is declared",
+      "pass": true,
+      "detail": "{\"truncated\":true,\"originalNodes\":5,\"originalLinks\":2,\"maxNodes\":3,\"maxLinks\":5000,\"reason\":\"output limits\",\"totalNodesAvailable\":8,\"offset\":0,\"nextOffset\":3}"
+    },
+    {
+      "name": "maxNodes: the three numbers stay distinct",
+      "pass": true,
+      "detail": "{\"truncated\":true,\"originalNodes\":5,\"originalLinks\":2,\"maxNodes\":3,\"maxLinks\":5000,\"reason\":\"output limits\",\"totalNodesAvailable\":8,\"offset\":0,\"nextOffset\":3}"
+    },
+    {
+      "name": "maxNodes: an in-range budget is NOT reported as adjusted [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "null"
+    },
+    {
+      "name": "maxLinks: the link budget is applied",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "maxLinks: the budget is what cut the edges (the control drew more) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "2 -> 1"
+    },
+    {
+      "name": "maxNodes: zero is refused",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was "
+    },
+    {
+      "name": "maxNodes: the zero refusal names the accepted range",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNod"
+    },
+    {
+      "name": "maxNodes: zero is not silently answered with a different page [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was "
+    },
+    {
+      "name": "maxNodes: negative is refused",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received -5) — a returned page must mean the page that was"
+    },
+    {
+      "name": "maxNodes: the negative refusal names the accepted range",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received -5) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNo"
+    },
+    {
+      "name": "maxNodes: negative is not silently answered with a different page [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received -5) — a returned page must mean the page that was"
+    },
+    {
+      "name": "maxNodes: above the ceiling is refused",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that w"
+    },
+    {
+      "name": "maxNodes: the above the ceiling refusal names the accepted range",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit max"
+    },
+    {
+      "name": "maxNodes: above the ceiling is not silently answered with a different page [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that w"
+    },
+    {
+      "name": "maxNodes: fractional is refused",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 1.5) — a returned page must mean the page that wa"
+    },
+    {
+      "name": "maxNodes: the fractional refusal names the accepted range",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 1.5) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxN"
+    },
+    {
+      "name": "maxNodes: fractional is not silently answered with a different page [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 1.5) — a returned page must mean the page that wa"
+    },
+    {
+      "name": "maxLinks: zero is refused with the accepted range",
+      "pass": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is"
+    },
+    {
+      "name": "maxLinks: the ceiling itself is ACCEPTED (the range is inclusive)",
+      "pass": true,
+      "detail": "{\"truncated\":false,\"originalNodes\":7,\"originalLinks\":2,\"maxNodes\":200,\"maxLinks\":20000,\"reason\":null,\"totalNodesAvailable\":8,\"offset\":0,\"nextOffset\":null}"
+    },
+    {
+      "name": "maxNodes: the ceiling itself is ACCEPTED",
+      "pass": true,
+      "detail": "{\"truncated\":false,\"originalNodes\":7,\"originalLinks\":2,\"maxNodes\":2000,\"maxLinks\":5000,\"reason\":null,\"totalNodesAvailable\":8,\"offset\":0,\"nextOffset\":null}"
+    },
+    {
+      "name": "offset: the page block declares where this answer sits",
+      "pass": true,
+      "detail": "{\"offset\":0,\"limit\":2,\"returned\":2,\"total\":8,\"totalBasis\":\"symbols matching this scope and these filters, counted before the noise filter and every output bound; pages are cut from the projection order, so a page can be shorter than `limit` and the numbers need not divide\",\"number\":1,\"nextOffset\":2,\"rule\":\"the same total order the ranking uses — the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample, from the first\"}"
+    },
+    {
+      "name": "offset: the answer names the NEXT page instead of leaving it to arithmetic",
+      "pass": true,
+      "detail": "{\"offset\":0,\"limit\":2,\"returned\":2,\"total\":8,\"totalBasis\":\"symbols matching this scope and these filters, counted before the noise filter and every output bound; pages are cut from the projection order, so a page can be shorter than `limit` and the numbers need not divide\",\"number\":1,\"nextOffset\":2,\"rule\":\"the same total order the ranking uses — the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample, from the first\"}"
+    },
+    {
+      "name": "offset: page 2 begins where page 1 ended",
+      "pass": true,
+      "detail": "whole=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/util/edit_distance.ts:editDistance:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/utilities/format_helpers.ts:formatHelper:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/handlers.ts:handleRequest:2 p2=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/utilities/format_helpers.ts:formatHelper:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/handlers.ts:handleRequest:2"
+    },
+    {
+      "name": "offset: the cursor is what moved (page 2 is not page 1 again) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "p1=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/util/edit_distance.ts:editDistance:1 p2=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/utilities/format_helpers.ts:formatHelper:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/handlers.ts:handleRequest:2"
+    },
+    {
+      "name": "offset: consecutive pages TILE the unpaged answer — nothing repeated, nothing skipped",
+      "pass": true,
+      "detail": "p1+p2=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/util/edit_distance.ts:editDistance:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/utilities/format_helpers.ts:formatHelper:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/handlers.ts:handleRequest:2 whole=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/util/edit_distance.ts:editDistance:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/utilities/format_helpers.ts:formatHelper:1,cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/handlers.ts:handleRequest:2"
+    },
+    {
+      "name": "offset: paging does not change the denominator",
+      "pass": true,
+      "detail": "8 / 8 / 8"
+    },
+    {
+      "name": "offset: truncation carries the cursor too",
+      "pass": true,
+      "detail": "{\"truncated\":true,\"originalNodes\":5,\"originalLinks\":2,\"maxNodes\":2,\"maxLinks\":5000,\"reason\":\"output limits\",\"totalNodesAvailable\":8,\"offset\":2,\"nextOffset\":4}"
+    },
+    {
+      "name": "offset: the last page reports nextOffset null",
+      "pass": true,
+      "detail": "{\"offset\":6,\"limit\":2,\"returned\":1,\"total\":8,\"totalBasis\":\"symbols matching this scope and these filters, counted before the noise filter and every output bound; pages are cut from the projection order, so a page can be shorter than `limit` and the numbers need not divide\",\"number\":4,\"nextOffset\":null,\"rule\":\"the same total order the ranking uses — the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample, after the first 6\"}"
+    },
+    {
+      "name": "offset: and it is not reported as absent",
+      "pass": true,
+      "detail": "false"
+    },
+    {
+      "name": "offset: a page past the end is declared an empty PAGE",
+      "pass": true,
+      "detail": "offset 8 holds no drawable symbol, and the fetch had no rows of its own left to offer — this is an empty PAGE, not an empty project: 8 symbol(s) match, so restart at an offset below 8"
+    },
+    {
+      "name": "offset: and it does NOT claim the project has no symbols [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "offset 8 holds no drawable symbol, and the fetch had no rows of its own left to offer — this is an empty PAGE, not an empty project: 8 symbol(s) match, so restart at an offset below 8"
+    },
+    {
+      "name": "offset: the text format states the page and the next cursor",
+      "pass": true,
+      "detail": "page: symbols 3-4 (offset 2, limit 2, page 2; 8 symbol(s) match this scope) — next page: offset=4"
+    },
+    {
+      "name": "offset: the text format calls an out-of-range page empty rather than absent",
+      "pass": true,
+      "detail": "absent: offset 8 holds no drawable symbol, and the fetch had no rows of its own left to offer — this is an empty PAGE, not an empty project: 8 symbol(s) match, so restart at an offset below 8"
+    },
+    {
+      "name": "offset: a negative cursor is refused",
+      "pass": true,
+      "detail": "bb_visualize: offset must be a whole number >= 0 (received -2) — a page must mean the page that was asked for; omit offset to start at the first symbol"
+    },
+    {
+      "name": "offset: a fractional cursor is refused",
+      "pass": true,
+      "detail": "bb_visualize: offset must be a whole number >= 0 (received 1.5) — a page must mean the page that was asked for; omit offset to start at the first symbol"
+    },
+    {
+      "name": "offset: a refusal is not answered with a page [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: offset must be a whole number >= 0 (received 1.5) — a page must mean the page that was asked for; omit off"
+    },
+    {
+      "name": "offset: a direct engine caller is TOLD its cursor was normalised",
+      "pass": true,
+      "detail": "[\"offset -3 is not a non-negative whole number; 0 applied\"]"
+    },
+    {
+      "name": "offset: and a fractional one is normalised the same way, with the note",
+      "pass": true,
+      "detail": "[\"offset 1.5 is not a non-negative whole number; 0 applied\"]"
+    },
+    {
+      "name": "offset: a valid cursor is NOT reported as adjusted [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "null"
+    },
+    {
+      "name": "annotations: the control answer declares an EMPTY layer rather than silence",
+      "pass": true,
+      "detail": "{\"notes\":0,\"nodes\":0,\"notesOnOtherPaths\":0,\"items\":[],\"capped\":false,\"rule\":\"notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere\"}"
+    },
+    {
+      "name": "annotations: and the rule says how a note is attributed",
+      "pass": true,
+      "detail": "notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere"
+    },
+    {
+      "name": "annotations: the note on the returned symbol is attached",
+      "pass": true,
+      "detail": "{\"notes\":1,\"nodes\":1,\"notesOnOtherPaths\":1,\"items\":[{\"node\":\"cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1\",\"name\":\"parse\",\"author\":\"agent\",\"body\":\"parsing is the hot path; keep it allocation-free\",\"updated\":\"2026-11-05T04:20:12.917Z\"}],\"capped\":false,\"rule\":\"notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere\"}"
+    },
+    {
+      "name": "annotations: and attributed to the NODE it was written on",
+      "pass": true,
+      "detail": "item={\"node\":\"cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1\",\"name\":\"parse\",\"author\":\"agent\",\"body\":\"parsing is the hot path; keep it allocation-free\",\"updated\":\"2026-11-05T04:20:12.917Z\"} parseNode=cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1"
+    },
+    {
+      "name": "annotations: the author class is carried",
+      "pass": true,
+      "detail": "{\"node\":\"cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1\",\"name\":\"parse\",\"author\":\"agent\",\"body\":\"parsing is the hot path; keep it allocation-free\",\"updated\":\"2026-11-05T04:20:12.917Z\"}"
+    },
+    {
+      "name": "annotations: a note on the same NAME at another path is counted, not attached",
+      "pass": true,
+      "detail": "{\"notes\":1,\"other\":1}"
+    },
+    {
+      "name": "annotations: a note on a symbol this page does not return is not counted [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"notes\":1,\"nodes\":1,\"notesOnOtherPaths\":1,\"items\":[{\"node\":\"cb3b004cda69212bfd4e951c2aa84f40e703a8e4:src/api/parse.ts:parse:1\",\"name\":\"parse\",\"author\":\"agent\",\"body\":\"parsing is the hot path; keep it allocation-free\",\"updated\":\"2026-11-05T04:20:12.917Z\"}],\"capped\":false,\"rule\":\"notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere\"}"
+    },
+    {
+      "name": "annotations: the DEFAULT text format states the layer",
+      "pass": true,
+      "detail": "annotations: 1 agent note(s) on 1 of the returned symbols, matched by name AND path (1 note(s) name a symbol of this scope at another path and are NOT attached)"
+    },
+    {
+      "name": "annotations: and names the notes it refused to attach",
+      "pass": true,
+      "detail": "annotations: 1 agent note(s) on 1 of the returned symbols, matched by name AND path (1 note(s) name a symbol of this scope at another path and are NOT attached)"
+    },
+    {
+      "name": "annotations: removing the notes empties the layer again",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "annotations: the layer is not a constant — it moved twice [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "0 -> 1"
+    },
+    {
+      "name": "view: text names graph",
+      "pass": true,
+      "detail": "graph: 7 nodes, 2 links | scope: project | view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity"
+    },
+    {
+      "name": "view: graph text names only graph [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "view: json carries graph",
+      "pass": true,
+      "detail": "graph"
+    },
+    {
+      "name": "view: grid is refused, not answered as the graph [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize draws only the dependency graph: unknown view \"grid\". Omit view or pass view \"graph\"."
+    },
+    {
+      "name": "view: orbit is refused, not answered as the graph [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize draws only the dependency graph: unknown view \"orbit\". Omit view or pass view \"graph\"."
+    },
+    {
+      "name": "layout: the default is the region map",
+      "pass": true,
+      "detail": "regions"
+    },
+    {
+      "name": "layout: json carries the other arrangement",
+      "pass": true,
+      "detail": "force"
+    },
+    {
+      "name": "layout: and the two answers are distinguishable [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "regions vs force"
+    },
+    {
+      "name": "layout: the data is the SAME either way (it is a picture, not a filter)",
+      "pass": true,
+      "detail": "7/2 vs 7/2"
+    },
+    {
+      "name": "layout: the region document declares itself",
+      "pass": true,
+      "detail": "regions"
+    },
+    {
+      "name": "layout: and the force document declares itself",
+      "pass": true,
+      "detail": "force"
+    },
+    {
+      "name": "layout: the two documents really differ [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "103958 vs 103954 chars"
+    },
+    {
+      "name": "layout: an unknown view is not told about a force layout [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "registry: bb_visualize publishes its input properties",
+      "pass": true,
+      "detail": "13"
+    },
+    {
+      "name": "handler: every published property is a key of the request",
+      "pass": true,
+      "detail": "scope,target,maxNodes,maxLinks,offset,relationshipTypes,symbolKinds,languages,excludePatterns,includeTests,view,layout,format"
+    },
+    {
+      "name": "handler: every published property is read from args",
+      "pass": true,
+      "detail": "target,maxNodes,maxLinks,offset,relationshipTypes,symbolKinds,languages,excludePatterns,includeTests,view,layout,format"
+    },
+    {
+      "name": "handler: the request carries the VALIDATED filter values, not the raw arguments",
+      "pass": true,
+      "detail": "relationshipTypes: relationshipFilter.folded,\n    languages: languageFilter.folded,\n    symbolKinds: symbolKindFilter.fo"
+    },
+    {
+      "name": "handler: scope is validated against the five scopes before it is used",
+      "pass": true,
+      "detail": "scope validation missing"
+    },
+    {
+      "name": "handler: the request names the two options that were dropped before [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "const request: VisualizationRequest = {\n    scope: scope as VisualizationScope,\n    target: args.target ? String(args.ta"
+    }
+  ],
+  "negativeCases": 28,
+  "summary": {
+    "total": 114,
+    "passed": 114,
+    "failed": 0
+  },
+  "decisions": {
+    "level": "through createToolHandlers(), because the options were dropped in the handler while the engine honoured them",
+    "causality": "every option assertion carries a control run without the option",
+    "vocabulary": "languages/relationshipTypes are echoed in considered, so the applied filter is visible",
+    "layout": "the graph's arrangement is an option rather than a replacement: it rides the JSON, it is declared on the document the caller opens, it changes no data, and it is never claimed for a view that has no force layout"
+  },
+  "limitations": [
+    "The vocabulary assertions are made through the handler against a fixture whose stored values are known; a value the index would hold in another project is not enumerated here.",
+    "Small fixture; the option matrix is about plumbing, not about scale."
+  ],
+  "generatedAt": "2026-11-05T04:20:12.944Z"
+}

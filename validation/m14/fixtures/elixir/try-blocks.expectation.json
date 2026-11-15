@@ -1,0 +1,14 @@
+{
+  "issue": "ELX-ADV F6",
+  "note": "try/rescue/catch/else/after — the F6 gate found `after_block`/`catch_block`/`else_block` were spec-declared but UNEXERCISED by any fixture; this fixture parses them and pins that every block's calls walk with correct lines. run complexity: 1 + rescue/catch/else/after blocks = 5.",
+  "expectComplexity": [
+    { "symbol": "run", "ownerName": "ETry", "equals": 5 }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "ETry.run/1", "target": "attempt", "line_number": 4, "meta.callArity": 1 },
+    { "type": "calls", "from": "ETry.run/1", "target": "handle_rescue", "line_number": 6, "meta.callArity": 1 },
+    { "type": "calls", "from": "ETry.run/1", "target": "handle_catch", "line_number": 8 },
+    { "type": "calls", "from": "ETry.run/1", "target": "handle_else", "line_number": 10, "meta.callArity": 1 },
+    { "type": "calls", "from": "ETry.run/1", "target": "cleanup", "line_number": 12 }
+  ]
+}

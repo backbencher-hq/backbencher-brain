@@ -1,0 +1,7 @@
+{
+  "fixtureId": "svelte/conditional-blocks",
+  "language": "svelte",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "{#if}/{:else if}/{:else} blocks and <slot> must not crash or produce garbage symbols.",
+  "expectSymbols": []
+}

@@ -1,0 +1,12 @@
+{
+  "issue": "F5-CERT",
+  "note": "Found by the F5 clj-kondo lane (12 MISSING edges across rewrite-clj node files): a PLAIN `{}` record answers `[\"toString\"]` from Object.prototype, so `METHOD_IMPL_PARENT_FORMS[\"toString\"]` was truthy and every Java-class `(toString [this] …)` override misfired the method-impl rule — the `toString` symbol vanished and its body's calls were consumed as \"method definitions\" (never emitted). All guard records are Object.create(null) now. Pins: the toString method symbol exists, its body's call edge emits (toString -> helper).",
+  "expectSymbols": [
+    { "name": "helper", "kind": "function" },
+    { "name": "Impl", "kind": "class" },
+    { "name": "toString", "kind": "function" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "toString", "target": "helper", "line_number": 7 }
+  ]
+}

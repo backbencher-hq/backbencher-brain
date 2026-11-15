@@ -1,0 +1,1223 @@
+{
+  "schemaVersion": 1,
+  "tool": "bb_visualize",
+  "status": "verified",
+  "currentCommit": "2d075c0997cfa91bef5d7b944d2a43644d3d7019",
+  "verifierCommand": "BB_DATA_DIR=validation/tools/bb_visualize/bbdata npx tsx validation/tools/bb_visualize/probe.ts",
+  "passed": 127,
+  "failed": 0,
+  "negativeCases": 27,
+  "generatedAt": "2026-11-03T16:39:11.384Z",
+  "blockedLegs": [],
+  "environment": {
+    "runtime": "v22.22.1",
+    "dataDir": "validation/tools/bb_visualize/bbdata",
+    "fixture": "/home/ishaq2321/mcp/backbencher-brain/validation/tools/bb_visualize/work/fixture",
+    "projectId": "085fcfa3ba00e3cf974d244acf3aac993aba52d9",
+    "readOnlyRules": "BB_NO_AUTO_REFRESH=1; probe only writes its own fixture data dir"
+  },
+  "dbUnchanged": true,
+  "dbBefore": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 946176,
+      "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 57712,
+      "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+    }
+  },
+  "dbAfter": {
+    "db": {
+      "path": "brain.db",
+      "exists": true,
+      "size": 946176,
+      "sha256": "d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3"
+    },
+    "wal": {
+      "path": "brain.db-wal",
+      "exists": true,
+      "size": 57712,
+      "sha256": "7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39"
+    }
+  },
+  "stderrTail": [
+    "[INFO] [11:39:10] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:39:10] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 1 links",
+    "[INFO] [11:39:10] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:39:10] [dependency-graph-visualizer] ✅ Graph Data Generated: 7 nodes, 14 links",
+    "[INFO] [11:39:10] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...",
+    "[INFO] [11:39:10] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 1 links"
+  ],
+  "cases": [
+    {
+      "name": "tools/list",
+      "args": {},
+      "isError": false,
+      "ms": 0,
+      "textHead": "{\"properties\":[\"scope\",\"target\",\"maxNodes\",\"maxLinks\",\"offset\",\"relationshipTypes\",\"symbolKinds\",\"languages\",\"excludePatterns\",\"includeTests\",\"view\",\"layout\",\"format\"]}",
+      "properties": [
+        "scope",
+        "target",
+        "maxNodes",
+        "maxLinks",
+        "offset",
+        "relationshipTypes",
+        "symbolKinds",
+        "languages",
+        "excludePatterns",
+        "includeTests",
+        "view",
+        "layout",
+        "format"
+      ]
+    },
+    {
+      "name": "default text",
+      "args": {},
+      "isError": false,
+      "ms": 45,
+      "textHead": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)\navailable: 39 symbol(s) match, 38 reached the projection, 38 returned — limits 200 nodes / 5000 links\npage: symbols 1-38 (offset 0, limit 200, page 1; 39 symbol(s) match this scope) — this is the LAST page\nedges: 18 relationship(s) connect the selected symbols — complete for this node set\nnode selection: the "
+    },
+    {
+      "name": "project json",
+      "args": {
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 17,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"group\": \"typescript\",\n      \"val\": 3.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/leaf.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"leaf.leaf\",\n      \"gravity\": 53,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 3.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lin"
+    },
+    {
+      "name": "format text maxNodes 10",
+      "args": {
+        "format": "text",
+        "maxNodes": 10
+      },
+      "isError": false,
+      "ms": 14,
+      "textHead": "graph: 10 nodes, 12 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)\navailable: 39 symbol(s) match, 19 reached the projection, 10 returned — limits 10 nodes / 5000 links\npage: symbols 1-10 (offset 0, limit 10, page 1; 39 symbol(s) match this scope) — next page: offset=10\nedges: 12 relationship(s) connect the selected symbols — complete for this node set; 3 more attached only t"
+    },
+    {
+      "name": "format json maxNodes 10",
+      "args": {
+        "format": "json",
+        "maxNodes": 10
+      },
+      "isError": false,
+      "ms": 11,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"group\": \"typescript\",\n      \"val\": 3.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/leaf.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"leaf.leaf\",\n      \"gravity\": 53,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 3,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineE"
+    },
+    {
+      "name": "format html regions",
+      "args": {
+        "format": "html"
+      },
+      "isError": false,
+      "ms": 43,
+      "textHead": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Backbencher Visualizer</title>\n<style>\n\n  :root {\n    color-scheme: dark;\n    --bg: #0b0c0f;\n    --side: #121419;\n    --ink: #f2efe9;\n    --muted: #a9a49b;\n    --faint: #7c776d;\n    --line: rgba(242, 239, 233, .10);\n    --line-2: rgba(242, 239, 233, .20);\n    --accent: #e7b56a;\n    --accent-soft: rgba(231, 181, 106, .12);\n    --warn: #e7b56a;\n  }\n  * { box-sizing: border-box; }\n  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);\n    font: 12.5px/1.55 ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n   ",
+      "bytes": 153690
+    },
+    {
+      "name": "format html force",
+      "args": {
+        "format": "html",
+        "layout": "force"
+      },
+      "isError": false,
+      "ms": 29,
+      "textHead": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>Backbencher Visualizer</title>\n<style>\n\n  :root {\n    color-scheme: dark;\n    --bg: #0b0c0f;\n    --side: #121419;\n    --ink: #f2efe9;\n    --muted: #a9a49b;\n    --faint: #7c776d;\n    --line: rgba(242, 239, 233, .10);\n    --line-2: rgba(242, 239, 233, .20);\n    --accent: #e7b56a;\n    --accent-soft: rgba(231, 181, 106, .12);\n    --warn: #e7b56a;\n  }\n  * { box-sizing: border-box; }\n  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);\n    font: 12.5px/1.55 ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n   ",
+      "bytes": 153686
+    },
+    {
+      "name": "scope file",
+      "args": {
+        "scope": "file",
+        "target": "src/core/top.ts",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 9,
+      "textHead": "{\n  \"scope\": \"file\",\n  \"target\": \"src/core/top.ts\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineEnd\": 3,\n      \"qualifiedName\": \"top.top\",\n      \"gravity\": 43,\n      \"stale\": false\n    }\n  ],\n  \"links\": [\n    {\n      \"source\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"target\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"type\": \"exports\",\n      \"color\": \"#94a3b8\",\n  "
+    },
+    {
+      "name": "scope module segment",
+      "args": {
+        "scope": "module",
+        "target": "src/my_mod",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 7,
+      "textHead": "{\n  \"scope\": \"module\",\n  \"target\": \"src/my_mod\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\n      \"name\": \"deep_lookup\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/my_mod/deep_lookup.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"deep_lookup.deep_lookup\",\n      \"gravity\": 13,\n      \"stale\": false\n    }\n  ],\n  \"links\": [\n    {\n      \"source\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\n      \"target\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod"
+    },
+    {
+      "name": "scope symbol",
+      "args": {
+        "scope": "symbol",
+        "target": "top",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 7,
+      "textHead": "{\n  \"scope\": \"symbol\",\n  \"target\": \"top\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineEnd\": 3,\n      \"qualifiedName\": \"top.top\",\n      \"gravity\": 43,\n      \"stale\": false\n    }\n  ],\n  \"links\": [\n    {\n      \"source\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"target\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"type\": \"exports\",\n      \"color\": \"#94a3b8\",\n      \"label"
+    },
+    {
+      "name": "alias symbol",
+      "args": {
+        "scope": "symbol",
+        "symbol": "top",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 6,
+      "textHead": "{\n  \"scope\": \"symbol\",\n  \"target\": \"top\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineEnd\": 3,\n      \"qualifiedName\": \"top.top\",\n      \"gravity\": 43,\n      \"stale\": false\n    }\n  ],\n  \"links\": [\n    {\n      \"source\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"target\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"type\": \"exports\",\n      \"color\": \"#94a3b8\",\n      \"label"
+    },
+    {
+      "name": "scope feature",
+      "args": {
+        "scope": "feature",
+        "target": "deep_lookup",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 9,
+      "textHead": "{\n  \"scope\": \"feature\",\n  \"target\": \"deep_lookup\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\n      \"name\": \"deep_lookup\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/my_mod/deep_lookup.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"deep_lookup.deep_lookup\",\n      \"gravity\": 13,\n      \"stale\": false\n    }\n  ],\n  \"links\": [\n    {\n      \"source\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\n      \"target\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_m"
+    },
+    {
+      "name": "target value %",
+      "args": {
+        "scope": "file",
+        "target": "%",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 5,
+      "textHead": "{\n  \"scope\": \"file\",\n  \"target\": \"%\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [],\n  \"links\": [],\n  \"excluded\": {\n    \"symbols\": 0,\n    \"byPattern\": {},\n    \"byRule\": {},\n    \"suffixes\": [\n      \".d.ts\",\n      \".min.js\",\n      \".map\"\n    ],\n    \"patterns\": [\n      \"node_modules\",\n      \".git\",\n      \".next\",\n      \".turbo\",\n      \".cache\",\n      \"coverage\",\n      \"dist\",\n      \"build\",\n      \"out\",\n      \"target\",\n      \"vendor\",\n      \"__pycache__\"\n    ],\n    \"includesTestFiles\": true\n  },\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"no indexed symbol matches scope=file target=\\\"%\\\" — absence declared, never guessed\",\n  \"totalNodesAvailable\": 0,\n  \"provenance\""
+    },
+    {
+      "name": "bounds tight",
+      "args": {
+        "format": "json",
+        "maxNodes": 3,
+        "maxLinks": 1
+      },
+      "isError": false,
+      "ms": 7,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"group\": \"typescript\",\n      \"val\": 3.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/leaf.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"leaf.leaf\",\n      \"gravity\": 53,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 3,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineE"
+    },
+    {
+      "name": "page 1",
+      "args": {
+        "format": "json",
+        "maxNodes": 5,
+        "offset": 0
+      },
+      "isError": false,
+      "ms": 0,
+      "textHead": "",
+      "ids": [
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:Api:3",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/mid.ts:mid:3",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:handle:4"
+      ]
+    },
+    {
+      "name": "page 2",
+      "args": {
+        "format": "json",
+        "maxNodes": 5,
+        "offset": 5
+      },
+      "isError": false,
+      "ms": 0,
+      "textHead": "",
+      "ids": [
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:respond:5",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/extra/pages.ts:page_00:1",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_modular/other.ts:modular_other:1",
+        "085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/py/service.py:py_service:1"
+      ]
+    },
+    {
+      "name": "offset past end",
+      "args": {
+        "format": "json",
+        "offset": 100000
+      },
+      "isError": false,
+      "ms": 8,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [],\n  \"links\": [],\n  \"excluded\": {\n    \"symbols\": 1,\n    \"byPattern\": {\n      \"vendor\": 1\n    },\n    \"byRule\": {},\n    \"suffixes\": [\n      \".d.ts\",\n      \".min.js\",\n      \".map\"\n    ],\n    \"patterns\": [\n      \"node_modules\",\n      \".git\",\n      \".next\",\n      \".turbo\",\n      \".cache\",\n      \"coverage\",\n      \"dist\",\n      \"build\",\n      \"out\",\n      \"target\",\n      \"vendor\",\n      \"__pycache__\"\n    ],\n    \"includesTestFiles\": true\n  },\n  \"declaredAbsent\": true,\n  \"absenceNote\": \"offset 100000 holds no drawable symbol, and the fetch had no rows of its own left to offer — this is "
+    },
+    {
+      "name": "offset echoed",
+      "args": {
+        "format": "text",
+        "offset": 7
+      },
+      "isError": false,
+      "ms": 9,
+      "textHead": "graph: 31 nodes, 3 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)\navailable: 39 symbol(s) match, 38 reached the projection, 31 returned — limits 200 nodes / 5000 links\npage: symbols 8-38 (offset 7, limit 200, page 1; 39 symbol(s) match this scope) — this is the LAST page\nedges: 3 relationship(s) connect the selected symbols — complete for this node set; 15 more attached only"
+    },
+    {
+      "name": "filter relationshipTypes",
+      "args": {
+        "relationshipTypes": [
+          "calls"
+        ],
+        "format": "json",
+        "maxNodes": 50
+      },
+      "isError": false,
+      "ms": 11,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/leaf.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"leaf.leaf\",\n      \"gravity\": 53,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineEnd"
+    },
+    {
+      "name": "filter relationshipTypes case-folded",
+      "args": {
+        "relationshipTypes": [
+          "CALLS"
+        ],
+        "format": "json",
+        "maxNodes": 50
+      },
+      "isError": false,
+      "ms": 11,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/leaf.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"leaf.leaf\",\n      \"gravity\": 53,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lineEnd"
+    },
+    {
+      "name": "filter languages",
+      "args": {
+        "languages": [
+          "python"
+        ],
+        "format": "json",
+        "maxNodes": 100
+      },
+      "isError": false,
+      "ms": 6,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/py/service.py:py_service:1\",\n      \"name\": \"py_service\",\n      \"group\": \"python\",\n      \"val\": 1.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/py/service.py\",\n      \"line\": 1,\n      \"lineEnd\": 2,\n      \"qualifiedName\": \"py_service\",\n      \"gravity\": 13,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/py/service.py:py_caller:4\",\n      \"name\": \"py_caller\",\n      \"group\": \"python\",\n      \"val\": 1.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/py/service.py\",\n    "
+    },
+    {
+      "name": "filter symbolKinds",
+      "args": {
+        "symbolKinds": [
+          "class"
+        ],
+        "format": "json",
+        "maxNodes": 100
+      },
+      "isError": false,
+      "ms": 8,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:Api:3\",\n      \"name\": \"Api\",\n      \"group\": \"typescript\",\n      \"val\": 1,\n      \"type\": \"class\",\n      \"filePath\": \"src/core/api.ts\",\n      \"line\": 3,\n      \"lineEnd\": 6,\n      \"qualifiedName\": \"api.Api\",\n      \"gravity\": 33,\n      \"stale\": false\n    }\n  ],\n  \"links\": [],\n  \"excluded\": {\n    \"symbols\": 0,\n    \"byPattern\": {},\n    \"byRule\": {},\n    \"suffixes\": [\n      \".d.ts\",\n      \".min.js\",\n      \".map\"\n    ],\n    \"patterns\": [\n      \"node_modules\",\n      \".git\",\n      \".next\",\n      \".turbo\",\n      "
+    },
+    {
+      "name": "filter excludePatterns",
+      "args": {
+        "excludePatterns": [
+          "src"
+        ],
+        "format": "json",
+        "maxNodes": 100
+      },
+      "isError": false,
+      "ms": 8,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:vendor/lib.ts:vendored:1\",\n      \"name\": \"vendored\",\n      \"group\": \"typescript\",\n      \"val\": 1,\n      \"type\": \"function\",\n      \"filePath\": \"vendor/lib.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"lib.vendored\",\n      \"gravity\": 13,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:test/app.test.ts:testHelper:3\",\n      \"name\": \"testHelper\",\n      \"group\": \"typescript\",\n      \"val\": 1.5,\n      \"type\": \"function\",\n      \"filePath\": \"test/app.test.ts\",\n      \"l"
+    },
+    {
+      "name": "filter includeTests false",
+      "args": {
+        "includeTests": false,
+        "format": "json",
+        "maxNodes": 400
+      },
+      "isError": false,
+      "ms": 11,
+      "textHead": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\n      \"name\": \"leaf\",\n      \"group\": \"typescript\",\n      \"val\": 3.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/leaf.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"leaf.leaf\",\n      \"gravity\": 53,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\",\n      \"name\": \"top\",\n      \"group\": \"typescript\",\n      \"val\": 3.5,\n      \"type\": \"function\",\n      \"filePath\": \"src/core/top.ts\",\n      \"line\": 3,\n      \"lin"
+    },
+    {
+      "name": "overlay annotations match",
+      "args": {
+        "scope": "module",
+        "target": "src/my_mod",
+        "format": "json"
+      },
+      "isError": false,
+      "ms": 6,
+      "textHead": "{\n  \"scope\": \"module\",\n  \"target\": \"src/my_mod\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\n      \"name\": \"deep_lookup\",\n      \"group\": \"typescript\",\n      \"val\": 2,\n      \"type\": \"function\",\n      \"filePath\": \"src/my_mod/deep_lookup.ts\",\n      \"line\": 1,\n      \"lineEnd\": 1,\n      \"qualifiedName\": \"deep_lookup.deep_lookup\",\n      \"gravity\": 13,\n      \"stale\": false\n    }\n  ],\n  \"links\": [\n    {\n      \"source\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\n      \"target\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod"
+    },
+    {
+      "name": "overlay annotations path mismatch",
+      "args": {
+        "scope": "module",
+        "target": "src/core",
+        "format": "json",
+        "maxNodes": 100
+      },
+      "isError": false,
+      "ms": 18,
+      "textHead": "{\n  \"scope\": \"module\",\n  \"target\": \"src/core\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:Api:3\",\n      \"name\": \"Api\",\n      \"group\": \"typescript\",\n      \"val\": 3,\n      \"type\": \"class\",\n      \"filePath\": \"src/core/api.ts\",\n      \"line\": 3,\n      \"lineEnd\": 6,\n      \"qualifiedName\": \"api.Api\",\n      \"gravity\": 33,\n      \"stale\": false\n    },\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:handle:4\",\n      \"name\": \"handle\",\n      \"group\": \"typescript\",\n      \"val\": 2.5,\n      \"type\": \"method\",\n      \"filePath\": \"src/core/api.ts\",\n      \"line\": 4,\n      \"lineE"
+    },
+    {
+      "name": "overlay annotations in text",
+      "args": {
+        "scope": "module",
+        "target": "src/my_mod",
+        "format": "text"
+      },
+      "isError": false,
+      "ms": 3,
+      "textHead": "graph: 1 nodes, 1 links\nscope: module (src/my_mod)\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)\navailable: 1 symbol(s) match, 1 reached the projection, 1 returned — limits 200 nodes / 5000 links\npage: symbols 1-1 (offset 0, limit 200, page 1; 1 symbol(s) match this scope) — this is the LAST page\nedges: 1 relationship(s) connect the selected symbols — complete for this node set\nnode selection: "
+    },
+    {
+      "name": "refusal unknown scope",
+      "args": {
+        "scope": "galaxy"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "refusal scoped call without target",
+      "args": {
+        "scope": "symbol"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "refusal module scope without target",
+      "args": {
+        "scope": "module"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize module scope requires a non-empty target"
+    },
+    {
+      "name": "refusal maxNodes 0",
+      "args": {
+        "maxNodes": 0
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    },
+    {
+      "name": "refusal maxNodes above ceiling",
+      "args": {
+        "maxNodes": 2001
+      },
+      "isError": true,
+      "ms": 2,
+      "textHead": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    },
+    {
+      "name": "refusal maxNodes fractional",
+      "args": {
+        "maxNodes": 1.5
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: maxNodes must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal maxNodes not a number",
+      "args": {
+        "maxNodes": "abc"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: maxNodes must be number"
+    },
+    {
+      "name": "refusal maxLinks 0",
+      "args": {
+        "maxLinks": 0
+      },
+      "isError": true,
+      "ms": 2,
+      "textHead": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxLinks for the default 5000"
+    },
+    {
+      "name": "refusal maxLinks above ceiling",
+      "args": {
+        "maxLinks": 20001
+      },
+      "isError": true,
+      "ms": 2,
+      "textHead": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 20001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxLinks for the default 5000"
+    },
+    {
+      "name": "refusal offset negative",
+      "args": {
+        "offset": -1
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: offset must be non-negative"
+    },
+    {
+      "name": "refusal offset fractional",
+      "args": {
+        "offset": 1.5
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: offset must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal unknown language",
+      "args": {
+        "languages": [
+          "klingon"
+        ]
+      },
+      "isError": true,
+      "ms": 2,
+      "textHead": "bb_visualize: unknown languages: klingon — this index stores go, python, typescript. languages are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "refusal unknown relationship type",
+      "args": {
+        "relationshipTypes": [
+          "call"
+        ]
+      },
+      "isError": true,
+      "ms": 2,
+      "textHead": "bb_visualize: unknown relationshipTypes: call — this index stores calls, contains, exports, imports, instantiates, references. relationshipTypes are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "refusal unknown symbol kind",
+      "args": {
+        "symbolKinds": [
+          "widget"
+        ]
+      },
+      "isError": true,
+      "ms": 3,
+      "textHead": "bb_visualize: unknown symbolKinds: widget — this index stores class, function, method, module. symbolKinds are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "refusal unknown view",
+      "args": {
+        "view": "tree"
+      },
+      "isError": true,
+      "ms": 2,
+      "textHead": "error: bb_visualize: view must be one of: graph"
+    },
+    {
+      "name": "refusal unknown format",
+      "args": {
+        "format": "svg"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: format must be one of: text, json, html"
+    },
+    {
+      "name": "refusal unknown layout",
+      "args": {
+        "layout": "grid"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: layout must be one of: regions, force"
+    },
+    {
+      "name": "refusal unknown option",
+      "args": {
+        "maxnode": 5
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: unknown or irrelevant options: maxnode — accepted options: scope, target, maxNodes, maxLinks, offset, relationshipTypes, symbolKinds, languages, excludePatterns, includeTests, view, layout, format (aliases accepted: symbol, query)"
+    },
+    {
+      "name": "alias symbolName",
+      "args": {
+        "scope": "symbol",
+        "symbolName": "top",
+        "format": "json"
+      },
+      "isError": true,
+      "ms": 1,
+      "textHead": "error: bb_visualize: unknown or irrelevant options: symbolName — accepted options: scope, target, maxNodes, maxLinks, offset, relationshipTypes, symbolKinds, languages, excludePatterns, includeTests, view, layout, format (aliases accepted: symbol, query)"
+    }
+  ],
+  "checks": [
+    {
+      "name": "wire: bb_visualize is registered",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "wire: schema publishes every option",
+      "pass": true,
+      "detail": "scope,target,maxNodes,maxLinks,offset,relationshipTypes,symbolKinds,languages,excludePatterns,includeTests,view,layout,format"
+    },
+    {
+      "name": "wire: no truncation-metadata option leaked into the schema",
+      "pass": true,
+      "detail": "scope,target,maxNodes,maxLinks,offset,relationshipTypes,symbolKinds,languages,excludePatterns,includeTests,view,layout,format"
+    },
+    {
+      "name": "wire: description declares the read boundary",
+      "pass": true,
+      "detail": "6965 chars"
+    },
+    {
+      "name": "wire: description does not claim a write",
+      "pass": true,
+      "negative": true,
+      "detail": "Scoped dependency and architecture visualization: one bounded projection over the index's stored symbol and relationship"
+    },
+    {
+      "name": "default: text answer is not JSON",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed depend"
+    },
+    {
+      "name": "default text: carries \"graph:\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"scope: project\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"view: graph\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"layout: regions\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"available:\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"page:\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"edges:\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"excluded:\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "default text: carries \"provenance:\"",
+      "pass": true,
+      "detail": "graph: 38 nodes, 18 links\nscope: project\nview: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity\nlayout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one "
+    },
+    {
+      "name": "json: parses",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "json: nodes and links are arrays",
+      "pass": true,
+      "detail": "object"
+    },
+    {
+      "name": "json: distinct declared counts",
+      "pass": true,
+      "detail": "{\"truncated\":false,\"originalNodes\":38,\"originalLinks\":18,\"maxNodes\":200,\"maxLinks\":5000,\"reason\":null,\"totalNodesAvailable\":39,\"offset\":0,\"nextOffset\":null}"
+    },
+    {
+      "name": "json: truncation reconciles",
+      "pass": true,
+      "detail": "orig=38 returned=38"
+    },
+    {
+      "name": "json: page arithmetic",
+      "pass": true,
+      "detail": "{\"offset\":0,\"limit\":200,\"returned\":38,\"total\":39,\"totalBasis\":\"symbols matching this scope and these filters, counted before the noise filter and every output bound; pages are cut from the projection order, so a page can be shorter than `limit` and the numbers need not divide\",\"number\":1,\"nextOffset\":null,\"rule\":\"the same total order the ranking uses — the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample, from the first\"}"
+    },
+    {
+      "name": "json: provenance names its source",
+      "pass": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
+    },
+    {
+      "name": "json: freshness envelope declared",
+      "pass": true,
+      "detail": "{\"fresh\":10,\"stale\":0,\"missing\":0,\"staleRatio\":0,\"mode\":\"complete\",\"remediation\":\"\"}"
+    },
+    {
+      "name": "json: excluded block always present",
+      "pass": true,
+      "detail": "{\"symbols\":1,\"byPattern\":{\"vendor\":1},\"byRule\":{},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"],\"includesTestFiles\":true}"
+    },
+    {
+      "name": "json: node carries identity facts",
+      "pass": true,
+      "detail": "{\"id\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/leaf.ts:leaf:1\",\"name\":\"leaf\",\"group\":\"typescript\",\"val\":3.5,\"type\":\"function\",\"filePath\":\"src/core/leaf.ts\",\"line\":1,\"lineEnd\":1,\"qualifiedNam"
+    },
+    {
+      "name": "json: link carries the stored row it traces to",
+      "pass": true,
+      "detail": "{\"source\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:Api:3\",\"target\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/api.ts:handle:4\",\"type\":\"contains\",\"color\":\"#a78bfa\",\"label\":\"con"
+    },
+    {
+      "name": "json: no link has a missing endpoint",
+      "pass": true,
+      "detail": "18 links"
+    },
+    {
+      "name": "json: census counts the returned nodes",
+      "pass": true,
+      "detail": "{\"function\":34,\"method\":2,\"class\":1,\"module\":1}"
+    },
+    {
+      "name": "json: declared edge count reconciles with the stored rows",
+      "pass": true,
+      "detail": "declared=18 stored=18 folded=0"
+    },
+    {
+      "name": "format: text names the same node/link counts as JSON",
+      "pass": true,
+      "detail": "graph: 10 nodes, 12 links vs 10/12"
+    },
+    {
+      "name": "html: non-trivial document",
+      "pass": true,
+      "detail": "153690 bytes"
+    },
+    {
+      "name": "html: declares the layout it opens with",
+      "pass": true,
+      "detail": "marker"
+    },
+    {
+      "name": "html: two layouts are different documents",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "html: genuinely self-contained (no external resource)",
+      "pass": true,
+      "negative": true,
+      "detail": "none"
+    },
+    {
+      "name": "html: no network fetch of its own",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "html: shell embeds the view document",
+      "pass": true,
+      "detail": "2 doctypes"
+    },
+    {
+      "name": "html: saves itself rather than streaming a blob",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "html: payload carries the declared bounds",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "html: payload carries the freshness envelope",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "scope file: nodes belong to the file",
+      "pass": true,
+      "detail": "[\"src/core/top.ts\"]"
+    },
+    {
+      "name": "scope module: matches the directory",
+      "pass": true,
+      "detail": "deep_lookup"
+    },
+    {
+      "name": "scope module: does not reach a longer segment",
+      "pass": true,
+      "negative": true,
+      "detail": "deep_lookup"
+    },
+    {
+      "name": "scope symbol: resolves the named symbol",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"top\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/core/top.ts:top:3\","
+    },
+    {
+      "name": "alias: `symbol` resolves to target",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"symbol\",\n  \"target\": \"top\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244a"
+    },
+    {
+      "name": "scope feature: matches a symbol name",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"feature\",\n  \"target\": \"deep_lookup\",\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/dee"
+    },
+    {
+      "name": "target: `%` is a value and matches nothing",
+      "pass": true,
+      "detail": "total=0"
+    },
+    {
+      "name": "target: absence is declared, not an empty project",
+      "pass": true,
+      "detail": "no indexed symbol matches scope=file target=\"%\" — absence declared, never guessed"
+    },
+    {
+      "name": "bounds: node budget honoured",
+      "pass": true,
+      "detail": "3"
+    },
+    {
+      "name": "bounds: link budget honoured",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "bounds: truncation declared with both limits",
+      "pass": true,
+      "detail": "{\"truncated\":true,\"originalNodes\":6,\"originalLinks\":11,\"maxNodes\":3,\"maxLinks\":1,\"reason\":\"output limits\",\"totalNodesAvailable\":39,\"offset\":0,\"nextOffset\":3}"
+    },
+    {
+      "name": "bounds: the node cut and the link budget are counted apart",
+      "pass": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9\",\"linksOmittedWithNodeCut\":9,\"linksOmittedByBudget\":1}"
+    },
+    {
+      "name": "bounds: maxLinks is not blamed for the node cut",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9\",\"linksOmittedWithNodeCut\":9,\"linksOmittedByBudget\":1}"
+    },
+    {
+      "name": "page: page 2 starts where page 1 ended",
+      "pass": true,
+      "detail": "next=5 offset=5"
+    },
+    {
+      "name": "page: page 2 repeats no page 1 identity",
+      "pass": true,
+      "negative": true,
+      "detail": "5 nodes"
+    },
+    {
+      "name": "page: the two pages are not byte-identical",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "offset past end: is an empty page, not an empty project",
+      "pass": true,
+      "detail": "offset 100000 holds no drawable symbol, and the fetch had no rows of its own left to offer — this is an empty PAGE, not an empty project: 39 symbol(s) match, so restart at an offset below 39"
+    },
+    {
+      "name": "offset: the page block is always stated",
+      "pass": true,
+      "detail": "page: symbols 8-38 (offset 7, limit 200, page 1; 39 symbol(s) match this scope) — this is the LAST page"
+    },
+    {
+      "name": "filter relationshipTypes: every kept link is a call",
+      "pass": true,
+      "detail": "calls,calls,calls,calls,calls,calls,calls"
+    },
+    {
+      "name": "filter relationshipTypes: the applied filter is declared",
+      "pass": true,
+      "detail": "[\"calls\"]"
+    },
+    {
+      "name": "filter relationshipTypes: matched case-insensitively to the stored spelling",
+      "pass": true,
+      "detail": "{\n  \"scope\": \"project\",\n  \"target\": null,\n  \"format\": \"json\",\n  \"view\": \"graph\",\n  \"layout\": \"regions\",\n  \"nodes\": [\n    {\n      \"id\": \"085fcfa3ba00e3cf974d244a"
+    },
+    {
+      "name": "filter languages: only the requested language returns",
+      "pass": true,
+      "detail": "{\"python\":2}"
+    },
+    {
+      "name": "filter languages: applied before the limit and declared",
+      "pass": true,
+      "detail": "[\"python\"]"
+    },
+    {
+      "name": "filter symbolKinds: the selection honours the kind filter",
+      "pass": true,
+      "detail": "offKind=0 cascadeAdded=0"
+    },
+    {
+      "name": "filter symbolKinds: census states the composition",
+      "pass": true,
+      "detail": "{\"class\":1}"
+    },
+    {
+      "name": "filter excludePatterns: the caller's segments are the ones applied",
+      "pass": true,
+      "detail": "[\"src\"]"
+    },
+    {
+      "name": "filter excludePatterns: removal is counted",
+      "pass": true,
+      "detail": "{\"symbols\":37,\"byPattern\":{\"src\":37},\"byRule\":{},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"src\"],\"includesTestFiles\":true}"
+    },
+    {
+      "name": "filter includeTests: test sources are excluded and the rule is named",
+      "pass": true,
+      "detail": "{\"symbols\":2,\"byPattern\":{\"vendor\":1},\"byRule\":{\"test-sources\":1},\"suffixes\":[\".d.ts\",\".min.js\",\".map\"],\"patterns\":[\"node_modules\",\".git\",\".next\",\".turbo\",\".cache\",\"coverage\",\"dist\",\"build\",\"out\",\"target\",\"vendor\",\"__pycache__\"],\"includesTestFiles\":false}"
+    },
+    {
+      "name": "filter includeTests: no test file survives in the answer",
+      "pass": true,
+      "negative": true,
+      "detail": "[]"
+    },
+    {
+      "name": "overlay: a note on a returned symbol is attached",
+      "pass": true,
+      "detail": "{\"notes\":1,\"nodes\":1,\"notesOnOtherPaths\":0,\"items\":[{\"node\":\"085fcfa3ba00e3cf974d244acf3aac993aba52d9:src/my_mod/deep_lookup.ts:deep_lookup:1\",\"name\":\"deep_lookup\",\"author\":\"agent\",\"body\":\"the module entry point\",\"updated\":\"2026-11-03T16:39:06.744Z\"}],\"capped\":false,\"rule\":\"notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere\"}"
+    },
+    {
+      "name": "overlay: a note naming one of these symbols at ANOTHER path is not attached",
+      "pass": true,
+      "negative": true,
+      "detail": "{\"notes\":0,\"nodes\":0,\"notesOnOtherPaths\":1,\"items\":[],\"capped\":false,\"rule\":\"notes are matched to a returned symbol by NAME and PATH, never by name alone: a note whose path matches no returned symbol is counted on notesOnOtherPaths instead of being attached to a same-named symbol elsewhere\"}"
+    },
+    {
+      "name": "overlay: the default text format states the layer",
+      "pass": true,
+      "detail": "annotations: 1 agent note(s) on 1 of the returned symbols, matched by name AND path"
+    },
+    {
+      "name": "refusal (unknown scope): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "refusal (unknown scope): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "refusal (unknown scope): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: scope must be one of: project, file, module, symbol, feature"
+    },
+    {
+      "name": "refusal (scoped call without target): isError",
+      "pass": true,
+      "detail": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "refusal (scoped call without target): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "refusal (scoped call without target): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize symbol scope requires a non-empty target"
+    },
+    {
+      "name": "refusal (module scope without target): isError",
+      "pass": true,
+      "detail": "error: bb_visualize module scope requires a non-empty target"
+    },
+    {
+      "name": "refusal (module scope without target): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize module scope requires a non-empty target"
+    },
+    {
+      "name": "refusal (module scope without target): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize module scope requires a non-empty target"
+    },
+    {
+      "name": "refusal (maxNodes 0): isError",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNod"
+    },
+    {
+      "name": "refusal (maxNodes 0): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    },
+    {
+      "name": "refusal (maxNodes 0): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 0) — a returned page must mean the page that was "
+    },
+    {
+      "name": "refusal (maxNodes above ceiling): isError",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit max"
+    },
+    {
+      "name": "refusal (maxNodes above ceiling): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxNodes for the default 200"
+    },
+    {
+      "name": "refusal (maxNodes above ceiling): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxNodes must be an integer between 1 and 2000 (received 2001) — a returned page must mean the page that w"
+    },
+    {
+      "name": "refusal (maxNodes fractional): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: maxNodes must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal (maxNodes fractional): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: maxNodes must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal (maxNodes fractional): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: maxNodes must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal (maxNodes not a number): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: maxNodes must be number"
+    },
+    {
+      "name": "refusal (maxNodes not a number): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: maxNodes must be number"
+    },
+    {
+      "name": "refusal (maxNodes not a number): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: maxNodes must be number"
+    },
+    {
+      "name": "refusal (maxLinks 0): isError",
+      "pass": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxLi"
+    },
+    {
+      "name": "refusal (maxLinks 0): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 0) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxLinks for the default 5000"
+    },
+    {
+      "name": "refusal (maxLinks 0): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 0) — a returned page must mean the page that was"
+    },
+    {
+      "name": "refusal (maxLinks above ceiling): isError",
+      "pass": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 20001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit m"
+    },
+    {
+      "name": "refusal (maxLinks above ceiling): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 20001) — a returned page must mean the page that was asked for, so an out-of-range budget is refused rather than clamped; omit maxLinks for the default 5000"
+    },
+    {
+      "name": "refusal (maxLinks above ceiling): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: maxLinks must be an integer between 1 and 20000 (received 20001) — a returned page must mean the page that"
+    },
+    {
+      "name": "refusal (offset negative): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: offset must be non-negative"
+    },
+    {
+      "name": "refusal (offset negative): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: offset must be non-negative"
+    },
+    {
+      "name": "refusal (offset negative): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: offset must be non-negative"
+    },
+    {
+      "name": "refusal (offset fractional): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: offset must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal (offset fractional): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: offset must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal (offset fractional): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: offset must be a whole number (got 1.5)"
+    },
+    {
+      "name": "refusal (unknown language): isError",
+      "pass": true,
+      "detail": "bb_visualize: unknown languages: klingon — this index stores go, python, typescript. languages are matched case-insensitively, and a value the index does not contain is reported as an error rather tha"
+    },
+    {
+      "name": "refusal (unknown language): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: unknown languages: klingon — this index stores go, python, typescript. languages are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "refusal (unknown language): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown languages: klingon — this index stores go, python, typescript. languages are matched case-insensit"
+    },
+    {
+      "name": "refusal (unknown relationship type): isError",
+      "pass": true,
+      "detail": "bb_visualize: unknown relationshipTypes: call — this index stores calls, contains, exports, imports, instantiates, references. relationshipTypes are matched case-insensitively, and a value the index d"
+    },
+    {
+      "name": "refusal (unknown relationship type): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: unknown relationshipTypes: call — this index stores calls, contains, exports, imports, instantiates, references. relationshipTypes are matched case-insensitively, and a value the index does not contain is reported as an error "
+    },
+    {
+      "name": "refusal (unknown relationship type): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown relationshipTypes: call — this index stores calls, contains, exports, imports, instantiates, refer"
+    },
+    {
+      "name": "refusal (unknown symbol kind): isError",
+      "pass": true,
+      "detail": "bb_visualize: unknown symbolKinds: widget — this index stores class, function, method, module. symbolKinds are matched case-insensitively, and a value the index does not contain is reported as an erro"
+    },
+    {
+      "name": "refusal (unknown symbol kind): names the rule",
+      "pass": true,
+      "detail": "bb_visualize: unknown symbolKinds: widget — this index stores class, function, method, module. symbolKinds are matched case-insensitively, and a value the index does not contain is reported as an error rather than as zero results."
+    },
+    {
+      "name": "refusal (unknown symbol kind): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "bb_visualize: unknown symbolKinds: widget — this index stores class, function, method, module. symbolKinds are matched c"
+    },
+    {
+      "name": "refusal (unknown view): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: view must be one of: graph"
+    },
+    {
+      "name": "refusal (unknown view): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: view must be one of: graph"
+    },
+    {
+      "name": "refusal (unknown view): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: view must be one of: graph"
+    },
+    {
+      "name": "refusal (unknown format): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: format must be one of: text, json, html"
+    },
+    {
+      "name": "refusal (unknown format): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: format must be one of: text, json, html"
+    },
+    {
+      "name": "refusal (unknown format): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: format must be one of: text, json, html"
+    },
+    {
+      "name": "refusal (unknown layout): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: layout must be one of: regions, force"
+    },
+    {
+      "name": "refusal (unknown layout): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: layout must be one of: regions, force"
+    },
+    {
+      "name": "refusal (unknown layout): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: layout must be one of: regions, force"
+    },
+    {
+      "name": "refusal (unknown option): isError",
+      "pass": true,
+      "detail": "error: bb_visualize: unknown or irrelevant options: maxnode — accepted options: scope, target, maxNodes, maxLinks, offset, relationshipTypes, symbolKinds, languages, excludePatterns, includeTests, vie"
+    },
+    {
+      "name": "refusal (unknown option): names the rule",
+      "pass": true,
+      "detail": "error: bb_visualize: unknown or irrelevant options: maxnode — accepted options: scope, target, maxNodes, maxLinks, offset, relationshipTypes, symbolKinds, languages, excludePatterns, includeTests, view, layout, format (aliases accepted: sym"
+    },
+    {
+      "name": "refusal (unknown option): does not return a graph",
+      "pass": true,
+      "negative": true,
+      "detail": "error: bb_visualize: unknown or irrelevant options: maxnode — accepted options: scope, target, maxNodes, maxLinks, offse"
+    },
+    {
+      "name": "contract: the descriptor claims only aliases the door accepts",
+      "pass": true,
+      "detail": "descriptorClaimsSymbolName=false doorRefused=true"
+    },
+    {
+      "name": "read path: database bytes unchanged by a read call",
+      "pass": true,
+      "detail": "{\"before\":{\"path\":\"brain.db\",\"exists\":true,\"size\":946176,\"sha256\":\"d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3\"},\"after\":{\"path\":\"brain.db\",\"exists\":true,\"size\":946176,\"sha256\":\"d6f42d61b47c68eefbc2e8e70e8e5783415d86230aed8642b6a649cd6556b0a3\"}}"
+    },
+    {
+      "name": "read path: write-ahead log unchanged by a read call",
+      "pass": true,
+      "detail": "{\"before\":{\"path\":\"brain.db-wal\",\"exists\":true,\"size\":57712,\"sha256\":\"7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39\"},\"after\":{\"path\":\"brain.db-wal\",\"exists\":true,\"size\":57712,\"sha256\":\"7ebdb8d5b8e8333bdf161d071f412e7aa11d32e830b639c8466ce82114d0fd39\"}}"
+    }
+  ]
+}

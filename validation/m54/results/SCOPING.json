@@ -1,0 +1,26 @@
+{
+  "gate": "M54.scoping",
+  "status": "verified",
+  "checks": 14,
+  "passed": 14,
+  "failed": 0,
+  "verifierCommand": "bun run script/m54/verify-scoping.ts",
+  "currentCommit": "pending",
+  "generatedAt": "2026-09-12T17:35:53.348Z",
+  "observed": {
+    "mapping": {
+      "all": 6,
+      "scoped": 3
+    },
+    "gaps": {
+      "scoped": 0
+    },
+    "quality": {
+      "all": 3,
+      "scoped": 2
+    },
+    "mutation": {
+      "files": 6
+    }
+  }
+}

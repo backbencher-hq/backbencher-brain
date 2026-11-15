@@ -1,0 +1,2160 @@
+{
+  "schemaVersion": 1,
+  "gate": "m60-grammar-consistency",
+  "ownership": {
+    "pinIdentity": {
+      "file": "validation/m14/grammar-pins.json",
+      "gate": "script/m14/verify-grammar-pins.ts",
+      "lanes": 27,
+      "role": "CONTRACT — gated for truth"
+    },
+    "upstreamSurvey": {
+      "file": "validation/m60/grammar-survey.json",
+      "gate": "script/m60/build-grammar-survey.ts",
+      "lanes": 53,
+      "role": "OBSERVATION — gated for freshness and completeness"
+    },
+    "thisGate": {
+      "file": "script/m60/verify-grammar-consistency.ts",
+      "role": "owns NO fact; proves the two above agree, and that the prose sites agree with whichever owns the lane"
+    },
+    "rule": "one fact, one owner. Two files with disjoint responsibilities and an enforced cross-check is not drift; two files both claiming to be the version record is."
+  },
+  "checkedAt": "2026-11-10T15:02:29.689Z",
+  "survey": {
+    "generatedAt": "2026-11-04T04:18:37.077Z",
+    "ageDays": 6.45,
+    "maxAgeDays": 90
+  },
+  "pins": {
+    "generatedAt": "2026-11-04T04:19:17.595Z",
+    "lanes": [
+      "c",
+      "clean",
+      "clojure",
+      "cpp",
+      "css",
+      "elixir",
+      "erlang",
+      "fsharp",
+      "graphql",
+      "haskell",
+      "hcl",
+      "json",
+      "julia",
+      "make",
+      "markdown",
+      "nim",
+      "objective-c",
+      "perl",
+      "powershell",
+      "protobuf",
+      "python",
+      "scss",
+      "solidity",
+      "sql",
+      "vb",
+      "xml",
+      "yaml"
+    ]
+  },
+  "checks": [
+    {
+      "id": "C1",
+      "status": "pass",
+      "detail": "27 pinned lane(s), 53 surveyed lane(s), 0 pinned-but-unsurveyed, 26 surveyed-but-unpinned"
+    },
+    {
+      "id": "C2",
+      "status": "pass",
+      "detail": "26 overlapping lane(s) agree on their wasm sha256; 1 incomparable; 0 mismatch(es)"
+    },
+    {
+      "id": "C3",
+      "status": "pass",
+      "detail": "52 lane(s) verified against wasm/ bytes; 1 lane(s) ship no wasm (generic/alias); 0 failure(s)"
+    },
+    {
+      "id": "C4",
+      "status": "pass",
+      "detail": "53 lane(s) cross-checked across docs/analyzers/ and script/m14/spec/ against the owning file; 0 disagreement(s)"
+    },
+    {
+      "id": "C5",
+      "status": "pass",
+      "detail": "53 declared lane(s) across engine.ts + M12 manifest + analyzer docs + pin record; 0 unrecorded, 0 phantom"
+    },
+    {
+      "id": "C6",
+      "status": "pass",
+      "detail": "96 candidate(s); 4 carry a verdict and each must name a review document that exists"
+    },
+    {
+      "id": "C7",
+      "status": "pass",
+      "detail": "survey is 6.4 day(s) old (limit 90); upstream candidates are only as current as this timestamp"
+    },
+    {
+      "id": "C9",
+      "status": "pass",
+      "detail": "4/4 — provenance by vocabulary where bytes are ambiguous, and every positive verdict names the candidate it was measured against"
+    },
+    {
+      "id": "C8",
+      "status": "pass",
+      "detail": "8/8 — the runtime-upgrade claim is measured, its harness was proven able to fail, and the survey restates the measurement"
+    }
+  ],
+  "hardFailures": [],
+  "knownGaps": [
+    "C1 remainder: 26 lane(s) surveyed but not yet in the pin record — bash, csharp, dart, go, groovy, html, java, javascript, kotlin, lua, matlab, php, r, ruby, rust, sass, scala, svelte, swift, terraform, toml, tsx, typescript, vba, vue, zig (pin adoption is per-lane and F11-gated, so this closes as lanes are adjudicated, not in one edit)",
+    "R1: 2 lane(s) have no version recorded in EITHER file — kotlin, matlab",
+    "R2: 44 corpus-error artifact(s) record no grammar sha256, so a grammar swap cannot make them stale",
+    "R3: 16 lane(s) have neither an F5 differential lane nor an F10 parse-success floor — graphql, hcl, lua, matlab, nim, perl, protobuf, r, sass, sql, terraform, tsx, vb, vba, xml, yaml",
+    "R4: 21 lane(s) ship a wasm that cannot be rebuilt from this repository — bash, clean, csharp, erlang, go, java, javascript, json, markdown, php, protobuf, python, rust, scala, svelte, swift, toml, tsx, typescript, vue, zig"
+  ],
+  "remainders": {
+    "R1_noVersionInEitherFile": [
+      "kotlin",
+      "matlab"
+    ],
+    "R2_claimNotBoundToGrammar": [
+      "bash",
+      "c",
+      "clean",
+      "clojure",
+      "cpp",
+      "csharp",
+      "css",
+      "dart",
+      "elixir",
+      "erlang",
+      "fsharp",
+      "go",
+      "graphql",
+      "groovy",
+      "haskell",
+      "hcl",
+      "html",
+      "java",
+      "javascript",
+      "json",
+      "kotlin",
+      "lua",
+      "make",
+      "markdown",
+      "nim",
+      "objective-c",
+      "perl",
+      "php",
+      "powershell",
+      "protobuf",
+      "python",
+      "r",
+      "ruby",
+      "rust",
+      "scala",
+      "scss",
+      "sql",
+      "svelte",
+      "swift",
+      "typescript",
+      "vue",
+      "xml",
+      "yaml",
+      "zig"
+    ],
+    "R3_noF5OrF10Guard": [
+      "graphql",
+      "hcl",
+      "lua",
+      "matlab",
+      "nim",
+      "perl",
+      "protobuf",
+      "r",
+      "sass",
+      "sql",
+      "terraform",
+      "tsx",
+      "vb",
+      "vba",
+      "xml",
+      "yaml"
+    ],
+    "R4_notRebuildableFromRepo": [
+      "bash",
+      "clean",
+      "csharp",
+      "erlang",
+      "go",
+      "java",
+      "javascript",
+      "json",
+      "markdown",
+      "php",
+      "protobuf",
+      "python",
+      "rust",
+      "scala",
+      "svelte",
+      "swift",
+      "toml",
+      "tsx",
+      "typescript",
+      "vue",
+      "zig"
+    ],
+    "surveyedButNotPinned": [
+      "bash",
+      "csharp",
+      "dart",
+      "go",
+      "groovy",
+      "html",
+      "java",
+      "javascript",
+      "kotlin",
+      "lua",
+      "matlab",
+      "php",
+      "r",
+      "ruby",
+      "rust",
+      "sass",
+      "scala",
+      "svelte",
+      "swift",
+      "terraform",
+      "toml",
+      "tsx",
+      "typescript",
+      "vba",
+      "vue",
+      "zig"
+    ]
+  },
+  "detail": {
+    "C1": {
+      "pinnedNotSurveyed": [],
+      "surveyedNotPinned": [
+        "bash",
+        "csharp",
+        "dart",
+        "go",
+        "groovy",
+        "html",
+        "java",
+        "javascript",
+        "kotlin",
+        "lua",
+        "matlab",
+        "php",
+        "r",
+        "ruby",
+        "rust",
+        "sass",
+        "scala",
+        "svelte",
+        "swift",
+        "terraform",
+        "toml",
+        "tsx",
+        "typescript",
+        "vba",
+        "vue",
+        "zig"
+      ]
+    },
+    "C2": [
+      {
+        "lane": "c",
+        "status": "pass",
+        "pinSha": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7",
+        "surveySha": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7"
+      },
+      {
+        "lane": "clean",
+        "status": "pass",
+        "pinSha": "001361f63df7d8bfbb1a17ca746fa3555f395e462a3d6bd168414bd4c8a8feea",
+        "surveySha": "001361f63df7d8bfbb1a17ca746fa3555f395e462a3d6bd168414bd4c8a8feea"
+      },
+      {
+        "lane": "clojure",
+        "status": "pass",
+        "pinSha": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+        "surveySha": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27"
+      },
+      {
+        "lane": "cpp",
+        "status": "pass",
+        "pinSha": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b",
+        "surveySha": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b"
+      },
+      {
+        "lane": "css",
+        "status": "pass",
+        "pinSha": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2",
+        "surveySha": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2"
+      },
+      {
+        "lane": "elixir",
+        "status": "pass",
+        "pinSha": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
+        "surveySha": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62"
+      },
+      {
+        "lane": "erlang",
+        "status": "pass",
+        "pinSha": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
+        "surveySha": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6"
+      },
+      {
+        "lane": "fsharp",
+        "status": "pass",
+        "pinSha": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
+        "surveySha": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e"
+      },
+      {
+        "lane": "graphql",
+        "status": "pass",
+        "pinSha": "f988e0a0c38e27493ff345382f004ac5fd6c5b7525f55af718406b90401bf6c4",
+        "surveySha": "f988e0a0c38e27493ff345382f004ac5fd6c5b7525f55af718406b90401bf6c4"
+      },
+      {
+        "lane": "haskell",
+        "status": "pass",
+        "pinSha": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
+        "surveySha": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c"
+      },
+      {
+        "lane": "hcl",
+        "status": "pass",
+        "pinSha": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+        "surveySha": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118"
+      },
+      {
+        "lane": "json",
+        "status": "pass",
+        "pinSha": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
+        "surveySha": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667"
+      },
+      {
+        "lane": "julia",
+        "status": "pass",
+        "pinSha": "6a4569abd693ab2042f05c06a845ae5e2f96db95f55b8a334380eabf7c8849f7",
+        "surveySha": "6a4569abd693ab2042f05c06a845ae5e2f96db95f55b8a334380eabf7c8849f7"
+      },
+      {
+        "lane": "make",
+        "status": "pass",
+        "pinSha": "af93a7597fd11dda62f5c4496fff828956c0a78656323785975ab96e3ae900ab",
+        "surveySha": "af93a7597fd11dda62f5c4496fff828956c0a78656323785975ab96e3ae900ab"
+      },
+      {
+        "lane": "markdown",
+        "status": "pass",
+        "pinSha": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+        "surveySha": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a"
+      },
+      {
+        "lane": "nim",
+        "status": "incomparable",
+        "pinSha": "421369fe6a8814dd28d0548f56dbab8877576da877b0b98ca1b905c024b5d1ad",
+        "surveySha": null
+      },
+      {
+        "lane": "objective-c",
+        "status": "pass",
+        "pinSha": "520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb",
+        "surveySha": "520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb"
+      },
+      {
+        "lane": "perl",
+        "status": "pass",
+        "pinSha": "ac0248edc4205816163f66d2cc2c99fa85a199eaf6535b2be590741ed293a169",
+        "surveySha": "ac0248edc4205816163f66d2cc2c99fa85a199eaf6535b2be590741ed293a169"
+      },
+      {
+        "lane": "powershell",
+        "status": "pass",
+        "pinSha": "df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6",
+        "surveySha": "df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6"
+      },
+      {
+        "lane": "protobuf",
+        "status": "pass",
+        "pinSha": "4624eb6d4b7830dd0ee7ba4d435935fe5f29f589ba9299944b70ad69ddf0a338",
+        "surveySha": "4624eb6d4b7830dd0ee7ba4d435935fe5f29f589ba9299944b70ad69ddf0a338"
+      },
+      {
+        "lane": "python",
+        "status": "pass",
+        "pinSha": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+        "surveySha": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47"
+      },
+      {
+        "lane": "scss",
+        "status": "pass",
+        "pinSha": "67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5",
+        "surveySha": "67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5"
+      },
+      {
+        "lane": "solidity",
+        "status": "pass",
+        "pinSha": "07420813d7668445152a5d5d2017e0fb84cb27342257e1add3cc7462eec7f811",
+        "surveySha": "07420813d7668445152a5d5d2017e0fb84cb27342257e1add3cc7462eec7f811"
+      },
+      {
+        "lane": "sql",
+        "status": "pass",
+        "pinSha": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819",
+        "surveySha": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819"
+      },
+      {
+        "lane": "vb",
+        "status": "pass",
+        "pinSha": "4d8d8e0e81211696dee64ae2edadf8a3504a65e5daacbdcadfae0af5bec183de",
+        "surveySha": "4d8d8e0e81211696dee64ae2edadf8a3504a65e5daacbdcadfae0af5bec183de"
+      },
+      {
+        "lane": "xml",
+        "status": "pass",
+        "pinSha": "2425a26e77dce87d7157f89b2e39920c67436a672263827dea3516210f93b1c8",
+        "surveySha": "2425a26e77dce87d7157f89b2e39920c67436a672263827dea3516210f93b1c8"
+      },
+      {
+        "lane": "yaml",
+        "status": "pass",
+        "pinSha": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+        "surveySha": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91"
+      }
+    ],
+    "C3": [
+      {
+        "lane": "bash",
+        "status": "pass",
+        "recorded": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+        "observed": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604"
+      },
+      {
+        "lane": "c",
+        "status": "pass",
+        "recorded": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7",
+        "observed": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7"
+      },
+      {
+        "lane": "clean",
+        "status": "pass",
+        "recorded": "001361f63df7d8bfbb1a17ca746fa3555f395e462a3d6bd168414bd4c8a8feea",
+        "observed": "001361f63df7d8bfbb1a17ca746fa3555f395e462a3d6bd168414bd4c8a8feea"
+      },
+      {
+        "lane": "clojure",
+        "status": "pass",
+        "recorded": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+        "observed": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27"
+      },
+      {
+        "lane": "cpp",
+        "status": "pass",
+        "recorded": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b",
+        "observed": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b"
+      },
+      {
+        "lane": "csharp",
+        "status": "pass",
+        "recorded": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40",
+        "observed": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40"
+      },
+      {
+        "lane": "css",
+        "status": "pass",
+        "recorded": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2",
+        "observed": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2"
+      },
+      {
+        "lane": "dart",
+        "status": "pass",
+        "recorded": "7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1",
+        "observed": "7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1"
+      },
+      {
+        "lane": "elixir",
+        "status": "pass",
+        "recorded": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
+        "observed": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62"
+      },
+      {
+        "lane": "erlang",
+        "status": "pass",
+        "recorded": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
+        "observed": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6"
+      },
+      {
+        "lane": "fsharp",
+        "status": "pass",
+        "recorded": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
+        "observed": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e"
+      },
+      {
+        "lane": "go",
+        "status": "pass",
+        "recorded": "9963ca89b616eaf04b08a43bc1fb0f07b85395bec313330851f1f1ead2f755b6",
+        "observed": "9963ca89b616eaf04b08a43bc1fb0f07b85395bec313330851f1f1ead2f755b6"
+      },
+      {
+        "lane": "graphql",
+        "status": "pass",
+        "recorded": "f988e0a0c38e27493ff345382f004ac5fd6c5b7525f55af718406b90401bf6c4",
+        "observed": "f988e0a0c38e27493ff345382f004ac5fd6c5b7525f55af718406b90401bf6c4"
+      },
+      {
+        "lane": "groovy",
+        "status": "pass",
+        "recorded": "f1e68cb398e63f3498c63b1675bb65496a33bd194efb65ec461bb3f589cece04",
+        "observed": "f1e68cb398e63f3498c63b1675bb65496a33bd194efb65ec461bb3f589cece04"
+      },
+      {
+        "lane": "haskell",
+        "status": "pass",
+        "recorded": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
+        "observed": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c"
+      },
+      {
+        "lane": "hcl",
+        "status": "pass",
+        "recorded": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+        "observed": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118"
+      },
+      {
+        "lane": "html",
+        "status": "pass",
+        "recorded": "11b3405c1543fb012f5ed7f8ee73125076dce8b168301e1e787e4c717da6b456",
+        "observed": "11b3405c1543fb012f5ed7f8ee73125076dce8b168301e1e787e4c717da6b456"
+      },
+      {
+        "lane": "java",
+        "status": "pass",
+        "recorded": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f",
+        "observed": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f"
+      },
+      {
+        "lane": "javascript",
+        "status": "pass",
+        "recorded": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+        "observed": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5"
+      },
+      {
+        "lane": "json",
+        "status": "pass",
+        "recorded": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
+        "observed": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667"
+      },
+      {
+        "lane": "julia",
+        "status": "pass",
+        "recorded": "6a4569abd693ab2042f05c06a845ae5e2f96db95f55b8a334380eabf7c8849f7",
+        "observed": "6a4569abd693ab2042f05c06a845ae5e2f96db95f55b8a334380eabf7c8849f7"
+      },
+      {
+        "lane": "kotlin",
+        "status": "pass",
+        "recorded": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
+        "observed": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9"
+      },
+      {
+        "lane": "lua",
+        "status": "pass",
+        "recorded": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a",
+        "observed": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a"
+      },
+      {
+        "lane": "make",
+        "status": "pass",
+        "recorded": "af93a7597fd11dda62f5c4496fff828956c0a78656323785975ab96e3ae900ab",
+        "observed": "af93a7597fd11dda62f5c4496fff828956c0a78656323785975ab96e3ae900ab"
+      },
+      {
+        "lane": "markdown",
+        "status": "pass",
+        "recorded": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+        "observed": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a"
+      },
+      {
+        "lane": "matlab",
+        "status": "pass",
+        "recorded": "0f2f381f010d81af18a9f132e77606dceb02ae705c5b2e3cb0eabff3f42083c3",
+        "observed": "0f2f381f010d81af18a9f132e77606dceb02ae705c5b2e3cb0eabff3f42083c3"
+      },
+      {
+        "lane": "nim",
+        "status": "no-artifact"
+      },
+      {
+        "lane": "objective-c",
+        "status": "pass",
+        "recorded": "520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb",
+        "observed": "520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb"
+      },
+      {
+        "lane": "perl",
+        "status": "pass",
+        "recorded": "ac0248edc4205816163f66d2cc2c99fa85a199eaf6535b2be590741ed293a169",
+        "observed": "ac0248edc4205816163f66d2cc2c99fa85a199eaf6535b2be590741ed293a169"
+      },
+      {
+        "lane": "php",
+        "status": "pass",
+        "recorded": "d4df6a6ff08c87c3ec4f9cbb785fe09998a0cb570e03f57d7b19b3acfb146aa7",
+        "observed": "d4df6a6ff08c87c3ec4f9cbb785fe09998a0cb570e03f57d7b19b3acfb146aa7"
+      },
+      {
+        "lane": "powershell",
+        "status": "pass",
+        "recorded": "df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6",
+        "observed": "df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6"
+      },
+      {
+        "lane": "protobuf",
+        "status": "pass",
+        "recorded": "4624eb6d4b7830dd0ee7ba4d435935fe5f29f589ba9299944b70ad69ddf0a338",
+        "observed": "4624eb6d4b7830dd0ee7ba4d435935fe5f29f589ba9299944b70ad69ddf0a338"
+      },
+      {
+        "lane": "python",
+        "status": "pass",
+        "recorded": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+        "observed": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47"
+      },
+      {
+        "lane": "r",
+        "status": "pass",
+        "recorded": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6",
+        "observed": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6"
+      },
+      {
+        "lane": "ruby",
+        "status": "pass",
+        "recorded": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39",
+        "observed": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39"
+      },
+      {
+        "lane": "rust",
+        "status": "pass",
+        "recorded": "f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57",
+        "observed": "f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57"
+      },
+      {
+        "lane": "sass",
+        "status": "pass",
+        "recorded": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2",
+        "observed": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2"
+      },
+      {
+        "lane": "scala",
+        "status": "pass",
+        "recorded": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+        "observed": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917"
+      },
+      {
+        "lane": "scss",
+        "status": "pass",
+        "recorded": "67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5",
+        "observed": "67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5"
+      },
+      {
+        "lane": "solidity",
+        "status": "pass",
+        "recorded": "07420813d7668445152a5d5d2017e0fb84cb27342257e1add3cc7462eec7f811",
+        "observed": "07420813d7668445152a5d5d2017e0fb84cb27342257e1add3cc7462eec7f811"
+      },
+      {
+        "lane": "sql",
+        "status": "pass",
+        "recorded": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819",
+        "observed": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819"
+      },
+      {
+        "lane": "svelte",
+        "status": "pass",
+        "recorded": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+        "observed": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5"
+      },
+      {
+        "lane": "swift",
+        "status": "pass",
+        "recorded": "41c4fdb2249a3aa6d87eed0d383081ff09725c2248b4977043a43825980ffcc7",
+        "observed": "41c4fdb2249a3aa6d87eed0d383081ff09725c2248b4977043a43825980ffcc7"
+      },
+      {
+        "lane": "terraform",
+        "status": "pass",
+        "recorded": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+        "observed": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118"
+      },
+      {
+        "lane": "toml",
+        "status": "pass",
+        "recorded": "7849ac8ce9d10a4684ca189ea8ad3654c20c38acb2d674a014a164398cbd37a2",
+        "observed": "7849ac8ce9d10a4684ca189ea8ad3654c20c38acb2d674a014a164398cbd37a2"
+      },
+      {
+        "lane": "tsx",
+        "status": "pass",
+        "recorded": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6",
+        "observed": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6"
+      },
+      {
+        "lane": "typescript",
+        "status": "pass",
+        "recorded": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335",
+        "observed": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335"
+      },
+      {
+        "lane": "vb",
+        "status": "pass",
+        "recorded": "4d8d8e0e81211696dee64ae2edadf8a3504a65e5daacbdcadfae0af5bec183de",
+        "observed": "4d8d8e0e81211696dee64ae2edadf8a3504a65e5daacbdcadfae0af5bec183de"
+      },
+      {
+        "lane": "vba",
+        "status": "pass",
+        "recorded": "9e0615ad1a4fdf3abff07265fe84d95ba1f392df6f4bbecd0f3ddea92aee00de",
+        "observed": "9e0615ad1a4fdf3abff07265fe84d95ba1f392df6f4bbecd0f3ddea92aee00de"
+      },
+      {
+        "lane": "vue",
+        "status": "pass",
+        "recorded": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250",
+        "observed": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250"
+      },
+      {
+        "lane": "xml",
+        "status": "pass",
+        "recorded": "2425a26e77dce87d7157f89b2e39920c67436a672263827dea3516210f93b1c8",
+        "observed": "2425a26e77dce87d7157f89b2e39920c67436a672263827dea3516210f93b1c8"
+      },
+      {
+        "lane": "yaml",
+        "status": "pass",
+        "recorded": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+        "observed": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91"
+      },
+      {
+        "lane": "zig",
+        "status": "pass",
+        "recorded": "59cc4531aa661e2de4c5bc04e4045b6bdd5d2bfa75045cbda5f673102d140eef",
+        "observed": "59cc4531aa661e2de4c5bc04e4045b6bdd5d2bfa75045cbda5f673102d140eef"
+      }
+    ],
+    "C4": [
+      {
+        "lane": "bash",
+        "owner": "survey",
+        "authoritative": "0.25.1",
+        "sites": [
+          {
+            "file": "docs/analyzers/bash.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/bash-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "c",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/c.md",
+            "version": "0.24.1"
+          },
+          {
+            "file": "script/m14/spec/c-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "clean",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/clean.md",
+            "version": "1.2.8"
+          },
+          {
+            "file": "script/m14/spec/clean-completeness.json",
+            "version": "1.2.8"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "clojure",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/clojure.md",
+            "version": "0.0.14"
+          },
+          {
+            "file": "script/m14/spec/clojure-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "cpp",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/cpp.md",
+            "version": "0.23.4"
+          },
+          {
+            "file": "script/m14/spec/cpp-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "csharp",
+        "owner": "survey",
+        "authoritative": "0.23.5",
+        "sites": [
+          {
+            "file": "docs/analyzers/csharp.md",
+            "version": "0.23.5"
+          },
+          {
+            "file": "script/m14/spec/csharp-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "css",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/css.md",
+            "version": "0.25.0"
+          },
+          {
+            "file": "script/m14/spec/css-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "dart",
+        "owner": "survey",
+        "authoritative": "75.5",
+        "sites": [
+          {
+            "file": "docs/analyzers/dart.md",
+            "version": "75.5"
+          },
+          {
+            "file": "script/m14/spec/dart-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "elixir",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/elixir.md",
+            "version": "0.3.5"
+          },
+          {
+            "file": "script/m14/spec/elixir-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "erlang",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/erlang.md",
+            "version": "0.26.0"
+          },
+          {
+            "file": "script/m14/spec/erlang-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "fsharp",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/fsharp.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/fsharp-completeness.json",
+            "version": "0.3.11"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "go",
+        "owner": "survey",
+        "authoritative": "0.25.0",
+        "sites": [
+          {
+            "file": "docs/analyzers/go.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/go-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "graphql",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "script/m14/spec/graphql-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "groovy",
+        "owner": "survey",
+        "authoritative": "0.25.1",
+        "sites": [
+          {
+            "file": "docs/analyzers/groovy.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/groovy-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "haskell",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/haskell.md",
+            "version": "0.23.1"
+          },
+          {
+            "file": "script/m14/spec/haskell-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "hcl",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/hcl.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/hcl-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "html",
+        "owner": "survey",
+        "authoritative": "0.1.12",
+        "sites": [],
+        "status": "pass"
+      },
+      {
+        "lane": "java",
+        "owner": "survey",
+        "authoritative": "0.1.11",
+        "sites": [
+          {
+            "file": "docs/analyzers/java.md",
+            "version": "0.1.11"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "javascript",
+        "owner": "survey",
+        "authoritative": "0.23.1",
+        "sites": [
+          {
+            "file": "docs/analyzers/javascript.md",
+            "version": "0.23.1"
+          },
+          {
+            "file": "script/m14/spec/javascript-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "json",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [],
+        "status": "pass"
+      },
+      {
+        "lane": "julia",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "script/m14/spec/julia-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "kotlin",
+        "owner": "survey",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/kotlin.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/kotlin-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "lua",
+        "owner": "survey",
+        "authoritative": "0.4.1",
+        "sites": [
+          {
+            "file": "docs/analyzers/lua.md",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "make",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/make.md",
+            "version": "1.1.1"
+          },
+          {
+            "file": "script/m14/spec/make-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "markdown",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/markdown.md",
+            "version": "0.5.1"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "matlab",
+        "owner": "survey",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "script/m14/spec/matlab-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "nim",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "script/m14/spec/nim-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "objective-c",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/objective-c.md",
+            "version": "3.0.2"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "perl",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "script/m14/spec/perl-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "php",
+        "owner": "survey",
+        "authoritative": "0.24.2",
+        "sites": [
+          {
+            "file": "docs/analyzers/php.md",
+            "version": "0.24.2"
+          },
+          {
+            "file": "script/m14/spec/php-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "powershell",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/powershell.md",
+            "version": "0.26.4"
+          },
+          {
+            "file": "script/m14/spec/powershell-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "protobuf",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/protobuf.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/protobuf-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "python",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/python.md",
+            "version": "0.25.0"
+          },
+          {
+            "file": "script/m14/spec/python-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "r",
+        "owner": "survey",
+        "authoritative": "1.1.2",
+        "sites": [
+          {
+            "file": "docs/analyzers/r.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/r-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "ruby",
+        "owner": "survey",
+        "authoritative": "0.1.11",
+        "sites": [
+          {
+            "file": "docs/analyzers/ruby.md",
+            "version": "0.1.11"
+          },
+          {
+            "file": "script/m14/spec/ruby-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "rust",
+        "owner": "survey",
+        "authoritative": "0.24.0",
+        "sites": [
+          {
+            "file": "docs/analyzers/rust.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/rust-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "sass",
+        "owner": "survey",
+        "authoritative": null,
+        "sites": [],
+        "status": "pass"
+      },
+      {
+        "lane": "scala",
+        "owner": "survey",
+        "authoritative": "0.26.2",
+        "sites": [
+          {
+            "file": "docs/analyzers/scala.md",
+            "version": "0.26.2"
+          },
+          {
+            "file": "script/m14/spec/scala-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "scss",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/scss.md",
+            "version": "1.0.0"
+          },
+          {
+            "file": "script/m14/spec/scss-completeness.json",
+            "version": "1.0.0"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "solidity",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/solidity.md",
+            "version": "1.2.13"
+          },
+          {
+            "file": "script/m14/spec/solidity-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "sql",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "script/m14/spec/sql-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "svelte",
+        "owner": "survey",
+        "authoritative": "1.0.2",
+        "sites": [
+          {
+            "file": "docs/analyzers/svelte.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/svelte-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "swift",
+        "owner": "survey",
+        "authoritative": "0.7.1",
+        "sites": [
+          {
+            "file": "docs/analyzers/swift.md",
+            "version": "0.7.1"
+          },
+          {
+            "file": "script/m14/spec/swift-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "terraform",
+        "owner": "survey",
+        "authoritative": null,
+        "sites": [],
+        "status": "pass"
+      },
+      {
+        "lane": "toml",
+        "owner": "survey",
+        "authoritative": "0.1.11",
+        "sites": [],
+        "status": "pass"
+      },
+      {
+        "lane": "tsx",
+        "owner": "survey",
+        "authoritative": "0.1.11",
+        "sites": [],
+        "status": "pass"
+      },
+      {
+        "lane": "typescript",
+        "owner": "survey",
+        "authoritative": "0.23.2",
+        "sites": [
+          {
+            "file": "docs/analyzers/typescript.md",
+            "version": "0.23.2"
+          },
+          {
+            "file": "script/m14/spec/typescript-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "vb",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/vb.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/vb-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "vba",
+        "owner": "survey",
+        "authoritative": "0.14.5",
+        "sites": [
+          {
+            "file": "docs/analyzers/vba.md",
+            "version": "0.14.5"
+          },
+          {
+            "file": "script/m14/spec/vba-completeness.json",
+            "version": "0.14.5"
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "vue",
+        "owner": "survey",
+        "authoritative": "0.1.12",
+        "sites": [
+          {
+            "file": "docs/analyzers/vue.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/vue-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "xml",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/xml.md",
+            "version": null
+          },
+          {
+            "file": "script/m14/spec/xml-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "yaml",
+        "owner": "pin-record",
+        "authoritative": null,
+        "sites": [
+          {
+            "file": "docs/analyzers/yaml.md",
+            "version": "0.7.1"
+          },
+          {
+            "file": "script/m14/spec/yaml-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      },
+      {
+        "lane": "zig",
+        "owner": "survey",
+        "authoritative": "0.1.13",
+        "sites": [
+          {
+            "file": "docs/analyzers/zig.md",
+            "version": "0.1.13"
+          },
+          {
+            "file": "script/m14/spec/zig-completeness.json",
+            "version": null
+          }
+        ],
+        "status": "pass"
+      }
+    ],
+    "C6": [
+      {
+        "lane": "bash",
+        "package": "tree-sitter-bash",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "bash",
+        "package": "@curlconverter/tree-sitter-bash",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "bash",
+        "package": "@willbooster/tree-sitter-bash",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "bash",
+        "package": "@ohos-ports/tree-sitter-bash",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "bash",
+        "package": "@sengac/tree-sitter-bash",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "c",
+        "package": "tree-sitter-c",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "c",
+        "package": "@sengac/tree-sitter-c",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "clean",
+        "package": "tree-sitter-clean",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "clojure",
+        "package": "tree-sitter-clojure",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "clojure",
+        "package": "@yogthos/tree-sitter-clojure",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "cpp",
+        "package": "tree-sitter-cpp",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "cpp",
+        "package": "@sengac/tree-sitter-cpp",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "csharp",
+        "package": "tree-sitter-c_sharp",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "css",
+        "package": "tree-sitter-css",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "dart",
+        "package": "tree-sitter-dart",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "dart",
+        "package": "@vokturz/tree-sitter-dart",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "dart",
+        "package": "@sengac/tree-sitter-dart",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "dart",
+        "package": "@driftlog/tree-sitter-dart",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "elixir",
+        "package": "tree-sitter-elixir",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "erlang",
+        "package": "tree-sitter-erlang",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "fsharp",
+        "package": "tree-sitter-fsharp",
+        "verdict": "refused",
+        "ruling": "reviews/m60-fsharp-grammar-0312-refused.md",
+        "resolved": "repo-relative",
+        "status": "pass"
+      },
+      {
+        "lane": "go",
+        "package": "tree-sitter-go",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "go",
+        "package": "@sengac/tree-sitter-go",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "go",
+        "package": "@ohos-ports/tree-sitter-go",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "graphql",
+        "package": "tree-sitter-graphql",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "groovy",
+        "package": "tree-sitter-groovy",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "groovy",
+        "package": "@vokturz/tree-sitter-groovy",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "groovy",
+        "package": "@dekobon/tree-sitter-groovy",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "haskell",
+        "package": "tree-sitter-haskell",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "hcl",
+        "package": "@tree-sitter-grammars/tree-sitter-hcl",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "html",
+        "package": "tree-sitter-wasms",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "html",
+        "package": "tree-sitter-html",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "java",
+        "package": "tree-sitter-java",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "java",
+        "package": "@sengac/tree-sitter-java",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "javascript",
+        "package": "tree-sitter-javascript",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "javascript",
+        "package": "@sengac/tree-sitter-javascript",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "json",
+        "package": "tree-sitter-wasms",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "json",
+        "package": "@rtinternal/tree-sitter-json",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "json",
+        "package": "tree-sitter-json",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "julia",
+        "package": "tree-sitter-julia",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "kotlin",
+        "package": "tree-sitter-kotlin",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "kotlin",
+        "package": "@tree-sitter-grammars/tree-sitter-kotlin",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "kotlin",
+        "package": "@ohos-ports/tree-sitter-kotlin",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "kotlin",
+        "package": "@sengac/tree-sitter-kotlin",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "lua",
+        "package": "tree-sitter-lua",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "lua",
+        "package": "@tree-sitter-grammars/tree-sitter-lua",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "make",
+        "package": "tree-sitter-make",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "markdown",
+        "package": "tree-sitter-markdown",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "markdown",
+        "package": "@tree-sitter-grammars/tree-sitter-markdown",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "matlab",
+        "package": "tree-sitter-matlab",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "objective-c",
+        "package": "tree-sitter-objc",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "perl",
+        "package": "tree-sitter-perl",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "perl",
+        "package": "@ganezdragon/tree-sitter-perl",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "php",
+        "package": "tree-sitter-php",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "php",
+        "package": "@sengac/tree-sitter-php",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "powershell",
+        "package": "tree-sitter-powershell",
+        "verdict": "refused",
+        "ruling": "reviews/m60-powershell-grammar-0264-refused.md",
+        "resolved": "repo-relative",
+        "status": "pass"
+      },
+      {
+        "lane": "protobuf",
+        "package": "tree-sitter-proto",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "python",
+        "package": "tree-sitter-python",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "python",
+        "package": "@sengac/tree-sitter-python",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "python",
+        "package": "@ohos-ports/tree-sitter-python",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "r",
+        "package": "@eagleoutice/tree-sitter-r",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "r",
+        "package": "@davisvaughan/tree-sitter-r",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "ruby",
+        "package": "tree-sitter-ruby",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "ruby",
+        "package": "@ohos-ports/tree-sitter-ruby",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "ruby",
+        "package": "@sengac/tree-sitter-ruby",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "rust",
+        "package": "tree-sitter-rust",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "rust",
+        "package": "@sengac/tree-sitter-rust",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "scala",
+        "package": "tree-sitter-scala",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "solidity",
+        "package": "tree-sitter-solidity",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "sql",
+        "package": "tree-sitter-sql",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "sql",
+        "package": "@derekstride/tree-sitter-sql",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "sql",
+        "package": "tree-sitter-sql-bigquery",
+        "verdict": "refused",
+        "ruling": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+        "resolved": "repo-relative",
+        "status": "pass"
+      },
+      {
+        "lane": "sql",
+        "package": "@relativelyunknown/tree-sitter-sql-polyglot",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "sql",
+        "package": "@vokturz/tree-sitter-sql",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "sql",
+        "package": "@l1xnan/tree-sitter-sql",
+        "verdict": "refused",
+        "ruling": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+        "resolved": "repo-relative",
+        "status": "pass"
+      },
+      {
+        "lane": "svelte",
+        "package": "@tree-sitter-grammars/tree-sitter-svelte",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "svelte",
+        "package": "tree-sitter-svelte",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "swift",
+        "package": "tree-sitter-swift",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "swift",
+        "package": "@sengac/tree-sitter-swift",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "toml",
+        "package": "tree-sitter-wasms",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "toml",
+        "package": "@tree-sitter-grammars/tree-sitter-toml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "toml",
+        "package": "tree-sitter-toml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "toml",
+        "package": "@konomanoasa/tree-sitter-toml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "tsx",
+        "package": "tree-sitter-wasms",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "typescript",
+        "package": "tree-sitter-typescript",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "typescript",
+        "package": "@sengac/tree-sitter-typescript",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "vb",
+        "package": "tree-sitter-vbnet",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "vba",
+        "package": "tree-sitter-vba",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "vue",
+        "package": "tree-sitter-vue",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "vue",
+        "package": "@deuscx/tree-sitter-vue",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "xml",
+        "package": "tree-sitter-xml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "xml",
+        "package": "@tree-sitter-grammars/tree-sitter-xml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "yaml",
+        "package": "tree-sitter-yaml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "yaml",
+        "package": "@tree-sitter-grammars/tree-sitter-yaml",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "zig",
+        "package": "tree-sitter-zig",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      },
+      {
+        "lane": "zig",
+        "package": "@tree-sitter-grammars/tree-sitter-zig",
+        "verdict": "unmeasured",
+        "status": "unmeasured"
+      }
+    ],
+    "C8": [
+      {
+        "check": "harness-control",
+        "status": "pass",
+        "detail": "sound: 3 deliberate corruption(s) rejected on every runtime before any result was read"
+      },
+      {
+        "check": "calibration",
+        "status": "pass",
+        "detail": "reproduces the previously recorded pinned-runtime baseline (tree-sitter-elm.wasm, tree-sitter-ql.wasm)"
+      },
+      {
+        "check": "cause",
+        "status": "pass",
+        "detail": "dylink.0 correspondence CONFIRMED exactly — {0.27.0 load failures} == {shipped wasms lacking dylink.0}, exactly"
+      },
+      {
+        "check": "survey-restates-artifact",
+        "status": "pass",
+        "detail": "the survey's 19-entry straggler list matches the artifact name for name, in order"
+      },
+      {
+        "check": "survey-counts-match",
+        "status": "pass",
+        "detail": "stragglers 19, candidate failures 21, wasms 61 — all agree"
+      },
+      {
+        "check": "census-sourced-versions-cite-their-source",
+        "status": "pass",
+        "detail": "4 lane(s) record their version from the census and every one cites the artifact and field it read (html, json, toml, tsx)"
+      },
+      {
+        "check": "local-rebuild-versions-carry-reproduction",
+        "status": "pass",
+        "detail": "4 lane(s) recorded as a local rebuild, each with a named source and a qualifying reproduction — by byte grade (byte-identical/equivalent) or by an identical vocabulary (bash: rebuild/equivalent, hcl: surface/no-candidate-reproduced-it, r: surface/no-candidate-reproduced-it, svelte: rebuild/byte-identical)"
+      },
+      {
+        "check": "retraction-visible",
+        "status": "pass",
+        "detail": "the superseded \"20 of 55\" is retained in place with reproducible:false — 0.27.0 breaks 20 of 55 shipped grammar wasms"
+      }
+    ],
+    "C9": [
+      {
+        "check": "grades-are-declared",
+        "status": "pass",
+        "detail": "4 lane(s), every verdict one of 5 declared grade(s)"
+      },
+      {
+        "check": "positive-verdicts-name-their-candidate",
+        "status": "pass",
+        "detail": "3 positive verdict(s), each backed by an attempt row naming the package and version it was measured against (kotlin: surface-compatible vs tree-sitter-kotlin@0.3.8, hcl: surface-identical vs @tree-sitter-grammars/tree-sitter-hcl@1.2.0, r: surface-identical vs @eagleoutice/tree-sitter-r@1.1.2)"
+      },
+      {
+        "check": "digests-are-real",
+        "status": "pass",
+        "detail": "every recorded surface carries a 64-hex digest for its types and fields"
+      },
+      {
+        "check": "no-contradiction-with-rebuild-verdicts",
+        "status": "pass",
+        "detail": "no lane is byte-identical to one package and surface-identical to another"
+      }
+    ]
+  },
+  "passed": true,
+  "policy": "Offline: never downloads, never fetches upstream, never mutates a grammar or a registry. Reads validation/m14/grammar-pins.json (the pin contract) and validation/m60/grammar-survey.json (the upstream observation) and proves they agree with each other and with the prose sites that quote versions. It deliberately restates no pin, so it can never become a second version record."
+}

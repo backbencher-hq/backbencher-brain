@@ -1,0 +1,1 @@
+{"gate":"m65-rules-budget-and-gates","command":"bun run script/m65/verify-rules-budget-and-gates.ts","exitCode":0,"durationMs":1324,"log":"validation/tools/bb_patterns/gates/logs/m65-rules-budget-and-gates.log","recordedAt":"2026-11-03T17:16:59Z"}

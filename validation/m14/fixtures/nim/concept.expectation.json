@@ -1,0 +1,176 @@
+{
+  "comment": "The `implements` edge, pinned in both directions. `Addable` and `Both` refine `Number`; `Both` also refines `Container`. POSITIVE half: the edges exist, carry the `implements` label, and sit at the concept's own declaration line. NEGATIVE half: the analyzer must not relabel a concept refinement as `extends` (the nominal-class label), must not emit `implements` for a concept that refines nothing, and must not treat a concept's formal parameter as a read. The forbid on `extends Number` is the half that would catch a 'helpful' fix that routed the concept clause through collectInheritance, which is the neighbouring-type confusion question 4 asks about. REVISED 2026-10-04: the `of`-form's GENERIC-TARGET shape (`of Source[T]`), its QUALIFIED-TARGET shape (`of mod.Contract`, whose leading `.` parses as an ERROR node with no field) and its SELF-CYCLE shape were added after nim-lang/nimony took the family's corpus count off zero. All three occur in real code; none was pinned, because a family can be fully fixture-covered and still be unpinned on the shape most of its corpus edges use.",
+  "expectSymbols": [
+    {
+      "name": "Number",
+      "kind": "interface"
+    },
+    {
+      "name": "Container",
+      "kind": "interface"
+    },
+    {
+      "name": "Addable",
+      "kind": "interface"
+    },
+    {
+      "name": "Both",
+      "kind": "interface"
+    },
+    {
+      "name": "Superset",
+      "kind": "interface"
+    },
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "HasArea",
+      "kind": "interface"
+    },
+    {
+      "name": "Recursive",
+      "kind": "interface"
+    },
+    {
+      "name": "Source",
+      "kind": "interface"
+    },
+    {
+      "name": "Wrapped",
+      "kind": "interface"
+    },
+    {
+      "name": "Cycle",
+      "kind": "interface"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "from": "Addable",
+      "target": "Number",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_concept_refinement",
+      "meta.nimContractKind": "concept",
+      "comment": "`type Addable = concept x of Number` \u2014 the `of` clause is the refinement, read off the grammar's `refines` field"
+    },
+    {
+      "type": "implements",
+      "from": "Both",
+      "target": "Number",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_concept_refinement",
+      "comment": "`of Number, Container` is a refinement_list of two entries; this is the first"
+    },
+    {
+      "type": "implements",
+      "from": "Both",
+      "target": "Container",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_concept_refinement",
+      "comment": "the second entry of the same refinement_list \u2014 one edge per named contract, not one per clause"
+    },
+    {
+      "type": "implements",
+      "from": "Superset",
+      "target": "Number",
+      "confidenceMin": 1,
+      "comment": "the OLD-styled spelling `concept of Number`, where `of` follows `concept` with no formal parameter. The grammar makes the parameter list optional, so a reader that only looked after a parameter list would miss this form entirely"
+    },
+    {
+      "type": "references",
+      "from": "Addable",
+      "target": "Number",
+      "comment": "DELIBERATE co-existence, mirroring what `inherits` already does: `extends` and `references` are both published for an object base, and `implements` and `references` are both published for a concept refinement. They answer two different questions \u2014 'which contract does this claim' versus 'which types does this depend on' \u2014 and the standing rule R9 requires the declared-type graph regardless of what the ontology edge says"
+    },
+    {
+      "type": "implements",
+      "from": "HasArea",
+      "target": "Shape",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_concept_refinement",
+      "meta.nimRefinementSpelling": "is",
+      "comment": "THE `is` SPELLING \u2014 `type HasArea = concept x` with body `x is Shape`. doc/manual_experimental.md:1205-1213 names it as the other way to write the same fact ('When the matched type within a concept is directly tested against a different concept, we say that the outer concept is a refinement of the inner concept'). Over 4,101 corpus files the `of` clause occurs 0 times against 216 concepts, so a reader that takes only the clause reports the type absent from a corpus full of concepts"
+    },
+    {
+      "type": "implements",
+      "from": "Chained",
+      "target": "Shape",
+      "confidenceMin": 1,
+      "meta.nimRefinementSpelling": "is",
+      "comment": "`x is Shape or name(x) is Sized` \u2014 the chain's first operand is a statement-level test of the parameter and refines; the second's left side is a CALL, so it is a constraint on a computed value and refines nothing. One guard covers both halves of an `or` chain without parsing the chain"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "target": "Source",
+      "confidenceMin": 1,
+      "meta.relationshipType": "nim_concept_refinement",
+      "comment": "`concept x of Source[T]` \u2014 the GENERIC-TARGET shape, 2 of the 47 corpus `implements` edges (nimony/tests/nimony/concepts/tconceptinheritnotgeneric.nim:7 `Bar = concept of Foo[T]`, tconceptinvocationbody.nim:39 `MutableIndexable*[T] = concept of Indexable[T]`). The target is the CONSTRUCTOR `Source`, not the type argument `T`. A reader that takes the last segment of the refinement list publishes `implements -> T`, a fabricated edge pointing at a generic parameter \u2014 the same confusion the `references` side records for `BlenderRgb[Rgba8]`. This lane's own oracle made exactly that mistake on its first pass and the cross-check caught it, which is why the shape is pinned on the ANALYZER side too."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "from": "HasField",
+      "comment": "guard 1, the field shape: `o.length is Sized` constrains the type of the FIELD `length` and refines no contract. Corpus shape: nim/tests/concepts/texplain.nim:136 reads `o.foo is RegularConcept`, where RegularConcept IS a same-file concept \u2014 so without this row a reader that only checked the right-hand side would publish a fabricated refinement"
+    },
+    {
+      "type": "implements",
+      "from": "Numeric",
+      "comment": "guard 2, the concrete-type shape: `x is int` is a type constraint on the matched parameter and `int` implements nothing. MEASURED on the pinned 4,555-file corpus (validation/m14/measurements/nim/ruling-probe.json, analyzer sha256 9d9ee478e3295c28): 156 `is` expressions sit inside a concept body, 124 name an identifier on the right and 32 do not. The most common unguarded right-hand sides are T(31) int(23) bool(15) string(10) V(5) float(5) SomeFloat(4) BaseField(4) Ordinal(3) A(3) \u2014 generic parameters and builtins, so an unguarded reader fabricates 124 edges pointing at builtin types and type parameters"
+    },
+    {
+      "type": "implements",
+      "from": "Recursive",
+      "comment": "guard 3, the self-reference: `r is Recursive` is recursion, not refinement. The corpus shape is `distinctBase(x) is Primitive` at nim/tests/concepts/trecursive_concepts.nim:26, where the left is a CALL on the parameter so guard 4 declines it and Primitive (a same-file concept) is never read as a supertype. rightNamesSameFileConcept is 0 and passesAllGuards is 0, which is why this family's corpus edge count is 0 rather than the 7 concept-declared names the wider population contains"
+    },
+    {
+      "type": "implements",
+      "from": "Chained",
+      "target": "Sized",
+      "comment": "the chain's second operand, `name(x) is Sized`: its left side is a call on the parameter, not the parameter, so it constrains a computed value. The corpus carries this exact shape at trecursive_concepts.nim:26 (`distinctBase(x) is Primitive`)"
+    },
+    {
+      "type": "implements",
+      "from": "Meters",
+      "comment": "THE FABRICATION GUARD. `Meters` is an ordinary object type, and Nim has no syntax for declaring that a type implements a concept: satisfaction is the compiler's structural match against the concept body at instantiation time. So no `implements` edge may name it. An analyzer that inferred satisfaction from the members it can see would publish one edge per (object type x concept) pair and every one would be fabricated \u2014 unresolvable at the target end, counted `unexplained` by the oracle, and wrong refactoring advice in bb_impact. This row is the one that catches it"
+    },
+    {
+      "type": "extends",
+      "target": "Number",
+      "comment": "the neighbouring-type confusion: a concept refinement is NOT the nominal class hierarchy, which `extends` already carries. A fix that routed the `of` clause through collectInheritance would satisfy every positive row above and still be wrong here"
+    },
+    {
+      "type": "implements",
+      "from": "Number",
+      "comment": "`Number` refines nothing. An `implements` edge needs a named supertype contract; a concept with no `of` clause has none, and emitting one would be a fabricated edge"
+    },
+    {
+      "type": "implements",
+      "from": "Container",
+      "comment": "the parameterless concept with no `of` clause \u2014 the same fabrication guard on the other spelling"
+    },
+    {
+      "type": "uses",
+      "target": "x",
+      "comment": "`concept x of Number` writes its formal parameter with no symbol_declaration and no type annotation, so it is invisible to the ordinary declaration-name test. The concept is a scope frame, so the read of `x` in `useContract`'s parameter position is a read of a BINDING and must not be attributed to file scope"
+    },
+    {
+      "type": "implements",
+      "from": "Wrapped",
+      "target": "T",
+      "comment": "the type ARGUMENT is not the refined contract. `of Source[T]` refines `Source`; publishing an edge to `T` would be the fabricated edge the row above exists to catch, and `T` is a generic parameter that resolves at neither end"
+    },
+    {
+      "type": "implements",
+      "from": "Cycle",
+      "comment": "the SELF-CYCLE, `of`-form twin of the `Recursive` forbid: `type Cycle = concept of Cycle` is the whole body of nimony/tests/nimony/concepts/tconceptcycle.nim, whose upstream tconceptcycle.msgs reads `Error: concept inheritance cycle detected`. A concept refining itself is not a relationship, so no edge may be published at all \u2014 this is a real corpus file, and `gap-hunt`-class reasoning does not cover it because the file parses cleanly and the construct is legal syntax"
+    }
+  ],
+  "forbidErrors": [
+    {}
+  ]
+}

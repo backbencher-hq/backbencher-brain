@@ -1,0 +1,12 @@
+{
+  "issue": "bb_ask real-repository e2e",
+  "code": "A6",
+  "tool": "bb_ask",
+  "title": "real-repo e2e (real subpath)",
+  "verified": true,
+  "checks": 3,
+  "passed": 3,
+  "failed": 0,
+  "negatives": 0,
+  "generatedAt": "2026-11-03T20:25:43.798Z"
+}

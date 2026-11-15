@@ -1,0 +1,43 @@
+name: Dependency marker names
+# THE GUARD, pinned from both sides. `DEPENDS_ON_KEYS` fires on four loader spellings, and in
+# every one of them the value names a declaration the document carries — except one measured
+# corpus position: kube-api-linter's config spells a rule-to-marker requirement
+# `dependenttags.rules[].dependsOn: ["k8s:optional"]`, where the value is a kubebuilder MARKER
+# (a Go-comment annotation), not a key any analyzer publishes. Three arms:
+#   * FORBIDDEN: an edge whose target is `k8s:optional` — the value names no document member,
+#     so no instrument could ever confirm the claim (whole-population measurement: 3 of 1,895
+#     `yaml_depends_on` targets are colon-bearing without a template marker, all this shape);
+#   * BOUNDARY 1: a TEMPLATE value at the same key still emits — a `${{ … }}` edge is a RULED
+#     external claim, and the guard's `{{` exclusion is what keeps it out of the refusal;
+#   * BOUNDARY 2: real dependency shapes still emit and resolve — compose `depends_on`
+#     (sibling service) and workflow `needs` (job in the same document).
+dependenttags:
+  rules:
+    - identifier: "k8s:unionMember"
+      type: "All"
+      dependsOn:
+        - "k8s:optional"
+
+stages:
+  - pipeline:
+      jobs:
+        - deploy:
+            dependsOn:
+              - "${{ parameters.dependsOn }}"
+
+services:
+  web:
+    image: nginx
+    depends_on:
+      - db
+  db:
+    image: postgres
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    needs: build
+  build:
+    runs-on: ubuntu-latest

@@ -1,0 +1,18 @@
+{
+  "fixtureId": "kotlin/object-literal",
+  "language": "kotlin",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the K6 gap: an anonymous object (object : Runner { ... }) is a real runtime type. It must (1) get a symbol named after its implemented supertype (anonymous_Runner — the established anonymous_* noise convention, so it never leaks into the index), (2) own its contained members (go() attributes to the anonymous object, NOT the enclosing class P — the previous P->go contains edge was a misattribution), and (3) reference its implemented type (run -> Runner). UPDATED by the M49/M37 #867 ruling: this fixture's literal sits inside `fun run()`, and it used to pin the anon type's OWN owner as the enclosing class `P` — the one place in the suite where kotlin's outlier behaviour was enshrined. Under the ruling (ownerName = the innermost enclosing DECLARATION, matching java/groovy/scala) the owner is the method `run`; kotlin was the analyzer that changed. The other pin here — that `go()` is owned by the anonymous object rather than by `P` — is unchanged and unrelated.",
+  "expectSymbols": [
+    { "name": "Runner", "kind": "interface" },
+    { "name": "P", "kind": "class" },
+    { "name": "run", "ownerName": "P" },
+    { "name": "anonymous_Runner", "kind": "class", "ownerName": "run", "meta.isAnonymousObject": true },
+    { "name": "go", "ownerName": "anonymous_Runner" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "run", "target": "anonymous_Runner", "meta.evidenceClass": "structural" },
+    { "type": "contains", "from": "anonymous_Runner", "target": "go", "meta.evidenceClass": "structural" },
+    { "type": "references", "from": "run", "target": "Runner", "meta.relationshipType": "object_literal" }
+  ]
+}

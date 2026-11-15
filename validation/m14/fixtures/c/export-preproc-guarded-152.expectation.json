@@ -1,0 +1,32 @@
+{
+  "fixtureId": "c/export-preproc-guarded-152",
+  "language": "c",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "task-152: the THIRD form of C's export attribute -- the marker inside a PREPROCESSOR GUARD immediately before the declaration, which is how sqlite and most of the C world write a Windows export boundary. `sqlite/src/test_loadext.c:94-98` is the measured case: `#ifdef _WIN32` / `__declspec(dllexport)` / `#endif` / `int testloadext_init(...)`. Before this form existed that file produced ZERO `exports` edges while the marker is plainly written in it, and 64 sqlite files carry the marker. WHY IT WAS INVISIBLE, both halves measured: (1) the grammar keeps only `#ifdef` / `identifier \"_WIN32\"` / `#endif` inside the `preproc_ifdef` -- the `__declspec(dllexport)` line is in no node, so a node search finds nothing; (2) `src/ast/engine.ts` blanks `__declspec(…)`/`__attribute__((…))` out of the content handed to the PARSER (space-for-space, newlines preserved) while the ANALYZER receives the original content, so the preproc block's own node text carries 21 spaces where the marker is (measured on that file). The implementation reads the marker from the ORIGINAL content of the guard block, under strict adjacency: the last non-blank line before the declaration must be `#endif` and the matching `#if…#endif` must be within 24 lines. AUTHORED AFTER THE RUN (this lane's other pins were authored before; this one records measured output) -- both rows below were measured on the production path (`ASTEngine.parseFile`) and the bare analyzer, which agree. The unguarded control is `forbidRelationships`: it is what fails if the adjacency rule is ever loosened into 'any nearby attribute'.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "from": "guarded_entry",
+      "target": "__declspec(dllexport)",
+      "comment": "THE PINNED ROW, definition form. Measured on sqlite: `src/test_loadext.c` lines 95/116, whose exported entry points are `testloadext_init` and `testbrokenext_init`."
+    },
+    {
+      "type": "exports",
+      "from": "guarded_prototype",
+      "target": "__declspec(dllexport)",
+      "comment": "The DECLARATION form of the same guard -- the `declaration` case, so both call sites of the emission site are pinned."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "from": "plain_internal",
+      "comment": "CONTROL 1: no guard, no attribute, nothing above it. A row here means the adjacency rule has been loosened and the detector is exporting declarations it does not guard."
+    },
+    {
+      "type": "exports",
+      "from": "_WIN32",
+      "comment": "CONTROL 2: the guard's own macro is not the exported name. The source of an export edge is the DECLARED name (the #963 shape): reading the preproc condition as the export would publish `_WIN32 -> __declspec(dllexport)`."
+    }
+  ]
+}

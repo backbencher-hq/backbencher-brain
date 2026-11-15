@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.52",
+  "code": "An2",
+  "tool": "bb_analyze",
+  "title": "bb_analyze: descriptor, validation layer and handler describe one contract",
+  "verifiedState": "verified",
+  "layers": [
+    "unit"
+  ],
+  "checks": [
+    {
+      "name": "bb_analyze is registered as a public tool",
+      "pass": true,
+      "detail": "found"
+    },
+    {
+      "name": "mutability is read",
+      "pass": true,
+      "detail": "read"
+    },
+    {
+      "name": "requiresIndex is true",
+      "pass": true,
+      "detail": "true"
+    },
+    {
+      "name": "modes are exactly the 11 the handler implements",
+      "pass": true,
+      "detail": "callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality"
+    },
+    {
+      "name": "freshnessModes cover every mode",
+      "pass": true,
+      "detail": "callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality"
+    },
+    {
+      "name": "required is exactly [mode]",
+      "pass": true,
+      "detail": "[\"mode\"]"
+    },
+    {
+      "name": "parameters are exactly filePath, limit, mode, target",
+      "pass": true,
+      "detail": "filePath,limit,mode,target"
+    },
+    {
+      "name": "mode enum equals the registered modes",
+      "pass": true,
+      "detail": "callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality"
+    },
+    {
+      "name": "limit is declared as a number",
+      "pass": true,
+      "detail": "number"
+    },
+    {
+      "name": "descriptor defaults name the real per-mode defaults",
+      "pass": true,
+      "detail": "{\"limit\":\"25 edges per direction (callers/callees/trace); 20 files (dependencies); 50 entries (test_mapping/test_gaps); 50 files (test_quality)\",\"target\":\"required for callers, callees, trace, impact, test_impact; optional file path or directory prefix for complexity\",\"filePath\":\"optional path prefix (or an exact file) for dependencies, test_mapping, test_gaps, test_quality\"}"
+    },
+    {
+      "name": "validation layer accepts the aliases the descriptor documents",
+      "pass": true,
+      "detail": "{\"symbol\":\"target\",\"symbolName\":\"target\",\"query\":\"target\"}"
+    },
+    {
+      "name": "validation requires mode",
+      "pass": true,
+      "detail": "bb_analyze: missing required option: mode"
+    },
+    {
+      "name": "validation rejects an unknown option",
+      "pass": true,
+      "detail": "bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases accepted: symbol, symbolName, query)"
+    },
+    {
+      "name": "validation rejects an unknown mode",
+      "pass": true,
+      "detail": "bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality"
+    },
+    {
+      "name": "validation forgives symbol= as target",
+      "pass": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "validation rejects conflicting alias and canonical",
+      "pass": true,
+      "detail": "bb_analyze: target and symbol are aliases with different values (\"a\" vs \"b\") — pass one"
+    },
+    {
+      "name": "handler registry answers bb_analyze",
+      "pass": true,
+      "detail": "function"
+    },
+    {
+      "name": "handler is not shared with another tool name [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "distinct function"
+    }
+  ],
+  "negativeCases": 1,
+  "summary": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0
+  },
+  "decisions": {
+    "parity": "assert the executable contract, not a source substring"
+  },
+  "limitations": [
+    "Dispatch behaviour is exercised by An1 (verify-analyze-modes); this gate is the contract layer."
+  ],
+  "generatedAt": "2026-11-05T04:04:48.083Z"
+}

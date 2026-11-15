@@ -1,0 +1,42 @@
+{
+  "issue": "M30.Q1",
+  "code": "Q1",
+  "milestone": "M30",
+  "status": "verified",
+  "checks": 23,
+  "passed": 23,
+  "failed": 0,
+  "negativeCases": 4,
+  "mutants": [
+    {
+      "name": "process-wide latch restored (any failure poisons the run)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "429 backoff window removed (immediate retry hammers API)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "Retry-After ignored (fixed long backoff delays recovery)",
+      "caught": true,
+      "detail": "caught"
+    },
+    {
+      "name": "per-batch fallback removed (failed batch returns empty)",
+      "caught": true,
+      "detail": "caught"
+    }
+  ],
+  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "sourceFingerprint": "2907e5d1873474248a673cbab080a41e72b24dc8c8f9cbc50ce0e624622d8a8a",
+  "verifierCommand": "npx tsx script/m30/verify-rate-limit.ts",
+  "evidenceFile": "Q1.json",
+  "generatedAt": "2026-11-15T04:10:22.829Z",
+  "limitations": [
+    "Backoff timing is tested with a 2.2s sleep against Retry-After: 1; jitter (<=500ms) is bounded and the window math is declared (cap 30s).",
+    "The verifier proves the quality cliff is fixed (batch degrades, run continues), not wall-clock index time; 429 storms still slow indexing by design.",
+    "Local-word-vector fallback vectors are real but not asserted for semantic quality here; model-label separation is enforced by engine invariants tested elsewhere."
+  ]
+}
