@@ -4,7 +4,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<repo-root>"
 const CR = join(ROOT, ".corpus")
 const { detectLanguageFromPath } = await import(join(ROOT, "src/ast/language-detection.ts"))
 const wts: any = await import("web-tree-sitter")
