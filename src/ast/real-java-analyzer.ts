@@ -2448,7 +2448,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion, methodsByOwner, overrideParents)
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion, methodsByOwner, overrideParents, receiverTypes.importSinglePaths)
 
     // Rewrite import-reference sources from the package name to the file's
     // primary type (the first top-level type declared). Imports precede the
@@ -2927,6 +2927,7 @@ currentPackage,
     companion: Map<string, Set<string>> | undefined,
     methodsByOwner: Map<string, Map<string, ASTEngine.UniversalSymbol[]>>,
     overrideParents: Map<string, JavaOverrideParent[]>,
+    singleTypeImports: ReadonlyMap<string, string>,
   ) {
     // PERF (review 2026-09-08, claim 11): the suffix index is built ONCE per
     // file (O(C)) instead of per task (was O(T·C)); the BFS below uses an
@@ -2943,6 +2944,15 @@ currentPackage,
         if (classHierarchy.has(local)) return { matches: [local], ambiguous: false }
       }
       if (classHierarchy.has(written)) return { matches: [written], ambiguous: false }
+      // JLS 7.5.1: a single-type import binds this SIMPLE name throughout
+      // the compilation unit unless an enclosing declaration shadows it.
+      // An unrelated nested type with the same leaf is not a valid fallback.
+      if (written.indexOf(".") === -1) {
+        const imported = singleTypeImports.get(written)
+        if (imported) {
+          return { matches: classHierarchy.has(imported) ? [imported] : [], ambiguous: false }
+        }
+      }
       const leaf = written.slice(written.lastIndexOf(".") + 1)
       const matches = (suffixIndex?.get(leaf) ?? []).filter(fqn => fqn.endsWith(`.${written}`))
       return matches.length === 1
