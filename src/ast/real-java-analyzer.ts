@@ -4026,7 +4026,29 @@ currentPackage,
       if (target.length === 0) continue
       // An existing project declaration is not an external citation, and
       // must not abort the other independent citation sites in this file.
-      if (projectOwnsQualified(target)) continue
+      //
+      // THE PROJECT KEY SPACE IS NOT LEXICAL SCOPE (remediation 2026-11-16).
+      // `projectOwnsQualified(target)` is a WHOLE-PROJECT test, so it also fires for a
+      // same-named type declared in ANOTHER file — `collisions.Filter` in the fixture
+      // directory beside a file that does `import jakarta.servlet.Filter`. That is not
+      // this compilation unit's binding. JLS 7.5.1: a single-type import binds the
+      // simple name throughout the importing compilation unit, and a same-package type
+      // of that name is SHADOWED by it. Only a declaration in THIS file competes, and
+      // that case is the `fileDeclared` test in the bare-symbol half below.
+      //
+      // Compiler-verified rather than reasoned: with `collisions.Filter` and
+      // `jakarta.servlet.Filter` both on the source path, javac compiles a file that
+      // imports the latter, and `javap` reports its field as
+      // `jakarta/servlet/Filter field` dispatching to
+      // `jakarta/servlet/Filter.doFilter` — the import won, as JLS 7.5.1 says.
+      // Before this guard the citation was dropped on exactly that shape, and the
+      // bare-symbol branch below was unreachable because this `continue` fired first.
+      const bareImportedPath = index.importSinglePaths.get(target)
+      const importBindsBareName =
+        !fileDeclared.has(target) &&
+        bareImportedPath !== undefined &&
+        !projectOwnsQualified(bareImportedPath)
+      if (projectOwnsQualified(target) && !importBindsBareName) continue
       for (const root of roots) {
         if (target !== root && !target.startsWith(`${root}.`)) continue
         // THE PROJECT'S OWN KEY SPACE WINS. `dotty.tools.dotc.reporting.Diagnostic` is a
