@@ -258,3 +258,103 @@ difference, not a disagreement.
 
 ### 9.8 `.cu` (CUDA) — routed, near-empty
 2 files → 9 edges, 5 symbols total. Correctly routed, produces almost nothing. Note, not a defect.
+
+---
+
+## 10 · VERIFIER AUDIT — because a green gate is not evidence
+
+You asked the right question: the scripts and docs are authored by the owner or by agents, so a
+passing test proves only that the test agrees with itself. This section audits the verifiers
+themselves. Four things were checked, and **two real problems were found**.
+
+### 10.1 The mutation harness — the strongest independent check, and it had a hole
+
+`BB_MUTANT_ONLY="cpp/" bun run script/m14/mutate-analyzer.ts` mutates the analyzer and requires a
+fixture to FAIL. That is the only check here that does not take the analyzer's word for anything.
+
+**First run: 54 CAUGHT, 1 SURVIVED, exit 2.**
+
+```
+SURVIVED  cpp/last-sig-wins-overrides-respelled  (0 -> 0 failures)
+```
+
+Investigated rather than reported. `0 -> 0` does **not** mean "the suite missed a real defect" —
+it means **the mutant never fired**. Its filter was `source === "Derived.f"` (dot), and the
+analyzer now emits `Derived::f` after the M65 source-spelling fix. **My own change silently
+disabled a mutant**, and the harness reported it as a survivor rather than as a broken test.
+
+That is the exact class you described, one level deeper: the *replacement* for an earlier no-op
+mutant had itself become a no-op. Both the retired `cpp/last-sig-wins-overrides` and its
+replacement `cpp/last-sig-wins-overrides-respelled` were ineffective, and only the first was marked
+`retired: true` with a reason.
+
+**Fixed**: the filter now matches the declaration rather than one spelling of it
+(`source === "Derived::f" || source === "Derived.f"`), and the comment states that any future
+change to source spelling must re-check the filter rather than the count.
+
+**Second run: `all 64 mutants caught`, 0 survived, exit 0**
+(`CAUGHT cpp/last-sig-wins-overrides-respelled (0 -> 1 failures; new failures: cpp/ctor-and-overload-regressions)`).
+
+The harness also reports **6 retired mutants not run**, each with a stated reason, and flags any
+bare retirement as `BAD-FACT`. One such BAD-FACT exists (`sql/…-RETIRED-unfixtureable`) and is in
+another lane. Both cpp retirements carry reasons and point to live replacements.
+
+**⇒ This is the most trustworthy signal in the whole audit, and it was the only one that could
+have caught my own regression. It did.**
+
+### 10.2 The `part_of` oracle — independent in code, but ONE RULE IN TWO FILES
+
+| check | result |
+|---|---|
+| imports the analyzer / its helpers | **0 imports** — genuinely independent |
+| mentions `cppPartSymbol` / `isCppSpelledName` / `stripIncludeChars` / `RealCppAnalyzer` | 4, all **inside the doc comment** declaring what it does not do |
+| multiset agreement with the analyzer | 2,328 rows, 0 disagreements |
+
+**BUT**: its `stemOf()` is **character-identical in logic** to the analyzer's `cppPartSymbol()`
+(verified over 11 inputs: 0 differences). It is the same rule written twice, which is the
+`CONNECTED-BUG` class this codebase names (#916: "a second copy of a rule is a second answer, and
+the two sides cancelling out of every count is how a wrong edge survives a year of gates").
+
+**⇒ What the oracle CAN and CANNOT prove.** It can catch: a lost `preproc_include` node, a wrong
+`path` field read, a dropped or extra row, a dedup regression, a type/kind flip. It **cannot**
+catch: a wrong STEM rule, because it would compute the same wrong stem. That is a real limitation
+and it is now stated rather than implied.
+
+A secondary probe found a **synthetic-only** edge case — `stemOf("\"q.h\"")` → `"q` (quote leaks
+into the stem when the quote is stripped *after* the stem). Verified NOT reachable in the real
+pipeline: the `path` node's `.text` carries no quotes, and both sides agree on all five live shapes
+(`"a/b.h"`→`b`, `"c.h"`→`c`, `<sys/types.h>`, `<vector>`, `"d.e.h"`→`d.e`). Recorded as a
+limitation of the oracle's own helper, not a live defect.
+
+### 10.3 The fixture suite — 873 assertions, but mostly weak
+
+| measure | value |
+|---|---|
+| cpp expectation suites | 54 files |
+| total assertions | **873** |
+| **exact-count assertions (`equals`)** | **21** |
+| forbid rows | 268 |
+| suites with zero assertions | 0 |
+
+Only **21 of 873** assertions are exact counts. `expectRelationships` means "**at least one**
+match", so a *duplicated* edge satisfies it — which is why the D3 duplicate class was invisible to
+the suite until an `equals` block was added. The ratio is the honest measure of how much of the
+suite can fail in the over-emission direction: **2.4%**.
+
+The mutation harness compensates: 64 mutants each prove some fixture CAN fail. But a fixture with
+only `expectRelationships` rows cannot catch an extra row, no matter how many mutants target it.
+
+### 10.4 The spec — one contradiction, restated
+`script/m14/spec/cpp-completeness.json` lists `preproc_def` / `preproc_function_def` under
+`internal_silent` (no `_notes`, no `handled_verified`) while `:3317` reads both and published 1,277
+macro symbols. The spec is wrong; the code is right.
+
+### 10.5 Summary — is the research complete?
+
+| verifier | trustworthy? | why |
+|---|---|---|
+| mutation harness | **YES, after the fix** | 64/64 caught, 0 survived; it is the only check that mutates the subject |
+| `part_of` oracle | **PARTLY** | independent in code, but shares the stem rule — cannot catch a wrong stem |
+| fixture suite | **PARTLY** | 873 assertions but only 21 exact; weak against over-emission |
+| census probe | **YES for row counts**, with the corrections in §6/§7 | row counts are mechanical; *resolution* percentages must state what they resolve against |
+| docs | **NO, not on their own** | 8 claims were false at HEAD when measured (§7 of the audit page); docs are a claim, never evidence |

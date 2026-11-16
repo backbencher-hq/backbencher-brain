@@ -162,19 +162,23 @@ export const CPP_MUTANTS: Mutant[] = [
     language: "cpp",
     defectClass: "relationship-loss",
     description:
-      "THE REPLACEMENT FOR THE NO-OP `cpp/last-sig-wins-overrides` (in script/m14/mutate-analyzer.ts), and it is here because the rule is that a no-op's REPLACEMENT TRAVELS WITH IT. THAT MUTANT IS A NO-OP MEASURED, NOT ASSUMED: it filters the override rows whose `metadata.reasonCode` is EXACTLY `signature-match` and whose source starts with `Derived.f` — but MEASURED on the current analyzer, the `Derived.f` row's reasonCode is `override-keyword+signature-match` (the `override-keyword+` prefix was added later), so the filter matches NOTHING and the mutant reports 0 -> 0 failures. A no-op is not a pass. This replacement models the SAME defect class at the CURRENT spelling: the virtual registry keeps one signature per method name, so the override of the first-declared base overload is silently dropped when the base also declares an overload of the same name. The filter drops the override row for the first-declared overload — the row the fixture cpp/ctor-and-overload-regressions pins as `overrides Derived.f -> f` with `meta.overriddenOwner: Base`.",
+      "THE REPLACEMENT FOR THE NO-OP `cpp/last-sig-wins-overrides` (in script/m14/mutate-analyzer.ts), and it is here because the rule is that a no-op's REPLACEMENT TRAVELS WITH IT. THAT MUTANT IS A NO-OP MEASURED, NOT ASSUMED: it filters the override rows whose `metadata.reasonCode` is EXACTLY `signature-match` and whose source starts with `Derived.f` — but MEASURED on the current analyzer, the `Derived.f` row's reasonCode is `override-keyword+signature-match` (the `override-keyword+` prefix was added later), so the filter matches NOTHING and the mutant reports 0 -> 0 failures. A no-op is not a pass. This replacement models the SAME defect class at the CURRENT spelling: the virtual registry keeps one signature per method name, so the override of the first-declared base overload is silently dropped when the base also declares an overload of the same name. The filter drops the override row for the first-declared overload — the row the fixture cpp/ctor-and-overload-regressions pins as `overrides Derived.f -> f` with `meta.overriddenOwner: Base`."
+      + " ★ M65 RE-SPELLING, AND THE LESSON IS THE POINT. This filter ALSO became a no-op when the analyzer's override SOURCE spelling changed from the DOT form (`Derived.f`) to the C++ scope form (`Derived::f`) — my own change, which silently disabled this mutant. The battery then reported `SURVIVED ... (0 -> 0 failures)`, and the honest reading of `0 -> 0` is NOT 'the suite missed it' but 'the mutant never fired'. A mutant whose filter matches nothing is indistinguishable from a surviving one in the count, so the filter is now matched on the SCOPE-SPELLING-AGNOSTIC leaf pair (`source` ends with `::f` or `.f`, and the owner segment is `Derived`), which survives either spelling. Any future change to how a source is spelled must re-check this filter, not the count.",
     caughtBy: "cpp/ctor-and-overload-regressions",
     transform: (r) => {
-      // the row the fixture pins: the override of the FIRST-declared base overload
-      const drop = (r?.relationships ?? []).filter(
-        (x: any) => x.type === "overrides" && String(x.source) === "Derived.f",
-      )
+      // The row the fixture pins: the override of the FIRST-declared base overload, matched on the
+      // DECLARATION rather than on one spelling of it. `Derived::f` (M65) and `Derived.f` (pre-M65)
+      // are the same row; matching either keeps the mutant live across the spelling change.
+      const isTarget = (x: any): boolean => {
+        if (x?.type !== "overrides") return false
+        const s = String(x?.source ?? "")
+        return s === "Derived::f" || s === "Derived.f"
+      }
+      const drop = (r?.relationships ?? []).filter(isTarget)
       if (drop.length === 0) return r
       return {
         ...r,
-        relationships: (r?.relationships ?? []).filter(
-          (x: any) => !(x.type === "overrides" && String(x.source) === "Derived.f"),
-        ),
+        relationships: (r?.relationships ?? []).filter((x: any) => !isTarget(x)),
       }
     },
   },
