@@ -2944,14 +2944,16 @@ currentPackage,
         if (classHierarchy.has(local)) return { matches: [local], ambiguous: false }
       }
       if (classHierarchy.has(written)) return { matches: [written], ambiguous: false }
-      // JLS 7.5.1: a single-type import binds this SIMPLE name throughout
-      // the compilation unit unless an enclosing declaration shadows it.
-      // An unrelated nested type with the same leaf is not a valid fallback.
-      if (written.indexOf(".") === -1) {
-        const imported = singleTypeImports.get(written)
-        if (imported) {
-          return { matches: classHierarchy.has(imported) ? [imported] : [], ambiguous: false }
-        }
+      // JLS 7.5.1: a single-type import also binds the leading name of
+      // a QUALIFIED member type (Map.Entry under import java.util.Map).
+      // Lexically enclosing declarations still take priority above. Never
+      // suffix-match another class's Map.Entry when Map comes from an import.
+      const firstDot = written.indexOf(".")
+      const importedHead = firstDot === -1 ? written : written.slice(0, firstDot)
+      const imported = singleTypeImports.get(importedHead)
+      if (imported) {
+        const resolvedName = imported + (firstDot === -1 ? "" : written.slice(firstDot))
+        return { matches: classHierarchy.has(resolvedName) ? [resolvedName] : [], ambiguous: false }
       }
       const leaf = written.slice(written.lastIndexOf(".") + 1)
       const matches = (suffixIndex?.get(leaf) ?? []).filter(fqn => fqn.endsWith(`.${written}`))
