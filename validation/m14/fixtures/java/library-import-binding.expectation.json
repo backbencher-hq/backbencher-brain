@@ -2,7 +2,7 @@
   "fixtureId": "java/library-import-binding",
   "language": "java",
   "authoredBeforeAnalyzerRun": true,
-  "rationale": "IMPORTED-BINDING CLAIM for STATIC single-member imports (Lead claim kind, live 2026-10-19). The analyzer publishes the EVIDENCE on the import edge (metadata.importedBindings + metadata.module, the gate's importsByFile key/specifier) and the CLAIM on the target row (metadata.importedBinding {specifier, binding}) for EXTERNAL containers only (JVM roots + java-platform-libraries roots). Positive: `import static java.util.Collections.sort;` + unqualified `sort(xs)`. Negatives: a project static import (`com.acme.own.ProjectUtil.projectHelper` \u2014 container not external, so no evidence and no claim), a name the FILE declares (declaration shadows the import), and a RECEIVER-CARRYING call. POSITIVE CLAIM PINS: the Lead's fixture matcher now compares non-array object metadata by stable key-sorted recursive JSON, so the claim object itself is pinned for BOTH external containers (`java.util.Collections.sort` and `jakarta.persistence.Persistence.createEntityManagerFactory`); the negatives assert the ABSENCE (`meta.importedBinding: null`). The arbiter's arm verification (bindOK with bindFAIL 0) remains the authoritative end-to-end check.",
+  "rationale": "IMPORTED-BINDING CLAIM for STATIC single-member imports (Lead claim kind, live 2026-10-19). The analyzer publishes the EVIDENCE on the import edge (metadata.importedBindings + metadata.module, the gate's importsByFile key/specifier) and the CLAIM on the target row (metadata.importedBinding {specifier, binding}) for EXTERNAL containers only (JVM roots + java-platform-libraries roots). Positive: `import static java.util.Collections.sort;` + unqualified `sort(xs)`. Negatives: a project static import (`com.acme.own.ProjectUtil.projectHelper` — container not external, so no evidence and no claim), a name the FILE declares (declaration shadows the import), and a RECEIVER-CARRYING call. POSITIVE CLAIM PINS: the Lead's fixture matcher now compares non-array object metadata by stable key-sorted recursive JSON, so the claim object itself is pinned for BOTH external containers (`java.util.Collections.sort` and `jakarta.persistence.Persistence.createEntityManagerFactory`); the negatives assert the ABSENCE (`meta.importedBinding: null`). The arbiter's arm verification (bindOK with bindFAIL 0) remains the authoritative end-to-end check. POST-2026-11-16 EVIDENCE RULE: jakarta is project-ownable. Without a complete project index the analyzer cannot assert the imported container is external, so the jakarta import and call are still present but carry no EXTERNAL imported-binding claim; JVM java.util imports retain their bound evidence.",
   "expectSymbols": [
     {
       "name": "LibraryImportBinding",
@@ -77,19 +77,13 @@
       "type": "calls",
       "source": "positiveJakartaCase",
       "target": "createEntityManagerFactory",
-      "meta.importedBinding": {
-        "specifier": "jakarta.persistence.Persistence",
-        "binding": "createEntityManagerFactory"
-      }
+      "meta.importedBinding": null
     },
     {
       "type": "imports",
       "source": "com.acme.imp",
       "target": "jakarta.persistence.Persistence.createEntityManagerFactory",
-      "meta.importedBindings": [
-        "createEntityManagerFactory"
-      ],
-      "meta.module": "jakarta.persistence.Persistence"
+      "meta.importedBindings": null
     }
   ],
   "forbidRelationships": [

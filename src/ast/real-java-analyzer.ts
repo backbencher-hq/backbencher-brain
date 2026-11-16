@@ -617,7 +617,7 @@ const JAVA_LIBRARY_NAMESPACE_CITATIONS: readonly string[] = ["jakarta", "android
  * and must resolve internally instead of being claimed. Both lists are Lead-owned vocabulary
  * (JLS §6.1 reserved roots; `script/m14/citations.ts` `java-platform-libraries`).
  */
-const JAVA_EXTERNAL_STATIC_IMPORT_ROOTS: readonly string[] = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "androidx.", "dotty.tools.", "org.yaml."]
+const JAVA_EXTERNAL_STATIC_IMPORT_ROOTS: readonly string[] = ["java.", "javax.", "jdk.", "sun.", "com.sun."]
 
 // Reuse immutable lookup tables across files and call sites; the old per-call
 // allocations were unnecessary on large Java source populations.
@@ -660,7 +660,7 @@ const JAVA_BUILTIN_ROOTS: ReadonlySet<string> = new Set([
       "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
       "Connection", "DriverManager", "ResultSet", "Statement",
       "PreparedStatement", "SQLException", "DataSource",
-      "javax", "jakarta",
+      "javax",
       // kotlin stdlib
       "kotlin", "Unit", "Nothing", "Any", "Int", "String",
       // Common JDK prefixes
@@ -2669,7 +2669,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // IMPORTED-BINDING CLAIM (Lead imported-binding claim kind, 2026-10-19): static single-member
     // imports bind names the file uses unqualified; the claim states exactly that and the arbiter
     // verifies it from the run's OWN import evidence published below.
-    this.attachJavaImportedBindingClaims(relationships, symbols, receiverTypes)
+    this.attachJavaImportedBindingClaims(relationships, symbols, receiverTypes, context?.projectIndex)
     // THE EXTERNAL SINGLE-TYPE-IMPORT BINDING CLAIM (java lane, 2026-10-20): the same claim
     // shape the static-import arm proved (391 claims, bindFAIL 0), applied to the OTHER import
     // form java has. `import java.util.List;` binds the simple name `List` (JLS 6.4.1), and the
@@ -3790,13 +3790,22 @@ currentPackage,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     index: JavaReceiverTypeIndex,
+    projectIndex?: ProjectIndex,
   ): void {
     if (index.staticImportPaths.size === 0) return
     const fileDeclared = new Set<string>()
     for (const s of symbols) if (s && s.name) fileDeclared.add(s.name)
     const isExternalContainer = (container: string): boolean => {
+      // A complete project index is authoritative over any lexical namespace
+      // convention. For ordinary, project-ownable namespaces (jakarta,
+      // androidx, org.yaml, dotty.tools) absence of that proof abstains.
+      if (projectIndex?.complete === true &&
+          (projectIndex.typeKinds.has(container) || projectIndex.symbolNames.has(container))) return false
       for (const root of JAVA_EXTERNAL_STATIC_IMPORT_ROOTS) if (container.startsWith(root)) return true
-      for (const root of JAVA_LIBRARY_NAMESPACE_CITATIONS) if (container.startsWith(`${root}.`)) return true
+      if (projectIndex?.complete !== true) return false
+      for (const root of JAVA_LIBRARY_NAMESPACE_CITATIONS) {
+        if (container.startsWith(`${root}.`)) return true
+      }
       return false
     }
     // 1) evidence on the import edges
@@ -4015,12 +4024,14 @@ currentPackage,
       if (md.languageNamespace !== undefined) continue
       const target = String(r.target ?? "")
       if (target.length === 0) continue
+      // An existing project declaration is not an external citation, and
+      // must not abort the other independent citation sites in this file.
+      if (projectOwnsQualified(target)) continue
       for (const root of roots) {
         if (target !== root && !target.startsWith(`${root}.`)) continue
         // THE PROJECT'S OWN KEY SPACE WINS. `dotty.tools.dotc.reporting.Diagnostic` is a
         // REGISTRY-rooted path AND scala3's own class in that repo; the citation must not
         // launder a project reference into extOK.
-        if (projectOwnsQualified(target)) return
         md.languageNamespace = [root]
         break
       }
@@ -4036,7 +4047,7 @@ currentPackage,
       if (!importedPath) continue
       for (const root of roots) {
         if (!importedPath.startsWith(`${root}.`)) continue
-        if (projectOwnsQualified(importedPath)) return
+        if (projectOwnsQualified(importedPath)) break
         md.languageNamespace = [target]
         break
       }
@@ -5920,7 +5931,9 @@ currentPackage,
     // marker may make, so kotlin/kotlinx targets now stay UNCLAIMED (honest unresolved rows) instead
     // of being excused by a per-file marker. The cost is measured, not hidden: 225 verified claims
     // and 29 refuted ones move from the claim columns to unresolved, and `extFAIL` gains 0.
-    const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun."]
+    // jakarta.* is project-ownable; absence of a project symbol is not a
+    // JVM/platform proof. The evidence-aware citation channel handles it.
+    const JVM_ROOTS = ["java.", "javax.", "jdk.", "sun.", "com.sun."]
 
     const isJvmModule = (name: string): boolean => JVM_ROOTS.some((r) => name.startsWith(r))
 
@@ -5961,8 +5974,11 @@ currentPackage,
       if (target.length === 0) continue
       const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
       if (md.isExternalTarget === true) continue
-      // A name this file declares is project code, whatever it is called.
+      // A name this file or the complete project declares is project code,
+      // regardless of whether its spelling resembles a library namespace.
       if (declared.has(target)) continue
+      if (context?.projectIndex?.complete === true &&
+          (context.projectIndex.typeKinds.has(target) || context.projectIndex.symbolNames.has(target))) continue
 
       // THE PAIRED IMPORT MENTION — the narrow claim. An `import_declaration_mention` references edge
       // carries the same module path as its `imports` sibling, and the claim is its evidence. It is
