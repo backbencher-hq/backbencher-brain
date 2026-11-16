@@ -2073,6 +2073,16 @@ fixture added (`cpp/part-of-stem-dedup-965`, proven to FAIL against the pre-fix 
 suite **58 pass / 0 fail**, grammar audit **PASS refs=106 unknown=0**, fixture coverage **PASS
 handled=44 uncovered=0 deadLiterals=0**.
 
-**What is left, and it is one instrument.** Add `deriveCppPartOfTruth` — cpp is the only lane with a
-`part_of` emission and no `part_of` truth, and defects (2) and (3) are exactly what a second opinion would
-have caught. Everything else this round found is fixed, measured, or named above as out of scope.
+**What was left after the fixes — and it is now closed.** `part_of` was the only emitted cpp type with
+no oracle, and defects (2) and (3) are exactly what a second opinion catches. **`deriveCppPartOfTruth`
+now exists** (`script/m14/oracles/cpp-part-of.ts`, 151 lines, lane-owned, sharing no code, tables or
+helpers with the analyzer) together with its harness `script/cpp-audit/oracle-check.ts`
+(`bun run script/cpp-audit/oracle-check.ts`). It agrees with the analyzer across the whole two-repo
+corpus — **2,328 rows, 0 disagreements in either direction** (`imports` 1,968, `part_of` 360) — and it
+is a real gate rather than a mirror: run against the PRE-fix analyzer it reports **5 analyzer-extra
+rows**, naming each duplicate by file, which is the same 5 the audit had measured by hand. The harness
+itself had to be fixed before it could prove anything: its first version compared SETS, so it reported
+identical numbers for the pre-fix and post-fix analyzers (a set of one duplicated element equals a set
+of one). It now compares MULTISETS per file, which is what the "one edge per (kind, target)" contract
+actually states. Wiring `deriveCppPartOfTruth` into `differential.ts`'s cpp arm is a master-owned
+change and remains the one open item; the oracle and its check are ready for it.
