@@ -304,14 +304,14 @@ function containsWhitespace(value: string): boolean {
 async function exactSymbolMatch(
   projectId: ProjectID,
   query: string,
-): Promise<{ name: string; symbolType: string; file: string; line: number; stale: boolean; missing: boolean } | null> {
+): Promise<{ name: string; symbolType: string; file: string; line: number; entityId: string; stale: boolean; missing: boolean } | null> {
   const name = stripTrailingPunctuation(query.trim()).trim()
   // A symbol name is a single token.
   if (name.length < 2 || name.length > 120 || containsWhitespace(name)) return null
   try {
     const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
     const row = raw.prepare(
-      "SELECT s.name, s.symbol_type AS symbolType, COALESCE(s.line_start, 0) AS line, " +
+      "SELECT s.name, s.symbol_type AS symbolType, COALESCE(s.line_start, 0) AS line, s.id AS entityId, " +
         "f.relative_path AS file, f.file_hash AS fileHash, f.path AS filePath, f.size_bytes AS sizeBytes, f.last_modified AS lastModified " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.name = ? COLLATE NOCASE AND COALESCE(s.line_start, 0) > 0 " +
@@ -322,7 +322,7 @@ async function exactSymbolMatch(
     // on exactly the same terms as a similarity result.
     const missing = !existsSync(row.filePath)
     const stale = !missing && !fileUnchangedSince(row.filePath, row.fileHash, row.sizeBytes, row.lastModified)
-    return { name: row.name, symbolType: row.symbolType ?? "symbol", file: row.file, line: row.line, stale, missing }
+    return { name: row.name, symbolType: row.symbolType ?? "symbol", file: row.file, line: row.line, entityId: row.entityId, stale, missing }
   } catch {
     return null
   }
@@ -481,7 +481,7 @@ export async function quickAnswer(
   }
 
   // ── "how many …" ──────────────────────────────────────────────────────────
-  if (has(lowerQuery, "how many") || has(lowerQuery, "count the") || has(lowerQuery, "number of")) {
+  if (has(lowerQuery, "how many") || has(lowerQuery, "count the") || has(lowerQuery, "number of") || has(lowerQuery, "total")) {
     const raw = await BrainDatabase.getRawInstance(projectId, { readonly: true })
     const snapshot = await readIndexSnapshot(projectId)
 
@@ -635,7 +635,9 @@ export async function quickAnswer(
   const retrieval = retrievalFacts(semantic)
 
   if (exact) {
-    const rest = semantic.results.slice(0, Math.max(0, limit - 1))
+    const rest = semantic.results
+      .filter((r) => !(r.symbolName === exact.name && r.file === exact.file && r.line === exact.line))
+      .slice(0, Math.max(0, limit - 1))
     return exactNameResult(projectId, exact, rest, limit, false, retrieval)
   }
 
