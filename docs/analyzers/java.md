@@ -772,3 +772,17 @@ name-only override or an external-ancestor guess.
 Regression: `validation/m14/fixtures/java/override-lexical-parent-resolution.java` and its expectation
 file cover direct and two-hop inheritance with a same-named decoy declared first. This is a syntax-local
 guarantee: imported/cross-file Java name resolution and compiler-level accessibility remain outside it.
+
+## Explicit single-type imports in override resolution
+
+A superclass name introduced by a single-type import must not be rebound by
+an unrelated same-leaf nested declaration via the in-file suffix fallback.
+The override resolver uses the file's already parsed single-type imports
+**after** searching the declaring type's lexical scopes, so a locally
+shadowing member class still wins. If the imported declaration is not in this
+file, the resolver abstains from reporting a verified in-file override.
+
+Regression: `validation/m14/fixtures/java/override-single-type-import-shadow.java`
+and its expectation file. The fixture is valid Java: `ImportedChild` extends
+`java.util.ArrayList`, while `Decoy.LocalChild` extends
+`Decoy.ArrayList`. These declarations must never share an override target.
