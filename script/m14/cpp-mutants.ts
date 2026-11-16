@@ -266,4 +266,29 @@ export const CPP_MUTANTS: Mutant[] = [
       return { ...r, relationships: rels }
     },
   },
+  {
+    id: "cpp/macro-recovery-in-error-spans",
+    language: "cpp",
+    defectClass: "symbol-loss",
+    description:
+      "M65 MACRO RECOVERY, the mutant that travels WITH the fix (the rule this lane has learned repeatedly: a fix with no mutant is a fix with no proof it can fail). It removes the RECOVERY ARM — the pass that mints a Macro/Constant for a `#define` the pinned grammar did not produce a `preproc_def` node for — while leaving the ordinary `preproc_def` branch intact. That is exactly the pre-fix state: MEASURED on a two-repo corpus, 544 `#define` lines have no `preproc_*` node (3,483 in source vs 2,939 produced), 543 of them in a file with >=1 ERROR node, and `calls` rows targeting those unpublished macros came to 9,004 of the 13,407 genuinely-unresolved targets. `CHECK` alone is 6,734. The fixture cpp/macro-recovery-in-error-spans pins a macro declared inside an ERROR region and requires the symbol to exist, so removing this arm lands 0 symbols where the fixture expects 1 and fails.",
+    caughtBy: "cpp/macro-recovery-in-error-spans",
+    transform: (r) => {
+      // Drop exactly the symbols the recovery arm mints: `metadata.isMacro === true` AND
+      // `metadata.recoveredFromDirective === true`. The second key is what distinguishes a
+      // recovered macro from an ordinary `preproc_def` one, so the ordinary branch is untouched and
+      // the mutant models the defect rather than deleting every macro.
+      return {
+        ...r,
+        symbols: (r?.symbols ?? []).filter(
+          (s: any) => !(s?.metadata?.isMacro === true && s?.metadata?.recoveredFromDirective === true),
+        ),
+        relationships: (r?.relationships ?? []).filter((x: any) => {
+          if (x?.type !== "contains") return true
+          const md = x?.metadata ?? {}
+          return md.recoveredFromDirective !== true
+        }),
+      }
+    },
+  },
 ]
