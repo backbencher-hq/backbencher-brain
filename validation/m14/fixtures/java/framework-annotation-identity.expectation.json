@@ -1,0 +1,66 @@
+{
+  "fixtureId": "java/framework-annotation-identity",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "javac-valid same-package Data, Getter, Setter annotation declarations have no Lombok code generation; similarly named local JpaRepository does not grant Spring Data generated methods. The analyzer must require a qualified lombok.* annotation or explicit single-type lombok import, and an actual Spring Data repository ancestry import.",
+  "expectSymbols": [
+    {
+      "name": "LocalData",
+      "kind": "class"
+    },
+    {
+      "name": "LocalGetter",
+      "kind": "class"
+    },
+    {
+      "name": "LocalSetter",
+      "kind": "class"
+    },
+    {
+      "name": "LocalRepository",
+      "kind": "interface"
+    },
+    {
+      "name": "findById",
+      "kind": "method"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "getCount",
+      "ownerName": "LocalData"
+    },
+    {
+      "name": "setCount",
+      "ownerName": "LocalData"
+    },
+    {
+      "name": "getTitle",
+      "ownerName": "LocalGetter"
+    },
+    {
+      "name": "setId",
+      "ownerName": "LocalSetter"
+    },
+    {
+      "name": "save",
+      "ownerName": "LocalRepository"
+    },
+    {
+      "name": "count",
+      "ownerName": "LocalRepository"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "LocalData",
+      "target": "getCount"
+    },
+    {
+      "type": "contains",
+      "from": "LocalRepository",
+      "target": "save"
+    }
+  ]
+}

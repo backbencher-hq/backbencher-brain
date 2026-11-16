@@ -747,7 +747,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (isExit) {
         if (parentContext) {
-          this.processPhantomSymbols(parentContext, symbols, symbolMap, frameworks)
+          this.processPhantomSymbols(parentContext, symbols, symbolMap, receiverTypes)
           if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1] === parentContext) {
             scopeStack.pop()
           }
@@ -3328,17 +3328,22 @@ currentPackage,
     scope: any, 
     symbols: ASTEngine.UniversalSymbol[], 
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
-    frameworks: Record<string, boolean>
+    index: JavaReceiverTypeIndex,
   ) {
-    const isSpringData = frameworks["spring_data"] || frameworks["spring"]
-
-    if (isSpringData && scope.isInterface) {
-      let isRepo = false
-      for (let i = 0; i < scope.parents.length; i++) {
-         if (scope.parents[i].indexOf("JpaRepository") !== -1 || scope.parents[i].indexOf("CrudRepository") !== -1) {
-            isRepo = true; break;
-         }
-      }
+    // Derive framework identity from the written import (or a qualified
+    // heritage name). A mere JpaRepository/CrudRepository suffix does not
+    // identify Spring Data: user code may declare types with those names.
+    const springRepositoryPaths = new Set([
+      "org.springframework.data.jpa.repository.JpaRepository",
+      "org.springframework.data.repository.CrudRepository",
+    ])
+    const isSpringRepositoryParent = (written: string): boolean => {
+      if (springRepositoryPaths.has(written)) return true
+      if (written.includes(".")) return false
+      return springRepositoryPaths.has(index.importSinglePaths.get(written) ?? "")
+    }
+    if (scope.isInterface) {
+      const isRepo = scope.parents.some((parent: string) => isSpringRepositoryParent(parent))
       if (isRepo) {
         const defaultMethods = ["save", "findById", "findAll", "deleteById", "delete", "count"]
         for (let j = 0; j < defaultMethods.length; j++) {
@@ -3374,17 +3379,17 @@ currentPackage,
       let isDataOrSetter = false
       for (let i = 0; i < scope.annotations.length; i++) {
          const d = scope.annotations[i]
-         // Exact short-name match: the pre-fix substring test (indexOf("Data"))
-         // fired on @Metadata / @Database and indexOf("Getter") on any
-         // annotation ending in Getter — fabricating Lombok accessors for
-         // non-Lombok classes (probe 2026-09-08).
-         let shortName = d.startsWith("@") ? d.slice(1) : d
-         const paren = shortName.indexOf("(")
-         if (paren !== -1) shortName = shortName.slice(0, paren)
-         const lastDot = shortName.lastIndexOf(".")
-         if (lastDot !== -1) shortName = shortName.slice(lastDot + 1)
-         if (shortName === "Data" || shortName === "Getter") isDataOrGetter = true
-         if (shortName === "Data" || shortName === "Setter") isDataOrSetter = true
+         // Annotation SIMPLE names do not prove Lombok identity. Only
+         // lombok.X spelled in source or a corresponding single-type import
+         // licenses a generated accessor claim. Wildcard imports abstain.
+         let written = d.startsWith("@") ? d.slice(1) : d
+         const paren = written.indexOf("(")
+         if (paren !== -1) written = written.slice(0, paren)
+         const resolved = written.includes(".")
+           ? written
+           : index.importSinglePaths.get(written) ?? ""
+         if (resolved === "lombok.Data" || resolved === "lombok.Getter") isDataOrGetter = true
+         if (resolved === "lombok.Data" || resolved === "lombok.Setter") isDataOrSetter = true
       }
 
       if (isDataOrGetter || isDataOrSetter) {
@@ -3392,7 +3397,7 @@ currentPackage,
           const prop = scope.fields[idx]
           const capitalizedName = prop.name.charAt(0).toUpperCase() + prop.name.slice(1)
           
-          if (isDataOrGetter) {
+          if (isDataOrGetter && !symbolMap.has(`${scope.fqn}.get${capitalizedName}()`)) {
             const sym = {
               name: `get${capitalizedName}`,
               kind: ASTEngine.SymbolKind.Method,
@@ -3409,7 +3414,7 @@ currentPackage,
             symbolMap.set(`${scope.fqn}.get${capitalizedName}()`, sym)
           }
 
-          if (isDataOrSetter) {
+          if (isDataOrSetter && !symbolMap.has(`${scope.fqn}.set${capitalizedName}(${prop.returnType || "Object"})`)) {
              const sym = {
               name: `set${capitalizedName}`,
               kind: ASTEngine.SymbolKind.Method,
