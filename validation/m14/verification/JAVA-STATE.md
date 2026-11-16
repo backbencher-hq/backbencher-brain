@@ -125,10 +125,13 @@ The current remediation commits on `main` are:
   prioritize project ownership over ordinary library namespace prefixes,
   narrow ambiguous `jakarta.*` external claims, and fix library-citation
   early termination on one project-owned target.
+- `1795eab966b9ac99005f6dcd540241f9cca82b89` —
+  replace file-wide type-name evidence in builtin-call filtering with
+  lexical visibility and explicit import precedence.
 
-**Three new M14 Java fixtures:** `local-builtin-name-shadowing`,
-`framework-annotation-identity`, `project-owned-jakarta-namespace`.
-Baseline 89 + 3 = **92 expected**. The `library-import-binding`
+**Four new M14 Java fixtures:** `local-builtin-name-shadowing`,
+`framework-annotation-identity`, `project-owned-jakarta-namespace`,
+`lexical-builtin-import-precedence`. Baseline 89 + 4 = **93 expected**. The `library-import-binding`
 fixture was re-authored only for its `jakarta` *external-claim* expectations
 when no complete project index is supplied; its imports and calls still must
 be emitted. Compare against the baseline, do not hide a changed binding count.
@@ -139,8 +142,8 @@ be emitted. Compare against the baseline, do not hide a changed binding count.
   The `javap` disassembly of the call-collision example shows
   `audit/Logger.audit`, `audit/String.custom` and `App.equals(I)`.
 - **New JavaCompiler API oracle:** `JavaAnalyzerRemediationOracle.java`
-  was run against four in-memory compiler-valid source files.
-  **12/12 compiler facts passed**, including an overload that is NOT
+  was run against five in-memory compiler-valid source files.
+  **13/13 compiler facts passed**, including an overload that is NOT
   an override and its matching true generic override control.
 - **Full Java analyzer runtime/M14 (post-remediation): UNMEASURED** —
   GitHub clone DNS unavailable and Bun/project dependencies absent

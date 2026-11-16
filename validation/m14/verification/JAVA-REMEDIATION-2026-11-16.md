@@ -1,8 +1,8 @@
 # Java remediation — developer verification evidence, 2026-11-16
 
 **Start commit:** `91d1401a12d22860a1d0a7d1d502f568d00ced30`.
-**Latest production correction:** `cc81abd3c8ea3876e3a7a98050d14164ecf34e82`.
-Three targeted Java production corrections and three new fixtures.
+**Latest production correction:** `1795eab966b9ac99005f6dcd540241f9cca82b89`.
+Four targeted Java production corrections and four new fixtures.
 See `JAVA-STATE.md` for all commit IDs and unmeasured gates.
 
 ## Independently compiler-verified facts
@@ -15,8 +15,10 @@ javac -d /tmp/bb-remediation-oracle validation/m14/verification/JavaAnalyzerReme
 java -cp /tmp/bb-remediation-oracle JavaAnalyzerRemediationOracle
 ```
 
-Authoring environment JDK 21 completed **12/12** facts: four source
+Authoring environment JDK 21 completed **13/13** facts: five source
 units compile, three local conventional-name calls are project-declared,
+an imported java.util.logging.Logger is not rebound to an unrelated
+nested Decoy.Logger,
 custom `@Data/@Getter/@Setter` do not generate Lombok accessors,
 a local `JpaRepository` does not inject Spring Data methods,
 `jakarta.project.Owned` is project-declared, and
