@@ -70,7 +70,6 @@
  * include resolution is the compiler's, not the analyzer's, so there is nothing to resolve — the
  * directive's own text IS the fact.
  */
-import type { Node } from "web-tree-sitter"
 
 export interface CppPartOfTruthEdge {
   label: "part_of" | "imports"
@@ -134,7 +133,7 @@ export function deriveCppPartOfTruth(root: any): CppPartOfTruthEdge[] {
         // THE SENTINEL COLLISION GUARD: a target spelled `global` is the file-scope SOURCE sentinel,
         // and a row naming it would be indistinguishable from the sentinel to a consumer. `global` is
         // a legal C++ identifier (std::locale::global is a real function), so this refuses a row
-          // rather than asserting a fact the vocabulary cannot carry.
+        // rather than asserting a fact the vocabulary cannot carry.
         if (target.length > 0 && target !== FILE_SCOPE) {
           const label: "part_of" | "imports" = isQuoted ? "part_of" : "imports"
           const key = `${label}\u0000${target}`
