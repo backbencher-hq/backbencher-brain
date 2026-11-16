@@ -298,14 +298,88 @@ The census's 12 entries all belong to other lanes
 (php ×2, powershell ×1, ruby ×3, swift ×2, typescript ×4) and are
 pre-existing.
 
-### Corpus and incoming gate
+### Corpus and incoming gate — MEASURED on this host
 
-| Check | Status |
-| --- | --- |
-| Pinned Java corpus | **UNMEASURED** — `BB_CORPUS_ROOT` unset, no `.corpus/` |
-| `incoming-gate.ts java java 200` | **UNMEASURED** — requires the corpus |
+The corpus was found and used. It is not absent:
 
-These are infrastructure gaps on this host, not passing checks.
+```
+BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories
+11,152 .java files across 19 repositories
+```
+
+Command run (whole corpus, no sampling):
+
+```
+BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories \
+  bun script/m14/incoming-gate.ts java java 0
+```
+
+Gate output, verbatim in its own columns:
+
+```
+population: 11152 parsed of 11152 sampled
+TOTAL  1478629 edges | resolved 642640 | collRes 108446 | amb(decl) 174366
+       | amb(kind) 92484 | unresolved 341867 | extOK 319452 | ext? 16
+       | extFAIL 0 | bindOK 288 | bindFAIL 0 | causeFAIL 0
+VERDICT: FAIL — CLAUSE 1
+  516233 ambiguous/unresolved + 0 refuted + 16 unreachable claims
+  clause 1 FAIL · clause 2 ok · clause 3 ok · clause 4 ok (extFAIL/bindFAIL/causeFAIL = 0)
+instrument self-test: PASS (control fired)
+```
+
+**The override row is the one this lane's work targets, and it is clean:**
+
+| type | edges | resolved | amb(decl) | unresolved | extFAIL |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **overrides** | **33,443** | **33,443** | **0** | **0** | **0** |
+| contains | 160,970 | 160,970 | 0 | 0 | 0 |
+| exports | 10,777 | 10,745 | 12 | 20 | 0 |
+| implements | 5,260 | 3,882 | 46 | 1,078 | 0 |
+| extends | 6,863 | 2,338 | 2,958 | 1,301 | 0 |
+| calls | 356,498 | 131,765 | 82,269 | 142,176 | 0 |
+| references | 554,563 | 129,259 | 64,256 | 162,728 | 0 |
+| imports | 209,100 | 90,769 | 1,131 | 5,881 | 0 |
+| instantiates | 41,811 | 7,341 | 11,994 | 13,184 | 0 |
+| uses | 99,344 | 72,128 | 11,700 | 15,499 | 0 |
+
+**33,443 of 33,443 override edges resolve — 100%, zero ambiguous, zero
+unresolved, zero refuted claims.** That is the corpus-scale counterpart to
+93/93 fixtures, and it is the measurement this lane previously lacked.
+
+**How to read the FAIL verdict honestly.** Clause 1 fails on the *whole
+lane*, and the mass sits in `calls` / `references` / `instantiates` — name
+resolution against a whole-corpus key space, where a bare name like `get`
+or `open` legitimately matches hundreds of declarations. It is NOT a
+statement about override correctness, and it must not be reported as one.
+Clauses 2–4 pass, and every failure counter this lane owns
+(`extFAIL`, `bindFAIL`, `causeFAIL`) is **0**.
+
+### Bounded real-codebase probes (sampled, not census)
+
+Two stride samples over real repositories, printed with their coverage so a
+short page is never read as a whole set.
+
+| Repo | Files (of) | Symbols | Relationships | overrides |
+| --- | --- | ---: | ---: | ---: | ---: |
+| dbeaver | 300 (6,687) | 4,411 | 45,163 | 1,128 |
+| grails-core | 300 (1,893) | 4,319 | 32,513 | 655 |
+
+Parse errors: dbeaver 1/300 (0.3%), grails-core 0/300.
+
+**`first-parent-guess` is honest abstention, measured not assumed.** dbeaver
+250-file sample: 965 `@Override` sites, 949 `first-parent-guess` edges at
+confidence 0.5. Each was tested for AVOIDABILITY — does a type declared in
+the SAME file, already in the file's inheritance chain, declare a method of
+that name? Result:
+
+```
+first-parent-guess : 949
+AVOIDABLE (in-file): 0
+```
+
+Every one is an Eclipse/Equinox framework parent (`AbstractPartListener`,
+`IPropertyListener`, `IPreferencePage`) declared in another file. A per-file
+analyzer cannot see it, so 0.5 is the correct claim — not a resolution gap.
 
 ### GitHub Actions
 

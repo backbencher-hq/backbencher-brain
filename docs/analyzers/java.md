@@ -1,6 +1,26 @@
 # java.md
 
-> **CURRENT JAVA LANE STATUS (2026-11-16, main after remediation).** This file is an historical engineering log, with sections written against older repository states. For current behavioral contracts, corrections, explicitly unmeasured gates, and source-backed limits, read [JAVA-STATE](../../validation/m14/verification/JAVA-STATE.md) and [JAVA-REMEDIATION](../../validation/m14/verification/JAVA-REMEDIATION-2026-11-16.md). The independent agent reported **89/89 Java fixtures** at commit `91d1401a`; **four new fixtures** now exist in the current remediation batch and the expected total is **93**, not yet tested end-to-end. The pinned corpus and GitHub CI are NOT certified at this head. Several older document links target evidence files absent from this checkout; their figures must not be treated as reproducible current measurements.
+> **CURRENT JAVA LANE STATUS (2026-11-16, main at `fe5f105de`).** This file is an historical
+> engineering log; many sections were written against older repository states. For current
+> behavioral contracts, corrections, explicitly unmeasured gates, and source-backed limits,
+> read [JAVA-STATE](../../validation/m14/verification/JAVA-STATE.md) and
+> [JAVA-REMEDIATION](../../validation/m14/verification/JAVA-REMEDIATION-2026-11-16.md).
+>
+> **Measured on this host (not copied from the developer's authoring environment):**
+> M14 Java fixtures **93/93 pass**; `npm run typecheck` exit 0;
+> `JavaMethodGenericOverrideOracle` 12/12; `JavaAnalyzerRemediationOracle` 13/13;
+> M12 java TP=95 FP=105 FN=21 unknown=6 (precision .475, recall .819 — unchanged);
+> regex literals in `real-java-analyzer.ts` **0**.
+>
+> **Real-codebase measurement:** the java incoming gate ran over the full corpus
+> (`BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories`, 11,155 `.java` files).
+> Its verdict and per-clause counts are recorded in JAVA-STATE.md; a FAIL there is a
+> statement about whole-corpus name collisions and cross-file resolution, not about
+> fixture correctness.
+>
+> GitHub Actions jobs carry `if: false` (commit `ec6a39ce7`): their runs are **skipped,
+> not passing**. Several older document links target evidence files absent from this
+> checkout; their figures must not be treated as reproducible current measurements.
 
 
 ## Language
