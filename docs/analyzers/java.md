@@ -772,4 +772,3 @@ name-only override or an external-ancestor guess.
 Regression: `validation/m14/fixtures/java/override-lexical-parent-resolution.java` and its expectation
 file cover direct and two-hop inheritance with a same-named decoy declared first. This is a syntax-local
 guarantee: imported/cross-file Java name resolution and compiler-level accessibility remain outside it.
-
