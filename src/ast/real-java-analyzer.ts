@@ -2978,21 +2978,24 @@ currentPackage,
         }
         return undefined
       }
-      // Java access rule for inherited member types:
-      //   - `private` nested types are accessible ONLY within their directly
-      //     enclosing class, not in subclasses (JLS 6.6.1).
+      // Java access rule for inherited member types (JLS 6.6.1):
+      //   - `private` nested types are accessible only within their directly
+      //     enclosing top-level class — shared by sibling nested types.
       //   - `protected`/`public` nested types are accessible in subclasses.
       //   - package-private (no modifier) is accessible within the same package.
-      // We conservatively reject `private` member types when the resolving
-      // context is not the declaring class itself.
+      // We reject `private` member types when the resolving context is not
+      // inside the same top-level class as the declaring type.
+      const topLevel = (fqn: string): string => {
+        const dot = fqn.indexOf(".")
+        return dot < 0 ? fqn : fqn.slice(0, dot)
+      }
       const candidateVisible = (candidate: string, fromOwner: string): boolean => {
         const sym = symbolMap.get(candidate)
         if (!sym) return true // no symbol info: do not fabricate a restriction
         if (sym.visibility !== "private") return true
-        // private: accessible only within the declaring class itself
         const dot = candidate.lastIndexOf(".")
         const declaringType = dot < 0 ? "" : candidate.slice(0, dot)
-        return declaringType === fromOwner
+        return topLevel(declaringType) === topLevel(fromOwner)
       }
       const inheritedMemberOwner = (candidate: string): boolean => {
         const dot = candidate.lastIndexOf(".")
