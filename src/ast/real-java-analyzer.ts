@@ -2936,7 +2936,7 @@ currentPackage,
     // Resolve an in-file parent relative to the type writing its heritage
     // clause. A same-named nested class elsewhere is not an ancestor.
     // Unknown ambiguous parents do not become guessed override targets.
-    const parentCandidates = (fromOwner: string, written: string): { matches: string[]; ambiguous: boolean } => {
+    const parentCandidates = (fromOwner: string, written: string): { matches: string[]; ambiguous: boolean; rejectedInaccessible: boolean } => {
       let scope = fromOwner
       while (scope.lastIndexOf(".") !== -1) {
         scope = scope.slice(0, scope.lastIndexOf("."))
@@ -2978,6 +2978,22 @@ currentPackage,
         }
         return undefined
       }
+      // Java access rule for inherited member types:
+      //   - `private` nested types are accessible ONLY within their directly
+      //     enclosing class, not in subclasses (JLS 6.6.1).
+      //   - `protected`/`public` nested types are accessible in subclasses.
+      //   - package-private (no modifier) is accessible within the same package.
+      // We conservatively reject `private` member types when the resolving
+      // context is not the declaring class itself.
+      const candidateVisible = (candidate: string, fromOwner: string): boolean => {
+        const sym = symbolMap.get(candidate)
+        if (!sym) return true // no symbol info: do not fabricate a restriction
+        if (sym.visibility !== "private") return true
+        // private: accessible only within the declaring class itself
+        const dot = candidate.lastIndexOf(".")
+        const declaringType = dot < 0 ? "" : candidate.slice(0, dot)
+        return declaringType === fromOwner
+      }
       const inheritedMemberOwner = (candidate: string): boolean => {
         const dot = candidate.lastIndexOf(".")
         if (dot < 0) return false
@@ -2999,7 +3015,11 @@ currentPackage,
           // For "InnerBase.Deep", reaching Ancestor proves its declared
           // "Ancestor.InnerBase.Deep" is accessible through that hierarchy,
           // even though Ancestor.InnerBase was not a BFS vertex.
-          if (owner === declaringType || candidate === `${owner}.${written}`) return true
+          if (owner === declaringType || candidate === `${owner}.${written}`) {
+            // Enforce access: a `private` member type is not visible outside
+            // its directly enclosing class, so a subclass cannot inherit it.
+            return candidateVisible(candidate, fromOwner)
+          }
           for (const base of classHierarchy.get(owner) ?? []) {
             const resolved = resolveDeclaredParent(owner, base)
             if (resolved && !visited.has(resolved)) queue.push(resolved)
@@ -3008,9 +3028,14 @@ currentPackage,
         return false
       }
       const reachable = matches.filter(inheritedMemberOwner)
+      // rejectedInaccessible: candidates exist in the file but were all
+      // rejected by inheritedMemberOwner (e.g. private member type not
+      // visible from this context). Distinct from "no candidates at all"
+      // so the caller does not fall through to first-parent-guess.
+      const rejectedInaccessible = matches.length > 0 && reachable.length === 0
       return reachable.length === 1
-        ? { matches: reachable, ambiguous: false }
-        : { matches: [], ambiguous: reachable.length > 1 }
+        ? { matches: reachable, ambiguous: false, rejectedInaccessible: false }
+        : { matches: [], ambiguous: reachable.length > 1, rejectedInaccessible }
     }
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
@@ -3056,9 +3081,11 @@ currentPackage,
       let head = 0
       while (head < queue.length && !targetFqn) {
         const { parent, fromOwner, bindings: childBindings } = queue[head++]
-        const { matches: candidates, ambiguous } = parentCandidates(fromOwner, parent.name)
+        const { matches: candidates, ambiguous, rejectedInaccessible } = parentCandidates(fromOwner, parent.name)
         // An ambiguous in-file parent is not evidence of an external parent.
-        if (task.explicit && parent.name && candidates.length === 0 && !ambiguous) {
+        // Candidates rejected due to inaccessibility (e.g. private member type)
+        // must not fall through to first-parent-guess either.
+        if (task.explicit && parent.name && candidates.length === 0 && !ambiguous && !rejectedInaccessible) {
           unresolvedParents.add(parent.name)
         }
         for (const cand of candidates) {
