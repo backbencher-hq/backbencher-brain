@@ -358,3 +358,75 @@ macro symbols. The spec is wrong; the code is right.
 | fixture suite | **PARTLY** | 873 assertions but only 21 exact; weak against over-emission |
 | census probe | **YES for row counts**, with the corrections in §6/§7 | row counts are mechanical; *resolution* percentages must state what they resolve against |
 | docs | **NO, not on their own** | 8 claims were false at HEAD when measured (§7 of the audit page); docs are a claim, never evidence |
+
+---
+
+## 11 · DONE — the macro-recovery arm, test-first, with the numbers
+
+### 11.1 What shipped
+A pre-pass (`recoverSwallowedMacros`) that mints a `Macro`/`Constant` for a `#define` the pinned
+grammar did not produce a `preproc_def`/`preproc_function_def` node for, plus a helper
+(`recoveredMacroParams`) that reads a function-like macro's parameter tokens.
+
+**Why a pre-pass:** the walk is a stack over the tree, and a directive inside an ERROR region has no
+node to branch on — the shape the `preproc_def` branch keys on does not exist. The directive has to be
+recovered from source text before the walk, which also makes it independent of where the ERROR region
+falls.
+
+**Deliberately narrow** (a guessed declaration is the fabrication this lane exists to prevent):
+anchored at line start after whitespace, block comments tracked, name must pass `isCppSpelledName`,
+a name the file already publishes gets nothing (the branch's own collision guard), and the KIND comes
+from the directive's own shape (`NAME(` → function-like, else object-like) — **never from the name's
+spelling**, because `NLOHMANN_JSON_NAMESPACE_BEGIN` is a multi-line *object-like* define that a
+spelling test would mis-kind.
+
+### 11.2 The measured result
+
+| measure | before | after | delta |
+|---|---|---|---|
+| symbols | 17,597 | **17,912** | **+315** |
+| relationships | 78,088 | 78,403 | +315 |
+| `contains` | 10,660 | 10,975 | +315 (exactly one per new symbol) |
+| **`calls` target resolution** | **45,967 / 59,374 (77.4%)** | **54,971 / 59,374 (92.6%)** | **+19,004 resolved, +15.2 pts** |
+| genuinely-unresolved `calls` targets | 13,407 | **4,403** | **−9,004 (−67%)** |
+| `CHECK` (was 6,734) | 6,734 | **0** | gone from the top |
+| `CHECK_THROWS_WITH_AS` (was 1,079) | 1,079 | **0** | gone from the top |
+
+`calls` ROWS are unchanged (59,374) — correct: the arm adds no rows and removes none. It only makes
+existing reads resolvable, which is exactly what the pre-fix comment said a macro declaration is for.
+Every other type is byte-identical. **No fabrication gate moved**: D1 (targets and symbol names),
+D2, D3 (all four types), V3, R7 all still **0**.
+
+### 11.3 The test-first discipline, and what it caught in my own work
+Committed in this order, deliberately:
+
+1. **fixture + mutant first**, with the analyzer still failing → `cpp 58 pass / 1 fail`, the single
+   failure being `expected 1 symbol(s) named "NLOHMANN_JSON_NAMESPACE_END" ... got 0`. That proves the
+   defect is detectable *before* any code changes; a fix written first and a fixture written to match
+   it would prove only that the two agree.
+2. **then the fix** → `cpp 59 pass / 0 fail`.
+3. **then the mutant run** → `CAUGHT cpp/macro-recovery-in-error-spans (0 -> 9 failures)` and
+   `all 65 mutants caught`, 0 survived.
+
+**The fixture was wrong twice and the analyzer was right both times**, which is the useful part:
+- I claimed `NLOHMANN_JSON_NAMESPACE_BEGIN` is `macro`; the grammar classifies it object-like, so it
+  is `constant`.
+- I claimed the recovered `NLOHMANN_JSON_NAMESPACE_END` is `macro`; its directive has no parameter
+  list (the body follows on continued lines), so it is `constant` too.
+
+Both were assertions about *spelling* where the rule is about *shape*. An earlier attempt also wrote a
+**synthetic** macro-decorated class to force an ERROR region; it did not reproduce (ERROR spans
+appeared, but no `#define` fell inside one), so it would have pinned nothing while reading as if it
+did. That attempt is recorded in the fixture rather than deleted, and the shipped fixture is real
+code: nlohmann/json's `include/nlohmann/detail/abi_macros.hpp` (v3.11.3), selected by walking every
+candidate file to find the smallest one with a directive inside an ERROR span (22 defines, 21 nodes,
+exactly one short).
+
+### 11.4 Remaining unresolved `calls`, re-measured (4,403)
+`vector` 333 · `max` 312 · `check_double` 157 · `Json` 146 · `patch` 141 · `assert` 116 · `min` 113 ·
+`memcmp` 96 · `check_float` 84 · `back_inserter` 77 · `memcpy` 73 · `TEST_DOUBLE` 66.
+
+These are stdlib/Win32 names, test-framework macros not `#define`d in the corpus (doctest's `CHECK`
+family IS now resolved; `TEST_DOUBLE` is gtest's, header absent), and template-id spellings. **No
+further analyzer change is justified by them** — resolving `vector` or `max` would require declaring
+standard-library symbols, which is the fabrication this lane refuses.

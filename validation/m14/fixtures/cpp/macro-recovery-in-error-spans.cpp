@@ -31,7 +31,7 @@
 // THE CONTROL IS THE OTHER 21. They all parse and publish through the EXISTING branch, so an
 // implementation that deleted that branch, or that minted a symbol for every ALL-CAPS name it saw,
 // fails here. The load-bearing assertions are:
-//   * `expectSymbols` names `NLOHMANN_JSON_NAMESPACE_END` with kind `macro` — the recovered symbol,
+//   * `expectSymbols` names `NLOHMANN_JSON_NAMESPACE_END` with kind `constant` — the recovered symbol,
 //     pinned by KIND and not only by name, so a phantom of another kind does not satisfy it;
 //   * `expectSymbolCount ... equals: 1` for it — the only form that fails when the same name is
 //     minted twice, which is the collision the branch's own guard prevents;

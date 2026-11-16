@@ -12,13 +12,13 @@
     },
     "parseFailures": 0,
     "failureSample": [],
-    "parseMs": 23927
+    "parseMs": 24094
   },
   "totals": {
-    "symbols": 17597,
-    "relationships": 78088,
+    "symbols": 17912,
+    "relationships": 78403,
     "kinds": {
-      "constant": 810,
+      "constant": 860,
       "class": 1582,
       "function": 4140,
       "variable": 594,
@@ -29,7 +29,7 @@
       "namespace": 357,
       "constructor": 912,
       "enum": 89,
-      "macro": 1211
+      "macro": 1476
     }
   },
   "perType": {
@@ -48,25 +48,25 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "59374/59374",
-      "targetResolved": "45967/59374",
+      "targetResolved": "54971/59374",
       "sub1WithoutReasonCode": 0
     },
     "contains": {
-      "rows": 10660,
+      "rows": 10975,
       "files": 180,
-      "distinctPairs": 8196,
-      "duplicatePairsVsRows": 2464,
+      "distinctPairs": 8504,
+      "duplicatePairsVsRows": 2471,
       "confidenceMissing": 0,
       "confidenceValues": [
         1
       ],
       "evidenceClass": {
-        "structural": 10660
+        "structural": 10975
       },
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
-      "sourceResolved": "10657/10660",
-      "targetResolved": "10660/10660",
+      "sourceResolved": "10972/10975",
+      "targetResolved": "10975/10975",
       "sub1WithoutReasonCode": 0
     },
     "uses": {
