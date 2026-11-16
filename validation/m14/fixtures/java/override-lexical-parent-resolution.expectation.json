@@ -1,0 +1,36 @@
+{
+  "fixtureId": "java/override-lexical-parent-resolution",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The nearest enclosing Java type owns an unqualified superclass name in both direct and multi-hop inheritance. An earlier, unrelated nested Base must neither create false overrides nor contaminate the declaringType. localEdgeLabel shortens endpoints to their last two dot-segments (lane convention, see anonymous-and-multihop-overrides / generic-override-signatures), so endpoints and declaringType are spelled Direct.collide / Base rather than the full FQN. Under the old suffix-only resolution, Direct.collide would emit NO override edge (Decoy.Base and Owner.Base collide on the bare suffix -> ambiguous -> no edge); the lexical fix resolves Owner.Base and emits the edge.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Direct.collide",
+      "target": "collide",
+      "meta.declaringType": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Indirect.collide",
+      "target": "collide",
+      "meta.declaringType": "Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Indirect.localOnly",
+      "target": "localOnly",
+      "meta.declaringType": "Base"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Direct.decoyOnly"
+    },
+    {
+      "type": "overrides",
+      "from": "Indirect.decoyOnly"
+    }
+  ]
+}
