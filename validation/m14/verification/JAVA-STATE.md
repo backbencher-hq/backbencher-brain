@@ -77,3 +77,33 @@ java -cp /tmp/bb-java-oracle JavaMethodGenericOverrideOracle \
 The 2026-11-16 isolated Java 21 run returned 12/12 true-or-false
 compiler judgments, but the full analyzer fixture suite is still
 unmeasured here and remains a task for the independent verifier.
+
+## Consolidated audit feedback and targeted correction
+
+Independent audit of range `0ec8ae4b9..8ff51ba73` reported:
+
+- Java M14: **87 pass / 2 fail** out of 89.
+- Failing fixtures: `override-unbounded-method-alpha-equivalence` and
+  `override-generic-method-return-consistency` (3 missing interface
+  method-generic overrides each; six absent expected relationships).
+- Independent javac oracle: **12/12** reported passing.
+- Full `npm run typecheck`: reported PASS; `typecheck:scripts` report
+  stated PASS alongside two diagnostic errors, requiring precise replay.
+- M12 differential: TP=95 FP=105 FN=21 unknown=6,
+  precision=.475 recall=.819, input digest `1271c1d6d903`
+  (reported; differs from stored stale artifact).
+- Corpus: UNMEASURED; GitHub workflows still disabled.
+
+The first implementation's structured method loop mistakenly required
+`variables.length > 0`, which tests class-level generic parameters
+rather than whether a **method** has generic parameters. A non-generic
+interface `Transformer` with `<T> T identity(T)` was skipped, despite
+a valid `<U> U identity(U)` override in its implementor.
+
+The follow-up code removes this unrelated class-variable guard and
+retains the private/static checks and structural method/return comparison.
+The independent audit's **87/89 is a pre-correction result**, not the
+post-correction verification count. Fresh Java M14, M12, TypeScript and
+corpus checks for this correction remain UNMEASURED until rerun.
+Existing fixtures/expectations and M12 ground truth are intentionally
+unchanged. No regex added.

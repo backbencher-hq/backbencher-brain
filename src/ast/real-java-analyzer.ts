@@ -3136,7 +3136,10 @@ currentPackage,
             break
           }
           for (const member of methodsByOwner.get(cand)?.get(task.methodName) ?? []) {
-            if (variables.length === 0 || member.visibility === "private" || member.isStatic) continue
+            // A non-generic declaring TYPE may still declare generic METHODS.
+            // The check below handles both class-generic substitution and
+            // method-generic alpha-equivalence; neither requires class variables.
+            if (member.visibility === "private" || member.isStatic) continue
             // Method-generic variables have their own alpha-equivalent scope.
             // Never infer equality of bounded methods from parameter names.
             const baseVars = member.genericParameters ?? []
