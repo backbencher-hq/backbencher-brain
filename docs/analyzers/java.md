@@ -772,3 +772,65 @@ name-only override or an external-ancestor guess.
 Regression: `validation/m14/fixtures/java/override-lexical-parent-resolution.java` and its expectation
 file cover direct and two-hop inheritance with a same-named decoy declared first. This is a syntax-local
 guarantee: imported/cross-file Java name resolution and compiler-level accessibility remain outside it.
+
+## Explicit single-type imports in override resolution
+
+A superclass name introduced by a single-type import must not be rebound by
+an unrelated same-leaf nested declaration via the in-file suffix fallback.
+The override resolver uses the file's already parsed single-type imports
+**after** searching the declaring type's lexical scopes, so a locally
+shadowing member class still wins. If the imported declaration is not in this
+file, the resolver abstains from reporting a verified in-file override.
+
+Regression: `validation/m14/fixtures/java/override-single-type-import-shadow.java`
+and its expectation file. The fixture is valid Java: `ImportedChild` extends
+`java.util.ArrayList`, while `Decoy.LocalChild` extends
+`Decoy.ArrayList`. These declarations must never share an override target.
+
+## Qualified type names with an imported outer type
+
+For a heritage name such as `Map.Entry` under `import java.util.Map`,
+the single-type import binds the **first** name. Override resolution
+qualifies the rest of the written member chain under that imported type
+before considering any similarly named nested types in the compilation unit.
+Lexical member types remain higher priority. If the qualified imported
+ancestor is outside the file, no in-file override is asserted.
+
+The `java/override-qualified-import-head` regression checks both
+`Decoy.LocalChild implements Decoy.Map.Entry` and
+`ExternalChild implements java.util.Map.Entry`, using a decoy's `marker`
+method to expose a fabricated override. It is compiler-valid Java.
+
+## Suffix fallback requires inherited member visibility
+
+A unique matching type name elsewhere in a Java file does **not** prove it
+is visible as an unqualified superclass. In particular, an unrelated nested
+`Decoy.ArrayList` must never override the binding supplied by
+`import java.util.*`. When lexical, exact, and single-type import
+resolution find no parent, the override resolver now permits a suffix
+candidate only if its declaring type is reachable through the in-file
+inheritance hierarchy of the heritage clause's owner. The walk is bounded
+by visited type identities and never uses regular expressions.
+
+The `java/override-inherited-member-visibility` fixture pins both a
+negative imported-class case and a positive *transitively inherited member
+type* case. This conservatively abstains on externally defined inherited
+member types; the analyzer has no compiler classpath or cross-file type
+table sufficient to prove them.
+
+## Inherited qualified member-type parents
+
+When the heritage name is a **qualified chain of member types** (for example
+`InnerBase.Deep`), checking only that the candidate's immediate declaring
+type `Ancestor.InnerBase` is a BFS ancestor is insufficient: Java also
+inherits `InnerBase` through an ancestor such as `Ancestor`. The
+in-file visibility guard admits a candidate exactly matching the currently
+reached ancestor plus the **complete written chain**. It still rejects
+unrelated same-suffix decoys and does not guess which candidate is correct.
+
+The `java/override-inherited-qualified-member-chain` regression pins
+`Descendant.Nested extends InnerBase.Deep` via
+`Descendant -> Middle -> Ancestor`, and requires genuine 1.0-confidence
+in-file overrides rather than a 0.5 first-parent guess.
+This remains an in-file proof; access modifiers and cross-file owner
+resolution still require broader compiler/corpus verification.

@@ -2448,7 +2448,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion, methodsByOwner, overrideParents)
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion, methodsByOwner, overrideParents, receiverTypes.importSinglePaths)
 
     // Rewrite import-reference sources from the package name to the file's
     // primary type (the first top-level type declared). Imports precede the
@@ -2927,6 +2927,7 @@ currentPackage,
     companion: Map<string, Set<string>> | undefined,
     methodsByOwner: Map<string, Map<string, ASTEngine.UniversalSymbol[]>>,
     overrideParents: Map<string, JavaOverrideParent[]>,
+    singleTypeImports: ReadonlyMap<string, string>,
   ) {
     // PERF (review 2026-09-08, claim 11): the suffix index is built ONCE per
     // file (O(C)) instead of per task (was O(T·C)); the BFS below uses an
@@ -2943,11 +2944,73 @@ currentPackage,
         if (classHierarchy.has(local)) return { matches: [local], ambiguous: false }
       }
       if (classHierarchy.has(written)) return { matches: [written], ambiguous: false }
+      // JLS 7.5.1: a single-type import also binds the leading name of
+      // a QUALIFIED member type (Map.Entry under import java.util.Map).
+      // Lexically enclosing declarations still take priority above. Never
+      // suffix-match another class's Map.Entry when Map comes from an import.
+      const firstDot = written.indexOf(".")
+      const importedHead = firstDot === -1 ? written : written.slice(0, firstDot)
+      const imported = singleTypeImports.get(importedHead)
+      if (imported) {
+        const resolvedName = imported + (firstDot === -1 ? "" : written.slice(firstDot))
+        return { matches: classHierarchy.has(resolvedName) ? [resolvedName] : [], ambiguous: false }
+      }
       const leaf = written.slice(written.lastIndexOf(".") + 1)
       const matches = (suffixIndex?.get(leaf) ?? []).filter(fqn => fqn.endsWith(`.${written}`))
-      return matches.length === 1
-        ? { matches, ambiguous: false }
-        : { matches: [], ambiguous: matches.length > 1 }
+      // A unique spelling is not proof of visibility. A member type inside
+      // another class can be inherited, but a coincidental matching leaf
+      // cannot be borrowed from that class. Prove an inherited owner through
+      // this file's declared hierarchy, or abstain.
+      const resolveDeclaredParent = (owner: string, name: string): string | undefined => {
+        let scope = owner
+        while (scope.lastIndexOf(".") !== -1) {
+          scope = scope.slice(0, scope.lastIndexOf("."))
+          const local = `${scope}.${name}`
+          if (classHierarchy.has(local)) return local
+        }
+        if (classHierarchy.has(name)) return name
+        const dot = name.indexOf(".")
+        const importedName = dot === -1 ? name : name.slice(0, dot)
+        const imported = singleTypeImports.get(importedName)
+        if (imported) {
+          const resolved = imported + (dot === -1 ? "" : name.slice(dot))
+          if (classHierarchy.has(resolved)) return resolved
+        }
+        return undefined
+      }
+      const inheritedMemberOwner = (candidate: string): boolean => {
+        const dot = candidate.lastIndexOf(".")
+        if (dot < 0) return false
+        const declaringType = candidate.slice(0, dot)
+        const queue: string[] = []
+        let scope = fromOwner
+        while (scope.length > 0) {
+          if (classHierarchy.has(scope)) queue.push(scope)
+          const lastDot = scope.lastIndexOf(".")
+          if (lastDot < 0) break
+          scope = scope.slice(0, lastDot)
+        }
+        const visited = new Set<string>()
+        for (let head = 0; head < queue.length; head++) {
+          const owner = queue[head]
+          if (visited.has(owner)) continue
+          visited.add(owner)
+          // An inherited member type may itself qualify another nested type.
+          // For "InnerBase.Deep", reaching Ancestor proves its declared
+          // "Ancestor.InnerBase.Deep" is accessible through that hierarchy,
+          // even though Ancestor.InnerBase was not a BFS vertex.
+          if (owner === declaringType || candidate === `${owner}.${written}`) return true
+          for (const base of classHierarchy.get(owner) ?? []) {
+            const resolved = resolveDeclaredParent(owner, base)
+            if (resolved && !visited.has(resolved)) queue.push(resolved)
+          }
+        }
+        return false
+      }
+      const reachable = matches.filter(inheritedMemberOwner)
+      return reachable.length === 1
+        ? { matches: reachable, ambiguous: false }
+        : { matches: [], ambiguous: reachable.length > 1 }
     }
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
