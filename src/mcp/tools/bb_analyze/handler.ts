@@ -260,6 +260,11 @@ export const handler: ToolHandler = async (args, { projectId }) => {
               calleesIfUncapped: null,
               totalsAreLowerBounds: false,
               dedupedAtToolLayer: { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
+              // Declare the walk bound even for a declared absence, so the
+              // not-found summary has the same bound fields as a found answer
+              // (F-001). No walk ran, so the budget was not exhausted.
+              timeBudgetMs: ANALYZE_GRAPH_WALK_CEILING_MS,
+              timeBudgetExhausted: false,
             },
             provenance: makeProvenance({
               evidenceClass: "unknown",

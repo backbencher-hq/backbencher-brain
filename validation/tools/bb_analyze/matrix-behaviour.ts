@@ -3,6 +3,7 @@
 //   npx tsx validation/tools/bb_analyze/matrix-behaviour.ts > matrix-behaviour.json
 import path from "node:path"
 import { getProjectId } from "../../../src/cli/index"
+import { indexProjectParallel } from "../../../src/ast/parallel-indexer"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../../src/mcp/tool-registry"
 import { validateToolArguments } from "../../../src/mcp/tool-validation"
 import { createToolHandlers } from "../../../src/mcp/tool-handlers"
@@ -11,6 +12,11 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
 const DIR = path.join(ROOT, "validation/tools/bb_analyze/work/behaviour")
 const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((t) => t.name === "bb_analyze")!
 const handler = createToolHandlers()["bb_analyze"]
+const projectId = getProjectId(DIR)
+
+// Index the behaviour fixture before invoking the handler, so every mode
+// exercised below operates on real indexed data (F-002).
+await indexProjectParallel(projectId, DIR, {})
 
 type Row = { id: string; args: Record<string, unknown>; ok: boolean; isError?: boolean; bytes?: number; thrown?: string; text?: string; parsed?: any; notes: string[] }
 const rows: Row[] = []
@@ -20,7 +26,7 @@ async function call(id: string, args: Record<string, unknown>, note?: (r: Row) =
   const row: Row = { id, args, ok: false, notes: [] }
   try {
     const validated = validateToolArguments(descriptor, args)
-    const res = await handler(validated, { projectPath: DIR, projectId: getProjectId(DIR) })
+    const res = await handler(validated, { projectPath: DIR, projectId })
     const text = res.content.map((c: any) => c.text).join("\n")
     row.text = text
     row.bytes = Buffer.byteLength(text)

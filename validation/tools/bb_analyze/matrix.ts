@@ -119,14 +119,14 @@ await call("stats:default", { mode: "stats" }, (r) => {
 })
 
 // ── 4. complexity ────────────────────────────────────────────────────────────
-await call("complexity:project", { mode: "complexity" })
-await call("complexity:exact-file", { mode: "complexity", target: "src/wide/module_0.ts" })
-await call("complexity:dir-prefix", { mode: "complexity", target: "src/wide" })
-await call("complexity:top-level-dir", { mode: "complexity", target: "src" })
-await call("complexity:symbol-refused", { mode: "complexity", target: hubT1 }, (r) => {
+await call("complexity:project", { mode: "complexity", __tier: "T0" })
+await call("complexity:exact-file", { mode: "complexity", target: "ts-js/src/checkout.ts", __tier: "T0" })
+await call("complexity:dir-prefix", { mode: "complexity", target: "ts-js/src", __tier: "T0" })
+await call("complexity:top-level-dir", { mode: "complexity", target: "java-scala", __tier: "T0" })
+await call("complexity:symbol-refused", { mode: "complexity", target: hubT1, __tier: "T0" }, (r) => {
   r.notes = [`errorFlag=${r.errorFlag} msg=${(r.text ?? "").slice(0, 120)}`]
 })
-await call("complexity:absent-refused", { mode: "complexity", target: "zz/none.ts" })
+await call("complexity:absent-refused", { mode: "complexity", target: "zz/none.ts", __tier: "T0" })
 
 // ── 5. impact ────────────────────────────────────────────────────────────────
 await call("impact:success", { mode: "impact", target: hubT1 }, (r) => {
