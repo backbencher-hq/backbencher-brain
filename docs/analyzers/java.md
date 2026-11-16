@@ -800,3 +800,20 @@ The `java/override-qualified-import-head` regression checks both
 `Decoy.LocalChild implements Decoy.Map.Entry` and
 `ExternalChild implements java.util.Map.Entry`, using a decoy's `marker`
 method to expose a fabricated override. It is compiler-valid Java.
+
+## Suffix fallback requires inherited member visibility
+
+A unique matching type name elsewhere in a Java file does **not** prove it
+is visible as an unqualified superclass. In particular, an unrelated nested
+`Decoy.ArrayList` must never override the binding supplied by
+`import java.util.*`. When lexical, exact, and single-type import
+resolution find no parent, the override resolver now permits a suffix
+candidate only if its declaring type is reachable through the in-file
+inheritance hierarchy of the heritage clause's owner. The walk is bounded
+by visited type identities and never uses regular expressions.
+
+The `java/override-inherited-member-visibility` fixture pins both a
+negative imported-class case and a positive *transitively inherited member
+type* case. This conservatively abstains on externally defined inherited
+member types; the analyzer has no compiler classpath or cross-file type
+table sufficient to prove them.

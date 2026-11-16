@@ -1,0 +1,20 @@
+{
+  "fixtureId": "java/override-inherited-member-visibility",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "An on-demand java.util.* import makes Child extend java.util.ArrayList, not an unrelated Decoy.ArrayList, even if the nested class is the only in-file suffix match. Conversely, Descendant.Nested inherits the member type Ancestor.Inner through Middle and must retain its valid ping override. Both declarations are javac-valid; source-level compiler superclass identity was checked with javap.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Nested.ping",
+      "target": "ping",
+      "meta.declaringType": "Inner"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Child.marker"
+    }
+  ]
+}
