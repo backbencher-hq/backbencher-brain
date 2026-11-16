@@ -347,7 +347,13 @@ async function runPhase(
     // Folded scan: SQL only narrows the rows that get TRANSFERRED, and the
     // accept/reject decision is made in JS with the same toLowerCase() the
     // ranking uses — so the fold rule cannot disagree with the rank rule.
-    const rows = raw.prepare(`${base} AND ${phase.clause} LIMIT ?`).all(projectId, ...params, phase.value, ctx.fetchCap) as Candidate[]
+    // Some phases (e.g. `1 = 1` for substring fallback) carry no `?` in their
+    // clause, so `phase.value` must not be bound — otherwise SQLite rejects
+    // "too many parameter values" for the unused binding.
+    const bindValue = phase.clause.includes("?") ? [phase.value] : []
+    const rows = raw
+      .prepare(`${base} AND ${phase.clause} LIMIT ?`)
+      .all(projectId, ...params, ...bindValue, ctx.fetchCap) as Candidate[]
     return { rows: filterFolded(rows, phase, ctx.query), truncated: rows.length >= ctx.fetchCap }
   }
   if (!phase.substring) {

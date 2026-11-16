@@ -117,20 +117,33 @@ The existing verification gates are thorough on: contract boundaries, provenance
 | Exact symbol with neighbours (limit > 1) — duplicate symbol check | CLOSED by live test; ISSUE 1 fixed |
 | "total X" count queries not reaching the count path | CLOSED by live test; ISSUE 2 fixed |
 | `exactSymbolMatch` missing entityId return | CLOSED; ISSUE 3 fixed |
-| Non-discriminative ranking on exact-symbol route with neighbours | Existing gates cover the retrieval route; exact-symbol route with `scanSkipped=false` (limit > 1) now also verified by live testing |
-| Cross-language aggregate (function vs method union) | Covered by verify-ask-stats.ts A1 |
+#### ISSUE 4: Unicode queries crash with "Too many parameter values were provided" (must-fix) — FIXED
+
+**Root cause:** In `symbol-search.ts` `runPhase`, folded phases with `clause: "1 = 1"` (the substring fallback phase for non-narrow unicode queries) have no `?` placeholder in their SQL clause, but `phase.value` was still passed as a bound parameter. SQLite rejects the extra binding: "Too many parameter values were provided."
+
+**Fix applied:** In `runPhase`, `phase.value` is now only bound when `phase.clause` actually contains a `?` placeholder:
+```typescript
+const bindValue = phase.clause.includes("?") ? [phase.value] : []
+const rows = raw
+  .prepare(`${base} AND ${phase.clause} LIMIT ?`)
+  .all(projectId, ...params, ...bindValue, ctx.fetchCap)
+```
+
+**Verification:** `café`, `ca`, and other unicode queries no longer crash — they return 0 results (explicit unknown) instead of an error. All 7 verification gates pass.
 
 ---
 
 ## 5. Findings — Must-improve (works but could be better)
 
-None identified beyond ISSUE 1–3. The tool is well-engineered, honest about its limits, and read-only.
+None identified beyond ISSUE 1–4. The tool is well-engineered, honest about its limits, and read-only.
 
 ---
 
 ## 6. Summary of changes made
 
-All changes in `src/intelligence/search/quick-answer.ts` only (no docs, descriptor, or handler changes needed):
+Changes in two files:
+
+### `src/intelligence/search/quick-answer.ts` (no docs, descriptor, or handler changes needed):
 
 1. **Line 307:** Return type of `exactSymbolMatch` now includes `entityId: string`
 2. **Line 314:** SQL query now includes `s.id AS entityId`
@@ -138,6 +151,10 @@ All changes in `src/intelligence/search/quick-answer.ts` only (no docs, descript
 4. **Lines 638-639:** Neighbour list filtered by `symbolName/file/line` match instead of unfiltered `slice()`
 5. **Line 484:** Outer count-branch condition uses `has(lowerQuery, "total")` instead of `tokens.includes("total")`
 
+### `src/intelligence/search/symbol-search.ts`:
+
+6. **Lines 346-352:** `runPhase` folded-scan path now conditionally binds `phase.value` only when `phase.clause` contains a `?` placeholder, fixing the "Too many parameter values" crash for unicode substring queries
+
 **Verification results:**
 - All 7 verification gates pass: Contract (27/27), Provenance (27/27), Honesty (30/30), Adversarial (22/22), Integration (15/15), Stats (A1-A4 all VERIFIED), Tool docs (PASS)
-- Live end-to-end testing confirms both bugs are fixed with no regressions
+- Live end-to-end testing confirms all fixes with no regressions across 28+ test cases including unicode, special characters, long queries, single-char queries, exact symbol neighbours, count-by-language, and total-X queries
