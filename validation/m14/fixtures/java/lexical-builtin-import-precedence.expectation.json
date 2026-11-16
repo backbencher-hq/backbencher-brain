@@ -1,0 +1,38 @@
+{
+  "fixtureId": "java/lexical-builtin-import-precedence",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "javac 21 binds Logger.getLogger to explicitly imported java.util.logging.Logger despite an unrelated Decoy.Logger nested type. File-wide typeNames membership is not lexical visibility. The import wins and platform calls remain filtered. The previous local-builtin-name-shadowing fixture is the positive control for genuinely visible project Logger/String types.",
+  "expectSymbols": [
+    {
+      "name": "Caller",
+      "kind": "class"
+    },
+    {
+      "name": "Decoy",
+      "kind": "class"
+    },
+    {
+      "name": "Logger",
+      "kind": "class",
+      "ownerName": "Decoy"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "getLogger"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "println"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "fake"
+    }
+  ]
+}

@@ -617,7 +617,66 @@ const JAVA_LIBRARY_NAMESPACE_CITATIONS: readonly string[] = ["jakarta", "android
  * and must resolve internally instead of being claimed. Both lists are Lead-owned vocabulary
  * (JLS §6.1 reserved roots; `script/m14/citations.ts` `java-platform-libraries`).
  */
-const JAVA_EXTERNAL_STATIC_IMPORT_ROOTS: readonly string[] = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "androidx.", "dotty.tools.", "org.yaml."]
+const JAVA_EXTERNAL_STATIC_IMPORT_ROOTS: readonly string[] = ["java.", "javax.", "jdk.", "sun.", "com.sun."]
+
+// Reuse immutable lookup tables across files and call sites; the old per-call
+// allocations were unnecessary on large Java source populations.
+const JAVA_BUILTIN_CALLS: ReadonlySet<string> = new Set([
+      "System.out.println", "System.out.print", "System.out.printf",
+      "System.err.println", "System.err.print",
+      "System.exit", "System.gc", "System.currentTimeMillis",
+      "System.nanoTime", "System.getProperty", "System.getenv",
+      "System.identityHashCode", "System.arraycopy",
+      "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait",
+      "clone", "finalize",
+    ])
+const JAVA_BUILTIN_ROOTS: ReadonlySet<string> = new Set([
+      // java.lang
+      "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
+      "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
+      "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
+      "Throwable", "Error", "Exception", "StackTraceElement",
+      "Enum", "Void", "Compiler", "Package",
+      // java.util
+      "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
+      "LinkedHashMap", "LinkedHashSet", "WeakHashMap", "IdentityHashMap",
+      "Collections", "Arrays", "Objects", "Optional", "OptionalInt",
+      "OptionalLong", "OptionalDouble", "Stream", "Collectors", "Comparator",
+      "Iterator", "ListIterator", "Spliterator", "Random", "UUID",
+      "Date", "Calendar", "TimeZone", "Locale", "Currency",
+      "Base64", "Scanner", "Formatter", "StringJoiner",
+      "AbstractList", "AbstractMap", "AbstractSet", "AbstractCollection",
+      "EnumMap", "EnumSet", "Queue", "Deque", "Stack", "Vector",
+      "Hashtable", "Properties", "BitSet", "Dictionary",
+      "List", "Map", "Set", "Collection", "Iterable",
+      // java.io / java.nio
+      "File", "Files", "Path", "Paths", "InputStream", "OutputStream",
+      "Reader", "Writer", "BufferedReader", "BufferedWriter",
+      "FileInputStream", "FileOutputStream", "FileReader", "FileWriter",
+      "ByteArrayInputStream", "ByteArrayOutputStream",
+      "StringReader", "StringWriter", "PrintWriter", "PrintStream",
+      "IOException", "FileNotFoundException", "EOFException",
+      // java.net / java.sql / javax
+      "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
+      "Connection", "DriverManager", "ResultSet", "Statement",
+      "PreparedStatement", "SQLException", "DataSource",
+      "javax",
+      // kotlin stdlib
+      "kotlin", "Unit", "Nothing", "Any", "Int", "String",
+      // Common JDK prefixes
+      "java", "jdk", "sun",
+      // Logger frameworks (always stdlib when called by these names)
+      "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
+      "Marker", "MDC", "NDC",
+      // Common annotations (never architectural)
+      "Override", "Deprecated", "SuppressWarnings", "SafeVarargs",
+      "FunctionalInterface", "Nullable", "NotNull", "NonNls",
+      "Test", "Before", "After", "BeforeClass", "AfterClass", "Ignore",
+      "RunWith", "Suite", "Parameterized",
+      // org.slf4j / logging
+      "slf4j", "log4j", "logback",
+    ])
+
 
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
@@ -688,7 +747,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (isExit) {
         if (parentContext) {
-          this.processPhantomSymbols(parentContext, symbols, symbolMap, frameworks)
+          this.processPhantomSymbols(parentContext, symbols, symbolMap, receiverTypes)
           if (scopeStack.length > 0 && scopeStack[scopeStack.length - 1] === parentContext) {
             scopeStack.pop()
           }
@@ -1810,7 +1869,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       else if (type === "method_invocation") {
          const callExpression = this.buildJavaCallExpression(node)
-         if (callExpression && !this.isJavaBuiltin(callExpression)) {
+         if (callExpression && !this.isJavaBuiltin(callExpression, receiverTypes, node, context?.projectIndex)) {
             // RECEIVER TYPING (owner contract 2026-10-18): the declared type of the
             // receiver, when the file itself states it. Additive metadata only —
             // see the JavaReceiverTypeIndex contract above the class for what is
@@ -2610,7 +2669,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // IMPORTED-BINDING CLAIM (Lead imported-binding claim kind, 2026-10-19): static single-member
     // imports bind names the file uses unqualified; the claim states exactly that and the arbiter
     // verifies it from the run's OWN import evidence published below.
-    this.attachJavaImportedBindingClaims(relationships, symbols, receiverTypes)
+    this.attachJavaImportedBindingClaims(relationships, symbols, receiverTypes, context?.projectIndex)
     // THE EXTERNAL SINGLE-TYPE-IMPORT BINDING CLAIM (java lane, 2026-10-20): the same claim
     // shape the static-import arm proved (391 claims, bindFAIL 0), applied to the OTHER import
     // form java has. `import java.util.List;` binds the simple name `List` (JLS 6.4.1), and the
@@ -3269,17 +3328,22 @@ currentPackage,
     scope: any, 
     symbols: ASTEngine.UniversalSymbol[], 
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
-    frameworks: Record<string, boolean>
+    index: JavaReceiverTypeIndex,
   ) {
-    const isSpringData = frameworks["spring_data"] || frameworks["spring"]
-
-    if (isSpringData && scope.isInterface) {
-      let isRepo = false
-      for (let i = 0; i < scope.parents.length; i++) {
-         if (scope.parents[i].indexOf("JpaRepository") !== -1 || scope.parents[i].indexOf("CrudRepository") !== -1) {
-            isRepo = true; break;
-         }
-      }
+    // Derive framework identity from the written import (or a qualified
+    // heritage name). A mere JpaRepository/CrudRepository suffix does not
+    // identify Spring Data: user code may declare types with those names.
+    const springRepositoryPaths = new Set([
+      "org.springframework.data.jpa.repository.JpaRepository",
+      "org.springframework.data.repository.CrudRepository",
+    ])
+    const isSpringRepositoryParent = (written: string): boolean => {
+      if (springRepositoryPaths.has(written)) return true
+      if (written.includes(".")) return false
+      return springRepositoryPaths.has(index.importSinglePaths.get(written) ?? "")
+    }
+    if (scope.isInterface) {
+      const isRepo = scope.parents.some((parent: string) => isSpringRepositoryParent(parent))
       if (isRepo) {
         const defaultMethods = ["save", "findById", "findAll", "deleteById", "delete", "count"]
         for (let j = 0; j < defaultMethods.length; j++) {
@@ -3315,17 +3379,17 @@ currentPackage,
       let isDataOrSetter = false
       for (let i = 0; i < scope.annotations.length; i++) {
          const d = scope.annotations[i]
-         // Exact short-name match: the pre-fix substring test (indexOf("Data"))
-         // fired on @Metadata / @Database and indexOf("Getter") on any
-         // annotation ending in Getter — fabricating Lombok accessors for
-         // non-Lombok classes (probe 2026-09-08).
-         let shortName = d.startsWith("@") ? d.slice(1) : d
-         const paren = shortName.indexOf("(")
-         if (paren !== -1) shortName = shortName.slice(0, paren)
-         const lastDot = shortName.lastIndexOf(".")
-         if (lastDot !== -1) shortName = shortName.slice(lastDot + 1)
-         if (shortName === "Data" || shortName === "Getter") isDataOrGetter = true
-         if (shortName === "Data" || shortName === "Setter") isDataOrSetter = true
+         // Annotation SIMPLE names do not prove Lombok identity. Only
+         // lombok.X spelled in source or a corresponding single-type import
+         // licenses a generated accessor claim. Wildcard imports abstain.
+         let written = d.startsWith("@") ? d.slice(1) : d
+         const paren = written.indexOf("(")
+         if (paren !== -1) written = written.slice(0, paren)
+         const resolved = written.includes(".")
+           ? written
+           : index.importSinglePaths.get(written) ?? ""
+         if (resolved === "lombok.Data" || resolved === "lombok.Getter") isDataOrGetter = true
+         if (resolved === "lombok.Data" || resolved === "lombok.Setter") isDataOrSetter = true
       }
 
       if (isDataOrGetter || isDataOrSetter) {
@@ -3333,7 +3397,7 @@ currentPackage,
           const prop = scope.fields[idx]
           const capitalizedName = prop.name.charAt(0).toUpperCase() + prop.name.slice(1)
           
-          if (isDataOrGetter) {
+          if (isDataOrGetter && !symbolMap.has(`${scope.fqn}.get${capitalizedName}()`)) {
             const sym = {
               name: `get${capitalizedName}`,
               kind: ASTEngine.SymbolKind.Method,
@@ -3350,7 +3414,7 @@ currentPackage,
             symbolMap.set(`${scope.fqn}.get${capitalizedName}()`, sym)
           }
 
-          if (isDataOrSetter) {
+          if (isDataOrSetter && !symbolMap.has(`${scope.fqn}.set${capitalizedName}(${prop.returnType || "Object"})`)) {
              const sym = {
               name: `set${capitalizedName}`,
               kind: ASTEngine.SymbolKind.Method,
@@ -3726,13 +3790,22 @@ currentPackage,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     index: JavaReceiverTypeIndex,
+    projectIndex?: ProjectIndex,
   ): void {
     if (index.staticImportPaths.size === 0) return
     const fileDeclared = new Set<string>()
     for (const s of symbols) if (s && s.name) fileDeclared.add(s.name)
     const isExternalContainer = (container: string): boolean => {
+      // A complete project index is authoritative over any lexical namespace
+      // convention. For ordinary, project-ownable namespaces (jakarta,
+      // androidx, org.yaml, dotty.tools) absence of that proof abstains.
+      if (projectIndex?.complete === true &&
+          (projectIndex.typeKinds.has(container) || projectIndex.symbolNames.has(container))) return false
       for (const root of JAVA_EXTERNAL_STATIC_IMPORT_ROOTS) if (container.startsWith(root)) return true
-      for (const root of JAVA_LIBRARY_NAMESPACE_CITATIONS) if (container.startsWith(`${root}.`)) return true
+      if (projectIndex?.complete !== true) return false
+      for (const root of JAVA_LIBRARY_NAMESPACE_CITATIONS) {
+        if (container.startsWith(`${root}.`)) return true
+      }
       return false
     }
     // 1) evidence on the import edges
@@ -3951,12 +4024,14 @@ currentPackage,
       if (md.languageNamespace !== undefined) continue
       const target = String(r.target ?? "")
       if (target.length === 0) continue
+      // An existing project declaration is not an external citation, and
+      // must not abort the other independent citation sites in this file.
+      if (projectOwnsQualified(target)) continue
       for (const root of roots) {
         if (target !== root && !target.startsWith(`${root}.`)) continue
         // THE PROJECT'S OWN KEY SPACE WINS. `dotty.tools.dotc.reporting.Diagnostic` is a
         // REGISTRY-rooted path AND scala3's own class in that repo; the citation must not
         // launder a project reference into extOK.
-        if (projectOwnsQualified(target)) return
         md.languageNamespace = [root]
         break
       }
@@ -3972,7 +4047,7 @@ currentPackage,
       if (!importedPath) continue
       for (const root of roots) {
         if (!importedPath.startsWith(`${root}.`)) continue
-        if (projectOwnsQualified(importedPath)) return
+        if (projectOwnsQualified(importedPath)) break
         md.languageNamespace = [target]
         break
       }
@@ -5046,7 +5121,10 @@ currentPackage,
     if (value.type === "method_invocation") {
       const nameNode = value.childForFieldName("name")
       const name = nameNode ? nameNode.text : ""
-      if (!name || this.isJavaBuiltin(name)) return null
+      if (!name) return null
+      // A locally declared method's return type is stronger evidence than a
+      // conventional builtin spelling (for example a user method toString()).
+      if (this.isJavaBuiltin(name) && !index.methodReturns.has(name)) return null
       const returns = index.methodReturns.get(name)
       return returns && returns.size === 1 ? [...returns][0] : null
     }
@@ -5394,7 +5472,10 @@ currentPackage,
     if (objectNode.type === "method_invocation") {
       const nameNode = objectNode.childForFieldName("name")
       const name = nameNode ? nameNode.text : null
-      if (!name || this.isJavaBuiltin(name)) return null
+      if (!name) return null
+      // A locally declared method's return type is stronger evidence than a
+      // conventional builtin spelling (for example a user method toString()).
+      if (this.isJavaBuiltin(name) && !index.methodReturns.has(name)) return null
       const returns = index.methodReturns.get(name)
       // ONE distinct declared return type or nothing: an overload set with
       // differing return types is not resolvable from the name alone.
@@ -5770,90 +5851,73 @@ currentPackage,
     return nameNode.text
   }
 
-  private isJavaBuiltin(call: string): boolean {
-    // Exact builtin patterns (common JDK calls with known full paths)
-    const builtins = [
-      "System.out.println", "System.out.print", "System.out.printf",
-      "System.err.println", "System.err.print",
-      "System.exit", "System.gc", "System.currentTimeMillis",
-      "System.nanoTime", "System.getProperty", "System.getenv",
-      "System.identityHashCode", "System.arraycopy",
-      "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait",
-      "clone", "finalize",
-    ]
-    for (let i = 0; i < builtins.length; i++) {
-      if (builtins[i] === call) return true
+  /**
+   * Is a type name lexically visible at this use site? Same-name nested
+   * types in UNRELATED classes are not visible, even when this file's
+   * global type-name index contains their leaf.
+   *
+   * Restrict this to lexical declarations. Imported types and project-index
+   * declarations are handled separately by the call filter.
+   */
+  private javaLexicalTypeVisible(name: string, site: Node): boolean {
+    const isType = (type: string): boolean =>
+      type === "class_declaration" || type === "interface_declaration" ||
+      type === "enum_declaration" || type === "record_declaration" ||
+      type === "annotation_type_declaration"
+    for (let cursor: Node | null = site; cursor; cursor = cursor.parent) {
+      if (isType(cursor.type) && cursor.childForFieldName("name")?.text === name) return true
+      let container: Node | null = null
+      if (cursor.type === "program") container = cursor
+      else if (isType(cursor.type)) {
+        container = this.findChildByType(cursor, "class_body") ||
+          this.findChildByType(cursor, "interface_body") ||
+          this.findChildByType(cursor, "enum_body") ||
+          this.findChildByType(cursor, "annotation_type_body")
+      }
+      if (!container) continue
+      for (let i = 0; i < container.namedChildCount; i++) {
+        const candidate = container.namedChild(i)
+        if (candidate && isType(candidate.type) &&
+            candidate.childForFieldName("name")?.text === name) return true
+      }
     }
-    // Prefix-based stdlib filtering: first segment identifies the class/package.
-    // These are unambiguous — java.*, javax.*, kotlin.*, and common JDK classes.
-    const firstDot = call.indexOf(".")
-    const root = firstDot > 0 ? call.slice(0, firstDot) : call
-    const STDLIB_ROOTS = new Set([
-      // java.lang
-      "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
-      "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
-      "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
-      "Throwable", "Error", "Exception", "StackTraceElement",
-      "Enum", "Void", "Compiler", "Package",
-      // java.util
-      "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
-      "LinkedHashMap", "LinkedHashSet", "WeakHashMap", "IdentityHashMap",
-      "Collections", "Arrays", "Objects", "Optional", "OptionalInt",
-      "OptionalLong", "OptionalDouble", "Stream", "Collectors", "Comparator",
-      "Iterator", "ListIterator", "Spliterator", "Random", "UUID",
-      "Date", "Calendar", "TimeZone", "Locale", "Currency",
-      "Base64", "Scanner", "Formatter", "StringJoiner",
-      "AbstractList", "AbstractMap", "AbstractSet", "AbstractCollection",
-      "EnumMap", "EnumSet", "Queue", "Deque", "Stack", "Vector",
-      "Hashtable", "Properties", "BitSet", "Dictionary",
-      "List", "Map", "Set", "Collection", "Iterable",
-      // java.io / java.nio
-      "File", "Files", "Path", "Paths", "InputStream", "OutputStream",
-      "Reader", "Writer", "BufferedReader", "BufferedWriter",
-      "FileInputStream", "FileOutputStream", "FileReader", "FileWriter",
-      "ByteArrayInputStream", "ByteArrayOutputStream",
-      "StringReader", "StringWriter", "PrintWriter", "PrintStream",
-      "IOException", "FileNotFoundException", "EOFException",
-      // java.net / java.sql / javax
-      "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
-      "Connection", "DriverManager", "ResultSet", "Statement",
-      "PreparedStatement", "SQLException", "DataSource",
-      "javax", "jakarta",
-      // kotlin stdlib
-      "kotlin", "Unit", "Nothing", "Any", "Int", "String",
-      // Common JDK prefixes
-      "java", "jdk", "sun",
-      // Logger frameworks (always stdlib when called by these names)
-      "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
-      "Marker", "MDC", "NDC",
-      // Common annotations (never architectural)
-      "Override", "Deprecated", "SuppressWarnings", "SafeVarargs",
-      "FunctionalInterface", "Nullable", "NotNull", "NonNls",
-      "Test", "Before", "After", "BeforeClass", "AfterClass", "Ignore",
-      "RunWith", "Suite", "Parameterized",
-      // org.slf4j / logging
-      "slf4j", "log4j", "logback",
-    ])
-    // M37.21 C5: check the ROOT segment ONLY. The previous per-segment walk
-    // dropped user calls like com.mycompany.Service.doWork (segment "com")
-    // and foo.Logger.bar (segment "Logger") as stdlib — root-prefix is the
-    // JLS-meaningful resolution key for a qualified name.
-    //
-    // M49.J3 (reviewer wave): "org" and "com" are NOT meaningful roots —
-    // com.sun (JDK) vs com.mycompany (user) differ completely, same for
-    // org.w3c vs org.acme — so they are REMOVED from the root set above.
-    // Fully-qualified calls like org.apache.commons.io.FileUtils.readFile(...)
-    // now emit user-call edges. Over-emission of third-party stdlib FQ calls
-    // is the honest error direction (the differential compares targets, so an
-    // extra edge is truth-covered or honestly heuristic; a DROPPED user call
-    // is silent truth loss). Bare org.slf4j.LoggerFactory calls still filter
-    // via the exact-name roots below. Under-filtering of static-imported bare
-    // names (assertEquals, println) remains a known, accepted behavior
-    // (emitting them as user calls is conservative).
-    const segments = call.split(".")
-    if (segments.length > 0 && STDLIB_ROOTS.has(segments[0])) return true
-    if (STDLIB_ROOTS.has(call)) return true
     return false
+  }
+
+  /** A JDK-looking name is not evidence that a call binds to the JDK. */
+  private isJavaBuiltin(
+    call: string,
+    index?: JavaReceiverTypeIndex,
+    site?: Node,
+    projectIndex?: ProjectIndex,
+  ): boolean {
+    const dot = call.indexOf(".")
+    const root = dot >= 0 ? call.slice(0, dot) : call
+    const historicallyBuiltin = JAVA_BUILTIN_CALLS.has(call) || JAVA_BUILTIN_ROOTS.has(root)
+    if (!historicallyBuiltin) return false
+    if (index) {
+      if (dot >= 0) {
+        if (site && this.javaLexicalTypeVisible(root, site)) return false
+        // A variable/field receiver shadows an imported type name.
+        if (site && this.javaResolveIdentifierBinding(root, site.startIndex, index)) return false
+        // A named single-type import binds this type unless a nearer lexical
+        // declaration or variable won above. An unrelated nested declaration
+        // elsewhere in this compilation unit cannot defeat that import.
+        const imported = index.importSinglePaths.get(root)
+        if (imported) {
+          if (!imported.startsWith("java.") && !imported.startsWith("javax.") &&
+              !imported.startsWith("jdk.") && !imported.startsWith("sun.")) return false
+          return historicallyBuiltin
+        }
+        // Only a type, not a coincidentally named field/method, counts as
+        // a declaration of a conventionally named class in another file.
+        if (projectIndex?.complete === true && projectIndex.typeKinds.has(root)) return false
+      } else if (site) {
+        const enclosing = this.javaEnclosingTypeScope(index, site.startIndex)
+        if (enclosing?.methodNames?.has(call)) return false
+      }
+    }
+    return historicallyBuiltin
   }
 
   /**
@@ -5899,7 +5963,9 @@ currentPackage,
     // marker may make, so kotlin/kotlinx targets now stay UNCLAIMED (honest unresolved rows) instead
     // of being excused by a per-file marker. The cost is measured, not hidden: 225 verified claims
     // and 29 refuted ones move from the claim columns to unresolved, and `extFAIL` gains 0.
-    const JVM_ROOTS = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun."]
+    // jakarta.* is project-ownable; absence of a project symbol is not a
+    // JVM/platform proof. The evidence-aware citation channel handles it.
+    const JVM_ROOTS = ["java.", "javax.", "jdk.", "sun.", "com.sun."]
 
     const isJvmModule = (name: string): boolean => JVM_ROOTS.some((r) => name.startsWith(r))
 
@@ -5940,8 +6006,11 @@ currentPackage,
       if (target.length === 0) continue
       const md = (r.metadata ?? (r.metadata = {})) as Record<string, unknown>
       if (md.isExternalTarget === true) continue
-      // A name this file declares is project code, whatever it is called.
+      // A name this file or the complete project declares is project code,
+      // regardless of whether its spelling resembles a library namespace.
       if (declared.has(target)) continue
+      if (context?.projectIndex?.complete === true &&
+          (context.projectIndex.typeKinds.has(target) || context.projectIndex.symbolNames.has(target))) continue
 
       // THE PAIRED IMPORT MENTION — the narrow claim. An `import_declaration_mention` references edge
       // carries the same module path as its `imports` sibling, and the claim is its evidence. It is

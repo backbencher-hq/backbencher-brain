@@ -1,0 +1,49 @@
+{
+  "fixtureId": "java/local-builtin-name-shadowing",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Compiler-valid Java: a same-file Logger type, same-file String type and locally declared equals(int) method must retain AST calls even when conventional JDK names collide. Actual platform System.out.println and fully qualified java.util.Objects calls remain filtered in the historical model. The receiver/declaration prepass works irrespective of declaration ordering.",
+  "expectSymbols": [
+    {
+      "name": "Logger",
+      "kind": "class"
+    },
+    {
+      "name": "String",
+      "kind": "class"
+    },
+    {
+      "name": "App",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "audit"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "custom"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "equals"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "println"
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "requireNonNull"
+    }
+  ]
+}

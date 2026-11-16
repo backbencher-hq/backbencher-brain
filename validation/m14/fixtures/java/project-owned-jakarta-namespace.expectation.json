@@ -1,0 +1,45 @@
+{
+  "fixtureId": "java/project-owned-jakarta-namespace",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Compiler-valid Java under a project-owned jakarta.* package. A namespace prefix alone cannot prove that declarations are external; the analyzer should preserve local calls and refuse isExternalTarget on the project-owned FQN.",
+  "expectSymbols": [
+    {
+      "name": "Owned",
+      "kind": "class"
+    },
+    {
+      "name": "Consumer",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "work"
+    },
+    {
+      "type": "instantiates",
+      "target": "jakarta.project.Owned",
+      "meta.isExternalTarget": null
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "work",
+      "meta.isExternalTarget": null
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "work",
+      "meta.importedBinding": {
+        "specifier": "jakarta.project.Owned",
+        "binding": "work"
+      }
+    }
+  ]
+}

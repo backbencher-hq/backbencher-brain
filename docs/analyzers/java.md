@@ -1,5 +1,8 @@
 # java.md
 
+> **CURRENT JAVA LANE STATUS (2026-11-16, main after remediation).** This file is an historical engineering log, with sections written against older repository states. For current behavioral contracts, corrections, explicitly unmeasured gates, and source-backed limits, read [JAVA-STATE](../../validation/m14/verification/JAVA-STATE.md) and [JAVA-REMEDIATION](../../validation/m14/verification/JAVA-REMEDIATION-2026-11-16.md). The independent agent reported **89/89 Java fixtures** at commit `91d1401a`; **four new fixtures** now exist in the current remediation batch and the expected total is **93**, not yet tested end-to-end. The pinned corpus and GitHub CI are NOT certified at this head. Several older document links target evidence files absent from this checkout; their figures must not be treated as reproducible current measurements.
+
+
 ## Language
 
 - Analyzer file: `src/ast/real-java-analyzer.ts`
@@ -36,7 +39,7 @@
 | kind | ✅ | `mapTypeToSymbolKind`: class/record/annotation → `Class`; interface → `Interface`; enum → `Enum`; `enum_constant` → `EnumMember`; methods → `Method`; constructors → `Constructor`; fields → `Property`, or `Constant` when `static final`. The nine `SymbolKind` values this analyzer constructs, re-measured 2026-10-02: `Class`, `Constant`, `Constructor`, `Enum`, `EnumMember`, `Interface`, `Method`, `Property`, `Type` |
 | qualified/container name | ✅ | FQN built from `package_declaration` (scoped_identifier) + enclosing scopes (`buildFqn`) |
 | ownerName / ownerKind | ✅ | Parent scope name/kind captured during the single-pass walk |
-| range (start/end line + column) | ✅ | `nodeToRange` from `startPosition`/`endPosition` (node-start convention: annotation line for annotated declarations, matching M11) |
+| range (start/end line + column) | ✅ | `symbolRange` / `declarationLineNode` use the declaration name (not the annotation) for ordinary symbols; AST node range is retained for expression sites. Historic M11 annotation-start text is superseded by M59. |
 | parameters | ✅ | `formal_parameters` → `formal_parameter` → `name` + `type` fields. **Record components are read from `formal_parameters` too, not from a `record_parameters` node** — this file previously named `record_parameters`, which does not occur anywhere in the analyzer; tree-sitter-java models record components as formal parameters, and a varargs component parses as `spread_parameter` whose name lives in the trailing `variable_declarator` rather than in a `name` field. ERROR-node fallback for malformed text |
 | returnType / type | ✅ | `method_declaration` field `type`; `field_declaration` type child |
 | documentation/comments | ✅ | **This row previously read "❌ (not emitted)". That was wrong.** The analyzer sets `comments: [javadoc]` on class-like symbols (line 455), methods (line 796) and fields (line 993), from tree-sitter-java's `line_comment` / `block_comment` nodes (line 1050). The M14 #383 note in the source records the defect this repaired: java method symbols used to carry no comments and the docstrings were silently lost |
@@ -62,7 +65,7 @@ serialises to `"extends"`, `Implementation` to `"implements"`, and `Imports` to
 | instantiates | ✅ | `object_creation_expression` → `type_identifier`; plus PascalCase `method_invocation` heuristics | 0.95 (typed), 0.6 (heuristic) |
 | uses | ✅ | field accesses resolved to the enclosing METHOD (M49 W15 #814: `this`/`super` receivers used to resolve to the enclosing type, the JAD2 exception, which the family-wide ruling removed — a class-level read falls back to the type); Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access, 1.0 framework-derived, 1.0/0.6 conditional on `tableNameIsDeclared` / `columnNameIsDeclared` |
 | exports | ✅ | public top-level symbols; Spring MVC endpoints (`Exports` with route, httpMethod) | 1.0 |
-| overrides | ✅ | Walks in-file ancestors and compares parameter signatures after substituting declared class type arguments. For an explicit `@Override` with an external parent, the companion index suggests a declaring type from method names, or the analyzer guesses the first unresolved parent. | `exact-in-file` 1.0, `generic-substitution` 0.9, `companion-index` 0.65, `first-parent-guess` 0.5. Method type-parameter compatibility and raw-type erasure are outside the substitution check. |
+| overrides | ✅ | Walks in-file ancestors and compares parameter signatures after substituting declared class type arguments. For an explicit `@Override` with an external parent, the companion index suggests a declaring type from method names, or the analyzer guesses the first unresolved parent. | `exact-in-file` 1.0, `generic-substitution` 0.9, `companion-index` 0.65, `first-parent-guess` 0.5. Unbounded method type-variable alpha-equivalence and equal normalized generic return types are supported since November 2026; bounded method constraints, full return covariance, and erasure across files remain unproven. |
 | references | ✅ | import edges and the post-pass that rewrites their source from the package name to the file's primary type (first top-level class/interface/enum); also type references (`references:getStatus:String`, `references:Mapper:B`, `references:genericBound:T` in the recorded differential) | 0.9, 0.95, 1.0 |
 | contains | ✅ | owner → owned symbols (deduped against engine-generated contains in `storeResults`) | 1.0, or 0.6 when the member is a phantom |
 | **imports** | ✅ **EMITTED** | `import_declaration` → the module name as a `RelationshipType.Imports` edge at **1.0** (`metadata.relationshipType: "import_declaration"`, `isWildcard`/`isStatic`), **and** an `ImportInfo[]` entry on the import-site channel; a JLS 7.7.1 `requires` clause is the same edge (1.0, **0.9** for `requires static`, which is optional at compile time). The same directive also publishes the dotted path as a `references` edge at 0.9 — the family's deliberate pairing: `imports` is the DEPENDENCY, `references` is the MENTION. This row read "**never referenced by this analyzer**" from 2026-10-02, which was true of the analyzer that correction was written against and was falsified by the import-edge work that followed it; re-read against the source 2026-10-16 | 1.0 (import, module `requires`), 0.9 (`requires static`) |
@@ -119,7 +122,7 @@ direction; the full before/after tables and the intent census are in
 - Generic classes/interfaces: `Repository<T>`, `BaseService<UserService.User>` — inheritance
   targets stripped of type args (`extractJavaTypeBaseName`) so `extends`/`implements` resolve to
   real symbols — `UserService.java`
-- Methods, constructors (named `constructor`), overloads (signature-keyed FQN),
+- Methods, constructors (named after their declaring class, **not** the literal `constructor`), overloads (signature-keyed internal FQN),
   abstract/default methods — `AdvancedFeatures.java`
 - Annotations: Spring bean markers, `@Entity`/`@Table` (table mapping), JPA
   column/relation mappings, `@RequestMapping`/`@GetMapping`-family routes (class base path +
@@ -921,3 +924,85 @@ existing two fixtures are unchanged: they serve as independent regression
 tests for this fix. This is a correction of a confirmed false negative, not
 evidence of full bounded-generic or cross-file resolution. See
 `validation/m14/verification/JAVA-STATE.md` for the verification status.
+
+## 2026-11-16 remediation: name-shadowing and call emission
+
+The old builtin filter suppressed ALL `Logger.*`, `String.*`, and
+bare `equals` calls before considering project declarations. Java permits
+all of those names in application code. The call reader now gives positive
+in-file type/method declarations, explicit non-JDK imports, typed receiver
+bindings, and complete-project type names precedence over the static
+builtin spelling list. Lookup tables are shared rather than allocated on
+every call. The deliberately narrow fallback still omits ordinary JDK calls
+where no ownership evidence exists; without a complete project index,
+an unimported class with a conventional JDK name in ANOTHER file may still
+be unrecognized. That remains a declared cross-file coverage gap.
+
+Regression: `java/local-builtin-name-shadowing` (valid with `javac`).
+
+## 2026-11-16 remediation: framework symbol identity
+
+Synthetic Lombok accessors now require either `@lombok.Data`,
+`@lombok.Getter`, `@lombok.Setter`, or an explicit matching
+single-type import and bare annotation spelling. An unrelated local
+`@interface Data` has no Lombok semantics; a wildcard import gives
+insufficient binding evidence, so the analyzer abstains.
+
+Spring Data repository phantom methods now require the ancestor to
+resolve to the actual `org.springframework.data.jpa.repository.JpaRepository`
+or `org.springframework.data.repository.CrudRepository` through an
+explicit single-type import or written FQN, rather than merely sharing
+its leaf name. If a matching accessor is explicitly declared in the
+same class, an extra phantom with the same signature is not generated.
+
+Regression `java/framework-annotation-identity` is valid Java with
+locally declared lookalikes. Existing `java/phantom-contains-lines`
+continues to pin the imported Lombok/Spring positive claims. These
+are hypotheses about annotation processors, not a compiler's proof
+of generated bytecode; real Lombok modes, boolean getters and fluent
+accessors remain outside the syntax-only model.
+
+## 2026-11-16 remediation: project ownership over namespace conventions
+
+The external-target classifier no longer classifies every `jakarta.*`
+reference as a JVM-owned dependency. Unlike `java.*`, third-party
+namespace roots such as `jakarta`, `androidx`, `org.yaml`, and
+`dotty.tools` are project-ownable. The library-citation channel
+requires a *complete* project index and refuses a project-owned
+qualified target. Static-import evidence for those roots now follows
+the same proof rule; when the index is absent the analyzer abstains
+rather than falsely asserting that a project member is external.
+
+The citation walk also fixes an early-function-return: project-owned
+targets are skipped individually, rather than suppressing independent
+citations for the rest of the file. The existing
+`java/library-import-binding` fixture's jakarta expectations were
+corrected because that fixture supplies no complete project index;
+the unqualified call and import remain, but their external claim is
+unproven. `java/project-owned-jakarta-namespace` pins the direct
+project-owned case. Actual fully indexed, cross-file namespace binding
+remains subject to a whole-project gate; prefix-only resolution is not
+used as proof of Java package ownership.
+
+## 2026-11-16 call-filter lexical shadowing correction
+
+The project-first builtin filter initially consulted the entire file's
+set of type names. That is unsound for nested declarations: an
+unrelated `Decoy.Logger` does not bind `Logger` in a sibling type,
+especially when the source explicitly imports
+`java.util.logging.Logger`.
+
+`javaLexicalTypeVisible` now restricts same-file evidence to visible
+enclosing and sibling member/top-level declarations; actual in-scope
+variable receivers take precedence over imported type names, and a
+single-type import takes precedence over unrelated nested names.
+Only a real project type (not a merely same-named field or method)
+can override the builtin filter through the complete project index.
+The lexical check runs only for calls whose spellings match the
+historical builtin-name lists, preserving ordinary-call throughput.
+
+New compiler-valid negative regression:
+`java/lexical-builtin-import-precedence`. The positive companion is
+`java/local-builtin-name-shadowing`. The receiver-type model still
+does not constitute full javac name binding across compilation units;
+that remains a documented limitation, not a 100% proof.
