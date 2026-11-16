@@ -786,3 +786,17 @@ Regression: `validation/m14/fixtures/java/override-single-type-import-shadow.jav
 and its expectation file. The fixture is valid Java: `ImportedChild` extends
 `java.util.ArrayList`, while `Decoy.LocalChild` extends
 `Decoy.ArrayList`. These declarations must never share an override target.
+
+## Qualified type names with an imported outer type
+
+For a heritage name such as `Map.Entry` under `import java.util.Map`,
+the single-type import binds the **first** name. Override resolution
+qualifies the rest of the written member chain under that imported type
+before considering any similarly named nested types in the compilation unit.
+Lexical member types remain higher priority. If the qualified imported
+ancestor is outside the file, no in-file override is asserted.
+
+The `java/override-qualified-import-head` regression checks both
+`Decoy.LocalChild implements Decoy.Map.Entry` and
+`ExternalChild implements java.util.Map.Entry`, using a decoy's `marker`
+method to expose a fabricated override. It is compiler-valid Java.

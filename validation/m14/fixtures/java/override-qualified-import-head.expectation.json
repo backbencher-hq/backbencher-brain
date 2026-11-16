@@ -1,0 +1,20 @@
+{
+  "fixtureId": "java/override-qualified-import-head",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "With import java.util.Map, Map.Entry names the imported type for an external class; an unrelated Decoy.Map.Entry is not its ancestor. Within Decoy, the enclosing Decoy.Map shadows the imported Map and LocalChild.marker implements Decoy.Map.Entry.marker. Confirmed with javac -p javap; the resolver must not use suffix identity as a substitute for import binding.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "LocalChild.marker",
+      "target": "marker",
+      "meta.declaringType": "Entry"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "ExternalChild.marker"
+    }
+  ]
+}
