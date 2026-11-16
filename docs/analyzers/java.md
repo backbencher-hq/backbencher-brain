@@ -901,3 +901,23 @@ above is no longer true. The first batch's two new generic-method
 fixtures are compiler-valid, but complete Java-fixture verification,
 fresh M12 and pinned corpus remain unmeasured here. CI is currently
 disabled by `if: false` gates in three workflows.
+
+## Independent batch audit — non-generic owner method override guard
+
+The initial 2026-11-16 method-generic alpha-equivalence batch was audited
+at `8ff51ba737ffa8320d421c5233c95b18e70a73e8`.
+The independent M14 run reported **87/89 fixtures passing**:
+`java/override-unbounded-method-alpha-equivalence` and
+`java/override-generic-method-return-consistency` each lacked three
+interface override edges. The precise cause was a structured-method-loop
+guard requiring `variables.length > 0`, where `variables` denotes
+**class** generic variables. Ordinary interfaces with **generic methods**
+have zero class variables, so that guard skipped valid comparisons.
+
+The guard now checks method accessibility/staticness only; the already
+present method-generic logic decides whether type-variable substitution,
+alpha-equivalence and return compatibility prove an override. The
+existing two fixtures are unchanged: they serve as independent regression
+tests for this fix. This is a correction of a confirmed false negative, not
+evidence of full bounded-generic or cross-file resolution. See
+`validation/m14/verification/JAVA-STATE.md` for the verification status.
