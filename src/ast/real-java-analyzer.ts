@@ -5852,14 +5852,39 @@ currentPackage,
   }
 
   /**
-   * Skip a conventional platform call ONLY when the parse/index cannot
-   * identify a project declaration which could own its spelling.
+   * Is a type name lexically visible at this use site? Same-name nested
+   * types in UNRELATED classes are not visible, even when this file's
+   * global type-name index contains their leaf.
    *
-   * Java permits user types called String/Logger/System and methods named
-   * equals/hashCode/toString. A bare name blacklist is not binding evidence.
-   * With no declaration evidence the historical stdlib filter is preserved;
-   * unavailable cross-file scope remains explicitly unverified.
+   * Restrict this to lexical declarations. Imported types and project-index
+   * declarations are handled separately by the call filter.
    */
+  private javaLexicalTypeVisible(name: string, site: Node): boolean {
+    const isType = (type: string): boolean =>
+      type === "class_declaration" || type === "interface_declaration" ||
+      type === "enum_declaration" || type === "record_declaration" ||
+      type === "annotation_type_declaration"
+    for (let cursor: Node | null = site; cursor; cursor = cursor.parent) {
+      if (isType(cursor.type) && cursor.childForFieldName("name")?.text === name) return true
+      let container: Node | null = null
+      if (cursor.type === "program") container = cursor
+      else if (isType(cursor.type)) {
+        container = this.findChildByType(cursor, "class_body") ||
+          this.findChildByType(cursor, "interface_body") ||
+          this.findChildByType(cursor, "enum_body") ||
+          this.findChildByType(cursor, "annotation_type_body")
+      }
+      if (!container) continue
+      for (let i = 0; i < container.namedChildCount; i++) {
+        const candidate = container.namedChild(i)
+        if (candidate && isType(candidate.type) &&
+            candidate.childForFieldName("name")?.text === name) return true
+      }
+    }
+    return false
+  }
+
+  /** A JDK-looking name is not evidence that a call binds to the JDK. */
   private isJavaBuiltin(
     call: string,
     index?: JavaReceiverTypeIndex,
@@ -5868,24 +5893,31 @@ currentPackage,
   ): boolean {
     const dot = call.indexOf(".")
     const root = dot >= 0 ? call.slice(0, dot) : call
+    const historicallyBuiltin = JAVA_BUILTIN_CALLS.has(call) || JAVA_BUILTIN_ROOTS.has(root)
+    if (!historicallyBuiltin) return false
     if (index) {
       if (dot >= 0) {
-        // Source declarations take precedence over name-based JDK conventions.
-        if (index.typeNames.has(root)) return false
-        const imported = index.importSinglePaths.get(root)
-        if (imported && !imported.startsWith("java.") && !imported.startsWith("javax.") &&
-            !imported.startsWith("jdk.") && !imported.startsWith("sun.")) return false
+        if (site && this.javaLexicalTypeVisible(root, site)) return false
+        // A variable/field receiver shadows an imported type name.
         if (site && this.javaResolveIdentifierBinding(root, site.startIndex, index)) return false
-        // A complete project index may prove that a conventionally named type
-        // is project-owned even when its declaration is in another file.
-        if (projectIndex?.complete === true &&
-            (projectIndex.typeKinds.has(root) || projectIndex.symbolNames.has(root))) return false
+        // A named single-type import binds this type unless a nearer lexical
+        // declaration or variable won above. An unrelated nested declaration
+        // elsewhere in this compilation unit cannot defeat that import.
+        const imported = index.importSinglePaths.get(root)
+        if (imported) {
+          if (!imported.startsWith("java.") && !imported.startsWith("javax.") &&
+              !imported.startsWith("jdk.") && !imported.startsWith("sun.")) return false
+          return historicallyBuiltin
+        }
+        // Only a type, not a coincidentally named field/method, counts as
+        // a declaration of a conventionally named class in another file.
+        if (projectIndex?.complete === true && projectIndex.typeKinds.has(root)) return false
       } else if (site) {
         const enclosing = this.javaEnclosingTypeScope(index, site.startIndex)
         if (enclosing?.methodNames?.has(call)) return false
       }
     }
-    return JAVA_BUILTIN_CALLS.has(call) || JAVA_BUILTIN_ROOTS.has(root)
+    return historicallyBuiltin
   }
 
   /**

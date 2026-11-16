@@ -983,3 +983,26 @@ unproven. `java/project-owned-jakarta-namespace` pins the direct
 project-owned case. Actual fully indexed, cross-file namespace binding
 remains subject to a whole-project gate; prefix-only resolution is not
 used as proof of Java package ownership.
+
+## 2026-11-16 call-filter lexical shadowing correction
+
+The project-first builtin filter initially consulted the entire file's
+set of type names. That is unsound for nested declarations: an
+unrelated `Decoy.Logger` does not bind `Logger` in a sibling type,
+especially when the source explicitly imports
+`java.util.logging.Logger`.
+
+`javaLexicalTypeVisible` now restricts same-file evidence to visible
+enclosing and sibling member/top-level declarations; actual in-scope
+variable receivers take precedence over imported type names, and a
+single-type import takes precedence over unrelated nested names.
+Only a real project type (not a merely same-named field or method)
+can override the builtin filter through the complete project index.
+The lexical check runs only for calls whose spellings match the
+historical builtin-name lists, preserving ordinary-call throughput.
+
+New compiler-valid negative regression:
+`java/lexical-builtin-import-precedence`. The positive companion is
+`java/local-builtin-name-shadowing`. The receiver-type model still
+does not constitute full javac name binding across compilation units;
+that remains a documented limitation, not a 100% proof.
