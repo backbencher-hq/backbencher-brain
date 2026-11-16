@@ -619,6 +619,65 @@ const JAVA_LIBRARY_NAMESPACE_CITATIONS: readonly string[] = ["jakarta", "android
  */
 const JAVA_EXTERNAL_STATIC_IMPORT_ROOTS: readonly string[] = ["java.", "javax.", "jakarta.", "jdk.", "sun.", "com.sun.", "androidx.", "dotty.tools.", "org.yaml."]
 
+// Reuse immutable lookup tables across files and call sites; the old per-call
+// allocations were unnecessary on large Java source populations.
+const JAVA_BUILTIN_CALLS: ReadonlySet<string> = new Set([
+      "System.out.println", "System.out.print", "System.out.printf",
+      "System.err.println", "System.err.print",
+      "System.exit", "System.gc", "System.currentTimeMillis",
+      "System.nanoTime", "System.getProperty", "System.getenv",
+      "System.identityHashCode", "System.arraycopy",
+      "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait",
+      "clone", "finalize",
+    ])
+const JAVA_BUILTIN_ROOTS: ReadonlySet<string> = new Set([
+      // java.lang
+      "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
+      "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
+      "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
+      "Throwable", "Error", "Exception", "StackTraceElement",
+      "Enum", "Void", "Compiler", "Package",
+      // java.util
+      "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
+      "LinkedHashMap", "LinkedHashSet", "WeakHashMap", "IdentityHashMap",
+      "Collections", "Arrays", "Objects", "Optional", "OptionalInt",
+      "OptionalLong", "OptionalDouble", "Stream", "Collectors", "Comparator",
+      "Iterator", "ListIterator", "Spliterator", "Random", "UUID",
+      "Date", "Calendar", "TimeZone", "Locale", "Currency",
+      "Base64", "Scanner", "Formatter", "StringJoiner",
+      "AbstractList", "AbstractMap", "AbstractSet", "AbstractCollection",
+      "EnumMap", "EnumSet", "Queue", "Deque", "Stack", "Vector",
+      "Hashtable", "Properties", "BitSet", "Dictionary",
+      "List", "Map", "Set", "Collection", "Iterable",
+      // java.io / java.nio
+      "File", "Files", "Path", "Paths", "InputStream", "OutputStream",
+      "Reader", "Writer", "BufferedReader", "BufferedWriter",
+      "FileInputStream", "FileOutputStream", "FileReader", "FileWriter",
+      "ByteArrayInputStream", "ByteArrayOutputStream",
+      "StringReader", "StringWriter", "PrintWriter", "PrintStream",
+      "IOException", "FileNotFoundException", "EOFException",
+      // java.net / java.sql / javax
+      "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
+      "Connection", "DriverManager", "ResultSet", "Statement",
+      "PreparedStatement", "SQLException", "DataSource",
+      "javax", "jakarta",
+      // kotlin stdlib
+      "kotlin", "Unit", "Nothing", "Any", "Int", "String",
+      // Common JDK prefixes
+      "java", "jdk", "sun",
+      // Logger frameworks (always stdlib when called by these names)
+      "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
+      "Marker", "MDC", "NDC",
+      // Common annotations (never architectural)
+      "Override", "Deprecated", "SuppressWarnings", "SafeVarargs",
+      "FunctionalInterface", "Nullable", "NotNull", "NonNls",
+      "Test", "Before", "After", "BeforeClass", "AfterClass", "Ignore",
+      "RunWith", "Suite", "Parameterized",
+      // org.slf4j / logging
+      "slf4j", "log4j", "logback",
+    ])
+
+
 export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -1810,7 +1869,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       else if (type === "method_invocation") {
          const callExpression = this.buildJavaCallExpression(node)
-         if (callExpression && !this.isJavaBuiltin(callExpression)) {
+         if (callExpression && !this.isJavaBuiltin(callExpression, receiverTypes, node, context?.projectIndex)) {
             // RECEIVER TYPING (owner contract 2026-10-18): the declared type of the
             // receiver, when the file itself states it. Additive metadata only —
             // see the JavaReceiverTypeIndex contract above the class for what is
@@ -5046,7 +5105,10 @@ currentPackage,
     if (value.type === "method_invocation") {
       const nameNode = value.childForFieldName("name")
       const name = nameNode ? nameNode.text : ""
-      if (!name || this.isJavaBuiltin(name)) return null
+      if (!name) return null
+      // A locally declared method's return type is stronger evidence than a
+      // conventional builtin spelling (for example a user method toString()).
+      if (this.isJavaBuiltin(name) && !index.methodReturns.has(name)) return null
       const returns = index.methodReturns.get(name)
       return returns && returns.size === 1 ? [...returns][0] : null
     }
@@ -5394,7 +5456,10 @@ currentPackage,
     if (objectNode.type === "method_invocation") {
       const nameNode = objectNode.childForFieldName("name")
       const name = nameNode ? nameNode.text : null
-      if (!name || this.isJavaBuiltin(name)) return null
+      if (!name) return null
+      // A locally declared method's return type is stronger evidence than a
+      // conventional builtin spelling (for example a user method toString()).
+      if (this.isJavaBuiltin(name) && !index.methodReturns.has(name)) return null
       const returns = index.methodReturns.get(name)
       // ONE distinct declared return type or nothing: an overload set with
       // differing return types is not resolvable from the name alone.
@@ -5770,90 +5835,41 @@ currentPackage,
     return nameNode.text
   }
 
-  private isJavaBuiltin(call: string): boolean {
-    // Exact builtin patterns (common JDK calls with known full paths)
-    const builtins = [
-      "System.out.println", "System.out.print", "System.out.printf",
-      "System.err.println", "System.err.print",
-      "System.exit", "System.gc", "System.currentTimeMillis",
-      "System.nanoTime", "System.getProperty", "System.getenv",
-      "System.identityHashCode", "System.arraycopy",
-      "toString", "hashCode", "equals", "getClass", "notify", "notifyAll", "wait",
-      "clone", "finalize",
-    ]
-    for (let i = 0; i < builtins.length; i++) {
-      if (builtins[i] === call) return true
+  /**
+   * Skip a conventional platform call ONLY when the parse/index cannot
+   * identify a project declaration which could own its spelling.
+   *
+   * Java permits user types called String/Logger/System and methods named
+   * equals/hashCode/toString. A bare name blacklist is not binding evidence.
+   * With no declaration evidence the historical stdlib filter is preserved;
+   * unavailable cross-file scope remains explicitly unverified.
+   */
+  private isJavaBuiltin(
+    call: string,
+    index?: JavaReceiverTypeIndex,
+    site?: Node,
+    projectIndex?: ProjectIndex,
+  ): boolean {
+    const dot = call.indexOf(".")
+    const root = dot >= 0 ? call.slice(0, dot) : call
+    if (index) {
+      if (dot >= 0) {
+        // Source declarations take precedence over name-based JDK conventions.
+        if (index.typeNames.has(root)) return false
+        const imported = index.importSinglePaths.get(root)
+        if (imported && !imported.startsWith("java.") && !imported.startsWith("javax.") &&
+            !imported.startsWith("jdk.") && !imported.startsWith("sun.")) return false
+        if (site && this.javaResolveIdentifierBinding(root, site.startIndex, index)) return false
+        // A complete project index may prove that a conventionally named type
+        // is project-owned even when its declaration is in another file.
+        if (projectIndex?.complete === true &&
+            (projectIndex.typeKinds.has(root) || projectIndex.symbolNames.has(root))) return false
+      } else if (site) {
+        const enclosing = this.javaEnclosingTypeScope(index, site.startIndex)
+        if (enclosing?.methodNames?.has(call)) return false
+      }
     }
-    // Prefix-based stdlib filtering: first segment identifies the class/package.
-    // These are unambiguous — java.*, javax.*, kotlin.*, and common JDK classes.
-    const firstDot = call.indexOf(".")
-    const root = firstDot > 0 ? call.slice(0, firstDot) : call
-    const STDLIB_ROOTS = new Set([
-      // java.lang
-      "System", "String", "Integer", "Long", "Double", "Float", "Boolean",
-      "Byte", "Short", "Character", "Math", "StrictMath", "Object", "Class",
-      "Thread", "Runnable", "Runtime", "Process", "ProcessBuilder",
-      "Throwable", "Error", "Exception", "StackTraceElement",
-      "Enum", "Void", "Compiler", "Package",
-      // java.util
-      "ArrayList", "LinkedList", "HashMap", "HashSet", "TreeMap", "TreeSet",
-      "LinkedHashMap", "LinkedHashSet", "WeakHashMap", "IdentityHashMap",
-      "Collections", "Arrays", "Objects", "Optional", "OptionalInt",
-      "OptionalLong", "OptionalDouble", "Stream", "Collectors", "Comparator",
-      "Iterator", "ListIterator", "Spliterator", "Random", "UUID",
-      "Date", "Calendar", "TimeZone", "Locale", "Currency",
-      "Base64", "Scanner", "Formatter", "StringJoiner",
-      "AbstractList", "AbstractMap", "AbstractSet", "AbstractCollection",
-      "EnumMap", "EnumSet", "Queue", "Deque", "Stack", "Vector",
-      "Hashtable", "Properties", "BitSet", "Dictionary",
-      "List", "Map", "Set", "Collection", "Iterable",
-      // java.io / java.nio
-      "File", "Files", "Path", "Paths", "InputStream", "OutputStream",
-      "Reader", "Writer", "BufferedReader", "BufferedWriter",
-      "FileInputStream", "FileOutputStream", "FileReader", "FileWriter",
-      "ByteArrayInputStream", "ByteArrayOutputStream",
-      "StringReader", "StringWriter", "PrintWriter", "PrintStream",
-      "IOException", "FileNotFoundException", "EOFException",
-      // java.net / java.sql / javax
-      "URL", "URI", "HttpURLConnection", "URLEncoder", "URLDecoder",
-      "Connection", "DriverManager", "ResultSet", "Statement",
-      "PreparedStatement", "SQLException", "DataSource",
-      "javax", "jakarta",
-      // kotlin stdlib
-      "kotlin", "Unit", "Nothing", "Any", "Int", "String",
-      // Common JDK prefixes
-      "java", "jdk", "sun",
-      // Logger frameworks (always stdlib when called by these names)
-      "Logger", "LoggerFactory", "LogManager", "Level", "LogRecord",
-      "Marker", "MDC", "NDC",
-      // Common annotations (never architectural)
-      "Override", "Deprecated", "SuppressWarnings", "SafeVarargs",
-      "FunctionalInterface", "Nullable", "NotNull", "NonNls",
-      "Test", "Before", "After", "BeforeClass", "AfterClass", "Ignore",
-      "RunWith", "Suite", "Parameterized",
-      // org.slf4j / logging
-      "slf4j", "log4j", "logback",
-    ])
-    // M37.21 C5: check the ROOT segment ONLY. The previous per-segment walk
-    // dropped user calls like com.mycompany.Service.doWork (segment "com")
-    // and foo.Logger.bar (segment "Logger") as stdlib — root-prefix is the
-    // JLS-meaningful resolution key for a qualified name.
-    //
-    // M49.J3 (reviewer wave): "org" and "com" are NOT meaningful roots —
-    // com.sun (JDK) vs com.mycompany (user) differ completely, same for
-    // org.w3c vs org.acme — so they are REMOVED from the root set above.
-    // Fully-qualified calls like org.apache.commons.io.FileUtils.readFile(...)
-    // now emit user-call edges. Over-emission of third-party stdlib FQ calls
-    // is the honest error direction (the differential compares targets, so an
-    // extra edge is truth-covered or honestly heuristic; a DROPPED user call
-    // is silent truth loss). Bare org.slf4j.LoggerFactory calls still filter
-    // via the exact-name roots below. Under-filtering of static-imported bare
-    // names (assertEquals, println) remains a known, accepted behavior
-    // (emitting them as user calls is conservative).
-    const segments = call.split(".")
-    if (segments.length > 0 && STDLIB_ROOTS.has(segments[0])) return true
-    if (STDLIB_ROOTS.has(call)) return true
-    return false
+    return JAVA_BUILTIN_CALLS.has(call) || JAVA_BUILTIN_ROOTS.has(root)
   }
 
   /**

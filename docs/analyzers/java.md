@@ -921,3 +921,18 @@ existing two fixtures are unchanged: they serve as independent regression
 tests for this fix. This is a correction of a confirmed false negative, not
 evidence of full bounded-generic or cross-file resolution. See
 `validation/m14/verification/JAVA-STATE.md` for the verification status.
+
+## 2026-11-16 remediation: name-shadowing and call emission
+
+The old builtin filter suppressed ALL `Logger.*`, `String.*`, and
+bare `equals` calls before considering project declarations. Java permits
+all of those names in application code. The call reader now gives positive
+in-file type/method declarations, explicit non-JDK imports, typed receiver
+bindings, and complete-project type names precedence over the static
+builtin spelling list. Lookup tables are shared rather than allocated on
+every call. The deliberately narrow fallback still omits ordinary JDK calls
+where no ownership evidence exists; without a complete project index,
+an unimported class with a conventional JDK name in ANOTHER file may still
+be unrecognized. That remains a declared cross-file coverage gap.
+
+Regression: `java/local-builtin-name-shadowing` (valid with `javac`).
