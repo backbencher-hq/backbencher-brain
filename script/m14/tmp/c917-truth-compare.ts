@@ -3,7 +3,7 @@
 // the working tree's for the same file — isolating oracle drift from analyzer drift.
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const head: any = await import(path.resolve("script/m14/tmp/diff-head.ts"))
 const now: any = await import(path.resolve("script/m14/differential.ts"))
 
@@ -15,7 +15,7 @@ const cLang: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-si
 const parser = new P()
 parser.setLanguage(cLang)
 
-const file = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const file = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const src = fs.readFileSync(file, "utf8")
 const root = parser.parse(src).rootNode
 

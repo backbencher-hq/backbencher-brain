@@ -1,20 +1,20 @@
 failed to asynchronously prepare wasm: CompileError: WebAssembly.instantiate(): BufferSource argument is empty
 Aborted(CompileError: WebAssembly.instantiate(): BufferSource argument is empty)
 [WARN] [19:41:22] [ast-engine] core init via locateFile failed, trying default {"wasmFile":"/tmp/bb-ts-core.wasm","error":{}}
-/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2290
+<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2290
       var e = new WebAssembly.RuntimeError(what);
               ^
 
 RuntimeError: Aborted(CompileError: WebAssembly.instantiate(): BufferSource argument is empty). Build with -sASSERTIONS for more info.
-    at abort (/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2290:15)
-    at instantiateArrayBuffer (/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2331:9)
-    at async createWasm (/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2392:22)
-    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:3505:23)
-    at async initializeBinding (/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:3742:15)
-    at async init (/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:3777:15)
-    at async <anonymous> (/home/ishaq2321/mcp/bb-lanes/graphql/src/ast/engine.ts:148:9)
-    at async getParser (/home/ishaq2321/mcp/bb-lanes/graphql/src/ast/engine.ts:763:34)
-    at async parseRaw (/home/ishaq2321/mcp/bb-lanes/graphql/src/ast/engine.ts:1364:16)
-    at async parseWithTimeout (/home/ishaq2321/mcp/bb-lanes/graphql/src/ast/engine.ts:1497:22)
+    at abort (<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2290:15)
+    at instantiateArrayBuffer (<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2331:9)
+    at async createWasm (<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:2392:22)
+    at async <anonymous> (<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:3505:23)
+    at async initializeBinding (<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:3742:15)
+    at async init (<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js:3777:15)
+    at async <anonymous> (<corpus-root>/mcp/bb-lanes/graphql/src/ast/engine.ts:148:9)
+    at async getParser (<corpus-root>/mcp/bb-lanes/graphql/src/ast/engine.ts:763:34)
+    at async parseRaw (<corpus-root>/mcp/bb-lanes/graphql/src/ast/engine.ts:1364:16)
+    at async parseWithTimeout (<corpus-root>/mcp/bb-lanes/graphql/src/ast/engine.ts:1497:22)
 
 Node.js v22.22.1

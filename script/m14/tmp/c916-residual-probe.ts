@@ -3,7 +3,7 @@
 // analyzer level). Characterize each so it can be fixed or registered honestly.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
 const wts: any = await import("web-tree-sitter")
@@ -13,8 +13,8 @@ await P.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/t
 const lang = await L.load(readFileSync(path.join(ROOT, "wasm/tree-sitter-c.wasm")))
 
 const SITES: Array<{ file: string; line: number; target: string; ctx: number }> = [
-  { file: "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c", line: 8752, target: "BufSize", ctx: 8 },
-  { file: "/home/ishaq2321/bb_tests/repositories/sqlite/src/resolve.c", line: 1336, target: "if", ctx: 6 },
+  { file: "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c", line: 8752, target: "BufSize", ctx: 8 },
+  { file: "<corpus-root>/bb_tests/repositories/sqlite/src/resolve.c", line: 1336, target: "if", ctx: 6 },
 ]
 
 for (const s of SITES) {

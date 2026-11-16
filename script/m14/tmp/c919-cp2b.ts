@@ -5,8 +5,8 @@
 //   bun script/m14/tmp/c919-cp2b.ts
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const after = JSON.parse(readFileSync("/tmp/c919-after.json", "utf8"))
 const { RealCppAnalyzer } = await import(path.join(ROOT, "src", "ast", "real-cpp-analyzer.ts"))
 const wts: any = await import("web-tree-sitter")

@@ -5,7 +5,7 @@
 # control that fails must be compared against the last verified revision before
 # it can be called a regression.
 set -u
-BR=/home/ishaq2321/mcp/backbencher-brain
+BR=<corpus-root>/mcp/backbencher-brain
 REV="$1"
 OUT="$2"
 V=/tmp/g841-baseline-build

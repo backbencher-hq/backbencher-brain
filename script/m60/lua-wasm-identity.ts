@@ -10,11 +10,11 @@ import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 import { parseFile } from "../../src/ast/pool-worker"
 import { join } from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const CANDIDATES: Array<[string, string]> = [
   ["wired (wasm/tree-sitter-lua.wasm)", resolveWasmAsset("tree-sitter-lua.wasm")],
-  ["@tree-sitter-grammars/…@0.4.1", "/home/ishaq2321/bb_tests/grammars/npm-0.4.1.wasm"],
-  ["tree-sitter-wasms@0.1.13", "/home/ishaq2321/bb_tests/grammars/tswasms-0.1.13-lua.wasm"],
+  ["@tree-sitter-grammars/…@0.4.1", "<corpus-root>/bb_tests/grammars/npm-0.4.1.wasm"],
+  ["tree-sitter-wasms@0.1.13", "<corpus-root>/bb_tests/grammars/tswasms-0.1.13-lua.wasm"],
 ]
 
 async function main(): Promise<void> {

@@ -11,8 +11,8 @@ const headMod: any = await import(`../../../${TMP}`)
 const curMod: any = await import("../../../src/ast/real-cpp-analyzer")
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 function files(root: string, exts: string[]): string[] {
   const names = exts.map((e) => `-name '${e}'`).join(" -o ")
@@ -37,12 +37,12 @@ for (const [, root, exts] of ROOTS) {
         const k = JSON.stringify([e.target, e.line ?? e.line_number ?? e.metadata?.line, e.metadata?.source ?? e.source ?? ""])
         const n = kb.get(k)
         if (n && n > 0) kb.set(k, n - 1)
-        else if (ty !== "contains" && movedSamples.length < 20) movedSamples.push(`ADDED  ${f.replace("/home/ishaq2321/bb_tests/repositories/", "")} [${ty}] ${JSON.stringify(e)}`)
+        else if (ty !== "contains" && movedSamples.length < 20) movedSamples.push(`ADDED  ${f.replace("<corpus-root>/bb_tests/repositories/", "")} [${ty}] ${JSON.stringify(e)}`)
       }
       for (const [k, n] of kb) {
         if (n <= 0) continue
         if (ty === "contains") { movedContains += n; continue }
-        if (movedSamples.length < 20) movedSamples.push(`LOST   ${f.replace("/home/ishaq2321/bb_tests/repositories/", "")} [${ty}] ${k} x${n}`)
+        if (movedSamples.length < 20) movedSamples.push(`LOST   ${f.replace("<corpus-root>/bb_tests/repositories/", "")} [${ty}] ${k} x${n}`)
       }
     }
   }

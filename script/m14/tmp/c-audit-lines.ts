@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { readFileSync } from "node:fs"
-const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+const Z = "<corpus-root>/bb_tests/repositories/zig"
 const files = execFileSync("bash", ["-c", `find ${Z} -name '*.c' -size +1k | sort | head -60`], { encoding: "utf8" }).split("\n").filter(Boolean)
 let rels = 0, withLine = 0, withMetaLine = 0, withLineNumber = 0
 const samples: string[] = []

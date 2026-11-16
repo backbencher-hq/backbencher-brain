@@ -17,7 +17,7 @@ const mod: any = await import("../../../src/ast/real-c-analyzer")
 const Analyzer = mod.RealCAnalyzer ?? mod.default
 const analyzer = new Analyzer()
 
-const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+const Z = "<corpus-root>/bb_tests/repositories/zig"
 const files = execFileSync("bash", ["-c", `find ${Z} -name '*.c' -size +1k -not -path '*/.git/*' | sort | head -400`], { encoding: "utf8" }).split("\n").filter(Boolean)
 console.log(`slice: ${files.length} files`)
 

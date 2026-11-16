@@ -51,7 +51,7 @@ const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..") // 
 import { Parser, Language } from "web-tree-sitter"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPOS = process.env.XML_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/xml/repos"
+const REPOS = process.env.XML_CORPUS_ROOT ?? "<corpus-root>/bb_tests/xml/repos"
 const OUT_DEFAULT = process.env.XML_DIFF_OUT ?? join(ROOT_HERE, "..", "validation", "m12", "results")
 const EXTS = (process.env.XML_EXTS || "*.xml *.xsd *.dtd").split(/\s+/).filter(Boolean)
 const LIMIT = Number(process.env.XML_LIMIT || "0")

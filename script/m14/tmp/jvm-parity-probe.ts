@@ -49,7 +49,7 @@ async function main() {
       const wasm = lang === "java" ? "tree-sitter-java.wasm" : lang === "kotlin" ? "tree-sitter-kotlin.wasm" : lang === "groovy" ? "tree-sitter-groovy.wasm" : "tree-sitter-scala.wasm"
       const { readFileSync } = await import("fs")
       const { join } = await import("path")
-      const grammar = await L.load(readFileSync(join("/home/ishaq2321/mcp/backbencher-brain/wasm", wasm)))
+      const grammar = await L.load(readFileSync(join("<corpus-root>/mcp/backbencher-brain/wasm", wasm)))
       const p = new P(); p.setLanguage(grammar)
       const root = p.parse(src).rootNode
       const r = await ans[lang].analyze(root, src, `T.${exts[lang]}`, undefined)

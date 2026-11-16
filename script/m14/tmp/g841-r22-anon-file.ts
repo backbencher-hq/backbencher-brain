@@ -1,8 +1,8 @@
 // #841 round 22: analyzer-level diff for DefaultGrailsJsonViewHelper
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultGrailsJsonViewHelper.groovy"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/grails-core/grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultGrailsJsonViewHelper.groovy"
 const WASM = process.argv[2]
 if (WASM) {
   // overwrite the repo wasm + purge the engine mirror so the engine loads THIS build

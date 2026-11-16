@@ -24,7 +24,7 @@ import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = ["ohmyzsh", "nvm", "rbenv", "otp", "fsharp"]
 
 const wts: any = await import("web-tree-sitter")

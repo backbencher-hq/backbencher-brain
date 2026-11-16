@@ -6,7 +6,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
 const lang = await L.load(fs.readFileSync(process.argv[2] ?? "/tmp/x23c.wasm"))
 const parser = new P(); parser.setLanguage(lang)
-const SRC = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/SbomPlugin.groovy", "utf8")
+const SRC = fs.readFileSync("<corpus-root>/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/SbomPlugin.groovy", "utf8")
 const root = parser.parse(SRC).rootNode
 const errs: any[] = []
 const walk = (n: any): void => {

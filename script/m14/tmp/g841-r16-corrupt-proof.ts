@@ -6,7 +6,7 @@ await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm"
 const lang = await L.load(fs.readFileSync(process.argv[2]))
 const parser = new P()
 parser.setLanguage(lang)
-const PC = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
+const PC = "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
 const t = parser.parse(fs.readFileSync(PC, "utf8"))
 const hits: string[] = []
 const w = (n: any) => {
@@ -16,7 +16,7 @@ const w = (n: any) => {
 }
 w(t.rootNode)
 console.log(hits.join("\n"))
-const FT = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
+const FT = "<corpus-root>/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
 const t2 = parser.parse(fs.readFileSync(FT, "utf8"))
 const c: string[] = []
 const w2 = (n: any) => {

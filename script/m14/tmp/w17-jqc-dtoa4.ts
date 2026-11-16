@@ -4,8 +4,8 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const JQ = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const JQ = "<corpus-root>/bb_tests/repositories/jq"
 const NAMES = new Set(["ROUND_BIASED", "Sudden_Underflow", "NO_HEX_FP", "emin"])
 const DECL_PARENTS = new Set(["declaration", "parameter_declaration", "field_declaration", "init_declarator", "function_declarator", "pointer_declarator", "array_declarator", "type_definition", "enumerator", "preproc_def", "preproc_function_def"])
 

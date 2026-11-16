@@ -9,7 +9,7 @@ import * as WTS from "web-tree-sitter"
 import { RealErlangAnalyzer } from "../../../src/ast/real-erlang-analyzer"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const [repo, label, contextArg, tag] = process.argv.slice(2)
 const CONTEXT = contextArg === "-" ? "" : contextArg
 

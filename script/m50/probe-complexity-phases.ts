@@ -13,7 +13,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
 import { analyzeComplexity } from "../../src/intelligence/analysis/complexity"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const pid = getProjectId(ROOT) as any
 
 type Row = {

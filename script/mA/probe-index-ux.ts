@@ -26,7 +26,7 @@ const require = createRequire(import.meta.url)
 const ROOT = path.resolve(process.cwd())
 const RESULTS = path.join(ROOT, "validation/mA/results")
 const REPOS = ["rake", "vue-core", "element-plus"]
-const REPO_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const REPO_ROOT = "<corpus-root>/bb_tests/repositories"
 
 mkdirSync(RESULTS, { recursive: true })
 

@@ -4,8 +4,8 @@ import * as fs from "fs"
 import * as WTS from "web-tree-sitter"
 import { RealSwiftAnalyzer } from "../../../src/ast/real-swift-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const NIO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const NIO = "<corpus-root>/bb_tests/repositories/swift-nio"
 const F = process.argv[2] ?? "Sources/NIOFS/FileType.swift"
 
 async function main() {

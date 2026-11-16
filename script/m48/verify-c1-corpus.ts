@@ -31,7 +31,7 @@ import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT, "validation/m48/results")
 const PARTS_DIR = path.join(RESULTS_DIR, "C1-parts")
-// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "<corpus-root>/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const REPO_BASE = resolveCorpusRoot(process.cwd()) ?? "REPO_BASE_UNRESOLVED"
 const WORKER = path.join(ROOT, "script/m48/c1-repo-worker.ts")
 

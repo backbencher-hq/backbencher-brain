@@ -14,7 +14,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { getProjectId } from "../../src/cli/index"
 import { analyzeTaintFlows } from "../../src/intelligence/security/taint"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const pid = getProjectId(ROOT) as any
 
 type TaintRow = { source_symbol_id: string | null; sink_symbol_id: string | null; flow_path: string | null }
@@ -132,8 +132,8 @@ async function main() {
     },
   }
   const fs = await import("node:fs")
-  fs.mkdirSync("/home/ishaq2321/mcp/backbencher-brain/validation/m50/results", { recursive: true })
-  const file = "/home/ishaq2321/mcp/backbencher-brain/validation/m50/results/A2-security-phases.json"
+  fs.mkdirSync("<corpus-root>/mcp/backbencher-brain/validation/m50/results", { recursive: true })
+  const file = "<corpus-root>/mcp/backbencher-brain/validation/m50/results/A2-security-phases.json"
   const prev = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null
   let digestMatch: boolean | null = null
   if (prev?.engine?.digest) digestMatch = prev.engine.digest === out.engine.digest

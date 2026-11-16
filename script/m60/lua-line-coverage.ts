@@ -3,7 +3,7 @@
 import { execFileSync } from "node:child_process"
 import { parseFile } from "../../src/ast/pool-worker"
 async function main(): Promise<void> {
-  const repo = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/luvit"
+  const repo = process.argv[2] || "<corpus-root>/bb_tests/repositories/luvit"
   const files = execFileSync("git", ["-C", repo, "ls-files", "*.lua", "*.luau"], { encoding: "utf8", maxBuffer: 1 << 28 }).trim().split("\n").filter(Boolean)
   let total = 0, withLine = 0, missing = 0
   const samples: string[] = []

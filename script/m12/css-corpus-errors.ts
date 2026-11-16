@@ -6,7 +6,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/css/samples"
+const ROOT = "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/tests/css/samples"
 const SAMPLE_LIMIT = Number(process.env.CSS_SAMPLE_LIMIT || 400)
 
 async function main() {

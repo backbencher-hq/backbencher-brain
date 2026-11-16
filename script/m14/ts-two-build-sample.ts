@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url"
 import { admitCorpusCached, extensionsFor, strideSample } from "./ts-corpus"
 
 const REPO = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const want = Number(argv.find((a) => a.startsWith("--files="))?.slice("--files=".length) ?? 300)
 const jsonOut = argv.find((a) => a.startsWith("--json="))?.slice("--json=".length)

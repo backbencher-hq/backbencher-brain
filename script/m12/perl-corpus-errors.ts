@@ -2,7 +2,7 @@
 import { ASTEngine } from "../../src/ast/engine"
 import { execFileSync } from "node:child_process"
 
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/mojo"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/mojo"
 const relative = execFileSync("git", ["-C", root, "ls-files", "*.pm", "*.pl"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
 const files = relative.map((file) => `${root}/${file}`)

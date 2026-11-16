@@ -7,7 +7,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealPhpAnalyzer } from "../../../src/ast/real-php-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const SRC = `<?php
 class Box {
   public $plain = 1;

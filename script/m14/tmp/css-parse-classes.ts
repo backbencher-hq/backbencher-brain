@@ -20,7 +20,7 @@ import { loadWebTreeSitter, Language, Parser } from "web-tree-sitter"
 import { readFileSync, readdirSync, statSync } from "fs"
 import { join } from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const OUT = argv[argv.indexOf("--out") + 1]
 const REPOS = ["svelte", "grails-core"]

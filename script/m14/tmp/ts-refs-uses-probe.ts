@@ -29,7 +29,7 @@ import { deriveTypeScriptReferencesTruth } from "../oracles/typescript-reference
 import { deriveTypeScriptUsesTruth } from "../oracles/typescript-uses"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..", "..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 function lastSegment(name: string): string {
   const parts = name.split(/::|\./).filter(Boolean)

@@ -5,9 +5,9 @@ import { readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const SIZE_CAP = 1024 * 1024
-const { detectLanguageFromPath } = await import(`/home/ishaq2321/mcp/backbencher-brain/src/ast/language-detection.ts`)
+const { detectLanguageFromPath } = await import(`<corpus-root>/mcp/backbencher-brain/src/ast/language-detection.ts`)
 
 const trackedAll: string[] = []
 for (const name of readdirSync(CR).sort()) {

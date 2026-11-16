@@ -67,7 +67,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { storeResults } from "../../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../../src/brain/database"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_DIR = process.env.BB_REPO ?? "java-lib"
 const WANT = Number(process.env.LANE_NFILES ?? 40)
 /**

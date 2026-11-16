@@ -3,7 +3,7 @@
   "lane": "INCOMING_JAVA",
   "repoHead": "b0b3c05eb5b448e1d3a8c298f434e7b6f56a55bd",
   "corpus": {
-    "dir": "/home/ishaq2321/bb_tests/repositories/java-lib",
+    "dir": "<corpus-root>/bb_tests/repositories/java-lib",
     "rev": "72dd370d951967fe97756ecaaa938c7cb5bcbc28",
     "filesEnumerated": 3275,
     "analyzed": 3275,

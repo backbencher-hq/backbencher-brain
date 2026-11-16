@@ -5,7 +5,7 @@
 import * as path from "path"
 import { vue, plain, rels, syms, names, probe, report } from "./harness"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 async function main() {
   console.log("# F1 — Options-API INHERITANCE is not a relationship")

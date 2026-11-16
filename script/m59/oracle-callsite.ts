@@ -38,7 +38,7 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 // reported `FAIL: the oracle did not prove it can fail` — a corpus-path problem
 // reading as an evidence problem, on the one gate whose whole job is to prove it
 // can fail. Same one-line shape as the differential's, for the same reason.
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT_DIR = path.join(ROOT, "validation/m59/results")
 
 const SKIP_DIRS = new Set([

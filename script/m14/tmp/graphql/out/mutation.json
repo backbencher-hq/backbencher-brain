@@ -22,7 +22,7 @@
       "defect": "C1: a definition's range started on its Description — 3,131 of 3,332 symbols on the GitHub public schema (94%) pointed at a docstring line (M59/#861 family rule)",
       "caught": true,
       "firstFailures": [
-        "threw: Transform failed with 1 error:\n/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-range-includes-leading-description.ts:1934:11: ERROR: Expected \";\" but found \"{\""
+        "threw: Transform failed with 1 error:\n<corpus-root>/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-range-includes-leading-description.ts:1934:11: ERROR: Expected \";\" but found \"{\""
       ]
     },
     {
@@ -274,7 +274,7 @@
       "defect": "the `exports` EDGE reverted to ExportInfo only, which `parallel-indexer.ts` does not read — so the schema's public surface reached no graph and `exports` went back to being an un-emitted ontology type",
       "caught": true,
       "firstFailures": [
-        "threw: Transform failed with 1 error:\n/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-exports-edge-removed.ts:1296:8: ERROR: Unexpected \"...\""
+        "threw: Transform failed with 1 error:\n<corpus-root>/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-exports-edge-removed.ts:1296:8: ERROR: Unexpected \"...\""
       ]
     },
     {
@@ -349,7 +349,7 @@
       "defect": "the member-supplied-from-an-interface post-pass removed, so the one override-shaped construct GraphQL has (spec 3.6 requires the object to supply every interface member) emitted nothing — 1,054 occurrences over 4 corpus files",
       "caught": true,
       "firstFailures": [
-        "threw: Transform failed with 1 error:\n/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-overrides-edge-removed.ts:1230:19: ERROR: Expected \";\" but found \":\""
+        "threw: Transform failed with 1 error:\n<corpus-root>/mcp/bb-lanes/graphql/script/m14/tmp/graphql/mutants/analyzer-overrides-edge-removed.ts:1230:19: ERROR: Expected \";\" but found \":\""
       ]
     },
     {

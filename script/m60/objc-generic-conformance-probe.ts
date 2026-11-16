@@ -31,7 +31,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories/objc"
 const files: { label: string; abs: string; dir: string; text: string; lines: string[] }[] = []
 for (const e of readdirSync(CR)) {
   const dir = path.join(CR, e)

@@ -1,5 +1,5 @@
 import { ASTEngine } from "../../../src/ast/engine"
-const f = "/home/ishaq2321/bb_tests/repositories/zig/lib/compiler/aro/aro/Attribute.zig"
+const f = "<corpus-root>/bb_tests/repositories/zig/lib/compiler/aro/aro/Attribute.zig"
 const src = await Bun.file(f).text()
 for (let i = 1; i <= 5; i++) {
   const parser = await ASTEngine.getParser("zig")

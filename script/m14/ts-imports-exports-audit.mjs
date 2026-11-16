@@ -37,7 +37,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
 const ROOT = join(import.meta.dir, "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 const argOf = (f) => {

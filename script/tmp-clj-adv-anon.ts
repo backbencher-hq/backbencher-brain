@@ -35,7 +35,7 @@ const symName = (nd: any): string => {
 }
 const files: string[] = []
 const walkDir = (d: string) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const fp = path.join(d, e.name); if (e.isDirectory()) { if (e.name === ".git") continue; walkDir(fp) } else if (/\.(clj|cljs|cljc)$/.test(e.name)) files.push(fp) } }
-walkDir("/home/ishaq2321/bb_tests/repositories/clojure"); walkDir("/home/ishaq2321/bb_tests/repositories/clj-kondo")
+walkDir("<corpus-root>/bb_tests/repositories/clojure"); walkDir("<corpus-root>/bb_tests/repositories/clj-kondo")
 let shapeCount = 0, fileCount = 0; const samples: string[] = []
 for (const f of files) {
   const src = fs.readFileSync(f, "utf8")

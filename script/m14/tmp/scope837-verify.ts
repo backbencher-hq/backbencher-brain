@@ -5,7 +5,7 @@ import * as fs from "fs"
 import * as path from "path"
 import * as os from "os"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "scope837-"))
 
 const FILES: Record<string, string> = {

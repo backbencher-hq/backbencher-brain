@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 await P.init({ locateFile: () => `${ROOT}/node_modules/web-tree-sitter/tree-sitter.wasm` })
 const lang = await L.load(readFileSync(`${ROOT}/wasm/tree-sitter-groovy.wasm`))
 const p = new P(); p.setLanguage(lang)

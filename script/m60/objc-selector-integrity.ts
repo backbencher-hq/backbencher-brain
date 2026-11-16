@@ -40,7 +40,7 @@ import { getParser } from "../../src/ast/engine"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories/objc"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories/objc"
 const OUT = path.join(ROOT, "validation/m60/results/objc-selector-integrity.json")
 
 /** The analyzer's rule, restated so the probe measures the SOURCE and not the output. */

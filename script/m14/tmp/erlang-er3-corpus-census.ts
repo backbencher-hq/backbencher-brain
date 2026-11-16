@@ -29,7 +29,7 @@ import { RealErlangAnalyzer } from "../../../src/ast/real-erlang-analyzer"
 import { deriveErlangEdges, normTarget } from "../differential"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = process.argv.slice(2).filter((a) => !a.startsWith("--"))
 const TAG = process.env.BB_CENSUS_TAG ?? "unset"
 // Sharding exists because a single SYNC call cannot outlive 10 minutes on this

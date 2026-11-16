@@ -5,8 +5,8 @@
 import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const SRC = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/jv.c", "utf8")
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const SRC = fs.readFileSync("<corpus-root>/bb_tests/repositories/jq/src/jv.c", "utf8")
 const DECL_PARENT_TYPES = new Set([
   "declaration", "parameter_declaration", "field_declaration", "init_declarator",
   "function_declarator", "pointer_declarator", "array_declarator", "type_definition",

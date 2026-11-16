@@ -3,8 +3,8 @@ import * as WTS from "web-tree-sitter"
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/runtime-runes/samples/class-state-raw/main.svelte"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/tests/runtime-runes/samples/class-state-raw/main.svelte"
 
 async function main() {
   console.log("START")
@@ -20,7 +20,7 @@ async function main() {
   // script content (between <script> and </script>)
   const m = src.match(/<script>([\s\S]*?)<\/script>/)!
   const root = p.parse(m[1]).rootNode
-  const mod: any = await import("/home/ishaq2321/mcp/backbencher-brain/script/m14/differential.ts")
+  const mod: any = await import("<corpus-root>/mcp/backbencher-brain/script/m14/differential.ts")
   console.log("PARSED, top children:", root.namedChildCount); const edges = mod.deriveTypeScriptEdges(root) as any[]
   console.log("edges total:", (edges as any[]).length); console.log("edges total:", (edges as any[]).length); const calls = edges.filter((x: any) => x.label === "calls")
   for (const c of calls) console.log("oracle calls:", c.from, "->", c.target)

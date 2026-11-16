@@ -14,7 +14,7 @@ import { readFileSync, readdirSync, statSync } from "fs"
 import { join, relative } from "path"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/svelte"
+const ROOT = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/svelte"
 const EXT = process.argv[3] ?? ".css"
 
 await Parser.init()

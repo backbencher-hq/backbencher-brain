@@ -5,7 +5,7 @@
 # Every earlier chunk/census file is removed first so the closure is ONE run, not a splice of runs
 # taken before and after the fix.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 OUT=validation/m14/measurements/groovy-arm
 LOG=script/m14/tmp/groovy-arm-run.log
 : > "$LOG"

@@ -4,7 +4,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { vue, rels, syms, names } from "./harness"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 async function main() {
   console.log("=== Q2d.1  the `[key]` phantom, minimized ===")

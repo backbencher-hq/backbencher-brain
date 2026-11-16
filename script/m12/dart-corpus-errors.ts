@@ -3,11 +3,11 @@
 // single-long-lived-parser memory exhaustion that causes spurious Abort()s.
 // Usage: bun script/m12/dart-corpus-errors.ts
 // Reads:  validation/m12/results/dart-corpus-sample.txt (relative paths into
-//         the pinned flutter repo at /home/ishaq2321/flutter)
+//         the pinned flutter repo at <corpus-root>/flutter)
 import { readFileSync } from "fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO = "/home/ishaq2321/flutter"
+const REPO = "<corpus-root>/flutter"
 const SAMPLE = "validation/m12/results/dart-corpus-sample.txt"
 
 async function main() {

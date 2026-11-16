@@ -24,7 +24,7 @@ import { RealBashAnalyzer } from "../../../src/ast/real-bash-analyzer"
 import { RealPowershellAnalyzer } from "../../../src/ast/real-powershell-analyzer"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts

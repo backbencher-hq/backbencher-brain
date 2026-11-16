@@ -14,7 +14,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 // `style` is a FREE name here on purpose: a parameter would be bound, and the
 // binding gate would (correctly) suppress the read and hide the measurement.
 const CASES: Array<[string, string]> = [

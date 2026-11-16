@@ -12,7 +12,7 @@ import { RealRubyAnalyzer } from "../../../src/ast/real-ruby-analyzer"
 import { ASTEngine } from "../../../src/ast/engine"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 const TARGETS: Array<[string, number[]]> = [
   ["rack/lib/rack/builder.rb", [103, 137, 289]],

@@ -27,7 +27,7 @@ import * as path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 import { deriveGoImplements } from "../differential"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const roots = process.argv.slice(2).length > 0 ? process.argv.slice(2) : [`${REPOS}/go-tools`, `${REPOS}/terraform`]
 
 const parser = await ASTEngine.getParser("go" as any)

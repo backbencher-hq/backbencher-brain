@@ -5,7 +5,7 @@ import * as fs from "fs"; import * as path from "path"
 const ROOT = path.resolve(import.meta.dirname, "../../..")
 const { deriveFsharpEdges } = await import(path.join(ROOT, "script/m14/fsharp-truth-oracle.ts"))
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argOf = (n: string) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : undefined }
 function walk(d: string, exts: string[], out: string[], cap: number): string[] {
   if (out.length >= cap) return out

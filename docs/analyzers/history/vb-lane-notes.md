@@ -965,7 +965,7 @@ has not finished:
 ## Re-running the numbers
 
 ```sh
-export PATH="$HOME/.local/bin:/home/ishaq2321/bb_tests/bin:$PATH"
+export PATH="$HOME/.local/bin:<corpus-root>/bb_tests/bin:$PATH"
 
 # grammar: rebuild, run the 27 repro cases, run the corpus differential
 grammars/_vendored/vbnet/grammar-gate.sh

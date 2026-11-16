@@ -7,10 +7,10 @@
 //   bun script/m14/tmp/cpp743-blocks.ts [--wasm <path>] [repo] [limit]
 import fs from "node:fs"
 import path from "node:path"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const WASM = process.argv.includes("--wasm") ? process.argv[process.argv.indexOf("--wasm") + 1] : "wasm/tree-sitter-cpp.wasm"
 const REPOS = process.argv.slice(2).filter((a, i, arr) => a !== "--wasm" && arr[i - 1] !== "--wasm")
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts

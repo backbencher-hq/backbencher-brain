@@ -31,7 +31,7 @@ import path from "node:path"
 import { StdioLsp, ensureServerBuilt, M55_ROOT } from "./lsp-wire.ts"
 
 /** The declared external fixture (owner decision, 2026-09-12). */
-export const DECLARED_FIXTURE = "/home/ishaq2321/bb-demo-hub"
+export const DECLARED_FIXTURE = "<corpus-root>/bb-demo-hub"
 
 export interface ProbeFlow {
   id: string

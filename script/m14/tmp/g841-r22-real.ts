@@ -1,7 +1,7 @@
 // #841 round 22: real-file probe — where does the innermost error sit?
 import fs from "node:fs"
 import path from "node:path"
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language

@@ -7,7 +7,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { execFileSync } from "child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const TMP = "/tmp/cpp-fixture-dump"
 
 function materializeHead(): string {

@@ -15,8 +15,8 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 // wasm / extensions / PRIMARY corpus, mirroring the sweep's routing in
 // script/m14/differential.ts (LANG_REPOS + LANGS).

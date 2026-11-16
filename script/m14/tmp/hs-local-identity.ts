@@ -39,7 +39,7 @@ for (let i = 0; i < argv.length; i++) {
     shards = m
   } else roots.push(a)
 }
-if (!roots.length) roots.push("/home/ishaq2321/bb_tests/repositories/hledger")
+if (!roots.length) roots.push("<corpus-root>/bb_tests/repositories/hledger")
 
 function walk(dir: string, out: string[] = []): string[] {
   let entries: string[]

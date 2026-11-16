@@ -1,6 +1,6 @@
 {
   "corpus": "lodash",
-  "dir": "/home/ishaq2321/bb_tests/repositories/lodash",
+  "dir": "<corpus-root>/bb_tests/repositories/lodash",
   "corpusTotalFiles": 55,
   "analyzedFiles": 55,
   "parsed": 55,

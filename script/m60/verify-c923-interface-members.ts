@@ -23,7 +23,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const CENSUS = path.join(ROOT, "validation", "m60", "results", "c923-interface-members.json")
 const PINNED = process.argv.includes("--pinned")
 

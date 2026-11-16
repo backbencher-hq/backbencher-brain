@@ -12,7 +12,7 @@ import path from "node:path"
 import { RealScalaAnalyzer } from "../../../src/ast/real-scala-analyzer"
 import { normTarget } from "../differential"
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..", "..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (e.name === ".git" || e.name === "target") continue

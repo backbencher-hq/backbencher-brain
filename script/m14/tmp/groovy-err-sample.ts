@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import * as path from "node:path"
 const ROOT = path.resolve(import.meta.dir, "..", "..", "..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const wts: any = await import("web-tree-sitter")
 const ParserClass = wts.Parser ?? wts.default ?? wts
 const Language = wts.Language ?? wts.default?.Language

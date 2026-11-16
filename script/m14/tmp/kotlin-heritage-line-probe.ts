@@ -6,9 +6,9 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE =
-  "/home/ishaq2321/bb_tests/repositories/kotlinx-coroutines/kotlinx-coroutines-test/common/src/TestScope.kt"
+  "<corpus-root>/bb_tests/repositories/kotlinx-coroutines/kotlinx-coroutines-test/common/src/TestScope.kt"
 
 async function main() {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))

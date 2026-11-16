@@ -3,10 +3,10 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const CORPUS = "<corpus-root>/bb_tests/repositories/grails-core"
 function resolveFile(suffix: string): string | null {
   const parts = suffix.split("/")
-  const dir = "/home/ishaq2321/bb_tests/repositories/grails-core"
+  const dir = "<corpus-root>/bb_tests/repositories/grails-core"
   const stack = [dir]
   while (stack.length) {
     const d = stack.pop()!
@@ -26,7 +26,7 @@ const CASES: Array<[string, number]> = [
   ["grails-test-examples/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy", 38],
   ["grails-test-examples/app1/grails-app/controllers/functionaltests/caching/CacheTestController.groovy", 33],
 ]
-for (const [name, wasm] of [["OLD", "/tmp/g841-worktree-7f01e3ed.wasm"], ["NEW", "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"]] as Array<[string, string]>) {
+for (const [name, wasm] of [["OLD", "/tmp/g841-worktree-7f01e3ed.wasm"], ["NEW", "<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"]] as Array<[string, string]>) {
   const lang = await L.load(fs.readFileSync(wasm))
   const parser = new P()
   parser.setLanguage(lang)

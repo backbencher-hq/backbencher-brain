@@ -13,11 +13,11 @@ import { writeFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { Parser, Language } from "web-tree-sitter"
 
-const WASM = "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-hcl.wasm"
+const WASM = "<corpus-root>/backbencher-brain/wasm/tree-sitter-hcl.wasm"
 const UPSTREAMS = [
-  { label: "tree-sitter-grammars/tree-sitter-hcl", dir: "/home/ishaq2321/bb_tests/hcl/ts-grammars-hcl" },
+  { label: "tree-sitter-grammars/tree-sitter-hcl", dir: "<corpus-root>/bb_tests/hcl/ts-grammars-hcl" },
 ]
-const OUT = "/home/ishaq2321/bb_tests/hcl/out"
+const OUT = "<corpus-root>/bb_tests/hcl/out"
 
 await Parser.init()
 const lang = await Language.load(WASM)

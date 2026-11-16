@@ -2,13 +2,13 @@
 // NOT a reuse of m52's verifier: written fresh so the number cannot inherit
 // m52's harness assumptions. Measures what users' clients measure: a FRESH
 // `node bin/bb mcp` process, strict request→response round-trips, default
-// bb_health (no flags), against the REAL index (BB_DATA_DIR=/home/ishaq2321/.bb).
+// bb_health (no flags), against the REAL index (BB_DATA_DIR=<corpus-root>/.bb).
 // 3 independent process launches, each with a warm-up call + measured call —
 // separating one-time covering-index/open cost from steady-state per-call cost.
 
 import { spawn } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const BIN = `${ROOT}/bin/bb`
 
 interface Result { ok: boolean; ms: number; detail: string }
@@ -41,7 +41,7 @@ const launches: { launch: number; initMs: number; warm: Result; measured: Result
 for (const i of [1, 2, 3]) {
   const child = spawn("node", [BIN, "mcp"], {
     cwd: ROOT,
-    env: { ...process.env, BB_DATA_DIR: "/home/ishaq2321/.bb" },
+    env: { ...process.env, BB_DATA_DIR: "<corpus-root>/.bb" },
     stdio: ["pipe", "pipe", "pipe"],
   })
   let err = ""

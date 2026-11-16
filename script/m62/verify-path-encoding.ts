@@ -259,7 +259,7 @@ const backlogHits = codeHits.filter((h) => !h.shipping)
   // The first version asserted `/ /.test(ROOT)`: "this checkout's path contains a space, so the
   // defect can actually fire here". That is a property of the MACHINE, not of the code, and it
   // made the gate un-passable on every clone whose path has no space (measured on the Linux host:
-  // NO SPACE in /home/ishaq2321/mcp/backbencher-brain, exit 1 with a clean tree). A gate that
+  // NO SPACE in <corpus-root>/mcp/backbencher-brain, exit 1 with a clean tree). A gate that
   // fails on a host where nothing is wrong teaches people to ignore it — the failure mode this
   // file's own comments keep naming.
   //

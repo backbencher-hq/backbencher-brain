@@ -47,7 +47,7 @@ import { tmpdir } from "node:os"
 import * as path from "node:path"
 
 const REPO_ROOT = path.resolve(path.join(import.meta.dir, "..", "..", ".."))
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const corpusName = process.argv[2] ?? "ripgrep"
 const corpusDir = path.resolve(process.argv[3] ?? path.join(CR, corpusName))
 

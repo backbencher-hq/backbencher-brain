@@ -26,7 +26,7 @@ const only = process.argv[2]
 
 function corpusDirFor(repo: string): string | null {
   for (const c of [repo, repo.startsWith("gql-") ? repo.slice(4) : `gql-${repo}`]) {
-    const d = path.join("/home/ishaq2321/bb_tests/repositories", c)
+    const d = path.join("<corpus-root>/bb_tests/repositories", c)
     if (fs.existsSync(d)) return d
   }
   return null

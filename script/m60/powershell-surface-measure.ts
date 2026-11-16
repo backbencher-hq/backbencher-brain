@@ -68,7 +68,7 @@ import * as WTS from "web-tree-sitter"
 import * as os from "node:os"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/powershell-surface.json")
 const argv = process.argv.slice(2)
 const val = (a: string, d?: string) => (argv.includes(a) ? argv[argv.indexOf(a) + 1] : d)

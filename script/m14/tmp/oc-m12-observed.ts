@@ -13,7 +13,7 @@ import { parseFile } from "../../../src/ast/pool-worker"
 import { mergeSymbolsIntoOverrideCompanion, mergeTypeKindsIntoCompanion, type TypeKindCompanion } from "../../../src/ast/override-context"
 import { factKey, type ObservedFact } from "../../m11/differential-harness"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const LANG = "objective-c"
 
 async function main() {

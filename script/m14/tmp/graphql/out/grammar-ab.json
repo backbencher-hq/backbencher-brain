@@ -1,6 +1,6 @@
 {
-  "vendored": "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-graphql.wasm",
-  "candidate": "/home/ishaq2321/bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-ported.wasm",
+  "vendored": "<corpus-root>/backbencher-brain/wasm/tree-sitter-graphql.wasm",
+  "candidate": "<corpus-root>/bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-ported.wasm",
   "files": 9,
   "vendoredErrorFiles": 4,
   "candidateErrorFiles": 2,

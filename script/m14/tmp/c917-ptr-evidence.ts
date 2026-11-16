@@ -4,7 +4,7 @@
 // exists as a symbol (in isolation and in the whole file).
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.resolve("src/ast/engine.ts"))
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts
@@ -14,7 +14,7 @@ const cLang: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-si
 const parser = new P()
 parser.setLanguage(cLang)
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const FILE = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const whole = fs.readFileSync(FILE, "utf8")
 const lines = whole.split("\n")
 

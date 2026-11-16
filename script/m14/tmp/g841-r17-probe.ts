@@ -30,6 +30,6 @@ console.log(`  C3 assert-colon shape errs=${errsOf(body("assert x = f y: 'msg'")
 console.log("--- round-16 tie-breakers: must hold ---")
 console.log(`  D1 int('x') non-gap  errs=${errsOf(body("def t = int('x')"))}  (must be >0)`)
 console.log(`  D2 B attrs.int       errs=${errsOf(body("def t = attrs.int('total')"))}  (must be 0)`)
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
 const srcF = fs.readFileSync(F, "utf8")
 console.log(`  D3 FormTagLib        errs=${errsOf(srcF)}  line503=${kinds(srcF.split("\n").slice(490, 515).join("\n") === srcF ? srcF : srcF)}`)

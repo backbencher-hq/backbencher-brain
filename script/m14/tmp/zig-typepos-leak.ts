@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES = [
   ['namespace type', 'const types = @import("types.zig");\nfn f(request: types.Params) void { _ = request; }'],
   ['bare type name', 'const f80 = struct { v: u8 };\nfn pack(x: f80) void { _ = x; }'],

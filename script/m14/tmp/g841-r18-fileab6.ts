@@ -3,7 +3,7 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const R = "/home/ishaq2321/bb_tests/repositories/grails-core/"
+const R = "<corpus-root>/bb_tests/repositories/grails-core/"
 const FILES = [
  'grails-databinding-core/src/test/groovy/org/grails/databinding/converters/DateConversionHelperSpec.groovy',
  'grails-spring-security/rest/core/grails-app/services/grails/plugin/springsecurity/rest/RestOauthService.groovy',

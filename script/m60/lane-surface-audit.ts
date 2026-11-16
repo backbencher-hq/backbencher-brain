@@ -60,7 +60,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const argOf = (name: string): string | undefined => {
   const i = process.argv.indexOf(name)

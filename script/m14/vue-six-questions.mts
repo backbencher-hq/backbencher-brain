@@ -67,7 +67,7 @@ const admit = (dir: string, repo: string) => {
     files.push({ repo, dir, rel, abs, text })
   }
 }
-for (const e of REPOS) admit(path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e), e)
+for (const e of REPOS) admit(path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", e), e)
 for (const d of EXTRA) admit(d, path.basename(d))
 files.sort((a, b) => (a.repo + "/" + a.rel < b.repo + "/" + b.rel ? -1 : 1))
 console.log(`vue six questions — ${files.length} .vue files, repos ${[...new Set(files.map((f) => f.repo))].join(",")}`)

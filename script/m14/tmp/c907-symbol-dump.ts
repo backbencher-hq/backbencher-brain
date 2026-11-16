@@ -11,7 +11,7 @@ import { parseFile } from "../../../src/ast/pool-worker"
 const out = process.argv[2]
 const ROOTS = process.argv.slice(3).length
   ? process.argv.slice(3)
-  : ["/home/ishaq2321/bb_tests/repositories/jq", "/home/ishaq2321/bb_tests/repositories/sqlite"]
+  : ["<corpus-root>/bb_tests/repositories/jq", "<corpus-root>/bb_tests/repositories/sqlite"]
 
 function walk(dir: string, acc: string[] = []): string[] {
   let entries: string[] = []

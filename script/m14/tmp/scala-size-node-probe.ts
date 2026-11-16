@@ -1,7 +1,7 @@
 // M59 (#825): dump the node shape for `@Param(...) var size: Int = _` so the
 // declaration-line rule can be judged from the tree instead of assumed.
 import * as fs from "fs"
-const F = "/home/ishaq2321/bb_tests/repositories/cats-effect/benchmarks/src/main/scala/cats/effect/benchmarks/QueueBenchmark.scala"
+const F = "<corpus-root>/bb_tests/repositories/cats-effect/benchmarks/src/main/scala/cats/effect/benchmarks/QueueBenchmark.scala"
 
 async function main(): Promise<void> {
   const WTS: any = await import("web-tree-sitter")

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const F = "validation/m14/fixtures/c/macro-truncated-declarator-916.c"
 const wts: any = await import("web-tree-sitter")
 const P = (wts.Parser ?? wts.default) as any

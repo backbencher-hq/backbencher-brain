@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { deriveTreeEdges } = await import(path.join(ROOT, "script/m14/differential.ts"))
 const wts: any = await import("web-tree-sitter")
 const ParserClass = wts.Parser ?? wts.default ?? wts
@@ -28,7 +28,7 @@ const astOf = async (p: string) => {
 }
 
 // 1. the real corpus file: the truth must carry the edge the analyzer emits.
-const FILE = "/home/ishaq2321/bb_tests/repositories/scala3/tests/pos/typeclasses-this.scala"
+const FILE = "<corpus-root>/bb_tests/repositories/scala3/tests/pos/typeclasses-this.scala"
 const truth = deriveTreeEdges(parse(readFileSync(FILE, "utf8")), "scala")
 const ovr = truth.filter((e: any) => e.label === "overrides").map((e: any) => `${e.from} -> ${e.target}`)
 console.log("=== positive: typeclasses-this.scala truth overrides ===")

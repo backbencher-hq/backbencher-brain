@@ -4,7 +4,7 @@ population: 3275 .java files on disk · MEASURED 200 · sampling: first 200 lexi
 denominator (10, engine.ts RelationshipType): calls extends implements uses imports exports contains references overrides instantiates
 
 [INFO] [11:40:45] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
-[INFO] [11:40:45] [ast-engine] language parser loaded {"language":"java","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
+[INFO] [11:40:45] [ast-engine] language parser loaded {"language":"java","wasmPath":"<corpus-root>/backbencher-brain/node_modules/tree-sitter-java/tree-sitter-java.wasm"}
 MEASURED 200/200 files · 8205 ms · 2648 symbols · 0 failures
 
 === CHANNEL TALLY (all three, separately) ===

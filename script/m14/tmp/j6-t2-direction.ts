@@ -10,7 +10,7 @@ import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyze
 import { RealTypeScriptAnalyzer } from "../../../src/ast/real-typescript-analyzer"
 import { deriveTreeEdges, deriveJavaScriptEdges, deriveTypeScriptEdges } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 let P: any
 const LANGS: Record<string, any> = {}
 

@@ -14,8 +14,8 @@ import { parseFile } from "../../../src/ast/pool-worker"
 const ROOTS = process.argv.slice(2).length
   ? process.argv.slice(2)
   : [
-      "/home/ishaq2321/bb_tests/repositories/jq",
-      "/home/ishaq2321/bb_tests/repositories/sqlite",
+      "<corpus-root>/bb_tests/repositories/jq",
+      "<corpus-root>/bb_tests/repositories/sqlite",
     ]
 
 function walk(dir: string, out: string[] = []): string[] {

@@ -21,7 +21,7 @@ import { writeFileSync } from "node:fs"
 import * as path from "node:path"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m12/results/nim-corpus-errors.json")
 
 /** The pinned corpora, in the order they are reported. `primary` is the one the

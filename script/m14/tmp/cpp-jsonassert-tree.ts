@@ -9,8 +9,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/nlohmann-json/tests/abi/include/nlohmann/json_v3_10_5.hpp"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/nlohmann-json/tests/abi/include/nlohmann/json_v3_10_5.hpp"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

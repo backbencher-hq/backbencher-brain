@@ -1,6 +1,6 @@
 import { parseFile } from "../../../src/ast/pool-worker"
-const F = "/home/ishaq2321/bb_tests/repositories/jq/src/jv_print.c"
-const r: any = await parseFile(F, "/home/ishaq2321/bb_tests/repositories/jq")
+const F = "<corpus-root>/bb_tests/repositories/jq/src/jv_print.c"
+const r: any = await parseFile(F, "<corpus-root>/bb_tests/repositories/jq")
 for (const s of (r.symbols ?? [])) {
   if (String(s.name).includes("dump") || String(s.name) === "jv_show") {
     console.log(`${s.name} | kind=${s.kind} | scope=${s.scope} | line=${s.range?.startLine ?? JSON.stringify(s.range)}`)

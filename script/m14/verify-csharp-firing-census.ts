@@ -18,7 +18,7 @@
  * measure the PARSE, not the text.
  *
  * Corpus note: the handover named
- * /home/ishaq2321/bb_tests/repositories/csharp-sample, which does not exist on
+ * <corpus-root>/bb_tests/repositories/csharp-sample, which does not exist on
  * either laptop. The only real C# corpus on disk is `powershell` (1278 .cs
  * files, a first-class C# differential corpus for this lane since 2026-09-29)
  * plus incidental .cs files elsewhere. `--root` overrides.
@@ -28,7 +28,7 @@ import { join } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { RealCSharpAnalyzer } from "../../src/ast/real-csharp-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const DEFAULT_ROOT = "powershell"
 
 /**

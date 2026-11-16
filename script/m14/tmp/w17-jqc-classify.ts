@@ -20,7 +20,7 @@
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 const fs = require("fs")
-const src = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/builtin.c", "utf8")
+const src = fs.readFileSync("<corpus-root>/bb_tests/repositories/jq/src/builtin.c", "utf8")
 const lines = src.split("\n")
 // find decl lines and read lines with function boundaries
 const decls: [number, string][] = []

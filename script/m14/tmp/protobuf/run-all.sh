@@ -8,7 +8,7 @@
 # numbers it did not earn.
 #
 # Corpora are NOT tracked. Stage them per script/m14/tmp/protobuf/corpus-manifest.json
-# (default /home/ishaq2321/bb_tests/protobuf/repos). The corpus gates skip loudly
+# (default <corpus-root>/bb_tests/protobuf/repos). The corpus gates skip loudly
 # and do not pretend to have run.
 set -uo pipefail
 cd "$(dirname "$0")/../../../.." || exit 1

@@ -16,14 +16,14 @@
 import * as fs from "fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 // The repo each sample's relative paths resolve against, and the claim under test.
 const LANGS: Record<string, { repo: string; claim: string; claimed: number | null }> = {
-  java: { repo: "/home/ishaq2321/intellij-community", claim: "no grammarErrorFiles field (never measured)", claimed: null },
-  kotlin: { repo: "/home/ishaq2321/intellij-community", claim: "grammarErrorFiles: 51 of 300", claimed: 51 },
-  scala: { repo: "/home/ishaq2321/bb_tests/repositories/scala3", claim: "grammarErrorFiles: 0 of 400", claimed: 0 },
-  groovy: { repo: "/home/ishaq2321/bb_tests/repositories/grails-core", claim: "0/400 grammar errors and 0 missing tokens", claimed: 0 },
+  java: { repo: "<corpus-root>/intellij-community", claim: "no grammarErrorFiles field (never measured)", claimed: null },
+  kotlin: { repo: "<corpus-root>/intellij-community", claim: "grammarErrorFiles: 51 of 300", claimed: 51 },
+  scala: { repo: "<corpus-root>/bb_tests/repositories/scala3", claim: "grammarErrorFiles: 0 of 400", claimed: 0 },
+  groovy: { repo: "<corpus-root>/bb_tests/repositories/grails-core", claim: "0/400 grammar errors and 0 missing tokens", claimed: 0 },
 }
 
 type Row = {

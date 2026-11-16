@@ -7,7 +7,7 @@
 // Run: bun script/m14/tmp/rust-798-draw-check.ts
 import { filesFor } from "../../m60/target-spelling-census"
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/cargo/crates/cargo-test-support/src/lib.rs"
+const FILE = "<corpus-root>/bb_tests/repositories/cargo/crates/cargo-test-support/src/lib.rs"
 for (const cap of [40, 60, 240, 400, 700, 1400]) {
   const draw = filesFor("rust", "cargo", cap)
   const hit = draw.indexOf(FILE)

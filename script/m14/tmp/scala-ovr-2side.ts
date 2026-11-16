@@ -26,7 +26,7 @@ const parser = mk()
 // Control: a file whose override truth we already know the analyzer finds.
 // SourcePosition.scala is known to carry override truth: the analyzer resolves
 // NoSourcePosition.line -> SourcePosition.line at confidence 1.0 there.
-const CONTROL = "/home/ishaq2321/bb_tests/repositories/scala3/compiler/src/dotty/tools/dotc/util/SourcePosition.scala"
+const CONTROL = "<corpus-root>/bb_tests/repositories/scala3/compiler/src/dotty/tools/dotc/util/SourcePosition.scala"
 const controlSrc = fs.readFileSync(CONTROL, "utf8")
 const controlRoot = parser.parse(controlSrc).rootNode
 if (!controlRoot || controlRoot.namedChildCount === 0 || !controlRoot.text.includes("trait SrcPos")) {

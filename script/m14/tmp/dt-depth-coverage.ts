@@ -15,8 +15,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const REPOS = [
-  { repo: "proxicall", dir: "/home/ishaq2321/bb_tests/repositories/proxicall", lane: "proxicall:dart" },
-  { repo: "dart-http", dir: "/home/ishaq2321/bb_tests/repositories/dart-http", lane: "dart-http:dart" },
+  { repo: "proxicall", dir: "<corpus-root>/bb_tests/repositories/proxicall", lane: "proxicall:dart" },
+  { repo: "dart-http", dir: "<corpus-root>/bb_tests/repositories/dart-http", lane: "dart-http:dart" },
 ]
 
 // The differential's own walker (ext=dart), so "the corpus" means what the gate

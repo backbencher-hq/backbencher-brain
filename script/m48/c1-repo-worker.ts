@@ -22,7 +22,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const REPO_BASE = "/home/ishaq2321/bb_tests/repositories"
+const REPO_BASE = "<corpus-root>/bb_tests/repositories"
 const PARTS_DIR = path.join(ROOT, "validation/m48/results/C1-parts")
 
 const repo = process.argv[2]

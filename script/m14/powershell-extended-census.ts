@@ -102,7 +102,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { getParser } from "../../src/ast/engine"
 
 const ROOT = path.resolve(import.meta.dir, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LANG = "powershell"
 /** The cap this lane's census instruments use. Stated, not assumed: a different cap is a different population. */
 const SIZE_CAP = 512 * 1024

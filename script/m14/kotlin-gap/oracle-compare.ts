@@ -51,7 +51,7 @@ import {
   normTarget,
 } from "../differential"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const repoIdx = argv.indexOf("--repo")
 const REPO_DIR = repoIdx >= 0 ? argv[repoIdx + 1] : "kotlin"

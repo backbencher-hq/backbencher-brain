@@ -28,7 +28,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { RealObjectiveCAnalyzer } from "../../src/ast/real-objective-c-analyzer"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories/objc"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories/objc"
 const OUT = path.join(ROOT, "validation/m60/results/objc-worker-filter-loss.json")
 
 /** The worker's own leaf rule, restated: the last NON-EMPTY `:`-separated segment,

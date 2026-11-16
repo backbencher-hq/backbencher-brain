@@ -15,7 +15,7 @@ import path from "node:path"
 import * as WTS from "web-tree-sitter"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["Clyde", "clean-stdlib", "Prelude", "cloogle.org", "eastwood"]
 const WASMS = [
   ["pinned", path.join(ROOT, "wasm/tree-sitter-clean.wasm")],

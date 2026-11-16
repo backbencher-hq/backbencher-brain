@@ -13,7 +13,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 import path from "node:path"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 /** EXACTLY the engine's replacement, then the newline count difference. */
 function engineBlanked(content: string): string {

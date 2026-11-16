@@ -12,7 +12,7 @@ Adjust BLOCKS / MINE / FILE_INSERTS per round, then run.
 """
 import subprocess, sys, os
 
-ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+ROOT = "<corpus-root>/mcp/backbencher-brain"
 MAIN_GUARD = "main().catch(e => { console.error(e); process.exit(1) })\n"
 CO_AGENT_MARKERS = ("M60", "seam trace", "retrofit")
 

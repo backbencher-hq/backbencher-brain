@@ -81,7 +81,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.wasm") })
 const lang: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm/tree-sitter-graphql.wasm")))
 const parser = new P(); parser.setLanguage(lang)
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const files: Array<{abs:string,dir:string,rel:string,repo:string}> = []
 for (const e of fs.readdirSync(CR)) {
   const dir = path.join(CR, e)

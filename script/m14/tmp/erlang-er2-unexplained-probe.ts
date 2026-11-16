@@ -8,7 +8,7 @@ import { deriveErlangEdges } from "../differential"
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/rebar3"
+const CORPUS = "<corpus-root>/bb_tests/repositories/rebar3"
 const EXT = ".erl"
 
 async function main() {

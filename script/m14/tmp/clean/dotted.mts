@@ -1,6 +1,6 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/bb-lanes/clean"
+const ROOT = "<corpus-root>/mcp/bb-lanes/clean"
 const WIDE = path.join(ROOT, "script", "m14", "clean-wide-manifest.txt")
 const files = fs.readFileSync(WIDE, "utf8").split("\n").map(s=>s.trim()).filter(Boolean).filter(p=>fs.existsSync(p))
 const wts: any = await import("web-tree-sitter")
@@ -22,7 +22,7 @@ for (const f of files) {
         n++
         const line = x.startPosition.row + 1
         const lines = src.split("\n")
-        console.log(`\n--- ${path.relative("/home/ishaq2321/bb_tests/repositories", f)}:${line} ---`)
+        console.log(`\n--- ${path.relative("<corpus-root>/bb_tests/repositories", f)}:${line} ---`)
         for (let r = x.startPosition.row; r <= Math.min(x.endPosition.row, x.startPosition.row + 4); r++) console.log(`  ${r+1}| ${lines[r]}`)
         for (const d of dt) console.log(`   dotted_type: ${JSON.stringify(d.toString().slice(0,120))}`)
       }

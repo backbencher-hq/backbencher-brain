@@ -4,7 +4,7 @@ Lane owner: **hcl-lane**. Verdict page, refutation-first. The analyzer's own lon
 `docs/analyzers/hcl.md` (outside this lane's write scope); this page carries what the
 COVERAGE DECLARATION rests on, the measurements behind it, and what it does NOT settle.
 
-**Corpus — TWO populations, and every count says which one it is.** The **CENSUS** population is **9,329 git-tracked `.tf` / `.tfvars` / `.hcl` / `.tofu` files over 16 repositories under /home/ishaq2321/bb_tests/repositories** (files present on disk, ≤1 MiB) — the lane's own walk (`validation/m14/fixtures/hcl/tools/construct-census.mts`, `script/m14/hcl-extended-census.ts`), and every construct count in this page is a CENSUS count. **THE ARM POPULATION IS 11,139 admitted** (the gate's own line, root `$PWD/.corpus` = `/home/ishaq2321/mcp/backbencher-brain/.corpus`, same extensions, ≤1 MiB; 38 width-300 slices, contiguous [0, 11,139), closure exact 307,748) and IS the declaration's (`validation/m14/instruments/hcl/incoming-declaration.json`). A count from one is never quoted as the other's.
+**Corpus — TWO populations, and every count says which one it is.** The **CENSUS** population is **9,329 git-tracked `.tf` / `.tfvars` / `.hcl` / `.tofu` files over 16 repositories under <corpus-root>/bb_tests/repositories** (files present on disk, ≤1 MiB) — the lane's own walk (`validation/m14/fixtures/hcl/tools/construct-census.mts`, `script/m14/hcl-extended-census.ts`), and every construct count in this page is a CENSUS count. **THE ARM POPULATION IS 11,139 admitted** (the gate's own line, root `$PWD/.corpus` = `<corpus-root>/mcp/backbencher-brain/.corpus`, same extensions, ≤1 MiB; 38 width-300 slices, contiguous [0, 11,139), closure exact 307,748) and IS the declaration's (`validation/m14/instruments/hcl/incoming-declaration.json`). A count from one is never quoted as the other's.
 
 **Declared row.** `hcl 8/9 from=spec coverage block` — closure `8 implemented + 0 unexercised +
 1 gap = 9 applicable = 10 − 1 grammar-absence − 0 unclassified`.
@@ -24,13 +24,13 @@ COVERAGE DECLARATION rests on, the measurements behind it, and what it does NOT 
    {"hcl":{"pass":11,"fail":0}}`.
 2. **Its cited adjudication does not exist.** HCL-D1's resolution ends "Adjudication:
    `bb_tests/hcl/out/calls-feasibility.json`". That path does not exist on this laptop — indeed
-   `/home/ishaq2321/bb_tests/hcl/` does not exist at all. The instrument that wrote it
+   `<corpus-root>/bb_tests/hcl/` does not exist at all. The instrument that wrote it
    (`script/m14/tmp/hcl/calls-feasibility.mts`) imports a hardcoded
-   `/home/ishaq2321/backbencher-brain/src/ast/engine` — the repo is at
-   `/home/ishaq2321/mcp/backbencher-brain`. A ruling that rests on a missing artifact is not a
+   `<corpus-root>/backbencher-brain/src/ast/engine` — the repo is at
+   `<corpus-root>/mcp/backbencher-brain`. A ruling that rests on a missing artifact is not a
    ruling; this is the same hardcoded-path class the corrected `firing-check.mjs` header records.
 3. **The old corpus root is gone too.** The previous `corpus` block (9,079 files / 9 repos) and every
-   probe in `script/m14/tmp/hcl/` point at `/home/ishaq2321/bb_tests/hcl/repos`, which no longer
+   probe in `script/m14/tmp/hcl/` point at `<corpus-root>/bb_tests/hcl/repos`, which no longer
    exists. The measured population is the one above; the `corpus` block is refreshed to it.
 
 Replacement: **HCL-D1a** (extends / implements / instantiates) and **HCL-D9** (calls / overrides),

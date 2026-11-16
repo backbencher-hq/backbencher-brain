@@ -4,8 +4,8 @@ import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 
-const ROOT = process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ?? "/home/ishaq2321/mcp/backbencher-brain"
-const LIB = "/home/ishaq2321/.gradle/wrapper/dists/gradle-8.14-all/c2qonpi39x1mddn7hk5gh9iqj/gradle-8.14/lib"
+const ROOT = process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ?? "<corpus-root>/mcp/backbencher-brain"
+const LIB = "<corpus-root>/.gradle/wrapper/dists/gradle-8.14-all/c2qonpi39x1mddn7hk5gh9iqj/gradle-8.14/lib"
 
 const full = readFileSync("/tmp/g841-r14-minimal.groovy", "utf8")
 const noImports = full.split("\n").filter((l) => !/^\s*import\b/.test(l)).join("\n")

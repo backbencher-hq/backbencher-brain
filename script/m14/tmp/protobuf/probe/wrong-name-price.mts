@@ -53,7 +53,7 @@
 import { readFileSync, existsSync } from "node:fs"
 import { parseFile } from "../../../../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ORACLE = process.env.PB_ORACLE ?? "/tmp/opencode/pb/protoc-oracle.json"
 const TSV = process.env.PB_TSV ?? "/tmp/opencode/pb/uses-targets.tsv"
 

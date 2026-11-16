@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 // Analyzer-level Tier A (no pipeline, no shared DB): every emitted
 // relationship line must contain its target's leaf name (Tier-A-exact:
 // post-dot leaf, word boundaries, $ sigil tolerated). Mirrors

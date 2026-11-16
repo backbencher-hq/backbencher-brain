@@ -4,8 +4,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 async function main() {
   const files = process.argv.slice(2)

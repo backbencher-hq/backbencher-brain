@@ -5,7 +5,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FIXTURE = process.argv[2]                             // e.g. groovy/anonymous-body-overrides.groovy
 const WASM = process.argv[3] ?? "tree-sitter-groovy.wasm"
 const MOD = process.argv[4] ?? "real-groovy-analyzer"

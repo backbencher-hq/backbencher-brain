@@ -48,7 +48,7 @@ import { fileURLToPath } from "url"
 import { Parser, Language } from "web-tree-sitter"
 
 const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..", "..") // the REPO ROOT
-const REPOS = process.env.XML_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/xml/repos"
+const REPOS = process.env.XML_CORPUS_ROOT ?? "<corpus-root>/bb_tests/xml/repos"
 const OUT = process.env.XML_AB_OUT ?? join(ROOT_HERE, "validation", "m12", "results")
 
 const CASES: [string, string][] = [

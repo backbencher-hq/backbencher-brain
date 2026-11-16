@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 async function main() {
-  const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+  const ROOT = "<corpus-root>/mcp/backbencher-brain"
   const wts: any = await import("web-tree-sitter")
   const L: any = wts.Language ?? wts.default?.Language
   const LANG: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-php.wasm")))

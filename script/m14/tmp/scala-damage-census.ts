@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   const gl = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-scala.wasm")))
   const parser = new P(); parser.setLanguage(gl)
   const analyzer = new RealScalaAnalyzer()
-  const ROOTDIR = "/home/ishaq2321/bb_tests/repositories"
+  const ROOTDIR = "<corpus-root>/bb_tests/repositories"
   const files = walk(path.join(ROOTDIR, CORPUS))
   let clean = 0, damaged = 0, reported = 0, silent = 0, named = 0, fileLevelOnly = 0
   const silentEx: string[] = []
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
       // does it name a real node, or is it the file-level fallback?
       if (errs.some((e: any) => e?.range && (e.range.startIndex > 0 || e.range.endIndex > 0))) named++
       else fileLevelOnly++
-    } else { silent++; if (silentEx.length < 8) silentEx.push(path.relative(path.join("/home/ishaq2321/bb_tests/repositories", CORPUS), f)) }
+    } else { silent++; if (silentEx.length < 8) silentEx.push(path.relative(path.join("<corpus-root>/bb_tests/repositories", CORPUS), f)) }
   }
   console.log(`# scala damaged-file reporting — ${CORPUS}\n`)
   console.log(`- files: ${files.length}   clean: ${clean}   damaged: ${damaged}`)

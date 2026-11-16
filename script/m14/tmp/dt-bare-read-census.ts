@@ -13,7 +13,7 @@ import { readdirSync, statSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 function walk(dir: string, out: string[] = []): string[] {
   let entries: any[] = []
@@ -46,7 +46,7 @@ async function main() {
   if (corpus) {
     // Full extent on the pinned dart corpora — the fixtures are the witness,
     // the corpus is the blast radius.
-    const repos = ["proxicall", "dart-http"].map((r) => join("/home/ishaq2321/bb_tests/repositories", r))
+    const repos = ["proxicall", "dart-http"].map((r) => join("<corpus-root>/bb_tests/repositories", r))
     const byShape = new Map<string, { n: number; sample: string }>()
     let files = 0, edges = 0
     for (const repo of repos) {
@@ -63,7 +63,7 @@ async function main() {
           const key = `${r.type}|${meta}`
           const cur = byShape.get(key)
           if (cur) cur.n++
-          else byShape.set(key, { n: 1, sample: `${f.replace("/home/ishaq2321/", "")}:${r.line_number} ${r.source} -> ${r.target}` })
+          else byShape.set(key, { n: 1, sample: `${f.replace("<corpus-root>/", "")}:${r.line_number} ${r.source} -> ${r.target}` })
         }
       }
       console.log(`[corpus] ${repo}: ${list.length} files so far, ${edges} sub-threshold edges`)

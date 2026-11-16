@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process"
 import { writeFileSync } from "node:fs"
 
 const ROOT = process.cwd()
-const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/mojo"
+const corpus = process.argv[2] || "<corpus-root>/bb_tests/repositories/mojo"
 const relative = execFileSync("git", ["-C", corpus, "ls-files", "*.pm", "*.pl"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
 const files = relative.map((file) => `${corpus}/${file}`)

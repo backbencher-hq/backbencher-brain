@@ -14,7 +14,7 @@ const lang = await L.load(readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const ROOT = "<corpus-root>/bb_tests/repositories/sqlite"
 const files = execFileSync("bash", ["-c", `find ${ROOT} -name '*.c' -size +1k -not -path '*/.git/*' | sort`], { encoding: "utf8" }).split("\n").filter(Boolean)
 let filesWithSwallow = 0
 let names = 0

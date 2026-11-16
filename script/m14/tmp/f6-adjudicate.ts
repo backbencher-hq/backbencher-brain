@@ -11,7 +11,7 @@
 // enumeration is incomplete and the GATE is wrong, not the analyzer.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const FLAGGED: Record<string, string[]> = {
   java: ["_reserved_identifier", "comment"],

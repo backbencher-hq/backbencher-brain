@@ -16,12 +16,12 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
-import { RealJsonAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-json-analyzer"
-import { RealYamlAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-yaml-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
+import { RealJsonAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-json-analyzer"
+import { RealYamlAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-yaml-analyzer"
 
-const OUT = "/home/ishaq2321/bb_tests/hcl/out"
+const OUT = "<corpus-root>/bb_tests/hcl/out"
 
 /** The band: 40–200 AST nodes per file. Big enough to amortise fixed
  *  per-file overhead, small enough that a single pathological file cannot
@@ -33,7 +33,7 @@ const ROUNDS = 3
 const SOURCES: Record<string, { roots: string[]; ext: RegExp; analyzer: any; label: string }> = {
   hcl: {
     label: "hcl",
-    roots: ["/home/ishaq2321/bb_tests/hcl/repos/terraform", "/home/ishaq2321/bb_tests/hcl/repos/tf-aws-components"],
+    roots: ["<corpus-root>/bb_tests/hcl/repos/terraform", "<corpus-root>/bb_tests/hcl/repos/tf-aws-components"],
     ext: /\.(tf|tfvars|hcl|tofu)$/i,
     analyzer: new RealHclAnalyzer(),
   },
@@ -42,13 +42,13 @@ const SOURCES: Record<string, { roots: string[]; ext: RegExp; analyzer: any; lab
     // fixtures: both are real declarative documents, neither is a package manifest
     // dressed up as a corpus.
     label: "json",
-    roots: ["/home/ishaq2321/bb_tests/hcl/repos/terraform", "/home/ishaq2321/bb_tests/repositories/kong"],
+    roots: ["<corpus-root>/bb_tests/hcl/repos/terraform", "<corpus-root>/bb_tests/repositories/kong"],
     ext: /\.json$/i,
     analyzer: new RealJsonAnalyzer(),
   },
   yaml: {
     label: "yaml",
-    roots: ["/home/ishaq2321/bb_tests/repos/tf-aws-components", "/home/ishaq2321/bb_tests/hcl/repos/tf-aws-components"],
+    roots: ["<corpus-root>/bb_tests/repos/tf-aws-components", "<corpus-root>/bb_tests/hcl/repos/tf-aws-components"],
     ext: /\.(ya?ml)$/i,
     analyzer: new RealYamlAnalyzer(),
   },

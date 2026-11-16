@@ -8,7 +8,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const LANES: Array<{ repo: string; lang: string; ext: string; routeByContent?: string[] }> = [
   { repo: "grails-core", lang: "groovy", ext: "groovy,gradle" },
   { repo: "geb", lang: "groovy", ext: "groovy,gradle" },

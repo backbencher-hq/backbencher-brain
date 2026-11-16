@@ -99,7 +99,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { getParser } from "../../../src/ast/engine"
 import { RealGroovyAnalyzer } from "../../../src/ast/real-groovy-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_DIR = process.env.LANE_REPO ?? "groovy"
 const WANT = Number(process.env.LANE_NFILES ?? 0)
 const CONC = Number(process.env.LANE_CONC ?? 6)

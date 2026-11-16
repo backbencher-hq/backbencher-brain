@@ -29,7 +29,7 @@ import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "../m14/or
 import { RESERVED_TOKENS, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "../../src/ast/solidity-reserved-tokens"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const DIR = path.join(CORPUS_ROOT, "solidity")
 const OUT = path.join(ROOT, "validation/m60/results/solidity-unexplained-adjudication.json")
 const argv = process.argv.slice(2)

@@ -3,8 +3,8 @@
 //   bun script/m14/tmp/c919-binary2.ts
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const file = "/home/ishaq2321/bb_tests/repositories/nlohmann-json/tests/src/unit-serialization.cpp"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const file = "<corpus-root>/bb_tests/repositories/nlohmann-json/tests/src/unit-serialization.cpp"
 const src = readFileSync(file, "utf8")
 const { RealCppAnalyzer } = await import(path.join(ROOT, "src", "ast", "real-cpp-analyzer.ts"))
 const { RealCppAnalyzer: Base } = await import(path.join(ROOT, "src", "ast", "cpp-baseline-analyzer.ts"))

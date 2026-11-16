@@ -25,7 +25,7 @@
  *
  * Run: `npx tsx script/m14/verify-dart-references.ts`
  * Then over the corpus: `--corpus` walks `BB_CORPUS_ROOT` (default
- * `/home/ishaq2321/bb_tests/repositories`) with a deterministic stride sample of
+ * `<corpus-root>/bb_tests/repositories`) with a deterministic stride sample of
  * tracked `.dart` files and prints agreement per repo. That number is a
  * comparison between two implementations of one measured rule, and it is quoted in
  * `docs/analyzers/dart.md` as exactly that.
@@ -39,7 +39,7 @@ import { RealDartAnalyzer } from "../../src/ast/real-dart-analyzer"
 import type { ASTEngine } from "../../src/ast/engine"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const CORPUS = process.argv.includes("--corpus")
 const PER_REPO = Number(process.env.BB_DART_PER_REPO ?? 40)
 

@@ -23,7 +23,7 @@ const require = createRequire(import.meta.url)
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const WASM_DIR = path.join(ROOT, "wasm")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   java: { wasm: "tree-sitter-java.wasm", ext: [".java"], repo: "grails-core" },

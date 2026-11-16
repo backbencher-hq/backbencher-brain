@@ -4,7 +4,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { loadAvg1 } from "./loadavg"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 function filesUnder(root: string, exts: string[], limit: number): string[] {
   const out: string[] = []

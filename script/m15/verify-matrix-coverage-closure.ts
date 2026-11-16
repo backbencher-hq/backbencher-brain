@@ -60,7 +60,7 @@ const masterPlanPath = path.join(ROOT, "docs/m15/M15-MASTER-PLAN.md")
 
 // Map repos to their primary languages (from repo names and known content)
 const repoLangs: Record<string, string[]> = {}
-// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "<corpus-root>/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const testReposDir = resolveCorpusRoot(process.cwd()) ?? "testReposDir_UNRESOLVED"
 const homeRepos = ["TypeScript", "vscode", "openclaw", "paperclip", "ProxiCall"]
 
@@ -142,7 +142,7 @@ for (const repo of Object.keys(testRepoMap)) {
   if (existsSync(repoPath)) existCount++
 }
 for (const repo of Object.keys(homeRepoMap)) {
-  const repoPath = "/home/ishaq2321/" + repo
+  const repoPath = "<corpus-root>/" + repo
   if (existsSync(repoPath)) existCount++
 }
 ck("most repos exist on disk", existCount >= totalRepos - 3, existCount + "/" + totalRepos + " exist")

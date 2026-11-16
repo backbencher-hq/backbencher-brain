@@ -30,7 +30,7 @@ import { RealCppAnalyzer as Post } from "../../src/ast/real-cpp-analyzer"
 // which does not exist here, so the probe walked 0 files and reported a ratio of
 // nothing. `BB_CORPUS_ROOT` still wins. The zero-admission case is reported rather
 // than averaged — a ratio over an empty corpus is not a slow ratio, it is no ratio.
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2").split(",").filter(Boolean)
 const EXTS = [".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++"]
 const SKIP = new Set([".git", "build", "node_modules", ".github"])

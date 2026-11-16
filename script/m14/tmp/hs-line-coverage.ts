@@ -26,7 +26,7 @@
 // Usage: bun script/m14/tmp/hs-line-coverage.ts <dir> [maxFiles] [--out file]
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 function filesUnder(dir: string, exts: string[], out: string[] = []): string[] {
   let entries: any[] = []
   try {

@@ -35,7 +35,7 @@ import { createHash } from "crypto"
 import Database from "better-sqlite3"
 
 const ROOT = path.resolve(process.cwd())
-const srcDir = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/gql-gqlgen"
+const srcDir = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/gql-gqlgen"
 const nFiles = Number(process.argv[3] ?? 200)
 const TMP = "/tmp/opencode/m14-store-resolution"
 

@@ -47,7 +47,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 import { RelationshipType } from "../../src/ast/types"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = process.argv[2] ?? "/tmp/vue-enum-divergence.json"
 const LIMIT = Number(process.env.BB_VUE_LIMIT ?? "0")
 

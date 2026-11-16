@@ -81,7 +81,7 @@ type File = { repo: string; dir: string; rel: string; abs: string; text: string 
 const files: File[] = []
 const seenAbs = new Set<string>()
 for (const e of REPOS) {
-  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e)
+  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", e)
   try { if (!statSync(dir).isDirectory()) continue; execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
   let tracked: string[]
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }

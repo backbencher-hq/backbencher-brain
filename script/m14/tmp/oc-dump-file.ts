@@ -3,7 +3,7 @@
 // Usage: bun script/m14/tmp/oc-dump-file.ts <path> [--tree]
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const args = process.argv.slice(2)
 const file = path.isAbsolute(args[0]) ? args[0] : path.join(ROOT, args[0])

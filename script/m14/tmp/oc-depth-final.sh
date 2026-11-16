@@ -4,7 +4,7 @@
 # corpora; both are small enough to be read WHOLE, so the depth claim is a full extent
 # rather than a draw.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 export BB_M14_WORK=/tmp/oc-depth-final-work
 rm -rf "$BB_M14_WORK"
 

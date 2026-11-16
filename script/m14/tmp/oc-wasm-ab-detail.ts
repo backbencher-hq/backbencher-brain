@@ -2,7 +2,7 @@
 // Usage: bun script/m14/tmp/oc-wasm-ab-detail.ts <wasmA> <wasmB> <file...>
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const [wasmA, wasmB, ...files] = process.argv.slice(2)
 const wts: any = await import("web-tree-sitter")

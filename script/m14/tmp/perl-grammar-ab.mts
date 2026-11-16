@@ -6,7 +6,7 @@
 // checkouts -- so point BB_PERL_CORPUS at them. Everything written lands in
 // BB_PERL_OUT (default /tmp), never inside the repo.
 const REPO = path.resolve(import.meta.dir, "..", "..", "..")
-const CORPUS = process.env.BB_PERL_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_PERL_CORPUS ?? "<corpus-root>/bb_tests/repositories"
 const OUTDIR = process.env.BB_PERL_OUT ?? "/tmp"
 /**
  * PERL GRAMMAR A/B — wired bytes vs a fresh build of 1.2.1 vs a fresh build of
@@ -35,7 +35,7 @@ import * as path from "path"
 import { createHash } from "crypto"
 
 const ROOT = path.resolve(import.meta.dir, "..", "..", "..")
-const CR = process.env.BB_PERL_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_PERL_CORPUS ?? "<corpus-root>/bb_tests/repositories"
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const ParserClass = wts.Parser ?? wts.default ?? wts
 const Language = wts.Language ?? wts.default?.Language

@@ -6,7 +6,7 @@ import * as path from "path"
 import * as WTS from "web-tree-sitter"
 import { RealCAnalyzer } from "../../../src/ast/real-c-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main() {
   const P: any = (WTS as any).Parser ?? (WTS as any).default ?? WTS
   const L: any = (WTS as any).Language ?? (WTS as any).default?.Language

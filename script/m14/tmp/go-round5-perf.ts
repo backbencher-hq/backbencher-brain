@@ -95,7 +95,7 @@ const PreFix = (await import(preFixPath)).RealGoAnalyzer as typeof PostFix
 const headSha = execSync("git rev-parse HEAD", { cwd: path.join(import.meta.dir, "../../..") }).toString().trim()
 
 // ------------------------------------------------------------------ the corpus
-const REPOS = arg("--repos") ?? "/home/ishaq2321/bb_tests/repositories/go-tools"
+const REPOS = arg("--repos") ?? "<corpus-root>/bb_tests/repositories/go-tools"
 const MIN_KB = Number(arg("--min-kb") ?? 8)
 const MAX_KB = Number(arg("--max-kb") ?? 40)
 const WANT = Number(arg("--files") ?? 300)

@@ -59,7 +59,7 @@ import { getParser } from "../../../src/ast/engine"
 import { RealJavaAnalyzer } from "../../../src/ast/real-java-analyzer"
 
 // ------------------------------------------------------------------ config
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_DIR = process.env.BB_REPO ?? "java-lib"
 const LANE_NFILES = Number(process.env.LANE_NFILES ?? 0) // 0 = every .java file on disk
 const CONCURRENCY = Number(process.env.LANE_CONC ?? 8)

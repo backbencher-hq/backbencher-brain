@@ -10,7 +10,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1]), "..", "..", "..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 const repo = process.argv[2] ?? "cats-effect"
 const limit = Number(process.argv[3] ?? 400)

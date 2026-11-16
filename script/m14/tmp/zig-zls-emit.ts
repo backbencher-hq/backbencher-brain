@@ -5,13 +5,13 @@ async function parse(f: string) {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts
   const L: any = wts.Language ?? wts.default?.Language
-  await P.init({ locateFile: () => path.join("/home/ishaq2321/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const LANG: any = await L.load(fs.readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-cpp.wasm".replace("cpp", "zig")))
+  await P.init({ locateFile: () => path.join("<corpus-root>/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const LANG: any = await L.load(fs.readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-cpp.wasm".replace("cpp", "zig")))
   const p = new P(); p.setLanguage(LANG)
   return p.parse(fs.readFileSync(f, "utf8")).rootNode
 }
 async function main() {
-  for (const f of ["/home/ishaq2321/bb_tests/repositories/zls/tests/analysis/result_location_type.zig", "/home/ishaq2321/bb_tests/repositories/zls/src/analyser/InternPool.zig"]) {
+  for (const f of ["<corpus-root>/bb_tests/repositories/zls/tests/analysis/result_location_type.zig", "<corpus-root>/bb_tests/repositories/zls/src/analyser/InternPool.zig"]) {
     const src = fs.readFileSync(f, "utf8")
     const root = await parse(f)
     const r: any = await new RealZigAnalyzer().analyze(root, src, "T.zig")

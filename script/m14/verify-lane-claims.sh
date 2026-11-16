@@ -11,7 +11,7 @@
 set -u
 LANGS="${1:-}"
 [ -z "$LANGS" ] && { echo "usage: $0 <language>"; exit 2; }
-ROOT=/home/ishaq2321/backbencher-brain
+ROOT=<corpus-root>/backbencher-brain
 cd "$ROOT" || exit 1
 L=$(echo "$LANGS" | tr '[:upper:]' '[:lower:]')
 

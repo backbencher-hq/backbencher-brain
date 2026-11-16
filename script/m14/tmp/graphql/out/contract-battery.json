@@ -1,5 +1,5 @@
 {
-  "wasm": "/home/ishaq2321/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
+  "wasm": "<corpus-root>/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
   "pass": 59,
   "fail": 0,
   "total": 59,

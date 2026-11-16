@@ -1,7 +1,7 @@
 {
   "population": {
     "rule": "the ADMITTED SET is the GIT-TRACKED set (git ls-files) restricted to the router's extensions (.groovy, .gvy, .gradle) and to files under the 1 MB cap; the REPO COUNT is the repositories carrying an admitted file",
-    "corpus_root": "/home/ishaq2321/bb_tests/repositories",
+    "corpus_root": "<corpus-root>/bb_tests/repositories",
     "extensions": [
       "groovy",
       "gvy",
@@ -34,8 +34,8 @@
     "excluded_absent": 3,
     "measured_files": 100,
     "measured_slice": [
-      "/home/ishaq2321/bb_tests/repositories/Exposed/documentation-website/Writerside/snippets/exposed-modules-groovy-gradle/build.gradle",
-      "/home/ishaq2321/bb_tests/repositories/geb/doc/manual-snippets/src/test/groovy/configuration/NavigatorFactoryConfigSpec.groovy"
+      "<corpus-root>/bb_tests/repositories/Exposed/documentation-website/Writerside/snippets/exposed-modules-groovy-gradle/build.gradle",
+      "<corpus-root>/bb_tests/repositories/geb/doc/manual-snippets/src/test/groovy/configuration/NavigatorFactoryConfigSpec.groovy"
     ],
     "slice_offset": 0,
     "is_whole_population": false,

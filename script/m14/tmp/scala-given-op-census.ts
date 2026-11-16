@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const repo = process.argv[2] ?? "scala3"
 const limit = Number(process.argv[3] ?? 400)
 function walkFiles(dir: string, out: string[] = []): string[] {

@@ -26,7 +26,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 // NINTH corpus, added 2026-09-28 for ONE reason: `yaml_tag_include` had ZERO occurrences in
 // the first eight, so the family was pinned by fixture only and no corpus could hold it
 // to account. pyyaml-include is the library that DEFINES the construct — its own test

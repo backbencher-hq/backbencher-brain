@@ -3,7 +3,7 @@
 // duplicate tree visits, and `emit` dedupes, so every row must be identical.
 import fs from "node:fs";
 import path from "node:path";
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain";
+const ROOT = "<corpus-root>/mcp/backbencher-brain";
 const wts = await import(ROOT + "/node_modules/web-tree-sitter/tree-sitter.js");
 const Parser = wts.Parser ?? wts.default ?? wts;
 const Language = wts.Language ?? wts.default?.Language;

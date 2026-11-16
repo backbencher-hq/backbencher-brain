@@ -6,8 +6,8 @@ import * as path from "path"
 import { RealCAnalyzer } from "../../../src/ast/real-c-analyzer"
 import { deriveCCalls } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const JQ = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const JQ = "<corpus-root>/bb_tests/repositories/jq"
 
 async function parseFile(abs: string) {
   const P: any = (WTS as any).Parser ?? (WTS as any).default ?? WTS

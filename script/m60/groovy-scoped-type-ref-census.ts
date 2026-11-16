@@ -174,7 +174,7 @@ async function main() {
   const dotTargets = new Set<string>()
 
   for (const corpus of CORPORA) {
-    const root = path.resolve("/home/ishaq2321/bb_tests/repositories", corpus)
+    const root = path.resolve("<corpus-root>/bb_tests/repositories", corpus)
     const files = walk(root).sort()
     if (files.length === 0) {
       process.stdout.write(`  (corpus ${corpus}: not present)\n`)

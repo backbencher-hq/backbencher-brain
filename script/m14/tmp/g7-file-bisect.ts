@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/DefaultGraphQLTypeManager.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/DefaultGraphQLTypeManager.groovy"
 
 async function errs(src: string): Promise<number> {
   const parser = await ASTEngine.getParser("groovy" as any)

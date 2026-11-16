@@ -1,6 +1,6 @@
 {
   "corpus": {
-    "root": "/home/ishaq2321/bb_tests/repositories",
+    "root": "<corpus-root>/bb_tests/repositories",
     "files": 4394,
     "repos": {
       "bootstrap": 122,

@@ -9,10 +9,10 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
-const REPOS = "/home/ishaq2321/bb_tests/hcl/repos"
+const REPOS = "<corpus-root>/bb_tests/hcl/repos"
 const EXT = /\.(tf|tfvars|hcl|tofu)$/i
 const parser = await ASTEngine.getParser("hcl")
 const analyzer = new RealHclAnalyzer()

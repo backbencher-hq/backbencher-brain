@@ -21,8 +21,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealTypeScriptAnalyzer } from "../../../src/ast/real-typescript-analyzer"
 
-const ROOT = process.env.BB_M14_ROOT ?? "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = process.env.BB_M14_ROOT ?? "<corpus-root>/mcp/backbencher-brain"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const LANES = ["vue-core", "element-plus"]
 
 function filesUnder(dir: string, out: string[] = []): string[] {

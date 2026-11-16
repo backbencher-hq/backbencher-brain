@@ -23,7 +23,7 @@
 //     reported a ratio that overstated the coverage. The harness counts every
 //     assertion once and keeps positives and negatives in separate buckets.
 //
-// The 8 hardcoded `/home/ishaq2321/...` paths in sibling verifiers are not
+// The 8 hardcoded `<corpus-root>/...` paths in sibling verifiers are not
 // used here: this suite is hermetic.
 //
 // Run: npx tsx script/m20/verify-security-flow-boundary.ts

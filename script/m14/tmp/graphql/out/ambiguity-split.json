@@ -15,7 +15,7 @@
     "skippedBad": 0,
     "fresh": 0,
     "partial": false,
-    "checkpoint": "/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/walk-ambiguity-split.txt",
+    "checkpoint": "<corpus-root>/mcp/bb-lanes/graphql/script/m14/tmp/graphql/walk-ambiguity-split.txt",
     "degraded": 0
   },
   "symbols": {

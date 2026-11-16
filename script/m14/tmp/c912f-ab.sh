@@ -3,8 +3,8 @@
 # HEAD's analyzer, swapped in and RESTORED in the same command regardless of
 # outcome (trap), and the restore is md5-verified.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
-R=/home/ishaq2321/bb_tests/repositories
+cd <corpus-root>/mcp/backbencher-brain || exit 1
+R=<corpus-root>/bb_tests/repositories
 FIX=src/ast/real-c-analyzer.ts
 KEEP=/tmp/c912f-fix.ts
 cp "$FIX" "$KEEP" || exit 1

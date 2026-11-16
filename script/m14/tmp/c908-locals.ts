@@ -10,7 +10,7 @@ const lang = await L.load(fs.readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const src = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/parser.c", "utf8")
+const src = fs.readFileSync("<corpus-root>/bb_tests/repositories/jq/src/parser.c", "utf8")
 const root = parser.parse(src).rootNode
 
 const show = (n: any, depth = 0): void => {

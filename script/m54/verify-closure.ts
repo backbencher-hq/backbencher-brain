@@ -80,7 +80,7 @@ check("X1.downstream-m52-V1", v1.ok, v1.detail)
     const { realpathSync } = await import("node:fs")
     const path = await import("node:path")
     const pid = createHash("sha1").update(realpathSync(${JSON.stringify(ROOT)})).digest("hex")
-    const dbPath = path.join("/home/ishaq2321/.bb", "projects", pid, "brain.db")
+    const dbPath = path.join("<corpus-root>/.bb", "projects", pid, "brain.db")
     const { openDatabase } = await import(${JSON.stringify(path.join(ROOT, "src/storage/db.bun.ts"))})
     const db = openDatabase(dbPath, { readonly: true })
     const fk = (db.native as any).prepare("PRAGMA foreign_keys").get() as any

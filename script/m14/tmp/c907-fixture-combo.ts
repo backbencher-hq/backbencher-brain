@@ -7,9 +7,9 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const jv = readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/jv.c", "utf8").split("\n")
-const util = readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/util.c", "utf8").split("\n")
-const dtoa = readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/jv_dtoa.c", "utf8").split("\n")
+const jv = readFileSync("<corpus-root>/bb_tests/repositories/jq/src/jv.c", "utf8").split("\n")
+const util = readFileSync("<corpus-root>/bb_tests/repositories/jq/src/util.c", "utf8").split("\n")
+const dtoa = readFileSync("<corpus-root>/bb_tests/repositories/jq/src/jv_dtoa.c", "utf8").split("\n")
 
 const slice = (ls: string[], a: number, b: number): string => ls.slice(a - 1, b).join("\n")
 

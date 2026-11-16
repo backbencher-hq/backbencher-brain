@@ -53,7 +53,7 @@ const CASES: { id: string; src: string; note: string }[] = [
   { id: "unicode-range-selector", src: "#\\31 { color: red; }\n", note: "an escaped unicode id alone" },
 ]
 
-const CSS_VARS = "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/css/samples/css-vars/expected.css"
+const CSS_VARS = "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/tests/css/samples/css-vars/expected.css"
 
 function verdict(src: string) {
   const t = p.parse(src)

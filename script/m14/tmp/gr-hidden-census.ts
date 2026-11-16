@@ -9,7 +9,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { deriveTreeEdges, deriveGroovyEdges } from "../differential"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPO = process.argv[2] ?? "grails-core"
 const EXT = "groovy,gradle"
 const repoDir = path.join(CORPUS, REPO)

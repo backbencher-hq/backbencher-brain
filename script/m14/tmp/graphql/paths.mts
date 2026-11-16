@@ -39,7 +39,7 @@ export const GROUND_TRUTH = path.join(GQL, "fixtures", "ground-truth.json")
  * must fetch. Every probe that reads them records the exact revision it used, so
  * a missing corpus is a fetch instruction rather than a mystery.
  */
-export const CORPORA = process.env.GQL_CORPORA ?? "/home/ishaq2321/bb_tests/graphql/repos"
+export const CORPORA = process.env.GQL_CORPORA ?? "<corpus-root>/bb_tests/graphql/repos"
 
 /** The wired grammar under test. */
 export const WASM = process.env.GQL_WASM ?? path.join(ROOT, "wasm/tree-sitter-graphql.wasm")

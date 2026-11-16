@@ -4,9 +4,9 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const F =
-  "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/runtime-legacy/samples/attribute-casing-custom-element/main.svelte"
+  "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/tests/runtime-legacy/samples/attribute-casing-custom-element/main.svelte"
 
 async function main() {
   const src = fs.readFileSync(F, "utf8")

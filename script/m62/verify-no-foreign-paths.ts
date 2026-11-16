@@ -5,12 +5,12 @@
 // FOUND 2026-10-11 while fixing the three gates that could not fail
 // (script/m62/verify-gates-can-fail.ts). script/m15/verify-edit-e2e-docs.ts:37 reads:
 //
-//   const REPOS_DIR = path.resolve("/home/ishaq2321/bb_tests/repositories")
+//   const REPOS_DIR = path.resolve("<corpus-root>/bb_tests/repositories")
 //
-// `/home/ishaq2321` is the OTHER laptop's home directory, hardcoded. On this machine
+// `<corpus-root>` is the OTHER laptop's home directory, hardcoded. On this machine
 // the gate dies immediately:
 //
-//   Error: ENOENT: no such file or directory, scandir '/home/ishaq2321/bb_tests/repositories/graphql-js'
+//   Error: ENOENT: no such file or directory, scandir '<corpus-root>/bb_tests/repositories/graphql-js'
 //
 // — it never runs a single check. It was in `npm run verify`, so that leg contributed
 // nothing while appearing to be part of the chain.
@@ -199,7 +199,7 @@ if (broken.length > 0) {
       "      convention already used by script/m15/verify-security-deep.ts.\n" +
       "    - the corpus is OPTIONAL: search a real location and say so, rather than\n" +
       "      resolving a path that cannot exist here.\n\n" +
-      "  Note that /home/ishaq2321 is a different machine. A gate pointing at it either CRASHES\n" +
+      "  Note that <corpus-root> is a different machine. A gate pointing at it either CRASHES\n" +
       "  (ENOENT, as script/m15/verify-edit-e2e-docs.ts does) or silently exercises nothing\n" +
       "  and passes vacuously. The second is worse: a gate that cannot see its subject\n" +
       "  reports green.",

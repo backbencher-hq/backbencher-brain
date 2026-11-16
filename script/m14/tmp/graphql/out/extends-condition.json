@@ -2,7 +2,7 @@
  "kind": "m60-extends-condition-probe",
  "producedBy": "script/m14/tmp/graphql/probe/extends-condition.mts",
  "entryPoint": "grammar walk replicating real-graphql-analyzer.ts:314-344 exactly",
- "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "corpusRoot": "<corpus-root>/bb_tests/repositories",
  "admittedFiles": 1905,
  "documentsWithParseErrorsOrMissingNodes": 142,
  "buckets": {

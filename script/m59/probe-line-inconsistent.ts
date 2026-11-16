@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 const SKIP_DIRS = new Set([
   ".git", "node_modules", "dist", "build", "out", "target", ".venv", "venv",

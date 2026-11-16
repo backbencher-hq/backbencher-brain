@@ -37,7 +37,7 @@ import * as cp from "node:child_process"
 import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const REPO = process.env.SOL_REPO ?? "/home/ishaq2321/bb_tests/repositories/solidity"
+const REPO = process.env.SOL_REPO ?? "<corpus-root>/bb_tests/repositories/solidity"
 const TRIALS = Number(process.env.BB_PERF_TRIALS ?? 3)
 const OUT = path.join(ROOT, "validation", "m60", "results", "solidity-perf.json")
 /** The same rule the surface artifact uses. Not relaxed here. */

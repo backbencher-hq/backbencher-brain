@@ -7,7 +7,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const WASM = process.argv.includes("--wasm")
   ? process.argv[process.argv.indexOf("--wasm") + 1]
   : "wasm/tree-sitter-cpp.wasm"

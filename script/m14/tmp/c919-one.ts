@@ -4,7 +4,7 @@
 //   bun script/m14/tmp/c919-one.ts <file> <out.json>
 import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const file = process.argv[2]
 const out = process.argv[3]
 const { parseFile } = await import(path.join(ROOT, "src", "ast", "engine.ts"))

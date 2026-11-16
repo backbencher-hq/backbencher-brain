@@ -2,8 +2,8 @@
 // `isCgd19SuppressedVarDecl` returning true BEFORE the #916 hook runs. Printing
 // the ancestor chain of the truncated declaration to see what CGD19 would see.
 import { readFileSync } from "node:fs"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const F = "/home/ishaq2321/bb_tests/repositories/sqlite/src/btmutex.c"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const F = "<corpus-root>/bb_tests/repositories/sqlite/src/btmutex.c"
 const wts: any = await import("web-tree-sitter")
 const P = (wts.Parser ?? wts.default) as any
 const L = (wts.Language ?? wts.default?.Language) as any

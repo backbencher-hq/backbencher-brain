@@ -6,9 +6,9 @@
 #
 #   bash script/m14/tmp/c743-ab.sh <c|cpp> [repo ...]
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
+cd <corpus-root>/mcp/backbencher-brain || exit 1
 LANG_KIND="${1:-cpp}"; shift || true
-R=/home/ishaq2321/bb_tests/repositories
+R=<corpus-root>/bb_tests/repositories
 case "$LANG_KIND" in
   cpp) WASM=wasm/tree-sitter-cpp.wasm; CAND=/tmp/fam-cpp.wasm; DEFAULT="fmt nlohmann-json";;
   c)   WASM=wasm/tree-sitter-c.wasm;   CAND=/tmp/fam-c.wasm;    DEFAULT="sqlite jq";;

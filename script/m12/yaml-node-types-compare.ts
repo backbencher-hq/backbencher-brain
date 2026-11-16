@@ -44,7 +44,7 @@ const m12Files = readdirSync("validation/m12/fixtures/yaml").filter((file) => /\
 const m14Dir = "validation/m14/fixtures/yaml"
 const m14Files = existsSync(m14Dir) ? readdirSync(m14Dir).filter((file) => /\.(yaml|yml)$/i.test(file)).sort() : []
 const files = [...m12Files, ...m14Files.map((f) => `m14/${f}`)]
-const corpus = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const corpus = "<corpus-root>/bb_tests/repositories/grails-core"
 const corpusFiles = execFileSync("git", ["-C", corpus, "ls-files", "*.yaml", "*.yml"], { encoding: "utf8" }).trim().split("\n").filter(Boolean).sort()
 const inputs = [
   ...m12Files.map((file) => readFileSync(`validation/m12/fixtures/yaml/${file}`, "utf8")),

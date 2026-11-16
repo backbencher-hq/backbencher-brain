@@ -14,8 +14,8 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const { parseFile } = await import(path.join(ROOT, "src", "ast", "engine.ts"))
 
 const artifact = JSON.parse(

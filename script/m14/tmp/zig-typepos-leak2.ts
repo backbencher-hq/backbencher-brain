@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES = [
   ['deep namespace param', 'const types = @import("types.zig");\nfn f(request: types.document_formatting.Params) void { _ = request; }'],
   ['deep ns param + slice return', 'const types = @import("types.zig");\nfn f(request: types.document_formatting.Params) Error!?[]types.TextEdit { return undefined; }'],

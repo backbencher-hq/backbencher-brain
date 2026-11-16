@@ -66,7 +66,7 @@ const MAX_BYTES = 512 * 1024
 
 const files: Array<{ repo: string; dir: string; rel: string; abs: string; text: string }> = []
 for (const e of REPOS) {
-  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e)
+  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", e)
   let tracked: string[]
   try { if (!statSync(dir).isDirectory()) continue } catch { continue }
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }
@@ -409,7 +409,7 @@ for (const h of heritage) {
 
 console.log(`\nbases resolved to a file in the corpus: ${resolved.length} of ${heritage.length}`)
 for (const r of resolved) {
-  console.log(`  ${r.repo}/${r.rel}: ${r.component} ${r.isMixin ? "mixins" : "extends"} [${r.spec}] -> ${r.baseFile.replace(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", "$CORPUS")}`)
+  console.log(`  ${r.repo}/${r.rel}: ${r.component} ${r.isMixin ? "mixins" : "extends"} [${r.spec}] -> ${r.baseFile.replace(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", "$CORPUS")}`)
   console.log(`      base declares ${r.baseMembers.length} members: ${r.baseMembers.slice(0, 12).join(", ")}${r.baseMembers.length > 12 ? " …" : ""}`)
   console.log(`      component declares ${r.ownMembers.length} members; COLLISIONS: ${r.collisions.length ? r.collisions.join(", ") : "(none)"}`)
   console.log(`        member overrides (Vue replaces the base's): ${r.memberOverrides.length ? r.memberOverrides.join(", ") : "(none)"}`)

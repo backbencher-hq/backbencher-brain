@@ -11,9 +11,9 @@ import path from "node:path"
 
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const LANG = process.argv.find((a) => a.startsWith("--lang="))?.slice("--lang=".length) ?? "kotlin"
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const REPOS: Record<string, { exts: string[]; repos: string[] }> = {
   kotlin: { exts: [".kt"], repos: ["Exposed", "kotlinx-coroutines"] },
   java: { exts: [".java"], repos: ["grails-core", "clojure"] },

@@ -59,7 +59,7 @@ function arg(name: string, fallback: string): string {
   return hit ? hit.slice(name.length + 3) : fallback
 }
 
-const CR = arg("corpus", "/home/ishaq2321/bb_tests/repositories/svelte")
+const CR = arg("corpus", "<corpus-root>/bb_tests/repositories/svelte")
 const TAG = arg("tag", path.basename(CR))
 const SAMPLE = parseInt(arg("sample", "600"), 10)
 const SIZE_CAP = 512 * 1024

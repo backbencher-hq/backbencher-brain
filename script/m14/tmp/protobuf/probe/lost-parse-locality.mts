@@ -57,7 +57,7 @@ const arg = (name: string, dflt: string): string => {
 const SCOPE = arg("scope", "all")
 const ROUNDS = Number(arg("rounds", "6"))
 const WIDTH = Number(arg("width", "8"))
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = arg("out", "/tmp/opencode/pb/lost-parse-locality.json")
 
 /** The directory every observed loss has landed in. Stated as a constant, not

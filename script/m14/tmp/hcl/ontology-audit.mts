@@ -16,10 +16,10 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
-const REPOS = "/home/ishaq2321/bb_tests/hcl/repos"
+const REPOS = "<corpus-root>/bb_tests/hcl/repos"
 const EXT = /\.(tf|tfvars|hcl|tofu)$/i
 
 /** HCL's language-level iteration/context builtins. These are NOT declarations:
@@ -118,7 +118,7 @@ const out = {
     "real-sql-analyzer.ts:1569 — `addRelationship(type === \"uses\" ? Uses : References, \"global\", target, …)`: a GLOBAL-namespace target is `uses`, a project symbol is `references`. HCL's count/each/self/path/terraform are exactly that global class, and the analyzer currently publishes them as `references`, i.e. as if they were declarations.",
   unresolvedSample: unresolvedSamples.slice(0, 40),
 }
-writeFileSync("/home/ishaq2321/bb_tests/hcl/out/ontology-audit.json", JSON.stringify(out, null, 2) + "\n")
+writeFileSync("<corpus-root>/bb_tests/hcl/out/ontology-audit.json", JSON.stringify(out, null, 2) + "\n")
 
 console.log(`files=${files} relationships=${relTotal} references=${refTotal}`)
 console.log(`by type: ${JSON.stringify(out.byRelationshipType)}`)

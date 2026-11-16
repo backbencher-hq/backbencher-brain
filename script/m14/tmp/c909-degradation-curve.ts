@@ -21,7 +21,7 @@ import { statSync } from "node:fs"
 import { parseFile } from "../../../src/ast/pool-worker"
 
 const LIMIT = parseInt(process.argv[2] ?? "400")
-const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+const Z = "<corpus-root>/bb_tests/repositories/zig"
 const files = execFileSync("bash", ["-c", `find ${Z} -name '*.c' -size +1k -not -path '*/.git/*' | sort | head -${LIMIT}`], {
   encoding: "utf8",
 })
@@ -42,7 +42,7 @@ for (let start = 0; start < files.length; start += BUCKET) {
   let rels = 0
   for (const f of slice) {
     try {
-      const r: any = await parseFile(f, "/home/ishaq2321/mcp/backbencher-brain")
+      const r: any = await parseFile(f, "<corpus-root>/mcp/backbencher-brain")
       rels += r.relationships?.length ?? 0
     } catch {}
   }

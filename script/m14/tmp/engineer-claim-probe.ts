@@ -7,7 +7,7 @@
 import { readFileSync, mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 async function layer1Analyzer() {
   const wts: any = await import("web-tree-sitter")
@@ -57,7 +57,7 @@ async function layer23Store() {
   const indexProjectParallel = idxMod.indexProjectParallel
   const brain: any = await import(path.join(ROOT, "src/brain/database.ts"))
   const getRaw = (id: string) => brain.BrainDatabase.getRawInstance(id)
-  const repo = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/grails-core"
+  const repo = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/grails-core"
   const projectId = getProjectId(repo) as any
   const t0 = Date.now()
   const stats = await indexProjectParallel(projectId, repo, {})

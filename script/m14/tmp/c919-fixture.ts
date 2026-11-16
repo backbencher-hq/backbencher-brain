@@ -3,7 +3,7 @@
 //   bun script/m14/tmp/c919-fixture.ts
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const file = path.join(ROOT, "validation/m14/fixtures/cpp/macro-declared-body-919.cpp")
 const { parseFile } = await import(path.join(ROOT, "src", "ast", "engine.ts"))
 const res: any = await parseFile(file, readFileSync(file, "utf8"), { language: "cpp" })

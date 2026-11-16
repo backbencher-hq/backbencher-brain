@@ -1,6 +1,6 @@
 // Web closure — TS re-cert: T1–T9 claims probed against the LIVE analyzer at HEAD
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
 async function run(name: string, src: string): Promise<any> {

@@ -17,7 +17,7 @@ const ROOT = process.cwd()
 const ARM_DIR = "validation/m14/measurements/groovy-arm"
 const CHUNKS = (() => { const out: number[] = []; for (const f of readdirSync(resolve(ROOT, ARM_DIR))) { const mm = /^census-(\d+)\.json$/.exec(f); if (mm) out.push(Number(mm[1])) } return out.sort((a, b) => a - b) })()
 const OUT = "validation/m14/measurements/groovy-population-census-2026-10-22.json"
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 const COUNT_KEYS = [
   "traitDeclarations", "traitAppliedByImplements", "traitAppliedByExtends",

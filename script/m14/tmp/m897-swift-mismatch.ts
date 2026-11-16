@@ -1,6 +1,6 @@
 import { parseFile } from "../../../src/ast/pool-worker"
 import { ASTEngine } from "../../../src/ast/engine"
-const f = "/home/ishaq2321/bb_tests/repositories/alamofire/Source/Core/WebSocketRequest.swift"
+const f = "<corpus-root>/bb_tests/repositories/alamofire/Source/Core/WebSocketRequest.swift"
 const src = await Bun.file(f).text()
 const lang = ASTEngine.detectLanguage(f, src)
 console.log("detected:", lang)

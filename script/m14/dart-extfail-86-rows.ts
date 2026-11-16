@@ -77,7 +77,7 @@ import { buildProjectIndexStreaming, deserializeProjectIndex, DART_DECLARATION_S
 import { resolveWasmAsset } from "../../src/util/wasm"
 import { verifyExternalClaim, NAME_CAP } from "./incoming-rule"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const SIZE_CAP = 1024 * 1024
 
 /** THE 25 TARGETS THE PRE-FIX ARM PRINTED — a SUBSET (the gate's `NAME_CAP` is 25, so the list it

@@ -47,7 +47,7 @@ import { parseFile } from "../../../../../src/ast/pool-worker"
 import { RealProtobufAnalyzer } from "../../../../../src/ast/real-protobuf-analyzer"
 
 const N = Number((process.argv.find((a) => a.startsWith("--n=")) ?? "--n=40").slice(4))
-const TARGET = "/home/ishaq2321/bb_tests/repositories/pb-googleapis/google/api/expr/v1beta1/source.proto"
+const TARGET = "<corpus-root>/bb_tests/repositories/pb-googleapis/google/api/expr/v1beta1/source.proto"
 
 const wts: any = await import("web-tree-sitter")
 const ParserClass = wts.Parser ?? wts.default ?? wts

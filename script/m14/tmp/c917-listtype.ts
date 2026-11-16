@@ -2,7 +2,7 @@
 // analyzer does not cover. Where does truth get it from?
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts
 const L: any = wts.Language ?? wts.default?.Language
@@ -11,7 +11,7 @@ const cLang: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-si
 const parser = new P()
 parser.setLanguage(cLang)
 
-const file = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const file = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const src = fs.readFileSync(file, "utf8")
 const root = parser.parse(src).rootNode
 const st: any[] = [root]

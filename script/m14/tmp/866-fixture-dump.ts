@@ -4,7 +4,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES: Array<{ lang: string; file: string; wasm: string; mod: string; cls: string }> = [
   { lang: "java", file: "java/anonymous-field-member.java", wasm: "tree-sitter-java.wasm", mod: "real-java-analyzer", cls: "RealJavaAnalyzer" },
   { lang: "groovy", file: "groovy/anonymous-field-member.groovy", wasm: "tree-sitter-groovy.wasm", mod: "real-groovy-analyzer", cls: "RealGroovyAnalyzer" },

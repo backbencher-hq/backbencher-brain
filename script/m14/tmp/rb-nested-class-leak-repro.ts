@@ -22,7 +22,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealRubyAnalyzer } from "../../../src/ast/real-ruby-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 async function parseSrc(src: string) {
   const wts: any = await import("web-tree-sitter")

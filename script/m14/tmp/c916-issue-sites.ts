@@ -3,9 +3,9 @@
 // untouched?
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.join(ROOT, "src/ast/engine.ts"))
-const R = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const R = "<corpus-root>/bb_tests/repositories/sqlite"
 
 const SITES: Array<[string, string, string]> = [
   // file, real symbol the issue says was lost, phantom the site emitted

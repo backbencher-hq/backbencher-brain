@@ -3,7 +3,7 @@
 Lane owner: **r-lane**. Corpus: 2,184 git-tracked `.R` files across 16 repositories
 (ggplot2=360 r-testthat=266 dplyr=195 usethis=184 r-vctrs=181 r-cli=171 r-rlang=160 r-pkgdown=135
 r-Rcpp=116 r-scales=95 r-air=87 Matrix=80 S7=61 r-withr=58 R6=27 nvim-treesitter=8), rooted at
-`/home/ishaq2321/bb_tests/repositories`. Corpus file-set sha256 `953c0314…` (2,184 paths, sorted).
+`<corpus-root>/bb_tests/repositories`. Corpus file-set sha256 `953c0314…` (2,184 paths, sorted).
 
 **Every figure on this page declares its `degraded` count**, per HANDOFF §5.1. A degraded parse is
 a regex fallback: it does not fail, it returns fewer edges with no error, so a figure without a
@@ -84,7 +84,7 @@ were right to be cautious, and they were superseded by the third whole-corpus ce
 (`measurements/r-census-overrides-instantiates.current.txt`):
 
 ```
-[BB-PARSE-ERR] r | /home/ishaq2321/bb_tests/repositories/r-testthat/R/edition.R | memory access out of bounds
+[BB-PARSE-ERR] r | <corpus-root>/bb_tests/repositories/r-testthat/R/edition.R | memory access out of bounds
 files walked: 2184   degraded (regex fallback): 1   parse failures: 0   traps ([BB-PARSE-ERR]): 1
 EXIT code=0 after 122451ms total (walk 122447ms; post-walk drain 4ms)
 ```

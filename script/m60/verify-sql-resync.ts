@@ -56,7 +56,7 @@ import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
 const argValue = (a: string, d?: string) => (process.argv.includes(a) ? process.argv[process.argv.indexOf(a) + 1] : d)
-const REPO = argValue("--repo", "/home/ishaq2321/ProxiCall")!
+const REPO = argValue("--repo", "<corpus-root>/ProxiCall")!
 const EMIT = process.argv.includes("--emit")
 /**
  * The bar is the MEASURED firing count on this gate's own population, recorded rather than

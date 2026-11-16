@@ -8,7 +8,7 @@ import path from "node:path"
 // fixture's forbid list is MEASURED rather than reconstructed.
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const rel = process.argv.find((a) => a.startsWith("--file="))?.slice("--file=".length) ?? ""
 
 async function main() {

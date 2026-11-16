@@ -4,7 +4,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 function tmpf(name: string, src: string): string {
   const p = path.join(ROOT, "script/m14/tmp", name)
@@ -64,7 +64,7 @@ async function main() {
   console.log(`#741 scala frameworks: ${JSON.stringify(frameworks)} -> ${frameworks.length > 0 ? "FIXED" : "STILL OPEN"}`)
 
   // ── #742 groovy: parse success on the real corpus ──────────────────────
-  const groovyDir = "/home/ishaq2321/bb_tests/repositories/grails-core"
+  const groovyDir = "<corpus-root>/bb_tests/repositories/grails-core"
   const files: string[] = []
   const walk = (d: string) => {
     let ents: fs.Dirent[]

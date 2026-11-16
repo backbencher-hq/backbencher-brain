@@ -81,7 +81,7 @@ const OWNERLESS_KINDS = new Set(["module", "namespace", "package", "file", "fold
 // to mean anything.
 const MEMBER_KINDS = new Set(["method", "property", "field", "class_member", "enum_member", "instance_field", "static_field", "abstract_method", "virtual_method"])
 
-const REPOS = (arg("--repos") ?? "/home/ishaq2321/bb_tests/repositories/go-tools").split(",")
+const REPOS = (arg("--repos") ?? "<corpus-root>/bb_tests/repositories/go-tools").split(",")
 const FULL = process.argv.includes("--full")
 const WANT = Number(arg("--files") ?? 400)
 

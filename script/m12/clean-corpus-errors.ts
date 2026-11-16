@@ -3,7 +3,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { readdirSync } from "fs"
 import { join } from "path"
 
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/clean-stdlib"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/clean-stdlib"
 const files = readdirSync(root)
   .filter((f) => f.endsWith(".icl") || f.endsWith(".dcl"))
   .map((f) => join(root, f))

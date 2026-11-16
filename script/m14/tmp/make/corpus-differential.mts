@@ -24,11 +24,11 @@
  */
 import { readFileSync, writeFileSync } from "node:fs"
 import { Parser, Language } from "web-tree-sitter"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
 
-const REPO = "/home/ishaq2321/backbencher-brain"
-const OUT = "/home/ishaq2321/bb_tests/make/out"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPO = "<corpus-root>/backbencher-brain"
+const OUT = "<corpus-root>/bb_tests/make/out"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const MAN = JSON.parse(readFileSync(`${OUT}/corpus-manifest.json`, "utf8"))
 
 await Parser.init()

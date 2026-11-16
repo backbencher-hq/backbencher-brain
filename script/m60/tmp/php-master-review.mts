@@ -18,7 +18,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const FULL = process.argv.includes("--full")
 const AS_JSON = process.argv.includes("--json")
 const LIMIT = FULL ? 100000 : 1500

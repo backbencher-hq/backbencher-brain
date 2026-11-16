@@ -64,7 +64,7 @@ import { execSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const OUT = (() => {
   // --out= keeps half-sweeps from clobbering each other's evidence; the halves
   // are merged by script/m59/merge-matrix-halves.ts and the merged file records

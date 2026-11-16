@@ -20,7 +20,7 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-CORPUS = "/home/ishaq2321/bb_tests/repositories"
+CORPUS = "<corpus-root>/bb_tests/repositories"
 
 # LANGS keys -> the router's DetectedLanguage spelling.
 ALIAS = {

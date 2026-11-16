@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-D=/home/ishaq2321/bb_tests/graphql/repos
+D=<corpus-root>/bb_tests/graphql/repos
 clone() {
   local n="$1" u="$2"
   if [ -d "$D/$n/.git" ]; then echo "$n: present"; return; fi

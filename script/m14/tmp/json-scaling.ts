@@ -1,4 +1,4 @@
-import { parseFile } from "/home/ishaq2321/mcp/backbencher-brain/src/ast/pool-worker"
+import { parseFile } from "<corpus-root>/mcp/backbencher-brain/src/ast/pool-worker"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import * as path from "path"

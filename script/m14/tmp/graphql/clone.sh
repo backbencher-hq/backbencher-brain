@@ -1,7 +1,7 @@
 #!/bin/bash
 # Clone the GraphQL corpus. Pinned revisions recorded in repositories.json.
 set -u
-D=/home/ishaq2321/bb_tests/graphql/repos
+D=<corpus-root>/bb_tests/graphql/repos
 clone() { # name url rev
   local n="$1" u="$2" r="${3:-}"
   if [ -d "$D/$n/.git" ]; then echo "$n: present"; return; fi

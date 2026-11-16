@@ -13,8 +13,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealPhpAnalyzer } from "../../../src/ast/real-php-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/phpunit"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/phpunit"
 
 function filesUnder(dir: string, out: string[] = []): string[] {
   let entries: any[] = []

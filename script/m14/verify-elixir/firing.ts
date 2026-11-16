@@ -14,7 +14,7 @@
  *   2. it samples 12 files (`pickFiles(dir, exts, 12)`), which is far below the
  *      120-file floor this lane's brief sets — a type can be silent on 12 files
  *      and live on 200;
- *   3. it imports the analyzer and engine from `/home/ishaq2321/backbencher-brain`
+ *   3. it imports the analyzer and engine from `<corpus-root>/backbencher-brain`
  *      (the MAIN checkout), so a lane in a worktree would be measuring someone
  *      else's bytes. This copy resolves ROOT from its own location.
  * The rules are otherwise identical: same production path, same tally.
@@ -30,7 +30,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..", "..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const REPO = arg("repo") ?? "elixir"

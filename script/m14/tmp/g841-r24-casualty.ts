@@ -22,7 +22,7 @@ function errInfo(t: any): string {
   return errs.length === 0 ? "CLEAN" : `${errs.length} nodes: ${errs.slice(0, 3).join(",")}`
 }
 for (const f of FILES) {
-  const p = `/home/ishaq2321/bb_tests/repositories/${f}`
+  const p = `<corpus-root>/bb_tests/repositories/${f}`
   const t = parser.parse(fs.readFileSync(p, "utf8")).rootNode
   console.log(`${f.split("/").pop()}  ${errInfo(t)}`)
 }

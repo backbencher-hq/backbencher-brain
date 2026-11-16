@@ -20,7 +20,7 @@ import { basename } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const LANGS: Record<string, { lang: string; repo: string; ext: string[] }> = {
   go:       { lang: "go",       repo: `${ROOT}/go-tools`,     ext: ["*.go"] },
   rust:     { lang: "rust",     repo: `${ROOT}/cargo`,        ext: ["*.rs"] },

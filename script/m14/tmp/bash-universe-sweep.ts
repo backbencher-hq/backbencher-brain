@@ -26,7 +26,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { deriveBashEdges } from "../differential"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const CONC = Number(process.env.BB_CONC ?? 8)
 const MAX_BYTES = 512 * 1024
 

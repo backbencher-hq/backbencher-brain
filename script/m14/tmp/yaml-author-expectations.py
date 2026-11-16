@@ -15,7 +15,7 @@ drift between the fixtures and the pins.
 import json
 import pathlib
 
-ROOT = pathlib.Path("/home/ishaq2321/mcp/backbencher-brain")
+ROOT = pathlib.Path("<corpus-root>/mcp/backbencher-brain")
 FIX = ROOT / "validation/m14/fixtures/yaml"
 DUMP = json.loads((ROOT / "validation/m14/results/archive/yaml-fixture-emission.json").read_text())["fixtures"]
 

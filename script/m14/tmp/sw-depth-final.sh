@@ -3,7 +3,7 @@
 # Canonical lane = swift-nio (554 files, the corpus the six findings were
 # measured on); second corpus = alamofire (where #942 was measured).
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 export BB_M14_WORK=/tmp/sw-depth-final-work
 rm -rf "$BB_M14_WORK"
 

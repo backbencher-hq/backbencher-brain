@@ -5,7 +5,7 @@
  * for twelve files per lane. Twelve is a floor, not a verdict: the workstream
  * contract (`docs/analyzers/ONTOLOGY-WORKSTREAM.md`) requires a COUNT and the
  * FILES a type came from, and requires the six questions of Part 1, not just
- * the second one. firing-check also hardcodes `REPO = "/home/ishaq2321/backbencher-brain"`,
+ * the second one. firing-check also hardcodes `REPO = "<corpus-root>/backbencher-brain"`,
  * so it measures whatever is in the MAIN checkout — which for this lane currently
  * carries 157 uncommitted insertions in the analyzer. An instrument that measures
  * a neighbour's working tree cannot decide a verdict about this lane's commit.
@@ -76,7 +76,7 @@ const argOf = (flag: string): string | undefined => {
 }
 const LANG = argOf("--lang") ?? "typescript"
 const OUT = argOf("--out")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LIMIT = Number(argOf("--limit") ?? "200")
 const REPO_FILTER = argOf("--repo")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(400 * 1024))

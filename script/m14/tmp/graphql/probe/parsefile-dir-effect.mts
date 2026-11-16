@@ -26,10 +26,10 @@ const SLICE = Number(process.env.GQL_SLICE ?? "250")
 // own centre of mass rather than a convenient guess. Counted from
 // `out/production-six-questions.json` `population.repos`.
 const dirs = [
-  "/home/ishaq2321/bb_tests/repositories/gql-graphql-platform",
-  "/home/ishaq2321/bb_tests/repositories/hasura-engine",
-  "/home/ishaq2321/bb_tests/repositories/gql-graphql-tools",
-  "/home/ishaq2321/bb_tests/repositories/gql-gqlgen",
+  "<corpus-root>/bb_tests/repositories/gql-graphql-platform",
+  "<corpus-root>/bb_tests/repositories/hasura-engine",
+  "<corpus-root>/bb_tests/repositories/gql-graphql-tools",
+  "<corpus-root>/bb_tests/repositories/gql-gqlgen",
 ]
 // `statSync` is NOT exported by child_process. Importing it from there throws a TypeError, the
 // per-repo try/catch below swallows it as "not a git repo", and the probe walks an EMPTY slice

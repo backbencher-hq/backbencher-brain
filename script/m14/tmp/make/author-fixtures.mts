@@ -13,9 +13,9 @@
  * the right answer is right.
  */
 import { readFileSync, writeFileSync, readdirSync } from "node:fs"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
 
-const DIR = "/home/ishaq2321/backbencher-brain/validation/m14/fixtures/make"
+const DIR = "<corpus-root>/backbencher-brain/validation/m14/fixtures/make"
 
 interface Spec {
   file: string

@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { RealCAnalyzer: Post } = await import(path.join(ROOT, "src/ast/real-c-analyzer.ts"))
 const { RealCAnalyzer: Pre } = await import(path.join(ROOT, "src/ast/zz-c916-pre-analyzer.ts"))
 
@@ -17,7 +17,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.wasm") })
 const lang = await L.load(readFileSync(path.join(ROOT, "wasm/tree-sitter-c.wasm")))
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const REPO = "<corpus-root>/bb_tests/repositories/sqlite"
 const SITES: Array<{ file: string; target: string; line?: number }> = [
   { file: "src/btree.c", target: "sqlite3SharedCacheList", line: 2657 },
   { file: "src/notify.c", target: "sqlite3BlockedList", line: 59 },

@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process"
 const analyzer = readFileSync("src/ast/real-perl-analyzer.ts", "utf8")
 const refs = new Set<string>()
 for (const match of analyzer.matchAll(/(?:\.type|\btype)\s*===\s*"([a-z_]+)"/g)) refs.add(match[1])
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/mojo"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/mojo"
 const relative = execFileSync("git", ["-C", root, "ls-files", "*.pm", "*.pl"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
 const corpusFiles = relative.map((file) => `${root}/${file}`)

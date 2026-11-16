@@ -9,8 +9,8 @@
  * usage: bun run script/m14/c-k1-loss-probe.ts <file1> [file2 ...]
  */
 import * as fs from "node:fs"
-import { getParser } from "/home/ishaq2321/mcp/backbencher-brain/src/ast/engine"
-import { RealCAnalyzer } from "/home/ishaq2321/mcp/backbencher-brain/src/ast/real-c-analyzer"
+import { getParser } from "<corpus-root>/mcp/backbencher-brain/src/ast/engine"
+import { RealCAnalyzer } from "<corpus-root>/mcp/backbencher-brain/src/ast/real-c-analyzer"
 const C_KEYWORDS = new Set(["if","else","for","while","do","switch","case","default","break","continue","return","goto","sizeof","typedef","struct","union","enum","static","extern","inline","register","volatile","const","auto","signed","unsigned","void","char","short","int","long","float","double","_Bool","_Complex","_Imaginary","restrict","_Alignas","_Alignof","_Atomic","_Generic","_Noreturn","_Static_assert","_Thread_local"])
 const isIdent = (s: string): boolean => {
   if (s.length === 0) return false

@@ -42,7 +42,7 @@ import { join, relative } from "node:path"
 import type { Node } from "web-tree-sitter"
 
 const REPO = process.env.BB_REPO || "/tmp/opencode/wt/VERIFY_PY10"
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const LIMIT = Number(process.env.BB_LIMIT || 0) // 0 = the whole population
 const EXTS = [".py", ".pyi"]
 const SKIP_DIRS = new Set([

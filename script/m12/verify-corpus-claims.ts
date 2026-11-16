@@ -171,8 +171,8 @@ for (const a of manifest.analyzers) {
 // gate that convicts on its own failure to look is worse than no gate.
 const CORPUS_ROOTS = [
   process.env.BB_CORPUS_ROOT,
-  "/home/ishaq2321/bb_tests/repositories",
-  "/home/ishaq2321",
+  "<corpus-root>/bb_tests/repositories",
+  "<corpus-root>",
 ].filter((x): x is string => typeof x === "string" && x.length > 0)
 
 /** Every location a corpus id might live, across all roots. */

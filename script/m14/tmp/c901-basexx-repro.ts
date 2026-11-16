@@ -23,7 +23,7 @@ for (const [label, src] of CASES) {
   console.log(tree.rootNode.toString().replace(/\n/g, " | "))
 }
 // Also dump the exact real file region
-const real = readFileSync("/home/ishaq2321/bb_tests/repositories/sqlite/ext/misc/basexx.c", "utf8")
+const real = readFileSync("<corpus-root>/bb_tests/repositories/sqlite/ext/misc/basexx.c", "utf8")
 const REAL_CASE = `#ifndef G\n# include "sqlite3ext.h"\nSQLITE_EXTENSION_INIT1;\n#endif\n`
 console.log("\n=== REAL region tree (no undef/define) ===")
 console.log(parser.parse(REAL_CASE).rootNode.toString().replace(/\n/g, " | "))

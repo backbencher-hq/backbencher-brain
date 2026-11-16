@@ -85,7 +85,7 @@ for (const [name, src] of CASES) {
 
 // The analyzer's own view of a real file, for oracle/analyzer agreement triage.
 const rel = process.env.CLEAN_PROBE_FILE ?? "Clyde/cleantools/Pm/PmPath.icl"
-const full = path.join("/home/ishaq2321/bb_tests/repositories", rel)
+const full = path.join("<corpus-root>/bb_tests/repositories", rel)
 const src = readFileSync(full, "utf8")
 const tree = parser.parse(src)
 const res = new RealCleanAnalyzer().analyze(tree.rootNode as any, src, full)

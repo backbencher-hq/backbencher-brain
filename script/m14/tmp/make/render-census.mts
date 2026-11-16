@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url"
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, "..", "..", "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = resolve(ROOT, "validation/m14/fixtures/make/render-census.current.json")
 const NODE_TYPES = resolve(ROOT, "grammars/tree-sitter-make/src/node-types.json")
 const SIZE_CAP = 1024 * 1024

@@ -3,7 +3,7 @@
 # closing code (the M14.0.F5 artifact is a family-level snapshot a scoped run may not
 # write; the lane's own canonical rows are re-measured here, dart's convention).
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 export BB_M14_WORK=/tmp/sw-canon-work
 rm -rf "$BB_M14_WORK"
 

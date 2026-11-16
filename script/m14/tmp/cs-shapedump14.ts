@@ -4,8 +4,8 @@ async function main() {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts
   const L: any = wts.Language ?? wts.default?.Language
-  await P.init({ locateFile: () => path.join("/home/ishaq2321/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const LANG: any = await L.load(fs.readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-c_sharp.wasm"))
+  await P.init({ locateFile: () => path.join("<corpus-root>/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const LANG: any = await L.load(fs.readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-c_sharp.wasm"))
   const p = new P(); p.setLanguage(LANG)
   const root = p.parse(`using System.Linq; class A { void M() { var q = from x in xs select x into g; var r = from a in bs where a > 1 orderby a select a; } }`).rootNode
   console.log("hasError:", root.hasError);

@@ -1,9 +1,9 @@
 import fs from "node:fs"
 import path from "node:path"
-const { ASTEngine } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/engine.ts")
-const { RealGroovyAnalyzer } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
+const { ASTEngine } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/engine.ts")
+const { RealGroovyAnalyzer } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
 const parser = await ASTEngine.getParser("groovy" as any)
-const f = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
+const f = "<corpus-root>/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
 const src = fs.readFileSync(f, "utf8")
 const t = parser.parse(src)
 const a = new RealGroovyAnalyzer()

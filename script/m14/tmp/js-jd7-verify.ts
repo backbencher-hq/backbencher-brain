@@ -7,7 +7,7 @@ import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyze
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 
 async function main() {
   const wts: any = WTS

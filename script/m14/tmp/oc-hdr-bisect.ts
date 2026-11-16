@@ -13,8 +13,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/afnetworking/UIKit+AFNetworking/AFAutoPurgingImageCache.h"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/afnetworking/UIKit+AFNetworking/AFAutoPurgingImageCache.h"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

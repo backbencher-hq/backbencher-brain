@@ -12,7 +12,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { readdirSync, statSync, readFileSync } from "fs"
 import { join, resolve } from "path"
 
-const ROOT_CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT_CORPUS = "<corpus-root>/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 function flag(name: string, def?: string): string | undefined {

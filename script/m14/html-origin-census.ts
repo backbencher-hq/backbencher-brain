@@ -94,7 +94,7 @@ const FIRST_FLAG = RAW_ARGS.findIndex((a) => a.startsWith("--"))
 const POSITIONAL = FIRST_FLAG === -1 ? RAW_ARGS : RAW_ARGS.slice(0, FIRST_FLAG)
 const WANT = POSITIONAL.filter((a) => !a.startsWith("-") && !a.includes("/"))
 const REPO = process.env.BB_REPO || process.cwd()
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const MAX_FILES = Number(process.env.BB_MAX_FILES || 0)
 
 function countHtml(dir: string): number {

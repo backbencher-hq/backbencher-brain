@@ -18,7 +18,7 @@ import * as path from "node:path"
 import { parseFile } from "../../../../../src/ast/pool-worker"
 import { RealProtobufAnalyzer } from "../../../../../src/ast/real-protobuf-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ROOT = process.cwd()
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const P = wts.Parser ?? wts.default ?? wts

@@ -7,8 +7,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealCAnalyzer } from "../../../src/ast/real-c-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const JQ = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const JQ = "<corpus-root>/bb_tests/repositories/jq"
 const FILES = [
   "src/lexer.c", "src/parser.c", "src/jv.c", "src/main.c", "src/execute.c",
   "src/builtin.c", "src/jq_test.c", "src/linker.c", "src/srcversion.c",

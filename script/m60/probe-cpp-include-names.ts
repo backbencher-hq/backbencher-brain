@@ -9,8 +9,8 @@ import path from "node:path"
 import { parseFile } from "../../src/ast/engine"
 
 const ROOTS = [
-  "/home/ishaq2321/bb_tests/repositories/fmt",
-  "/home/ishaq2321/bb_tests/repositories/nlohmann-json",
+  "<corpus-root>/bb_tests/repositories/fmt",
+  "<corpus-root>/bb_tests/repositories/nlohmann-json",
 ]
 const EXTS = new Set([".h", ".hpp", ".hh", ".hxx", ".cpp", ".cc", ".cxx", ".c"])
 const SKIP = new Set([".git", "build", "node_modules", "docs", "doc", "third_party", "test", "tests"])
@@ -46,7 +46,7 @@ for (const root of ROOTS) {
       if (rel?.metadata?.relationshipType === "include_dependency") targets.push(String(rel.target))
     }
     if (modules.length || targets.length) {
-      out[path.relative("/home/ishaq2321/bb_tests/repositories", f)] = {
+      out[path.relative("<corpus-root>/bb_tests/repositories", f)] = {
         modules: modules.sort(), targets: targets.sort(),
       }
     }

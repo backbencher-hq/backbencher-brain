@@ -1,14 +1,14 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/bb-lanes/graphql"
+const ROOT = "<corpus-root>/mcp/bb-lanes/graphql"
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const ParserClass = wts.Parser ?? wts.default?.Parser
 const LanguageClass = wts.Language ?? wts.default?.Language
 await ParserClass.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.wasm") })
 const files = [
-  "/home/ishaq2321/bb_tests/repositories/gql-graphql-core/tests/fixtures/schema_kitchen_sink.graphql",
-  "/home/ishaq2321/bb_tests/repositories/gql-absinthe/test/support/fixtures/language/kitchen-sink.graphql",
-  "/home/ishaq2321/bb_tests/repositories/hasura-engine/v3/crates/graphql/lang-graphql/tests/query_testdata/ok/0001_simple_query.graphql",
+  "<corpus-root>/bb_tests/repositories/gql-graphql-core/tests/fixtures/schema_kitchen_sink.graphql",
+  "<corpus-root>/bb_tests/repositories/gql-absinthe/test/support/fixtures/language/kitchen-sink.graphql",
+  "<corpus-root>/bb_tests/repositories/hasura-engine/v3/crates/graphql/lang-graphql/tests/query_testdata/ok/0001_simple_query.graphql",
 ]
 for (const wasm of ["tree-sitter-bash.wasm", "tree-sitter-graphql.wasm"]) {
   const p = new ParserClass()

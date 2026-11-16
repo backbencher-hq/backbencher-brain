@@ -59,7 +59,7 @@ import { writeFileSync } from "node:fs"
 const REPO = path.resolve(import.meta.dir, "..", "..")
 const { RelationshipType: RT_TYPES } = await import(path.join(REPO, "src/ast/types.ts"))
 const { ASTEngine } = await import(path.join(REPO, "src/ast/engine.ts"))
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const JAVA_DIR = path.join(CORPUS, process.env.BB_JAVA_DIR ?? "java-lib")
 
 /**

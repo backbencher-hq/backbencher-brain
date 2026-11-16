@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES = [
   "fn f(a: u8, b: []const u8) void {}",
   "fn g(s: struct { GLOBAL: u8 }) void {}",

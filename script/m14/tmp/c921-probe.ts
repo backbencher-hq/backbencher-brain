@@ -4,7 +4,7 @@
 import { ASTEngine } from "../../../src/ast/engine"
 import { readFileSync } from "node:fs"
 
-const R = "/home/ishaq2321/bb_tests/repositories"
+const R = "<corpus-root>/bb_tests/repositories"
 const rows: Array<{ lang: string; file: string; target: string; claimedLine: number; sourceLine: string }> =
   JSON.parse(readFileSync("/tmp/m59-dump.json", "utf8"))
 

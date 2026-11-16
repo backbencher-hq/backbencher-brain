@@ -49,7 +49,7 @@ const admit = (dir: string, repo: string): void => {
     files.push({ repo, dir, rel, abs, text })
   }
 }
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 for (const e of REPOS) admit(path.join(CR, e), e)
 for (const d of EXTRA) admit(d, path.basename(d))
 files.sort((a, b) => (a.repo + "/" + a.rel < b.repo + "/" + b.rel ? -1 : 1))

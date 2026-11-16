@@ -9,7 +9,7 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from "nod
 import { tmpdir } from "node:os"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 // The fixture is deliberately DISCRIMINATING: the call to `gamma` is written
 // two lines below `beta`'s declaration, so a substituted declaration line

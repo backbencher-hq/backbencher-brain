@@ -5,7 +5,7 @@
 // at all.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main() {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts

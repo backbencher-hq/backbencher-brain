@@ -15,7 +15,7 @@ import path from "node:path"
 
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const OUT =
   process.argv.find((a) => a.startsWith("--out="))?.slice("--out=".length) ?? "/tmp/866-sweep.json"
 
@@ -29,7 +29,7 @@ const ALL_LANGS: Array<{ lang: string; ext: string; repos: string[] }> = [
   { lang: "scala", ext: ".scala", repos: ["scala3", "cats-effect"] },
 ]
 const LANGS = ONLY ? ALL_LANGS.filter((l) => l.lang === ONLY) : ALL_LANGS
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 function walk(dir: string, ext: string, out: string[] = []): string[] {
   let entries

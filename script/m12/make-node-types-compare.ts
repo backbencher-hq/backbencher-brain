@@ -33,7 +33,7 @@ const files = readdirSync("validation/m12/fixtures/make").filter((file) => /\.mk
 // permissive direction is as useless as one that cannot run, so the corpus is
 // enumerated by RULE across every checkout, exactly as the lane's manifest does it,
 // and the count it used is recorded in the artifact.
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const EXACT = new Set(["Makefile", "makefile", "GNUmakefile", "Makefile.am", "Makefile.in"])
 const SKIP = new Set([".git", "node_modules", "vendor", "target", "dist", "build", ".venv", "deps"])
 const MAX_CORPUS_FILES = 400

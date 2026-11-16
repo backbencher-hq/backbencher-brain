@@ -136,7 +136,7 @@ export type Ruled = {
 }
 
 // ---------------------------------------------------------------- the grammar this lane ships
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const PROTOBUF_WASM = "wasm/tree-sitter-protobuf.wasm"
 /** The start rule of `grammars/tree-sitter-proto/grammar.js`. Bash's is `program`, which is

@@ -7,9 +7,9 @@ import { execFileSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/pool-worker"
 
 const CORPORA: Array<[string, string, number]> = [
-  ["sqlite", "/home/ishaq2321/bb_tests/repositories/sqlite", 60],
-  ["jq", "/home/ishaq2321/bb_tests/repositories/jq", 60],
-  ["zig", "/home/ishaq2321/bb_tests/repositories/zig", 100],
+  ["sqlite", "<corpus-root>/bb_tests/repositories/sqlite", 60],
+  ["jq", "<corpus-root>/bb_tests/repositories/jq", 60],
+  ["zig", "<corpus-root>/bb_tests/repositories/zig", 100],
 ]
 
 for (const [name, root, n] of CORPORA) {

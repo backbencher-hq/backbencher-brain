@@ -36,7 +36,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
-const ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : undefined
 const REPOS = (process.env.BB_GROOVY_REPOS ?? "groovy").split(",").map((s) => s.trim()).filter(Boolean)

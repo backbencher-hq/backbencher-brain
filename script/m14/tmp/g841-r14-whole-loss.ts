@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CORPUS = "/home/ishaq256/bb_tests/repositories/grails-core".replace("/ishaq256/", "/ishaq2321/")
 
 const FILES = [

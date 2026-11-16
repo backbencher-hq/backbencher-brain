@@ -4,7 +4,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 async function main() {
   const { LANG_REPOS, SECOND_CORPUS, corpusPath } = await import(path.join(ROOT, "script/m14/differential.ts"))
@@ -89,13 +89,13 @@ async function main() {
       walkTop(p, depth + 1)
     }
   }
-  walkTop("/home/ishaq2321/bb_tests", 0)
+  walkTop("<corpus-root>/bb_tests", 0)
   for (const [p, n] of found) console.log(`  ${n.toString().padStart(5)} .vue   ${p}`)
   if (!found.length) console.log("  (none)")
 
   console.log("\n=== Q0.5  any .vue SFC anywhere on the machine (excl. node_modules/.git) ===")
   const out = (await import("child_process")).execSync(
-    `find /home/ishaq2321 -name '*.vue' -not -path '*/node_modules/*' -not -path '*/.git/*' 2>/dev/null | head -50`,
+    `find <corpus-root> -name '*.vue' -not -path '*/node_modules/*' -not -path '*/.git/*' 2>/dev/null | head -50`,
     { encoding: "utf8", maxBuffer: 1 << 24 },
   ).trim().split("\n").filter(Boolean)
   console.log(`  ${out.length} path(s) (capped at 50):`)

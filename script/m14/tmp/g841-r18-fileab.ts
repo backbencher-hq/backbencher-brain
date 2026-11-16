@@ -3,7 +3,7 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const R = "/home/ishaq2321/bb_tests/repositories/grails-core/"
+const R = "<corpus-root>/bb_tests/repositories/grails-core/"
 const FILES = [
  'grails-test-examples/async-events-pubsub-demo/grails-app/controllers/pubsub/demo/SumController.groovy',
  'grails-views-gson/src/test/groovy/grails/plugin/json/view/JsonViewTestSpec.groovy',

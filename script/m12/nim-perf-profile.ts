@@ -31,7 +31,7 @@ import * as path from "node:path"
 import { RealNimAnalyzer } from "../../src/ast/real-nim-analyzer"
 
 const ROOT = process.cwd()
-const REPO = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/nim"
+const REPO = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/nim"
 const N = parseInt(process.argv[3] ?? "200", 10)
 
 if (!existsSync(REPO)) {

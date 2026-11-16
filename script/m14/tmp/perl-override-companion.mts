@@ -22,9 +22,9 @@
  */
 import * as fs from "fs"
 import * as path from "path"
-import { buildOverrideCompanion } from "/home/ishaq2321/backbencher-brain/src/ast/override-context"
+import { buildOverrideCompanion } from "<corpus-root>/backbencher-brain/src/ast/override-context"
 
-const ROOT = "/home/ishaq2321/backbencher-brain"
+const ROOT = "<corpus-root>/backbencher-brain"
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
@@ -33,7 +33,7 @@ const p = new P()
 p.setLanguage(await L.load(fs.readFileSync(path.join(ROOT, "wasm/tree-sitter-perl.wasm"))))
 const { RealPerlAnalyzer } = await import(path.join(ROOT, "src/ast/real-perl-analyzer.ts"))
 
-const CR = process.env.BB_PERL_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_PERL_CORPUS ?? "<corpus-root>/bb_tests/repositories"
 const CORPORA: Record<string, string> = {
   mojo: `${CR}/mojo`,
   plack: `${CR}/plack`,

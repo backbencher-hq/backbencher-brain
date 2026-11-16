@@ -3,11 +3,11 @@
 // probe returns zeros (known instrument trap, r22 history) — parseFile is the
 // authoritative entry the pipeline itself uses.
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILES = [
-  ["TestData-simple", "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/services/test/TestDataService.groovy"],
-  ["TestData-extended", "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/extended/grails-app/services/test/TestDataService.groovy"],
-  ["ViolationAgg", "/home/ishaq2321/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsViolationAggregationPlugin.groovy"],
+  ["TestData-simple", "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/services/test/TestDataService.groovy"],
+  ["TestData-extended", "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/extended/grails-app/services/test/TestDataService.groovy"],
+  ["ViolationAgg", "<corpus-root>/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsViolationAggregationPlugin.groovy"],
 ]
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 for (const [tag, FILE] of FILES) {

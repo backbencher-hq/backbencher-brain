@@ -16,7 +16,7 @@ import path from "node:path"
 import { RealScalaAnalyzer } from "../../../src/ast/real-scala-analyzer"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1]), "..", "..", "..")
-const FILE = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/scala3/tests/pos/large.scala"
+const FILE = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/scala3/tests/pos/large.scala"
 const BUDGET_MS = Number(process.argv[3] ?? 2000)
 
 async function main(): Promise<void> {

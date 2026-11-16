@@ -14,8 +14,8 @@ const head = new headMod.RealCppAnalyzer()
 const cur = new curMod.RealCppAnalyzer()
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 function files(root: string, exts: string[]): string[] {
   const names = exts.map((e) => `-name '${e}'`).join(" -o ")
@@ -34,7 +34,7 @@ for (const [, root, exts] of ROOTS) {
     const a: any = await cur.analyze(tree2.rootNode, src, f)
     const mapA = new Map<string, any>()
     for (const s of a.symbols ?? []) mapA.set(`${s.range?.startLine}|${s.range?.startColumn}`, s)
-    const rel = f.replace("/home/ishaq2321/bb_tests/repositories/", "")
+    const rel = f.replace("<corpus-root>/bb_tests/repositories/", "")
     for (const sb of b.symbols ?? []) {
       const sa = mapA.get(`${sb.range?.startLine}|${sb.range?.startColumn}`)
       if (!sa || sa.kind === sb.kind) continue

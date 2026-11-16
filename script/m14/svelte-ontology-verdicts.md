@@ -1,7 +1,7 @@
 # SVELTE_FIX2 — relationship-ontology verdicts, with the measurement behind each
 
 Branch `analyzer/SVELTE_FIX2`. Analyzer `src/ast/real-svelte-analyzer.ts`.
-Assigned corpus `/home/ishaq2321/bb_tests/repositories/shadcn-svelte`.
+Assigned corpus `<corpus-root>/bb_tests/repositories/shadcn-svelte`.
 
 This file is the lane's measurement record. Every number in it came from an instrument
 named beside it, over a population the instrument declared, through the path named
@@ -17,7 +17,7 @@ no import edges."*
 That 3/10 reproduces exactly, and it is an artifact.
 
 ```
-$ cd /home/ishaq2321/backbencher-brain
+$ cd <corpus-root>/backbencher-brain
 $ NFILES=200 bun script/m14/firing-check-v2.mjs SVELTE_FIX2
   3/10   200/200 parsed   imports[] 0 in 0 files
   fired:  calls contains instantiates

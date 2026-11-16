@@ -27,7 +27,7 @@ import * as path from "path"
 import Database from "better-sqlite3"
 import { getProjectId } from "../../../../../src/util/project-id"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const TMP_ROOT = "/tmp/opencode/m14-store-resolution-multi"
 
 function corpusDirFor(repo: string): string | null {

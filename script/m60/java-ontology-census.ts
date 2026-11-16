@@ -95,7 +95,7 @@ export type Totals = {
 }
 
 /* ---------------------------------------------------------------- corpus */
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (process.env.BB_JAVA_REPOS ?? "java-lib,java-sample").split(",").map((s) => s.trim()).filter(Boolean)
 /** Workers in ONE process — a correctness knob here, not a throughput knob. */
 const CONCURRENCY = Number(process.env.BB_JAVA_CENSUS_WORKERS ?? "3")

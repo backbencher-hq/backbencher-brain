@@ -30,7 +30,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { ASTEngine } from "../../src/ast/engine"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ROOT = path.resolve(import.meta.dirname, "..", "..")
 const OUT = process.argv[2] ?? path.join(ROOT, "validation/m12/results/vue-ontology-constructs.json")
 const ONLY = process.env.BB_VUE_REPOS ? process.env.BB_VUE_REPOS.split(",").filter(Boolean) : []

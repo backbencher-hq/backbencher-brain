@@ -7,8 +7,8 @@ import { execSync } from "node:child_process"
 import { getParser } from "../run-fixtures"
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 function files(root: string, exts: string[]): string[] {
   const names = exts.map((e) => `-name '${e}'`).join(" -o ")
@@ -71,7 +71,7 @@ for (const [, root, exts] of ROOTS) {
             wsCalls++
             const key = `${stop.type}${NAME_BEARING.has(stop.type) ? " (name-bearing!)" : ""}`
             byStop.set(key, (byStop.get(key) ?? 0) + 1)
-            if (samples.length < 14) samples.push(`${f.replace("/home/ishaq2321/bb_tests/repositories/", "")} L${n.startPosition.row + 1} [${stop.type}] ${JSON.stringify(txt.length > 60 ? txt.slice(0, 60) + "…" : txt)}`)
+            if (samples.length < 14) samples.push(`${f.replace("<corpus-root>/bb_tests/repositories/", "")} L${n.startPosition.row + 1} [${stop.type}] ${JSON.stringify(txt.length > 60 ? txt.slice(0, 60) + "…" : txt)}`)
           }
         }
       }

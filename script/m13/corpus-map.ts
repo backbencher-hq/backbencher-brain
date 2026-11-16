@@ -14,7 +14,7 @@ import path from "node:path"
 import { Harness } from "./harness"
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 
-// WAS: the literal "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home
+// WAS: the literal "<corpus-root>/bb_tests/repositories" — the OTHER laptop's home
 // directory. This file's own header (line 3) says "~/bb_tests/repositories", which is
 // what it always meant; the literal contradicted it and made B5 report
 // "corpus directory exists … missing" on every machine but that one, so the whole

@@ -15,7 +15,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 // Only the literals an ANALYZER INVENTS. `null`/`none`/`undefined` are deliberately
 // NOT here: the first run of this probe flagged 154 `relationship.target="Null"`
 // entries, and every one was a real member named `Null` in

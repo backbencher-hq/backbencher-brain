@@ -3,7 +3,7 @@
 //   (2) where are its reads
 // Verdicts written by hand from the probe series (w17-jqc-*).
 import * as fs from "fs"
-const jq = "/home/ishaq2321/bb_tests/repositories/jq"
+const jq = "<corpus-root>/bb_tests/repositories/jq"
 // For builtin.c: are the reads of last_var inside gen_last_1 (the declaring fn)?
 const builtin = fs.readFileSync(`${jq}/src/builtin.c`, "utf8").split("\n")
 const fnAt = (line: number): string => {

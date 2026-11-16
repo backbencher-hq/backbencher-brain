@@ -1,6 +1,6 @@
   qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 9 row(s) asked · namespace branch: 0 of 0 row(s) asked (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)
 incoming gate — groovy
-corpus root: /home/ishaq2321/bb_tests/repositories (the DEFAULT)
+corpus root: <corpus-root>/bb_tests/repositories (the DEFAULT)
 population: 2000 parsed of 2000 sampled (corpus has 8102 .groovy,gvy,gradle files across 8 repos; CHUNK)
 population: ★ THIS RUN IS A CHUNK, NOT A POPULATION — admitted files [0, 2000) of 8102, and 2000 of them were measured.
 population: the chunk is a SLICE of the admitted set, not a stride of it, so it is DISJOINT from a chunk at another offset and the chunks COVER the population when walked from offset 0.
@@ -11,11 +11,11 @@ parse failures: 0   degraded (regex fallback): 0
 endpoint keys indexed: name + 0 qualifiedName alias(es). A lane that publishes a file-scoped qualified name and targets that path is measured, not missed.
 empty results: 1 file(s) hold NO CONTENT AT ALL (0 bytes or whitespace). The run missed nothing, the population is COMPLETE, and these are NOT a defect.
 empty results: 7 file(s) hold CONTENT AND RETURNED NOTHING. **THIS COUNTER CANNOT TELL WHICH OF THREE THINGS THEY ARE**: content that cannot declare anything (comments, blank bodies — population COMPLETE), a genuine parse failure or timeout (a HOLE in it), or a file the analyzer declined. Do NOT report them as a hole without reading them.
-    ????? /home/ishaq2321/bb_tests/repositories/dart-http/pkgs/ok_http/android/settings.gradle
-    ????? /home/ishaq2321/bb_tests/repositories/geb/buildSrc/src/main/groovy/geb.coordinates.gradle
-    ????? /home/ishaq2321/bb_tests/repositories/geb/module/geb-core/src/test/groovy/GebConfigBothScriptAndClass.groovy
-    ????? /home/ishaq2321/bb_tests/repositories/geb/module/geb-core/src/test/groovy/GebConfigClassOnly.groovy
-    ????? /home/ishaq2321/bb_tests/repositories/grails-core/gradle-bootstrap/settings.gradle
+    ????? <corpus-root>/bb_tests/repositories/dart-http/pkgs/ok_http/android/settings.gradle
+    ????? <corpus-root>/bb_tests/repositories/geb/buildSrc/src/main/groovy/geb.coordinates.gradle
+    ????? <corpus-root>/bb_tests/repositories/geb/module/geb-core/src/test/groovy/GebConfigBothScriptAndClass.groovy
+    ????? <corpus-root>/bb_tests/repositories/geb/module/geb-core/src/test/groovy/GebConfigClassOnly.groovy
+    ????? <corpus-root>/bb_tests/repositories/grails-core/gradle-bootstrap/settings.gradle
 ambiguous is counted by DECLARATION here. The kind-count is shown beside it because the fleet's earlier number used it, and the two differ by two orders of magnitude.
 SAMPLE, NOT POPULATION: 2000 of 8102 files. A stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose collision lives in an unsampled file of the same repository reads unique here. Run with maxFiles 0 for a number about the corpus.
 resolution scope: PER PROJECT (the repository a file belongs to) — production's scope. `parallel-indexer.resolveRelationships` fills `target_symbol_id` only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1 (`_res_name.cnt = 1`, `WHERE s.project_id = ?`). A name that collides with a declaration in ANOTHER project is not ambiguous to production and is not counted as ambiguous here.

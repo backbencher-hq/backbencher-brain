@@ -8,7 +8,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const SRC = `
 extension type NSCachedURLResponse._(objc.ObjCObject object$) implements objc.ObjCObjectBase {
   static bool isA(objc.ObjCObject? obj) => obj == null ? false : true;

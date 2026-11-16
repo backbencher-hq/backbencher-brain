@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/jq/src/parser.c"
+const FILE = "<corpus-root>/bb_tests/repositories/jq/src/parser.c"
 const res: any = await ASTEngine.parseFile(FILE, readFileSync(FILE, "utf8"))
 const rels: any[] = res?.relationships ?? res?.result?.relationships ?? []
 console.log(`relationships: ${rels.length}`)

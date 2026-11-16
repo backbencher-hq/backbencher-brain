@@ -15,7 +15,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { execSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 // Materialise the PRE-FIX oracle from git rather than depending on a /tmp
 // artifact. Self-locating: the commit that introduced the privacy helper is
 // found by pickaxe, and its parent is the oracle as it stood before #905 (a

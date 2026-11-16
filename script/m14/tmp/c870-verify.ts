@@ -5,7 +5,7 @@
 import fs from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/fmt/test/std-test.cc"
+const FILE = "<corpus-root>/bb_tests/repositories/fmt/test/std-test.cc"
 const src = fs.readFileSync(FILE, "utf8")
 const res: any = await ASTEngine.parseFile(FILE, src)
 

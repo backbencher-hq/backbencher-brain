@@ -24,7 +24,7 @@ import { parseFile as productionParseFile } from "../../../src/ast/pool-worker"
 import { readFileSync } from "fs"
 import { spawnSync } from "child_process"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/svelte"
+const CORPUS = "<corpus-root>/bb_tests/repositories/svelte"
 
 const tracked = spawnSync("git", ["ls-files", "*.css"], { cwd: CORPUS, encoding: "utf8" })
   .stdout.split("\n").map((s) => s.trim()).filter(Boolean).sort()

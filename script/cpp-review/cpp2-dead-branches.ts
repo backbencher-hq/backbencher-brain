@@ -16,14 +16,14 @@
  * it is the same count/accessor argument as two sites that ARE exercised, and record
  * that no fixture can cover it.
  *
- *   BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories CPP_REPOS=sqlite,cpp-sample \
+ *   BB_CORPUS_ROOT=<corpus-root>/bb_tests/repositories CPP_REPOS=sqlite,cpp-sample \
  *     bun run script/cpp-review/cpp2-dead-branches.ts
  */
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"
 const EXTS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++", ".h", ".ipp", ".tpp"])
 const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-debug", "bazel-bin", "CMakeFiles"])

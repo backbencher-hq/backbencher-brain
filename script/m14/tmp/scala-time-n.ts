@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
   const gl = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-scala.wasm")))
   const p = new P(); p.setLanguage(gl)
-  const files = walk(path.join("/home/ishaq2321/bb_tests/repositories", process.argv[2] ?? "cats-effect")).slice(0, Number(process.argv[3] ?? 100))
+  const files = walk(path.join("<corpus-root>/bb_tests/repositories", process.argv[2] ?? "cats-effect")).slice(0, Number(process.argv[3] ?? 100))
   const a = new RealScalaAnalyzer()
   const t0 = Date.now(); let slowest = 0; let slowFile = ""
   for (const f of files) {

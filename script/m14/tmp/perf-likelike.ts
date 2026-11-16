@@ -11,7 +11,7 @@ import path from "node:path"
 
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const CORPUS = process.argv.find((a) => a.startsWith("--corpus="))?.slice("--corpus=".length) ?? ""
 const EXT = process.argv.find((a) => a.startsWith("--ext="))?.slice("--ext=".length) ?? ".js"
 const WARM = parseInt(process.argv.find((a) => a.startsWith("--warm="))?.slice("--warm=".length) ?? "3")

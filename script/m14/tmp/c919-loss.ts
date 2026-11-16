@@ -4,7 +4,7 @@
 //   bun script/m14/tmp/c919-loss.ts
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const before = JSON.parse(readFileSync("/tmp/c919-before.json", "utf8"))
 const after = JSON.parse(readFileSync("/tmp/c919-after.json", "utf8"))
 const CASES: Array<[string, number, string]> = [

@@ -123,7 +123,7 @@ try {
 // that SHRANK below its declared floor. When the demo repo is not on the
 // machine at all, no db can hold its files and there is nothing to regress —
 // scoring that red makes closure impossible on any host without the demo
-// checkout, which is what happened here (`/home/ishaq2321/bb-demo-hub` does not
+// checkout, which is what happened here (`<corpus-root>/bb-demo-hub` does not
 // exist). The two states are now distinguished and named:
 //   repo present + no db holding its files -> RED (the index was not rebuilt)
 //   repo absent                            -> declared absence with a reason

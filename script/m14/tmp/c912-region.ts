@@ -2,14 +2,14 @@
 // tokens/nodes between it and the call-shaped heading.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.wasm") })
 const lang = await L.load(readFileSync(path.join(ROOT, "wasm/tree-sitter-c.wasm")))
 const parser = new P(); parser.setLanguage(lang)
-const file = "/home/ishaq2321/bb_tests/repositories/jq/src/builtin.c"
+const file = "<corpus-root>/bb_tests/repositories/jq/src/builtin.c"
 const src = readFileSync(file, "utf8")
 const root = parser.parse(src).rootNode
 const dump = (n: any, depth: number) => {

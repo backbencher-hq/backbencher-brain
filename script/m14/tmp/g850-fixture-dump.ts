@@ -2,7 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FIX = process.argv[2] ?? "validation/m14/fixtures/groovy/reserved-key-map-items-850.groovy"
 
 async function main(): Promise<void> {

@@ -23,7 +23,7 @@ import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { getParser } from "../../src/ast/engine"
 
-const REPO = process.env.BB_KOTLIN_CORPUS ?? "/home/ishaq2321/bb_tests/repositories/kotlin"
+const REPO = process.env.BB_KOTLIN_CORPUS ?? "<corpus-root>/bb_tests/repositories/kotlin"
 const TARGETS = [
   "analysis/analysis-api/testData/components/relationProvider/implementationState/ambiguouslyInheritedGeneric.kt",
   "analysis/analysis-api/testData/components/javaInteroperabilityComponent/asPsiType/forExpression/localClassWithUnresolvedSuperType.kt",

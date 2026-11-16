@@ -1,6 +1,6 @@
 import fs from "node:fs"
-const { ASTEngine } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/engine.ts")
-const { RealGroovyAnalyzer } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
+const { ASTEngine } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/engine.ts")
+const { RealGroovyAnalyzer } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
 const SRC = `class C {\n  def m(promise) {\n    promise = promise.then { it * 2 } then { it + 6 }\n  }\n}\n`
 fs.writeFileSync("/tmp/g841-r19-edge-src.groovy", SRC)
 const parser = await ASTEngine.getParser("groovy" as any)

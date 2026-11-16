@@ -455,7 +455,7 @@ def read_tsv(path: str):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tsv", required=True)
-    ap.add_argument("--corpus", default=os.environ.get("BB_CORPUS_ROOT", "/home/ishaq2321/bb_tests/repositories"))
+    ap.add_argument("--corpus", default=os.environ.get("BB_CORPUS_ROOT", "<corpus-root>/bb_tests/repositories"))
     ap.add_argument("--out", default="/tmp/opencode/pb/descriptor-oracle.json")
     ap.add_argument("--protoc", default=os.environ.get("PB_PROTOC", ""))
     args = ap.parse_args()

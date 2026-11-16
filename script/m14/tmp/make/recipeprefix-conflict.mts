@@ -36,12 +36,12 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { Parser, Language } from "web-tree-sitter"
 
-const REPO = "/home/ishaq2321/backbencher-brain"
-const OUT = "/home/ishaq2321/bb_tests/make/out"
+const REPO = "<corpus-root>/backbencher-brain"
+const OUT = "<corpus-root>/bb_tests/make/out"
 const ATTEMPT = `${REPO}/grammars/tree-sitter-make/recipeprefix`
 
 const BUILDS: { label: string; wasm: string }[] = [
-  { label: "pristine", wasm: "/home/ishaq2321/bb_tests/make/ab/pristine-make.wasm" },
+  { label: "pristine", wasm: "<corpus-root>/bb_tests/make/ab/pristine-make.wasm" },
   { label: "wired (P1+P2)", wasm: `${REPO}/wasm/tree-sitter-make.wasm` },
   // Built by the procedure in the recipeprefix README, if it is present.
   { label: "recipe-only (NOT wired)", wasm: "/tmp/opencode/ts-g2b/make-g2b.wasm" },

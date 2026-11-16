@@ -9,7 +9,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { RealGroovyAnalyzer } from "../../../src/ast/real-groovy-analyzer"
 import { deriveGroovyEdges } from "../differential"
 
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-web-url-mappings/src/test/groovy/grails/web/mapping/RestfulResourceMappingSpec.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-web-url-mappings/src/test/groovy/grails/web/mapping/RestfulResourceMappingSpec.groovy"
 
 async function main(): Promise<void> {
   const content = readFileSync(F, "utf8")

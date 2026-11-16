@@ -12,17 +12,17 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
-import { Parser, Language } from "/home/ishaq2321/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js"
+import { Parser, Language } from "<corpus-root>/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js"
 import { readVbSource } from "./vb-source"
 
-const CORE_WASM = "/home/ishaq2321/backbencher-brain/wasm/tree-sitter.wasm"
-const GRAMMAR_WASM = process.env.VB_WASM ?? "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-vbnet.wasm"
+const CORE_WASM = "<corpus-root>/backbencher-brain/wasm/tree-sitter.wasm"
+const GRAMMAR_WASM = process.env.VB_WASM ?? "<corpus-root>/backbencher-brain/wasm/tree-sitter-vbnet.wasm"
 
 const CORPORA: Array<{ name: string; root: string; limit: number }> = [
-  { name: "runtime-mvb", root: "/home/ishaq2321/bb_tests/vb-corpus/runtime", limit: 0 },
-  { name: "p3d-legacy", root: "/home/ishaq2321/bb_tests/vb-corpus/p3d", limit: 600 },
-  { name: "dismtools", root: "/home/ishaq2321/bb_tests/vb-corpus/dismt", limit: 400 },
-  { name: "tankexporter", root: "/home/ishaq2321/bb_tests/vb-corpus/tankex", limit: 0 },
+  { name: "runtime-mvb", root: "<corpus-root>/bb_tests/vb-corpus/runtime", limit: 0 },
+  { name: "p3d-legacy", root: "<corpus-root>/bb_tests/vb-corpus/p3d", limit: 600 },
+  { name: "dismtools", root: "<corpus-root>/bb_tests/vb-corpus/dismt", limit: 400 },
+  { name: "tankexporter", root: "<corpus-root>/bb_tests/vb-corpus/tankex", limit: 0 },
 ]
 
 function collectVbFiles(root: string): string[] {

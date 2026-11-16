@@ -20,7 +20,7 @@ import { join } from "node:path"
 
 const ROOT = process.cwd()
 const ART = join(ROOT, "validation/m12/results/clean-complexity.json")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const GATE = join(ROOT, "script/m60/analyzer-complexity-gate.ts")
 
 let failures = 0

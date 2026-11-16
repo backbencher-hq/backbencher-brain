@@ -1,7 +1,7 @@
 // Probe: emitted relationships for validation/m14/fixtures/scala/declaration-lines-825.scala
 import * as path from "path"
 import * as fs from "fs"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FIX = "validation/m14/fixtures/scala/declaration-lines-825.scala"
 async function main() {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))

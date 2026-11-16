@@ -43,7 +43,7 @@ const EXPECTED_SUSPICIOUS: Record<string, string> = {
 }
 import * as fs from "node:fs"; import * as path from "path"
 import { fileURLToPath } from "node:url"; import * as cp from "node:child_process"; import * as WTS from "web-tree-sitter"
-const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..",".."); const DIR="/home/ishaq2321/bb_tests/repositories/solidity"
+const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..",".."); const DIR="<corpus-root>/bb_tests/repositories/solidity"
 function hh(s:string){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16).padStart(8,"0")}
 const { parseFile } = await import(path.join(ROOT,"src/ast/pool-worker.ts"))
 await WTS.Parser.init()

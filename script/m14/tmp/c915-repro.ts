@@ -3,7 +3,7 @@
 // shape, taken from the measured sqlite census.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P = (wts.Parser ?? wts.default) as any
 const L = (wts.Language ?? wts.default?.Language) as any
@@ -13,10 +13,10 @@ const parser = new P()
 parser.setLanguage(lang)
 
 const SITES: Array<[string, number, string]> = [
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btmutex.c", 53, "SQLITE_NOINLINE between type and name (function prototype)"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btree.c", 87, "SQLITE_WSD after the type (global pointer)"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/main.c", 138, "SQLITE_CDECL inside a function-pointer declarator"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c", 6244, "JNICALL before a function name (macro decorator)"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btmutex.c", 53, "SQLITE_NOINLINE between type and name (function prototype)"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btree.c", 87, "SQLITE_WSD after the type (global pointer)"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/main.c", 138, "SQLITE_CDECL inside a function-pointer declarator"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c", 6244, "JNICALL before a function name (macro decorator)"],
 ]
 
 for (const [file, line, why] of SITES) {

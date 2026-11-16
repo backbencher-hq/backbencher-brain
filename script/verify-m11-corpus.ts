@@ -14,7 +14,7 @@ function check(label: string, condition: boolean): void {
 }
 
 check("manifest schema is version 1", manifest.schemaVersion === 1)
-check("manifest uses repository-only external root", manifest.externalCloneRoot === "/home/ishaq2321/bb_tests/repositories")
+check("manifest uses repository-only external root", manifest.externalCloneRoot === "<corpus-root>/bb_tests/repositories")
 check("evidence is repository-owned", manifest.evidenceRoot === "validation/m11")
 check("external policy allows cloned repositories only", manifest.externalDirectoryPolicy === "cloned_repositories_only")
 check("evidence policy is repository-owned", manifest.evidencePolicy.includes("versioned_here"))

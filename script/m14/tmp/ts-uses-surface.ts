@@ -4,7 +4,7 @@ import * as path from "path"
 import * as WTS from "web-tree-sitter"
 import { RealTypeScriptAnalyzer } from "../../../src/ast/real-typescript-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 let P: any, LANG: any
 
 async function probe(tag: string, src: string) {

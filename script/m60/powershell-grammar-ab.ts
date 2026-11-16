@@ -39,8 +39,8 @@ import { join } from "path"
 import { createHash } from "crypto"
 import { execFileSync } from "child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const val = (f: string) => { const i = argv.indexOf(f); return i < 0 ? undefined : argv[i + 1] }
 const NEW = val("--new")

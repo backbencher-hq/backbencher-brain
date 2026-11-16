@@ -5,7 +5,7 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const REPOS = ["/home/ishaq2321/bb_tests/repositories/grails-core", "/home/ishaq2321/bb_tests/repositories/geb"]
+const REPOS = ["<corpus-root>/bb_tests/repositories/grails-core", "<corpus-root>/bb_tests/repositories/geb"]
 function walkFiles(dir: string, out: string[] = []): string[] {
   let es: any[] = []
   try { es = fs.readdirSync(dir, { withFileTypes: true }) } catch { return out }
@@ -29,7 +29,7 @@ for (const [name, wasm] of [["OLD", "/tmp/g841-r16-head-fresh.wasm"], ["NEW", "/
     // constructor_declaration whose parent chain includes field_declaration
     const w = (n: any) => {
       if (n.type === "constructor_declaration" && n.parent && n.parent.type === "field_declaration") {
-        hits.push(`${path.relative("/home/ishaq2321/bb_tests/repositories", f)}:${n.startPosition.row + 1}`)
+        hits.push(`${path.relative("<corpus-root>/bb_tests/repositories", f)}:${n.startPosition.row + 1}`)
       }
       for (let i = 0; i < n.childCount; i++) w(n.child(i))
     }

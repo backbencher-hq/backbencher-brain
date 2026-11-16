@@ -6,7 +6,7 @@
  *
  * `script/m14/firing-check-v2.mjs:36` hardcodes
  *
- *     const REPO = "/home/ishaq2321/backbencher-brain"
+ *     const REPO = "<corpus-root>/backbencher-brain"
  *
  * and every module it loads is resolved against that constant, so the instrument
  * ALWAYS measures the main checkout and can never measure a lane worktree. That is
@@ -60,7 +60,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
 
 const REPO = resolve(import.meta.dir, "../..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES ?? 200)
 const BLIND = process.env.BB_BLIND === "1"
 

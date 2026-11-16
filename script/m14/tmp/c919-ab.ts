@@ -5,8 +5,8 @@
 //   bun script/m14/tmp/c919-ab.ts <out.json> [repo ...]
 import { readFileSync, readdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const out = process.argv[2]
 const REPOS = process.argv.slice(3).length ? process.argv.slice(3) : ["fmt", "nlohmann-json"]
 const { parseFile } = await import(path.join(ROOT, "src", "ast", "engine.ts"))

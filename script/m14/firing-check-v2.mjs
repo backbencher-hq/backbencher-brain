@@ -33,8 +33,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
-const REPO = "/home/ishaq2321/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const REPO = "<corpus-root>/backbencher-brain"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

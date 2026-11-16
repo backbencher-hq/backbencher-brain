@@ -2,7 +2,7 @@
 // from real emission and never from memory (M14 fixture discipline).
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 async function main() {
   const rel = process.argv[2]

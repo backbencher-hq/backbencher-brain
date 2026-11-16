@@ -5,7 +5,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const EXT_CPP = /\.(cpp|cc|cxx|hpp|hh|h)$/
 const EXT_C = /\.(c|h)$/
 const extArg = process.argv.includes("--ext") ? process.argv[process.argv.indexOf("--ext") + 1] : "cpp"

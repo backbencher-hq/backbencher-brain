@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { RealObjectiveCAnalyzer } from "../../../src/ast/real-objective-c-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 function norm(t: string): string {
   const parts = String(t).replace(/^<\s*/, "").split(/::|\./).filter(Boolean)
   return parts[parts.length - 1] ?? t

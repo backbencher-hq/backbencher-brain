@@ -98,7 +98,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const FILES = Number(arg("--files", "400"))
 const OUT = path.resolve(ROOT, arg("--out", "validation/m60/lua/external-marking.json")!)

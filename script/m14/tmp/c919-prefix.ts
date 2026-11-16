@@ -9,8 +9,8 @@
 //   bun script/m14/tmp/c919-prefix.ts
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const before = JSON.parse(readFileSync("/tmp/c919-before.json", "utf8"))
 const { macroDeclaredBody, RealCppAnalyzer } = await import(path.join(ROOT, "src", "ast", "real-cpp-analyzer.ts"))
 const pred: any = new RealCppAnalyzer()

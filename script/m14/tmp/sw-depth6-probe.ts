@@ -15,8 +15,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { RealSwiftAnalyzer } from "../../../src/ast/real-swift-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/swift-nio"
 const FILES = [
   "Sources/NIOEmbedded/AsyncTestingChannel.swift",
   "Tests/NIOFSTests/FileInfoTests.swift",

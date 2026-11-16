@@ -4,8 +4,8 @@
 //   bun script/m14/tmp/c919-binary.ts
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const file = "/home/ishaq2321/bb_tests/repositories/nlohmann-json/tests/src/unit-serialization.cpp"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const file = "<corpus-root>/bb_tests/repositories/nlohmann-json/tests/src/unit-serialization.cpp"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language

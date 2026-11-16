@@ -5,7 +5,7 @@ The analyzer's own long-form doc is [`fsharp.md`](fsharp.md), which is
 read-only for this page's author; this page records **verdicts and their measurements**, not the
 analyzer's design.
 
-Corpus: the 26 git repositories under `/home/ishaq2321/bb_tests/repositories` that carry F#.
+Corpus: the 26 git repositories under `<corpus-root>/bb_tests/repositories` that carry F#.
 Whole-population runs: 10,138 git-tracked `.fs` files (arbiter arm, this page's split) and the
 11,807-file corpus dump that carries `.fs`/`.fsi`/`.fsx`.
 

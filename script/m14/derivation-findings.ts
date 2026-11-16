@@ -41,7 +41,7 @@ const LANG = argOf("--lang") ?? "typescript"
 const OUT = argOf("--out")
 const REPO = argOf("--repo") ?? "element-plus"
 const FIRE_FILES = Number(argOf("--files") ?? "300")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_ROOT = path.resolve(path.dirname(process.argv[1]!), "..", "..")
 
 // ── 1. constructible: read the analyzer's SOURCE and look for the enum member ──

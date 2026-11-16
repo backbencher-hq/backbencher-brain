@@ -87,7 +87,7 @@ import { execSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REGISTER = path.join(ROOT, "validation/m60/powershell-keyword-census.json")
 const argv = process.argv.slice(2)
 const has = (a: string) => argv.includes(a)

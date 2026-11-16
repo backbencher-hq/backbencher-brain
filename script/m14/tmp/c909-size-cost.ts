@@ -22,7 +22,7 @@ import { readdirSync, statSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const REPOS = ["/home/ishaq2321/bb_tests/repositories/zig", "/home/ishaq2321/bb_tests/repositories/sqlite", "/home/ishaq2321/bb_tests/repositories/jq"]
+const REPOS = ["<corpus-root>/bb_tests/repositories/zig", "<corpus-root>/bb_tests/repositories/sqlite", "<corpus-root>/bb_tests/repositories/jq"]
 const EXTS = new Set([".c", ".h"])
 const CAP = 1024 * 1024 // the harness's own per-file cap
 
@@ -64,7 +64,7 @@ async function timeSet(label: string, files: string[]): Promise<void> {
   let rels = 0
   for (const f of files) {
     try {
-      const r: any = await parseFile(f, "/home/ishaq2321/mcp/backbencher-brain")
+      const r: any = await parseFile(f, "<corpus-root>/mcp/backbencher-brain")
       symbols += r.symbols?.length ?? 0
       rels += r.relationships?.length ?? 0
     } catch {}

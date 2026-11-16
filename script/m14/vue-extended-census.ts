@@ -39,7 +39,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { parseFile } from "../../src/ast/pool-worker"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
-const CORPUS_ROOT = path.resolve(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/mcp/backbencher-brain/.corpus")
+const CORPUS_ROOT = path.resolve(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/mcp/backbencher-brain/.corpus")
 const OUT = (() => {
   const i = process.argv.indexOf("--out")
   return i !== -1 && i + 1 < process.argv.length ? process.argv[i + 1] : "validation/m14/measurements/vue-extended-census.json"

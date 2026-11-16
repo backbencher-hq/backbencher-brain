@@ -3,14 +3,14 @@ import * as WTS from "web-tree-sitter"
 import * as fs from "fs"
 import * as path from "path"
 import { RealJavaScriptAnalyzer } from "../../../../src/ast/real-javascript-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main() {
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
   const js = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-javascript.wasm")))
-  const mod: any = await import("/home/ishaq2321/mcp/backbencher-brain/script/m14/differential.ts")
+  const mod: any = await import("<corpus-root>/mcp/backbencher-brain/script/m14/differential.ts")
   const src = `const config = { inner: { deeper: { leaf: 1 } } };\nfunction read() {\n  return config.inner.deeper.leaf;\n}\nfunction bare() {\n  return config;\n}\nfunction gated(flag) {\n  if (flag) { config.inner = 1; }\n  return config;\n}\n`
   const p = new P(); p.setLanguage(js)
   const root = p.parse(src).rootNode

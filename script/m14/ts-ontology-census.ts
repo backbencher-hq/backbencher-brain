@@ -35,7 +35,7 @@ const argOf = (flag: string): string | undefined => {
 }
 const LANG = argOf("--lang") ?? "typescript"
 const OUT = argOf("--out")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LIMIT = Number(argOf("--limit") ?? "0")
 const REPO_FILTER = argOf("--repo")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(512 * 1024))

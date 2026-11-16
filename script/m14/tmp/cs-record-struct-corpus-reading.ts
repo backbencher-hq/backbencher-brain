@@ -2,7 +2,7 @@
 //
 // `record struct` does not occur in either of csharp's TWO PINNED corpora
 // (powershell, fsharp — grep: 0 each), which is why five depth draws and every
-// canonical draw missed it. It is live in /home/ishaq2321/roslyn (1278 occurrences
+// canonical draw missed it. It is live in <corpus-root>/roslyn (1278 occurrences
 // under src/). This is a SCOPED reading, not a differential draw: roslyn is not a
 // pinned corpus for this lane, so no claim about it is made beyond what is printed.
 //

@@ -3,7 +3,7 @@
 // --root=/tmp/bb-base (no recovery) and once against the working tree.
 import path from "node:path"
 
-const ROOT = process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ?? "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ?? "<corpus-root>/mcp/backbencher-brain"
 
 const CANDIDATES: Record<string, string> = {
   "A-simple-register": `

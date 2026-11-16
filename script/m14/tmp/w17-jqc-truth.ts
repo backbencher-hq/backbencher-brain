@@ -5,8 +5,8 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const JQ = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const JQ = "<corpus-root>/bb_tests/repositories/jq"
 const TARGETS = ["ITER_FINISHED","YY_INITIAL_VALUE","yyg","yy_cp","yy_current_state","yy_act","escapes","yy_amount_of_matched_text","yy_next_state","offset","last_var","is_empty_var","call_arg","if_empty","builtin_defs","builtin_def_1arg","rangestart","rangevar","range","Round_up","Round_down","Round_near","Round_zero"]
 
 async function loadParser() {

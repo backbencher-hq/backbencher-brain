@@ -10,7 +10,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const CASES: Array<{ id: string; src: string }> = [
   { id: "1. direct return of the global", src: `int g;\nint f(void) { return g; }\n` },

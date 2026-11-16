@@ -1,5 +1,5 @@
 // script/m43/verify-a4-corpus.ts — M43.A4 (#660)
-// SYSTEM-LEVEL corpus on REAL repositories from /home/ishaq2321/bb_tests/.
+// SYSTEM-LEVEL corpus on REAL repositories from <corpus-root>/bb_tests/.
 // Proves the whole M43 invariant sentence end-to-end: an edit outside bb_edit
 // is repaired inline by the next read within budget (declared); over budget
 // the read declines honestly; concurrent readers never corrupt or crash while
@@ -26,21 +26,21 @@ const RESULTS_DIR = path.join(ROOT, "validation/m43/results")
 import { resolveCorpusRoot } from "../lib/corpus-root.ts"
 const CORPUS_BASE = resolveCorpusRoot(process.cwd()) ?? "CORPUS_BASE_UNRESOLVED"
 
-//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
+//  "<corpus-root>/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
-//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
+//  "<corpus-root>/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
 // Per-repo corpus paths were built on the literal foreign root
-//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
+//  "<corpus-root>/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.
 const RAKE_REPO = `${CORPUS_BASE}/rake`
-//  "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
+//  "<corpus-root>/bb_tests/repositories" — the OTHER laptop's home directory — so
 //  each repo path below resolved to a filesystem that does not exist here and the leg
 //  measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 //  candidates in order and names them all when none exists.

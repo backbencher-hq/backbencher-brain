@@ -2,7 +2,7 @@
 // truth edge for btree.c, and if not, which gate blocks it?
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { deriveCCalls } = await import(path.join(ROOT, "script/m14/differential.ts"))
 
 const wts: any = await import("web-tree-sitter")
@@ -12,8 +12,8 @@ await P.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/t
 const lang = await L.load(readFileSync(path.join(ROOT, "wasm/tree-sitter-c.wasm")))
 
 const FILES = [
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btree.c", "sqlite3SharedCacheList"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/notify.c", "sqlite3BlockedList"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btree.c", "sqlite3SharedCacheList"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/notify.c", "sqlite3BlockedList"],
 ]
 for (const [file, target] of FILES) {
   const src = readFileSync(file, "utf8")

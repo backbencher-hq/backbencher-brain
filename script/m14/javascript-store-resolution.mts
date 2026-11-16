@@ -89,7 +89,7 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const arg = (n: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const FILES = Number(arg("files") ?? "250")
-const CORPUS = arg("corpus") ?? "/home/ishaq2321/bb_tests/repositories/svelte"
+const CORPUS = arg("corpus") ?? "<corpus-root>/bb_tests/repositories/svelte"
 const JSON_OUT = arg("json")
 
 const TYPES = [

@@ -298,7 +298,7 @@ const registry = {
   externalCloneRoot: manifest.externalCloneRoot,
   setup: {
     command: "bun run script/m20/create-corpus-snapshots.ts",
-    fallbackCommand: "git clone <remote> /home/ishaq2321/bb_tests/repositories/<name> && git -C /home/ishaq2321/bb_tests/repositories/<name> checkout <40-character-revision>",
+    fallbackCommand: "git clone <remote> <corpus-root>/bb_tests/repositories/<name> && git -C <corpus-root>/bb_tests/repositories/<name> checkout <40-character-revision>",
     policy: "The verifier is offline and never downloads, resets, cleans, or mutates external repositories. The setup utility refuses existing destinations and extracts only pinned Git archives.",
   },
   corpusStatus,

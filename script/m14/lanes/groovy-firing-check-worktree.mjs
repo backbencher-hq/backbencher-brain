@@ -37,7 +37,7 @@ import { join } from "node:path"
 //
 //   (1) REPO resolves from BB_REPO, defaulting to THIS worktree, so the tally
 //       measures the analyzer on the lane branch. The shared harness hardcodes
-//       /home/ishaq2321/backbencher-brain, which is the MAIN checkout on branch
+//       <corpus-root>/backbencher-brain, which is the MAIN checkout on branch
 //       main - running the shared harness verbatim measures another branch
 //       analyzer and reports that branch's number as this lane's.
 //   (2) Lane selection is unchanged, so the GROOVY lane draws the same
@@ -47,7 +47,7 @@ import { join } from "node:path"
 // number and the shared one to reproduce what the master sees.
 
 const REPO = process.env.BB_REPO || process.cwd()
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

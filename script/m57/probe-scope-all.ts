@@ -12,7 +12,7 @@
 
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const mode = process.argv.includes("--dist") ? "dist" : "src"
 const ROUNDS = Number(process.env.BB_M57_ROUNDS ?? 3)
 
@@ -32,7 +32,7 @@ function digest(payload: any): string {
 
 async function main() {
   if (mode === "src") {
-    process.env.BB_DATA_DIR = process.env.BB_DATA_DIR || "/home/ishaq2321/.bb"
+    process.env.BB_DATA_DIR = process.env.BB_DATA_DIR || "<corpus-root>/.bb"
     const { BrainDatabase } = await import(`${ROOT}/src/brain/database`)
     const { getProjectId } = await import(`${ROOT}/src/cli/index`)
     const { PatternBrainTools } = await import(`${ROOT}/src/ast/tools`)

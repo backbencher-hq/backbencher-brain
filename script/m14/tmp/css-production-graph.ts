@@ -25,7 +25,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { readdirSync, statSync, readFileSync } from "fs"
 import { join } from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const SAMPLE = Number(argv[argv.indexOf("--sample") + 1] || 40)
 

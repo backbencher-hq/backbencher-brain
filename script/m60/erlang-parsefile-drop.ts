@@ -57,7 +57,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { RealErlangAnalyzer } from "../../src/ast/real-erlang-analyzer"
 import { getParser } from "../m14/run-fixtures"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const argOf = (n: string, d?: string): string | undefined => (argv.includes(`--${n}`) ? argv[argv.indexOf(`--${n}`) + 1] : d)
 const OUT = argOf("out")

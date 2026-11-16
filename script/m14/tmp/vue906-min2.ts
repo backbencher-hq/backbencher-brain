@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const diff: any = await import(path.join(ROOT, "script/m14/differential.ts"))
 const eng: any = await import(path.join(ROOT, "src/ast/engine.ts"))
 const wts: any = await import("web-tree-sitter")

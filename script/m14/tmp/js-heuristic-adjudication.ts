@@ -8,7 +8,7 @@ import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyze
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/svelte"
+const ROOT = "<corpus-root>/bb_tests/repositories/svelte"
 
 function walkFiles(dir: string, out: string[], depth = 0): void {
   if (depth > 14) return

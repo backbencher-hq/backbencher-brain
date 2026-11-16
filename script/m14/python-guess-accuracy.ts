@@ -53,7 +53,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const OUT = argOf("--out")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_FILTER = argOf("--repo")
 const LIMIT = Number(argOf("--limit") ?? "0")
 const MAX_BYTES = Number(argOf("--max-bytes") ?? String(1024 * 1024))

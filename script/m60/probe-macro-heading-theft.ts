@@ -8,7 +8,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 const ROOT = process.cwd()
-const FILE = "/home/ishaq2321/bb_tests/repositories/fmt/test/posix-mock-test.cc"
+const FILE = "<corpus-root>/bb_tests/repositories/fmt/test/posix-mock-test.cc"
 
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts

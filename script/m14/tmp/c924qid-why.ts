@@ -10,8 +10,8 @@ const headMod: any = await import(`../../../${TMP}`)
 const curMod: any = await import("../../../src/ast/real-cpp-analyzer")
 
 const CASES: Array<[string, number, number]> = [
-  ["/home/ishaq2321/bb_tests/repositories/fmt/include/fmt/base.h", 1685, 1700],
-  ["/home/ishaq2321/bb_tests/repositories/fmt/include/fmt/compile.h", 570, 580],
+  ["<corpus-root>/bb_tests/repositories/fmt/include/fmt/base.h", 1685, 1700],
+  ["<corpus-root>/bb_tests/repositories/fmt/include/fmt/compile.h", 570, 580],
 ]
 for (const [f, lo, hi] of CASES) {
   const src = readFileSync(f, "utf8")

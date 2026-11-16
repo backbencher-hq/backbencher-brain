@@ -4,7 +4,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")
@@ -61,7 +61,7 @@ async function main() {
     }
   }
   const files: string[] = []
-  for (const r of ["ansible", "docker", "kubernetes", "grails-core", "terraform"]) walkDir(path.join("/home/ishaq2321/bb_tests/repositories", r), files)
+  for (const r of ["ansible", "docker", "kubernetes", "grails-core", "terraform"]) walkDir(path.join("<corpus-root>/bb_tests/repositories", r), files)
   files.sort()
   let tagNodes = 0, tagZeroWidth = 0, tagNonEmpty = 0, directiveNodes = 0, commentNodes = 0
   const tagTexts: string[] = []

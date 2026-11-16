@@ -12,7 +12,7 @@ import { createHash } from "node:crypto"
 import path from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const CORPUS = "<corpus-root>/bb_tests/repositories/grails-core"
 const OUT = process.argv[2]
 const WANT = Number(process.argv[3] ?? 250)
 if (!OUT) {

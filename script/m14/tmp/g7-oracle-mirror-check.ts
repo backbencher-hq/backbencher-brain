@@ -20,7 +20,7 @@ import { deriveGroovyEdges, deriveTreeEdges } from "../differential"
 // LANE rather than of a function.
 const GROOVY_COMPARED_LABELS = new Set(["extends", "implements", "instantiates", "overrides", "calls", "uses"])
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["grails-core", "geb"]
 const EXTS = new Set([".groovy", ".gradle", ".gsp"])
 

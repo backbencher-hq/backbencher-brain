@@ -20,7 +20,7 @@ import { basename, join } from "node:path"
 import { tmpdir } from "node:os"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/bb_tests/repositories/jq"
 const artifact = JSON.parse(readFileSync("validation/m12/results/c-corpus-errors.json", "utf8"))
 const files: string[] = (artifact.errorFileList as any[]).map((e: any) => String(e.file))
 

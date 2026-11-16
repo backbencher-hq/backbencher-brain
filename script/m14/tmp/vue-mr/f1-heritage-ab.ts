@@ -4,7 +4,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { vue, rels } from "./harness"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 function under(root: string, limit: number) {
   const out: string[] = []

@@ -4,7 +4,7 @@
 import { ASTEngine } from "../../src/ast/engine"
 import { execFileSync } from "node:child_process"
 
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/phpunit"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/phpunit"
 const files = execFileSync("git", ["-C", root, "ls-files", "*.php"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).map((f) => `${root}/${f}`)
 const parser = await ASTEngine.getParser("php")

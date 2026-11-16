@@ -2,7 +2,7 @@
 // and if not, what does the ERROR swallow? (#855 follow-up, TimeT.scala:148)
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const WTS: any = await import("web-tree-sitter")
 const P = WTS.default ?? WTS
 const { Parser, Language } = P

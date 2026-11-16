@@ -12,7 +12,7 @@ const lang = await L.load(fs.readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["sqlite", "jq", "zig"]
 
 const walk = (dir: string, out: string[] = []): string[] => {

@@ -22,7 +22,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "n
 import { execSync } from "node:child_process"
 import { join, dirname, relative } from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/fsharp"
+const CORPUS = "<corpus-root>/bb_tests/repositories/fsharp"
 const argv = process.argv.slice(2)
 const limitIdx = argv.indexOf("--limit")
 const LIMIT = limitIdx >= 0 ? parseInt(argv[limitIdx + 1]) : Infinity

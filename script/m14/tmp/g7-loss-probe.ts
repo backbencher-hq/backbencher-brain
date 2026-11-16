@@ -4,8 +4,8 @@
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const FILE = "build-logic/settings.gradle"
 
 async function main(): Promise<void> {

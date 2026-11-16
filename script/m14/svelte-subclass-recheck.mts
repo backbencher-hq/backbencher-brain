@@ -40,7 +40,7 @@ import { createHash } from "node:crypto"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || fileURLToPath(new URL("../..", import.meta.url))
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const ONLY = process.env.ONLY_REPO || ""
 const MAXBYTES = 512 * 1024
 

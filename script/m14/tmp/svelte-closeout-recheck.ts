@@ -3,7 +3,7 @@
 // the closeout record must rest on probes, not on the notes.
 import * as fs from "fs"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 type Case = { id: string; claim: string; src: string; pass: (r: any) => boolean; want: string }
 

@@ -2,7 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { deriveScalaContainsTruth } from "../differential"
 import { RealScalaAnalyzer } from "../../../src/ast/real-scala-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const fp = process.argv[2]
 async function main(): Promise<void> {
   const wts: any = await import("web-tree-sitter")

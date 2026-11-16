@@ -2,7 +2,7 @@
  "kind": "m60-graphql-imports-production-census",
  "producedBy": "script/m14/tmp/graphql/probe/imports-production-census.mts",
  "entryPoint": "parseFile (src/ast/pool-worker.ts)",
- "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "corpusRoot": "<corpus-root>/bb_tests/repositories",
  "population": {
   "admittedFiles": 1905,
   "filesParsed": 1905,

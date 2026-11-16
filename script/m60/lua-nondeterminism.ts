@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUTDIR = "/tmp/opencode/lua-lane/nondet"
 const PASS = process.argv.includes("--pass") ? process.argv[process.argv.indexOf("--pass") + 1] : null
 const DIFF = process.argv.includes("--diff")

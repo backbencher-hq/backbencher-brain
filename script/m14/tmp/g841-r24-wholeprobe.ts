@@ -14,7 +14,7 @@ const FILES = [
   "grails-spring-security/rest/core/grails-app/services/grails/plugin/springsecurity/rest/RestOauthService.groovy",
 ]
 for (const f of FILES) {
-  const p = `/home/ishaq2321/bb_tests/repositories/grails-core/${f}`
+  const p = `<corpus-root>/bb_tests/repositories/grails-core/${f}`
   const src = fs.readFileSync(p, "utf8")
   const t = parser.parse(src).rootNode
   const errs: Array<[string, number, number]> = []

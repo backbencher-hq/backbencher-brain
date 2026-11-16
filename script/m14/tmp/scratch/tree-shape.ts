@@ -1,7 +1,7 @@
 // What does the grammar produce for `new\n  Other()`? Node types only.
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const SRC = `export function f() {
   const a = new Thing()
   const b = new

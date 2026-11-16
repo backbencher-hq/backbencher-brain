@@ -5,10 +5,10 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES: Array<[string, string, string]> = [
-  ["jv.c", "ITER_FINISHED", "/home/ishaq2321/bb_tests/repositories/jq/src/jv.c"],
-  ["jv_dtoa.c", "emin", "/home/ishaq2321/bb_tests/repositories/jq/src/jv_dtoa.c"],
+  ["jv.c", "ITER_FINISHED", "<corpus-root>/bb_tests/repositories/jq/src/jv.c"],
+  ["jv_dtoa.c", "emin", "<corpus-root>/bb_tests/repositories/jq/src/jv_dtoa.c"],
 ]
 
 async function main() {

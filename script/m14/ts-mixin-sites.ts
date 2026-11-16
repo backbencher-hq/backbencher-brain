@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url"
 import { admitCorpusCached, extensionsFor, strideSample, populationLine, SIZE_CAP } from "./ts-corpus"
 
 const REPO = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES ?? 0) // 0 = the WHOLE admitted population
 
 const argv = process.argv.slice(2)

@@ -132,8 +132,8 @@ async function measureAvgMsPerFile(corpus: string): Promise<{ avg: number; files
 // which is false data in a pinned file — and the kind that survives, because a
 // plausible number in the wrong row is harder to notice than a missing one.
 const CORPUS_OF: Record<string, string> = {
-  "svelte:css": "/home/ishaq2321/bb_tests/repositories/svelte",
-  "grails-core:css": "/home/ishaq2321/bb_tests/repositories/grails-core",
+  "svelte:css": "<corpus-root>/bb_tests/repositories/svelte",
+  "grails-core:css": "<corpus-root>/bb_tests/repositories/grails-core",
 }
 for (const [key, row] of Object.entries<any>(rows)) {
   const corpus = CORPUS_OF[key]

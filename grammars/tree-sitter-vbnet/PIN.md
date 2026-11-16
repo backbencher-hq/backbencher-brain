@@ -156,7 +156,7 @@ nothing to do with the code.
 Rebuild:
 
 ```sh
-export PATH="$HOME/.local/bin:/home/ishaq2321/bb_tests/bin:$PATH"
+export PATH="$HOME/.local/bin:<corpus-root>/bb_tests/bin:$PATH"
 cd grammars/tree-sitter-vbnet
 tree-sitter generate && tree-sitter build --wasm --docker
 cp tree-sitter-vbnet.wasm ../../wasm/
@@ -166,7 +166,7 @@ Then `bb_tests/grammar-repro/grammar-gate.sh` and
 `bun run script/m14/verify-grammar-pins.ts --write`.
 
 The pristine upstream `grammar.js` is kept at
-`/home/ishaq2321/bb_tests/grammar-eval/tree-sitter-vbnet/grammar.js`, so the patch
+`<corpus-root>/bb_tests/grammar-eval/tree-sitter-vbnet/grammar.js`, so the patch
 set is diffable against its base rather than only readable in place.
 
 Upstream: `github.com/govindbanura/tree-sitter-vbnet` (MIT). No npm package, no

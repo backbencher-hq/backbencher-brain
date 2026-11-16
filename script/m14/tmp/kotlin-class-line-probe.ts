@@ -4,9 +4,9 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const F =
-  "/home/ishaq2321/bb_tests/repositories/Exposed/spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt"
+  "<corpus-root>/bb_tests/repositories/Exposed/spring-transaction/src/main/kotlin/org/jetbrains/exposed/v1/spring/transaction/SpringTransactionManager.kt"
 
 async function main(): Promise<void> {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))

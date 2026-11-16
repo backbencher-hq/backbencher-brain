@@ -41,7 +41,7 @@ for (const [label, src] of CASES) {
 }
 
 // Census: sqlite sites whose wrapping macro's first argument is a pointer type.
-const REPO = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const REPO = "<corpus-root>/bb_tests/repositories/sqlite"
 const files: string[] = []
 const walk = (d: string) => {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

@@ -19,12 +19,12 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
 const REPOS = [
-  "/home/ishaq2321/bb_tests/hcl/repos/terraform",
-  "/home/ishaq2321/bb_tests/hcl/repos/tf-aws-components",
+  "<corpus-root>/bb_tests/hcl/repos/terraform",
+  "<corpus-root>/bb_tests/hcl/repos/tf-aws-components",
 ]
 const EXT = /\.(tf|tfvars|hcl|tofu)$/i
 
@@ -167,7 +167,7 @@ const out = {
   linearityRuling:
     "A ratio near 1.0 across quartiles is the linearity evidence. A rising ms-per-unit with size is the O(n^2) signature the formula's rule 9 asks for; facts-per-unit drifting upward would mean the Set-backed relationship dedupe is degrading with size.",
 }
-writeFileSync("/home/ishaq2321/bb_tests/hcl/out/complexity.json", JSON.stringify(out, null, 2) + "\n")
+writeFileSync("<corpus-root>/bb_tests/hcl/out/complexity.json", JSON.stringify(out, null, 2) + "\n")
 
 console.log(`files=${out.files} bytes=${out.totalBytes} nodes=${out.totalNodes} facts=${out.totalFacts}`)
 console.log(`loadAvg1 during measurement: ${out.loadAvg1.min}-${out.loadAvg1.max}`)

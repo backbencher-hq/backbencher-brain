@@ -62,7 +62,7 @@ const nodeTypes: { type: string; named: boolean }[] = JSON.parse(
 // ── 2. what the CORPUS actually produces ──────────────────────────────────────
 // Measured, not assumed. A type with no corpus occurrence is labelled as such in the
 // spec, which is the difference between "handled" and "never looked at".
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const CORPORA = ["element-plus", "phpmyadmin", "vue-core", "vue-element-admin"]
 
 const { readdirSync, statSync } = await import("fs")

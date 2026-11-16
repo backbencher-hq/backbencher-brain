@@ -23,8 +23,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = process.argv[2] ?? "<corpus-root>/bb_tests/repositories"
 const CAP = Number(process.argv[3] ?? process.env["BB_CAP"] ?? 60)
 const FULL = new Set(["sdwebimage", "afnetworking"])
 

@@ -33,7 +33,7 @@ function fnName(node: any): string | null {
 
 const REPOS = ["jq", "sqlite", "zig"]
 for (const repo of REPOS) {
-  const files = execFileSync("bash", ["-c", `find /home/ishaq2321/bb_tests/repositories/${repo} -name '*.c' -size +1k -not -path '*/.git/*' | sort`], { encoding: "utf8" })
+  const files = execFileSync("bash", ["-c", `find <corpus-root>/bb_tests/repositories/${repo} -name '*.c' -size +1k -not -path '*/.git/*' | sort`], { encoding: "utf8" })
     .split("\n").filter(Boolean).slice(0, 400)
   let filesWith = 0
   let totalSwallowed = 0
@@ -62,7 +62,7 @@ for (const repo of REPOS) {
     if (swallowed.length > 0) {
       filesWith++
       totalSwallowed += swallowed.length
-      rows.push({ file: f.replace("/home/ishaq2321/bb_tests/repositories/", ""), swallowed, owner })
+      rows.push({ file: f.replace("<corpus-root>/bb_tests/repositories/", ""), swallowed, owner })
     }
   }
   console.log(`\n=== ${repo}: ${files.length} .c files scanned, ${filesWith} with swallowed definitions, ${totalSwallowed} swallowed names ===`)

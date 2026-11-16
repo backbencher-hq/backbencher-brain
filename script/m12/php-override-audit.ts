@@ -31,7 +31,7 @@ import fs from "node:fs"
 import path from "node:path"
 
 const ROOT = process.cwd()
-const REPO = process.env.CORPUS ?? "/home/ishaq2321/bb_tests/repositories/phpunit"
+const REPO = process.env.CORPUS ?? "<corpus-root>/bb_tests/repositories/phpunit"
 const SAMPLE = Number(process.env.SAMPLE ?? 60)
 
 const wts: any = await import("web-tree-sitter")

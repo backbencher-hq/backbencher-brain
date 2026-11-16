@@ -2,7 +2,7 @@
 import * as fs from "fs"
 import { RealVueAnalyzer } from "../../../src/ast/real-vue-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 let P: any, LANGS: Record<string, any> = {}
 
 async function parsers() {

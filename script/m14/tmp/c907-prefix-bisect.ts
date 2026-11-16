@@ -18,7 +18,7 @@ const parser = new P()
 parser.setLanguage(lang)
 
 const arg = process.argv[2] ?? "396"
-const FILE = process.argv[3] ?? "/home/ishaq2321/bb_tests/repositories/jq/src/jv_print.c"
+const FILE = process.argv[3] ?? "<corpus-root>/bb_tests/repositories/jq/src/jv_print.c"
 const lines = readFileSync(FILE, "utf8").split("\n")
 // "a-b,c-d" = keep the 1-based line ranges, concatenated (compaction test).
 const src = /^[\d,\-]+$/.test(arg) && arg.includes("-")

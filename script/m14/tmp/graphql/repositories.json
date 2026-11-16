@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "purpose": "Pinned GraphQL corpora for the GRAPHQL analyzer lane. Every record names an exact revision so a measurement can be re-run and get the same bytes. A corpus without a revision is an anecdote — this file exists because the m12 GraphQL corpus layer was unreproducible when this work started: validation/m12/results/graphql-*.json pinned /home/ishaq2321/bb_tests/repositories/graphql-js, which no longer existed, so every script under script/m12/graphql-*.ts CRASHED on `git rev-parse` while their artifacts sat on disk claiming `passed: true`.",
+  "purpose": "Pinned GraphQL corpora for the GRAPHQL analyzer lane. Every record names an exact revision so a measurement can be re-run and get the same bytes. A corpus without a revision is an anecdote — this file exists because the m12 GraphQL corpus layer was unreproducible when this work started: validation/m12/results/graphql-*.json pinned <corpus-root>/bb_tests/repositories/graphql-js, which no longer existed, so every script under script/m12/graphql-*.ts CRASHED on `git rev-parse` while their artifacts sat on disk claiming `passed: true`.",
   "establishedAt": "2026-09-27",
   "reestablished": {
     "what": "the m12 corpus layer",
@@ -15,7 +15,7 @@
   "corpora": [
     {
       "name": "graphql-js",
-      "path": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js",
+      "path": "<corpus-root>/bb_tests/graphql/repos/graphql-js",
       "url": "https://github.com/graphql/graphql-js",
       "revision": "ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea",
       "cloneDepth": 1,
@@ -30,7 +30,7 @@
     },
     {
       "name": "graphiql",
-      "path": "/home/ishaq2321/bb_tests/graphql/repos/graphiql",
+      "path": "<corpus-root>/bb_tests/graphql/repos/graphiql",
       "url": "https://github.com/graphql/graphiql",
       "revision": "9d9790decc93744f6e5c1237a2046fa8f9638d6d",
       "cloneDepth": 1,
@@ -41,7 +41,7 @@
     },
     {
       "name": "neo4j-graphql",
-      "path": "/home/ishaq2321/bb_tests/graphql/repos/neo4j-graphql",
+      "path": "<corpus-root>/bb_tests/graphql/repos/neo4j-graphql",
       "url": "https://github.com/neo4j/graphql",
       "revision": "ff0637bda0f44c740c8b7f042b98dd8c7ba61e33",
       "cloneDepth": 1,
@@ -65,7 +65,7 @@
     ]
   },
   "previousGrammar": {
-    "path": "/home/ishaq2321/bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
+    "path": "<corpus-root>/bb_tests/graphql/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm",
     "sha256": "9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27",
     "bytes": 41223,
     "why": "the bytes this lane replaced, kept so the extraction A/B (12 -> 4 error files, 20 -> 7 error nodes, +4 symbols, +76 relationships) is reproducible forever rather than being a one-time observation. The upstream SOURCE it was built from is not recoverable — it predates optional($.description) on schema_definition and optional($.directives) on variable_definition, and the GitHub API surfaces no tag for that commit — which is recorded as a rejected alternative in the grammar pin's decision."

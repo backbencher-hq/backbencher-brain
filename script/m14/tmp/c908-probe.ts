@@ -13,7 +13,7 @@ const lang = await L.load(fs.readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/jq/src/parser.c"
+const FILE = "<corpus-root>/bb_tests/repositories/jq/src/parser.c"
 const src = fs.readFileSync(FILE, "utf8")
 const tree = parser.parse(src)
 const NAME = "YY_INITIAL_VALUE"

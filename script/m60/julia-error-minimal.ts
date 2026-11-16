@@ -33,7 +33,7 @@ import { loadWebTreeSitter } from "../../src/util/wasm"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/julia-error-minimal.json")
-const CORPUS_ROOT = path.join("/home/ishaq2321/bb_tests/repositories", "julia")
+const CORPUS_ROOT = path.join("<corpus-root>/bb_tests/repositories", "julia")
 const DIFF = path.join(ROOT, "validation/m12/results/julia-differential.json")
 const arg = (f: string, d: number) => { const a = process.argv.find((x) => x.startsWith(`--${f}=`)); return a ? Number(a.slice(f.length + 3)) : d }
 const argTop = arg("top", 18)

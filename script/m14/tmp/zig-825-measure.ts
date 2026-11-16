@@ -3,7 +3,7 @@
 // expectation is authored from measurement and then hand-checked against source.
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE = path.join(ROOT, "validation/m14/fixtures/zig/callsite-lines-825.zig")
 const eng: any = await import(path.join(ROOT, "src/ast/engine.ts"))
 const content = fs.readFileSync(FILE, "utf8")

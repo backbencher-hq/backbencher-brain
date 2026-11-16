@@ -19,7 +19,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { readFileSync, writeFileSync } from "fs"
 import { spawnSync } from "child_process"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/svelte"
+const CORPUS = "<corpus-root>/bb_tests/repositories/svelte"
 const argv = process.argv.slice(2)
 const WRITE = argv.includes("--write-sample")
 

@@ -3,7 +3,7 @@
 // WHY A LANE COPY, and what it changes and does not.
 //
 // `script/m14/firing-check.mjs` is MASTER-owned and hardcodes
-// `const REPO = "/home/ishaq2321/backbencher-brain"`, so it always measures the
+// `const REPO = "<corpus-root>/backbencher-brain"`, so it always measures the
 // MAIN checkout — not the branch under review. It also reads the enum from
 // `src/ast/types.ts`, whose `Imports` member is `"brain_import"`, a value no
 // analyzer emits and a SQL table name (`schema-ddl.ts:131`). Measured on
@@ -73,7 +73,7 @@ import { fileURLToPath } from "node:url"
 import { admitCorpusCached, extensionsFor, strideSample, populationLine } from "./ts-corpus"
 
 const REPO = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES ?? 120)
 
 // ⇒⇒⇒ THE LANE TABLE CARRIES THE ANALYZER CLASS AND THE LANE NAME — AND NOTHING ELSE. The third

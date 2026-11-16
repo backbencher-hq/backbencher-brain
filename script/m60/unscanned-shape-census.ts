@@ -563,7 +563,7 @@ async function main() {
           continue
         }
         files++
-        const rel = path.relative(path.join("/home/ishaq2321/bb_tests/repositories", draw.repo), file)
+        const rel = path.relative(path.join("<corpus-root>/bb_tests/repositories", draw.repo), file)
         accumulateChildren(tree.rootNode, literals, `${draw.repo}/${rel}`, edges, grammarNamed, ctx)
         accumulateAllTypes(tree.rootNode, literals, orphans, grammarNamed)
       }

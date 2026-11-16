@@ -26,7 +26,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { deriveTreeEdges, deriveGroovyEdges } from "../differential"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const LANGS: Record<string, { repos: string[]; exts: string[]; lang: string }> = {
   groovy: { repos: ["grails-core", "geb"], exts: [".groovy", ".gradle"], lang: "groovy" },
   java: { repos: ["grails-core", "clojure"], exts: [".java"], lang: "java" },

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "graphql_differential",
   "truthSource": "hand_derived_from_spec",
-  "wasm": "/home/ishaq2321/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
+  "wasm": "<corpus-root>/mcp/bb-lanes/graphql/wasm/tree-sitter-graphql.wasm",
   "total": {
     "symbols": {
       "expected": 122,

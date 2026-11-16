@@ -30,7 +30,7 @@
 #   bash script/m14/yaml-census-chunked.sh before   # the analyzer at git HEAD
 #   bash script/m14/yaml-census-chunked.sh after    # the analyzer with the R3 work
 set -uo pipefail
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 
 MODE="${1:-after}"
 LOG=".tmp-yaml/chunked-$MODE.log"

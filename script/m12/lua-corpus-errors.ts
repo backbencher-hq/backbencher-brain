@@ -3,10 +3,10 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { execFileSync } from "node:child_process"
 import { writeFileSync } from "node:fs"
 
-// The default pointed at /home/ishaq2321/bb_tests/repositories/luarocks, which no
+// The default pointed at <corpus-root>/bb_tests/repositories/luarocks, which no
 // longer exists — so running this with no argument failed on a path that had
 // vanished, and the default silently encoded a corpus that cannot be reproduced.
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/luvit"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/luvit"
 const relative = execFileSync("git", ["-C", root, "ls-files", "*.lua", "*.luau"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean)
 const files = relative.map((file) => `${root}/${file}`)
@@ -65,7 +65,7 @@ const document = {
   crashFiles,
   errorFileList: errorList,
   passed: errorFiles === 0 && crashFiles === 0,
-  policy: "Every file in scope is audited through the production parseFile pipeline. The known-invalid fixture is a corpus selector fact, not a defect: a repository may ship a deliberately malformed file, and reporting it as a parse failure would be measuring the selector. Named per repo in /home/ishaq2321/bb_tests/repositories/MANIFEST.json.",
+  policy: "Every file in scope is audited through the production parseFile pipeline. The known-invalid fixture is a corpus selector fact, not a defect: a repository may ship a deliberately malformed file, and reporting it as a parse failure would be measuring the selector. Named per repo in <corpus-root>/bb_tests/repositories/MANIFEST.json.",
   note: "Written by this instrument. It previously wrote nothing, which left the M60 `corpus` cell reading `pass` on a vacuous comparison against a null artifact side.",
 }
 writeFileSync("validation/m12/results/lua-corpus-errors.json", JSON.stringify(document, null, 2) + "\n")

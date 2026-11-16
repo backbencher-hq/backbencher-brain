@@ -20,7 +20,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 /** Parse `// @line:<label>:<from>:<target>:<notLine>:<why>` markers. */
 // The marker TRAILS real code (`defer cleanup() // @line:...`), so it must be

@@ -43,7 +43,7 @@ import { readFileSync, existsSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const ART = path.join(ROOT, "validation/m14/results/M14.0.F11.clean.json")
 
 const CLEAN_KEYWORDS = new Set([

@@ -49,7 +49,7 @@ async function main() {
   }
 
   // ── 2. Real-repo e2e (rake, Ruby) ───────────────────────────────────────
-  const src = "/home/ishaq2321/bb_tests/repositories/rake"
+  const src = "<corpus-root>/bb_tests/repositories/rake"
   let liveFindings = 0, unresolvedSources = 0, histFindings = 0, badHistory = -1
   console.log("── S1.2  real-repo e2e: " + src + " ──")
   if (!existsSync(src)) {

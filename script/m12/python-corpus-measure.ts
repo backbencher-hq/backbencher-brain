@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process"
 import { statSync, writeFileSync } from "node:fs"
 
 const ROOT = process.cwd()
-const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/cython"
+const corpus = process.argv[2] || "<corpus-root>/bb_tests/repositories/cython"
 const relative = execFileSync("git", ["-C", corpus, "ls-files", "*.py"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
   .filter((file) => statSync(`${corpus}/${file}`).size >= 1024)

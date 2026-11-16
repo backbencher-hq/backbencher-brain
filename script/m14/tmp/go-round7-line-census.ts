@@ -21,7 +21,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const arg = (k: string, d: string): string => {
   const i = process.argv.indexOf(k)
   return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : d
@@ -45,7 +45,7 @@ async function main() {
   let totalEdges = 0
 
   for (const repo of repos) {
-    const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
+    const dir = path.join("<corpus-root>/bb_tests/repositories", repo)
     if (!fs.existsSync(dir)) { console.log(`[SKIP] ${repo}`); continue }
     const files: string[] = []
     const walk = (d: string): void => {

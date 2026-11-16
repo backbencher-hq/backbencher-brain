@@ -17,14 +17,14 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
 import { readVbSource } from "./vb-source"
 
 const CORPORA: Array<{ name: string; root: string; limit: number }> = [
-  { name: "runtime-mvb", root: "/home/ishaq2321/bb_tests/vb-corpus/runtime", limit: 0 },
-  { name: "p3d-legacy", root: "/home/ishaq2321/bb_tests/vb-corpus/p3d", limit: 150 },
-  { name: "dismtools", root: "/home/ishaq2321/bb_tests/vb-corpus/dismt", limit: 100 },
-  { name: "tankexporter", root: "/home/ishaq2321/bb_tests/vb-corpus/tankex", limit: 0 },
+  { name: "runtime-mvb", root: "<corpus-root>/bb_tests/vb-corpus/runtime", limit: 0 },
+  { name: "p3d-legacy", root: "<corpus-root>/bb_tests/vb-corpus/p3d", limit: 150 },
+  { name: "dismtools", root: "<corpus-root>/bb_tests/vb-corpus/dismt", limit: 100 },
+  { name: "tankexporter", root: "<corpus-root>/bb_tests/vb-corpus/tankex", limit: 0 },
 ]
 
 function collectVbFiles(root: string): string[] {

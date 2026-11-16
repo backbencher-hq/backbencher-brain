@@ -19,7 +19,7 @@ import { RealFsharpAnalyzer } from "../../../src/ast/real-fsharp-analyzer"
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs"
 import { join, dirname, relative } from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/fsharp"
+const CORPUS = "<corpus-root>/bb_tests/repositories/fsharp"
 const argv = process.argv.slice(2)
 const outIdx = argv.indexOf("--out")
 const OUT = outIdx >= 0 ? argv[outIdx + 1] : "validation/m14/results/archive/fsharp-error-triage.json"

@@ -30,7 +30,7 @@ import * as path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/P1-rust.json")
 
 // The dead cells P1 records for rust (the ones this probe adjudicates), plus the

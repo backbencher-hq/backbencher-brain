@@ -8,7 +8,7 @@
 import * as fs from "fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const FILES = [
   "grails-core/src/test/resources/test-application.groovy",
   "grails-data-hibernate5/dbmigration/src/integration-test/resources/changelog-account-sql.groovy",

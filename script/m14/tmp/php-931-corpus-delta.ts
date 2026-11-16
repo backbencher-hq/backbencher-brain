@@ -13,7 +13,7 @@ import * as fs from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["phpunit", "slim", "phpmyadmin"]
 
 function filesIn(repos: string[], ext: string[], cap: number): string[] {

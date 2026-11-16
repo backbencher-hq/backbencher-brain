@@ -15,7 +15,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 
 const file =
   process.argv[2] ??
-  "/home/ishaq2321/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
+  "<corpus-root>/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
 const from = Number(process.argv[3] ?? 205)
 const to = Number(process.argv[4] ?? 245)
 const src = fs.readFileSync(file, "utf8")

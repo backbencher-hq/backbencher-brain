@@ -6,8 +6,8 @@
 import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const SRC = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/jv.c", "utf8")
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const SRC = fs.readFileSync("<corpus-root>/bb_tests/repositories/jq/src/jv.c", "utf8")
 const lineOf = (idx: number) => SRC.slice(0, idx).split("\n").length
 async function main() {
   const P: any = (WTS as any).Parser ?? (WTS as any).default ?? WTS

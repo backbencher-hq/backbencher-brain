@@ -8,8 +8,8 @@ const lang = await L.load(fs.readFileSync(process.argv[2] ?? "wasm/tree-sitter-g
 const parser = new P(); parser.setLanguage(lang)
 
 const FILES = [
-  "/home/ishaq2321/bb_tests/repositories/grails-core/grails-core-cli-legacy/src/test/groovy/org/apache/grails/core/cli/LegacyCommandRegistryLoadingSpec.groovy",
-  "/home/ishaq2321/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/SbomPlugin.groovy",
+  "<corpus-root>/bb_tests/repositories/grails-core/grails-core-cli-legacy/src/test/groovy/org/apache/grails/core/cli/LegacyCommandRegistryLoadingSpec.groovy",
+  "<corpus-root>/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/SbomPlugin.groovy",
 ]
 for (const f of FILES) {
   const src = fs.readFileSync(f, "utf8")

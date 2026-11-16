@@ -25,7 +25,7 @@ import { RealTypeScriptAnalyzer } from "../../src/ast/real-typescript-analyzer"
 const ROOT = path_resolve()
 function path_resolve(): string {
   const i = process.argv.indexOf("--repo")
-  return i >= 0 ? process.argv[i + 1] : "/home/ishaq2321/mcp/backbencher-brain"
+  return i >= 0 ? process.argv[i + 1] : "<corpus-root>/mcp/backbencher-brain"
 }
 const LIMIT = (() => {
   const i = process.argv.indexOf("--limit")

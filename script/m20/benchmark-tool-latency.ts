@@ -18,8 +18,8 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m20/results")
 const tools = ["bb_search", "bb_ask", "bb_analyze", "bb_health", "bb_patterns", "bb_security", "bb_visualize", "bb_migrate", "bb_doc", "bb_edit"] as const
 const repos = [
-  { id: "rake", path: "/home/ishaq2321/bb_tests/repositories/rake", query: "Task" },
-  { id: "intellij-community", path: "/home/ishaq2321/intellij-community", query: "VirtualFile" },
+  { id: "rake", path: "<corpus-root>/bb_tests/repositories/rake", query: "Task" },
+  { id: "intellij-community", path: "<corpus-root>/intellij-community", query: "VirtualFile" },
 ]
 const args: Record<string, Record<string, unknown>> = {
   bb_search: { query: "QUERY", limit: 5 },

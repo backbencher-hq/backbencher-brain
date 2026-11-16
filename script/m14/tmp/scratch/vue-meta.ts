@@ -1,5 +1,5 @@
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main() {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
   const { readFileSync } = await import("node:fs")

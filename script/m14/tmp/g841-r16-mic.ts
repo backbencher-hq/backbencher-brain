@@ -5,7 +5,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
 const lang = await L.load(fs.readFileSync(process.argv[2]))
 const parser = new P(); parser.setLanguage(lang)
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-datamapping-core/src/main/groovy/org/grails/datastore/gorm/internal/MethodInvokingClosure.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-datamapping-core/src/main/groovy/org/grails/datastore/gorm/internal/MethodInvokingClosure.groovy"
 const src = fs.readFileSync(F, "utf8")
 const t = parser.parse(src)
 const show = (n: any, d = 0): string => {

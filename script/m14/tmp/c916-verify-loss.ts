@@ -3,16 +3,16 @@
 // "lost" claim has to be checked per site rather than assumed.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.join(ROOT, "src", "ast", "engine.ts"))
 
 const SITES: Array<[string, number, string]> = [
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btmutex.c", 53, "btreeLockCarefully"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btree.c", 87, "sqlite3SharedCacheList"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/notify.c", 40, "sqlite3BlockedList"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/os.c", 355, "vfsList"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/main.c", 138, "sqlite3IoTrace"],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c", 6244,
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btmutex.c", 53, "btreeLockCarefully"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btree.c", 87, "sqlite3SharedCacheList"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/notify.c", 40, "sqlite3BlockedList"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/os.c", 355, "vfsList"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/main.c", 138, "sqlite3IoTrace"],
+  ["<corpus-root>/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c", 6244,
    "Java_org_sqlite_jni_capi_SQLTester_installCustomExtensions"],
 ]
 

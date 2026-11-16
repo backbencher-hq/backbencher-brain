@@ -16,10 +16,10 @@
  */
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
-const REPOS = "/home/ishaq2321/bb_tests/hcl/repos"
+const REPOS = "<corpus-root>/bb_tests/hcl/repos"
 const EXT = /\.(tf|tfvars|hcl|tofu)$/i
 const parser = await ASTEngine.getParser("hcl")
 const analyzer = new RealHclAnalyzer()
@@ -145,7 +145,7 @@ const out = {
         : `PARTIALLY APPLICABLE: ${unexplained.length} callee(s) match a declared symbol and are NOT explained by the global namespace or by a type keyword — these need adjudication before the ruling can stand.`,
   samples: resolvable.slice(0, 20),
 }
-writeFileSync("/home/ishaq2321/bb_tests/hcl/out/calls-feasibility.json", JSON.stringify(out, null, 2) + "\n")
+writeFileSync("<corpus-root>/bb_tests/hcl/out/calls-feasibility.json", JSON.stringify(out, null, 2) + "\n")
 console.log(`files=${files} function_call nodes=${fnNodes} distinct callees=${out.distinctCallees}`)
 console.log(`callees resolving to a symbol declared in the same file: ${out.calleesResolvingToASymbolInTheSameFile}`)
 console.log(`provider-namespaced callees: ${out.providerNamespacedCallees.count} ${JSON.stringify(out.providerNamespacedCallees.names)}`)

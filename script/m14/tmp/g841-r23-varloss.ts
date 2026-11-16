@@ -9,9 +9,9 @@ const parser = new P(); parser.setLanguage(lang)
 
 const FILES: Array<[string, string, number]> = [
   // dedup: drop the second TestDataService path
-  ["TestDataService", "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/services/test/TestDataService.groovy", 115],
-  ["TestDataService2", "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/services/test/TestDataService.groovy", 0],
-  ["ViolationAgg", "/home/ishaq2321/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsViolationAggregationPlugin.groovy", 250],
+  ["TestDataService", "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/services/test/TestDataService.groovy", 115],
+  ["TestDataService2", "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/services/test/TestDataService.groovy", 0],
+  ["ViolationAgg", "<corpus-root>/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/GrailsViolationAggregationPlugin.groovy", 250],
 ]
 for (const [tag, path, focusLine] of FILES) {
   if (!fs.existsSync(path)) { console.log(`${tag}: FILE MISSING`); continue }

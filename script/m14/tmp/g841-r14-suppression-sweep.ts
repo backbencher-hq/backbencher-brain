@@ -7,8 +7,8 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 const base: Record<string, { symbols: string[]; rels: string[] }> = JSON.parse(readFileSync("/tmp/g841-r14-base.json", "utf8"))
 const after: Record<string, { symbols: string[]; rels: string[] }> = JSON.parse(readFileSync("/tmp/g841-r14-after.json", "utf8"))

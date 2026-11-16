@@ -32,7 +32,7 @@ export const ROOT = process.env.BB_ROOT
   : path.resolve(PB, "..", "..", "..", "..")
 
 /** Generated artifacts, written under the external workspace to keep the repo clean. */
-export const OUT = process.env.PB_OUT ?? "/home/ishaq2321/bb_tests/protobuf/out"
+export const OUT = process.env.PB_OUT ?? "<corpus-root>/bb_tests/protobuf/out"
 
 /** The hand-derived differential truth: the input, not an output. */
 export const GROUND_TRUTH = path.join(PB, "fixtures", "ground-truth.json")
@@ -44,7 +44,7 @@ export const MANIFEST = path.join(PB, "corpus-manifest.json")
  * The third-party corpora. Not tracked; see the note above.
  * `PB_CORPORA` overrides the root so a reader can stage them anywhere.
  */
-export const CORPORA = process.env.PB_CORPORA ?? "/home/ishaq2321/bb_tests/protobuf/repos"
+export const CORPORA = process.env.PB_CORPORA ?? "<corpus-root>/bb_tests/protobuf/repos"
 
 /** The wired grammar under test. */
 export const WASM = process.env.PB_WASM ?? path.join(ROOT, "wasm/tree-sitter-protobuf.wasm")
@@ -71,7 +71,7 @@ export const WASM = process.env.PB_WASM ?? path.join(ROOT, "wasm/tree-sitter-pro
  */
 export const PREVIOUS_WASM =
   process.env.PB_PREVIOUS_WASM ??
-  path.join(process.env.PB_OUT ?? "/home/ishaq2321/bb_tests/protobuf/out", "..", "baseline", "tree-sitter-proto-UPSTREAM.wasm")
+  path.join(process.env.PB_OUT ?? "<corpus-root>/bb_tests/protobuf/out", "..", "baseline", "tree-sitter-proto-UPSTREAM.wasm")
 
 /** The sha the pin recorded for the pre-patch build. Verified on every rebuild. */
 export const PREVIOUS_WASM_SHA = "dbbde8a8f047b6b661c113fb61fdb0d5aceff3956e11b7d5f58ac22ff02a473f"
@@ -116,7 +116,7 @@ export function ensureBaseline(): string {
   // find its own compiler is a very confusing failure to read.
   const cli = [
     path.join(ROOT, "node_modules/.bin/tree-sitter"),
-    path.join("/home/ishaq2321/bb_tests/node_modules/.bin/tree-sitter"),
+    path.join("<corpus-root>/bb_tests/node_modules/.bin/tree-sitter"),
   ].find((c) => fs.existsSync(c)) ?? "tree-sitter"
   run(cli, ["generate"], checkout)
   const out = path.join(tmp, "tree-sitter-proto-UPSTREAM.wasm")

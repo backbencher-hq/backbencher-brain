@@ -19,7 +19,7 @@ async function main() {
           else if (exts.some((x) => e.name.endsWith(x))) files.push(p)
         }
       }
-      collect("/home/ishaq2321/bb_tests/repositories/" + repo)
+      collect("<corpus-root>/bb_tests/repositories/" + repo)
       const lines: Record<string, number> = {}
       let errFiles = 0
       for (const f of files) {

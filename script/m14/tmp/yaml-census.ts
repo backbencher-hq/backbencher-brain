@@ -14,8 +14,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const CORPUS: Array<{ name: string; dir: string; limit: number }> = [
   { name: "grails-core", dir: "grails-core", limit: 300 },
   { name: "docker", dir: "docker", limit: 250 },

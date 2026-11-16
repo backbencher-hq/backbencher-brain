@@ -10,7 +10,7 @@
 // Run: bun script/m14/tmp/oc-m12-truth-build.ts [observed.json] [--write]
 import { readFileSync, writeFileSync } from "node:fs"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const OBS = process.argv[2] && !process.argv[2].startsWith("--") ? process.argv[2] : "/tmp/oc-m12-observed.json"
 const TRUTH = `${ROOT}/validation/m12/ground-truth/objective-c.json`
 const WRITE = process.argv.includes("--write")

@@ -17,7 +17,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const EVIDENCE = process.env.EVIDENCE ?? "validation/m14/results/M14.0.F11.clean.json"
 const g3 = JSON.parse(readFileSync(EVIDENCE, "utf8")).data.g3 as any
 

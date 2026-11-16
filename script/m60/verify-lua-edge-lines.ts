@@ -49,7 +49,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE = join(ROOT, "validation", "m60", "results", "lua-edge-lines.json")
-const PROBE_DIR = "/home/ishaq2321/bb_tests/probe"
+const PROBE_DIR = "<corpus-root>/bb_tests/probe"
 
 // ── the fixture ──────────────────────────────────────────────────────────────
 // Line numbers are 1-based and the file starts with a comment line, so the

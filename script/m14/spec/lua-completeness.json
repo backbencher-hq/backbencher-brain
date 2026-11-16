@@ -54,7 +54,7 @@
   "_authority": "script/m60/lua-ontology-census.ts (three instruments: production counts through `parseFile`, instrument A grammar inventory, instrument B parse-tree construct counts) and script/m60/lua-grammar-inventory.ts (instrument A as a standalone artifact). There is NO independent lua truth oracle in script/m14/oracles/, so every claim here rests on the analyzer plus a second instrument that does not share its rule table — never on the analyzer agreeing with itself.",
   "_wave": "M14 / M60 lane wave, lua — 2026-10-03",
   "corpus": {
-    "root": "/home/ishaq2321/bb_tests/repositories",
+    "root": "<corpus-root>/bb_tests/repositories",
     "repos": 120,
     "filesDrawn": 3250,
     "sampling": "every `git ls-files '*.lua'` path in every corpus repo, sorted, no cap. Deterministic and identical on every machine; not a random sample.",

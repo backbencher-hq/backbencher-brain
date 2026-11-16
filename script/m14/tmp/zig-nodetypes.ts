@@ -4,13 +4,13 @@ async function main() {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts
   const L: any = wts.Language ?? wts.default?.Language
-  await P.init({ locateFile: () => path.join("/home/ishaq2321/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const LANG: any = await L.load(fs.readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-zig.wasm"))
+  await P.init({ locateFile: () => path.join("<corpus-root>/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const LANG: any = await L.load(fs.readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-zig.wasm"))
   const p = new P(); p.setLanguage(LANG)
   const want = new Set(["argument_list","field_declaration","return_statement","return_expression","arguments","parameter","container_field","variable_declaration","call_expression","block","block_expression","error_type"])
   const seen: Record<string, number> = {}
   const files: string[] = []
-  for (const repo of ["/home/ishaq2321/bb_tests/repositories/zig", "/home/ishaq2321/bb_tests/repositories/zls"]) {
+  for (const repo of ["<corpus-root>/bb_tests/repositories/zig", "<corpus-root>/bb_tests/repositories/zls"]) {
     const walk = (d: string) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const q = path.join(d, e.name); if (e.isDirectory()) { if (!/^(\.|node_modules|build|target|zig-cache)/.test(e.name)) walk(q) } else if (e.name.endsWith(".zig")) files.push(q) } }
     walk(repo)
   }

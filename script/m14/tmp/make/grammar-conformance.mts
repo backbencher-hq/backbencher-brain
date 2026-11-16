@@ -21,9 +21,9 @@ import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { Parser, Language } from "web-tree-sitter"
 
-const REPO = "/home/ishaq2321/backbencher-brain"
-const SRC = "/home/ishaq2321/backbencher-brain/grammars/tree-sitter-make"
-const OUT = "/home/ishaq2321/bb_tests/make/out"
+const REPO = "<corpus-root>/backbencher-brain"
+const SRC = "<corpus-root>/backbencher-brain/grammars/tree-sitter-make"
+const OUT = "<corpus-root>/bb_tests/make/out"
 const WASM = `${REPO}/wasm/tree-sitter-make.wasm`
 
 await Parser.init()

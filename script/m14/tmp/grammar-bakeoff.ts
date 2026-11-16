@@ -8,16 +8,16 @@
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { Parser, Language } from "/home/ishaq2321/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js"
+import { Parser, Language } from "<corpus-root>/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js"
 
-const CORE_WASM = "/home/ishaq2321/backbencher-brain/wasm/tree-sitter.wasm"
+const CORE_WASM = "<corpus-root>/backbencher-brain/wasm/tree-sitter.wasm"
 
-const CORPUS_ROOT = process.argv[2] ?? "/home/ishaq2321/bb_tests/vb-corpus"
+const CORPUS_ROOT = process.argv[2] ?? "<corpus-root>/bb_tests/vb-corpus"
 const LIMIT = Number(process.argv[3] ?? 0)
 
 const GRAMMARS = [
-  { name: "vbnet", wasm: "/home/ishaq2321/bb_tests/grammar-eval/tree-sitter-vbnet/tree-sitter-vbnet.wasm" },
-  { name: "vb_dotnet", wasm: "/home/ishaq2321/bb_tests/grammar-eval/tree-sitter-vb-dotnet/tree-sitter-vb_dotnet.wasm" },
+  { name: "vbnet", wasm: "<corpus-root>/bb_tests/grammar-eval/tree-sitter-vbnet/tree-sitter-vbnet.wasm" },
+  { name: "vb_dotnet", wasm: "<corpus-root>/bb_tests/grammar-eval/tree-sitter-vb-dotnet/tree-sitter-vb_dotnet.wasm" },
 ]
 
 function collectVbFiles(root: string): string[] {

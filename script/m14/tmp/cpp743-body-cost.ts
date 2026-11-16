@@ -5,7 +5,7 @@
 //   bun script/m14/tmp/cpp743-body-cost.ts <file> <line>
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.join(ROOT, "src", "ast", "engine.ts"))
 const file = process.argv[2]
 const line = Number(process.argv[3])

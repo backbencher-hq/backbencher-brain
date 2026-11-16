@@ -68,7 +68,7 @@ const NOT_A_TYPE = new Set(["ERROR"])
 const ANALYZER_SRC = process.env.BB_VB_ANALYZER ?? "src/ast/real-vb-analyzer.ts"
 const WASM = process.env.BB_VB_WASM ?? "wasm/tree-sitter-vbnet.wasm"
 const CORE = process.env.BB_TS_CORE ?? "wasm/tree-sitter.wasm"
-const ROOTS = (process.env.BB_VB_ROOTS ?? "/home/ishaq2321/bb_tests/vb-corpus").split(",").filter(Boolean)
+const ROOTS = (process.env.BB_VB_ROOTS ?? "<corpus-root>/bb_tests/vb-corpus").split(",").filter(Boolean)
 
 async function main() {
   const sets = readSetsFromAnalyzer(readFileSync(ANALYZER_SRC, "utf8"))

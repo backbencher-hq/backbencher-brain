@@ -25,7 +25,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const repos = process.argv.slice(2)
 const LIMIT = Number(process.env.BB_LINE_FILES ?? 120)
 
@@ -50,7 +50,7 @@ async function main() {
 
   const out: any = { checked: 0, agree: 0, missingLine: 0, perLabel: {}, firstSiteAgrees: {}, firstSiteDiverged: {}, failures: [] }
   for (const repo of repos) {
-    const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
+    const dir = path.join("<corpus-root>/bb_tests/repositories", repo)
     if (!fs.existsSync(dir)) continue
     const files: string[] = []
     const walk = (d: string): void => {

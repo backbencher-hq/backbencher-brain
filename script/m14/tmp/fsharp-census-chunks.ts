@@ -15,7 +15,7 @@ const CHUNKS = ci >= 0 ? parseInt(argv[ci + 1]) : 5
 const di = argv.indexOf("--dir")
 const OUTDIR = di >= 0 ? argv[di + 1] : "/tmp/fsharp-census"
 const rest = argv.filter((a, i) => !a.startsWith("--") && argv[i - 1] !== "--chunks" && argv[i - 1] !== "--dir")
-const ROOT = rest[0] ?? "/home/ishaq2321/bb_tests/repositories/fsharp"
+const ROOT = rest[0] ?? "<corpus-root>/bb_tests/repositories/fsharp"
 const SKIP_DIRS = new Set([".git", "node_modules", "artifacts", "obj", "bin"])
 
 function walk(dir: string, out: string[] = []): string[] {

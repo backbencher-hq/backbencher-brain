@@ -3,7 +3,7 @@
 // error lines, so the expectation can be pinned to measured truth.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P = (wts.Parser ?? wts.default) as any
 const L = (wts.Language ?? wts.default?.Language) as any

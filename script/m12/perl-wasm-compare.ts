@@ -3,7 +3,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { loadWebTreeSitter } from "../../src/util/wasm"
 import { execFileSync } from "node:child_process"
 
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/mojo"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/mojo"
 const newWasm = process.argv[3] || "/tmp/tree-sitter-perl-npm-1.2.1.wasm"
 const relative = execFileSync("git", ["-C", root, "ls-files", "*.pm", "*.pl"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()

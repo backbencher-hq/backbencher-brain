@@ -24,8 +24,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = ["sdwebimage", "afnetworking"].map((r) => path.join("/home/ishaq2321/bb_tests/repositories", r))
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = ["sdwebimage", "afnetworking"].map((r) => path.join("<corpus-root>/bb_tests/repositories", r))
 
 // A header is this lane's file only when the ROUTER admits it (`.h` is sniffed
 // for `@interface`/`@protocol`). The universe grew to include the header half in

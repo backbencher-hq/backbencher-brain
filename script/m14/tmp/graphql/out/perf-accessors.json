@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-05T10:05:42.883Z",
-  "file": "/home/ishaq2321/bb_tests/graphql/repos/graphql-js/benchmark/github-schema.graphql",
+  "file": "<corpus-root>/bb_tests/graphql/repos/graphql-js/benchmark/github-schema.graphql",
   "lines": 20368,
   "facts": 10673,
   "counts": {

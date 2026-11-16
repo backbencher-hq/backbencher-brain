@@ -6,8 +6,8 @@ import { execSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/engine"
 
 const SUITES: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 
 function files(root: string, exts: string[]): string[] {

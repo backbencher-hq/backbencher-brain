@@ -1,7 +1,7 @@
 // REACT_PILOT FIRING CHECK — does the relationship type actually FIRE?
 //
 // `script/m14/firing-check.mjs` is the MASTER-owned harness and it resolves the
-// analyzer from `/home/ishaq2321/backbencher-brain` (the MAIN checkout). This lane
+// analyzer from `<corpus-root>/backbencher-brain` (the MAIN checkout). This lane
 // works in its own worktree, so a run of the shared harness would measure a
 // DIFFERENT `real-typescript-analyzer.ts` than the one this branch edits — the
 // number would be true of someone else's file. This script is the same instrument
@@ -29,7 +29,7 @@ import { readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const HERE = new URL("../..", import.meta.url).pathname.replace(/\/$/, "")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 const argOf = (flag, dflt) => {

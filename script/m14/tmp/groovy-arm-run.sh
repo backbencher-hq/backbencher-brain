@@ -5,7 +5,7 @@
 # bash call is REAPED with that call, MEASURED by the fleet three times.
 # The release runs EVEN IF A SLICE FAILS.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 OUT=validation/m14/measurements/groovy-arm
 mkdir -p "$OUT"
 LOG=script/m14/tmp/groovy-arm-run.log

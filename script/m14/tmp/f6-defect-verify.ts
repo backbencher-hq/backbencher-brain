@@ -4,7 +4,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const CASES: Array<{ lang: string; wasm: string; analyzer: string; cls: string; file: string; check: (res: any) => string }> = []
 

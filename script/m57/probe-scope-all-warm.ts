@@ -13,7 +13,7 @@
 //
 // Usage: BB_DATA_DIR=<dir> BB_M57_ROUNDS=5 bun run script/m57/probe-scope-all-warm.ts
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const ROUNDS = Number(process.env.BB_M57_ROUNDS ?? 5)
 
 async function main() {

@@ -21,7 +21,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { deriveJsonEdges } from "../differential"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (process.env.BB_REPOS ?? "terraform,otp,ansible,clj-kondo,svelte,kubernetes").split(",").map((x) => x.trim()).filter(Boolean)
 
 const wts: any = await import("web-tree-sitter")

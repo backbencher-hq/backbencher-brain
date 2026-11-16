@@ -8,15 +8,15 @@ import { parseFile } from "../../../src/ast/pool-worker"
 const CASES: Array<[string, string, string, string, string]> = [
   [
     "groovy",
-    "/home/ishaq2321/bb_tests/repositories/grails-core",
-    "/home/ishaq2321/bb_tests/repositories/grails-core/grails-datamapping-rx/src/main/groovy/org/grails/gorm/rx/finders/FindAllByFinder.groovy",
+    "<corpus-root>/bb_tests/repositories/grails-core",
+    "<corpus-root>/bb_tests/repositories/grails-core/grails-datamapping-rx/src/main/groovy/org/grails/gorm/rx/finders/FindAllByFinder.groovy",
     "FindAllByFinder",
     "doInvokeInternal",
   ],
   [
     "scala",
-    "/home/ishaq2321/bb_tests/repositories/scala3",
-    "/home/ishaq2321/bb_tests/repositories/scala3/library/src/scala/io/Position.scala",
+    "<corpus-root>/bb_tests/repositories/scala3",
+    "<corpus-root>/bb_tests/repositories/scala3/library/src/scala/io/Position.scala",
     "Position",
     "checkInput",
   ],

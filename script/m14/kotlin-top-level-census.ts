@@ -20,7 +20,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const ROOT = process.env.BB_ROOT || join(import.meta.dir, "..", "..")
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const REPOS = process.argv.slice(2).length ? process.argv.slice(2) : ["kotlin"]
 const NFILES = Number(process.env.NFILES || 200)
 

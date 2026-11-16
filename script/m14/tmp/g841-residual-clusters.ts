@@ -41,7 +41,7 @@ async function main() {
     if (!best) continue
     const raw = String(best.text ?? "")
     hits.push({
-      file: path.relative("/home/ishaq2321/bb_tests/repositories/grails-core", f),
+      file: path.relative("<corpus-root>/bb_tests/repositories/grails-core", f),
       kind: best.isMissing ? "MISSING" : "ERROR",
       nodeType: best.type,
       span: best.endIndex - best.startIndex,

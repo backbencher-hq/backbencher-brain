@@ -28,7 +28,7 @@ import type { Node } from "web-tree-sitter"
 // absolute path outside the checkout. `perf-interleaved.mts` loads this snapshot by
 // path, so a specifier that resolves into a DIFFERENT checkout measures the engine
 // of whatever tree that path names — or fails when the path is gone, which is what
-// happened: /home/ishaq2321/backbencher-brain does not exist on this machine, so the
+// happened: <corpus-root>/backbencher-brain does not exist on this machine, so the
 // A/B half of gate 10b was silently skipped and only its counted half ran. FIVE
 // levels up from script/m14/tmp/graphql/baseline/ is the repository root
 // (baseline -> graphql -> tmp -> m14 -> script -> root), so the snapshot now binds

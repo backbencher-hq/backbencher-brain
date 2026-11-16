@@ -9,8 +9,8 @@ const parser = new P()
 parser.setLanguage(lang)
 
 for (const F of [
-  "/home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c",
-  "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c",
+  "<corpus-root>/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c",
+  "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c",
 ]) {
   const src = fs.readFileSync(F, "utf8")
   const root = parser.parse(src).rootNode

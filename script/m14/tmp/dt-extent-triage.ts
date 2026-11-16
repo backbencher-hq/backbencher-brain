@@ -14,7 +14,7 @@ import * as path from "node:path"
 import { RealDartAnalyzer } from "../../../src/ast/real-dart-analyzer"
 import { deriveDartEdges, deriveDartBareUses } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const COMPARED = new Set(["extends", "implements", "instantiates", "calls", "uses"])
 
 function lastSegment(t: string): string {
@@ -28,7 +28,7 @@ function normTarget(t: string): string {
 async function main() {
   const file = process.argv[2]
   const filter = process.argv[3] ?? ""
-  const rel = path.relative("/home/ishaq2321/bb_tests/repositories/dart-http", file)
+  const rel = path.relative("<corpus-root>/bb_tests/repositories/dart-http", file)
   const wts0: any = await import("web-tree-sitter")
   const P0: any = wts0.Parser ?? wts0.default ?? wts0
   const L0: any = wts0.Language ?? wts0.default?.Language

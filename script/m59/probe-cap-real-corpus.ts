@@ -18,7 +18,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const DATA_ROOT = mkdtempSync(path.join(tmpdir(), "m59-capcorpus-data-"))
 process.env.BB_DATA_DIR = DATA_ROOT
 

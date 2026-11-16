@@ -6,8 +6,8 @@
 //   bun script/m14/tmp/c919-abdiff.ts /tmp/c919-before.json /tmp/c919-after.json
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const before = JSON.parse(readFileSync(process.argv[2], "utf8"))
 const after = JSON.parse(readFileSync(process.argv[3], "utf8"))
 const wts: any = await import("web-tree-sitter")

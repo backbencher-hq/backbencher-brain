@@ -10,7 +10,7 @@ import { deriveJavaScriptEdges } from "../../../script/m14/differential"
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/lodash"
+const ROOT = "<corpus-root>/bb_tests/repositories/lodash"
 
 async function main() {
   const wts: any = WTS

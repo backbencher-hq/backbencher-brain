@@ -28,7 +28,7 @@ let projectId = ""
 function check(label: string, ok: boolean, detail = "") { checks++; if (ok) passed++; else console.log(`FAIL: ${label}${detail ? ` — ${detail}` : ""}`) }
 function negative(label: string, ok: boolean, detail = "") { negatives++; check(`${label} [negative]`, ok, detail) }
 
-const REAL_REPO = "/home/ishaq2321/bb_tests/repositories/rake"
+const REAL_REPO = "<corpus-root>/bb_tests/repositories/rake"
 const REAL_REPO_ELIGIBLE = existsSync(path.join(REAL_REPO, ".git"))
 const PHASE_NAMES = ["relationships", "enrichment", "gravity", "taint", "health", "integrity"] as const
 

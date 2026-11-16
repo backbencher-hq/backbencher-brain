@@ -13,7 +13,7 @@ loads. `wasm/tree-sitter-nim.wasm` is a build of exactly these files, and
 | revision | `ac72ba30d16edf0be021588a9301ede4accd6cf4` (2026-07-03) |
 | license | MPL-2.0 (`LICENSE`) |
 | author | alaviss (leorize) |
-| upstream checkout | `/home/ishaq2321/bb_tests/nim/grammars/tree-sitter-nim-alaviss` |
+| upstream checkout | `<corpus-root>/bb_tests/nim/grammars/tree-sitter-nim-alaviss` |
 
 ## What is vendored, and why
 
@@ -37,7 +37,7 @@ loads. `wasm/tree-sitter-nim.wasm` is a build of exactly these files, and
 | `src/tree_sitter/` | regenerated headers. |
 | `src/parser.c` + wasm in the build tree | the wired bytes live at `wasm/tree-sitter-nim.wasm` and are pinned by sha256 in `validation/m14/grammar-pins.json`. |
 | `bindings/`, `binding.gyp`, `Makefile`, `CMakeLists.txt`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `setup.py`, `Package.swift`, `mise.toml`, `REUSE.toml`, `jsconfig.json` | native/package-manager bindings for platforms this product does not build for. |
-| `samples/cps`, `samples/nim` | upstream's sample programs. They are not parser input for the product; the corpus under `/home/ishaq2321/bb_tests/repositories/nim` is. |
+| `samples/cps`, `samples/nim` | upstream's sample programs. They are not parser input for the product; the corpus under `<corpus-root>/bb_tests/repositories/nim` is. |
 
 ## Rebuild
 
@@ -112,8 +112,8 @@ the same token competes with the scanner that owns it, and a `prec("suffix")`
 rule cannot win that contest the way an ordinary production can.
 
 **The patch stays unapplied and the wasm stays unwired.** The full patch is
-preserved at `/home/ishaq2321/bb_tests/nim/out/0001-nim-dopragma.patch` and the
-rebuilt candidate wasm at `/home/ishaq2321/bb_tests/nim/out/nim-dopragma.wasm`
+preserved at `<corpus-root>/bb_tests/nim/out/0001-nim-dopragma.patch` and the
+rebuilt candidate wasm at `<corpus-root>/bb_tests/nim/out/nim-dopragma.wasm`
 (5,914,156 B) for whoever takes it on — a real fix has to reach the SCANNER, not
 only the grammar.
 

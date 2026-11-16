@@ -6,8 +6,8 @@ import * as WTS from "web-tree-sitter"
 import { RealSwiftAnalyzer } from "../../../src/ast/real-swift-analyzer"
 import { deriveSwiftEdges, deriveSwiftBareUses } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const NIO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const NIO = "<corpus-root>/bb_tests/repositories/swift-nio"
 const FILES = [
   "Sources/NIOFS/FileType.swift",
   "Sources/NIOCore/EventLoop.swift",

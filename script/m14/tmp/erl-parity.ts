@@ -9,7 +9,7 @@ import { createHash } from "node:crypto"
 import Database from "better-sqlite3"
 import { Parser, Language } from "web-tree-sitter"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/rebar3"
+const CORPUS = "<corpus-root>/bb_tests/repositories/rebar3"
 
 async function main() {
   await Parser.init()

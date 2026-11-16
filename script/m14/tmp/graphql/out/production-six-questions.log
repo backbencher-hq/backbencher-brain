@@ -7,8 +7,8 @@
 [INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8yzn4s7"}
 [INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8we1qf4"}
 [INFO] [02:59:08] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60a8zfeoya"}
-[BB-PARSE-ERR] graphql | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/ApolloFederation/test/ApolloFederation.ImplementationFirst/__snapshots__/PageConnectionCompositeSchemaTests.PageConnection_Field_With_CompositeSourceSchema_Builds_Schema.graphql | memory access out of bounds
-[BB-PARSE-ERR] graphql | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/ImplicitOpenWorldTool.graphql | memory access out of bounds
+[BB-PARSE-ERR] graphql | <corpus-root>/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/ApolloFederation/test/ApolloFederation.ImplementationFirst/__snapshots__/PageConnectionCompositeSchemaTests.PageConnection_Field_With_CompositeSourceSchema_Builds_Schema.graphql | memory access out of bounds
+[BB-PARSE-ERR] graphql | <corpus-root>/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Adapters/test/Adapters.Mcp.Tests/__resources__/ImplicitOpenWorldTool.graphql | memory access out of bounds
 [INFO] [02:59:16] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60acm8mcl0"}
 [INFO] [02:59:29] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60aiocl54w"}
 [INFO] [02:59:44] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3847600_60apdnc8hk"}
@@ -34,4 +34,4 @@ triple buffer: 156709 rows for 156709 counted edges
   "instantiates 0 inFile null% proj null% lo07 null%"
  ]
 }
-[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/ApolloFederation/test/ApolloFederation.ImplementationFirst/__snapshots__/PageConnectionCompositeSchemaTests.PageConnection_Field_With_CompositeSourceSchema_Builds_Schema.graphql — exiting
+[BB-HANG] parser stuck 120s on <corpus-root>/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/ApolloFederation/test/ApolloFederation.ImplementationFirst/__snapshots__/PageConnectionCompositeSchemaTests.PageConnection_Field_With_CompositeSourceSchema_Builds_Schema.graphql — exiting

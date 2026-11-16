@@ -23,7 +23,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || process.cwd()
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.argv[2] || 400)
 const EXTS = [".py", ".pyi"]
 const SKIP_DIRS = new Set([

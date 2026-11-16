@@ -18,7 +18,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { parseFile } from "../../../src/ast/pool-worker"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? ".", "..", "..", "..")
-const CORPUS = process.env.BB_BASH_CORPUS ?? "/home/ishaq2321/bb_tests/repositories/fsharp"
+const CORPUS = process.env.BB_BASH_CORPUS ?? "<corpus-root>/bb_tests/repositories/fsharp"
 
 const NAME_BEARING = new Set([
   "variable_name",

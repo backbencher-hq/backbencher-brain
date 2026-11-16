@@ -39,11 +39,11 @@ const MAX_SAMPLE = 250
 const REPO_TIMEOUT_MS = 15 * 60 * 1000
 
 const NAMED_REPOS = [
-  { id: "intellij-community", path: "/home/ishaq2321/intellij-community" },
-  { id: "aspnetcore", path: "/home/ishaq2321/aspnetcore" },
-  { id: "typescript", path: "/home/ishaq2321/TypeScript" },
-  { id: "openclaw", path: "/home/ishaq2321/openclaw" },
-  { id: "paperclip", path: "/home/ishaq2321/paperclip" },
+  { id: "intellij-community", path: "<corpus-root>/intellij-community" },
+  { id: "aspnetcore", path: "<corpus-root>/aspnetcore" },
+  { id: "typescript", path: "<corpus-root>/TypeScript" },
+  { id: "openclaw", path: "<corpus-root>/openclaw" },
+  { id: "paperclip", path: "<corpus-root>/paperclip" },
 ]
 
 let checks = 0

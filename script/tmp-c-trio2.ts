@@ -16,7 +16,7 @@ const anaMod: any = await import("../src/ast/real-c-analyzer")
 const diffMod: any = await import("./m14/differential")
 const analyzer = new anaMod.RealCAnalyzer()
 
-const F = "/home/ishaq2321/bb_tests/repositories/sqlite/src/loadext.c"
+const F = "<corpus-root>/bb_tests/repositories/sqlite/src/loadext.c"
 const src = fs.readFileSync(F, "utf8")
 const root = p.parse(src).rootNode
 const res = analyzer.analyze(root, src, F)

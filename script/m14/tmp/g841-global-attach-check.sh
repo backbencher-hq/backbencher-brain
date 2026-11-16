@@ -7,7 +7,7 @@
 #
 # The committed grammar is not modified: everything happens in /tmp.
 set -u
-BR=/home/ishaq2321/mcp/backbencher-brain
+BR=<corpus-root>/mcp/backbencher-brain
 V=/tmp/g841-global-attach
 rm -rf "$V"; mkdir -p "$V"
 

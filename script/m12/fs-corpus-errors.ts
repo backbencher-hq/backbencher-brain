@@ -10,7 +10,7 @@ import { readFileSync, appendFileSync } from "fs"
 import { ASTEngine } from "../../src/ast/engine"
 
 async function main() {
-  const repo = "/home/ishaq2321/bb_tests/repositories/fsharp"
+  const repo = "<corpus-root>/bb_tests/repositories/fsharp"
   const chunkFile = process.argv[2]
   const resultsFile = process.argv[3] || "/tmp/fs-full-errors-results.txt"
   const files = readFileSync(chunkFile, "utf8").split("\n").map((l) => l.trim()).filter(Boolean)

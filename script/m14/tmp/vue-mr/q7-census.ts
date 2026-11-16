@@ -6,7 +6,7 @@ import * as path from "path"
 import { loadLang } from "./harness"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 function filesUnder(root: string, exts: string[], limit: number): string[] {
   const out: string[] = []

@@ -14,8 +14,8 @@ parser.setLanguage(g)
 const mod: any = await import("../src/ast/real-elixir-analyzer")
 const analyzer = new mod.RealElixirAnalyzer()
 
-const E = "/home/ishaq2321/bb_tests/repositories/elixir"
-const P = "/home/ishaq2321/bb_tests/repositories/phoenix"
+const E = "<corpus-root>/bb_tests/repositories/elixir"
+const P = "<corpus-root>/bb_tests/repositories/phoenix"
 
 const kids = (n: any): any[] => { const r: any[] = []; for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) r.push(c) } return r }
 const find = (n: any, pred: (c: any) => boolean): any => { for (const c of kids(n)) if (pred(c)) return c; return undefined }

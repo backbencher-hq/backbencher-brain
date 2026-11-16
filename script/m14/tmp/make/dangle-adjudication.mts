@@ -22,11 +22,11 @@
  * (unresolvable, HCL's precedent) or `references` (resolvable in-project).
  */
 import { readFileSync, writeFileSync } from "node:fs"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
 
-const MAN = JSON.parse(readFileSync("/home/ishaq2321/bb_tests/make/out/corpus-manifest.json", "utf8"))
-const OUT = "/home/ishaq2321/bb_tests/make/out"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const MAN = JSON.parse(readFileSync("<corpus-root>/bb_tests/make/out/corpus-manifest.json", "utf8"))
+const OUT = "<corpus-root>/bb_tests/make/out"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 /** GNU Make built-in variables (GNU Make manual, "Variables Used by Make"). */
 const BUILTIN_VARIABLES = new Set([

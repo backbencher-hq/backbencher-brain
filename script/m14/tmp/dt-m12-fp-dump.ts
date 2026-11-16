@@ -9,7 +9,7 @@ import { readdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const DIR = join(ROOT, "validation/m12/fixtures/dart")
 
 async function main() {

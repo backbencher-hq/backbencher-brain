@@ -7,8 +7,8 @@
 // read rather than argued.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 
 const files = [
   "grails-data-mongodb/bson/src/main/groovy/org/grails/datastore/bson/codecs/decoders/IdentityDecoder.groovy",

@@ -10,7 +10,7 @@ async function bench(lang: "c" | "cpp") {
   const mod: any = await import(`../../../src/ast/real-${lang}-analyzer`)
   const A = mod.RealCAnalyzer ?? mod.RealCppAnalyzer ?? mod.default
   const an = new A()
-  const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+  const Z = "<corpus-root>/bb_tests/repositories/zig"
   const files = execFileSync("bash", ["-c", `find ${Z} -name '*.${lang}' -size +8k -size -40k | sort | head -25`], { encoding: "utf8" }).split("\n").filter(Boolean)
   let ms = 0, nodes = 0, kb = 0
   for (const f of files) {

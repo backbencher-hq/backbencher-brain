@@ -14,7 +14,7 @@
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, existsSync, copyFileSync, rmSync } from "node:fs"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const PINNED = `${ROOT}/wasm/tree-sitter-python.wasm`
 const NEW = "/tmp/ts-python-npm/node_modules/tree-sitter-python/tree-sitter-python.wasm"
 const SCAN = `${ROOT}/script/m12/python-wasm-scan.ts`

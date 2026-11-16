@@ -55,7 +55,7 @@ import { execFileSync } from "node:child_process"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
 const DIFFERENTIAL = path.join(ROOT, "script", "m14", "differential.ts")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const EMIT = process.argv.includes("--emit")
 
 /** `lang: "repo"` pairs inside one `const NAME ... = {` literal. The terminator is the first

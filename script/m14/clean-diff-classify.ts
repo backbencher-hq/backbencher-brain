@@ -23,7 +23,7 @@ import path from "node:path"
 import { deriveCleanEdges } from "./differential.ts"
 
 const ROOT = process.cwd()
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const repoArg = process.argv.indexOf("--repo")
 const REPO_NAME = repoArg > 0 ? process.argv[repoArg + 1] : "Clyde"
 const limitArg = process.argv.indexOf("--limit")

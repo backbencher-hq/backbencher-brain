@@ -137,7 +137,7 @@ function walk(dir: string, acc: string[] = []): string[] {
   }
   return acc
 }
-const files = walk("/home/ishaq2321/bb_tests/repositories/clojure").slice(0, 300)
+const files = walk("<corpus-root>/bb_tests/repositories/clojure").slice(0, 300)
 const REFERENCED = new Set([
   "sym_lit", "kwd_lit", "list_lit", "vec_lit", "anon_fn_lit", "dis_expr",
   "comment", "meta_lit", "quoting_lit", "syn_quoting_lit", "unquoting_lit", "unquote_splicing_lit",

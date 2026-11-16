@@ -12,9 +12,9 @@ import { join, relative } from "node:path"
 import { execFileSync } from "node:child_process"
 import { Parser, Language } from "web-tree-sitter"
 
-const WASM = "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-hcl.wasm"
-const REPOS = "/home/ishaq2321/bb_tests/hcl/repos"
-const OUT = "/home/ishaq2321/bb_tests/hcl/out"
+const WASM = "<corpus-root>/backbencher-brain/wasm/tree-sitter-hcl.wasm"
+const REPOS = "<corpus-root>/bb_tests/hcl/repos"
+const OUT = "<corpus-root>/bb_tests/hcl/out"
 const EXT = /\.(tf|tfvars|hcl|tofu)$/i
 
 await Parser.init()

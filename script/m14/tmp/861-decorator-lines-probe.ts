@@ -4,7 +4,7 @@
 import * as fs from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FIX = process.argv.find((a) => a.startsWith("--fixture="))?.slice("--fixture=".length) ??
   "validation/m14/fixtures/typescript/decorator-lines-860.ts"
 const LANG = FIX.endsWith(".js") ? "javascript" : "typescript"

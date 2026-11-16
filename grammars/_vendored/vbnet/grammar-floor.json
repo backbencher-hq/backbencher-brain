@@ -2,13 +2,13 @@
   "gate": "VB.grammar-baseline",
   "title": "VB.NET grammar parse-success baseline, per corpus",
   "at": "2026-09-27T16:49:35.673Z",
-  "grammarWasm": "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-vbnet.wasm",
+  "grammarWasm": "<corpus-root>/backbencher-brain/wasm/tree-sitter-vbnet.wasm",
   "grammarWasmSha256": "c6182994f4353cdd355e8fbf28b4ef74cce1c33c5aa822f6a3c1d53b1b907f75",
   "method": "parse every tracked *.vb in the corpus with the committed wasm; a file is CLEAN only when its tree carries zero ERROR and zero MISSING nodes. Topmost bad nodes only, so nested errors cannot inflate the byte figure.",
   "corpora": [
     {
       "name": "runtime-mvb",
-      "root": "/home/ishaq2321/bb_tests/vb-corpus/runtime",
+      "root": "<corpus-root>/bb_tests/vb-corpus/runtime",
       "files": 75,
       "available": 75,
       "clean": 61,
@@ -25,7 +25,7 @@
     },
     {
       "name": "p3d-legacy",
-      "root": "/home/ishaq2321/bb_tests/vb-corpus/p3d",
+      "root": "<corpus-root>/bb_tests/vb-corpus/p3d",
       "files": 600,
       "available": 1880,
       "clean": 558,
@@ -42,7 +42,7 @@
     },
     {
       "name": "dismtools",
-      "root": "/home/ishaq2321/bb_tests/vb-corpus/dismt",
+      "root": "<corpus-root>/bb_tests/vb-corpus/dismt",
       "files": 400,
       "available": 483,
       "clean": 362,
@@ -59,7 +59,7 @@
     },
     {
       "name": "tankexporter",
-      "root": "/home/ishaq2321/bb_tests/vb-corpus/tankex",
+      "root": "<corpus-root>/bb_tests/vb-corpus/tankex",
       "files": 110,
       "available": 110,
       "clean": 96,

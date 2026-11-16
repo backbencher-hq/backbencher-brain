@@ -11,8 +11,8 @@ corpus: 1905 admitted files
 [INFO] [03:55:56] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3973489_61hqi5q059"}
 [INFO] [03:55:56] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3973489_61hqi12gtz"}
 [INFO] [03:56:02] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3973489_61ht52ah3c"}
-[BB-PARSE-ERR] graphql | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__snapshots__/SyntaxWriterTests.TypeWithManyDirectives_WithWrapping_MatchesSnapshot.graphql | memory access out of bounds
-[BB-PARSE-ERR] graphql | /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__snapshots__/SyntaxWriterTests.QueryWithDirectivesOnField_Indented_MatchesSnapshot.graphql | memory access out of bounds
+[BB-PARSE-ERR] graphql | <corpus-root>/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__snapshots__/SyntaxWriterTests.TypeWithManyDirectives_WithWrapping_MatchesSnapshot.graphql | memory access out of bounds
+[BB-PARSE-ERR] graphql | <corpus-root>/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__snapshots__/SyntaxWriterTests.QueryWithDirectivesOnField_Indented_MatchesSnapshot.graphql | memory access out of bounds
 [INFO] [03:56:09] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3973489_61hwiyye1v"}
 [INFO] [03:56:09] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3973489_61hwj19dso"}
 [INFO] [03:56:09] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_3973489_61hwj66d8i"}
@@ -37,4 +37,4 @@ overrides     EMITTED           4,168 edges in 4+ files, e.g. gql-absinthe/test/
 instantiates  RULED-SOUND       NOT EMITTED; the grammar produced 57 distinct node types across the corpus and NONE expresses it. Written ruling: script/m14/graphql-ruled.ts (RULED_BY_LANG.graphql)
 ------------------------------------------------------------------------------------------------------------------------
 emitted 7/10   ruled-sound 3   FALSIFIED 0   ruled-without-justification 0
-[BB-HANG] parser stuck 120s on /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__snapshots__/SyntaxWriterTests.TypeWithManyDirectives_WithWrapping_MatchesSnapshot.graphql — exiting
+[BB-HANG] parser stuck 120s on <corpus-root>/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Language/test/Language.SyntaxTree.Tests/__snapshots__/SyntaxWriterTests.TypeWithManyDirectives_WithWrapping_MatchesSnapshot.graphql — exiting

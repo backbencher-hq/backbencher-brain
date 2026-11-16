@@ -31,7 +31,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = process.env.SCSS_HARNESS_OUT ?? path.join(process.cwd(), "script/m14/tmp/scss-ontology-harness.json")
 const ALL_TYPES = ["calls", "uses", "contains", "brain_import", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
 /** the ontology's 10, with `imports` under the wire value the graph stores */

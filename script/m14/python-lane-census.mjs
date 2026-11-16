@@ -30,7 +30,7 @@
 // regex over source text matches comments and string literals.
 //
 // Usage:
-//   BB_CORPUS=/home/ishaq2321/bb_tests/repositories/python-corpus \
+//   BB_CORPUS=<corpus-root>/bb_tests/repositories/python-corpus \
 //   NFILES=200 bun script/m14/python-lane-census.mjs
 //   NFILES=0 bun script/m14/python-lane-census.mjs            # whole corpus
 //   LANE=django NFILES=200 bun script/m14/python-lane-census.mjs   # one repo
@@ -38,8 +38,8 @@
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
-const REPO = process.env.BB_REPO || "/home/ishaq2321/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories/python-corpus"
+const REPO = process.env.BB_REPO || "<corpus-root>/backbencher-brain"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories/python-corpus"
 const NFILES = Number(process.env.NFILES ?? "200")
 const LANE = process.env.LANE || ""
 const OUT = process.env.OUT || ""

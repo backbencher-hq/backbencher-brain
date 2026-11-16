@@ -70,9 +70,9 @@ const MAX_BYTES = 512 * 1024
 
 type File = { repo: string; dir: string; rel: string; abs: string }
 const files: File[] = []
-for (const e of readdirSync(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories")) {
+for (const e of readdirSync(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories")) {
   if (!REPOS.includes(e)) continue
-  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e)
+  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", e)
   let tracked: string[]
   try {
     if (!statSync(dir).isDirectory()) continue
@@ -91,7 +91,7 @@ files.sort((a, b) => (a.repo + "/" + a.rel < b.repo + "/" + b.rel ? -1 : 1))
 const ALL = files.length
 const admitted = SAMPLE > 0 ? files.slice(0, SAMPLE) : files
 let rev = ""
-try { rev = execFileSync("git", ["-C", path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", REPOS[0] ?? "typescript"), "rev-parse", "HEAD"], { encoding: "utf8" }).trim() } catch {}
+try { rev = execFileSync("git", ["-C", path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", REPOS[0] ?? "typescript"), "rev-parse", "HEAD"], { encoding: "utf8" }).trim() } catch {}
 
 const wts: any = await import("web-tree-sitter")
 const WSP = wts.Parser ?? wts.default
@@ -233,7 +233,7 @@ console.log("-".repeat(90))
 const out: any = {
   lane: "typescript",
   instrument: "script/m14/typescript-oracle-agreement.ts",
-  corpus_root: process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories",
+  corpus_root: process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories",
   repos: REPOS,
   pinned_rev: rev,
   tracked_typescript_files: ALL,

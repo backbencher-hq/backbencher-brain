@@ -31,7 +31,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (process.env.BB_ONLY_REPO ? [process.env.BB_ONLY_REPO] : ["powershell", "ansible"])
 const EXTS = ["ps1", "psm1", "psd1"]
 const OUT = path.join(ROOT, "validation/m60/results/powershell-fabricated-calls.json")

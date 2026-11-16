@@ -57,7 +57,7 @@ function countNodes(n: any): number {
   return c
 }
 
-const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+const Z = "<corpus-root>/bb_tests/repositories/zig"
 const cFiles = execFileSync("bash", ["-c", `find ${Z} -name '*.c' -size +1k -not -path '*/.git/*' | sort | head -40`], { encoding: "utf8" }).split("\n").filter(Boolean)
 const cppFiles = execFileSync("bash", ["-c", `find ${Z} -name '*.cpp' -o -name '*.cc' | grep -v '/.git/' | sort | head -40`], { encoding: "utf8" }).split("\n").filter(Boolean)
 console.log(`c sample: ${cFiles.length} files | cpp sample: ${cppFiles.length} files`)

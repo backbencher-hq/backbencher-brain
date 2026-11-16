@@ -18,11 +18,11 @@ async function main() {
   t("field typed new", "class C {\n  Deeper d = new Deeper()\n}\n")
   t("field def new + method", "class C {\n  def d = new Deeper()\n  def m() { 1 }\n}\n")
   // corpus sample: parse a real groovy file
-  const glob = require("fs").readdirSync("/home/ishaq2321/bb_tests/repositories/grails-core", { recursive: true }).filter((f: string) => f.endsWith(".groovy"))
+  const glob = require("fs").readdirSync("<corpus-root>/bb_tests/repositories/grails-core", { recursive: true }).filter((f: string) => f.endsWith(".groovy"))
   let errCount = 0, total = 0
   for (let i = 0; i < Math.min(60, glob.length); i++) {
     const f = glob[i]
-    const src = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/grails-core/" + f, "utf8")
+    const src = fs.readFileSync("<corpus-root>/bb_tests/repositories/grails-core/" + f, "utf8")
     total++
     if ((parser.parse(src).rootNode as any).hasError) errCount++
   }

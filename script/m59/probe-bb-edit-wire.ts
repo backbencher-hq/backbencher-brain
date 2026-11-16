@@ -27,7 +27,7 @@ import { execFileSync } from "node:child_process"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const BIN = path.join(ROOT, "bin/bb")
-const REAL_DATA = "/home/ishaq2321/.bb"
+const REAL_DATA = "<corpus-root>/.bb"
 const REAL_PROJECT = ROOT
 
 const SHAPES = `export function helper(): number {
@@ -285,7 +285,7 @@ async function main() {
     milestone: "M59",
     at: new Date().toISOString(),
     commit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(),
-    method: "fresh `node bin/bb mcp --dir <project>` per session; JSON-RPC over stdio; file bytes read from disk after each call; real-index leg uses BB_DATA_DIR=/home/ishaq2321/.bb",
+    method: "fresh `node bin/bb mcp --dir <project>` per session; JSON-RPC over stdio; file bytes read from disk after each call; real-index leg uses BB_DATA_DIR=<corpus-root>/.bb",
     toolsServed: tools.length,
     editParamsAdvertised: params,
     checks,

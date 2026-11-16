@@ -9,12 +9,12 @@
 // with a control that parses under both grammars is not the mechanism.
 
 import { readFileSync } from "node:fs"
-const W = await import("/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.cjs")
+const W = await import("<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.cjs")
 const wts = W.default ?? W
 const init = wts.Parser.init ?? wts.init
-await init.call(wts.Parser, { locateFile: () => "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter.wasm" })
+await init.call(wts.Parser, { locateFile: () => "<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter.wasm" })
 const grammars = {
-  "pinned  0.3.11": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-sql.wasm",
+  "pinned  0.3.11": "<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-sql.wasm",
   "cand    0.4.7": "/tmp/opencode/grammars/sql-l1xnan-047.wasm",
 }
 const cases = {

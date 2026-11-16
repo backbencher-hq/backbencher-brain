@@ -40,7 +40,7 @@ import { getParser } from "../../src/ast/engine"
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO = process.env.VB_CORPUS ?? "roslyn-vb"
 const DIR = join(CORPUS_ROOT, REPO)
 const LIMIT = Number(process.env.VB_NFILES ?? 0)

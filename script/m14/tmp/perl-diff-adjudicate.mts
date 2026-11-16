@@ -52,7 +52,7 @@ function walk(dir: string, out: string[] = [], depth = 0): string[] {
   return out
 }
 
-const dir = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/mojo"
+const dir = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/mojo"
 const limit = process.argv[3] ? parseInt(process.argv[3]) : 60
 const files = walk(dir).sort().slice(0, limit)
 

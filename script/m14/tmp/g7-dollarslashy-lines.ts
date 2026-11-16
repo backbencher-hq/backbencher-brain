@@ -6,7 +6,7 @@
 // the probe prints the raw lines so the claim is decided by the source.
 import { readFileSync } from "node:fs"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const FILES = [
   "build-logic/docs-core/src/main/groovy/grails/doc/DocPublisher.groovy",
   "grails-bootstrap/src/main/groovy/grails/codegen/model/DomainFieldModifier.groovy",

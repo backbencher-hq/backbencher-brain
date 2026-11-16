@@ -29,7 +29,7 @@ import type { Node } from "web-tree-sitter"
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const USE_STDLIB = argv.includes("--stdlib")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_FILTER = argOf("--repo")
 const MAX_BYTES = 1024 * 1024
 

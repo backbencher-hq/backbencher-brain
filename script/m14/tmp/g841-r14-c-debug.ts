@@ -1,6 +1,6 @@
 // #841 round 14: why does candidate C keep a fabricated calls->Type edge?
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const SRC = `
 class TestTaskShardingPlugin {

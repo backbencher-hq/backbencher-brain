@@ -8,13 +8,13 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { extensionsFor } from "./language-extensions.ts"
 // Resolved from THIS file's location, not hardcoded. It was
-// "/home/ishaq2321/backbencher-brain", which does not exist on this laptop
-// (/home/ishaq2321/mcp/backbencher-brain) — so the instrument the programme mandates for
+// "<corpus-root>/backbencher-brain", which does not exist on this laptop
+// (<corpus-root>/mcp/backbencher-brain) — so the instrument the programme mandates for
 // coverage claims could not run here at all, and every laptop-B lane number came from
 // source derivation instead. 57 scripts in this tree carry the same hardcoded path;
 // this one is fixed because it is the arbiter. Override with BB_REPO if ever needed.
 const REPO = process.env.BB_REPO || join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))))
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 
 const LANES = {
   RUST:        ["rust", "real-rust-analyzer", "ripgrep"],

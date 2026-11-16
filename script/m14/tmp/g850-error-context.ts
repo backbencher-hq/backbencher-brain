@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const files = process.argv.slice(2)
 
 async function main(): Promise<void> {

@@ -17,7 +17,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = process.cwd()
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const ARTIFACT = "/tmp/r10-artifact-pre.json"
 
 function classify(target: string, symNames: Set<string>): string {

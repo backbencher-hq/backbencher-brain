@@ -2,7 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { LANGS } from "../differential"
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..", "..")
-const f = "/home/ishaq2321/bb_tests/repositories/dart-http/pkgs/ok_http/example/lib/main.dart"
+const f = "<corpus-root>/bb_tests/repositories/dart-http/pkgs/ok_http/example/lib/main.dart"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language

@@ -15,7 +15,7 @@ import path from "node:path"
 import { createHash } from "node:crypto"
 import { execSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const [wasmPath, repoDir, extsArg, limitArg, topArg] = process.argv.slice(2)
 const EXTS = extsArg.split(",").map((e) => e.trim()).filter(Boolean)
 const LIMIT = limitArg ? Number(limitArg) : 400

@@ -14,7 +14,7 @@ p.setLanguage(g)
 const anaMod: any = await import("../src/ast/real-groovy-analyzer")
 const diffMod: any = await import("./m14/differential")
 
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-core/src/test/groovy/org/grails/compiler/injection/ASTValidationErrorsHelperSpec.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-core/src/test/groovy/org/grails/compiler/injection/ASTValidationErrorsHelperSpec.groovy"
 const src = fs.readFileSync(F, "utf8")
 const root = p.parse(src).rootNode
 const analyzer = new anaMod.RealGroovyAnalyzer()

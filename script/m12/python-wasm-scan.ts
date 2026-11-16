@@ -10,7 +10,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { createRequire } from "node:module"
 const require = createRequire(import.meta.url)
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/cython"
+const CORPUS = "<corpus-root>/bb_tests/repositories/cython"
 
 const sample = (() => {
   const { execSync } = require("child_process")

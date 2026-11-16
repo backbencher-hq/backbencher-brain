@@ -1,7 +1,7 @@
 // FIRING-CHECK v2, lane-owned copy for R7_AUDIT_FLEET.
 //
 // WHY A COPY. `script/m14/firing-check-v2.mjs` is MASTER-owned and this lane does
-// not edit it. It hard-codes `const REPO = "/home/ishaq2321/backbencher-brain"`,
+// not edit it. It hard-codes `const REPO = "<corpus-root>/backbencher-brain"`,
 // so running it measures the analyzer in the MAIN checkout — which, at the start of
 // this lane, was byte-identical to the branch copy, but stops being true the moment
 // this lane edits `src/ast/real-rust-analyzer.ts`. An instrument that reports the
@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url"
 const HERE = dirname(fileURLToPath(import.meta.url))
 // script/incoming-rust/ -> script/ -> repo root. Derived, not written down.
 const REPO = dirname(dirname(HERE))
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

@@ -1,13 +1,13 @@
 import { execSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
 // PROBE, not a hand-authored expectation: the lane's rule is that an expectation
 // records what the analyzer DOES (measured through the same entry the fixture
 // runner uses) after a defect class has been argued from the grammar. Every
 // value below was then read back against the fixture source line by line.
-const FIX = "/home/ishaq2321/backbencher-brain/validation/m14/fixtures/hcl/operation-operand-references.tf"
+const FIX = "<corpus-root>/backbencher-brain/validation/m14/fixtures/hcl/operation-operand-references.tf"
 const src = readFileSync(FIX, "utf8")
 const parser = await ASTEngine.getParser("hcl")
 const tree = parser.parse(src)
@@ -25,6 +25,6 @@ out.push("")
 out.push("=== reference targets containing a `var.` root, deduped ===")
 const targets = [...new Set(rels.map((r) => r.target))].sort()
 for (const t of targets) out.push("  " + t)
-writeFileSync("/home/ishaq2321/bb_tests/hcl/out/fixture-probe-operation.txt", out.join("\n") + "\n")
+writeFileSync("<corpus-root>/bb_tests/hcl/out/fixture-probe-operation.txt", out.join("\n") + "\n")
 console.log(out.join("\n"))
 console.log("\nline_number coverage: " + rels.filter((r: any) => typeof r.line_number === "number").length + "/" + rels.length)

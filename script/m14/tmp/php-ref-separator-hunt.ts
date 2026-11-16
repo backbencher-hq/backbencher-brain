@@ -35,7 +35,7 @@ async function main() {
   parser.setLanguage(lang)
   const az = new RealPhpAnalyzer()
 
-  const roots = ["/home/ishaq2321/bb_tests/repositories/phpunit", "/home/ishaq2321/bb_tests/repositories/phpmyadmin"]
+  const roots = ["<corpus-root>/bb_tests/repositories/phpunit", "<corpus-root>/bb_tests/repositories/phpmyadmin"]
   const files: string[] = []
   for (const r of roots) files.push(...walk(r))
   const stride = Math.max(1, Math.floor(files.length / 300))

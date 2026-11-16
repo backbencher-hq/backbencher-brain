@@ -58,7 +58,7 @@ function argOf(flag: string): string | null {
   return hit ? hit.slice(flag.length + 1) : null
 }
 
-const REPO = argOf("--repo") ?? "/home/ishaq2321/bb_tests/repositories/svelte"
+const REPO = argOf("--repo") ?? "<corpus-root>/bb_tests/repositories/svelte"
 if (!existsSync(REPO)) {
   console.error(`source-attribution: corpus not found at ${REPO} (pass --repo=<dir>)`)
   process.exit(2)

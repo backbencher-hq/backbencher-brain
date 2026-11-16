@@ -13,7 +13,7 @@ import { RealCleanAnalyzer } from "../../../src/ast/real-clean-analyzer"
 import { deriveCleanEdges } from "../differential"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/Clyde"
+const CORPUS = "<corpus-root>/bb_tests/repositories/Clyde"
 const rel = process.env.CLEAN_TRACE_FILE ?? "cleantools/Util/UtilStrictLists.icl"
 const full = path.join(CORPUS, rel)
 

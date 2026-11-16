@@ -5,8 +5,8 @@ import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "n
 import { join } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/elixir"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories/elixir"
 const ANALYZER = readFileSync(`${ROOT}/src/ast/real-elixir-analyzer.ts`, "utf8")
 
 // Extract every string literal compared against .type — `c?.type === "..."`,

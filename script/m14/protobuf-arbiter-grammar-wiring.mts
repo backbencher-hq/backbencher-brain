@@ -81,7 +81,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { LANGS } from "./differential"
 import { PROTOBUF_RULED } from "./protobuf-ruled"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ROOT = path.resolve(import.meta.dirname, "../..")
 const OUT = process.env.PB_OUT ?? "/tmp/opencode/pb/grammar-wiring.json"
 

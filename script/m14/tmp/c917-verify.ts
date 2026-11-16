@@ -4,7 +4,7 @@ import path from "node:path"
 import { readFileSync } from "node:fs"
 const { parseFile } = await import(path.resolve("src/ast/engine.ts"))
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const REPO = "<corpus-root>/bb_tests/repositories/sqlite"
 const CASES: Array<[string, string]> = [
   [
     "minimal wrapped (the issue's body)",

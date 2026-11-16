@@ -11,7 +11,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const ROOT = process.env.BB_LANE_ROOT ?? path.resolve(process.cwd())
-const DIR = path.join(process.env.BB_CORPUS ?? "/home/ishaq2321/bb_tests/repositories", "elixir")
+const DIR = path.join(process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories", "elixir")
 
 function walk(dir: string, out: string[] = []): string[] {
   let e: fs.Dirent[]

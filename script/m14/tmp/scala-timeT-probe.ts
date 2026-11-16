@@ -2,9 +2,9 @@
 // the analyzer emit for lines 130-162, and what does the tree look like there?
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE =
-  "/home/ishaq2321/bb_tests/repositories/cats-effect/kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala"
+  "<corpus-root>/bb_tests/repositories/cats-effect/kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala"
 
 const text = fs.readFileSync(FILE, "utf8")
 const lines = text.split("\n")

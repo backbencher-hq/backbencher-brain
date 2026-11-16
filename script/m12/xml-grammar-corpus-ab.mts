@@ -49,7 +49,7 @@ import { Parser, Language } from "web-tree-sitter"
 // near-miss that reads as a missing file rather than a wrong base.
 const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..", "..")
 
-const REPOS = process.env.XML_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/xml/repos"
+const REPOS = process.env.XML_CORPUS_ROOT ?? "<corpus-root>/bb_tests/xml/repos"
 const OUT = process.env.XML_AB_OUT ?? join(ROOT_HERE, "validation", "m12", "results")
 const EXTS = ["*.xml", "*.xsd", "*.dtd", "*.xsl", "*.xslt", "*.svg", "*.rng"]
 const MAX_BYTES = Number(process.env.XML_MAX_BYTES || "4000000")

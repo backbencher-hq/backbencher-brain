@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   for (let i = 0; i < lines.length; i++) console.log(`${i + 1}| ${lines[i]}`)
 }
 
-const ROOT_CONST = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT_CONST = "<corpus-root>/mcp/backbencher-brain"
 main().catch((e) => {
   console.error("FATAL", e)
   process.exit(1)

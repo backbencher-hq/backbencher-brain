@@ -45,7 +45,7 @@ const CORPUS_URL = "https://github.com/graphql/graphql-js"
 const REVISION = "9c245018484668b7c35f3ed219092a98855bd51e"
 /** Where the fetched files live. NOT `bb_tests/repositories/graphql-js`, which is
  *  an empty shell left by the disk-space cleanup and must stay that way. */
-const STAGE = process.env.GQL_CORPUS_STAGE ?? "/home/ishaq2321/bb_tests/graphql-corpus-probe"
+const STAGE = process.env.GQL_CORPUS_STAGE ?? "<corpus-root>/bb_tests/graphql-corpus-probe"
 
 const FILES = ["github-schema.graphql", "kitchen-sink.graphql"]
 

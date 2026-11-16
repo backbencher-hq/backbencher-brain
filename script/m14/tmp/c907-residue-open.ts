@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/bb_tests/repositories/jq"
 const audit = JSON.parse(readFileSync("validation/m12/results/c-clang-def-audit.json", "utf8"))
 
 const TARGETS: Array<[string, string[]]> = audit.perFile

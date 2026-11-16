@@ -83,7 +83,7 @@ import { parseFile } from "../../../../../src/ast/pool-worker"
 import { detectLanguageFromPath } from "../../../../../src/ast/language-detection"
 import { resumableWalk } from "../../../resumable-walk"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LANG = "graphql"
 
 const checkpoint = path.join(GQL, "walk-b2-census.txt")

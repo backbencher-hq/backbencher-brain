@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const R = "/home/ishaq2321/bb_tests/repositories"
+const R = "<corpus-root>/bb_tests/repositories"
 const CORPORA = ["jq", "sqlite", "fmt", "nlohmann-json"]
 const EXT = /\.(c|h|cc|cpp|cxx|hpp|hh)$/
 const out = process.argv[2] ?? "/tmp/c921-dump.json"

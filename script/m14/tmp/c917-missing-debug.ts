@@ -2,10 +2,10 @@
 // what does the lane-style comparison see?
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.resolve("src/ast/engine.ts"))
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const REPO = "<corpus-root>/bb_tests/repositories/sqlite"
 const relPath = "ext/wasm/libcmpp.c"
 const content = fs.readFileSync(path.join(REPO, relPath), "utf8")
 const result: any = await parseFile(relPath, content, { language: "c" } as any)

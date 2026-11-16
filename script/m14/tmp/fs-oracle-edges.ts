@@ -9,7 +9,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = path.resolve(import.meta.dir ?? path.dirname(Bun.main), "..", "..", "..")
-const FILE = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/fsharp/src/Compiler/Service/FSharpProjectSnapshot.fs"
+const FILE = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/fsharp/src/Compiler/Service/FSharpProjectSnapshot.fs"
 const LABEL = process.argv[3]
 
 const { deriveFsharpEdges } = await import("../fsharp-truth-oracle")

@@ -28,7 +28,7 @@ import * as path from "node:path"
 
 const args = process.argv.slice(2)
 const checkOnly = args.includes("--check")
-const ROOT = args.find((a) => !a.startsWith("--")) ?? "/home/ishaq2321/mcp/backtester-brain-placeholder"
+const ROOT = args.find((a) => !a.startsWith("--")) ?? "<corpus-root>/mcp/backtester-brain-placeholder"
 
 if (ROOT.includes("placeholder")) {
   console.error("target root required")

@@ -11,8 +11,8 @@ const headMod: any = await import(`../../../${TMP}`)
 const curMod: any = await import("../../../src/ast/real-cpp-analyzer")
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 function files(root: string, exts: string[]): string[] {
   const names = exts.map((e) => `-name '${e}'`).join(" -o ")
@@ -41,7 +41,7 @@ for (const [, root, exts] of ROOTS) {
     symA += (ra.symbols ?? []).length
     edgesB += (rb.relationships ?? []).length
     edgesA += (ra.relationships ?? []).length
-    const rel = f.replace("/home/ishaq2321/bb_tests/repositories/", "")
+    const rel = f.replace("<corpus-root>/bb_tests/repositories/", "")
     const kb = new Map<string, number>()
     for (const e of rb.relationships ?? []) {
       const k = JSON.stringify([e.type, e.source, e.target, e.line_number])

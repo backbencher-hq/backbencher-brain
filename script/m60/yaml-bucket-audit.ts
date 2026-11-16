@@ -50,7 +50,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["grails-core", "docker", "ansible", "kubernetes", "terraform", "openapi-spec", "helm", "gh-cli"]
 const RANGES = path.join(ROOT, "script/m14/tmp/yaml-f5-ranges.py")
 

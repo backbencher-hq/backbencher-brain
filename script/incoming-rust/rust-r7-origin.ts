@@ -53,7 +53,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { getParser } from "../../src/ast/engine"
 import { RealRustAnalyzer } from "../../src/ast/real-rust-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ARGS = process.argv.slice(2)
 const WANT_JSON = ARGS.includes("--json")
 const REPO_FILTER = ARGS.find((a) => a.startsWith("--repo="))?.slice(7)

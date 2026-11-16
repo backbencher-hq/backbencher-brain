@@ -22,7 +22,7 @@ import { execSync } from "child_process"
 
 const ROOT = path.resolve(import.meta.dir ?? path.dirname(Bun.main), "..", "..", "..")
 const HOME = process.env.HOME ?? ""
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m14/results/archive/elixir-grammar-ab.json")
 
 const GRAMMARS = [

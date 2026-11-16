@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-web-url-mappings/src/test/groovy/grails/web/mapping/RestfulResourceMappingSpec.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-web-url-mappings/src/test/groovy/grails/web/mapping/RestfulResourceMappingSpec.groovy"
 const SCOPES = new Set(["method_declaration", "constructor_declaration", "function_definition", "lambda_expression", "closure", "program"])
 const BOUNDARIES = new Set(["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"])
 

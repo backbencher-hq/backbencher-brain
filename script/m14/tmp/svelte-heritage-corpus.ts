@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url"
 const __dirname = fileURLToPath(new URL(".", import.meta.url)).replace(/[\\/]+$/, "")
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve(__dirname, "..", "..", "..")
-const REPO = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/svelte"
+const REPO = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/svelte"
 
 async function main() {
   const P: any = (WTS as any).Parser ?? (WTS as any).default ?? WTS

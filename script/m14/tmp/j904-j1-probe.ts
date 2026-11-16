@@ -5,8 +5,8 @@
 // Run: bun script/m14/tmp/j904-j1-probe.ts
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/scala3/tests/pos-java-interop-separate/java-object-any-unification-1/J_1.java"
-const ROOT = "/home/ishaq2321/bb_tests/repositories/scala3"
+const FILE = "<corpus-root>/bb_tests/repositories/scala3/tests/pos-java-interop-separate/java-object-any-unification-1/J_1.java"
+const ROOT = "<corpus-root>/bb_tests/repositories/scala3"
 
 const r: any = await parseFile(FILE, ROOT)
 console.log("=== symbols ===")

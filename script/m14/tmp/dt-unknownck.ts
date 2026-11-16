@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 async function main() {
-  const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+  const ROOT = "<corpus-root>/mcp/backbencher-brain"
   const src = fs.readFileSync(path.join(ROOT, "src/ast/real-dart-analyzer.ts"), "utf8")
   const masked = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "")
   const lits = new Set<string>()

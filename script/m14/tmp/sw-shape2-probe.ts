@@ -3,8 +3,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/swift-nio"
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts
 const L: any = wts.Language ?? wts.default?.Language

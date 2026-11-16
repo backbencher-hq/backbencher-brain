@@ -33,7 +33,7 @@ import { join, relative } from "node:path"
 // in THIS worktree. (The shared firing-check-v2.mjs hardcodes the main checkout's
 // absolute path instead — reported to master as a harness defect.)
 const REPO_ROOT = join(import.meta.dir, "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 const argOf = (flag) => {

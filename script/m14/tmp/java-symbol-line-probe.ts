@@ -6,7 +6,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 function walk(dir: string, out: string[], limit: number): void {
   if (out.length >= limit) return
@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   for (const s of samples) console.log("  " + s)
 }
 
-const ROOT_CONST = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT_CONST = "<corpus-root>/mcp/backbencher-brain"
 main().catch((e) => {
   console.error("FATAL", e)
   process.exit(1)

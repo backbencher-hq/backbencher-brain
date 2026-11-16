@@ -40,7 +40,7 @@ async function main() {
   fs.rmSync(tmp)
 
   // The real corpus site, so the synthetic case cannot be called unrepresentative.
-  const real = "/home/ishaq2321/bb_tests/repositories/fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs"
+  const real = "<corpus-root>/bb_tests/repositories/fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs"
   const src = fs.readFileSync(real, "utf8")
   const r2: any = await ASTEngine.parseFile(real, src)
   const hits = (r2.symbols ?? []).filter((s: any) => /CfgType|BuildableProjectCfg|IVsProjectFlavorCfg/.test(String(s.name)))

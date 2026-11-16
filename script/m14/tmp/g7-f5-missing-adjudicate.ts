@@ -9,7 +9,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { RealGroovyAnalyzer } from "../../../src/ast/real-groovy-analyzer"
 import { deriveGroovyEdges, deriveTreeEdges } from "../differential"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const FILES = [
   "grails-gsp/plugin/src/test/groovy/org/grails/web/mapping/RootUrlMappingTests.groovy",
   "grails-data-hibernate5/core/src/test/groovy/grails/gorm/tests/AddToManagedEntitySpec.groovy",

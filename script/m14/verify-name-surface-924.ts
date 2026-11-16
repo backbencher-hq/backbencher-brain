@@ -53,7 +53,7 @@ import { fileURLToPath } from "node:url"
   // fileURLToPath(import.meta.url)); this now matches it.
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, "..", "..")
-// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "<corpus-root>/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const LANES: Array<{ lang: "c" | "cpp" | "rust" | "go" | "clean"; dirs: string[]; exts: string[]; limit?: number; why?: string }> = [
   { lang: "c", dirs: ["jq", "sqlite"], exts: [".c"] },

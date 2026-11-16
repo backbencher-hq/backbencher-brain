@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { RealPowershellAnalyzer } from "../../../src/ast/real-powershell-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language

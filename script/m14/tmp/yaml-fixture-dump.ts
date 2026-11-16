@@ -6,7 +6,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const DIR = path.join(ROOT, "validation/m14/fixtures/yaml")
 
 async function main() {

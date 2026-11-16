@@ -9,12 +9,12 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { loadWebTreeSitter, resolveWasmAsset } from "../../src/util/wasm"
 import { join } from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
-const OUT = "/home/ishaq2321/bb_tests/out/lua-surface-digest.json"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
+const OUT = "<corpus-root>/bb_tests/out/lua-surface-digest.json"
 const BUILDS: Array<[string, string]> = [
   ["wired", resolveWasmAsset("tree-sitter-lua.wasm")],
-  ["npm-0.4.1", "/home/ishaq2321/bb_tests/grammars/npm-0.4.1.wasm"],
-  ["tswasms-0.1.13", "/home/ishaq2321/bb_tests/grammars/tswasms-0.1.13-lua.wasm"],
+  ["npm-0.4.1", "<corpus-root>/bb_tests/grammars/npm-0.4.1.wasm"],
+  ["tswasms-0.1.13", "<corpus-root>/bb_tests/grammars/tswasms-0.1.13-lua.wasm"],
 ]
 
 async function main(): Promise<void> {
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
     const keys = Object.keys(wired.treeDigestPerFile)
     const diff = keys.filter((k) => wired.treeDigestPerFile[k] !== npmBuild.treeDigestPerFile[k])
     console.log(`  per-file TREE digest over ${keys.length} files: ${diff.length === 0 ? "IDENTICAL on every file" : `DIFFERS on ${diff.length} files`}`)
-    for (const d of diff.slice(0, 5)) console.log(`      ${d.replace("/home/ishaq2321/bb_tests/repositories/", "")}`)
+    for (const d of diff.slice(0, 5)) console.log(`      ${d.replace("<corpus-root>/bb_tests/repositories/", "")}`)
   }
   console.log(`  idOrderDigest (NOT evidence — parse allocation noise): ${wired.idOrderDigest_NOT_EVIDENCE === npmBuild.idOrderDigest_NOT_EVIDENCE ? "same" : "differs, and that is expected"}`)
   const fOnly = npmBuild.fields.filter((f: string) => !wired.fields.includes(f))

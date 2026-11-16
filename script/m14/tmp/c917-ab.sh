@@ -4,8 +4,8 @@
 # killed shell must never leave HEAD's analyzer in the tree (the #916 wave lost
 # a background job exactly that way).
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
-R=/home/ishaq2321/bb_tests/repositories
+cd <corpus-root>/mcp/backbencher-brain || exit 1
+R=<corpus-root>/bb_tests/repositories
 FIX=src/ast/real-c-analyzer.ts
 KEEP=/tmp/c917-fix.ts
 cp "$FIX" "$KEEP" || exit 1

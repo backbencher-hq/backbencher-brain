@@ -54,7 +54,7 @@ if (!LABEL) {
   console.error("usage: swift-payload-latency.ts <label>")
   process.exit(2)
 }
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const SRC = path.join(process.cwd(), "src/ast/real-swift-analyzer.ts")
 const srcText = readFileSync(SRC, "utf8")

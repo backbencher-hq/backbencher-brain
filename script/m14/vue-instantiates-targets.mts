@@ -48,7 +48,7 @@ const MAX_BYTES = 512 * 1024
 
 type Repo = { dir: string; name: string }
 const repos: Repo[] = []
-for (const e of REPOS) repos.push({ dir: path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", e), name: e })
+for (const e of REPOS) repos.push({ dir: path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", e), name: e })
 for (const d of EXTRA) repos.push({ dir: d, name: path.basename(d) })
 
 /** Every `.vue` stem each repo TRACKS, plus the stem's PascalCase/camel form. */

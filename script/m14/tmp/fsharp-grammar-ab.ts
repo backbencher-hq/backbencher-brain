@@ -22,7 +22,7 @@ import { execSync } from "child_process"
 
 const ROOT = path.resolve(import.meta.dir ?? path.dirname(Bun.main), "..", "..", "..")
 const HOME = process.env.HOME ?? ""
-const REPO = "/home/ishaq2321/bb_tests/repositories/fsharp"
+const REPO = "<corpus-root>/bb_tests/repositories/fsharp"
 const OUT = path.join(ROOT, "validation/m14/results/archive/fsharp-grammar-ab.json")
 const shardFile = (i: number) => path.join(ROOT, `validation/m14/results/fsharp-grammar-ab.shard${i}.json`)
 const sha256Text = (s: string) => createHash("sha256").update(s).digest("hex")

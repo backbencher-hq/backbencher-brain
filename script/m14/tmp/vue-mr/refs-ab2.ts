@@ -8,7 +8,7 @@ import * as path from "path"
 import { vue, rels } from "./harness"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 function under(root: string, limit: number) {
   const out: string[] = []

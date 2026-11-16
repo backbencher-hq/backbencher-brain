@@ -7,8 +7,8 @@ import { execSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/engine"
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 
 function files(root: string, exts: string[]): string[] {
@@ -41,7 +41,7 @@ for (const [label, root, exts] of ROOTS) {
         otherRows.push({
           name: n,
           kind: String(s.kind),
-          file: f.replace("/home/ishaq2321/bb_tests/repositories/", ""),
+          file: f.replace("<corpus-root>/bb_tests/repositories/", ""),
           line: s.range?.startLine ?? 0,
           meta: s.metadata ?? null,
         })

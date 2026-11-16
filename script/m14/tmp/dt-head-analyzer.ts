@@ -16,7 +16,7 @@
 
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
-import { ASTEngine } from "/home/ishaq2321/mcp/backbencher-brain/src/ast/engine"
+import { ASTEngine } from "<corpus-root>/mcp/backbencher-brain/src/ast/engine"
 
 // ============================================================================
 // PURE-STRING HELPERS (regex-free normalization)

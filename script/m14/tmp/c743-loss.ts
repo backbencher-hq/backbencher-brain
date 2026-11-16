@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const [wasmPath, analyzerModule, className, ...files] = process.argv.slice(2)
 
 async function main() {

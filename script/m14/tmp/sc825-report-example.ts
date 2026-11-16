@@ -11,7 +11,7 @@ import path from "node:path"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
 
 const FILES = [
-  "/home/ishaq2321/bb_tests/repositories/cats-effect/scalafix/rules/src/main/scala/fix/v3_0_0.scala",
+  "<corpus-root>/bb_tests/repositories/cats-effect/scalafix/rules/src/main/scala/fix/v3_0_0.scala",
 ]
 
 function escapeRe(s: string): string {

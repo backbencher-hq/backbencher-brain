@@ -9,9 +9,9 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const PY_WASM = path.join(ROOT, "wasm", "tree-sitter-python.wasm")
-const REPOS = ["cython", "requests"].map((r) => path.join("/home/ishaq2321/bb_tests/repositories", r))
+const REPOS = ["cython", "requests"].map((r) => path.join("<corpus-root>/bb_tests/repositories", r))
 
 function filesUnder(dir: string, out: string[] = []): string[] {
   let entries: any[] = []
@@ -98,7 +98,7 @@ async function main() {
 
   // Analyzer-side reading of a duplicated class body: how many symbols does the
   // CURRENT (keep-both) reading publish for the name?
-  const sample = path.join("/home/ishaq2321/bb_tests/repositories", "cython", "Cython", "Compiler", "PyrexTypes.py")
+  const sample = path.join("<corpus-root>/bb_tests/repositories", "cython", "Cython", "Compiler", "PyrexTypes.py")
   const content = fs.readFileSync(sample, "utf8")
   const p2 = new P()
   p2.setLanguage(LANG)

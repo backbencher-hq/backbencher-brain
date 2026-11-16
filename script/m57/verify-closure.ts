@@ -14,7 +14,7 @@ import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const GATE_TIMEOUT = 600_000
-const REAL_DATA_DIR = process.env.BB_M57_DATA_DIR || path.join(process.env.HOME || "/home/ishaq2321/.khushal_file", ".bb")
+const REAL_DATA_DIR = process.env.BB_M57_DATA_DIR || path.join(process.env.HOME || "<corpus-root>/.khushal_file", ".bb")
 
 const SUBORDINATE: Array<{ code: string; script: string; env?: Record<string, string> }> = [
   { code: "T1", script: "verify-t1-classifier.ts", env: { BB_M57_REAL_DB: "1", BB_M57_DATA_DIR: REAL_DATA_DIR } },

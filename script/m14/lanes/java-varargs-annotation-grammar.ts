@@ -5,7 +5,7 @@
  * corpus, with nothing else in the file.
  *
  * The corpus case is
- * /home/ishaq2321/bb_tests/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java
+ * <corpus-root>/bb_tests/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java
  * which tree-sitter-java (the pinned REDISTRIBUTOR wasm, sha256 637aac44…) parses
  * with the class_declaration ENDING at line 1003 of 1541 and 30 methods after it
  * re-parented to `program`, so they lose their owner. The trigger region is

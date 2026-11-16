@@ -432,7 +432,7 @@ const CLAIMS: Claim[] = [
         if (!fs.existsSync(path.join(lane, rel))) throw new Error(`missing from the tracked lane: ${rel}`)
       }
       const runner = fs.readFileSync(path.join(lane, "run-all.sh"), "utf8")
-      if (runner.includes("/home/ishaq2321/bb_tests/graphql/run-all.sh")) throw new Error("the runner still hardcodes the old external location")
+      if (runner.includes("<corpus-root>/bb_tests/graphql/run-all.sh")) throw new Error("the runner still hardcodes the old external location")
       if (/npx tsx "\$HERE"/.test(runner) === false) throw new Error("the runner no longer invokes its probes relative to its own location")
       return "they are **here, in the repository**"
     },

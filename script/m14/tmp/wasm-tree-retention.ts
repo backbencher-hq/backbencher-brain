@@ -20,11 +20,11 @@
 // throws.
 //
 // Usage: bun script/m14/tmp/wasm-tree-retention.ts <leak|free> <repo> <ext> <wasm> [limit]
-//   e.g. bun script/m14/tmp/wasm-tree-retention.ts leak  /home/ishaq2321/bb_tests/repositories/proxicall dart dart.wasm
+//   e.g. bun script/m14/tmp/wasm-tree-retention.ts leak  <corpus-root>/bb_tests/repositories/proxicall dart dart.wasm
 import fs from "node:fs"
 import path from "node:path"
 
-const ROOT = process.env.BB_PROBE_ROOT ?? "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = process.env.BB_PROBE_ROOT ?? "<corpus-root>/mcp/backbencher-brain"
 const MODE = process.argv[2] ?? "leak"
 const REPO = process.argv[3]
 const EXT = process.argv[4]

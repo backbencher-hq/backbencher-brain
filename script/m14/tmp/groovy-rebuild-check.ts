@@ -5,8 +5,8 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const GR = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const GR = "<corpus-root>/bb_tests/repositories/grails-core"
 
 const CONSTRUCTS: Array<[string, string, "clean" | "missing" | "either"]> = [
   ["untyped param", "def dyn(arg) { return arg }", "clean"],

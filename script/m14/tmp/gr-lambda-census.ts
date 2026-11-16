@@ -7,7 +7,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["grails-core", "geb"]
 const EXTS = [".groovy", ".gradle"]
 

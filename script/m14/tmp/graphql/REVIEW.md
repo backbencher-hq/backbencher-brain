@@ -299,7 +299,7 @@ goes through S1 like any other. And the built-in scalars were initially reported
 
 | milestone | what applies to GraphQL | state at the start | state now |
 |---|---|---|---|
-| **M12** (analyzer correctness, issue #177) | the analyzer, its grammar, the m12 evidence layer | 37/37 contract, 97/97 differential — over **3 fixtures and a 2-file corpus**; the corpus scripts **crashed** (the pinned path `/home/ishaq2321/bb_tests/repositories/graphql-js` no longer existed) while their artifacts claimed `passed: true` | scripts run; corpus re-pinned to `graphql-js@ee5ce41d`; all 4 artifacts regenerated; the two grammar limitations the corpus-errors artifact named are **fixed**, so the table is now empty and the 113-construct battery guards it instead; the 2-file corpus is labelled as such in the artifact rather than presented as coverage |
+| **M12** (analyzer correctness, issue #177) | the analyzer, its grammar, the m12 evidence layer | 37/37 contract, 97/97 differential — over **3 fixtures and a 2-file corpus**; the corpus scripts **crashed** (the pinned path `<corpus-root>/bb_tests/repositories/graphql-js` no longer existed) while their artifacts claimed `passed: true` | scripts run; corpus re-pinned to `graphql-js@ee5ce41d`; all 4 artifacts regenerated; the two grammar limitations the corpus-errors artifact named are **fixed**, so the table is now empty and the 113-construct battery guards it instead; the 2-file corpus is labelled as such in the artifact rather than presented as coverage |
 | **M13** (tool truth over corpora) | `script/m13/corpus-map.ts` lists `graphql` for extension detection and carries the note *"pin a GraphQL schema-heavy repo; only 2 .graphql files today"* | the repo **already recorded** that the corpus was inadequate | 47 files / 4 repositories / 691,855 bytes, with revisions pinned. The m13 map's note is now stale and is left for its owner rather than edited from this lane |
 | **M14** (analyzer truth) | the fixture lane, the mutants, the differential lane, the spec file | **none of the four existed** | fixture lane + 2 fixtures (both proven to fail the pre-fix analyzer). `script/m14/spec/graphql-completeness.json` and the m14 differential/mutants lanes are **not** added here: they are milestone-wide artifacts whose shape is owned by the m14 wave, and inventing one lane's entry without the rest would make the m14 coverage matrix read as more complete than it is |
 | **M37** (families against each other) | GraphQL ↔ the data/config family | `script/m60/lang-completion-matrix.ts:71` lists `graphql` in the `config` family and `:89` gives it `[graphql]` | unchanged — and correctly so: the m60 matrix is the owner of that row, and this lane's contribution is the measurement behind it (0 phantoms, 93.38% project-resolvable with 0 provable-but-unqualified, `documentKind` now correct) |
@@ -432,7 +432,7 @@ isolated runs.
 
 ## L. The evidence was outside the repository, and the m12 artifact was an orphan
 
-The lane ran from `/home/ishaq2321/bb_tests/graphql`, which is **not a git
+The lane ran from `<corpus-root>/bb_tests/graphql`, which is **not a git
 repository**. So a clone had no probes, no ground truth, no runner and no
 artifacts, and every number in the analyzer document and in this review was
 unverifiable from a checkout — including the 42 the doc-truth gate checks. The
@@ -816,8 +816,8 @@ checkout.
 
 
 ```sh
-/home/ishaq2321/script/m14/tmp/graphql/run-all.sh            # gates 1-7
-/home/ishaq2321/script/m14/tmp/graphql/run-all.sh --corpus   # + 8, 8b, 9, and 10/10b
+<corpus-root>/script/m14/tmp/graphql/run-all.sh            # gates 1-7
+<corpus-root>/script/m14/tmp/graphql/run-all.sh --corpus   # + 8, 8b, 9, and 10/10b
 
 # 8  corpus sweep, 47 real files          -> phantoms, dupes, line contract
 # 8b project-level resolution            -> the G.1 table, SOURCES included; FAILS

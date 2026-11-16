@@ -17,7 +17,7 @@ import os from "node:os"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 
-const ROOT = process.env.BB_PROBE_ROOT ?? "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = process.env.BB_PROBE_ROOT ?? "<corpus-root>/mcp/backbencher-brain"
 const LANG = process.argv[2] ?? "svelte"
 const SAMPLE = process.argv[3] ?? "200"
 const LOG = path.join(os.tmpdir(), `os-race-${LANG}.log`)

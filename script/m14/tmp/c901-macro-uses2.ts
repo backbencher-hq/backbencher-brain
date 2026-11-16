@@ -27,7 +27,7 @@ for (const [name, src] of CASES) {
   if (!rels.length) console.log("  (no uses/references/calls edges)")
 }
 
-const R = "/home/ishaq2321/bb_tests/repositories"
+const R = "<corpus-root>/bb_tests/repositories"
 const REAL: Array<[string, string, string[]]> = [
   ["REAL basexx.c", `${R}/sqlite/ext/misc/basexx.c`, ["SQLITE_EXTENSION_INIT1"]],
   ["REAL tclsqlite.c", `${R}/sqlite/src/tclsqlite.c`, ["SQLITE_TCLAPI"]],

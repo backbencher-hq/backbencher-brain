@@ -365,7 +365,7 @@ function firstLine(text: string): string {
 }
 
 // ── 9. Corpus sampling: stored-lead invariants on real repositories ────────
-// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "<corpus-root>/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const REPO_ROOT = resolveCorpusRoot(process.cwd()) ?? "REPO_ROOT_UNRESOLVED"
 // graphql-js 17.x checkpoint has no top-level src/: the only real TypeScript on
 // this revision lives under website/pages (docs tooling). Point the corpus at

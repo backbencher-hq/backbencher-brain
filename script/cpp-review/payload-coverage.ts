@@ -34,7 +34,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join, extname } from "node:path"
 import { parseFile } from "../../src/ast/engine"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (process.env.BB_CPP_REPOS ?? "fmt,nlohmann-json,catch2,abseil-cpp,spdlog,zig").split(",")
 const EXTS = new Set([".cpp", ".cc", ".cxx", ".hpp", ".hxx", ".h", ".ipp", ".tcc", ".inl"])
 

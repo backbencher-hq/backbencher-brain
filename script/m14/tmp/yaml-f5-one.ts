@@ -5,9 +5,9 @@ import { execFileSync } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const ORACLE = path.join(ROOT, "script/m14/tmp/yaml-f5-oracle.py")
-const FILE = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/grails-core/grails-core/src/test/resources/application.yml"
+const FILE = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/grails-core/grails-core/src/test/resources/application.yml"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

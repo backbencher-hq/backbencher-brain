@@ -5,7 +5,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
 const lang = await L.load(readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P(); parser.setLanguage(lang)
-const R = "/home/ishaq2321/bb_tests/repositories/jq"
+const R = "<corpus-root>/bb_tests/repositories/jq"
 const CASES: Array<[string, string, number[]]> = [
   ["src/parser.c", `${R}/src/parser.c`, [2229, 2230]],
   ["src/parser.c YYDPRINTF", `${R}/src/parser.c`, [0]],

@@ -14,7 +14,7 @@ for (const src of B) {
   w(t.rootNode)
   console.log(`errs=${errs}  row3 nodes: ${types.join(" ")}`)
 }
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
 const src = fs.readFileSync(F, "utf8")
 const t = parser.parse(src)
 let errs = 0

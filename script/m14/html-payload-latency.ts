@@ -38,7 +38,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
 const REPO = process.env.BB_REPO || process.cwd()
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const MAX_FILES = Number(process.env.BB_MAX_FILES || 0)
 const WANT = process.argv.slice(2).filter((a) => !a.startsWith("-"))
 

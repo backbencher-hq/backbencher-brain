@@ -12,7 +12,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = path.resolve(import.meta.dir ?? path.dirname(Bun.main), "..", "..", "..")
-const FILE = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/fsharp/src/Compiler/Service/FSharpProjectSnapshot.fs"
+const FILE = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/fsharp/src/Compiler/Service/FSharpProjectSnapshot.fs"
 const MAX = Number(process.argv[3] ?? 4)
 
 const shape = (n: any, depth = 0, maxDepth = 8): string[] => {

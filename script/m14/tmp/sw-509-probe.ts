@@ -9,7 +9,7 @@
 import * as fs from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const F = "/home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOPosix/MultiThreadedEventLoopGroup.swift"
+const F = "<corpus-root>/bb_tests/repositories/swift-nio/Sources/NIOPosix/MultiThreadedEventLoopGroup.swift"
 const src = fs.readFileSync(F, "utf8")
 
 const parsed: any = await (ASTEngine as any).parseFile(F, src, { language: "swift" })
@@ -33,8 +33,8 @@ function walk(n: any, depth: number) {
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts
 const L: any = wts.Language ?? wts.default?.Language
-await P.init({ locateFile: () => "/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.wasm" })
-const LANG: any = await L.load(fs.readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-swift.wasm"))
+await P.init({ locateFile: () => "<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.wasm" })
+const LANG: any = await L.load(fs.readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-swift.wasm"))
 const p = new P()
 p.setLanguage(LANG)
 const tree = p.parse(src)

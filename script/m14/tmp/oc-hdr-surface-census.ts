@@ -13,8 +13,8 @@
 // edge"). This is the analyzer-side instrument.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 const PROLOGUE = /^\s*(NS_ASSUME_NONNULL_BEGIN|NS_ASSUME_NONNULL_END)\s*$/
 

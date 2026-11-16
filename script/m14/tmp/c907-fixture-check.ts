@@ -6,8 +6,8 @@
 // Run: bun script/m14/tmp/c907-fixture-check.ts [path]
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const F = process.argv[2] ?? "/home/ishaq2321/mcp/backbencher-brain/validation/m14/fixtures/c/swallowed-definitions-907.c"
-const r: any = await parseFile(F, "/home/ishaq2321/mcp/backbencher-brain")
+const F = process.argv[2] ?? "<corpus-root>/mcp/backbencher-brain/validation/m14/fixtures/c/swallowed-definitions-907.c"
+const r: any = await parseFile(F, "<corpus-root>/mcp/backbencher-brain")
 const fns = (r.symbols ?? []).filter((s: any) => String(s.kind) === "function")
 console.log(`${F.split("/").pop()}: ${r.symbols?.length ?? 0} symbols, ${fns.length} functions, ${r.relationships?.length ?? 0} relationships`)
 for (const f of fns) console.log(`   function ${f.name}  scope=${f.scope} line=${f.range?.startLine}`)

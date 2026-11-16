@@ -13,8 +13,8 @@ import * as path from "node:path"
 import { deriveKotlinEdges, deriveTreeEdges, normTarget } from "../differential"
 import { parseFile } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const FILE = "Exposed/exposed-tests/src/test/kotlin/org/jetbrains/exposed/v1/tests/shared/dml/MergeTableTest.kt"
 
 async function parser() {

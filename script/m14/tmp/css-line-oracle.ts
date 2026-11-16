@@ -21,7 +21,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { readFileSync, readdirSync, statSync, writeFileSync } from "fs"
 import { join } from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const OUT = argv.includes("--out") ? argv[argv.indexOf("--out") + 1] : undefined
 const REPOS = ["svelte", "grails-core", "scala3", "element-plus", "graphql-js", "cython", "go-tools", "mojo", "zig", "cloogle.org", "vue-core", "cargo", "fsharp"]

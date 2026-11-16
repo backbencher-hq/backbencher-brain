@@ -1,5 +1,5 @@
 {
- "repo": "/home/ishaq2321/bb_tests/go-stress/kubernetes",
+ "repo": "<corpus-root>/bb_tests/go-stress/kubernetes",
  "pin": "90777f0b13827dcae8301137ea64f699f3449dbc",
  "corpus": {
   "goFiles": 17848,

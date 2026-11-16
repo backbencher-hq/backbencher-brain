@@ -3,8 +3,8 @@
 // so the loss is context-dependent. Printing the node, its children, and the
 // analyzer's symbols around it.
 import { readFileSync } from "node:fs"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const F = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const F = "<corpus-root>/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c"
 const wts: any = await import("web-tree-sitter")
 const P = (wts.Parser ?? wts.default) as any
 const L = (wts.Language ?? wts.default?.Language) as any

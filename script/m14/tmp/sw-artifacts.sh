@@ -2,7 +2,7 @@
 # script/m14/tmp/sw-artifacts.sh — re-emit the M60/M14 artifacts at the swift lane's
 # final bytes. The tracker snapshot, the LCM and G1 come AFTER the issues are closed.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 
 step() { echo; echo "=== $* ==="; }
 

@@ -40,7 +40,7 @@ import { deriveBashEdges } from "../differential"
 import { RealBashAnalyzer } from "../../../src/ast/real-bash-analyzer"
 
 const ROOT = process.cwd()
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m14/results/archive/bash-lane-scoped.json")
 
 const wts: any = await import("web-tree-sitter")

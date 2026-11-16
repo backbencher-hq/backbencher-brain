@@ -6,8 +6,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const F = "/home/ishaq2321/bb_tests/repositories/cats-effect/testkit/shared/src/main/scala/cats/effect/testkit/TestInstances.scala"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const F = "<corpus-root>/bb_tests/repositories/cats-effect/testkit/shared/src/main/scala/cats/effect/testkit/TestInstances.scala"
 
 async function main(): Promise<void> {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))

@@ -5,7 +5,7 @@
 // Print every accepted site so each can be read by eye.
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
@@ -29,8 +29,8 @@ const walk = (dir: string, out: string[] = []): string[] => {
   return out
 }
 const REPOS = [
-  ["jq", "/home/ishaq2321/bb_tests/repositories/jq"],
-  ["sqlite", "/home/ishaq2321/bb_tests/repositories/sqlite"],
+  ["jq", "<corpus-root>/bb_tests/repositories/jq"],
+  ["sqlite", "<corpus-root>/bb_tests/repositories/sqlite"],
 ]
 let totalAccepted = 0, totalCandidates = 0
 for (const [name, repo] of REPOS) {

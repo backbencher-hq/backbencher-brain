@@ -3,7 +3,7 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
 const dump = (x: any, d = 0): string => {
   const pad = "  ".repeat(d)
   const txt = x.childCount === 0 ? JSON.stringify(x.text.slice(0, 26)) : ""
@@ -12,7 +12,7 @@ const dump = (x: any, d = 0): string => {
   for (let i = 0; i < x.childCount; i++) s += dump(x.child(i), d + 1)
   return s
 }
-for (const [name, wasm] of [["OLD", "/tmp/g841-worktree-7f01e3ed.wasm"], ["NEW", "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"]] as Array<[string, string]>) {
+for (const [name, wasm] of [["OLD", "/tmp/g841-worktree-7f01e3ed.wasm"], ["NEW", "<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"]] as Array<[string, string]>) {
   const lang = await L.load(fs.readFileSync(wasm))
   const parser = new P()
   parser.setLanguage(lang)

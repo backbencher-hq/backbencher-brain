@@ -16,7 +16,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const CORPUS = "<corpus-root>/bb_tests/repositories/grails-core"
 const SAMPLE = "validation/m12/results/groovy-corpus-sample.txt"
 
 // The two constructs that decided the choice last time, plus the ones the

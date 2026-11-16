@@ -15,7 +15,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const TARGETS: Array<[string, string, number]> = [
   ["nlohmann-json", "include/nlohmann", 6],
   ["fmt", "include/fmt", 20],

@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url"
 const REPO = (import.meta as any).dir
   ? path.resolve(path.join((import.meta as any).dir, "..", ".."))
   : path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".."))
-const CR = "/home/ishaq2321/bb_tests/repositories"
+const CR = "<corpus-root>/bb_tests/repositories"
 const ASTEngine: any = (await import(`${REPO}/src/ast/engine.ts`)).ASTEngine
 const rule: any = await import(`${REPO}/script/m14/incoming-rule.ts`)
 const LANES: Array<[string, string[], number]> = JSON.parse(process.env.LANES_JSON || "[]") // [lane, exts, cap] cap 0 = all

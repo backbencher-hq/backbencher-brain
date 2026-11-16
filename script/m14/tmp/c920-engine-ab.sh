@@ -3,7 +3,7 @@
 # restored in the same command regardless of outcome (trap) and md5-verified, so a
 # kill can never leave HEAD's... (the fix) outside the tree.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
+cd <corpus-root>/mcp/backbencher-brain || exit 1
 FIX=src/ast/engine.ts
 KEEP=/tmp/c920-engine-fix.ts
 cp "$FIX" "$KEEP" || exit 1

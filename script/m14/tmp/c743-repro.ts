@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wasmPath = process.argv[2]
 const LANG = process.argv[3] ?? "c"
 

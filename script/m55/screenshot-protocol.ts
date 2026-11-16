@@ -12,7 +12,7 @@
 //   2. records the sha256 of the installed bundle, its install time, the editor
 //      version, the display geometry and the fixture workspace hash;
 //   3. launches the editor on the DECLARED external fixture
-//      (/home/ishaq2321/bb-demo-hub, used as-is per the owner's decision) on a
+//      (<corpus-root>/bb-demo-hub, used as-is per the owner's decision) on a
 //      virtual display and drives the DECLARED flows with keyboard input
 //      (deterministic: `code -g` to place the cursor, the editor's own chords
 //      and the extension's contributed commands through the palette — no

@@ -177,7 +177,7 @@ const arg = (n: string): string | undefined => {
   return i >= 0 ? process.argv[i + 1] : undefined
 }
 if (import.meta.main) {
-  const REPO = arg("--repo") ?? "/home/ishaq2321/bb_tests/repositories/go-tools"
+  const REPO = arg("--repo") ?? "<corpus-root>/bb_tests/repositories/go-tools"
   const LIMIT = Number(arg("--files") ?? 0)
   const files: string[] = []
   const walk = (d: string) => {

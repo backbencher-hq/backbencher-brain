@@ -20,7 +20,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const REPO = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CORPUS = process.env.GROOVY_CORPUS ?? "/home/ishaq2321/bb_tests/xml/repos/grails-core"
+const CORPUS = process.env.GROOVY_CORPUS ?? "<corpus-root>/bb_tests/xml/repos/grails-core"
 
 // Same roots the lane audit declares as non-source, and matched the SAME way: by
 // substring, against the corpus-relative path. If `excludeDirs` in

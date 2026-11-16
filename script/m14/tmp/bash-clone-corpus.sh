@@ -7,8 +7,8 @@
 # language-reference source, an adversarial parser torture set, and three
 # real-world volumes.
 set -u
-ROOT=/home/ishaq2321/bb_tests/repositories
-LOG=/home/ishaq2321/bb_tests/bash-corpus-clone.log
+ROOT=<corpus-root>/bb_tests/repositories
+LOG=<corpus-root>/bb_tests/bash-corpus-clone.log
 : > "$LOG"
 
 clone() {

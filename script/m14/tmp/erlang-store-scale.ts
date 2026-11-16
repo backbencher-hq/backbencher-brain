@@ -17,13 +17,13 @@ import Database from "better-sqlite3"
 import { Parser, Language } from "web-tree-sitter"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/rebar3"
+const CORPUS = "<corpus-root>/bb_tests/repositories/rebar3"
 
 async function main() {
   await Parser.init()
   const parser = new Parser()
   parser.setLanguage(await Language.load(new URL("../../../wasm/tree-sitter-erlang.wasm", import.meta.url).pathname))
-  const { RealErlangAnalyzer } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/real-erlang-analyzer.ts")
+  const { RealErlangAnalyzer } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/real-erlang-analyzer.ts")
   const analyzer = new RealErlangAnalyzer()
 
   // Real CLI index FIRST (twice — the second for idempotency). The indexer is

@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/bb_tests/repositories/jq"
 const SITES: Array<[string, string]> = [
   ["src/jv.c", "jv_number"],
   ["src/builtin.c", "gen_last_1"],

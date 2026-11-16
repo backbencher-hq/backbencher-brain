@@ -5,7 +5,7 @@ import * as path from "path"
 import * as WTS from "web-tree-sitter"
 import { RealCAnalyzer } from "../../../src/ast/real-c-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 async function main() {
   const P: any = (WTS as any).Parser ?? (WTS as any).default ?? WTS
@@ -13,7 +13,7 @@ async function main() {
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
   const LANG: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-c.wasm")))
   const p = new P(); p.setLanguage(LANG)
-  const src = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/jq/src/jv_dtoa.c", "utf8")
+  const src = fs.readFileSync("<corpus-root>/bb_tests/repositories/jq/src/jv_dtoa.c", "utf8")
   const root = p.parse(src).rootNode
 
   // structural: all enum_specifier nodes with file-level vs nested position

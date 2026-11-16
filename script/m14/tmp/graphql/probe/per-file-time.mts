@@ -27,7 +27,7 @@ import { ROOT } from "../paths.mts"
 const { parseFile } = await import(path.join(ROOT, "src/ast/pool-worker.ts"))
 const { detectLanguageFromPath } = await import(path.join(ROOT, "src/ast/language-detection.ts"))
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LIMIT = Number(process.env.GQL_LIMIT ?? 400)
 
 const files: { abs: string; dir: string; label: string }[] = []

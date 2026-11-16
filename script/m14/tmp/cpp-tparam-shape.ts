@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES = [
   "template <int N> struct A {};",
   "template <int N = 3> struct B {};",

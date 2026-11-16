@@ -15,7 +15,7 @@ import { writeFileSync, mkdirSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve("script/m50", "../..")
-const REPO = "/home/ishaq2321/mcp/backbencher-brain"
+const REPO = "<corpus-root>/mcp/backbencher-brain"
 
 /** Fast scanner: "[0.1,-0.2,...]" -> Float32Array (reused buffer). */
 function scanInto(text: string, out: Float32Array): number {

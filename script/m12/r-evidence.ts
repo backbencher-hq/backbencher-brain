@@ -14,8 +14,8 @@ import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun.main), "..", "..")
 const OUT = path.join(ROOT, "validation", "m12", "results")
-const FIX = "/home/ishaq2321/bb_tests/fixtures"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const FIX = "<corpus-root>/bb_tests/fixtures"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const P = wts.Parser ?? wts.default ?? wts
@@ -153,7 +153,7 @@ const ORACLE_SHA = (() => {
   try { return createHash("sha256").update(fs.readFileSync(ORACLE_SCRIPT)).digest("hex") }
   catch { return null }
 })()
-const oracleRecordPath = process.env.BB_R_ORACLE_RECORD ?? "/home/ishaq2321/bb_tests/census/r-oracle-diff.json"
+const oracleRecordPath = process.env.BB_R_ORACLE_RECORD ?? "<corpus-root>/bb_tests/census/r-oracle-diff.json"
 let oracle: any = null
 try {
   oracle = JSON.parse(fs.readFileSync(oracleRecordPath, "utf8"))
@@ -218,7 +218,7 @@ const POSITIONS_SHA = (() => {
 let positions: any = null
 try {
   positions = JSON.parse(fs.readFileSync(
-    process.env.BB_R_POSITIONS_RECORD ?? "/home/ishaq2321/bb_tests/census/r-positions-oracle.json", "utf8"))
+    process.env.BB_R_POSITIONS_RECORD ?? "<corpus-root>/bb_tests/census/r-positions-oracle.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 const pt = positions?.totals
 writeSealed(path.join(OUT, "r-positions-oracle.json"), {
@@ -329,7 +329,7 @@ if (fixtureFiles.length === 0) {
 let crosscheck: any = null
 try {
   crosscheck = JSON.parse(fs.readFileSync(
-    process.env.BB_R_CROSSCHECK_RECORD ?? "/home/ishaq2321/bb_tests/census/r-exec-crosscheck.json", "utf8"))
+    process.env.BB_R_CROSSCHECK_RECORD ?? "<corpus-root>/bb_tests/census/r-exec-crosscheck.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 writeSealed(path.join(OUT, "r-exec-crosscheck.json"), {
   schemaVersion: 1,
@@ -365,7 +365,7 @@ if (!crosscheck || crosscheck.totals.filesDisagreeing > 0) process.exitCode = 1
 let production: any = null
 try {
   production = JSON.parse(fs.readFileSync(
-    process.env.BB_R_PRODUCTION_RECORD ?? "/home/ishaq2321/bb_tests/census/r-production-path.json", "utf8"))
+    process.env.BB_R_PRODUCTION_RECORD ?? "<corpus-root>/bb_tests/census/r-production-path.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 writeSealed(path.join(OUT, "r-production-path.json"), {
   schemaVersion: 1,
@@ -408,7 +408,7 @@ if (!production || production.problems.length) process.exitCode = 1
 let coverage: any = null
 try {
   coverage = JSON.parse(fs.readFileSync(
-    process.env.BB_R_CALL_COVERAGE_RECORD ?? "/home/ishaq2321/bb_tests/census/r-call-coverage.json", "utf8"))
+    process.env.BB_R_CALL_COVERAGE_RECORD ?? "<corpus-root>/bb_tests/census/r-call-coverage.json", "utf8"))
 } catch { /* absent is recorded, not hidden */ }
 writeSealed(path.join(OUT, "r-call-coverage.json"), {
   schemaVersion: 1,

@@ -5,7 +5,7 @@
 import * as fs from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const F = "/home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOEmbedded/AsyncTestingChannel.swift"
+const F = "<corpus-root>/bb_tests/repositories/swift-nio/Sources/NIOEmbedded/AsyncTestingChannel.swift"
 const src = fs.readFileSync(F, "utf8")
 const parsed: any = await (ASTEngine as any).parseFile(F, src, { language: "swift" })
 

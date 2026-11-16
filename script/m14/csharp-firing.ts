@@ -48,7 +48,7 @@ import { join, resolve as pathResolve } from "node:path"
 
 const HERE = import.meta.dir
 const REPO = pathResolve(HERE, "..", "..")
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 
 /**
  * Code-bearing signals for `.cs`, in the spirit of v2's `SIGNAL` table: tokens a

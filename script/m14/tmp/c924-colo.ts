@@ -7,8 +7,8 @@ import { execSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/engine"
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 
 function files(root: string, exts: string[]): string[] {
@@ -42,7 +42,7 @@ for (const [, root, exts] of ROOTS) {
       qualified++
       const macro = s.metadata?.expandedFrom === "macro-heading"
       if (macro) macroHeading++
-      rows.push({ name: n, file: f.replace("/home/ishaq2321/bb_tests/repositories/", ""), line: s.range?.startLine ?? 0, kind: String(s.kind), macro })
+      rows.push({ name: n, file: f.replace("<corpus-root>/bb_tests/repositories/", ""), line: s.range?.startLine ?? 0, kind: String(s.kind), macro })
     }
   }
 }

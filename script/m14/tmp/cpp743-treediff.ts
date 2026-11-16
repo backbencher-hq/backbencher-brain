@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const [wasmPath, file] = process.argv.slice(2)
 if (!wasmPath || !file) {
   console.error("usage: cpp743-treediff.ts <wasm> <file>")

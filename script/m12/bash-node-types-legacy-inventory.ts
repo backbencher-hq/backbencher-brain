@@ -48,7 +48,7 @@ for (const type of [
 const parser = await ASTEngine.getParser("bash")
 const observed = new Set<string>()
 const files = readdirSync("validation/m12/fixtures/bash").filter((file) => /\.(sh|bash)$/i.test(file)).sort()
-const corpus = "/home/ishaq2321/bb_tests/repositories/fsharp"
+const corpus = "<corpus-root>/bb_tests/repositories/fsharp"
 const corpusFiles = execFileSync("git", ["-C", corpus, "ls-files", "*.sh", "*.bash"], { encoding: "utf8" }).trim().split("\n").filter(Boolean).sort()
 const inputs = files.map((file) => readFileSync(`validation/m12/fixtures/bash/${file}`, "utf8"))
 for (const file of corpusFiles.slice(0, 32)) inputs.push(execFileSync("git", ["-C", corpus, "show", `HEAD:${file}`], { encoding: "utf8" }))

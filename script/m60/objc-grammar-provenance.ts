@@ -50,7 +50,7 @@ import { RealObjectiveCAnalyzer } from "../../src/ast/real-objective-c-analyzer"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/objc-grammar-provenance.json")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const WIRED = path.join(ROOT, "wasm/tree-sitter-objc.wasm")
 const REBUILD = process.argv.find((a) => a.startsWith("--rebuild="))?.slice(10) ?? "/tmp/opencode/tsbuild/rebuild-objc.wasm"
 const PRISTINE = process.argv.find((a) => a.startsWith("--pristine="))?.slice(11) ?? "/tmp/opencode/tsbuild/pristine-objc/package/tree-sitter-objc.wasm"

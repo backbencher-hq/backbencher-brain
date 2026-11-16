@@ -4,7 +4,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FIX = path.join(ROOT, "validation/m14/fixtures/groovy/lines-825.groovy")
 
 async function main(): Promise<void> {

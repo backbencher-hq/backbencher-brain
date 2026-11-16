@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 // Analyzer-level line coverage by edge type (pre-store): which relationship
 // classes leave the analyzer WITHOUT a line. Read-only; prints only.
 const LANGS: Record<string, { wasm: string; file: string; cls: string; ext: string }> = {

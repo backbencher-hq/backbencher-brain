@@ -84,7 +84,7 @@ if (!LANG || !CANDIDATE || !existsSync(CANDIDATE)) {
 }
 
 const F11 = path.join(ROOT, "script", "m14", "verify-grammar-leaves.ts")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 /** The lane's corpus list, read out of F11's LANES rather than duplicated. */
 function f11Lane(lang: string): { wasm: string; repos: string[]; sample: number } {

@@ -48,7 +48,7 @@ import {
 } from "./objc-truth"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories/objc"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories/objc"
 const OUT = path.join(ROOT, "validation/m60/results/objc-oracle-audit.json")
 
 const argFlag = (f: string, d: string): string => {
@@ -100,7 +100,7 @@ type Bucket = {
  * Each corruption is minimal and structural, never a regex.
  */
 async function selfTest(): Promise<void> {
-  const f = "/home/ishaq2321/bb_tests/repositories/objc/afnetworking/AFNetworking/AFHTTPSessionManager.m"
+  const f = "<corpus-root>/bb_tests/repositories/objc/afnetworking/AFNetworking/AFHTTPSessionManager.m"
   const src = readFileSync(f, "utf8")
   const parser = await getParser("objective-c")
   const tree: any = (parser as any).parse(src, f)

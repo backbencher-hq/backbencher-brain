@@ -15,7 +15,7 @@ import { RealCleanAnalyzer } from "../../../src/ast/real-clean-analyzer"
 import { deriveCleanEdges } from "../differential"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPO = process.argv[2] ?? "Clyde"
 
 const wts: any = WTS

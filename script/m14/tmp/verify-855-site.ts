@@ -5,9 +5,9 @@
 //   3. name the source symbol it was attributed to, and its metadata
 import * as fs from "fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE_REL = "kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala"
-const REPO = "/home/ishaq2321/bb_tests/repositories/cats-effect"
+const REPO = "<corpus-root>/bb_tests/repositories/cats-effect"
 
 const dirs = fs
   .readdirSync("/tmp")

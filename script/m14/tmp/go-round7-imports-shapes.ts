@@ -11,7 +11,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { deriveGoImports } from "./go-round7-imports-truth"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 type Case = {
   id: string

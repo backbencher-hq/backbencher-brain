@@ -45,7 +45,7 @@ import { HERE, OUT, ROOT } from "../paths.mts"
 const { detectLanguageFromPath: detect } = (await import(path.join(ROOT, "src/ast/language-detection"))) as any
 const { parseFile } = (await import(path.join(ROOT, "src/ast/pool-worker"))) as any
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
 type Type = (typeof ALL_TYPES)[number]
 

@@ -3,8 +3,8 @@
 import * as fs from "fs"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const NIO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const NIO = "<corpus-root>/bb_tests/repositories/swift-nio"
 
 const SNIPPETS: [string, string][] = [
   ["nio FileType", NIO + "/Sources/NIOFS/FileType.swift"],

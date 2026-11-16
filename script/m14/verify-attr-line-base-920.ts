@@ -57,7 +57,7 @@ import { fileURLToPath } from "node:url"
 const SELF_PATH = fileURLToPath(import.meta.url)
 const HERE = path.dirname(SELF_PATH)
 const ROOT = path.resolve(HERE, "..", "..")
-// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "<corpus-root>/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const REPOS = resolveCorpusRoot(process.cwd()) ?? "REPOS_UNRESOLVED"
 const FIXTURE = path.join(ROOT, "validation", "m14", "fixtures", "cpp", "multiline-attribute-line-base-920.cpp")
 

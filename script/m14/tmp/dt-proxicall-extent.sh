@@ -11,7 +11,7 @@
 #
 # `BB_F5_SHOW_FILES=1` prints every drawn path, which is what makes the union
 # checkable from the logs instead of asserted.
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
+cd <corpus-root>/mcp/backbencher-brain || exit 1
 # BB_M14_WORK is the harness's work-root env (M14_WORK_ENV is a DIFFERENT
 # constant name for the same idea — the pool file is <work root>/m14-f5-cold-pool.json).
 export BB_M14_WORK=/tmp/dt-depth-work

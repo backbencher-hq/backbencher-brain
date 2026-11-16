@@ -39,8 +39,8 @@ import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyze
 import { isJsBuiltin, jsBuiltinHasMember } from "../../../src/ast/js-builtin-prototypes"
 import { fileURLToPath } from "node:url"
 
-const REPO = "/home/ishaq2321/backbencher-brain"
-const DEFAULT_CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const REPO = "<corpus-root>/backbencher-brain"
+const DEFAULT_CORPUS = "<corpus-root>/bb_tests/repositories"
 const JS_EXTS = [".js", ".mjs", ".cjs"]
 
 // ---------------------------------------------------------------------------

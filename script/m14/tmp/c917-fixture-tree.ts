@@ -12,8 +12,8 @@ const TARGETS: Array<[string, number]> = [
   ["validation/m14/fixtures/c/macro-wrapped-heading-917.c", 65],
   ["validation/m14/fixtures/c/macro-wrapped-heading-917.c", 69],
   // the real sites for comparison
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c", 5529],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c", 5514],
+  ["<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c", 5529],
+  ["<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c", 5514],
 ]
 
 for (const [F, line] of TARGETS) {

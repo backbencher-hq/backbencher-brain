@@ -22,7 +22,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "fs"
 import { join } from "path"
 import { createHash } from "crypto"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 
 function flag(name: string): string | undefined {

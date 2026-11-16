@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 function filesUnder(dir: string, exts: string[], out: string[] = []): string[] {
   let entries: any[] = []
   try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return out }
@@ -30,7 +30,7 @@ async function main() {
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c) }
   }
   const p = new P(); p.setLanguage(LANG)
-  const files = [...filesUnder("/home/ishaq2321/bb_tests/repositories/go-tools", ["go"]), ...filesUnder("/home/ishaq2321/bb_tests/repositories/terraform", ["go"])].slice(0, 400)
+  const files = [...filesUnder("<corpus-root>/bb_tests/repositories/go-tools", ["go"]), ...filesUnder("<corpus-root>/bb_tests/repositories/terraform", ["go"])].slice(0, 400)
   console.log("files:", files.length)
   for (const f of files) {
     try {

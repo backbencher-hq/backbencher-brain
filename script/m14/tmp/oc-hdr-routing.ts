@@ -17,7 +17,7 @@ import { parseFile as workerParseFile } from "../../../src/ast/pool-worker"
 import { ASTEngine } from "../../../src/ast/engine"
 import * as fs from "node:fs"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const FILES = [
   "sdwebimage/SDWebImage/Core/SDImageCache.h",
   "sdwebimage/SDWebImage/include/SDWebImage/SDImageTransformer.h",

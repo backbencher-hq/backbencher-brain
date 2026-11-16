@@ -37,7 +37,7 @@ export async function parseWithAnalyzer(file: string): Promise<any> {
     // raw Language.load before that throws
     // "Cannot read properties of undefined (reading 'loadWebAssemblyModule')".
     // Measured, not assumed: the same call succeeds after one production parse.
-    await parseFile("/home/ishaq2321/bb_tests/repositories/luvit/init.lua", "/home/ishaq2321/bb_tests")
+    await parseFile("<corpus-root>/bb_tests/repositories/luvit/init.lua", "<corpus-root>/bb_tests")
     warmed = true
   }
   const lang: any = await mod.Language.load(resolveWasmAsset("tree-sitter-lua.wasm"))

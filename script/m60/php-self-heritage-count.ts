@@ -37,7 +37,7 @@ const argOf = (name: string): string | undefined => {
   return i >= 0 ? args[i + 1] : undefined
 }
 const N = Number(argOf("--files") ?? 600)
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const SIZE_CAP = 512 * 1024
 /** The kinds that can carry a heritage: the same set the analyzer's own class-like test uses. */
 const CLASS_LIKE = new Set(["class", "interface", "enum"])

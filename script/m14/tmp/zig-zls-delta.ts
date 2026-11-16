@@ -4,8 +4,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/zls"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/zls"
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

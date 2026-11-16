@@ -1,7 +1,7 @@
 # VENDORED external artifacts — provenance and how to run them
 
 Files here were authored on this machine **outside** the repository, under
-`/home/ishaq2321/bb_tests/`, and are cited by name from lane documentation in
+`<corpus-root>/bb_tests/`, and are cited by name from lane documentation in
 this repo. They were moved in on 2026-10-01 so that the repository is the one
 place the work lives, rather than a laptop-local path that stops existing the
 moment the laptop does.
@@ -11,7 +11,7 @@ verified with `cmp` at the moment of the move (36 files, 0 mismatches).
 
 ## Why these and not others
 
-The repository cites `/home/ishaq2321/bb_tests/…` from 45 `.md` files. Most of
+The repository cites `<corpus-root>/bb_tests/…` from 45 `.md` files. Most of
 those citations are **corpora** (`repositories/`, `hcl/`, `nim/…` clones) or
 **tool installs** (`bb_tests/bin/`) — all of which are meant to be re-fetched, and
 none of which is work product. What follows is the subset that is genuinely
@@ -55,7 +55,7 @@ build artefact of the rejected patch, and this repository gitignores
 | `repro-cases/*.vb` (27) | `bb_tests/grammar-repro/cases/` | 112 KB |
 
 **These now run from the repository.** They did not when first vendored: all four
-resolved paths from `/home/ishaq2321/…`, so a clone could not execute them at
+resolved paths from `<corpus-root>/…`, so a clone could not execute them at
 all. They now derive `ROOT` from their own location, and every remaining absolute
 path is an `env`-overridable default (`BB_REPO`, `BB_VB_CORPUS`, `BB_VB_BIN`,
 `BB_CORE_WASM`, `VB_WASM`, `OUT`, `BB_VB_CANDIDATE`, `BB_VB_BUILDLOG`).

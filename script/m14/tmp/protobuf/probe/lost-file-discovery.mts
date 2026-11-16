@@ -68,7 +68,7 @@ import * as path from "node:path"
 import { parseFile } from "../../../../../src/ast/pool-worker"
 import { RealProtobufAnalyzer } from "../../../../../src/ast/real-protobuf-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const flag = (name: string, dflt: string): string => {
   const i = process.argv.indexOf(`--${name}`)
   return i >= 0 ? process.argv[i + 1] : dflt

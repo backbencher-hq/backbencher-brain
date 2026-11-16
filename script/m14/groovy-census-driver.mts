@@ -12,7 +12,7 @@
  *
  * One such file destroys every remaining file in the process, and the file is
  * always in the corpus, so every re-run loses the same tail. Measured on
- * `/home/ishaq2321/bb_tests/repositories/groovy` (Apache Groovy itself):
+ * `<corpus-root>/bb_tests/repositories/groovy` (Apache Groovy itself):
  *
  *   src/test/groovy/bugs/Groovy3519.groovy      wasm memory access out of bounds
  *   src/test/groovy/bugs/Groovy3560.groovy      wasm memory access out of bounds
@@ -50,7 +50,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve(new URL("../..", import.meta.url).pathname)
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (argOf("--repo", "groovy") ?? "groovy").split(",").map((s) => s.trim()).filter(Boolean)
 const CHUNK = Number(argOf("--chunk", "40") ?? "40")
 const OUTDIR = argOf("--outdir", "validation/m14/measurements/groovy-census")!

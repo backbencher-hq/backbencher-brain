@@ -46,7 +46,7 @@ import { statSync } from "fs"
 import { ROOT } from "../paths.mts"
 import { fileURLToPath } from "node:url"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "out")
 
 const { parseFile } = await import(path.join(ROOT, "src/ast/pool-worker.ts"))

@@ -4,7 +4,7 @@ import * as WTS from "web-tree-sitter"
 import { RealDartAnalyzer } from "../../../src/ast/real-dart-analyzer"
 import { deriveDartBareUses, deriveDartEdges } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILES = [
   "validation/m14/fixtures/dart/bare-member-read-uses.dart",
   "validation/m14/fixtures/dart/member-value-reads.dart",

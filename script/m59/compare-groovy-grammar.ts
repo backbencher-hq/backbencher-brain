@@ -27,14 +27,14 @@ import { createHash } from "node:crypto"
 import { ASTEngine } from "../../src/ast/engine"
 
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
-const REPO = `/home/ishaq2321/bb_tests/repositories/${arg("--repo", "grails-core")}`
+const REPO = `<corpus-root>/bb_tests/repositories/${arg("--repo", "grails-core")}`
 const OUT = arg("--out", "/tmp/groovy-outcome.json")
 const EXT = arg("--ext", "gradle")
 
 async function main(): Promise<void> {
   const revision = execFileSync("git", ["-C", REPO, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
   const wasmSha = createHash("sha256")
-    .update(readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"))
+    .update(readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"))
     .digest("hex")
   const list = arg("--list", "")
   const files = list

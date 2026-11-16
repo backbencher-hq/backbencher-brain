@@ -8,7 +8,7 @@ async function main() {
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init()
-  const lang = await L.load("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-javascript.wasm")
+  const lang = await L.load("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-javascript.wasm")
   const p = new P(); p.setLanguage(lang)
   const a = new RealJavaScriptAnalyzer() as any
   let fail = 0

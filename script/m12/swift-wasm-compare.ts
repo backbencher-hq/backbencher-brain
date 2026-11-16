@@ -5,7 +5,7 @@ import { statSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const REPO = "<corpus-root>/bb_tests/repositories/swift-nio"
 const ROOT = process.cwd()
 const NEW_WASM = "/tmp/tree-sitter-swift-new.wasm"
 

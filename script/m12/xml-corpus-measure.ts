@@ -4,7 +4,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 import { measureOperation } from "../m11/differential-harness"
 
 const ROOT = process.cwd()
-const corpus = process.argv[2] || process.env.XML_CORPUS || "/home/ishaq2321/bb_tests/xml/repos/grails-core"
+const corpus = process.argv[2] || process.env.XML_CORPUS || "<corpus-root>/bb_tests/xml/repos/grails-core"
 
 /**
  * The SAME manifest and the SAME mechanism as xml-corpus-errors.ts, because the
@@ -21,7 +21,7 @@ function listOfCorpusFiles(dir: string, pattern: string): string[] {
       .split("\n").filter(Boolean)
   } catch { return [] }
 }
-const MANIFEST = process.env.XML_MANIFEST || "/home/ishaq2321/bb_tests/xml/repositories/MANIFEST.json"
+const MANIFEST = process.env.XML_MANIFEST || "<corpus-root>/bb_tests/xml/repositories/MANIFEST.json"
 const negativeControls = new Map<string, string>()
 if (existsSync(MANIFEST)) {
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"))

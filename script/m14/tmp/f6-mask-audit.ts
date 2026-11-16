@@ -2,7 +2,7 @@
 // real comparison). If it removed a live literal the gate would go vacuous.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const MOD = await import(path.join(ROOT, "script/m14/verify-fixture-coverage.ts")).catch(() => null as any)
 const maskComments: (s: string) => string = (MOD as any)?.__maskComments ?? (() => { throw new Error("masker not exported") })()
 const PATS = [

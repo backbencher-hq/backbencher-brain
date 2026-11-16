@@ -15,7 +15,7 @@
 # usage: script/m14/tmp/perl-evidence.sh > validation/m14/results/M14.6.perl.json
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
-export PATH="/home/ishaq2321/.bun/bin:$PATH"
+export PATH="<corpus-root>/.bun/bin:$PATH"
 export BB_PERL_OUT="${BB_PERL_OUT:-/tmp}"
 
 sha() { [ -f "$1" ] && sha256sum "$1" | cut -d' ' -f1 || echo "absent"; }

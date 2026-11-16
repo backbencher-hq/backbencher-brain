@@ -52,7 +52,7 @@ import { parseFile, filterNoiseRelationships, keepSymbol, nameTheSymbolRule } fr
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 // Derived from this file's own location, NOT hardcoded. Six of this lane's scripts
-// pinned /home/ishaq2321/backbencher-brain, so in a lane worktree they read a path
+// pinned <corpus-root>/backbencher-brain, so in a lane worktree they read a path
 // that does not exist and the gate died with ENOENT instead of reporting a verdict.
 // A gate that cannot execute is not a gate, and the mutant battery looked green
 // only because its failure was being read as a pass.
@@ -65,8 +65,8 @@ const arg = (n: string) => {
 }
 const REPO = arg("--repo") ?? "kong"
 const CORPUS: Record<string, { root: string; project: string }> = {
-  kong: { root: "/home/ishaq2321/bb_tests/repositories/kong", project: "/home/ishaq2321/bb_tests/repositories/kong" },
-  luvit: { root: "/home/ishaq2321/bb_tests/repositories/luvit", project: "/home/ishaq2321/bb_tests" },
+  kong: { root: "<corpus-root>/bb_tests/repositories/kong", project: "<corpus-root>/bb_tests/repositories/kong" },
+  luvit: { root: "<corpus-root>/bb_tests/repositories/luvit", project: "<corpus-root>/bb_tests" },
 }
 const cfg = CORPUS[REPO]
 if (!cfg) {

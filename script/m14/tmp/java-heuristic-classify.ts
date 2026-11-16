@@ -9,7 +9,7 @@ import { RealJavaAnalyzer } from "../../../src/ast/real-java-analyzer"
 import { deriveJavaEdges } from "../differential"
 import * as WTS from "web-tree-sitter"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const normTarget = (t: string) => String(t).replace(/<.*$/, "").trim()
 
 async function collect(dir: string, out: string[]) {

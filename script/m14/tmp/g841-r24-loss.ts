@@ -1,6 +1,6 @@
 // #841 r24: analyzer-level extraction for the five row-1 whole-program-ERROR files
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILES = [
   "grails-data-mongodb/core/src/test/groovy/org/apache/grails/data/mongo/core/GrailsDataMongoTckManager.groovy",
   "grails-datastore-core/src/main/groovy/org/grails/datastore/mapping/config/ConfigurationBuilder.groovy",
@@ -11,7 +11,7 @@ const FILES = [
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const fs = await import("node:fs")
 for (const f of FILES) {
-  const p = `/home/ishaq2321/bb_tests/repositories/grails-core/${f}`
+  const p = `<corpus-root>/bb_tests/repositories/grails-core/${f}`
   const text = fs.readFileSync(p, "utf8")
   const res = await (ASTEngine as any).parseFile(p, text)
   const syms = res.symbols ?? []

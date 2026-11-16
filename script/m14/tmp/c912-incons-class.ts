@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const rows: any[] = JSON.parse(readFileSync(process.argv[2] ?? "/tmp/c912-incons.json", "utf8"))
 
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")

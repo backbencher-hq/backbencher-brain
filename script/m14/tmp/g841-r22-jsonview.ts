@@ -4,7 +4,7 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const SRC = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/grails-core/grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultGrailsJsonViewHelper.groovy", "utf8")
+const SRC = fs.readFileSync("<corpus-root>/bb_tests/repositories/grails-core/grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultGrailsJsonViewHelper.groovy", "utf8")
 const lines = SRC.split("\n")
 console.log("SOURCE 424-438:")
 for (let i = 424; i <= 438; i++) console.log(`${i + 1} | ${lines[i]}`)

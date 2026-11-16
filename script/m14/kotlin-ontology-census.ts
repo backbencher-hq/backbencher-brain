@@ -43,7 +43,7 @@
  *            "constructor", "root", empty string) on emitted edges.
  *
  * USAGE
- *   BB_CORPUS=/home/ishaq2321/bb_tests/repositories bun script/m14/kotlin-ontology-census.ts
+ *   BB_CORPUS=<corpus-root>/bb_tests/repositories bun script/m14/kotlin-ontology-census.ts
  *   NFILES=200 bun script/m14/kotlin-ontology-census.ts [repoDir ...]
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
@@ -52,7 +52,7 @@ import type { Node } from "web-tree-sitter"
 
 const ROOT = process.env.BB_ROOT
   || join(import.meta.dir, "..", "..")
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 
 /** Corpus dirs that hold real Kotlin, extension -> signal tokens (string

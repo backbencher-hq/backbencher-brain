@@ -12,7 +12,7 @@ import * as path from "node:path"
 import { RealDartAnalyzer } from "../../../src/ast/real-dart-analyzer"
 import { deriveDartEdges, deriveDartBareUses } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const SRC = `class C {
   final Object o;

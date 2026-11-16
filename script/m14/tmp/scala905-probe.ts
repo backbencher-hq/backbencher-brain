@@ -8,8 +8,8 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/scala3/library/src/scala/concurrent/impl/Promise.scala"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/scala3/library/src/scala/concurrent/impl/Promise.scala"
 const diff: any = await import(path.join(ROOT, "script/m14/differential.ts"))
 const pre: any = await import("/tmp/differential-prefix905.ts")
 const ws: any = await import("web-tree-sitter")

@@ -16,8 +16,8 @@ const parser = new P()
 parser.setLanguage(lang)
 
 const corpora = process.env.BB_CORPUS === "jq"
-  ? [["jq", "/home/ishaq2321/bb_tests/repositories/jq"]]
-  : [["sqlite", "/home/ishaq2321/bb_tests/repositories/sqlite"], ["jq", "/home/ishaq2321/bb_tests/repositories/jq"]]
+  ? [["jq", "<corpus-root>/bb_tests/repositories/jq"]]
+  : [["sqlite", "<corpus-root>/bb_tests/repositories/sqlite"], ["jq", "<corpus-root>/bb_tests/repositories/jq"]]
 
 for (const [name, root] of corpora) {
   const files = execFileSync("bash", ["-c", `find ${root} -name '*.c' -not -path '*/.git/*' | sort | head -60`], { encoding: "utf8" }).split("\n").filter(Boolean)

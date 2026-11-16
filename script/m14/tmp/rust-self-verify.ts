@@ -5,17 +5,17 @@ async function parseSrc(f: string) {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts
   const L: any = wts.Language ?? wts.default?.Language
-  await P.init({ locateFile: () => path.join("/home/ishaq2321/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const LANG: any = await L.load(fs.readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-rust.wasm"))
+  await P.init({ locateFile: () => path.join("<corpus-root>/mcp/backbencher-brain", "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const LANG: any = await L.load(fs.readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-rust.wasm"))
   const p = new P(); p.setLanguage(LANG)
   return p.parse(fs.readFileSync(f, "utf8")).rootNode
 }
 async function main() {
   const mod: any = await import("../../../script/m14/differential")
   for (const f of [
-    "/home/ishaq2321/bb_tests/repositories/cargo/src/compiler/rustdoc.rs",
-    "/home/ishaq2321/bb_tests/repositories/cargo/crates/cargo-util-schemas/src/manifest/mod.rs",
-    "/home/ishaq2321/bb_tests/repositories/cargo/src/compiler/custom_build.rs",
+    "<corpus-root>/bb_tests/repositories/cargo/src/compiler/rustdoc.rs",
+    "<corpus-root>/bb_tests/repositories/cargo/crates/cargo-util-schemas/src/manifest/mod.rs",
+    "<corpus-root>/bb_tests/repositories/cargo/src/compiler/custom_build.rs",
   ]) {
     const src = fs.readFileSync(f, "utf8")
     const root = await parseSrc(f)

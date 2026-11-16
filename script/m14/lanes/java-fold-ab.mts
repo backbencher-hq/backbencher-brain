@@ -27,8 +27,8 @@ import { execFileSync } from "node:child_process"
 import { readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import { join, relative } from "node:path"
 
-const REPO = "/home/ishaq2321/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS_ROOT ? join(process.env.BB_CORPUS_ROOT, "java-lib") : "/home/ishaq2321/bb_tests/repositories/java-lib"
+const REPO = "<corpus-root>/backbencher-brain"
+const CORPUS = process.env.BB_CORPUS_ROOT ? join(process.env.BB_CORPUS_ROOT, "java-lib") : "<corpus-root>/bb_tests/repositories/java-lib"
 const CONC = Number(process.env.AB_CONC ?? 8)
 const PROBE_REL = "src/ast/real-java-analyzer-headprobe.ts"
 

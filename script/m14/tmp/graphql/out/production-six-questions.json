@@ -2,7 +2,7 @@
  "generatedAt": "2026-10-05T20:13:06.862Z",
  "entryPoint": "parseFile (src/ast/pool-worker.ts) — NOT analyze()",
  "population": {
-  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpusRoot": "<corpus-root>/bb_tests/repositories",
   "admittedFiles": 1905,
   "filesParsed": 1905,
   "filesWithParseError": 0,
@@ -340,12 +340,12 @@
     "repoRootBasePct": 0,
     "baseNote": "the repo-root row is the base this probe used until it was corrected; `b.graphql` and `c.graphql` are siblings under gql-graphql-tools/packages/import/tests/documents/import-test/default/, so the repo root is the wrong base by construction",
     "missingSamples": [
-     "a.graphql -> shared (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/global/shared)",
-     "a.graphql -> graphql-import-test/b.graphql (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/import-module/graphql-import-test/b.graphql)",
+     "a.graphql -> shared (resolved <corpus-root>/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/global/shared)",
+     "a.graphql -> graphql-import-test/b.graphql (resolved <corpus-root>/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/import-module/graphql-import-test/b.graphql)",
      "a.graphql -> /b.graphql (resolved /b.graphql)",
-     "b.graphql -> @circular/a.graphql (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/@circular/a.graphql)",
-     "a.graphql -> @circular/b.graphql (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/@circular/b.graphql)",
-     "a.graphql -> @b-schema (resolved /home/ishaq2321/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/exact/@b-schema)"
+     "b.graphql -> @circular/a.graphql (resolved <corpus-root>/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/@circular/a.graphql)",
+     "a.graphql -> @circular/b.graphql (resolved <corpus-root>/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/circular/@circular/b.graphql)",
+     "a.graphql -> @b-schema (resolved <corpus-root>/bb_tests/repositories/gql-graphql-tools/packages/import/tests/schema/fixtures/path-aliases/exact/@b-schema)"
     ]
    },
    "unknownEndpoints": 0,

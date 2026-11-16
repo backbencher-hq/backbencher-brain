@@ -2,7 +2,7 @@
 // guard-fireable juxt nodes) still occur anywhere in the corpus?
 import fs from "node:fs"
 import path from "node:path"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language

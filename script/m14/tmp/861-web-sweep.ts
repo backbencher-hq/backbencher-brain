@@ -9,7 +9,7 @@ import path from "node:path"
 
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const OUT = process.argv.find((a) => a.startsWith("--out="))?.slice("--out=".length) ?? "/tmp/861-sweep.json"
 
 const LANGS: Array<{ lang: string; exts: string[]; repos: string[] }> = [
@@ -18,7 +18,7 @@ const LANGS: Array<{ lang: string; exts: string[]; repos: string[] }> = [
   { lang: "vue", exts: [".vue"], repos: ["element-plus", "vue-element-admin"] },
   { lang: "svelte", exts: [".svelte"], repos: ["svelte", "shadcn-svelte"] },
 ]
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 function walk(dir: string, exts: string[], out: string[] = []): string[] {
   let entries

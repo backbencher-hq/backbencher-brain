@@ -19,7 +19,7 @@ import * as path from "node:path"
 import { execSync } from "node:child_process"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const outArg = (() => { const a = process.argv.find((x) => x.startsWith("--out=")); return a ? a.slice(6) : null })()
   const OUT = outArg ?? path.join(ROOT, "validation/m60/results/objc-error-dump.json")
 const REPOS = ["sdwebimage", "afnetworking", "Clyde"]

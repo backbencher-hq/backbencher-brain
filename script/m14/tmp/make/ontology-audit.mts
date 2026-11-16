@@ -15,7 +15,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs"
 
-const OUT = "/home/ishaq2321/bb_tests/make/out"
+const OUT = "<corpus-root>/bb_tests/make/out"
 const census = JSON.parse(readFileSync(`${OUT}/node-type-census.json`, "utf8"))
 const zero = JSON.parse(readFileSync(`${OUT}/zero-unknown-census.json`, "utf8"))
 const conf = JSON.parse(readFileSync(`${OUT}/grammar-conformance.json`, "utf8"))

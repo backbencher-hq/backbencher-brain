@@ -6,7 +6,7 @@
 //   bun script/m14/tmp/c743-treecheck.ts <pinned.wasm> <cand.wasm> <ext> [repo ...]
 import fs from "node:fs"
 import path from "node:path"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const [pinnedPath, candPath, extArg, ...repos] = process.argv.slice(2)
 if (!pinnedPath || !candPath) {
   console.error("usage: c743-treecheck.ts <pinned.wasm> <cand.wasm> <c|cpp> [repo ...]")

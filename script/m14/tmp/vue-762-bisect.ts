@@ -11,7 +11,7 @@ async function show(tag: string, file: string, src?: string) {
 }
 
 async function main() {
-  const REPO = "/home/ishaq2321/bb_tests/repositories"
+  const REPO = "<corpus-root>/bb_tests/repositories"
   await show("CORPUS", `${REPO}/vue-element-admin/src/components/MarkdownEditor/index.vue`)
   await show("A (+ +new Date())", "script/m14/tmp/v762b/A.vue")
   await show("B (no unary plus)", "script/m14/tmp/v762b/B.vue")

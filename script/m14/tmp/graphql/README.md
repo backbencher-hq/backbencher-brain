@@ -5,7 +5,7 @@ produced by a probe in this directory, and `probe/doc-truth.mts` fails if a
 documented number and its artifact disagree. That only means anything because the
 probes are **here, in the repository**.
 
-They used not to be. The lane lived in `/home/ishaq2321/bb_tests/graphql`, which
+They used not to be. The lane lived in `<corpus-root>/bb_tests/graphql`, which
 is not a git repository, so a clone had no probes, no ground truth and no
 artifacts, and all 42 documented claims were unverifiable from a checkout. The
 hcl lane's commit message states the rule this directory exists to satisfy:

@@ -24,7 +24,7 @@ const require = createRequire(import.meta.url)
 // Derived from this file's own location. Hardcoding the main checkout made this
 // script unreadable from a lane worktree.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const argOf = (k: string, d?: string): string | undefined => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const LIMIT = Number(argOf("--limit", "0")) || 0
 const ONLY = argOf("--only")

@@ -38,7 +38,7 @@ import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
 import { deriveImportsExportsTruth } from "./oracles/typescript-imports-exports"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }

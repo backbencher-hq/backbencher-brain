@@ -13,15 +13,15 @@
 //
 // Materialize the HEAD comparator first:
 //   git show HEAD:src/ast/real-dart-analyzer.ts \
-//     | sed 's|from "./engine"|from "/home/ishaq2321/mcp/backbencher-brain/src/ast/engine"|' \
+//     | sed 's|from "./engine"|from "<corpus-root>/mcp/backbencher-brain/src/ast/engine"|' \
 //     > script/m14/tmp/dt-head-analyzer.ts
 //
 // Reads only; writes nothing.
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = ["proxicall", "dart-http"].map((r) => path.join("/home/ishaq2321/bb_tests/repositories", r))
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = ["proxicall", "dart-http"].map((r) => path.join("<corpus-root>/bb_tests/repositories", r))
 
 function filesUnder(dir: string, out: string[] = []): string[] {
   let entries: any[] = []

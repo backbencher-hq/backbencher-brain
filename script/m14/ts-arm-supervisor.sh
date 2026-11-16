@@ -34,7 +34,7 @@
 #   arm-driver.log       every run's start, exit, and every restart
 set -u
 
-ROOT="/home/ishaq2321/mcp/backbencher-brain"
+ROOT="<corpus-root>/mcp/backbencher-brain"
 LOG1="$ROOT/.tmp-ts/armC-head.log"
 LOG2="$ROOT/.tmp-ts/armD-freshparse.log"
 DRV="$ROOT/.tmp-ts/arm-driver.log"

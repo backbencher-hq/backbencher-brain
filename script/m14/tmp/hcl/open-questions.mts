@@ -9,8 +9,8 @@
  *       that) or two distinct blocks colliding?
  */
 import { readFileSync, writeFileSync } from "node:fs"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
 const parser = await ASTEngine.getParser("hcl")
 const analyzer = new RealHclAnalyzer()
@@ -30,7 +30,7 @@ function tree(n: any, depth = 0, max = 14): string[] {
 
 // ---------------- Q1: the swallow class ----------------
 {
-  const f = "/home/ishaq2321/bb_tests/hcl/repos/boundary/internal/cmd/commands/config/fixtures/config_ext_decrypt.hcl"
+  const f = "<corpus-root>/bb_tests/hcl/repos/boundary/internal/cmd/commands/config/fixtures/config_ext_decrypt.hcl"
   const src = readFileSync(f, "utf8")
   out.push(`\n${"=".repeat(78)}\nQ1  SWALLOW CLASS — ${f}\n${"=".repeat(78)}`)
   out.push(src.split("\n").map((l, i) => `  ${String(i + 1).padStart(3)} | ${l}`).join("\n"))
@@ -61,7 +61,7 @@ function tree(n: any, depth = 0, max = 14): string[] {
 
 // ---------------- Q2: attribute-key duplication ----------------
 {
-  const f = "/home/ishaq2321/bb_tests/hcl/repos/tf-aws-components/deprecated/aws/ecs/atlantis.tf"
+  const f = "<corpus-root>/bb_tests/hcl/repos/tf-aws-components/deprecated/aws/ecs/atlantis.tf"
   const src = readFileSync(f, "utf8")
   const lines = src.split("\n")
   out.push(`\n${"=".repeat(78)}\nQ2  attribute duplication — ${f}\n${"=".repeat(78)}`)
@@ -80,5 +80,5 @@ function tree(n: any, depth = 0, max = 14): string[] {
   t.delete()
 }
 
-writeFileSync("/home/ishaq2321/bb_tests/hcl/out/open-questions.txt", out.join("\n") + "\n")
+writeFileSync("<corpus-root>/bb_tests/hcl/out/open-questions.txt", out.join("\n") + "\n")
 console.log(out.join("\n"))

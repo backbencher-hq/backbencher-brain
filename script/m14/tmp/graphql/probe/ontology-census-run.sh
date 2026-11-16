@@ -18,7 +18,7 @@
 #   a shard file overlaps    -> the merge exits 3 with the duplicated label.
 #
 # Usage:  script/m14/tmp/graphql/probe/ontology-census-run.sh [shards] [workers-per-shard]
-# Env:    BB_CORPUS_ROOT (default /home/ishaq2321/bb_tests/repositories)
+# Env:    BB_CORPUS_ROOT (default <corpus-root>/bb_tests/repositories)
 # Writes: script/m14/tmp/graphql/out/ontology-census.json (the artifact) and
 #         script/m14/tmp/graphql/out/parse-shard-<i>-of-<n>.json (the evidence)
 set -uo pipefail

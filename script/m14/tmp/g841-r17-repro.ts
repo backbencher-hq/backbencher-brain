@@ -3,11 +3,11 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const { ASTEngine } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/engine.ts")
-const { RealGroovyAnalyzer } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
+const { ASTEngine } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/engine.ts")
+const { RealGroovyAnalyzer } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
 const lang = await L.load(fs.readFileSync(process.argv[2]))
 const parser = new P(); parser.setLanguage(lang)
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultHalViewHelper.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-views-gson/src/main/groovy/grails/plugin/json/view/api/internal/DefaultHalViewHelper.groovy"
 const src = fs.readFileSync(F, "utf8")
 const t = parser.parse(src)
 // tree around 265-269

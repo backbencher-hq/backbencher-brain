@@ -5,7 +5,7 @@
 // Run: bun script/m14/tmp/v903-vue-probe.ts
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/element-plus"
+const ROOT = "<corpus-root>/bb_tests/repositories/element-plus"
 const FILES = [
   `${ROOT}/docs/examples/table-v2/cell-templating.vue`,
   `${ROOT}/docs/examples/table-v2/inline-editing.vue`,

@@ -10,7 +10,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { parseFile, ASTEngine } from "../../../src/ast/engine"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 // Markers are node TYPES that do not exist in v1.2.4's tree for these inputs. (`where` is a
 // node type too, but it is an ANONYMOUS token, so a walk over `namedChild` cannot see it — the
 // first draft of this probe reported it "ABSENT" for that reason, which is a probe bug, not a

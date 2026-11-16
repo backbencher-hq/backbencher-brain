@@ -31,7 +31,7 @@
 # other five probes re-measure rule behavior the canonical records already carry, and
 # on zig they cost ~20 minutes per arm for no answer this experiment asks.
 set -u
-TREE=/home/ishaq2321/mcp/backbencher-brain/.merge-tmp
+TREE=<corpus-root>/mcp/backbencher-brain/.merge-tmp
 PRE=/tmp/b612-prefix-arm
 PIN=/tmp/b612-zig-pinned
 LOG=/tmp/zig-audit.log

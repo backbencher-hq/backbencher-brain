@@ -12,8 +12,8 @@ const parser = new P()
 parser.setLanguage(lang)
 
 const FILES = [
-  "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c",
-  "/home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c",
+  "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c",
+  "<corpus-root>/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c",
 ]
 
 const shapes = new Map<string, number>()

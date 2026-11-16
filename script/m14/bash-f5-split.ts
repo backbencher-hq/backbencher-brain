@@ -40,7 +40,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
 const ROOT = process.cwd()
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO = process.env.BB_BASH_F5_REPO ?? "otp"
 const SAMPLE = process.argv[2] ?? join(ROOT, ".tmp-lead/bash/sample-files.txt")
 

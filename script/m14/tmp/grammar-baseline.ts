@@ -11,7 +11,7 @@ import { join, resolve } from "node:path"
 // REPO-RELATIVE: every path below is env-overridable with the previous value as
 // the default, so a clone runs unchanged on this machine and can be pointed
 // anywhere else. (VENDORED from bb_tests/probes/ — see grammars/_vendored/VENDORED.md)
-const REPO = process.env.BB_REPO ?? "/home/ishaq2321/backbencher-brain"
+const REPO = process.env.BB_REPO ?? "<corpus-root>/backbencher-brain"
 const { Parser, Language } = await import(`${REPO}/node_modules/web-tree-sitter/tree-sitter.js`)
 import { readVbSource } from "./vb-source"
 
@@ -23,7 +23,7 @@ const COMPARE = (() => {
   return i >= 0 ? process.argv[i + 1] : null
 })()
 
-const VB_CORPUS = process.env.BB_VB_CORPUS ?? "/home/ishaq2321/bb_tests/vb-corpus"
+const VB_CORPUS = process.env.BB_VB_CORPUS ?? "<corpus-root>/bb_tests/vb-corpus"
 const CORPORA: Array<{ name: string; root: string; limit: number }> = [
   { name: "runtime-mvb", root: `${VB_CORPUS}/runtime`, limit: 0 },
   { name: "p3d-legacy", root: `${VB_CORPUS}/p3d`, limit: 600 },

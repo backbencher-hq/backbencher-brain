@@ -81,7 +81,7 @@ async function main() {
   }
 
   console.log("\n=== Q9.4  metadata keys each analyzer can emit, measured over the corpus ===")
-  const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+  const CORPUS = "<corpus-root>/bb_tests/repositories"
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
   const collect = async (files: string[], label: string) => {
     const symMeta = new Map<string, number>()

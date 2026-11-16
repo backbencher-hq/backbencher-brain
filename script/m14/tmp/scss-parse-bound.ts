@@ -35,7 +35,7 @@ import { deriveCssEdges, deriveScssEdges } from "../differential"
 
 const argv = process.argv.slice(2)
 const N = argv.includes("--files") ? parseInt(argv[argv.indexOf("--files") + 1]) : 100000
-const ROOT = "/home/ishaq2321/bb_tests/repositories/element-plus"
+const ROOT = "<corpus-root>/bb_tests/repositories/element-plus"
 const COMPARABLE = ["uses", "references", "imports", "contains"]
 
 await Parser.init()

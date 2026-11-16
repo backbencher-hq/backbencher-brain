@@ -34,7 +34,7 @@ import * as path from "node:path"
 import type { Node } from "web-tree-sitter"
 import { RealProtobufAnalyzer } from "../../../../../src/ast/real-protobuf-analyzer"
 
-const REF = "/home/ishaq2321/bb_tests/repositories/pb-reference/src/google/protobuf"
+const REF = "<corpus-root>/bb_tests/repositories/pb-reference/src/google/protobuf"
 
 /** file -> the ids its nested-extend references must resolve to. Each expected id
  *  is the declaration protoc finds, and each is published by the SAME file, so a

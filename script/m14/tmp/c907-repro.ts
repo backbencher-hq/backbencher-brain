@@ -15,7 +15,7 @@ const lang = await L.load(readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const FILE = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/jq/src/jv_print.c"
+const FILE = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/jq/src/jv_print.c"
 const src = readFileSync(FILE, "utf8")
 const tree = parser.parse(src)
 const root = tree.rootNode

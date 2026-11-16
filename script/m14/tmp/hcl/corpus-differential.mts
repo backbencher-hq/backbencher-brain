@@ -19,15 +19,15 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 import { execFileSync } from "node:child_process"
-import { ASTEngine } from "/home/ishaq2321/backbencher-brain/src/ast/engine"
-import { RealHclAnalyzer } from "/home/ishaq2321/backbencher-brain/src/ast/real-hcl-analyzer"
+import { ASTEngine } from "<corpus-root>/backbencher-brain/src/ast/engine"
+import { RealHclAnalyzer } from "<corpus-root>/backbencher-brain/src/ast/real-hcl-analyzer"
 
-const REPOS = "/home/ishaq2321/bb_tests/hcl/repos"
+const REPOS = "<corpus-root>/bb_tests/hcl/repos"
 /** Mirrors the analyzer's set — but it is re-derived here from the same language
  *  semantics, and the differential's job is to CATCH a disagreement, so it is
  *  written out rather than imported. */
 const BUILTIN_ROOTS = new Set(["count", "each", "self", "path", "terraform"])
-const OUT = "/home/ishaq2321/bb_tests/hcl/out"
+const OUT = "<corpus-root>/bb_tests/hcl/out"
 const EXT = /\.(tf|tfvars|hcl|tofu)$/i
 
 const parser = await ASTEngine.getParser("hcl")

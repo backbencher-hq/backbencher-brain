@@ -1,7 +1,7 @@
 #!/bin/bash
 # Bisect round-3 conflicts: remove ONE, generate; if required, note it; else build+probe.
 set -u
-BR=/home/ishaq2321/mcp/backbencher-brain
+BR=<corpus-root>/mcp/backbencher-brain
 G=$BR/grammars/tree-sitter-groovy/grammar.js
 V=/tmp/g841-variant
 declare -a NAMES=(

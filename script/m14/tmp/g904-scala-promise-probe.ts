@@ -5,8 +5,8 @@
 // Run: bun script/m14/tmp/g904-scala-promise-probe.ts
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/scala3/library/src/scala/concurrent/impl/Promise.scala"
-const ROOT = "/home/ishaq2321/bb_tests/repositories/scala3"
+const FILE = "<corpus-root>/bb_tests/repositories/scala3/library/src/scala/concurrent/impl/Promise.scala"
+const ROOT = "<corpus-root>/bb_tests/repositories/scala3"
 
 const r: any = await parseFile(FILE, ROOT)
 const syms = (r.symbols ?? []).filter((s: any) => String(s.name).includes("submitWithValue") || /Transformation|DefaultPromise/.test(String(s.ownerName ?? "")))

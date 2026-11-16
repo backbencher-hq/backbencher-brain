@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process"
 import * as fs from "node:fs"
 
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const mod: any = await import("../../../script/m60/framework-surface-census")
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts
@@ -19,8 +19,8 @@ const parser = new P()
 parser.setLanguage(await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-typescript.wasm"))))
 
 const FILE = "real-php-analyzer.ts"
-const work = fs.readFileSync(`/home/ishaq2321/mcp/backbencher-brain/src/ast/${FILE}`, "utf8")
-const head = execFileSync("git", ["show", `HEAD:src/ast/${FILE}`], { cwd: "/home/ishaq2321/mcp/backbencher-brain", encoding: "utf8" })
+const work = fs.readFileSync(`<corpus-root>/mcp/backbencher-brain/src/ast/${FILE}`, "utf8")
+const head = execFileSync("git", ["show", `HEAD:src/ast/${FILE}`], { cwd: "<corpus-root>/mcp/backbencher-brain", encoding: "utf8" })
 
 for (const [label, src] of [["WORKTREE", work], ["HEAD", head]] as Array<[string, string]>) {
   const r = (mod as any).scanFile(parser, FILE, src)

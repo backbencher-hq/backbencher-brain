@@ -56,7 +56,7 @@ import * as path from "node:path"
 import * as wts from "web-tree-sitter"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const SIZE_CAP = 1024 * 1024
 const CONTROLS_ONLY = process.argv.includes("--controls")
 
@@ -308,7 +308,7 @@ parser.setLanguage(
 )
 
 console.log("HCL PROBE — measuring the five types HCL-D1 rules on prose")
-console.log(`population: /home/ishaq2321/bb_tests/repositories, ${CR}`)
+console.log(`population: <corpus-root>/bb_tests/repositories, ${CR}`)
 console.log()
 
 // ---- controls first. A probe whose control cannot fire is not measured at all.

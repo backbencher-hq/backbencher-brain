@@ -48,13 +48,13 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 const ANALYZER = "src/ast/real-graphql-analyzer.ts"
 const WASM = "wasm/tree-sitter-graphql.wasm"
 const FIXTURE_DIR = "validation/m12/fixtures/graphql"
-const GAP_BATTERY = "/home/ishaq2321/bb_tests/graphql/probe/grammar-gaps.mts"
+const GAP_BATTERY = "<corpus-root>/bb_tests/graphql/probe/grammar-gaps.mts"
 const OUT = "validation/m12/results/graphql-shape-safety.json"
 
 // The corpus is an ARGUMENT, not a constant. A constant rots: the previous one
 // named a directory that no longer existed, which is how this script came to
 // crash while its artifact still read `passed: true`.
-const corpus = process.argv[2] || "/home/ishaq2321/bb_tests/graphql/repos/graphql-js"
+const corpus = process.argv[2] || "<corpus-root>/bb_tests/graphql/repos/graphql-js"
 
 const parser = await (async () => {
   const { ASTEngine } = await import("../../src/ast/engine")

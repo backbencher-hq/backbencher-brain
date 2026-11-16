@@ -4,7 +4,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE = "typescript/one-line-base-873.ts"
 
 async function main(): Promise<void> {

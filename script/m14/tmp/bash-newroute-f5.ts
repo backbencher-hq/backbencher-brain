@@ -17,7 +17,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { deriveBashEdges } from "../differential"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = ["nvm", "rbenv", "ohmyzsh", "otp", "fsharp"]
 
 const wts: any = await import("web-tree-sitter")

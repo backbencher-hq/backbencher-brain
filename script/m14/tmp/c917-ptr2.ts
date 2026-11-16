@@ -5,7 +5,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
 const lang = await L.load(fs.readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P(); parser.setLanguage(lang)
-const F = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const F = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const root = parser.parse(fs.readFileSync(F, "utf8")).rootNode
 const st: any[] = [root]; const hits: any[] = []
 while (st.length) { const n = st.pop()!; if (n.startPosition.row + 1 >= 5525 && n.startPosition.row + 1 <= 5534) hits.push(n); for (let i = 0; i < n.childCount; i++) st.push(n.child(i)) }

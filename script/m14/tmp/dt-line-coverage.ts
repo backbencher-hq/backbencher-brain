@@ -9,8 +9,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = ["proxicall", "dart-http"].map((r) => path.join("/home/ishaq2321/bb_tests/repositories", r))
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = ["proxicall", "dart-http"].map((r) => path.join("<corpus-root>/bb_tests/repositories", r))
 
 function filesUnder(dir: string, out: string[] = []): string[] {
   let entries: any[] = []

@@ -56,7 +56,7 @@ const REF = argOf("--ref") ?? "HEAD~4"
 // effect is measured rather than argued about: if the delta changes sign, it is
 // order.
 const REVERSE = argv.includes("--reverse")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const ANALYZER_REL = "src/ast/real-typescript-analyzer.ts"
 

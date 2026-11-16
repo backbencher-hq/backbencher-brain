@@ -6,8 +6,8 @@ import * as path from "path"
 import * as WTS from "web-tree-sitter"
 import { RealCAnalyzer } from "../../../src/ast/real-c-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const JQ = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const JQ = "<corpus-root>/bb_tests/repositories/jq"
 const NAMES = ["ROUND_BIASED", "Sudden_Underflow", "NO_HEX_FP", "emin"]
 
 async function main() {

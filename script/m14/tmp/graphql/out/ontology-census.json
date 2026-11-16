@@ -4,7 +4,7 @@
   "lane": "graphql",
   "generatedAt": "2026-10-05T20:17:30.059Z",
   "producedBy": "script/m14/tmp/graphql/probe/ontology-census.mts",
-  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpusRoot": "<corpus-root>/bb_tests/repositories",
   "entryPoint": "src/ast/pool-worker.ts::parseFile",
   "sampling": {
     "method": "EXHAUSTIVE over the corpus root's git-tracked files; no sampling, no random draw",

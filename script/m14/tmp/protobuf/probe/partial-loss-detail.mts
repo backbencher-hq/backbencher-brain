@@ -48,7 +48,7 @@ import { parseFile } from "../../../../../src/ast/pool-worker"
 import { RealProtobufAnalyzer } from "../../../../../src/ast/real-protobuf-analyzer"
 
 const DEFAULT_TARGET =
-  "/home/ishaq2321/bb_tests/repositories/boundary/internal/proto/controller/custom_options/v1/options.proto"
+  "<corpus-root>/bb_tests/repositories/boundary/internal/proto/controller/custom_options/v1/options.proto"
 const TARGET = process.argv[2] ?? DEFAULT_TARGET
 const ATTEMPTS = Number((process.argv.find((a) => a.startsWith("--attempts=")) ?? "--attempts=5").slice(11))
 

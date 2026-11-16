@@ -23,7 +23,7 @@
  * by omission" -- except here the frame is not merely stale, it is unreachable.
  *
  * The artifact also cannot be regenerated in this checkout: the F5 harness reads
- * `CORPUS_ROOT = /home/ishaq2321/bb_tests/repositories` (overridable with
+ * `CORPUS_ROOT = <corpus-root>/bb_tests/repositories` (overridable with
  * BB_CORPUS_ROOT), that path does not exist here, and the run aborts on the first
  * pinned repo. No script in the tree writes `c-differential.json` by that name, so
  * the artifact's producer is not present either.
@@ -182,7 +182,7 @@ const out = {
   generatedAt: new Date().toISOString(),
   commit: execSyncSafe(),
   purpose:
-    "Per-row comparison of the PINNED M12 ground truth against the LIVE analyzer, on the four M12 fixtures. The M12 differential is a fixture differential, so this needs no corpus -- which is what makes it runnable at all in a checkout where the F5 harness's corpus root (/home/ishaq2321/bb_tests/repositories) does not exist.",
+    "Per-row comparison of the PINNED M12 ground truth against the LIVE analyzer, on the four M12 fixtures. The M12 differential is a fixture differential, so this needs no corpus -- which is what makes it runnable at all in a checkout where the F5 harness's corpus root (<corpus-root>/bb_tests/repositories) does not exist.",
   why: "validation/m12/results/c-differential.json asserts passed:true at 92/92 and lists rel:Module.c:instantiates:buffer_create:malloc and rel:Module.c:references:global:stdlib.h among its TRUE POSITIVES. The analyzer emits neither: Module.c produces imports 2 / calls 6 / uses 8, with no `instantiates` (the allocator edge was deliberately removed as noise) and includes in the first-class `imports` kind since M60/#910. A row the analyzer cannot produce cannot be a true positive, so the artifact is green on something that cannot fail.",
   totals: {
     pinnedFacts: rows.length,

@@ -15,7 +15,7 @@ import { RealGoAnalyzer } from "../../../src/ast/real-go-analyzer"
 
 const REAL =
   process.argv[2] ??
-  "/home/ishaq2321/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
+  "<corpus-root>/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
 const src = fs.readFileSync(REAL, "utf8")
 const parser = await ASTEngine.getParser("go" as any)
 const tree: any = parser.parse(src)

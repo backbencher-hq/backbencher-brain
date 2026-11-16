@@ -1,9 +1,9 @@
 import * as fs from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 const FILES = [
- "/home/ishaq2321/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicescontains/slicescontains.go",
- "/home/ishaq2321/bb_tests/repositories/go-tools/internal/gcimporter/testdata/genmeth/a.go",
- "/home/ishaq2321/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go",
+ "<corpus-root>/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicescontains/slicescontains.go",
+ "<corpus-root>/bb_tests/repositories/go-tools/internal/gcimporter/testdata/genmeth/a.go",
+ "<corpus-root>/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go",
 ]
 const parser = await ASTEngine.getParser("go" as any)
 for (const f of FILES) {

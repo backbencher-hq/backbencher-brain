@@ -1,6 +1,6 @@
 import { parseFile } from "../../src/ast/pool-worker"
 
-const file = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/luarocks/src/luarocks/fs/lua.lua"
+const file = process.argv[2] || "<corpus-root>/bb_tests/repositories/luarocks/src/luarocks/fs/lua.lua"
 const result = await parseFile(file, process.cwd())
 console.log("=== SYMBOLS ===")
 for (const s of result.symbols ?? []) {

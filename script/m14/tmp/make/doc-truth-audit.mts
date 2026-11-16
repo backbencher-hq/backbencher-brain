@@ -14,8 +14,8 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/backbencher-brain"
-const OUT = "/home/ishaq2321/bb_tests/make/out"
+const ROOT = "<corpus-root>/backbencher-brain"
+const OUT = "<corpus-root>/bb_tests/make/out"
 const json = (p: string) => JSON.parse(readFileSync(p.startsWith("/") ? p : `${ROOT}/${p}`, "utf8"))
 
 const review = readFileSync(`${ROOT}/reviews/make/master-review.md`, "utf8")

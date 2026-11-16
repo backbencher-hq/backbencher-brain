@@ -2,7 +2,7 @@
 // Contract question: does get/set x() {} emit calls from BOTH bodies?
 import * as WTS from "web-tree-sitter"
 const P = await WTS.init()
-const LANG = await P.Language.load("/home/ishaq2321/mcp/backbencher-brain/vendor/tree-sitter-javascript.wasm")
+const LANG = await P.Language.load("<corpus-root>/mcp/backbencher-brain/vendor/tree-sitter-javascript.wasm")
 const parser = new P()
 parser.setLanguage(LANG)
 const src = `class Store {

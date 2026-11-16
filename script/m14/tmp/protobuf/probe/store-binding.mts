@@ -79,7 +79,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { getProjectId } from "../../../../../src/cli/index"
 import { BrainDatabase } from "../../../../../src/brain/database"
 
-const CORPUS = process.env.BB_CORPUS_ROOT || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT || "<corpus-root>/bb_tests/repositories"
 // `pb-reference/src/google/protobuf` is the densest cross-file reference set in the
 // corpus: the well-known types are declared in one file and named from the others,
 // which is the only shape in which "the reverse walk found it" is a question at all.

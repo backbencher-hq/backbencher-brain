@@ -2,7 +2,7 @@
 // Usage: bun script/m14/tmp/g841-file-probe.ts <file1> <file2> ...
 import * as fs from "fs"
 
-const R = "/home/ishaq2321/bb_tests/repositories/grails-core/"
+const R = "<corpus-root>/bb_tests/repositories/grails-core/"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

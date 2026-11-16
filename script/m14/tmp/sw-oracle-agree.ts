@@ -4,7 +4,7 @@ import * as WTS from "web-tree-sitter"
 import { RealSwiftAnalyzer } from "../../../src/ast/real-swift-analyzer"
 import { deriveSwiftEdges, deriveSwiftBareUses } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILES = [
   "validation/m14/fixtures/swift/write-gate.swift",
   "validation/m14/fixtures/swift/edges-and-patterns.swift",

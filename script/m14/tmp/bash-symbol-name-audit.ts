@@ -20,7 +20,7 @@ import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 const repos: { name: string; dir: string }[] = []

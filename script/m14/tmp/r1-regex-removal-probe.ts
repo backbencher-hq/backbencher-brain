@@ -6,7 +6,7 @@
 import fs from "node:fs"
 import path from "node:path"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const { phpStripLeadingBackslashes } = await import(path.join(ROOT, "src/ast/real-php-analyzer.ts"))
 
 const listFiles = (d: string, out: string[], ext: string) => {

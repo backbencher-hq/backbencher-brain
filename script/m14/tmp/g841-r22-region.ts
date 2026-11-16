@@ -7,7 +7,7 @@ await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm"
 const lang = await L.load(fs.readFileSync(process.argv[2] ?? "wasm/tree-sitter-groovy.wasm"))
 const parser = new P(); parser.setLanguage(lang)
 
-const SRC = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/grails-core/grails-core-cli-legacy/src/test/groovy/org/apache/grails/core/cli/LegacyCommandRegistryLoadingSpec.groovy", "utf8")
+const SRC = fs.readFileSync("<corpus-root>/bb_tests/repositories/grails-core/grails-core-cli-legacy/src/test/groovy/org/apache/grails/core/cli/LegacyCommandRegistryLoadingSpec.groovy", "utf8")
 const root = parser.parse(SRC).rootNode
 
 // find the innermost error at line 316

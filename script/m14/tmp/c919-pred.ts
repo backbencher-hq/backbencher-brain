@@ -3,8 +3,8 @@
 //   bun script/m14/tmp/c919-pred.ts [repo ...]
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = process.argv.slice(2).length ? process.argv.slice(2) : ["fmt", "nlohmann-json"]
 const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts

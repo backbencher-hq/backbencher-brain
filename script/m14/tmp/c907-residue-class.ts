@@ -14,7 +14,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs"
 import { dirname, join } from "node:path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/jq"
+const ROOT = "<corpus-root>/bb_tests/repositories/jq"
 const d = JSON.parse(readFileSync("validation/m12/results/c-clang-def-audit.json", "utf8"))
 
 function macroNames(file: string): Set<string> {

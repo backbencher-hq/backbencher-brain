@@ -301,7 +301,7 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 // from a genuinely absent corpus — a misleading way to learn a path is wrong. Third instance of
 // the same merge signature in this one file (the csharp oracles, the lost braces, and now an env
 // lookup): all small, all silent, all load-bearing, and none of them visible to any gate.
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
@@ -427,7 +427,7 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
 // Two harness defects found live while re-emitting F5 (2026-09-14). Both made a
 // canonical sweep impossible to finish on this checkout, because `proxicall` —
 // the dart primary corpus — is a symlink to an actively developed 16G project
-// (/home/ishaq2321/ProxiCall) whose HEAD moved five times during one sweep:
+// (<corpus-root>/ProxiCall) whose HEAD moved five times during one sweep:
 //
 //   1. STATE FORKED PER CHILD. The journal is addressed by sweep state (pins +
 //      sampling + the analyzer/oracle source that derived it), and every
@@ -693,7 +693,7 @@ export const LANG_REPOS: Record<string, string> = {
   // The corpus directory is `go-tools` WITH A HYPHEN on this root, and the underscore form is the
   // one that does not exist. Ported from origin/main where the comment claimed the opposite —
   // "verified against the corpus on disk, which lists go_tools" — and the disk here lists
-  // `/home/ishaq2321/bb_tests/repositories/go-tools`. MEASURED, not assumed: with `go_tools` the
+  // `<corpus-root>/bb_tests/repositories/go-tools`. MEASURED, not assumed: with `go_tools` the
   // leg dies `Error: corpus repo missing: …/go_tools` (exit 1), so the port did not fix a vacuous
   // pass, it CREATED one — and the vacuous pass it claimed to fix was real on main's root.
   // THE CORRECT SPELLING IS A PROPERTY OF THE CORPUS ROOT, NOT OF THE FILE.
@@ -775,8 +775,8 @@ export const LANG_REPOS: Record<string, string> = {
   // so both lanes were measured on a root fetched for them and their declarations name it. The
   // differential reads the same files the declarations do — an absolute mapping rather than a
   // second corpus root, so the shared CORPUS_ROOT stays exactly what the other 48 lanes measured.
-  matlab: "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab",
-  vba: "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web",
+  matlab: "<corpus-root>/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab",
+  vba: "<corpus-root>/mcp/backbencher-brain/.corpus-tail/VBA-Web",
   json: "terraform",
   // M60 #278: powershell's primary corpus is the `powershell` repository. Its
   // test/ tree is deliberately excluded by the draw (parser-error TEST DATA — 166

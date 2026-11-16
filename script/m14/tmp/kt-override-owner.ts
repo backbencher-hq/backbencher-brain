@@ -20,7 +20,7 @@ import * as fs from "fs"
 import { RealKotlinAnalyzer } from "../../../src/ast/real-kotlin-analyzer"
 import { deriveTreeEdges } from "../differential"
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/Exposed/exposed-core/src/main/kotlin/org/jetbrains/exposed/v1/core/ColumnType.kt"
+const FILE = "<corpus-root>/bb_tests/repositories/Exposed/exposed-core/src/main/kotlin/org/jetbrains/exposed/v1/core/ColumnType.kt"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

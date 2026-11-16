@@ -2,7 +2,7 @@
 // (the first attempt inferred from a `tail -20` cut, which is not evidence).
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const src = (star: string) =>
   [

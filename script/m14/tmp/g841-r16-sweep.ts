@@ -1,8 +1,8 @@
 // Round 16: whole-corpus extraction snapshot (baseline vs vtie2 arms).
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const OUT = process.argv[2]
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const { RealGroovyAnalyzer } = await import(path.join(ROOT, "src/ast/real-groovy-analyzer.ts"))

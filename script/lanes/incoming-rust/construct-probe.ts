@@ -35,7 +35,7 @@ import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 
 const REPO_ROOT = path.resolve(path.join(import.meta.dir, "..", "..", ".."))
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const CORPUS = process.env.BB_PROBE_CORPUS ?? "ripgrep"
 
 const mode = process.argv[2]

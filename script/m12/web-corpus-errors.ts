@@ -38,10 +38,10 @@ import { parseFile } from "../../src/ast/pool-worker"
 // svelte -> svelte. vue's default mode is full-corpus because the pinned
 // vue_core repo tracks only 11 .vue files — full corpus beats any sample.
 const LANGS: Record<string, { lang: string; repo: string; ext: string[]; fullByDefault?: boolean }> = {
-  typescript: { lang: "typescript", repo: "/home/ishaq2321/TypeScript", ext: ["*.ts"] },
-  javascript: { lang: "javascript", repo: "/home/ishaq2321/bb_tests/repositories/svelte", ext: ["*.js", "*.mjs", "*.cjs"] },
-  vue: { lang: "vue", repo: "/home/ishaq2321/bb_tests/repositories/vue-core", ext: ["*.vue"], fullByDefault: true },
-  svelte: { lang: "svelte", repo: "/home/ishaq2321/bb_tests/repositories/svelte", ext: ["*.svelte"] },
+  typescript: { lang: "typescript", repo: "<corpus-root>/TypeScript", ext: ["*.ts"] },
+  javascript: { lang: "javascript", repo: "<corpus-root>/bb_tests/repositories/svelte", ext: ["*.js", "*.mjs", "*.cjs"] },
+  vue: { lang: "vue", repo: "<corpus-root>/bb_tests/repositories/vue-core", ext: ["*.vue"], fullByDefault: true },
+  svelte: { lang: "svelte", repo: "<corpus-root>/bb_tests/repositories/svelte", ext: ["*.svelte"] },
 }
 
 const args = process.argv.slice(2)

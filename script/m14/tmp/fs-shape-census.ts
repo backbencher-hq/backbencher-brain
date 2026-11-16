@@ -15,7 +15,7 @@
  *     instances of each interesting type, so the oracle's rules cite measured
  *     shapes rather than remembered ones.
  *
- * Reads the corpus under /home/ishaq2321/bb_tests/repositories/fsharp through
+ * Reads the corpus under <corpus-root>/bb_tests/repositories/fsharp through
  * the same web-tree-sitter + repo wasm the engine loads. Writes only
  * validation/m14/results/archive/fsharp-shape-census.json.
  *
@@ -27,7 +27,7 @@ import { createHash } from "crypto"
 import { execSync } from "child_process"
 
 const ROOT = path.resolve(import.meta.dir ?? path.dirname(Bun.main), "..", "..", "..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/fsharp"
+const CORPUS = "<corpus-root>/bb_tests/repositories/fsharp"
 const OUT = path.join(ROOT, "validation/m14/results/archive/fsharp-shape-census.json")
 const SAMPLE = Number(process.argv[2] ?? 120)
 

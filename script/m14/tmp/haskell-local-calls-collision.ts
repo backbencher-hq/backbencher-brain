@@ -29,7 +29,7 @@ import { join } from "node:path"
 
 const ROOTS = process.argv.slice(2).length
   ? process.argv.slice(2)
-  : ["/home/ishaq2321/bb_tests/repositories/hledger"]
+  : ["<corpus-root>/bb_tests/repositories/hledger"]
 
 function walk(dir: string, out: string[] = []): string[] {
   let entries: string[]

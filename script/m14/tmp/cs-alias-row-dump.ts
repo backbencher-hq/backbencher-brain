@@ -8,7 +8,7 @@ import { execSync } from "child_process"
 
 const ROOT = process.cwd()
 const OUT = process.env.BB_DUMP
-const CORPORA = ["/home/ishaq2321/bb_tests/repositories/powershell", "/home/ishaq2321/bb_tests/repositories/fsharp"]
+const CORPORA = ["<corpus-root>/bb_tests/repositories/powershell", "<corpus-root>/bb_tests/repositories/fsharp"]
 
 async function main() {
   if (!OUT) throw new Error("BB_DUMP required")

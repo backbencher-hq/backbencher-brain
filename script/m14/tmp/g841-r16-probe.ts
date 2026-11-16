@@ -15,8 +15,8 @@ console.log(`  B attrs.boolean('x')   errs=${errsOf(body("def b = attrs.boolean(
 console.log(`  B foo.int (read)       errs=${errsOf(body("def t = foo.int"))}`)
 console.log(`  B int('x') (non-gap)   errs=${errsOf(body("def t = int('x')"))}`)
 console.log(`  A def x = to UploadPage errs=${errsOf(body("def x = to UploadPage"))}`)
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
-const G = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-web-core/src/test/groovy/org/grails/web/servlet/mvc/GrailsParameterMapTests.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-gsp/plugin/src/main/groovy/org/grails/plugins/web/taglib/FormTagLib.groovy"
+const G = "<corpus-root>/bb_tests/repositories/grails-core/grails-web-core/src/test/groovy/org/grails/web/servlet/mvc/GrailsParameterMapTests.groovy"
 for (const [name, path, line] of [["FormTagLib", F, 503], ["GrailsParameterMapTests", G, 205]] as Array<[string, string, number]>) {
   if (!fs.existsSync(path)) { console.log(`  ${name}: MISSING`); continue }
   const src = fs.readFileSync(path, "utf8")
@@ -31,7 +31,7 @@ for (const [name, path, line] of [["FormTagLib", F, 503], ["GrailsParameterMapTe
   console.log(`  ${name} errors=${errs} MI@${line}=${mi ? JSON.stringify(mi.text.slice(0, 30)) : "NONE"}`)
 }
 // extra signals for the bisect
-const PC = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
+const PC = "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
 if (fs.existsSync(PC)) {
   const src2 = fs.readFileSync(PC, "utf8")
   const t2 = parser.parse(src2)
@@ -40,4 +40,4 @@ if (fs.existsSync(PC)) {
   w3(t2.rootNode)
   console.log(`  ProductController method_decl@38=${hasMD}`)
 }
-const GT = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-web-core/src/test/groovy/org/grails/web/servlet/GrailsParameterMapTests.groovy"
+const GT = "<corpus-root>/bb_tests/repositories/grails-core/grails-web-core/src/test/groovy/org/grails/web/servlet/GrailsParameterMapTests.groovy"

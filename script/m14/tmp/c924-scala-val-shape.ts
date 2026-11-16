@@ -9,9 +9,9 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const VAL_FILE = "/home/ishaq2321/bb_tests/repositories/scala3/sbt-test/scala2-compat/i24998/lib/EnumerationTests.scala"
-const ANON_FILE = "/home/ishaq2321/bb_tests/repositories/cats-effect/std/native/src/main/scala/cats/effect/std/SecureRandomCompanionPlatform.scala"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const VAL_FILE = "<corpus-root>/bb_tests/repositories/scala3/sbt-test/scala2-compat/i24998/lib/EnumerationTests.scala"
+const ANON_FILE = "<corpus-root>/bb_tests/repositories/cats-effect/std/native/src/main/scala/cats/effect/std/SecureRandomCompanionPlatform.scala"
 
 const wts: any = await import("web-tree-sitter")
 const P: any = wts.Parser ?? wts.default ?? wts

@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
-const LIB = "/home/ishaq2321/.gradle/wrapper/dists/gradle-8.14-all/c2qonpi39x1mddn7hk5gh9iqj/gradle-8.14/lib"
+const LIB = "<corpus-root>/.gradle/wrapper/dists/gradle-8.14-all/c2qonpi39x1mddn7hk5gh9iqj/gradle-8.14/lib"
 function oracle(source: string): string {
   const tmp = `/tmp/g841-r18-oracle-${Date.now()}-${Math.random().toString(36).slice(2)}.groovy`
   fs.writeFileSync(tmp, source)

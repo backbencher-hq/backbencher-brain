@@ -4,7 +4,7 @@
  * SAME unit the gaps were originally measured in.
  *
  * WHY THIS INSTRUMENT EXISTS. `script/m14/spec/dart-completeness.json` measured its gaps over
- * `/home/ishaq2321/ProxiCall/lib` — 1,294 files, with per-form occurrence counts (pattern bindings
+ * `<corpus-root>/ProxiCall/lib` — 1,294 files, with per-form occurrence counts (pattern bindings
  * 353 occurrences/110 files, constant patterns 103/50, record types 219/38, record literals 249/54).
  * A fixture proves a construct EMITS; it cannot prove the emission is present across the population
  * the gap was counted on. So closing a gap "with a counted corpus measurement" means re-counting the

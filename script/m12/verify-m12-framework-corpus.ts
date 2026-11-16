@@ -14,7 +14,7 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const REPO_ROOT = "<corpus-root>/bb_tests/repositories"
 const OUT_FILE = join(process.cwd(), "validation/m12/results/framework-corpus.json")
 
 // repo -> { expected: string[] (any match passes), globHint: (path) => boolean }

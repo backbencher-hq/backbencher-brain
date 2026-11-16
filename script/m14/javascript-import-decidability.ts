@@ -100,7 +100,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const arg = (n: string, d?: string) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
-const CR = arg("corpus", "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/src")!
+const CR = arg("corpus", "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/src")!
 const FILES = Number(arg("files", "0")) || Number.MAX_SAFE_INTEGER
 const TYPES = ["calls", "uses", "references", "instantiates"]
 

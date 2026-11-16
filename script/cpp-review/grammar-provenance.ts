@@ -5,7 +5,7 @@
  *
  * `script/m12/cpp-wasm-compare.ts` already made this comparison for the M12
  * grammar swap, but its paths are hardcoded to another machine
- * (`/home/ishaq2321/...`, `/tmp/ts-cpp-npm/...`). This is the same measurement with
+ * (`<corpus-root>/...`, `/tmp/ts-cpp-npm/...`). This is the same measurement with
  * the two files supplied as arguments, plus the parse-error counts that decide
  * whether the local rules are LOAD-BEARING (a fork nobody can feel is just a
  * different build; a fork that fixes N files is part of the pin).

@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const FILES = [
   "bash-completion/completions-core/tmux.bash",
   "bash-completion/completions-core/jarsigner.bash",

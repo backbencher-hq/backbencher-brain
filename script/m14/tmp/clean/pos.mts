@@ -1,7 +1,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 const ROOT = process.cwd()
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const WIDE = path.join(ROOT, "script", "m14", "clean-wide-manifest.txt")
 const files: string[] = []
 const seen = new Set<string>()

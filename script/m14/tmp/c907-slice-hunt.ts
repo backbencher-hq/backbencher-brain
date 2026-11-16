@@ -9,17 +9,17 @@ import { parseFile } from "../../../src/ast/pool-worker"
 
 const CASES: Array<{ file: string; name: string; ranges: Array<[number, number]> }> = [
   {
-    file: "/home/ishaq2321/bb_tests/repositories/jq/src/jv.c",
+    file: "<corpus-root>/bb_tests/repositories/jq/src/jv.c",
     name: "jv_number",
     ranges: [[660, 700], [640, 700], [673, 700], [660, 760]],
   },
   {
-    file: "/home/ishaq2321/bb_tests/repositories/jq/src/util.c",
+    file: "<corpus-root>/bb_tests/repositories/jq/src/util.c",
     name: "strptime",
     ranges: [[600, 640], [560, 700], [440, 700], [40, 700]],
   },
   {
-    file: "/home/ishaq2321/bb_tests/repositories/jq/src/jv_dtoa.c",
+    file: "<corpus-root>/bb_tests/repositories/jq/src/jv_dtoa.c",
     name: "ulp",
     ranges: [[1060, 1100], [1000, 1120]],
   },

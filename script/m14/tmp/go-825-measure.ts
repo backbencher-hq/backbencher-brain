@@ -12,7 +12,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 const REPOS = process.argv.slice(2).length
   ? process.argv.slice(2)
   : ["go-tools", "terraform"]
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const LIMIT = Number(process.env.LIMIT ?? 200)
 const EXT = process.env.EXT ?? ".go"
 

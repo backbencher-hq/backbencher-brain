@@ -40,7 +40,7 @@ for (const f of files) {
   } catch {
     continue
   }
-  const rel = path.relative("/home/ishaq2321/bb_tests/repositories", f)
+  const rel = path.relative("<corpus-root>/bb_tests/repositories", f)
   for (const r of res?.relationships ?? []) {
     const label = String(r?.type ?? "?")
     if (r?.target === undefined || r?.target === null) continue

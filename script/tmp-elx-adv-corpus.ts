@@ -33,8 +33,8 @@ const verbose = process.argv.includes("--verbose")
 const DEBUG_LIMIT = 4 // files whose per-edge divergences are printed inline
 
 const CORPUS: Record<string, string> = {
-  elixir: "/home/ishaq2321/bb_tests/repositories/elixir",
-  phoenix: "/home/ishaq2321/bb_tests/repositories/phoenix",
+  elixir: "<corpus-root>/bb_tests/repositories/elixir",
+  phoenix: "<corpus-root>/bb_tests/repositories/phoenix",
 }
 const REPOS = repos === "both" ? ["elixir", "phoenix"] : [repos]
 

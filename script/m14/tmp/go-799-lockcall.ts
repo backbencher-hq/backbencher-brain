@@ -7,7 +7,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { RealGoAnalyzer } from "../../../src/ast/real-go-analyzer"
 import { deriveGoEdges, deriveGoImplements, deriveTreeEdges } from "../differential"
 
-const REAL = "/home/ishaq2321/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
+const REAL = "<corpus-root>/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
 
 const SNIPPET = `package slicesbackward
 

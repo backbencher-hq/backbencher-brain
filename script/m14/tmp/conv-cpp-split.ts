@@ -16,10 +16,10 @@ async function main() {
       else if (e.name.endsWith(".hpp") || e.name.endsWith(".cpp") || e.name.endsWith(".cc") || e.name.endsWith(".h")) files.push(p)
     }
   }
-  collect("/home/ishaq2321/bb_tests/repositories/nlohmann-json")
+  collect("<corpus-root>/bb_tests/repositories/nlohmann-json")
   const buckets: Record<string, { err: number; tot: number }> = {}
   for (const f of files) {
-    const rel = f.replace("/home/ishaq2321/bb_tests/repositories/nlohmann-json/", "")
+    const rel = f.replace("<corpus-root>/bb_tests/repositories/nlohmann-json/", "")
     const bucket = rel.startsWith("tests/") ? "tests/" : (rel.startsWith("src/") || rel.startsWith("include/")) ? "src+include/" : "other/"
     const src = fs.readFileSync(f, "utf8")
     if (!buckets[bucket]) buckets[bucket] = { err: 0, tot: 0 }

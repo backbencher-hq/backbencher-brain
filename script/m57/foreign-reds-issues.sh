@@ -17,7 +17,7 @@
 # Liveness: use the pidfile, never `pgrep -f` (the pattern matches the checking
 # shell itself and reports a false RUNNING).
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 echo $$ > .foreign-reds-reconcile.pid
 
 REPO=ishaq2321/backbencher-brain

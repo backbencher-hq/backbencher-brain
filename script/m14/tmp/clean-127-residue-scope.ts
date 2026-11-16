@@ -21,7 +21,7 @@ import path from "node:path"
 import * as WTS from "web-tree-sitter"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const CANDIDATE = process.env.CLEAN_CANDIDATE ?? "/tmp/tree-sitter-clean-127.wasm"
 const EVIDENCE = process.env.EVIDENCE ?? "validation/m14/results/M14.0.F11.clean.json"
 const g3 = JSON.parse(readFileSync(EVIDENCE, "utf8")).data.g3 as any

@@ -23,8 +23,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const REPOS = [
-  "/home/ishaq2321/bb_tests/repositories/go-tools",
-  "/home/ishaq2321/bb_tests/repositories/terraform",
+  "<corpus-root>/bb_tests/repositories/go-tools",
+  "<corpus-root>/bb_tests/repositories/terraform",
 ]
 
 const RE = /^[A-Za-z_][A-Za-z0-9_]*$/

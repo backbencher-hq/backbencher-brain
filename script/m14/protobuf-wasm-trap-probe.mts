@@ -96,7 +96,7 @@ import { existsSync, readdirSync, statSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 import { ASTEngine } from "../../src/ast/engine"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argOf = (name: string, dflt: string): string => {
   const i = process.argv.indexOf(`--${name}`)
   return i >= 0 ? process.argv[i + 1] : dflt

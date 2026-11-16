@@ -19,7 +19,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const SAMPLE = "validation/m12/results/groovy-corpus-sample.txt"
 const args = process.argv.slice(2)
 const full = args.includes("--full")

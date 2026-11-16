@@ -11,7 +11,7 @@ import { parseFile } from "../../src/ast/pool-worker"
  * established), and an entry whose `verdict` is not a string is a hard error
  * rather than a silent pass.
  */
-const corpusPath = process.argv[2] || process.env.XML_CORPUS || "/home/ishaq2321/bb_tests/xml/repos/grails-core"
+const corpusPath = process.argv[2] || process.env.XML_CORPUS || "<corpus-root>/bb_tests/xml/repos/grails-core"
 const corpus = corpusPath
 
 /** Every tracked file of a corpus matching a glob, so a declared control can be a PATTERN. */
@@ -21,7 +21,7 @@ function listOfCorpusFiles(dir: string, pattern: string): string[] {
       .split("\n").filter(Boolean)
   } catch { return [] }
 }
-const MANIFEST = process.env.XML_MANIFEST || "/home/ishaq2321/bb_tests/xml/repositories/MANIFEST.json"
+const MANIFEST = process.env.XML_MANIFEST || "<corpus-root>/bb_tests/xml/repositories/MANIFEST.json"
 let negativeControls = new Map<string, { file: string; measured: string; verdict: string; why: string }>()
 if (existsSync(MANIFEST)) {
   const manifest = JSON.parse(readFileSync(MANIFEST, "utf8"))

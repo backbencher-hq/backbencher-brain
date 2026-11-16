@@ -16,8 +16,8 @@ import { fileURLToPath } from "node:url"
 
 const ROOT = process.env.BB_REPO || path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const CORPORA = [
-  { name: "phpunit", dir: "/home/ishaq2321/bb_tests/repositories/phpunit" },
-  { name: "phpmyadmin", dir: "/home/ishaq2321/bb_tests/repositories/phpmyadmin" },
+  { name: "phpunit", dir: "<corpus-root>/bb_tests/repositories/phpunit" },
+  { name: "phpmyadmin", dir: "<corpus-root>/bb_tests/repositories/phpmyadmin" },
 ].filter((c) => existsSync(c.dir))
 const FULL = process.argv.includes("--full")
 

@@ -12,7 +12,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const CASES: { lane: string; mod: string; cls: string; wasm: string; ext: string; src: string; callee: string; caller: string }[] = [
   {

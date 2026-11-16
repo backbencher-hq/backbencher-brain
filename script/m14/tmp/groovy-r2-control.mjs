@@ -11,8 +11,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain";
-const CORPUS = "/home/ishaq2321/bb_tests/repositories";
+const ROOT = "<corpus-root>/mcp/backbencher-brain";
+const CORPUS = "<corpus-root>/bb_tests/repositories";
 const CTL = ROOT + "/script/m14/tmp/groovy-control";
 const EXTS = ["groovy", "gvy", "gradle"];
 const CAP = 1048576;

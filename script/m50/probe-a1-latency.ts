@@ -11,9 +11,9 @@
 
 import { spawn } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const BIN = `${ROOT}/bin/bb`
-const REPO = "/home/ishaq2321/mcp/backbencher-brain"
+const REPO = "<corpus-root>/mcp/backbencher-brain"
 
 type Case = { name: string; args: Record<string, unknown> }
 const CASES: Case[] = [
@@ -137,13 +137,13 @@ async function main() {
     }
   }
   const fs = await import("node:fs")
-  fs.mkdirSync("/home/ishaq2321/mcp/backbencher-brain/validation/m50/results", { recursive: true })
+  fs.mkdirSync("<corpus-root>/mcp/backbencher-brain/validation/m50/results", { recursive: true })
   // A2 re-runs the SAME harness against the fixed build; the prefix keeps A1
   // receipts immutable (BB_M50_OUT_PREFIX=A2 -> A2-case-<idx>.json).
   const prefix = process.env.BB_M50_OUT_PREFIX || "A1"
   const outFile = Number.isInteger(argIdx)
-    ? `/home/ishaq2321/mcp/backbencher-brain/validation/m50/results/${prefix}-case-${argIdx}.json`
-    : `/home/ishaq2321/mcp/backbencher-brain/validation/m50/results/${prefix}-latency.json`
+    ? `<corpus-root>/mcp/backbencher-brain/validation/m50/results/${prefix}-case-${argIdx}.json`
+    : `<corpus-root>/mcp/backbencher-brain/validation/m50/results/${prefix}-latency.json`
   fs.writeFileSync(outFile,
     JSON.stringify({ probe: `M50.${prefix}-latency`, at: new Date().toISOString(), repo: REPO, runtime: "node bin/bb mcp (production shape)", launches: launchesN, measuredPerLaunch: reps, callTimeoutMs, report }, null, 2) + "\n")
   console.log(JSON.stringify(report, null, 2))

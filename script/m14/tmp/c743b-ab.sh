@@ -3,8 +3,8 @@
 # pinned corpora. The rule lives in the SHARED C grammar, so c's corpora have to
 # be re-verified too, not only cpp's.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
-R=/home/ishaq2321/bb_tests/repositories
+cd <corpus-root>/mcp/backbencher-brain || exit 1
+R=<corpus-root>/bb_tests/repositories
 C_OLD=wasm/tree-sitter-c.wasm
 C_NEW=/tmp/c743b.wasm
 CPP_OLD=/tmp/cpp743d.wasm

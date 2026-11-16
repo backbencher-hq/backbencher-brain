@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const SRC = 'pub const enable = 1;\npub inline fn message(comptime msg: [:0]const u8) void {\n    if (!enable) return;\n    _ = msg;\n}'
 async function main() {
   const wts: any = await import("web-tree-sitter")

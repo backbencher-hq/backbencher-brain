@@ -5,7 +5,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealPhpAnalyzer } from "../../../src/ast/real-php-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FIX = path.join(ROOT, "validation/m14/fixtures/php/header-reads.php")
 
 const META_KEYS = ["isConstRead", "isMemberRead", "isConstFetch", "isLocalRead", "isGlobalRead", "isTearOff"]

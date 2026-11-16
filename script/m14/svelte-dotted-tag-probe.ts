@@ -55,7 +55,7 @@ const svelteParser = async (): Promise<any> => {
 const files: Array<{ repo: string; dir: string; rel: string; abs: string; text: string }> = []
 const seenAbs = new Set<string>()
 for (const repo of REPOS) {
-  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories", repo)
+  const dir = path.join(process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories", repo)
   let tracked: string[]
   try {
     tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 })

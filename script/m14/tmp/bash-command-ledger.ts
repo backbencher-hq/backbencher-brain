@@ -13,7 +13,7 @@ import * as path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_BASH_CORPUS ?? "/home/ishaq2321/bb_tests/repositories/fsharp"
+const CORPUS = process.env.BB_BASH_CORPUS ?? "<corpus-root>/bb_tests/repositories/fsharp"
 const ROOT = process.cwd()
 
 const BUILTINS = new Set([

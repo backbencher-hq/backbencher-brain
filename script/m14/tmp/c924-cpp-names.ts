@@ -3,8 +3,8 @@
 import { readFileSync } from "node:fs"
 import { parseFile } from "../../../src/ast/engine"
 const FILES = [
-  "/home/ishaq2321/bb_tests/repositories/fmt/include/fmt/args.h",
-  "/home/ishaq2321/bb_tests/repositories/fmt/include/fmt/base.h",
+  "<corpus-root>/bb_tests/repositories/fmt/include/fmt/args.h",
+  "<corpus-root>/bb_tests/repositories/fmt/include/fmt/base.h",
 ]
 for (const f of FILES) {
   const r: any = await parseFile(f, readFileSync(f, "utf8"))

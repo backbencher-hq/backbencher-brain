@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-core/src/main/groovy/org/grails/test/support/GrailsTestAutowirer.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-test-core/src/main/groovy/org/grails/test/support/GrailsTestAutowirer.groovy"
 
 async function main(): Promise<void> {
   const src = readFileSync(F, "utf8")

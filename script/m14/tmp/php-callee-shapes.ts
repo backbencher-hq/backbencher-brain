@@ -3,7 +3,7 @@
 import fs from "node:fs"
 import path from "node:path"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const wts: any = await import("web-tree-sitter")
 const ParserClass = wts.Parser ?? wts.default ?? wts

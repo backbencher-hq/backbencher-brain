@@ -6,7 +6,7 @@ import * as path from "path"
 import { RealTypeScriptAnalyzer } from "../../../src/ast/real-typescript-analyzer"
 import { deriveTreeEdges, deriveTypeScriptEdges } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const src = [
   "function log(method: string, message: { text(): string }) {",
   "  console[method](message.text());",

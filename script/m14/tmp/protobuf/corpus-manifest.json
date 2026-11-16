@@ -1,5 +1,5 @@
 {
-  "note": "Third-party .proto corpora for the protobuf lane. NOT tracked in this repository — they are cloned protobuf-dominant repositories, so they are the one input a reader must fetch. Every entry pins an exact revision and the sparse paths that were checked out, and every probe that reads them records the revision it used, so a missing corpus is a fetch instruction rather than a mystery. Four corpora, per reviews/LANE-AUDIT-FORMULA.md's corpus-breadth dimension: the language's own reference implementation, the Google API schemas (which extend the well-known option types across files), the gRPC interop schemas (which are service- and streaming-heavy), and etcd (a proto2 real-world system). One repository's idioms are not the language, and no two of these four share a style. Stage them under `PB_CORPORA` (default /home/ishaq2321/bb_tests/protobuf/repos) as <name>/ checkouts with .git intact so the revision can be re-verified.",
+  "note": "Third-party .proto corpora for the protobuf lane. NOT tracked in this repository — they are cloned protobuf-dominant repositories, so they are the one input a reader must fetch. Every entry pins an exact revision and the sparse paths that were checked out, and every probe that reads them records the revision it used, so a missing corpus is a fetch instruction rather than a mystery. Four corpora, per reviews/LANE-AUDIT-FORMULA.md's corpus-breadth dimension: the language's own reference implementation, the Google API schemas (which extend the well-known option types across files), the gRPC interop schemas (which are service- and streaming-heavy), and etcd (a proto2 real-world system). One repository's idioms are not the language, and no two of these four share a style. Stage them under `PB_CORPORA` (default <corpus-root>/bb_tests/protobuf/repos) as <name>/ checkouts with .git intact so the revision can be re-verified.",
   "stage": "for each entry: git init && git remote add origin <url> && git fetch --depth 1 origin <rev> && git sparse-checkout init --cone && git sparse-checkout set <paths> && git checkout FETCH_HEAD",
   "corpora": [
     {
@@ -8,7 +8,7 @@
       "url": "https://github.com/protocolbuffers/protobuf",
       "rev": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
       "paths": ["src/google/protobuf"],
-      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-reference"
+      "root": "<corpus-root>/bb_tests/protobuf/repos/pb-reference"
     },
     {
       "name": "pb-googleapis",
@@ -16,7 +16,7 @@
       "url": "https://github.com/googleapis/googleapis",
       "rev": "9c085b2eb8a4c9996418d4268ade3fb9c708021d",
       "paths": ["google/api", "google/rpc", "google/type", "google/longrunning", "google/logging", "google/iam", "google/cloud/location"],
-      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-googleapis"
+      "root": "<corpus-root>/bb_tests/protobuf/repos/pb-googleapis"
     },
     {
       "name": "pb-grpc",
@@ -24,7 +24,7 @@
       "url": "https://github.com/grpc/grpc",
       "rev": "9702cf9442503f54c61d200e36534483b4bdebe8",
       "paths": ["examples", "interop", "src/proto"],
-      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-grpc"
+      "root": "<corpus-root>/bb_tests/protobuf/repos/pb-grpc"
     },
     {
       "name": "pb-etcd",
@@ -32,7 +32,7 @@
       "url": "https://github.com/etcd-io/etcd",
       "rev": "7583cc6e7e2756bb4166d646fe48d2fa1863b4b6",
       "paths": ["api", "server"],
-      "root": "/home/ishaq2321/bb_tests/protobuf/repos/pb-etcd"
+      "root": "<corpus-root>/bb_tests/protobuf/repos/pb-etcd"
     }
   ]
 }

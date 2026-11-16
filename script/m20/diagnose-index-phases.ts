@@ -16,10 +16,10 @@ import { indexProjectParallel, flushBackgroundEmbeddings, type ParallelIndexingS
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m20/results")
 const candidates = [
-  { id: "rake", path: "/home/ishaq2321/bb_tests/repositories/rake", sample: 12 },
-  { id: "typescript", path: "/home/ishaq2321/TypeScript", sample: 12 },
-  { id: "intellij-community", path: "/home/ishaq2321/intellij-community", sample: 12 },
-  { id: "aspnetcore", path: "/home/ishaq2321/aspnetcore", sample: 12 },
+  { id: "rake", path: "<corpus-root>/bb_tests/repositories/rake", sample: 12 },
+  { id: "typescript", path: "<corpus-root>/TypeScript", sample: 12 },
+  { id: "intellij-community", path: "<corpus-root>/intellij-community", sample: 12 },
+  { id: "aspnetcore", path: "<corpus-root>/aspnetcore", sample: 12 },
 ]
 
 function count(raw: any, table: string, projectId: string): number {

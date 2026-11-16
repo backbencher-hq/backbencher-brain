@@ -4,7 +4,7 @@
 // same. Prints EVERY child (anonymous included) for both spellings.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const SRC = `<?php
 function f($o, $v, $k) {
   $a = $o->NAME;

@@ -3,7 +3,7 @@
 import { readFileSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/zig"
+const ROOT = "<corpus-root>/bb_tests/repositories/zig"
 const MIN_BYTES = 1024
 const SAMPLE_SIZE = 400
 

@@ -58,17 +58,17 @@ const OUT = arg("--out") || path.join(ROOT, "validation", "m14", "measurements",
 const NDJSON = arg("--ndjson") || path.join(ROOT, "validation", "m14", "measurements", "clean", "error-impact.ndjson")
 const SELFTEST = argv.includes("--selftest")
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
-const WIDE_ROOT = "/home/ishaq2321/bb_tests/clean-wide"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
+const WIDE_ROOT = "<corpus-root>/bb_tests/clean-wide"
 
 /**
- * The census records a path RELATIVE to the corpus root (or to `/home/ishaq2321/bb_tests`
+ * The census records a path RELATIVE to the corpus root (or to `<corpus-root>/bb_tests`
  * for the wide clones). `rel()` in the census did that; this reverses it. Two candidate
  * roots are tried and the ABSOLUTE path is verified to exist before the file is measured,
  * so a row that cannot be resolved is reported as unresolvable rather than skipped.
  */
 function toAbs(relPath: string): string | null {
-  for (const base of [CR, WIDE_ROOT, "/home/ishaq2321/bb_tests"]) {
+  for (const base of [CR, WIDE_ROOT, "<corpus-root>/bb_tests"]) {
     const abs = path.resolve(base, relPath)
     if (fs.existsSync(abs)) return abs
   }

@@ -29,7 +29,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../../../../src/ast/pool-worker"
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const files: string[] = []
 for (const e of readdirSync(CR).sort()) {
   const dir = path.join(CR, e)

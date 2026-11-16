@@ -45,9 +45,9 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const ROOT = process.env.BB_PROBE_ROOT ?? "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = process.env.BB_PROBE_ROOT ?? "<corpus-root>/mcp/backbencher-brain"
 const MODE = process.argv[2] ?? "one"
-const REPO = process.argv[3] ?? "/home/ishaq2321/bb_tests/repositories/scala3"
+const REPO = process.argv[3] ?? "<corpus-root>/bb_tests/repositories/scala3"
 const LIMIT = Number(process.argv[4] ?? "0")
 const EXT = ".scala"
 const CHUNK = 500 // engine.ts's own rotation rule, the one the differential does not use

@@ -18,7 +18,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { checkMetadata } from "../../m60/framework-surface-probe"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 const LANES: { lang: string; repos: string[]; ext: string[]; fixture: string }[] = [
   { lang: "swift", repos: ["alamofire", "swift-nio"], ext: [".swift"], fixture: "validation/m14/fixtures/swift/framework-surface-pins.swift" },

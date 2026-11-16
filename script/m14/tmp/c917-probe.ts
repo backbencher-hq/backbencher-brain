@@ -76,7 +76,7 @@ for (const [label, src] of CASES) {
 }
 
 // Now the real file region.
-const REAL = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const REAL = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const realSrc = fs.readFileSync(REAL, "utf8")
 const realTree = parser.parse(realSrc)
 function findAt(node: any, line: number): any[] {

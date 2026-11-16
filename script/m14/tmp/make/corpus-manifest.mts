@@ -17,8 +17,8 @@ import { execFileSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { join, relative } from "node:path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
-const OUT = "/home/ishaq2321/bb_tests/make/out"
+const ROOT = "<corpus-root>/bb_tests/repositories"
+const OUT = "<corpus-root>/bb_tests/make/out"
 
 const EXACT = new Set(["Makefile", "makefile", "GNUmakefile", "Makefile.am", "Makefile.in"])
 const SUFFIX = ".mk"

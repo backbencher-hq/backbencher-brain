@@ -7,8 +7,8 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = path.join("/home/ishaq2321/bb_tests/repositories/element-plus")
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = path.join("<corpus-root>/bb_tests/repositories/element-plus")
 const diff: any = await import(path.join(ROOT, "script/m14/differential.ts"))
 
 const KEYWORDS = new Set([

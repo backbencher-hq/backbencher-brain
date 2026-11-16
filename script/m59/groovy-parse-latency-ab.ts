@@ -8,7 +8,7 @@ import * as fs from "node:fs"
 
 const BASE = "/tmp/groovy-baseline.wasm"
 const NEW = "/tmp/v1b-groovy.wasm"
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 
 async function main(): Promise<void> {
   const list = fs.readFileSync(process.argv[2], "utf8").trim().split("\n").filter(Boolean)

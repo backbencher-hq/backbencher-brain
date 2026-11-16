@@ -7,8 +7,8 @@ import { execSync } from "node:child_process"
 import { getParser } from "../run-fixtures"
 
 const ROOTS: Array<[string, string, string[]]> = [
-  ["fmt:cpp", "/home/ishaq2321/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
-  ["nlohmann-json:cpp", "/home/ishaq2321/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
+  ["fmt:cpp", "<corpus-root>/bb_tests/repositories/fmt", ["*.h", "*.cc", "*.cpp"]],
+  ["nlohmann-json:cpp", "<corpus-root>/bb_tests/repositories/nlohmann-json", ["*.hpp", "*.cpp", "*.h"]],
 ]
 
 const TMP = "src/ast/zz-tmp-head-cpp-analyzer.ts"
@@ -65,7 +65,7 @@ for (const [label, root, exts] of ROOTS) {
     symsA += (a.symbols ?? []).length
     edgesB += (b.relationships ?? []).length
     edgesA += (a.relationships ?? []).length
-    const rel = f.replace("/home/ishaq2321/bb_tests/repositories/", "")
+    const rel = f.replace("<corpus-root>/bb_tests/repositories/", "")
 
     // whitespace names, before/after (macro-heading names are deliberate)
     const isDeliberate = (s: any): boolean => s.metadata?.expandedFrom === "macro-heading"

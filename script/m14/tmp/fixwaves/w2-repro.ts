@@ -4,7 +4,7 @@ import * as WTS from "web-tree-sitter"
 import * as fs from "fs"
 import * as path from "path"
 import { RealJavaScriptAnalyzer } from "../../../../src/ast/real-javascript-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main() {
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts

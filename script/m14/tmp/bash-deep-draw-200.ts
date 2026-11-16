@@ -28,7 +28,7 @@ import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 import { parseFile } from "../../../src/ast/pool-worker"
 import { deriveBashEdges } from "../differential"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = (process.env.BB_REPOS ?? "nvm,rbenv,ohmyzsh,otp,fsharp").split(",").map((x) => x.trim()).filter(Boolean)
 const N = Number(process.env.BB_N ?? 200)
 

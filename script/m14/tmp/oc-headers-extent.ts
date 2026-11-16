@@ -18,8 +18,8 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["sdwebimage", "afnetworking"]
 
 function walk(dir: string, out: string[] = []): string[] {

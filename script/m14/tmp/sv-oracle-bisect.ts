@@ -4,8 +4,8 @@ import * as WTS from "web-tree-sitter"
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/types/index.d.ts"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/types/index.d.ts"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

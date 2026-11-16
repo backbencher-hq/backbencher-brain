@@ -50,7 +50,7 @@ import { RealXmlAnalyzer } from "../../src/ast/real-xml-analyzer"
 
 const OUT = "validation/m12/results/xml-shape-safety.json"
 const FIXTURE_DIR = "validation/m12/fixtures/xml"
-const CORPUS = process.env.XML_CORPUS || "/home/ishaq2321/bb_tests/xml/repos"
+const CORPUS = process.env.XML_CORPUS || "<corpus-root>/bb_tests/xml/repos"
 const CORPUS_EXTS = (process.env.XML_CORPUS_EXTS || "*.xml *.xsd *.dtd").split(/\s+/).filter(Boolean)
 const CORPUS_LIMIT = Number(process.env.XML_CORPUS_LIMIT || "1200")
 const MAX_BYTES = 2_000_000

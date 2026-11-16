@@ -12,7 +12,7 @@ import * as path from "path"
 
 const ROOT = path.resolve(import.meta.dir ?? path.dirname(Bun.main), "..", "..", "..")
 const HOME = process.env.HOME ?? ""
-const FILE = "/home/ishaq2321/bb_tests/repositories/fsharp/tests/EndToEndBuildTests/BasicProvider/BasicProvider/BasicProvider.Runtime.fs"
+const FILE = "<corpus-root>/bb_tests/repositories/fsharp/tests/EndToEndBuildTests/BasicProvider/BasicProvider/BasicProvider.Runtime.fs"
 const GRAMMARS = [
   { label: "wired", file: path.join(ROOT, "wasm/tree-sitter-fsharp.wasm") },
   { label: "npm-0.3.11-unpatched", file: path.join(HOME, ".bun/install/cache/tree-sitter-fsharp@0.3.11@@@1/tree-sitter-fsharp.wasm") },
@@ -24,7 +24,7 @@ async function main() {
   const Language = wts.Language ?? wts.default?.Language
   await ParserClass.init({ locateFile: () => path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.wasm") })
   const src = fs.readFileSync(FILE, "utf8")
-  console.log(`file: ${path.relative("/home/ishaq2321/bb_tests/repositories/fsharp", FILE)} (${src.length} bytes)`)
+  console.log(`file: ${path.relative("<corpus-root>/bb_tests/repositories/fsharp", FILE)} (${src.length} bytes)`)
   for (const g of GRAMMARS) {
     const lang = await Language.load(fs.readFileSync(g.file))
     const p = new ParserClass()

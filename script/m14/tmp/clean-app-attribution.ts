@@ -10,7 +10,7 @@ import path from "node:path"
 import * as WTS from "web-tree-sitter"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const repo = process.argv[2] ?? "clean-stdlib"
 const rel = process.argv[3] ?? "StdOverloadedList.icl"
 const head = process.argv[4] ?? "flatten"

@@ -7,7 +7,7 @@
 import * as fs from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories/swift-nio"
+const REPOS = "<corpus-root>/bb_tests/repositories/swift-nio"
 const FILES = [
   ["Sources/NIOWebSocketServer/Server.swift", [85, 95, 138, 148]],
   ["Sources/NIOWebSocketClient/Client.swift", [0, 0]],

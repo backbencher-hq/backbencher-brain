@@ -5,7 +5,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const CASES: Array<[string, string]> = [
   ["struct decl + container field + method", "const S = struct { a: u8, pub fn m() void {} };"],

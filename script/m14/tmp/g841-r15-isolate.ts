@@ -1,6 +1,6 @@
 // #841 round 15 recon: isolate each failing sub-construct.
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const parser = await ASTEngine.getParser("groovy" as any)
 

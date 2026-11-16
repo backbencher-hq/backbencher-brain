@@ -3,7 +3,7 @@
 # production entry the F3 lane uses. HEAD's analyzer is swapped in and RESTORED
 # by trap regardless of outcome.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
+cd <corpus-root>/mcp/backbencher-brain || exit 1
 FIX=src/ast/real-c-analyzer.ts
 KEEP=/tmp/c918-fix.ts
 cp "$FIX" "$KEEP" || exit 1

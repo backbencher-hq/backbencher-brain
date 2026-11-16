@@ -37,8 +37,8 @@ async function main() {
   // A REAL occurrence, so the synthetic case cannot be accused of being unrepresentative:
   // powershell has fully qualified `new A.B(` sites; fsharp has the global:: ones.
   const real = [
-    "/home/ishaq2321/bb_tests/repositories/powershell/SysLogProvider.cs",
-    "/home/ishaq2321/bb_tests/repositories/fsharp/vsintegration/src/FSharp.UIResources/Strings.Designer.cs",
+    "<corpus-root>/bb_tests/repositories/powershell/SysLogProvider.cs",
+    "<corpus-root>/bb_tests/repositories/fsharp/vsintegration/src/FSharp.UIResources/Strings.Designer.cs",
   ]
   for (const f of real) {
     if (!fs.existsSync(f)) continue

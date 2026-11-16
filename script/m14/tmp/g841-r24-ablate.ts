@@ -8,7 +8,7 @@ const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
 const lang = await L.load(fs.readFileSync("wasm/tree-sitter-groovy.wasm"))
 const parser = new P(); parser.setLanguage(lang)
-const FILE = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-spring-security/rest/core/grails-app/services/grails/plugin/springsecurity/rest/RestOauthService.groovy"
+const FILE = "<corpus-root>/bb_tests/repositories/grails-core/grails-spring-security/rest/core/grails-app/services/grails/plugin/springsecurity/rest/RestOauthService.groovy"
 const orig = fs.readFileSync(FILE, "utf8")
 
 function errInfo(src: string): string {

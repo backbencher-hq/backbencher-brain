@@ -45,7 +45,7 @@ import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 import type { DeclarationKind, ProjectIndex } from "../../src/ast/project-index"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 // The SAME draw the lane's census and the uncovered-type oracle use, so the
 // three instruments' numbers are comparable: swift-nio and alamofire at full
 // extent, plus a deterministic first-600 slice of apple/swift.

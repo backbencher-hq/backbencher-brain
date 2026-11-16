@@ -5,7 +5,7 @@ import { readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const ROOT_REPO = "/home/ishaq2321/bb_tests/repositories/rebar3"
+const ROOT_REPO = "<corpus-root>/bb_tests/repositories/rebar3"
 const SAMPLE = 225
 
 function collect(root: string): string[] {

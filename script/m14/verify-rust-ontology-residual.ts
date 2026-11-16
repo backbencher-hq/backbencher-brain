@@ -44,7 +44,7 @@ import { deriveRustContainsTruth } from "./oracles/rust-contains"
 import { deriveRustOverridesTruth } from "./oracles/rust-overrides"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPOS = process.argv.slice(2).filter((a) => !a.startsWith("-"))
 const MAX_BYTES = 512 * 1024
 

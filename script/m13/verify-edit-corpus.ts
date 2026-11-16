@@ -64,11 +64,11 @@ const harness = new Harness({
 // The corpus root was HARD-CODED to another developer's home directory, so this
 // gate could never pass anywhere but their machine — it failed with
 // corpus rake/lib/rake (Ruby): present
-// "/home/ishaq2321/bb_tests/repositories" — the OTHER laptop's home directory — so
+// "<corpus-root>/bb_tests/repositories" — the OTHER laptop's home directory — so
 // each repo path below resolved to a filesystem that does not exist here and the leg
 // measured nothing. Routed through script/lib/corpus-root.ts, which searches declared
 // candidates in order and names them all when none exists.
-// /home/ishaq2321/bb_tests/repositories/rake/lib/rake missing
+// <corpus-root>/bb_tests/repositories/rake/lib/rake missing
 // which reads as "bb_edit broke on real repositories" and is in fact "this file
 // names a path that does not exist here".
 //

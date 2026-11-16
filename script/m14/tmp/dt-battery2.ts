@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { RealDartAnalyzer } from "../../../src/ast/real-dart-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function parseSrc(src: string) {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts

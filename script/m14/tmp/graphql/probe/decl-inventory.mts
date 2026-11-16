@@ -86,8 +86,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { execFileSync } from "child_process"
 import { statSync } from "fs"
-const ROOT = "/home/ishaq2321/mcp/bb-lanes/graphql"
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/bb-lanes/graphql"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "script/m14/tmp/graphql/out")
 const { parseFile } = await import(path.join(ROOT, "src/ast/pool-worker.ts"))
 const { detectLanguageFromPath } = await import(path.join(ROOT, "src/ast/language-detection.ts"))

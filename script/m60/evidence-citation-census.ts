@@ -126,7 +126,7 @@ const out = {
     return {
       externalEvidenceTree: {
         count: all.filter((x) => x.path.startsWith("bb_tests/")).length,
-        note: "paths under bb_tests/, which does not exist in this repository — the corpora live at an external /home/ishaq2321/bb_tests/repositories. A claim resting on one of these cannot be opened or re-run by a reader of this repo.",
+        note: "paths under bb_tests/, which does not exist in this repository — the corpora live at an external <corpus-root>/bb_tests/repositories. A claim resting on one of these cannot be opened or re-run by a reader of this repo.",
         sample: all.filter((x) => x.path.startsWith("bb_tests/")).slice(0, 10),
       },
       generatedNotVendoredByDesign: {

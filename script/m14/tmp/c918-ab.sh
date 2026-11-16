@@ -3,8 +3,8 @@
 # and RESTORED in the same command regardless of outcome (trap), because a
 # killed shell must never leave HEAD's analyzer in the tree.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain || exit 1
-R=/home/ishaq2321/bb_tests/repositories
+cd <corpus-root>/mcp/backbencher-brain || exit 1
+R=<corpus-root>/bb_tests/repositories
 FIX=src/ast/real-c-analyzer.ts
 KEEP=/tmp/c918-fix.ts
 cp "$FIX" "$KEEP" || exit 1

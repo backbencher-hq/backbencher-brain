@@ -7,8 +7,8 @@ import { spawnSync } from "node:child_process"
 import * as os from "node:os"
 import * as fs from "node:fs"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = process.argv.find((a) => a.startsWith("--file="))?.slice("--file=".length) ?? "/home/ishaq2321/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/TestTaskShardingPlugin.groovy"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = process.argv.find((a) => a.startsWith("--file="))?.slice("--file=".length) ?? "<corpus-root>/bb_tests/repositories/grails-core/build-logic/plugins/src/main/groovy/org/apache/grails/buildsrc/TestTaskShardingPlugin.groovy"
 
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const parser = await ASTEngine.getParser("groovy" as any)

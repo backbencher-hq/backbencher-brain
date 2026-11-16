@@ -5,7 +5,7 @@
 > ## ⚠ Corpus scope — read before quoting any number in this document
 >
 > This document's measurements were taken on `go-stdlib` @ `6f5c275e` and on `cobra`, under
-> `/home/ishaq2321/bb_tests/repositories/`. **Both repositories have been removed from that
+> `<corpus-root>/bb_tests/repositories/`. **Both repositories have been removed from that
 > directory.** They cannot be re-cloned from this document, and no artifact in `validation/`
 > retains the raw per-file rows, so every count attributed to them — 9,447 files / 280,587 symbols /
 > 866,760 relationships in the firing section, the `--sample 120` differential rows, the payload and
@@ -105,7 +105,7 @@ disagree, this section wins and says so.
 symbols, 866,760 relationships, 17m 10s.
 
 > **Scope warning — this is the lane's ORIGINAL pinned draw and its corpus is gone.** `go-stdlib`
-> @ `6f5c275e` lived under `/home/ishaq2321/bb_tests/repositories/`, which no longer contains that
+> @ `6f5c275e` lived under `<corpus-root>/bb_tests/repositories/`, which no longer contains that
 > repository, so this paragraph cannot be re-run or refreshed here. It is kept as the record of the
 > original measurement. Every figure in it — 9,447 files, 280,587 symbols, 866,760 relationships,
 > 17m 10s — is unreproducible on this machine. Where a current number is needed, use the
@@ -239,7 +239,7 @@ not to delete the analysis.
 
 **The original table below was measured on a corpus that no longer exists.** Its basis was
 `go-stdlib` @ `6f5c275e` (9,447 files, 57 packages) under
-`/home/ishaq2321/bb_tests/repositories/`; that directory is gone from this machine, so neither the
+`<corpus-root>/bb_tests/repositories/`; that directory is gone from this machine, so neither the
 counts nor the 866,760 denominator could be re-run or refreshed in place. The numbers are kept
 verbatim because they are the record of a measurement that did happen, but they are marked
 unreproducible rather than presented as current.
@@ -1529,7 +1529,7 @@ reason the emission vocabulary is closed.
   The M12 census measured 5 grammar-error files in 400 on the older `go-tools` corpus; the
   `go-tools` checkout is **no longer present** on this box. **Both** Go repositories this document's
   numbers were pinned to — `go-stdlib` and `cobra` — are now also gone from
-  `<corpus-root>` (`/home/ishaq2321/bb_tests/repositories/`); `go-tools` is the only Go repo left
+  `<corpus-root>` (`<corpus-root>/bb_tests/repositories/`); `go-tools` is the only Go repo left
   there. The differential therefore cannot be run as pinned at all: every count in this document
   that is attributed to `go-stdlib` or `cobra` is unreproducible on this machine, and the only
   current Go measurement available is the `.corpus/` re-derivation in the R7 section (13,523 files

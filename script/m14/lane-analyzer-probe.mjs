@@ -33,7 +33,7 @@
 // e.g.:  bun /tmp/bb-lane-probe.mjs elixir=/tmp/opencode/wt/ELIXIR_FIX3
 import { pathToFileURL } from "node:url";
 
-const REPO = "/home/ishaq2321/backbencher-brain";
+const REPO = "<corpus-root>/backbencher-brain";
 const { runLang, getParser } = await import(`${REPO}/script/m14/run-fixtures.ts`);
 
 const spec = process.argv.slice(2);

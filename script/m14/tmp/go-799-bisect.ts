@@ -10,7 +10,7 @@ import * as fs from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 import { RealGoAnalyzer } from "../../../src/ast/real-go-analyzer"
 
-const REAL = "/home/ishaq2321/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
+const REAL = "<corpus-root>/bb_tests/repositories/go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go"
 const src = fs.readFileSync(REAL, "utf8")
 const lines = src.split("\n")
 

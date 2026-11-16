@@ -3,7 +3,7 @@ import path from "node:path"
 import { deriveRustContainsTruth } from "../oracles/rust-contains"
 import { LANGS } from "../differential"
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..", "..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 function walk(dir: string, exts: string[], cap: number): string[] {
   const out: string[] = []
   const stack = [dir]

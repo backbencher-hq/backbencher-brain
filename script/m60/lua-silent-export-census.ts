@@ -21,7 +21,7 @@ import { readFileSync, readdirSync } from "node:fs"
 // Derived from this file's own location. Hardcoding the main checkout made this
 // script unreadable from a lane worktree.
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 const argOf = (k: string, d?: string): string | undefined => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const ONLY = argOf("--only")
 const LIMIT = Number(argOf("--limit", "0")) || 0

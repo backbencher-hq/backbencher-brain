@@ -1,5 +1,5 @@
 graphql store resolution — real CLI (bb index) -> brain.db
-corpus: /home/ishaq2321/bb_tests/repositories/gql-gqlgen, first 200 .graphql/.gql by sorted relpath
+corpus: <corpus-root>/bb_tests/repositories/gql-gqlgen, first 200 .graphql/.gql by sorted relpath
 indexed: 110 files, 1625 symbols, 4118 relationships
 population: every brain_relationship row in that project (no sampling)
 

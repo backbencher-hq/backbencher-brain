@@ -5,7 +5,7 @@
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ?? "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ?? "<corpus-root>/mcp/backbencher-brain"
 const FIXTURES = path.join(ROOT, "validation/m14/fixtures/groovy")
 
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))

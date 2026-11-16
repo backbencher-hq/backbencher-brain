@@ -78,7 +78,7 @@ if (Object.keys(rows).length === 0) {
 // and the kind that survives, because a plausible number in the wrong row is harder to
 // notice than a missing one.
 const CORPUS_OF: Record<string, string> = {
-  "element-plus:scss": "/home/ishaq2321/bb_tests/repositories/element-plus",
+  "element-plus:scss": "<corpus-root>/bb_tests/repositories/element-plus",
 }
 
 async function measureAvgMsPerFile(dir: string): Promise<{ avg: number; files: number; load: number }> {

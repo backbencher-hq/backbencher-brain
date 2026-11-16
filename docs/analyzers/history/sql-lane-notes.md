@@ -2,7 +2,7 @@
 
 Lane owner: **sql-lane**. Branch `analyzers/ontology-laptop-b`.
 
-**Corpus.** `/home/ishaq2321/bb_tests/repositories` — 20 repositories carry `.sql`.
+**Corpus.** `<corpus-root>/bb_tests/repositories` — 20 repositories carry `.sql`.
 **1,970** git-tracked `.sql` files (list sha256 `3dd1e6c0…`), **1,964** admitted under the engine's
 own 1 MB `FULL_AST_LIMIT` (list sha256 `80837fae…`), 6 over the cap (largest 3,926,506 B),
 0 parse failures, **0 degraded** (no regex-fallback rows in any figure below).
@@ -83,7 +83,7 @@ the TOTAL by **1.9×**, which is the part worth recording:
 | census **after** the fix | 1,965 | 31,051 | 3,873 | 9,106 | 12,024 | 5,966 | **53** | **8** | **21** |
 | incoming gate (TABLE 1) | 1,964 | 31,297 | 3,908 | 9,160 | 12,132 | 6,015 | **53** | **8** | **21** |
 
-**CAUSE, MEASURED: `repositories/proxicall` is a SYMLINK** (`proxicall -> /home/ishaq2321/ProxiCall`)
+**CAUSE, MEASURED: `repositories/proxicall` is a SYMLINK** (`proxicall -> <corpus-root>/ProxiCall`)
 and the census's `walk` tested `readdirSync(…, { withFileTypes: true }).isDirectory()`, which is
 **false for a symlink**, so it dropped **439 `.sql` files — 22.3% of the 1,965-file population and
 ~48% of its edges — in silence**. Every "pooled, whole corpus" figure this instrument had produced
@@ -228,7 +228,7 @@ column is **424 higher, which is exactly this run's `collRes`**: the log was wri
     grammar inventory       npx tsx validation/m14/fixtures/sql/grammar-node-inventory.mts
     zero-claim keywords     git -C <repo> grep -liE '<pattern>' -- '*.sql'   (all 20 repos, with a control)
     second instrument       CENSUS_OUT=<path> bun validation/m14/fixtures/sql/lane-census.ts \
-                              /home/ishaq2321/bb_tests/repositories 0 --pools
+                              <corpus-root>/bb_tests/repositories 0 --pools
                             (its printed `walk:` line names how many SYMLINKED directories it followed)
 
 **Fixtures, verbatim:** `summary: {"sql":{"pass":17,"fail":0}}` ·

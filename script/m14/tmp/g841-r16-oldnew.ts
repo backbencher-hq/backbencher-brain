@@ -19,7 +19,7 @@ const dump = (x: any, d = 0): string => {
   for (let i = 0; i < x.childCount; i++) s += dump(x.child(i), d + 1)
   return s
 }
-for (const [name, wasm] of [["OLD 7f01e3ed", "/tmp/g841-worktree-7f01e3ed.wasm"], ["NEW 3edeebe8", "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"]] as Array<[string, string]>) {
+for (const [name, wasm] of [["OLD 7f01e3ed", "/tmp/g841-worktree-7f01e3ed.wasm"], ["NEW 3edeebe8", "<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"]] as Array<[string, string]>) {
   const lang = await L.load(fs.readFileSync(wasm))
   const parser = new P()
   parser.setLanguage(lang)

@@ -22,7 +22,7 @@ function filesUnder(dir: string, out: string[] = []): string[] {
 }
 
 for (const repo of ["sqlite", "jq"]) {
-  const dir = `/home/ishaq2321/bb_tests/repositories/${repo}`
+  const dir = `<corpus-root>/bb_tests/repositories/${repo}`
   let total = 0
   const perFile = new Map<string, number>()
   for (const f of filesUnder(dir)) {

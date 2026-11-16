@@ -3,7 +3,7 @@
 // analyzer emit?" WITHOUT the store, so the store's hardcoded 0
 // (src/ast/parallel-indexer.ts:2559) cannot mask the answer.
 //
-// Reads real files from /home/ishaq2321/bb_tests/repositories (the corpus the
+// Reads real files from <corpus-root>/bb_tests/repositories (the corpus the
 // milestones name), one per language, and reports how many relationships carry
 // a numeric line_number. No tool code is reused for the verdict.
 
@@ -11,7 +11,7 @@ import { readFileSync, existsSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 // FIXED 2026-09-15 (M49 W19): the java row pointed at
 // `Exposed/src/main/java/org/jetbrains/exposed/sql/Table.kt` — a Kotlin file that

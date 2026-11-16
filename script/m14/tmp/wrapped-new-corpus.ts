@@ -9,12 +9,12 @@ import path from "node:path"
 
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const CORPORA = [
-  "/home/ishaq2321/bb_tests/repositories/element-plus",
-  "/home/ishaq2321/bb_tests/repositories/vue-core",
-  "/home/ishaq2321/bb_tests/repositories/shadcn-svelte",
-  "/home/ishaq2321/bb_tests/repositories/lodash",
+  "<corpus-root>/bb_tests/repositories/element-plus",
+  "<corpus-root>/bb_tests/repositories/vue-core",
+  "<corpus-root>/bb_tests/repositories/shadcn-svelte",
+  "<corpus-root>/bb_tests/repositories/lodash",
 ]
 const EXTS = (process.argv.find((a) => a.startsWith("--exts="))?.slice("--exts=".length) ?? ".ts,.tsx,.js,.jsx,.mjs,.cjs").split(",")
 
@@ -57,7 +57,7 @@ async function main() {
         (r: any) => `${r.type}|${r.source}|${r.target}|${r.line_number ?? "null"}`,
       )
       rows.sort()
-      const rel = path.relative("/home/ishaq2321/bb_tests/repositories", file)
+      const rel = path.relative("<corpus-root>/bb_tests/repositories", file)
       process.stdout.write(`## ${rel}\n`)
       for (const row of rows) process.stdout.write(row + "\n")
       changedFiles++

@@ -9,8 +9,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const VUE = "/home/ishaq2321/bb_tests/repositories/element-plus/docs/examples/table-v2/cell-templating.vue"
-const ROOT = "/home/ishaq2321/bb_tests/repositories/element-plus"
+const VUE = "<corpus-root>/bb_tests/repositories/element-plus/docs/examples/table-v2/cell-templating.vue"
+const ROOT = "<corpus-root>/bb_tests/repositories/element-plus"
 
 const src = readFileSync(VUE, "utf8")
 const m = src.indexOf("<script")

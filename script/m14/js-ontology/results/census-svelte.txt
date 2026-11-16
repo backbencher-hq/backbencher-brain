@@ -1,6 +1,6 @@
 js-census  corpus=svelte  files on disk=3447  analyzed=3447
 [INFO] [22:47:55] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
-[INFO] [22:47:55] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [22:47:55] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"<corpus-root>/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
 
 parsed=3447  failed=0  errorFiles=0  errorNodes=0
 symbols=6261  emptySymbolNames=0

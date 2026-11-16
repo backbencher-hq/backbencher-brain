@@ -26,7 +26,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = path.resolve((import.meta as any).dirname, "../../..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argOf = (n: string) => { const i = process.argv.indexOf(n); return i >= 0 ? process.argv[i + 1] : undefined }
 const LIMIT = parseInt(argOf("--limit") ?? "400")
 const EXT = (argOf("--ext") ?? "fs,fsi,fsx").split(",")

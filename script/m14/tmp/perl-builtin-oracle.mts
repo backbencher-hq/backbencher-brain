@@ -20,7 +20,7 @@ import * as path from "path"
 import { createHash } from "crypto"
 import { createHash } from "crypto"
 
-const ROOT = "/home/ishaq2321/backbencher-brain"
+const ROOT = "<corpus-root>/backbencher-brain"
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const ParserClass = wts.Parser ?? wts.default ?? wts
 const Language = wts.Language ?? wts.default?.Language
@@ -80,7 +80,7 @@ try {
   // perl5's own opcode.h is the authority for the builtin set; it lives in the
   // corpus checkout, not the repo, so it comes from BB_PERL_CORPUS
   // (reviews/LANE-AUDIT-FORMULA.md, evidence-integrity rule 4).
-  const p = (process.env.BB_PERL_CORPUS ?? "/home/ishaq2321/bb_tests/repositories") + "/perl5/opcode.h"
+  const p = (process.env.BB_PERL_CORPUS ?? "<corpus-root>/bb_tests/repositories") + "/perl5/opcode.h"
   const s = fs.readFileSync(p, "utf8")
   const i = s.indexOf("PL_op_name[] INIT({")
   const j = s.indexOf("\n});", i)

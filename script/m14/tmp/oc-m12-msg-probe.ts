@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main() {
   const file = path.join(ROOT, "validation/m12/fixtures/objective-c/Negative.m")
   const content = readFileSync(file, "utf8")

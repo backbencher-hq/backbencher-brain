@@ -6,7 +6,7 @@
 //   node script/verify-core.ts        # via better-sqlite3
 import { BrainDatabase } from "../src/brain/database"
 
-const EXISTING_DB = process.env.BB_VERIFY_DB || "/home/ishaq2321/.local/share/opencode/brain/4b0ea68d7af9a6031a7ffda7ad66e0cb83315750/brain.db"
+const EXISTING_DB = process.env.BB_VERIFY_DB || "<corpus-root>/.local/share/opencode/brain/4b0ea68d7af9a6031a7ffda7ad66e0cb83315750/brain.db"
 const PROJECT_ID = process.env.BB_VERIFY_PID || "4b0ea68d7af9a6031a7ffda7ad66e0cb83315750"
 
 let failures = 0

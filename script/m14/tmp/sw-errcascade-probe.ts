@@ -4,8 +4,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const F = "/home/ishaq2321/bb_tests/repositories/swift-nio/Sources/NIOEmbedded/AsyncTestingChannel.swift"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const F = "<corpus-root>/bb_tests/repositories/swift-nio/Sources/NIOEmbedded/AsyncTestingChannel.swift"
 const src = fs.readFileSync(F, "utf8")
 const lines = src.split("\n")
 const wts: any = await import("web-tree-sitter")

@@ -12,8 +12,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { execFileSync } from "child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/nlohmann-json"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS = "<corpus-root>/bb_tests/repositories/nlohmann-json"
 const TMP = "/tmp/cpp-ab"
 
 const FILES = [

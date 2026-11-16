@@ -25,7 +25,7 @@
  * reports a symlink with `isDirectory() === false`. A walk that uses `Dirent.isDirectory()` on a
  * corpus of symlinked repositories drops every one of them, silently. MEASURED on this lane's
  * corpus: 439 `.sql` files — 22.3% of the population and ~48% of the edges — live behind
- * `repositories/proxicall -> /home/ishaq2321/ProxiCall`, and the census read 1,526 files where
+ * `repositories/proxicall -> <corpus-root>/ProxiCall`, and the census read 1,526 files where
  * the truth is 1,965. This walk therefore uses `statSync(p).isDirectory()` (which FOLLOWS the
  * link) with a `realpathSync` cycle guard, and PRINTS the number of symlinked directories it
  * followed. A number that changes when the walk changes is a number you cannot cite.

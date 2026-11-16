@@ -6,7 +6,7 @@ const analyzer = readFileSync("src/ast/real-clean-analyzer.ts", "utf8")
 const refs = new Set<string>()
 for (const m of analyzer.matchAll(/\.type\s*===\s*"([a-z_]+)"/g)) refs.add(m[1])
 
-const root = "/home/ishaq2321/bb_tests/repositories/clean-stdlib"
+const root = "<corpus-root>/bb_tests/repositories/clean-stdlib"
 const files = (await Bun.$`ls ${root}/*.icl ${root}/*.dcl`.text()).trim().split("\n").filter(Boolean)
 const parser = await ASTEngine.getParser("clean")
 const emitted = new Set<string>()

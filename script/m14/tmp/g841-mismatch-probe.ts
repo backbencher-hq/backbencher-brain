@@ -3,7 +3,7 @@ import * as fs from "fs"
 async function main() {
   const { ASTEngine } = await import("../../../src/ast/engine")
   const { parseFile } = await import("../../../src/ast/pool-worker")
-  const F = "/home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/generate-build-artifact-hashes.groovy"
+  const F = "<corpus-root>/bb_tests/repositories/grails-core/etc/bin/generate-build-artifact-hashes.groovy"
   const src = fs.readFileSync(F, "utf8")
   const parser = await ASTEngine.getParser("groovy")
   const tree = parser.parse(src)

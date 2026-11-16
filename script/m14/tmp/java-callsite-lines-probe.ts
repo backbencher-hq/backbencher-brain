@@ -4,7 +4,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const F = path.join(ROOT, "validation/m14/fixtures/java/callsite-lines-825.java")
 
 async function main(): Promise<void> {

@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 async function main(): Promise<void> {
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
@@ -12,7 +12,7 @@ async function main(): Promise<void> {
   let damaged = 0
   const out: string[] = []
   for (const f of files) {
-    const root = parser.parse(fs.readFileSync(path.join("/home/ishaq2321/bb_tests/repositories/scala3", f), "utf8")).rootNode
+    const root = parser.parse(fs.readFileSync(path.join("<corpus-root>/bb_tests/repositories/scala3", f), "utf8")).rootNode
     if (root.hasError) { damaged++; out.push(f) }
   }
   console.log(`# scala3: ${files.length} files, ${damaged} with rootNode.hasError`)

@@ -4,7 +4,7 @@
  "_authority": "agent-authored by the analyzer/PROTOBUF lane. Expectations in validation/m14/fixtures/protobuf/ were hand-derived from the protobuf language specification and from protobuf's own reference corpus, not captured from an analyzer run; the oracle gaps and the mutant battery that stands in for one are stated per decision rather than left implicit.",
  "_wave": "M14 / M60 ontology workstream, laptop B, pass 2 (adversarial re-verification of pass 1)",
  "_corpus": {
-  "root": "/home/ishaq2321/bb_tests/repositories",
+  "root": "<corpus-root>/bb_tests/repositories",
   "files_admitted": 821,
   "repositories": 18,
   "sampling": "working-tree walk of every *.proto, uncapped. NOT `git ls-files`: three of these corpora are sparse checkouts where git ls-files lists 8,694 tracked paths that are not on disk, so reading them would make the corpus size a fiction.",

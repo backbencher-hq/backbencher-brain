@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs"
 import { getParser } from "../../../src/ast/engine"
 
 const FILE = process.env.PROBE_FILE ??
-  "/home/ishaq2321/bb_tests/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java"
+  "<corpus-root>/bb_tests/repositories/java-lib/guava/src/com/google/common/base/Preconditions.java"
 
 // Returns the joined ancestor chain as ONE string (its one caller stores it as
 // `path`); the annotation said `string[]`, which is what the walk builds before it

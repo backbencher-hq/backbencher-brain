@@ -3,7 +3,7 @@
 [INFO] [02:12:20] [ast-engine] language parser loaded {"language":"groovy","wasmPath":"/tmp/bb-wasm_tree-sitter-groovy_tree-sitter-groovy.wasm_5_6hxcvmh"}
   qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 0 row(s) asked · namespace branch: 0 of 0 row(s) asked (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)
 incoming gate — groovy
-corpus root: /home/ishaq2321/bb_tests/repositories (the DEFAULT)
+corpus root: <corpus-root>/bb_tests/repositories (the DEFAULT)
 population: 1 parsed of 1 sampled (corpus has 8102 .groovy,gvy,gradle files across 8 repos; stride sample)
 population: admitted extensions = .groovy, .gvy, .gradle (both spellings admitted) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 8102 for THIS lane in THIS run — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).
 project index: NOT USED — this is the per-file population, which is NOT the one production parses (re-run with --index to measure that one)

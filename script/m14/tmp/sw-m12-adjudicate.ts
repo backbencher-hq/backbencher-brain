@@ -9,7 +9,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const DIR = "/home/ishaq2321/mcp/backbencher-brain/validation/m12/fixtures/swift"
+const DIR = "<corpus-root>/mcp/backbencher-brain/validation/m12/fixtures/swift"
 for (const file of ["UserService.swift", "Negative.swift"]) {
   const f = path.join(DIR, file)
   const src = fs.readFileSync(f, "utf8")

@@ -17,7 +17,7 @@ for (const [name, src] of [["isolated", ISO], ["isolated+int", ISO2]] as Array<[
   console.log(`${name}: errors=${errs} kinds=${kinds.join(" ")}`)
 }
 // the real file: list method/field/constructor nodes between lines 30-50
-const F = "/home/ishaq2321/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
+const F = "<corpus-root>/bb_tests/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/controllers/functional/tests/ProductController.groovy"
 const t = parser.parse(fs.readFileSync(F, "utf8"))
 const kinds: string[] = []
 const w = (n: any) => { if (["method_declaration", "field_declaration", "constructor_declaration", "function_definition"].includes(n.type) && n.startPosition.row + 1 >= 20 && n.startPosition.row + 1 <= 55) kinds.push(`${n.type}@${n.startPosition.row + 1}:${JSON.stringify(n.text.slice(0, 34))}`); for (let i = 0; i < n.childCount; i++) w(n.child(i)) }

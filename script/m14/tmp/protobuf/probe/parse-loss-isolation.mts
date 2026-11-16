@@ -62,7 +62,7 @@ const arg = (name: string, dflt: string): string => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
   return hit ? hit.slice(name.length + 3) : dflt
 }
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPS = Number(arg("reps", "40"))
 const MODE = arg("mode", "alone-fresh")
 const WIDTH = 8

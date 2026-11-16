@@ -1,7 +1,7 @@
 // ER3 — the parse-success census, measured over the WHOLE corpus.
 //
 // The canonical gate (script/m14/verify-parse-success.ts) reads its corpora from
-// /home/ishaq2321/bb_tests/repositories, which does not exist in this
+// <corpus-root>/bb_tests/repositories, which does not exist in this
 // environment, so it prints "corpus absent — skipped" for erlang. This probe is
 // the same measurement against the corpora that DO exist here, plus the
 // classification the gate's report requires: every grammar-error file is

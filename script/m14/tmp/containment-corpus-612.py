@@ -43,7 +43,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-CORPUS = Path("/home/ishaq2321/bb_tests/repositories")
+CORPUS = Path("<corpus-root>/bb_tests/repositories")
 DEFAULT_OUT = "validation/m14/measurements/containment-612.json"
 
 # (repo dir name, language the probes should filter on)

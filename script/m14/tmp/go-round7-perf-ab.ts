@@ -30,7 +30,7 @@ import * as os from "node:os"
 import * as path from "node:path"
 import { execSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const BEFORE_COMMIT = "03bfc864" // GOD10 present, GOD11/GOD12 absent
 const arg = (k: string, d: string): string => {
   const i = process.argv.indexOf(k)
@@ -54,7 +54,7 @@ async function main() {
   // The BEFORE analyzer, from the pinned commit, import specifier rewritten only.
   const beforeSrc = execSync(`git show ${BEFORE_COMMIT}:src/ast/real-go-analyzer.ts`, {
     cwd: ROOT, maxBuffer: 1 << 28,
-  }).toString().replace(/from "\.\/engine"/g, 'from "/home/ishaq2321/mcp/backbencher-brain/src/ast/engine"')
+  }).toString().replace(/from "\.\/engine"/g, 'from "<corpus-root>/mcp/backbencher-brain/src/ast/engine"')
   const beforeDir = "/tmp/opencode/go-before"
   fs.mkdirSync(beforeDir, { recursive: true })
   const beforePath = path.join(beforeDir, `real-go-analyzer-${BEFORE_COMMIT}.ts`)
@@ -68,7 +68,7 @@ async function main() {
   const rows: any[] = []
   let nodes = 0
   for (const repo of repos) {
-    const dir = path.join("/home/ishaq2321/bb_tests/repositories", repo)
+    const dir = path.join("<corpus-root>/bb_tests/repositories", repo)
     if (!fs.existsSync(dir)) continue
     const files: string[] = []
     const walk = (d: string): void => {

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { parseFile } from "../../../src/ast/pool-worker"
-const SRC = "/home/ishaq2321/bb_tests/repositories/jq/src/jv_print.c"
+const SRC = "<corpus-root>/bb_tests/repositories/jq/src/jv_print.c"
 const lines = readFileSync(SRC, "utf8").split("\n")
 const dir = mkdtempSync(join(tmpdir(), "c901bs-"))
 for (const n of [lines.length, 442, 430, 420, 411, 400]) {

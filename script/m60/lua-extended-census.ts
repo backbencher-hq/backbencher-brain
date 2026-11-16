@@ -60,7 +60,7 @@ import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const arg = (k: string, d?: string) => (process.argv.includes(k) ? process.argv[process.argv.indexOf(k) + 1] : d)
 const OUT = path.resolve(ROOT, arg("--out", "validation/m14/measurements/lua-extended-census.json")!)
 const GRAMMAR_INVENTORY = path.resolve(ROOT, "validation/m14/measurements/lua-grammar-nodes.json")

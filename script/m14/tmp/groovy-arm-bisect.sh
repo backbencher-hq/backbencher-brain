@@ -4,7 +4,7 @@
 # The tiling rule is unchanged: the slices must abut, start at 0, and reach the gate's own admitted
 # total (8,102). A slice that TIMES OUT is recorded as a hang with its own offset, never silently.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 OUT=validation/m14/measurements/groovy-arm
 LOG=script/m14/tmp/groovy-arm-run.log
 for OFF in $(seq 7900 10 8100); do

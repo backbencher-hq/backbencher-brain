@@ -5,7 +5,7 @@ import { parseFile } from "../src/ast/pool-worker"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/elixir/lib"
+const CORPUS = "<corpus-root>/bb_tests/repositories/elixir/lib"
 const files: string[] = []
 function walk(d: string) {
   for (const e of readdirSync(d)) {

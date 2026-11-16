@@ -12,8 +12,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CYTHON = "/home/ishaq2321/bb_tests/repositories/cython"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CYTHON = "<corpus-root>/bb_tests/repositories/cython"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

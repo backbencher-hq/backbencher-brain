@@ -47,8 +47,8 @@ import { execFileSync } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const ORACLE = path.join(ROOT, "script/m14/tmp/yaml-f5-oracle.py")
 const OUT = path.join(ROOT, "validation/m14/results/archive/yaml-f5-differential.json")
 

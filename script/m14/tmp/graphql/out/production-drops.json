@@ -3,7 +3,7 @@
   "kind": "graphql-production-drops",
   "generatedAt": "2026-10-03T10:32:17.983Z",
   "producedBy": "script/m14/tmp/graphql/probe/production-drops.mts",
-  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "corpusRoot": "<corpus-root>/bb_tests/repositories",
   "files": 426,
   "direct": {
     "symbols": 8796,

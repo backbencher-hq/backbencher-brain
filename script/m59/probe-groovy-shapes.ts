@@ -6,7 +6,7 @@
 //    its annotation (the java defect), or at the declaration?
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const SRC = `package com.acme
 

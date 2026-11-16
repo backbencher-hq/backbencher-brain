@@ -31,7 +31,7 @@
 # exit:  0 if HEAD is healthy, 1 if any check fails
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"
-export PATH="/home/ishaq2321/.bun/bin:$PATH"
+export PATH="<corpus-root>/.bun/bin:$PATH"
 
 HEAD_SHA="$(git rev-parse --short HEAD)"
 WT="${TMPDIR:-/tmp}/perl-head-gate-$$"

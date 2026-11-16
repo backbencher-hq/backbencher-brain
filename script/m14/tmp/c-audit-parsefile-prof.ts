@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/pool-worker"
 
 const N = Number(process.env.BB_N ?? 80)
-const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+const Z = "<corpus-root>/bb_tests/repositories/zig"
 const files = execFileSync("bash", ["-c", `find ${Z} -name '*.c' -size +1k -not -path '*/.git/*' | sort | head -400`], { encoding: "utf8" }).split("\n").filter(Boolean).slice(0, N)
 console.log(`profiling parseFile over ${files.length} C files`)
 const t0 = performance.now()

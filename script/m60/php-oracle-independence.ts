@@ -52,7 +52,7 @@ import * as path from "node:path"
 
 // The checkout this script lives in, not a literal path — see `php-line-contract.ts`. A gate
 // that cannot start on the machine it is committed to is not a gate, and the hardcoded
-// `/home/ishaq2321/backbencher-brain` made this one load-bearing on a directory that does not
+// `<corpus-root>/backbencher-brain` made this one load-bearing on a directory that does not
 // exist in a lane worktree (`…/mcp/backbencher-brain`).
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const DIFF = path.join(ROOT, "script/m14/differential.ts")

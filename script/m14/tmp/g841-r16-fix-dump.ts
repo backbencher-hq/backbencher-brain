@@ -3,8 +3,8 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const { ASTEngine } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/engine.ts")
-const { RealGroovyAnalyzer } = await import("/home/ishaq2321/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
+const { ASTEngine } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/engine.ts")
+const { RealGroovyAnalyzer } = await import("<corpus-root>/mcp/backbencher-brain/src/ast/real-groovy-analyzer.ts")
 const lang = await L.load(fs.readFileSync(process.argv[2]))
 const parser = new P(); parser.setLanguage(lang)
 for (const f of process.argv.slice(3)) {

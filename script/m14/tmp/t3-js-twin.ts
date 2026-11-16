@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES: Array<[string, string]> = [
   ["console[method](nested call)", "function f(m, method) { console[method](m.text()); }\n"],
   ["arr[i](nested call)", "function f(m, arr, i) { arr[i](m.text()); }\n"],

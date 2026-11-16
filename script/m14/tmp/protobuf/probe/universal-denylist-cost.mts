@@ -75,7 +75,7 @@ import * as path from "node:path"
 import { parseFile, nameTheSymbolRule } from "../../../../../src/ast/pool-worker"
 import { RealProtobufAnalyzer } from "../../../../../src/ast/real-protobuf-analyzer"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LIMIT_ARG = process.argv.find((a) => a.startsWith("--limit="))
 const PER_REPO_LIMIT = LIMIT_ARG ? Number(LIMIT_ARG.slice("--limit=".length)) : 0
 const OUT = "/tmp/opencode/pb/universal-denylist-cost.json"

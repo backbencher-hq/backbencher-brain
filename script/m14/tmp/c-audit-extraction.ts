@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const Z = "/home/ishaq2321/bb_tests/repositories/zig"
+const Z = "<corpus-root>/bb_tests/repositories/zig"
 const files = execFileSync("bash", ["-c", `find ${Z} -name '*.c' -size +1k -not -path '*/.git/*' | sort | head -400`], { encoding: "utf8" }).split("\n").filter(Boolean)
 const kinds: Record<string, number> = {}
 const edges: Record<string, number> = {}

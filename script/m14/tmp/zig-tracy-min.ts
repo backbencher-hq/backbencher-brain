@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const CASES: Array<[string,string]> = [
   ['tracy message', 'pub const enable = 1;\npub inline fn message(comptime msg: [:0]const u8) void {\n    if (!enable) return;\n    _ = msg;\n}'],
   ['enable in const expr', 'pub const enable = 1;\npub const enable_allocation = enable and 2;'],

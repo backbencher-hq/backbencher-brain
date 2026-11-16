@@ -9,7 +9,7 @@
  * `--tree <file>` dumps the tree instead of scoring, for reading a shape.
  */
 import { readFileSync, existsSync } from "node:fs"
-const REPO = process.env.BB_REPO ?? "/home/ishaq2321/backbencher-brain"
+const REPO = process.env.BB_REPO ?? "<corpus-root>/backbencher-brain"
 const { Parser, Language } = await import(`${REPO}/node_modules/web-tree-sitter/tree-sitter.js`)
 import { readVbSource } from "./vb-source"
 

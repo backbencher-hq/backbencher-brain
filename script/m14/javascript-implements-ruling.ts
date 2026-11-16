@@ -49,7 +49,7 @@ function arg(name: string, fallback: string): string {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
   return hit ? hit.slice(name.length + 3) : fallback
 }
-const CR = arg("corpus", "/home/ishaq2321/bb_tests/repositories/typescript")
+const CR = arg("corpus", "<corpus-root>/bb_tests/repositories/typescript")
 const TAG = arg("tag", path.basename(CR))
 const SIZE_CAP = 512 * 1024
 const OUT = `validation/m14/tmp/javascript-implements-ruling.json`

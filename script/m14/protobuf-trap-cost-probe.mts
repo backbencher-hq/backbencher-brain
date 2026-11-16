@@ -29,7 +29,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? '/home/ishaq2321/bb_tests/repositories'
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? '<corpus-root>/bb_tests/repositories'
 
 /** The three files one trapped run in this session degraded. */
 const TRAPPED = [

@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const corpus = "/home/ishaq2321/bb_tests/repositories"
+const corpus = "<corpus-root>/bb_tests/repositories"
 const count = Number(process.argv[2] ?? 120)
 const files = execFileSync("bash", ["-lc", `find ${corpus} -name '*.icl' -o -name '*.dcl' | sort | head -${count}`], { encoding: "utf8", maxBuffer: 1 << 28 })
   .trim().split("\n").filter(Boolean)

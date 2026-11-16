@@ -3,7 +3,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
 import { parseFile } from "../../src/ast/engine"
-const ROOTS = ["/home/ishaq2321/bb_tests/repositories/fmt", "/home/ishaq2321/bb_tests/repositories/nlohmann-json"]
+const ROOTS = ["<corpus-root>/bb_tests/repositories/fmt", "<corpus-root>/bb_tests/repositories/nlohmann-json"]
 const EXTS = [".h", ".hpp", ".hh", ".cpp", ".cc", ".cxx"]
 const SKIP = new Set([".git", "build", "node_modules", "docs", "doc", "third_party", "test", "tests"])
 const walk = (d: string, out: string[] = [], depth = 0): string[] => {

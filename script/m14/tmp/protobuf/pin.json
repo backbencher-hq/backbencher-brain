@@ -6,7 +6,7 @@
     "bytes": 81735
   },
   "baseline": {
-    "file": "/home/ishaq2321/bb_tests/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm",
+    "file": "<corpus-root>/bb_tests/graphql/baseline/tree-sitter-proto-UPSTREAM.wasm",
     "sha256": "dbbde8a8f047b6b661c113fb61fdb0d5aceff3956e11b7d5f58ac22ff02a473f",
     "bytes": 72342,
     "note": "amaanq/tree-sitter-proto as published, pre-patch; kept so the extraction A/B compares two different parsers"

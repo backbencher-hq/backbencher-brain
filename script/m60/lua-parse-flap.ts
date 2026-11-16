@@ -20,7 +20,7 @@ import { execFileSync } from "node:child_process"
 import { readdirSync, statSync } from "node:fs"
 import * as path from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ROUNDS = Number(process.env.BB_FLAP_ROUNDS ?? "12")
 const CONCURRENCY = Number(process.env.BB_FLAP_CONCURRENCY ?? "8")
 

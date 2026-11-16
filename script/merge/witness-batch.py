@@ -60,7 +60,7 @@ def main() -> int:
             cmd = cmds[n].replace('"', '\\"')
             log = f"{args.tag}-s{n}.log"
             f.write(f'log={log}\n')
-            f.write(f'(cd {args.pre_c1} && PATH=/home/ishaq2321/.bun/bin:$PATH timeout {args.timeout} bash -c "{cmd}" > "$log" 2>&1); rc=$?\n')
+            f.write(f'(cd {args.pre_c1} && PATH=<corpus-root>/.bun/bin:$PATH timeout {args.timeout} bash -c "{cmd}" > "$log" 2>&1); rc=$?\n')
             f.write(f'echo "STEP {n} our_dur=?s pre-c1 exit=$rc :: {cmd}" >> {bulk}\n')
         f.write(f'echo "WITNESS-BATCH DONE $(date +%H:%M:%S)" >> {bulk}\n')
     os.chmod(out, 0o755)

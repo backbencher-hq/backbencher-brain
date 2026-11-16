@@ -15,7 +15,7 @@ import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT_DIR = path.join(ROOT, "validation/m59/results")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 
 const lang = process.argv.find((a) => a.startsWith("--lang="))?.split("=")[1] ?? "typescript"
 

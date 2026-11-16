@@ -145,8 +145,8 @@ const candidateTypes = [...refs.entries()]
  * and the artifact records WHICH source each type came from — a type that only
  * exists in a probe stays visible as probe-only rather than passing silently.
  */
-const CORPUS = process.env.BB_SQL_CORPUS ?? "/home/ishaq2321/ProxiCall"
-const PROBE_DIR = "/home/ishaq2321/bb_tests/sql/probe/dialects"
+const CORPUS = process.env.BB_SQL_CORPUS ?? "<corpus-root>/ProxiCall"
+const PROBE_DIR = "<corpus-root>/bb_tests/sql/probe/dialects"
 const observed = new Map<string, Set<string>>()
 let corpusFiles = 0
 let corpusBytes = 0

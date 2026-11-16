@@ -3,7 +3,7 @@
 // real defect shape instead of a snippet that passes under both dispatches.
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const diff: any = await import(path.join(ROOT, "script/m14/differential.ts"))
 const eng: any = await import(path.join(ROOT, "src/ast/engine.ts"))
 const wts: any = await import("web-tree-sitter")
@@ -39,7 +39,7 @@ const report = (label: string, src: string) => {
 }
 
 // (A) the real file's script block, verbatim
-const real = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/element-plus/docs/examples/table-v2/selection.vue", "utf8")
+const real = fs.readFileSync("<corpus-root>/bb_tests/repositories/element-plus/docs/examples/table-v2/selection.vue", "utf8")
 report("A real selection.vue", real)
 
 // (B) minimized: JSX return + typed destructure + Array.from().map object literal

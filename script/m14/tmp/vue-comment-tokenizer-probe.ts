@@ -4,7 +4,7 @@
 // rather than trusting the note.
 import * as fs from "fs"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const cases: { name: string; src: string }[] = [
   {

@@ -1,8 +1,8 @@
 // #912 part 1: the site's analyzer output through the PRODUCTION entry.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const file = "/home/ishaq2321/bb_tests/repositories/jq/src/builtin.c"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const file = "<corpus-root>/bb_tests/repositories/jq/src/builtin.c"
 const src = readFileSync(file, "utf8")
 const { parseFile } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const res: any = await parseFile(file, src, { language: "c" } as any)

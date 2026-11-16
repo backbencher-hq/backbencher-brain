@@ -1,7 +1,7 @@
 // Author the #868 expectation from LIVE emission, never from memory.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const FILES = process.argv.slice(2).length > 0
   ? process.argv.slice(2)

@@ -52,7 +52,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 
 const REPO = resolve(import.meta.dir, "../..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const DIR = join(CORPUS_ROOT, process.env.VB_CORPUS ?? "roslyn-vb")
 const LIMIT = Number(process.env.VB_NFILES ?? 0)
 const OFFSET = Number(process.env.VB_OFFSET ?? 0)

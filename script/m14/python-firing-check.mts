@@ -44,8 +44,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join } from "node:path"
 import { execFileSync } from "node:child_process"
 
-const REPO = process.env.BB_REPO ?? "/home/ishaq2321/backbencher-brain"
-const CORPUS_ROOT = process.env.BB_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
+const REPO = process.env.BB_REPO ?? "<corpus-root>/backbencher-brain"
+const CORPUS_ROOT = process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
 const PY_CORPUS = process.env.BB_PY_CORPUS ?? join(CORPUS_ROOT, "python-corpus")
 const BLIND = process.env.BB_BLIND === "1"
 

@@ -45,7 +45,7 @@ import { getParser } from "../../src/ast/engine"
 import { RealRustAnalyzer } from "../../src/ast/real-rust-analyzer"
 
 const MAIN_ROOT = process.env.BB_REPO || join(dirname(fileURLToPath(import.meta.url)), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ARGS = process.argv.slice(2)
 const RUNS = Number(ARGS.find((a) => a.startsWith("--runs="))?.slice(7) ?? 3)
 const FILE = ARGS.find((a) => a.startsWith("--file="))?.slice(7) ?? "defs.rs"

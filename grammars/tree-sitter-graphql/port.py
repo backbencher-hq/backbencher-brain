@@ -26,8 +26,8 @@ import sys
 # `python3 port.py` always reads upstream and rewrites grammar.js from scratch,
 # which makes the patch reviewable as a diff and makes a re-run idempotent
 # instead of a "the anchor is already gone" failure.
-UPSTREAM = "/home/ishaq2321/backbencher-brain/grammars/tree-sitter-graphql/grammar.upstream.js"
-SRC = "/home/ishaq2321/backbencher-brain/grammars/tree-sitter-graphql/grammar.js"
+UPSTREAM = "<corpus-root>/backbencher-brain/grammars/tree-sitter-graphql/grammar.upstream.js"
+SRC = "<corpus-root>/backbencher-brain/grammars/tree-sitter-graphql/grammar.js"
 
 # snake_case rule -> the exact name the vendored wasm exposes.
 # Derived from `language.nodeTypeForId` over wasm/tree-sitter-graphql.wasm

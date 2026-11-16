@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 const ROOT = "."
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const { macroDeclaredBody, RealCppAnalyzer } = await import("../../../src/ast/real-cpp-analyzer.ts")
 const pred: any = new RealCppAnalyzer()
 const wts: any = await import("web-tree-sitter")

@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 // .vue/.svelte are SFC CONTAINERS: the real analyzers pre-parse their script
 // block, so parsing them with the plain JS grammar produces garbage nodes
 // (measured: `.svelte` "decorator" hits were misparsed CSS at-rules). Only the
@@ -19,7 +19,7 @@ const CORPORA: Array<{ repo: string; exts: string[] }> = [
   { repo: "grails-core", exts: [".js"] },
   { repo: "vue-element-admin", exts: [".js"] },
 ]
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 
 function walk(dir: string, exts: string[], out: string[] = []): string[] {
   let entries

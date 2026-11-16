@@ -4,7 +4,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealPhpAnalyzer } from "../../../src/ast/real-php-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE = process.argv[2] ?? path.join(ROOT, "validation/m14/fixtures/php/header-reads.php")
 
 async function main() {

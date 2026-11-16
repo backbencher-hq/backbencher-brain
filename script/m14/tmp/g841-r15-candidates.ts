@@ -5,8 +5,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const LIB = "/home/ishaq2321/.gradle/wrapper/dists/gradle-8.14-all/c2qonpi39x1mddn7hk5gh9iqj/gradle-8.14/lib"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const LIB = "<corpus-root>/.gradle/wrapper/dists/gradle-8.14-all/c2qonpi39x1mddn7hk5gh9iqj/gradle-8.14/lib"
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const parser = await ASTEngine.getParser("groovy" as any)
 

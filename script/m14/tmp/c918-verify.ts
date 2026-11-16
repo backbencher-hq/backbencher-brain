@@ -5,7 +5,7 @@ import path from "node:path"
 import fs from "node:fs"
 const { parseFile } = await import(path.resolve("src/ast/engine.ts"))
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const FILE = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const EXPECT: Array<[number, string, string]> = [
   [5514, "cmpp_rc_cstr", "char const *"],
   [5529, "cmpp_mrealloc", "void *"],

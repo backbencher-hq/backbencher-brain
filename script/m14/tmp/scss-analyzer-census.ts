@@ -35,7 +35,7 @@ import { ASTEngine } from "../../../src/ast/engine"
 import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "fs"
 import { join } from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const CORPORA = ["element-plus", "phpmyadmin", "vue-core", "vue-element-admin"]
 const SKIP = new Set(["node_modules", ".git", "target", "vendor", "dist", "build"])
 const OUT = "validation/m14/results/archive/scss-analyzer-census.json"

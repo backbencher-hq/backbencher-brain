@@ -35,7 +35,7 @@ const { detectLanguageFromPath } = (await import(path.join(ROOT, "src/ast/langua
 const { parseFile } = (await import(path.join(ROOT, "src/ast/pool-worker"))) as any
 const { RealGraphqlAnalyzer } = (await import(path.join(ROOT, "src/ast/real-graphql-analyzer"))) as any
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const wts: any = await import(path.join(ROOT, "node_modules/web-tree-sitter/tree-sitter.js"))
 const ParserClass = wts.Parser ?? wts.default ?? wts

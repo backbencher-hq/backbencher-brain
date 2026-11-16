@@ -8,7 +8,7 @@ import * as fs from "fs"
 import { RealGroovyAnalyzer } from "../../../src/ast/real-groovy-analyzer"
 
 const FILE =
-  "/home/ishaq2321/bb_tests/repositories/grails-core/grails-scaffolding/src/main/templates/scaffolding/AsyncController.groovy"
+  "<corpus-root>/bb_tests/repositories/grails-core/grails-scaffolding/src/main/templates/scaffolding/AsyncController.groovy"
 
 async function main() {
   const SRC = fs.readFileSync(FILE, "utf8")

@@ -9,7 +9,7 @@ const lang = await L.load(fs.readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const FILE = "/home/ishaq2321/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
+const FILE = "<corpus-root>/bb_tests/repositories/sqlite/ext/wasm/libcmpp.c"
 const LINES: Array<[number, string]> = [
   [5514, "cmpp_rc_cstr"], [5529, "cmpp_mrealloc"], [5533, "cmpp_malloc"],
   [6102, "cmpp_dx_delim"], [9526, "cmpp_b_reuse"], [9714, "cmpp_b_borrow"],

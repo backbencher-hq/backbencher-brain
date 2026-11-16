@@ -145,7 +145,7 @@ const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.jso
 // its pinned revision instead. A lane that cannot name where its own corpus
 // lives cannot record a floor, and the alternative — hard-coding one workdir's
 // path into shared code — would make the other 20 lanes depend on it.
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
@@ -198,7 +198,7 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
 // Two harness defects found live while re-emitting F5 (2026-09-14). Both made a
 // canonical sweep impossible to finish on this checkout, because `proxicall` —
 // the dart primary corpus — is a symlink to an actively developed 16G project
-// (/home/ishaq2321/ProxiCall) whose HEAD moved five times during one sweep:
+// (<corpus-root>/ProxiCall) whose HEAD moved five times during one sweep:
 //
 //   1. STATE FORKED PER CHILD. The journal is addressed by sweep state (pins +
 //      sampling + the analyzer/oracle source that derived it), and every

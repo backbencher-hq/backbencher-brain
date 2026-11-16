@@ -42,7 +42,7 @@ const HERE = path.dirname(SELF_PATH)
 const ROOT = path.resolve(HERE, "..", "..")
 const SPEC_DIR = path.join(ROOT, "script", "m14", "spec")
 const WASM_DIR = path.join(ROOT, "wasm")
-// Was: the literal foreign corpus root "/home/ishaq2321/bb_tests/repositories" — see script/lib/corpus-root.ts.
+// Was: the literal foreign corpus root "<corpus-root>/bb_tests/repositories" — see script/lib/corpus-root.ts.
 const CORPUS_ROOT = resolveCorpusRoot(process.cwd()) ?? "CORPUS_ROOT_UNRESOLVED"
 const EVIDENCE = path.join(ROOT, "validation", "m14", "results", "M14.0.F8.json")
 const CENSUS_FILES = process.argv.includes("--files") ? parseInt(process.argv[process.argv.indexOf("--files") + 1]) : 60

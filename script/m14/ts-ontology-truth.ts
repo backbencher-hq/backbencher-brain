@@ -117,7 +117,7 @@ const argOf = (flag: string): string | undefined => {
 const hasFlag = (flag: string): boolean => argv.includes(flag)
 const OUT = argOf("--out")
 const LANG = argOf("--lang") ?? "typescript"
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 // Default to the lane's assigned corpus. Drawn from every repo in the tree
 // instead, `.ts` files in `csharp-sample`'s agent scripts and `vuejs` get mixed
 // in and the sample stops being a typescript measurement.

@@ -17,8 +17,8 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = ["sdwebimage", "afnetworking"].map((r) => path.join("/home/ishaq2321/bb_tests/repositories", r))
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = ["sdwebimage", "afnetworking"].map((r) => path.join("<corpus-root>/bb_tests/repositories", r))
 
 // A header belongs to this lane only when the ROUTER says so: production sniffs
 // `.h` content for `@interface`/`@protocol`. Asking the router (rather than

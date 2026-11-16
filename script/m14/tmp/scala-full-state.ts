@@ -18,7 +18,7 @@ import { RealScalaAnalyzer } from "../../../src/ast/real-scala-analyzer"
 import { LANGS, LANG_REPOS, SECOND_CORPUS, normTarget } from "../differential"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..", "..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const LABELS = ["calls", "instantiates", "contains", "uses", "references", "extends", "implements", "overrides"]
 
 function walk(dir: string, out: string[] = []): string[] {

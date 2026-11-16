@@ -3,7 +3,7 @@
 // Same allowlist + dedupe + normTarget as script/m14/differential.ts's c branch.
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { parseFile } = await import(path.resolve("src/ast/engine.ts"))
 const mod: any = await import(path.resolve("script/m14/differential.ts"))
 
@@ -15,7 +15,7 @@ const cLang: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-si
 const parser = new P()
 parser.setLanguage(cLang)
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const REPO = "<corpus-root>/bb_tests/repositories/sqlite"
 const FILES = ["ext/wasm/libcmpp.c", "ext/jni/src/c/sqlite3-jni.c"]
 const ALLOW = new Set(["extends", "implements", "instantiates", "overrides", "calls", "uses", "references", "imports"])
 const normTarget = (t: string) => t

@@ -45,7 +45,7 @@ import { loadWebTreeSitter } from "../../src/util/wasm"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const OUT = path.join(ROOT, "validation/m60/results/julia-census.json")
-const CORPUS_ROOT = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = "<corpus-root>/bb_tests/repositories"
 const WASM = path.join(ROOT, "wasm/tree-sitter-julia.wasm")
 const GRAMMAR_DIR = path.join(ROOT, "grammars/tree-sitter-julia")
 const PKG = "tree-sitter-julia@0.23.1"

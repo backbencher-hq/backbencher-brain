@@ -3,9 +3,9 @@
 // invisibility of `calls anonymous_Fiber -> liftF @148`.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const FILE =
-  "/home/ishaq2321/bb_tests/repositories/cats-effect/kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala"
+  "<corpus-root>/bb_tests/repositories/cats-effect/kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala"
 const text = fs.readFileSync(FILE, "utf8")
 const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 const res: any = await ASTEngine.parseFile(FILE, text)

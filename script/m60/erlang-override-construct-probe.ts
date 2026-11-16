@@ -103,7 +103,7 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const argOf = (name: string): string | undefined => {
   const i = argv.indexOf(name)

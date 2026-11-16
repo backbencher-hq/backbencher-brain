@@ -3,7 +3,7 @@
 # Quick probes first, the slow FULL-EXTENT draws last, each step timeout-guarded so
 # one wedged child cannot hide the readings that already exist.
 set -u
-cd /home/ishaq2321/mcp/backbencher-brain
+cd <corpus-root>/mcp/backbencher-brain
 export BB_M14_WORK=/tmp/sw-closure-work
 rm -rf "$BB_M14_WORK"
 

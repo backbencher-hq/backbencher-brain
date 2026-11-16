@@ -6,8 +6,8 @@ import * as WTS from "web-tree-sitter"
 import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyzer"
 import { deriveTreeEdges, deriveJavaScriptEdges } from "../differential"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories"
 let P: any, LANG: any
 
 async function parsers() {

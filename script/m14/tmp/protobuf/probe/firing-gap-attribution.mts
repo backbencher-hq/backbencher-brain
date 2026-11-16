@@ -46,7 +46,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { parseFile } from "../../../../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const LANG = "protobuf"
 const LIMIT = 120
 

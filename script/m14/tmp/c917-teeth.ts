@@ -2,7 +2,7 @@
 // by side, so the working tree is never swapped) vs the fixed one.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const { RealCAnalyzer: Post } = await import(path.join(ROOT, "src/ast/real-c-analyzer.ts"))
 const { RealCPreAnalyzer917: Pre } = await import(path.join(ROOT, "src/ast/zz-c917-pre-analyzer.ts"))
 const wts: any = await import("web-tree-sitter")

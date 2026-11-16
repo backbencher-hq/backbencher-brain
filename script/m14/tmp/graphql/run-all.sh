@@ -9,13 +9,13 @@
 # gate runs against wasm/tree-sitter-graphql.wasm exactly as production does.
 set -u
 # Self-locating: the lane directory is this script's own, and the repository root
-# is four levels up. It used to `cd /home/ishaq2321/bb_tests`, which meant the
+# is four levels up. It used to `cd <corpus-root>/bb_tests`, which meant the
 # whole suite was unrunnable from a clone — the failure mode this move exists to
 # remove. `GQL_CORPORA` still defaults to the external corpus checkout, and says
 # so when it is absent rather than silently measuring nothing.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../../.." && pwd)"
-CORPORA="${GQL_CORPORA:-/home/ishaq2321/bb_tests/graphql/repos}"
+CORPORA="${GQL_CORPORA:-<corpus-root>/bb_tests/graphql/repos}"
 cd "$ROOT" || exit 1
 export GQL_WASM="${GQL_WASM:-$ROOT/wasm/tree-sitter-graphql.wasm}"
 export GQL_CORPORA="$CORPORA"
@@ -90,7 +90,7 @@ if [ "${1:-}" = "--corpus" ]; then
     npx tsx "$HERE"/probe/robustness.mts
   echo "  9. extraction A/B (wired grammar vs the grammar it replaced)"
   echo "=============================================================="
-  if GQL_WASM=/home/ishaq2321/backbencher-brain/wasm/tree-sitter-graphql.wasm \
+  if GQL_WASM=<corpus-root>/backbencher-brain/wasm/tree-sitter-graphql.wasm \
      GQL_LABEL_A=wired \
      GQL_CANDIDATE="$HERE/grammar-rebuild/tree-sitter-graphql-VENDORED-BEFORE.wasm" \
      GQL_LABEL_B=previous-wasm \

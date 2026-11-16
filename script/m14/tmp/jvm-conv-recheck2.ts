@@ -7,7 +7,7 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 async function analyze(engine: any, name: string, src: string) {
   const p = path.join(ROOT, "script/m14/tmp", name)
@@ -94,13 +94,13 @@ async function main() {
       else if (e.name.endsWith(".groovy")) files.push(p)
     }
   }
-  walk("/home/ishaq2321/bb_tests/repositories/grails-core")
+  walk("<corpus-root>/bb_tests/repositories/grails-core")
   let clean = 0
   const bad: string[] = []
   for (const f of files) {
     const tree = parser.parse(fs.readFileSync(f, "utf8"))
     if (tree && !tree.rootNode.hasError) clean++
-    else bad.push(path.relative("/home/ishaq2321/bb_tests/repositories/grails-core", f))
+    else bad.push(path.relative("<corpus-root>/bb_tests/repositories/grails-core", f))
   }
   console.log(`#742 groovy ERROR-node census: ${clean}/${files.length} clean (${((clean / files.length) * 100).toFixed(1)}%)`)
   console.log(`  first error files: ${bad.slice(0, 5).join(" | ")}`)

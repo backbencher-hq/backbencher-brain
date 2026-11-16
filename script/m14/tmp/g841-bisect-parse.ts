@@ -9,7 +9,7 @@ async function main() {
   await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
   const lang = await L.load(fs.readFileSync(wasmArg))
   const parser = new P(); parser.setLanguage(lang)
-  const ROOT = "/home/ishaq2321/bb_tests/repositories/grails-core"
+  const ROOT = "<corpus-root>/bb_tests/repositories/grails-core"
   for (const f of files) {
     const src = fs.readFileSync(ROOT + "/" + f, "utf8")
     const tree = parser.parse(src)

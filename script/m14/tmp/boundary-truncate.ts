@@ -23,11 +23,11 @@
  * added and nothing else.
  */
 import { readFileSync } from "node:fs"
-import { Parser, Language } from "/home/ishaq2321/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js"
+import { Parser, Language } from "<corpus-root>/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.js"
 import { readVbSource } from "./vb-source"
 
-const CORE_WASM = "/home/ishaq2321/backbencher-brain/wasm/tree-sitter.wasm"
-const GRAMMAR_WASM = process.env.VB_WASM ?? "/home/ishaq2321/backbencher-brain/wasm/tree-sitter-vbnet.wasm"
+const CORE_WASM = "<corpus-root>/backbencher-brain/wasm/tree-sitter.wasm"
+const GRAMMAR_WASM = process.env.VB_WASM ?? "<corpus-root>/backbencher-brain/wasm/tree-sitter-vbnet.wasm"
 
 const isBad = (n: any) => n.type === "ERROR" || n.type === "_ERROR" || n.isMissing
 function hasBadBelow(node: any): boolean {

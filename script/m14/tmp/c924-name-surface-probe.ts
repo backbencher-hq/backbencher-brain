@@ -29,8 +29,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
-const CENSUS = "/home/ishaq2321/mcp/backbencher-brain/validation/m60/results/target-spelling.json"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
+const CENSUS = "<corpus-root>/mcp/backbencher-brain/validation/m60/results/target-spelling.json"
 const LANES = ["kotlin", "scala", "zig", "haskell", "elixir"] as const
 
 const args = process.argv.slice(2)

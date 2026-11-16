@@ -5,7 +5,7 @@ Measured 2026-10-05 on branch `analyzer/R7_AUDIT_FLEET`.
 ## Which instrument, and why not the master one verbatim
 
 The brief's command is
-`cd /home/ishaq2321/backbencher-brain && NFILES=200 bun script/m14/firing-check-v2.mjs R7_AUDIT_FLEET`.
+`cd <corpus-root>/backbencher-brain && NFILES=200 bun script/m14/firing-check-v2.mjs R7_AUDIT_FLEET`.
 Run verbatim on 2026-10-05 it prints:
 
 ```
@@ -23,7 +23,7 @@ separate defects, both reported to master, both unrepaired here because
    working as designed (an unmatched lane must not print an empty table and
    `unmeasured: none`), so the instrument is right and the invocation is wrong.
 2. **The root is hard-coded**: `firing-check-v2.mjs:36`
-   `const REPO = "/home/ishaq2321/backbencher-brain"`. Even with the right lane
+   `const REPO = "<corpus-root>/backbencher-brain"`. Even with the right lane
    name it imports the analyzer from the MAIN checkout, so it would measure
    `main`'s `src/ast/real-rust-analyzer.ts` and not this branch's. That matters
    from commit `762dd6927` on, where the two differ.

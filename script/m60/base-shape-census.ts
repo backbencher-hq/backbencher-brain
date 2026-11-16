@@ -67,7 +67,7 @@ import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const TMP = path.join(ROOT, "script/m14/tmp/.base-shapes")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 type Shape = "control" | "subscript" | "attribute" | "call" | "keyword"
 

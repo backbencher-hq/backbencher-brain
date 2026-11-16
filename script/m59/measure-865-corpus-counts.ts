@@ -15,7 +15,7 @@ import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const REPO_ARG = process.argv.find((a) => a.startsWith("--repo="))?.slice("--repo=".length)
-const REPO = REPO_ARG ?? "/home/ishaq2321/bb_tests/repositories/cats-effect"
+const REPO = REPO_ARG ?? "<corpus-root>/bb_tests/repositories/cats-effect"
 
 const ANALYZER_KEYS = [
   "evidenceClass", "phpSpecific", "scalaSpecific", "resolvedReceiver", "isCrossLanguage",

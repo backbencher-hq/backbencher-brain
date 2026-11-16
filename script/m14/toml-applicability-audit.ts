@@ -62,7 +62,7 @@ import * as path from "path"
 import { Parser, Language } from "web-tree-sitter"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const WASM = path.join(ROOT, "wasm", "tree-sitter-toml.wasm")
 const SIZE_CAP = 1024 * 1024
 

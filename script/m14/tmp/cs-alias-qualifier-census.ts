@@ -11,7 +11,7 @@ import * as path from "path"
 import { execSync } from "child_process"
 
 const ROOT = process.cwd()
-const CORPORA = ["/home/ishaq2321/bb_tests/repositories/powershell", "/home/ishaq2321/bb_tests/repositories/fsharp"]
+const CORPORA = ["<corpus-root>/bb_tests/repositories/powershell", "<corpus-root>/bb_tests/repositories/fsharp"]
 
 async function main() {
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))

@@ -26,7 +26,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 
 const REPO = process.env.BB_REPO || "/tmp/opencode/wt/HTML_FIX"
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 100000)
 
 const { ASTEngine } = await import(`${REPO}/src/ast/engine.ts`)

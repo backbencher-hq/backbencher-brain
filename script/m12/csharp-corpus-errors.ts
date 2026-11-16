@@ -24,7 +24,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 // The pinned csharp corpus is roslyn (M11 manifest); the M12 sample list was
 // taken against this repo at revision 73241b4b.
 const LANGS: Record<string, { lang: string; repo: string; ext: string[] }> = {
-  csharp: { lang: "csharp", repo: "/home/ishaq2321/roslyn", ext: ["*.cs"] },
+  csharp: { lang: "csharp", repo: "<corpus-root>/roslyn", ext: ["*.cs"] },
 }
 
 const args = process.argv.slice(2)

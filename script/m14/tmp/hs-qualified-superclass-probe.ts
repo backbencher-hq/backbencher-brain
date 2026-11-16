@@ -14,7 +14,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const CASES: Array<{ id: string; src: string }> = [
   { id: "bare (known-good, #872)", src: `class (Lines border) => Loud border where\n  borderLines :: border -> Int\n` },

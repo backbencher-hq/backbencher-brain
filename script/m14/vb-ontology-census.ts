@@ -41,7 +41,7 @@ import { readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO = process.env.VB_CORPUS ?? "roslyn-vb"
 const LIMIT = Number(process.env.VB_NFILES ?? 0) // 0 = every file the walk finds
 const DIR = join(CORPUS_ROOT, REPO)

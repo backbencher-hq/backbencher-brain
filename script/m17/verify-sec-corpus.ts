@@ -34,8 +34,8 @@ function runCli(args: string[], timeoutSec = 180): string {
 }
 
 const corpora = [
-  { tag: "rake (Ruby)", src: "/home/ishaq2321/bb_tests/repositories/rake" },
-  { tag: "lodash (JS)", src: "/home/ishaq2321/bb_tests/repositories/lodash" },
+  { tag: "rake (Ruby)", src: "<corpus-root>/bb_tests/repositories/rake" },
+  { tag: "lodash (JS)", src: "<corpus-root>/bb_tests/repositories/lodash" },
 ]
 
 async function indexAndCheck(tag: string, dir: string, expectSourceOnly: boolean) {

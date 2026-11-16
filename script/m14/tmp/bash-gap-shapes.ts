@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process"
 import { ASTEngine } from "../../../src/ast/engine"
 import { parseFile } from "../../../src/ast/pool-worker"
 
-const CORPUS = process.env.BB_BASH_CORPUS ?? "/home/ishaq2321/bb_tests/repositories/fsharp"
+const CORPUS = process.env.BB_BASH_CORPUS ?? "<corpus-root>/bb_tests/repositories/fsharp"
 const ROOT = process.cwd()
 const GAPS = ["array", "file_redirect", "unset_command", "postfix_expression", "unary_expression", "ERROR"]
 

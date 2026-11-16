@@ -33,7 +33,7 @@ const CORPORA: Record<string, { repo: string; ext: string; wasm: string }> = {
   haskell: { repo: "hledger", ext: ".hs", wasm: "tree-sitter-haskell.wasm" },
 }
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const MAX_FILES = 400 // deterministic sample cap; full-corpus when fewer
 
 async function main() {

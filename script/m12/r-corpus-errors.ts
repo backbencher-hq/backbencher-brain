@@ -2,7 +2,7 @@
 import { ASTEngine } from "../../src/ast/engine"
 import { execFileSync } from "node:child_process"
 
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/dplyr"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/dplyr"
 const files = execFileSync("git", ["-C", root, "ls-files", "*.R", "*.r"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).map((f) => `${root}/${f}`)
 let errorFiles = 0

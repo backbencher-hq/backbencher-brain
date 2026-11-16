@@ -62,7 +62,7 @@ const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const GATE = path.join(ROOT, "script/m14/incoming-gate.ts")
 
 // Copied verbatim from incoming-gate.ts:143 — same corpus root, same env override.
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",

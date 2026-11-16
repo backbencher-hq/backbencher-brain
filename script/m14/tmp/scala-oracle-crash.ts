@@ -17,14 +17,14 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const FILE = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/scala3/tests/neg-macros/i18825/Macro_1.scala"
-const ROOT = process.argv[3] ?? "/home/ishaq2321/bb_tests/replicas/m60-93cf6ed6"
+const FILE = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/scala3/tests/neg-macros/i18825/Macro_1.scala"
+const ROOT = process.argv[3] ?? "<corpus-root>/bb_tests/replicas/m60-93cf6ed6"
 
 const diff: any = await import(path.join(ROOT, "script/m14/differential.ts"))
 const ws: any = await import("web-tree-sitter")
 const P: any = ws.Parser ?? ws.default ?? ws
 const L: any = ws.Language ?? ws.default?.Language
-await P.init({ locateFile: () => path.join("/home/ishaq2321/mcp/backbencher-brain", "node_modules/web-tree-sitter/tree-sitter.wasm") })
+await P.init({ locateFile: () => path.join("<corpus-root>/mcp/backbencher-brain", "node_modules/web-tree-sitter/tree-sitter.wasm") })
 const grammar = await L.load(fs.readFileSync(path.join(ROOT, "wasm/tree-sitter-scala.wasm")))
 const parser = new P()
 parser.setLanguage(grammar)

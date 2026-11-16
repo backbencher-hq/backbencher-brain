@@ -14,7 +14,7 @@ import { getProjectId } from "../../src/cli/index"
 import { testGaps, testMapping } from "../../src/intelligence/testing/test-intel"
 import { testQuality } from "../../src/intelligence/testing/quality"
 
-const ROOT = process.env.BB_PROBE_ROOT || "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = process.env.BB_PROBE_ROOT || "<corpus-root>/mcp/backbencher-brain"
 const OUT = `${ROOT}/validation/m50/results/A2-test-sources.json`
 const pid = getProjectId(ROOT) as any
 

@@ -9,8 +9,8 @@
 // a real declaration) or REAL LOSS. Exit is non-zero if a real loss occurs.
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPOS = "<corpus-root>/bb_tests/repositories"
 
 const args = process.argv.slice(2)
 const wasmIn = args.filter((a) => !a.startsWith("--"))

@@ -5,7 +5,7 @@ const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
 
-const SRC = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/grails-core/grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/core/GrailsGradlePlugin.groovy", "utf8")
+const SRC = fs.readFileSync("<corpus-root>/bb_tests/repositories/grails-core/grails-gradle/plugins/src/main/groovy/org/grails/gradle/plugin/core/GrailsGradlePlugin.groovy", "utf8")
 
 for (const W of ["/tmp/x22-base.wasm", process.argv[2] ?? "/tmp/x22j.wasm"]) {
   const lang = await L.load(fs.readFileSync(W))

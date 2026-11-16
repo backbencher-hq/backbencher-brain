@@ -21,7 +21,7 @@ import { RealScalaAnalyzer } from "../../../src/ast/real-scala-analyzer"
 import { ensureSchema } from "../../../src/brain/schema-ddl"
 
 const ROOT = path.resolve(path.dirname(process.argv[1]), "..", "..", "..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const repo = process.argv[2] ?? "scala3"
 const drawFile = process.argv[3]
 const LIMIT = Number(process.argv[4] ?? 400)

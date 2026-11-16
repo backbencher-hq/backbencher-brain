@@ -23,7 +23,7 @@ import { createHash } from "crypto"
 import { join } from "path"
 import { spawnSync } from "child_process"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const argv = process.argv.slice(2)
 const SAMPLE = Number(argv[argv.indexOf("--sample") + 1] || 400)
 const OUT = argv[argv.indexOf("--out") + 1]

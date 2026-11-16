@@ -48,7 +48,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const JS_EXT = /\.(js|mjs|cjs)$/
 /** Directories a JavaScript project does not author: dependencies, build output, VCS. */
 const SKIP = new Set(["node_modules", ".git", "dist", "build", "vendor", "coverage", ".next", ".svelte-kit", "out", ".cache"])

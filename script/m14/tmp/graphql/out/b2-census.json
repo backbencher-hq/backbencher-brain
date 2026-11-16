@@ -13,7 +13,7 @@
   "skippedBad": 0,
   "fresh": 0,
   "partial": false,
-  "checkpoint": "/home/ishaq2321/mcp/bb-lanes/graphql/script/m14/tmp/graphql/walk-b2-census.txt"
+  "checkpoint": "<corpus-root>/mcp/bb-lanes/graphql/script/m14/tmp/graphql/walk-b2-census.txt"
  },
  "symbols": {
   "total": 91464,

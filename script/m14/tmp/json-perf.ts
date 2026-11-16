@@ -1,10 +1,10 @@
-import { parseFile } from "/home/ishaq2321/mcp/backbencher-brain/src/ast/pool-worker"
+import { parseFile } from "<corpus-root>/mcp/backbencher-brain/src/ast/pool-worker"
 import { execFileSync } from "node:child_process"
 import { readFileSync, statSync } from "node:fs"
 import { createHash } from "node:crypto"
-import { detectLanguageFromPath } from "/home/ishaq2321/mcp/backbencher-brain/src/ast/language-detection"
+import { detectLanguageFromPath } from "<corpus-root>/mcp/backbencher-brain/src/ast/language-detection"
 import * as path from "path"
-const CR = "/home/ishaq2321/bb_tests/repositories"
+const CR = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["terraform", "otp", "ansible", "clj-kondo", "svelte", "kubernetes"]
 const cands: any[] = []
 for (const repo of REPOS) {

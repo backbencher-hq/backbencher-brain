@@ -42,7 +42,7 @@ import Database from "better-sqlite3"
 import { fileURLToPath } from "node:url"
 
 const ROOT = path.resolve(process.cwd())
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const TMP_ROOT = "/tmp/opencode/m14-store-resolution-multi"
 const nPerRepo = Number(process.argv[2] ?? 150)
 const REPOS = process.argv.slice(3)

@@ -29,7 +29,7 @@ import { Parser, Language } from "web-tree-sitter"
 import { deriveCssEdges } from "../../../script/m14/differential"
 import { ASTEngine } from "../../../src/ast/engine"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["svelte", "grails-core", "scala3", "proxicall"]
 
 await Parser.init()

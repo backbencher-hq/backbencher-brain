@@ -2,9 +2,9 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
-const CENSUS = "/home/ishaq2321/mcp/backbencher-brain/validation/m12/results/groovy-corpus-errors.json"
-const ORACLE = "/home/ishaq2321/mcp/backbencher-brain/validation/m59/results/g841-groovy-oracle.json"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
+const CENSUS = "<corpus-root>/mcp/backbencher-brain/validation/m12/results/groovy-corpus-errors.json"
+const ORACLE = "<corpus-root>/mcp/backbencher-brain/validation/m59/results/g841-groovy-oracle.json"
 
 const census = JSON.parse(fs.readFileSync(CENSUS, "utf8"))
 const oracle = JSON.parse(fs.readFileSync(ORACLE, "utf8"))
@@ -15,7 +15,7 @@ const wts: any = await import("web-tree-sitter")
 const P = wts.Parser ?? wts.default ?? wts
 const L = wts.Language ?? wts.default?.Language
 await P.init({ locateFile: () => "node_modules/web-tree-sitter/tree-sitter.wasm" })
-const lang = await L.load(fs.readFileSync("/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"))
+const lang = await L.load(fs.readFileSync("<corpus-root>/mcp/backbencher-brain/wasm/tree-sitter-groovy.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 

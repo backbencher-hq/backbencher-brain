@@ -17,7 +17,7 @@ import { writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs"
 import path from "node:path"
 import os from "node:os"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 let pass = 0, fail = 0
 const failures: string[] = []

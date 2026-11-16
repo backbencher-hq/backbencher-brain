@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process"
 const analyzer = readFileSync("src/ast/real-php-analyzer.ts", "utf8")
 const refs = new Set<string>()
 for (const match of analyzer.matchAll(/(?:\.type|\btype)\s*===\s*"([a-z_]+)"/g)) refs.add(match[1])
-const root = process.argv[2] || "/home/ishaq2321/bb_tests/repositories/phpunit"
+const root = process.argv[2] || "<corpus-root>/bb_tests/repositories/phpunit"
 const corpusFiles = execFileSync("git", ["-C", root, "ls-files", "*.php"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).map((f) => `${root}/${f}`)
 const fixtures = [

@@ -108,7 +108,7 @@ import { fileURLToPath } from "node:url"
 import { parseFile } from "../../src/ast/pool-worker"
 
 const REPO = path.resolve(dirname(fileURLToPath(import.meta.url)), "../..")
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_NAME = process.env.BB_TS_REPO ?? "rxjs"
 // `BB_TS_BASELINE` exists so a proposed ceiling can be tested WITHOUT editing the
 // recorded one: point the gate at a copy, and the ratchet's fail path is exercised end

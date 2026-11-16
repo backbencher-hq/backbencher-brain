@@ -18,7 +18,7 @@ import * as WTS from "web-tree-sitter"
 import { RealCleanAnalyzer } from "../../../src/ast/real-clean-analyzer"
 
 const ROOT = process.cwd()
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const REPOS = ["Clyde", "clean-stdlib", "Prelude", "cloogle.org", "eastwood"]
 const SAMPLES = (() => {
   const i = process.argv.indexOf("--samples")

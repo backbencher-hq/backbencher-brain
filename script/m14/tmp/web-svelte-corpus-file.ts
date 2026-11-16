@@ -4,8 +4,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { RealSvelteAnalyzer } from "../../../src/ast/real-svelte-analyzer"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const FILE = "/home/ishaq2321/bb_tests/repositories/svelte/packages/svelte/tests/runtime-runes/samples/class-state-raw/main.svelte"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const FILE = "<corpus-root>/bb_tests/repositories/svelte/packages/svelte/tests/runtime-runes/samples/class-state-raw/main.svelte"
 
 async function main() {
   const wts: any = await import("web-tree-sitter")

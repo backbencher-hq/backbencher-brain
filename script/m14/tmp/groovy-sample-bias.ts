@@ -9,8 +9,8 @@ import * as fs from "fs"
 import * as path from "path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/grails-core"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/grails-core"
 const SAMPLE = ROOT + "/validation/m12/results/groovy-corpus-sample.txt"
 
 function walkAll(dir: string, out: string[]): void {

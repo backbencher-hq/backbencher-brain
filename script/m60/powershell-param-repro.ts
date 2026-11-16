@@ -19,7 +19,7 @@ import { Parser as TSParser, Language } from "web-tree-sitter"
 import { readFileSync } from "fs"
 import { join } from "path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const argv = process.argv.slice(2)
 const GRAMMAR = argv.includes("--grammar") ? argv[argv.indexOf("--grammar") + 1] : join(ROOT, "wasm/tree-sitter-powershell.wasm")
 

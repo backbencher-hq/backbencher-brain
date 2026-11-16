@@ -33,7 +33,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
 const DIFFERENTIAL = path.join(ROOT, "script", "m14", "differential.ts")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories/objc"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"]
 
 const fileKey = "objective-c"          // from real-objective-c-analyzer.ts

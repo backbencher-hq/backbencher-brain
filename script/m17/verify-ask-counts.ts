@@ -41,7 +41,7 @@ async function main() {
   }
 
   console.log("── A8.2  real-repo parity: rake ──")
-  const src = "/home/ishaq2321/bb_tests/repositories/rake"
+  const src = "<corpus-root>/bb_tests/repositories/rake"
   let real = -1, dbN = -1
   if (!existsSync(src)) {
     ck("A8: rake corpus present", false, "MISSING " + src)

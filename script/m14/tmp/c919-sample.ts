@@ -3,7 +3,7 @@
 //   bun script/m14/tmp/c919-sample.ts <file> <line>
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const file = process.argv[2]
 const line = Number(process.argv[3])
 const src = readFileSync(file, "utf8")

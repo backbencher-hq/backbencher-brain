@@ -4,7 +4,7 @@
 // new declaration with a wrong name, recovery has a different shape.
 import { readFileSync } from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const P = (wts.Parser ?? wts.default) as any
 const L = (wts.Language ?? wts.default?.Language) as any
@@ -14,12 +14,12 @@ const parser = new P()
 parser.setLanguage(lang)
 
 const SITES: Array<[string, number]> = [
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btmutex.c", 53],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/btree.c", 87],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/notify.c", 40],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/os.c", 355],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/src/main.c", 138],
-  ["/home/ishaq2321/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c", 6244],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btmutex.c", 53],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/btree.c", 87],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/notify.c", 40],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/os.c", 355],
+  ["<corpus-root>/bb_tests/repositories/sqlite/src/main.c", 138],
+  ["<corpus-root>/bb_tests/repositories/sqlite/ext/jni/src/c/sqlite3-jni.c", 6244],
 ]
 
 const show = (m: any) =>

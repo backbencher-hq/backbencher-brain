@@ -80,7 +80,7 @@ function emit(code: string, issue: string, title: string, file: string, extra: R
 function resolveCorpusRoot(): string | null {
   const candidates = [
     process.env.BB_SECURITY_CORPUS_ROOT,
-    "/home/ishaq2321/bb_tests/repositories",
+    "<corpus-root>/bb_tests/repositories",
     path.join(process.env.HOME ?? "", "bb_tests", "repositories"),
     path.join(ROOT_DIR, "bb_tests", "repositories"),
   ].filter((c): c is string => !!c)
@@ -405,7 +405,7 @@ emit("X4", "M15.X4", "measured time complexity", "x4.json")
     // with verified:false AND stripped its bbSeal, then let X7 fail on the
     // rewritten file — while the process still exited 0. An absent corpus is
     // not a defect in bb_security.
-    const searched = [process.env.BB_SECURITY_CORPUS_ROOT, "/home/ishaq2321/bb_tests/repositories", path.join(process.env.HOME ?? "", "bb_tests", "repositories"), path.join(ROOT_DIR, "bb_tests", "repositories")].filter(Boolean)
+    const searched = [process.env.BB_SECURITY_CORPUS_ROOT, "<corpus-root>/bb_tests/repositories", path.join(process.env.HOME ?? "", "bb_tests", "repositories"), path.join(ROOT_DIR, "bb_tests", "repositories")].filter(Boolean)
     skipped.push({ code: "X5", reason: `no corpus found. Set BB_SECURITY_CORPUS_ROOT to a bb_tests/repositories directory. Searched: ${searched.join(", ")}. This is an environment gap, not a tool defect.` })
     console.log(`  SKIP X5: no corpus root; set BB_SECURITY_CORPUS_ROOT (searched: ${searched.join(", ")})`)
   } else {

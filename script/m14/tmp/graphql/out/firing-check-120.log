@@ -3,7 +3,7 @@ firing-check: graphql … [INFO] [08:24:28] [ast-engine] tree-sitter core initia
 7/10 fired, 27780 edges, 120/120 files
 
 firing check — production parseFile, 120-file stride sample per language
-corpus: /home/ishaq2321/bb_tests/repositories
+corpus: <corpus-root>/bb_tests/repositories
 
 lang       files       fired   rels        degraded  analyzerfired types
 --------------------------------------------------------------------------------------------------------------

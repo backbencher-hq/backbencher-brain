@@ -40,7 +40,7 @@ import { fileURLToPath } from "node:url"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || fileURLToPath(new URL("../..", import.meta.url))
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const ONLY = process.env.ONLY || ""
 const MAXBYTES = 512 * 1024
 const SAMPLE = Number(process.env.SAMPLE || 4)

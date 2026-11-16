@@ -53,7 +53,7 @@ import { readdirSync, statSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { getParser } from "../../src/ast/engine"
 
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO = process.env.VB_CORPUS ?? "roslyn-vb"
 const DIR = join(CORPUS_ROOT, REPO)
 const LIMIT = Number(process.env.VB_NFILES ?? 0)

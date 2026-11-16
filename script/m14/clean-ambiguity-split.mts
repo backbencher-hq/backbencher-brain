@@ -300,7 +300,7 @@ function tokenPresent(text: string, name: string, nextLine?: string): boolean {
   if (/(^|\s)(=|\|)/.test(text) && new RegExp(`(^|[\\s|={,])\\s*${bare}(\\s|;|$)`).test(text)) return true
   return false
 }
-const CR_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CR_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const absPathCache = new Map<string, string | null>()
 function absolutePath(rel: string): string | null {
   const hit = absPathCache.get(rel)

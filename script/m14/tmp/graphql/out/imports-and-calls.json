@@ -1,7 +1,7 @@
 {
  "kind": "m60-imports-and-calls-measurement",
  "producedBy": "script/m14/tmp/graphql/probe/imports-and-calls.mts",
- "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "corpusRoot": "<corpus-root>/bb_tests/repositories",
  "admittedFiles": 1905,
  "imports": {
   "commentNodes": 4510,

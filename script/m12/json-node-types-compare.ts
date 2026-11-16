@@ -8,7 +8,7 @@ for (const match of source.matchAll(/node\.type\s*===\s*["']([^"']+)["']|value\.
   const type = match[1] || match[2] || match[3]
   if (type) refs.add(type)
 }
-const corpus = process.argv[2] || "/home/ishaq2321/roslyn"
+const corpus = process.argv[2] || "<corpus-root>/roslyn"
 const corpusFiles = execFileSync("git", ["-C", corpus, "ls-files", "*.json"], { encoding: "utf8" })
   .trim().split("\n").filter(Boolean).sort()
 function strictJson(file: string): boolean {

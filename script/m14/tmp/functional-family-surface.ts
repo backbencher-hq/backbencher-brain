@@ -11,8 +11,8 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const REPOS = "/home/ishaq2321/bb_tests/repositories"
-const WASM = "/home/ishaq2321/mcp/backbencher-brain/wasm"
+const REPOS = "<corpus-root>/bb_tests/repositories"
+const WASM = "<corpus-root>/mcp/backbencher-brain/wasm"
 
 interface LaneSpec {
   lane: string
@@ -66,7 +66,7 @@ async function main() {
   const wts: any = await import("web-tree-sitter")
   const P: any = wts.Parser ?? wts.default ?? wts
   const L: any = wts.Language ?? wts.default?.Language
-  await P.init({ locateFile: () => path.join("/home/ishaq2321/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.wasm") })
+  await P.init({ locateFile: () => path.join("<corpus-root>/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.wasm") })
 
   const combined: any[] = []
   for (const spec of LANES) {
@@ -74,7 +74,7 @@ async function main() {
     const lang: any = await L.load(path.join(WASM, spec.wasm))
     const parser = new P()
     parser.setLanguage(lang)
-    const mod: any = await import(path.join("/home/ishaq2321/mcp/backbencher-brain/src/ast", spec.mod))
+    const mod: any = await import(path.join("<corpus-root>/mcp/backbencher-brain/src/ast", spec.mod))
     const Analyzer = mod[spec.cls]
     const files = spec.roots.flatMap((r) => walk(path.join(REPOS, r), spec.exts)).sort().slice(0, cap)
 

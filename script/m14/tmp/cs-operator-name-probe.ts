@@ -11,7 +11,7 @@ import * as fs from "fs"
 import * as path from "path"
 
 const ROOT = process.cwd()
-const FILE = "/home/ishaq2321/bb_tests/repositories/fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs"
+const FILE = "<corpus-root>/bb_tests/repositories/fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectConfig.cs"
 
 async function main() {
   const src = fs.readFileSync(FILE, "utf8")

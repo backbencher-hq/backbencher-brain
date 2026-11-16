@@ -34,7 +34,7 @@
 // EXPORTS_JAVA2 lane copy of script/m14/firing-check-v2.mjs.
 //
 // ONE LINE DIFFERS from the shared harness and it is load-bearing: `REPO`.
-// The shared script hardcodes /home/ishaq2321/backbencher-brain, which is the
+// The shared script hardcodes <corpus-root>/backbencher-brain, which is the
 // MAIN checkout — running it from a lane worktree measures whatever bytes the
 // main checkout happens to hold, not the lane's. That is not a nitpick: it is
 // how a lane reports "9/10" while shipping 8/10. This copy resolves REPO from its
@@ -57,7 +57,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const REPO = new URL("../../../", import.meta.url).pathname
-const CORPUS = process.env.BB_CORPUS || "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.env.NFILES || 200)
 const BLIND = process.env.BB_BLIND === "1"
 

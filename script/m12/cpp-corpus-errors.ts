@@ -7,7 +7,7 @@ import { ASTEngine } from "../../src/ast/engine"
 import { readFileSync, statSync } from "node:fs"
 import { execSync } from "node:child_process"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories/zig"
+const ROOT = "<corpus-root>/bb_tests/repositories/zig"
 const SAMPLE_LIMIT = Number(process.env.CPP_SAMPLE_LIMIT || 218)
 const MIN_BYTES = Number(process.env.CPP_MIN_BYTES || 1024)
 

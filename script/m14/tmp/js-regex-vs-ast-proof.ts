@@ -4,7 +4,7 @@ import * as WTS from "web-tree-sitter"
 import * as fs from "fs"
 import * as path from "path"
 
-const ROOT = "/home/ishaq2321/bb_tests/repositories"
+const ROOT = "<corpus-root>/bb_tests/repositories"
 
 /** The CURRENT implementation: text micro-parse of obj.text. */
 function viaRegex(objText: string, propText: string): string {

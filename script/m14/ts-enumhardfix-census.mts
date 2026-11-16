@@ -50,7 +50,7 @@ const argOf = (f: string): string | undefined => {
   const i = argv.indexOf(f)
   return i >= 0 ? argv[i + 1] : undefined
 }
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_FILTER = argOf("--repo") ?? "typescript"
 const OUT = argOf("--out")
 const LIMIT = Number(argOf("--limit") ?? "0")

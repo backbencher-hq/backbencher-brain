@@ -6,8 +6,8 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
-const REPO = "/home/ishaq2321/bb_tests/repositories/element-plus"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
+const REPO = "<corpus-root>/bb_tests/repositories/element-plus"
 const ws: any = await import("web-tree-sitter")
 const P: any = ws.Parser ?? ws.default ?? ws
 const L: any = ws.Language ?? ws.default?.Language

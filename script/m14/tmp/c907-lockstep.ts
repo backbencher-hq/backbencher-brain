@@ -18,7 +18,7 @@ const lang = await L.load(readFileSync("wasm/tree-sitter-c.wasm"))
 const parser = new P()
 parser.setLanguage(lang)
 
-const F = process.argv[2] ?? "/home/ishaq2321/bb_tests/repositories/jq/src/jv_print.c"
+const F = process.argv[2] ?? "<corpus-root>/bb_tests/repositories/jq/src/jv_print.c"
 const src = readFileSync(F, "utf8")
 const root = parser.parse(src).rootNode
 
@@ -33,7 +33,7 @@ const tKey = (e: any) => `${e.label ?? e.type}:${e.from ?? e.source ?? "?"}->${e
 const truthSet = new Set(truth.map(tKey))
 
 // analyzer side (the production entry)
-const r: any = await parseFile(F, "/home/ishaq2321/bb_tests/repositories/jq")
+const r: any = await parseFile(F, "<corpus-root>/bb_tests/repositories/jq")
 const mine: any[] = r.relationships ?? []
 const aKey = (e: any) => `${String(e.type)}:${e.source ?? "global"}->${e.target}`
 

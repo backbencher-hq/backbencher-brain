@@ -3,7 +3,7 @@
 // fabricating [key,return,string] and losing [ref,from,generateColumns,...].
 import fs from "node:fs"
 import path from "node:path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const diff: any = await import(path.join(ROOT, "script/m14/differential.ts"))
 const eng: any = await import(path.join(ROOT, "src/ast/engine.ts"))
 const wts: any = await import("web-tree-sitter")
@@ -20,7 +20,7 @@ const js = await mk("tree-sitter-javascript.wasm")
 const tsx = await mk("tree-sitter-tsx.wasm")
 const KEYWORDS = new Set(["return", "key", "string", "if", "for", "typeof", "new", "in", "of", "else", "case"])
 
-const real = fs.readFileSync("/home/ishaq2321/bb_tests/repositories/element-plus/docs/examples/table-v2/selection.vue", "utf8")
+const real = fs.readFileSync("<corpus-root>/bb_tests/repositories/element-plus/docs/examples/table-v2/selection.vue", "utf8")
 const rootOfReal = null
 
 const callsOf = (body: string, parser: any) => {

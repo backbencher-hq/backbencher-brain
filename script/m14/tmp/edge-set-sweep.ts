@@ -7,7 +7,7 @@ import path from "node:path"
 
 const ROOT =
   process.argv.find((a) => a.startsWith("--root="))?.slice("--root=".length) ??
-  "/home/ishaq2321/mcp/backbencher-brain"
+  "<corpus-root>/mcp/backbencher-brain"
 const CORPUS = process.argv.find((a) => a.startsWith("--corpus="))?.slice("--corpus=".length) ?? ""
 const OUT = process.argv.find((a) => a.startsWith("--out="))?.slice("--out=".length)
 const EXTS = (process.argv.find((a) => a.startsWith("--exts="))?.slice("--exts=".length) ?? ".ts,.tsx").split(",")

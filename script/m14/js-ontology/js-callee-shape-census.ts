@@ -36,7 +36,7 @@ import type { Dirent } from "node:fs"
 import { getParser } from "../../../src/ast/engine"
 import { RealJavaScriptAnalyzer } from "../../../src/ast/real-javascript-analyzer"
 
-const DEFAULT_CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const DEFAULT_CORPUS = "<corpus-root>/bb_tests/repositories"
 // .js/.mjs/.cjs only — this is the JAVASCRIPT analyzer. The typescript corpus is
 // the population §2 measured (13,203 tracked `.js` files, its build output), and
 // it is admitted here by EXTENSION, not by `detectLanguageFromPath`, so the

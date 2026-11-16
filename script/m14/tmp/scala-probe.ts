@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const file = argOf("--file")
   const repo = argOf("--repo")
   const only = argOf("--label") ?? "contains"
-  const corpusRoot = "/home/ishaq2321/bb_tests/repositories"
+  const corpusRoot = "<corpus-root>/bb_tests/repositories"
   // `--draw <file>` is the honest way to compare two runs: the lane's cold-pool
   // ROTATION changes the 60-file draw on every invocation, so two lane runs are
   // not the same measurement even at the same --sample. A captured draw is.

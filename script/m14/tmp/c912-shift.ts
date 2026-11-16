@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import * as WTS from "web-tree-sitter"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const abs = process.argv[2]
 const src = readFileSync(abs, "utf8")
 const lines = src.split("\n")

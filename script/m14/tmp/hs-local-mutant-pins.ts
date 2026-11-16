@@ -11,7 +11,7 @@
 // Usage: bun script/m14/tmp/hs-local-mutant-pins.ts [--out file]
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 
 const HS = path.join(ROOT, "validation/m14/fixtures/haskell/payload-and-complexity.hs")
 const EXP = path.join(ROOT, "validation/m14/fixtures/haskell/payload-and-complexity.expectation.json")

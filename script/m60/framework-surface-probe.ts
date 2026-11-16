@@ -49,7 +49,7 @@ import * as fs from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const OUT = path.join(ROOT, "validation/m60/results/framework-surface-runtime.json")
 
 interface Lane {
@@ -567,7 +567,7 @@ async function main() {
       half: "runtime",
       at: new Date().toISOString(),
       method:
-        "the emitted metadata of each OO analyzer is checked against five contract assertions (A1 array, A2 dedupe, A3 primary-presence, A4 patterns-subset, A5 single-name) over two corpora: an inline minimal framework trigger per language, and a real-file draw from the pinned corpora in /home/ishaq2321/bb_tests/repositories. Multiplicity cannot be decided statically, which is why this half exists.",
+        "the emitted metadata of each OO analyzer is checked against five contract assertions (A1 array, A2 dedupe, A3 primary-presence, A4 patterns-subset, A5 single-name) over two corpora: an inline minimal framework trigger per language, and a real-file draw from the pinned corpora in <corpus-root>/bb_tests/repositories. Multiplicity cannot be decided statically, which is why this half exists.",
       assertions: ["A1-array", "A2-dedupe", "A3-primary", "A4-aligned", "A5-one-name", "A6-claim"],
       corpusRoot: CORPUS,
       perRepoCap: cap,

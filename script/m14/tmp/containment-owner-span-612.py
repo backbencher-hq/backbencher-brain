@@ -30,7 +30,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-CORPUS = Path("/home/ishaq2321/bb_tests/repositories")
+CORPUS = Path("<corpus-root>/bb_tests/repositories")
 # the sweep record whose index runs wrote the DBs this driver reads — the
 # canonical one by default, and --lineage names the arm whose DBs are under test
 # (the before arm's DBs are gone once the after sweep re-indexes, so its record

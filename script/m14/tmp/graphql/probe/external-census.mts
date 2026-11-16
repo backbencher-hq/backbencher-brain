@@ -21,7 +21,7 @@ import * as path from "path"
 import { ASTEngine } from "../../../../../src/ast/engine"
 
 const limit = Number(process.argv[2] ?? 400)
-const corpus = process.argv[3] ?? "/home/ishaq2321/bb_tests/repositories"
+const corpus = process.argv[3] ?? "<corpus-root>/bb_tests/repositories"
 
 /** The GraphQL specification's own vocabulary — declared by the SPEC, not by any
  * file in a corpus. Section 3.5 "Built-in Scalars" and section 3.13 "Built-in

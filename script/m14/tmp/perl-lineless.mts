@@ -4,7 +4,7 @@ import * as fs from "fs"; import * as path from "path"
 // repo; the corpora are large upstream checkouts and are not in it, so they come
 // from BB_PERL_CORPUS (reviews/LANE-AUDIT-FORMULA.md, evidence rule 4).
 const ROOT=path.resolve(import.meta.dir,"..","..","..")
-const CR=process.env.BB_PERL_CORPUS ?? "/home/ishaq2321/bb_tests/repositories"
+const CR=process.env.BB_PERL_CORPUS ?? "<corpus-root>/bb_tests/repositories"
 const wts:any=await import(path.join(ROOT,"node_modules/web-tree-sitter/tree-sitter.js"))
 const P=wts.Parser??wts.default??wts; const L=wts.Language??wts.default?.Language
 await P.init({locateFile:()=>path.join(ROOT,"node_modules/web-tree-sitter/tree-sitter.wasm")})

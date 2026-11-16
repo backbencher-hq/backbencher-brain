@@ -1,6 +1,6 @@
 {
  "population": {
-  "root": "/home/ishaq2321/bb_tests/repositories",
+  "root": "<corpus-root>/bb_tests/repositories",
   "repos": [
    "ripgrep"
   ],

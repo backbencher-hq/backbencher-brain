@@ -43,7 +43,7 @@ import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const EVIDENCE = join(ROOT, "validation", "m60", "results", "lua-published-claims.json")
-const PROBE_DIR = "/home/ishaq2321/bb_tests/probe"
+const PROBE_DIR = "<corpus-root>/bb_tests/probe"
 
 const FIXTURE: Record<string, string> = {
   // an ordinary file that happens to use the names the bare-name heuristic

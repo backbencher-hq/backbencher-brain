@@ -1,5 +1,5 @@
 {
- "repo": "/home/ishaq2321/bb_tests/repositories/terraform",
+ "repo": "<corpus-root>/bb_tests/repositories/terraform",
  "files": 1993,
  "filesChanged": 1853,
  "symbolsAdded": 257,

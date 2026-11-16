@@ -19,7 +19,7 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { RealObjectiveCAnalyzer } from "../../src/ast/real-objective-c-analyzer"
 
 const ROOT = path.resolve((import.meta as any).dirname, "..", "..")
-const CR = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories/objc"
+const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories/objc"
 const reps = Number(process.argv[process.argv.indexOf("--reps") + 1]) || 9
 
 // --- the HEAD analyzer, as a second module in the same process --------------

@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import * as path from "path"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 // Independent uses-recall census (Java): dumb-walk member reads, check analyzer coverage.
 // Deliberately independent of analyzer internals: raw grammar walk vs emitted uses edges.
 function filesUnder(dir: string, out: string[] = []): string[] {
@@ -20,7 +20,7 @@ async function main() {
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
   const LANG: any = await L.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-java.wasm")))
   const mod: any = await import(path.join(ROOT, "src/ast/real-java-analyzer"))
-  const files = filesUnder("/home/ishaq2321/bb_tests/repositories/grails-core").slice(0, 25)
+  const files = filesUnder("<corpus-root>/bb_tests/repositories/grails-core").slice(0, 25)
   let reads = 0, covered = 0
   const misses: string[] = []
   for (const f of files) {

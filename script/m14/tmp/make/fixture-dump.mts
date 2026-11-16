@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs"
 import * as path from "node:path"
 
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 const wts: any = await import("web-tree-sitter")
 const ParserClass = wts.Parser ?? wts.default ?? wts
 const Language = wts.Language ?? wts.default?.Language

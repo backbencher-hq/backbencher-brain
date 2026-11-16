@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { RealZigAnalyzer } from "../../../src/ast/real-zig-analyzer"
-const ROOT = "/home/ishaq2321/mcp/backbencher-brain"
+const ROOT = "<corpus-root>/mcp/backbencher-brain"
 function filesUnder(dir: string, exts: string[], out: string[] = []): string[] {
   let entries: any[] = []
   try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return out }

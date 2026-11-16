@@ -76,14 +76,14 @@ tree-sitter build --wasm -o ../../wasm/tree-sitter-graphql.wasm
 `tree-sitter build --wasm` needs emscripten; with only docker present it uses
 `emscripten/emsdk` through docker automatically. The CLI must be ≥ 0.25 for the
 `tree-sitter.json`/ABI-15 path; the bb_tests copy at
-`/home/ishaq2321/bb_tests/node_modules/tree-sitter-cli` is 0.25.1.
+`<corpus-root>/bb_tests/node_modules/tree-sitter-cli` is 0.25.1.
 
 **After regenerating, re-run every gate** — the wasm hash is pinned and the
 extraction changes:
 
 ```sh
-/home/ishaq2321/bb_tests/graphql/run-all.sh --corpus
-cd /home/ishaq2321/backbencher-brain && bun script/m14/verify-grammar-pins.ts --write
+<corpus-root>/bb_tests/graphql/run-all.sh --corpus
+cd <corpus-root>/backbencher-brain && bun script/m14/verify-grammar-pins.ts --write
 ```
 
 ## What the patch bought, measured

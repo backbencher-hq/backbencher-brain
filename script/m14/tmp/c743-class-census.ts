@@ -11,7 +11,7 @@ import path from "node:path"
 import { createHash } from "node:crypto"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../../..")
-const CORPUS = "/home/ishaq2321/bb_tests/repositories"
+const CORPUS = "<corpus-root>/bb_tests/repositories"
 const CAP = 400
 
 const wts: any = await import("web-tree-sitter")

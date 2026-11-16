@@ -17,7 +17,7 @@ const anaMod: any = await import("../src/ast/real-c-analyzer")
 const diffMod: any = await import("./m14/differential")
 const analyzer = new anaMod.RealCAnalyzer()
 
-const CORPUS = "/home/ishaq2321/bb_tests/repositories/sqlite"
+const CORPUS = "<corpus-root>/bb_tests/repositories/sqlite"
 const FILES = ["src/loadext.c", "ext/wasm/api/sqlite3-wasm.c", "autosetup/jimsh0.c"]
 
 const walkPrint = (root: any, lo: number, hi: number, cap = 60): void => {
