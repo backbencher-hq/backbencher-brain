@@ -2995,7 +2995,11 @@ currentPackage,
           const owner = queue[head]
           if (visited.has(owner)) continue
           visited.add(owner)
-          if (owner === declaringType) return true
+          // An inherited member type may itself qualify another nested type.
+          // For "InnerBase.Deep", reaching Ancestor proves its declared
+          // "Ancestor.InnerBase.Deep" is accessible through that hierarchy,
+          // even though Ancestor.InnerBase was not a BFS vertex.
+          if (owner === declaringType || candidate === `${owner}.${written}`) return true
           for (const base of classHierarchy.get(owner) ?? []) {
             const resolved = resolveDeclaredParent(owner, base)
             if (resolved && !visited.has(resolved)) queue.push(resolved)

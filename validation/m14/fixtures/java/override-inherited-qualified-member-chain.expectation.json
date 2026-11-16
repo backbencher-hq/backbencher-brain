@@ -1,0 +1,30 @@
+{
+  "fixtureId": "java/override-inherited-qualified-member-chain",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Java permits Descendant.Nested to extend InnerBase.Deep where InnerBase is inherited via Descendant->Middle->Ancestor. javac/javap identify its superclass as Ancestor$InnerBase$Deep, not the unrelated Decoy$InnerBase$Deep. The original inheritedMemberOwner guard checks only immediate declaringType, misses the inherited qualifier chain and downgrades explicit overrides to first-parent-guess. Require exact-in-file evidence for both overridden members, and never derive an override from the decoy method.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Nested.ping",
+      "target": "ping",
+      "meta.declaringType": "Deep",
+      "meta.reasonCode": "exact-in-file",
+      "meta.evidenceClass": "structural"
+    },
+    {
+      "type": "overrides",
+      "from": "Nested.ancestorOnly",
+      "target": "ancestorOnly",
+      "meta.declaringType": "Deep",
+      "meta.reasonCode": "exact-in-file",
+      "meta.evidenceClass": "structural"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Nested.decoyOnly"
+    }
+  ]
+}

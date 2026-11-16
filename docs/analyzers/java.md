@@ -817,3 +817,20 @@ negative imported-class case and a positive *transitively inherited member
 type* case. This conservatively abstains on externally defined inherited
 member types; the analyzer has no compiler classpath or cross-file type
 table sufficient to prove them.
+
+## Inherited qualified member-type parents
+
+When the heritage name is a **qualified chain of member types** (for example
+`InnerBase.Deep`), checking only that the candidate's immediate declaring
+type `Ancestor.InnerBase` is a BFS ancestor is insufficient: Java also
+inherits `InnerBase` through an ancestor such as `Ancestor`. The
+in-file visibility guard admits a candidate exactly matching the currently
+reached ancestor plus the **complete written chain**. It still rejects
+unrelated same-suffix decoys and does not guess which candidate is correct.
+
+The `java/override-inherited-qualified-member-chain` regression pins
+`Descendant.Nested extends InnerBase.Deep` via
+`Descendant -> Middle -> Ancestor`, and requires genuine 1.0-confidence
+in-file overrides rather than a 0.5 first-parent guess.
+This remains an in-file proof; access modifiers and cross-file owner
+resolution still require broader compiler/corpus verification.
