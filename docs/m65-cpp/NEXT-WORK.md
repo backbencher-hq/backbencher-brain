@@ -472,3 +472,50 @@ whether an edge binds.
 declaration shared by a same-named member (recorded in `metadata.overriddenOwner`, which is the
 machine-readable answer to "which declaration did the resolver intend"). **No further analyzer change
 is warranted** — the residual is a property of C++ member names, not of the emission.
+
+---
+
+## 13 · THE FOURTH WRONG NUMBER — `resolves()` was measuring every type in one key space
+
+`references` reported **36.9% resolved (76/206)**. The true figure is **99.5% (205/206)**. The one
+miss is `::std::ostream`, whose ROOT namespace `std` is not declared in the corpus — correct by
+design, since `std` is the standard library.
+
+**The cause was structural, not a typo.** A single `resolves()` tested every target against
+**symbol names** (plus a unique-bare-name fallback). That is the right key space for `calls`, `uses`,
+`extends`, `instantiates` and `overrides` — and the wrong one for three other types:
+
+| type | its target is | the key space that decides it |
+|---|---|---|
+| calls / uses / extends / instantiates / overrides | a declared name | symbol names + `qualifiedName` |
+| `references` | a **namespace** name (`using X = Y;`) | namespace names, and the ROOT of a `::` path |
+| `part_of` | a **file stem** (file-level relation) | file stems present in the corpus |
+| `imports` | an external **module** name | nothing in-corpus — external by design |
+
+**So this was one defect producing four headlines.** Measured with the correct space per type:
+
+| type | before (symbol-name space) | after (its own space) |
+|---|---|---|
+| `references` | 76/206 = 36.9% | **205/206 = 99.5%** |
+| `part_of` | 63/360 = 17.5% | **347/360 = 96.4%** |
+| `overrides` | "134/134 ambiguous" | **120 exact + 14 genuine, 0 unresolved** |
+| `imports` | 205/1,968 = 10.4% | 205/1,968 = 10.4% (unchanged — external by design) |
+
+**The four wrong numbers of this campaign, together, because they are one lesson:**
+
+| # | the claim | the truth | the proxy that misled |
+|---|---|---|---|
+| 1 | `overrides` "0 of 134 unresolvable" | all 134 resolved | resolver leaf-matching on `.` was unread |
+| 2 | `part_of` "17.5% resolved" | 97.5% | a FILE relation measured against SYMBOLS |
+| 3 | `overrides` "134/134 ambiguous" | 120 exact + 14 genuine | a NAME count, not the store's key space |
+| 4 | `references` "36.9% resolved" | 99.5% | symbol names for a NAMESPACE target |
+
+Every one came from the same mistake: **printing a rate without stating what it was measured against.**
+`resolves()` now takes the relationship type and answers in that type's own space, and any rate this
+probe prints names its space. That is the structural fix; the four numbers above are just where it bit.
+
+**Consequence for the work list: two items are now closed and one is confirmed correct-by-design.**
+`part_of` (96.4%) and `references` (99.5%) need **no analyzer change** — their residuals are a file
+outside the checkout and `std` itself. `imports` (10.4%) is external-module by construction and must
+**not** be "fixed". The remaining honest resolution gap is `calls` at 92.6% (4,403 rows), which is
+stdlib/Win32/test-macros and was analysed in §11.4.

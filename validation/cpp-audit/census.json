@@ -12,7 +12,7 @@
     },
     "parseFailures": 0,
     "failureSample": [],
-    "parseMs": 18997
+    "parseMs": 17446
   },
   "totals": {
     "symbols": 17912,
@@ -139,7 +139,7 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "360/360",
-      "targetResolved": "63/360",
+      "targetResolved": "347/360",
       "sub1WithoutReasonCode": 0
     },
     "references": {
@@ -157,7 +157,7 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "206/206",
-      "targetResolved": "76/206",
+      "targetResolved": "205/206",
       "sub1WithoutReasonCode": 0
     },
     "instantiates": {
@@ -348,14 +348,9 @@
     {
       "check": "target unresolved against in-output index",
       "type": "references",
-      "count": 130,
+      "count": 1,
       "sample": [
-        "std::get",
-        "fmt::runtime",
-        "testing::Contains",
-        "fmt::string_view",
-        "fmt::detail::buffer",
-        "testing::_"
+        "::std::ostream"
       ]
     },
     {

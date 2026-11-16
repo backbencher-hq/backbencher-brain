@@ -198,8 +198,49 @@ async function main(): Promise<void> {
       if (typeof q === "string" && q !== s.name) symbolNames.add(q)
     }
   }
-  const resolves = (t: string): boolean => {
-    if (t === "" ) return false
+  // ── THE RESOLVER, PER TYPE. ★ M65, THE FOURTH WRONG NUMBER, AND THE FIX IS STRUCTURAL. ────────
+  // A single `resolves()` against symbol names was used for EVERY type, and that produced four wrong
+  // headlines in this campaign because each type resolves in a DIFFERENT key space:
+  //
+  //   calls/uses/instantiates/extends/overrides  -> symbol names (+ qualifiedName), per-file then corpus
+  //   imports                                    -> module names; external by design (never a symbol)
+  //   references                                 -> NAMESPACE names (a `using X = Y;` names a namespace)
+  //   part_of                                    -> FILE STEMS (a file-level relation, not a symbol)
+  //   exports                                    -> the macro/declared name it names
+  //
+  // MEASURED CONSEQUENCES, all four the same error — measuring a proxy instead of the consumer's
+  // question:
+  //   "0 of 134 overrides unresolvable"  -> wrong, all 134 resolved (extractLeaf splits on `.`)
+  //   "part_of 17.5% resolved"           -> wrong, 97.5% (measured against file stems)
+  //   "overrides 134/134 ambiguous"      -> wrong, 120 exact + 14 genuine
+  //   "references 36.9% resolved"        -> wrong, 99.5% (205/206; the one miss is `::std::ostream`,
+  //                                          whose ROOT namespace `std` is not declared in-corpus)
+  //
+  // So `resolves` now takes the type and answers in that type's own space. A rate printed by this
+  // probe states which space it used, which is the only way a percentage here can mean anything.
+  const corpusNamespaces = new Set<string>()
+  const corpusStems = new Set<string>()
+  for (const r of recs) {
+    for (const s of r.symbols) if (s.kind === "namespace") corpusNamespaces.add(s.name)
+    const slash = r.path.lastIndexOf("/")
+    const base = slash >= 0 ? r.path.slice(slash + 1) : r.path
+    const dot = base.lastIndexOf(".")
+    corpusStems.add((dot > 0 ? base.slice(0, dot) : base))
+  }
+  const resolves = (t: string, type?: string): boolean => {
+    if (t === "") return false
+    // imports: an external module name. It resolves iff a symbol or namespace carries it, which for
+    // a real `#include <vector>` it never does -- that is the contract, not a defect.
+    if (type === "imports") return symbolNames.has(t) || corpusNamespaces.has(t)
+    // references: a namespace name, possibly a `::` path whose ROOT is the declared namespace.
+    if (type === "references") {
+      if (corpusNamespaces.has(t)) return true
+      const root = t.split("::")[0]
+      return root !== "" && corpusNamespaces.has(root)
+    }
+    // part_of: a FILE STEM. It resolves iff a file with that stem is in the corpus.
+    if (type === "part_of") return corpusStems.has(t)
+    // the rest: symbol names, then a unique bare name.
     if (symbolNames.has(t)) return true
     if (nameCount.get(t) === 1) return true
     return false
@@ -250,8 +291,8 @@ async function main(): Promise<void> {
     }
     const lineMissing = rows.filter((r) => typeof r.line_number !== "number" || r.line_number <= 0).length
     const emptyEndpoint = rows.filter((r) => !r.source || !r.target || r.source === "" || r.target === "").length
-    const srcResolved = rows.filter((r) => resolves(r.source) || r.source === "global").length
-    const tgtResolved = rows.filter((r) => resolves(r.target)).length
+    const srcResolved = rows.filter((r) => resolves(r.source, t) || r.source === "global").length
+    const tgtResolved = rows.filter((r) => resolves(r.target, t)).length
     const reasonMissing = rows.filter((r) => typeof r.confidence === "number" && r.confidence < 1 && !(r.metadata as any)?.reasonCode).length
     const dupPairs = rows.length - e.pairs.size
     perType[t] = {
@@ -374,7 +415,7 @@ async function main(): Promise<void> {
     const ov = types.get("overrides")
     if (ov) {
       const dottedSrc = ov.rows.filter((r) => r.source.includes(".")).length
-      const srcRes = ov.rows.filter((r) => resolves(r.source)).length
+      const srcRes = ov.rows.filter((r) => resolves(r.source, "overrides")).length
       findings.push({
         // The check's FIRST name was "the dot ... resolves to no symbol", which this probe DISPROVED:
         // the resolver's extractLeaf (pool-worker.ts:879) splits on `.` too, so a dot source DOES bind —
@@ -450,8 +491,8 @@ async function main(): Promise<void> {
     for (const t of ["imports", "references", "exports"]) {
       const e = types.get(t)
       if (!e) continue
-      const unres = e.rows.filter((r) => !resolves(r.target)).length
-      findings.push({ check: "target unresolved against in-output index", type: t, count: unres, sample: [...new Set(e.rows.filter((r) => !resolves(r.target)).slice(0, 6).map((r) => r.target))] })
+      const unres = e.rows.filter((r) => !resolves(r.target, t)).length
+      findings.push({ check: "target unresolved against in-output index", type: t, count: unres, sample: [...new Set(e.rows.filter((r) => !resolves(r.target, t)).slice(0, 6).map((r) => r.target))] })
     }
   }
 
