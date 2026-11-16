@@ -2932,6 +2932,23 @@ currentPackage,
     // file (O(C)) instead of per task (was O(T·C)); the BFS below uses an
     // index cursor instead of queue.shift() (O(1) vs O(N) per dequeue).
     let suffixIndex: Map<string, string[]> | null = null
+    // Resolve an in-file parent relative to the type writing its heritage
+    // clause. A same-named nested class elsewhere is not an ancestor.
+    // Unknown ambiguous parents do not become guessed override targets.
+    const parentCandidates = (fromOwner: string, written: string): { matches: string[]; ambiguous: boolean } => {
+      let scope = fromOwner
+      while (scope.lastIndexOf(".") !== -1) {
+        scope = scope.slice(0, scope.lastIndexOf("."))
+        const local = `${scope}.${written}`
+        if (classHierarchy.has(local)) return { matches: [local], ambiguous: false }
+      }
+      if (classHierarchy.has(written)) return { matches: [written], ambiguous: false }
+      const leaf = written.slice(written.lastIndexOf(".") + 1)
+      const matches = (suffixIndex?.get(leaf) ?? []).filter(fqn => fqn.endsWith(`.${written}`))
+      return matches.length === 1
+        ? { matches, ambiguous: false }
+        : { matches: [], ambiguous: matches.length > 1 }
+    }
     for (let taskIdx = 0; taskIdx < tasks.length; taskIdx++) { const task = tasks[taskIdx]
       let targetFqn: string | null = null
       // Confidence reflects EVIDENCE TIER, and it is consumed downstream
@@ -2951,12 +2968,11 @@ currentPackage,
       // localOwnerPrefix aliases while hop-2+ looked up classHierarchy with
       // the bare name and missed — nested-class chains (BlackVal extends
       // Black extends Node) silently lost overrides whose declaring ancestor
-      // sat two+ levels up (val/left/right on Node). Suffix-resolve every
-      // bare parent to its FQN candidate(s); the symbolMap hit requirement
-      // disambiguates same-named classes (a wrong-candidate FQN has no
-      // matching method symbol). JLS 8.4.8.1 semantics unchanged: BFS walks
-      // the chain level-by-level, breaking at the first accessible (non-
-      // private) declaring ancestor.
+      // sat two+ levels up (val/left/right on Node). Resolve parent names
+      // against the enclosing lexical scopes before considering an in-file
+      // suffix. A matching method on an unrelated nested class is not evidence
+      // of inheritance. The BFS still checks accessible (non-private,
+      // non-static) ancestor method signatures in hierarchy order.
       // PERF (review 2026-09-08): suffixIndex is hoisted above the task loop.
       if (!suffixIndex) {
         suffixIndex = new Map<string, string[]>()
@@ -2969,14 +2985,19 @@ currentPackage,
       }
       const parentsOf = (owner: string): JavaOverrideParent[] =>
         overrideParents.get(owner) ?? (classHierarchy.get(owner) ?? []).map(name => ({ name, typeArguments: [] }))
-      const queue = parentsOf(task.ownerFqn).map(parent => ({ parent, bindings: new Map() as JavaTypeBindings }))
+      const queue = parentsOf(task.ownerFqn).map(parent => ({
+        parent, fromOwner: task.ownerFqn, bindings: new Map() as JavaTypeBindings,
+      }))
       const seen = new Set<string>()
       const unresolvedParents = new Set<string>()
       let head = 0
       while (head < queue.length && !targetFqn) {
-        const { parent, bindings: childBindings } = queue[head++]
-        const candidates = classHierarchy.has(parent.name) ? [parent.name] : suffixIndex.get(parent.name) ?? []
-        if (task.explicit && parent.name && candidates.length === 0) unresolvedParents.add(parent.name)
+        const { parent, fromOwner, bindings: childBindings } = queue[head++]
+        const { matches: candidates, ambiguous } = parentCandidates(fromOwner, parent.name)
+        // An ambiguous in-file parent is not evidence of an external parent.
+        if (task.explicit && parent.name && candidates.length === 0 && !ambiguous) {
+          unresolvedParents.add(parent.name)
+        }
         for (const cand of candidates) {
           // Valid Java hierarchies cannot inherit conflicting instantiations.
           // Key by declaration to bound the walk on malformed, cyclic source.
@@ -3009,7 +3030,7 @@ currentPackage,
             break
           }
           if (targetFqn) break
-          for (const ancestor of parentsOf(cand)) queue.push({ parent: ancestor, bindings })
+          for (const ancestor of parentsOf(cand)) queue.push({ parent: ancestor, fromOwner: cand, bindings })
         }
       }
 

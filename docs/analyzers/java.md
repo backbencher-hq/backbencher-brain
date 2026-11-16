@@ -761,3 +761,16 @@ construct census: `validation/m14/measurements/java-extended-types-census.json`
 **R2 is not taken and no regeneration control is published: a patched node would fire 0** for each of the
 three grammar constructs (there is no syntax in the language to patch), so there is nothing to wire and
 nothing to control. That is a disclosed reason, not a missing measurement.
+
+## Lexically qualified in-file override parents
+
+In-file override resolution now searches the enclosing lexical scope of the
+type that **writes** each superclass clause, including each intermediate hop.
+It then accepts an exact in-file declaration, or a unique suffix candidate
+if the lexical search found nothing. A nonunique suffix does not authorize a
+name-only override or an external-ancestor guess.
+
+Regression: `validation/m14/fixtures/java/override-lexical-parent-resolution.java`
+and its expectation file cover direct and two-hop inheritance with a same-named
+decoy declared first. This is a syntax-local guarantee: imported/cross-file
+Java name resolution and compiler-level accessibility remain outside it.

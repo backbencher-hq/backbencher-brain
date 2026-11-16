@@ -1,0 +1,48 @@
+{
+  "fixtureId": "java/override-lexical-parent-resolution",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The nearest enclosing Java type owns an unqualified superclass name in both direct and multi-hop inheritance. An earlier, unrelated nested Base must neither create false overrides nor contaminate the declaringType.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Owner.Direct.collide",
+      "target": "collide",
+      "meta.declaringType": "Owner.Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Owner.Indirect.collide",
+      "target": "collide",
+      "meta.declaringType": "Owner.Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Owner.Indirect.localOnly",
+      "target": "localOnly",
+      "meta.declaringType": "Owner.Base"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Owner.Direct.decoyOnly"
+    },
+    {
+      "type": "overrides",
+      "from": "Owner.Indirect.decoyOnly"
+    },
+    {
+      "type": "overrides",
+      "from": "Owner.Direct.collide",
+      "target": "collide",
+      "meta.declaringType": "Decoy.Base"
+    },
+    {
+      "type": "overrides",
+      "from": "Owner.Indirect.collide",
+      "target": "collide",
+      "meta.declaringType": "Decoy.Base"
+    }
+  ]
+}
