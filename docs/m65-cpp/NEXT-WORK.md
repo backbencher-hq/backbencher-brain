@@ -430,3 +430,45 @@ These are stdlib/Win32 names, test-framework macros not `#define`d in the corpus
 family IS now resolved; `TEST_DOUBLE` is gtest's, header absent), and template-id spellings. **No
 further analyzer change is justified by them** — resolving `vector` or `max` would require declaring
 standard-library symbols, which is the fabrication this lane refuses.
+
+---
+
+## 12 · THE THIRD WRONG NUMBER — and the probe fixed rather than its output
+
+`overrides` "source leaf is declared MORE THAN ONCE in its file = 134/134" was wrong, and this time
+I caught it by re-deriving instead of re-reading. **All 134 `overrides` sources resolve EXACTLY by
+their full string; 0 resolve to nothing.**
+
+**What the bad check did.** It built `declCount` from `s.name` only, so a file declaring
+`void f(int)`, `void f(double)` and `void f()` in three classes read as "leaf `f` declared 3x ⇒
+ambiguous". But the resolver (`parallel-indexer.ts:5239-5247`) matches the edge's **source string**
+against `name`, `qualifiedName` and `metadata.fqn` first, and only falls back to the bare leaf when
+none answers. An `overrides` source is now `${cls}::${method}` (M65), which **is** a published
+`qualifiedName` — so it resolves exactly and the leaf count is irrelevant.
+
+**The corrected measurement** (523 files, using the store's own key space):
+
+| resolution path | rows |
+|---|---|
+| bind EXACTLY by full source string | **120** |
+| bind via endsWith to a unique key | 0 |
+| bind only via bare leaf, ambiguous | 14 |
+| bind only via bare leaf, unique | 0 |
+| **resolve to nothing** | **0** |
+
+The 14 are genuine C++ — a declaration plus an out-of-line definition of the same method
+(`iterator_buffer::grow` 4×, `Mutex::Lock` 2×, `OsStackTraceGetter::CurrentStackTrace` 2×) — not a
+spelling defect. **That is a legitimate ambiguous-by-name case, and no resolver can do better without
+a key that distinguishes declarations of the same member.**
+
+**Three times is a pattern, so the check was fixed rather than its output.** `0/134 unresolvable`
+(wrong: it resolved), `part_of 17.5%` (wrong: 97.5%), `overrides 134/134 ambiguous` (wrong: 120
+exact, 14 genuine). Each time the cause was the same: **the number measured a proxy — a name count,
+or symbol resolution for a file-level relation — instead of the question the consumer actually asks.**
+The check now measures against the key space the store receives, which is the thing that decides
+whether an edge binds.
+
+**⇒ The honest summary of `overrides` after M65:** 134 rows, all resolving, 120 uniquely and 14 to a
+declaration shared by a same-named member (recorded in `metadata.overriddenOwner`, which is the
+machine-readable answer to "which declaration did the resolver intend"). **No further analyzer change
+is warranted** — the residual is a property of C++ member names, not of the emission.

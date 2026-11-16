@@ -12,7 +12,7 @@
     },
     "parseFailures": 0,
     "failureSample": [],
-    "parseMs": 24094
+    "parseMs": 18997
   },
   "totals": {
     "symbols": 17912,
@@ -307,15 +307,15 @@
       ]
     },
     {
-      "check": "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
+      "check": "overrides source binds to an AMBIGUOUS key in its file (declared >1x, not merely a repeated name)",
       "type": "overrides",
-      "count": 134,
+      "count": 14,
       "sample": [
-        "134 of 134 rows have an ambiguous leaf",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::unsupported -> leaf \"unsupported\" declared 3x",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_year -> leaf \"on_year\" declared 4x",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_short_year -> leaf \"on_short_year\" declared 4x",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_offset_year -> leaf \"on_offset_year\" declared 4x"
+        "120 of 134 sources bind EXACTLY by their full string; 14 ambiguous; 0 resolve to nothing",
+        ".cpp-corpus/fmt/include/fmt/core.h: iterator_buffer::grow -> key declared 4x",
+        ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc: OsStackTraceGetter::CurrentStackTrace -> key declared 2x",
+        ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc: FuchsiaDeathTest::GetErrorLogs -> key declared 2x",
+        ".cpp-corpus/fmt/test/gtest/gmock/gmock.h: ActionResultHolder::PrintAsActionResult -> key declared 2x"
       ]
     },
     {

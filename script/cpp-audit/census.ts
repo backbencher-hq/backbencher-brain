@@ -143,14 +143,52 @@ async function main(): Promise<void> {
   const nameCount = new Map<string, number>()
   const symbolNames = new Set<string>()
   const ownerMember = new Set<string>() // `${owner}::${name}`
-  // PER-FILE declaration counts, for the override-source ambiguity measurement. A source binds to a
-  // name; it binds UNAMBIGUOUSLY only when that name is declared exactly once in the file the edge came
-  // from. Keyed `${filePath} NUL ${leafName}`.
-  const declCount = new Map<string, number>()
+  // PER-FILE declaration counts, for the override-source ambiguity measurement.
+  //
+  // ★ M65 CORRECTION — THIS MAP PRODUCED THE THIRD WRONG NUMBER OF THE CAMPAIGN, AND THE LESSON IS THE
+  // SAME ONE AS `part_of`. It counted `s.name` only, so a file declaring `void f(int)` / `void f(double)`
+  // / `void f()` in three classes read as "leaf `f` declared 3x => ambiguous". That is the wrong
+  // question. The resolver (parallel-indexer.ts:5239-5247) matches the edge's SOURCE STRING against
+  // `name`, `qualifiedName` and `metadata.fqn` FIRST, and only falls back to the bare leaf when none
+  // answers. An `overrides` source is `${cls}::${method}` (M65), which IS a published `qualifiedName`,
+  // so it resolves EXACTLY and the leaf count is irrelevant.
+  //
+  // MEASURED both ways over 523 files: 134 of 134 `overrides` sources resolve EXACTLY by their full
+  // string, 0 via endsWith, 0 by bare leaf, 0 unresolved. The earlier "134 of 134 ambiguous" measured
+  // whether a NAME repeats — which it does in any C++ file with overloads — not whether the EDGE
+  // resolves. `part_of` (97.5% correct, not 17.5%) was the same error one type earlier, and "0 of 134
+  // unresolvable" before that. Three times is a pattern, so the check is fixed rather than its output:
+  // ambiguity is now measured against the KEY SPACE the store receives, not against the name count.
+  const keyCount = new Map<string, number>()
   for (const r of recs) {
     const perFile = new Map<string, number>()
-    for (const s of r.symbols) perFile.set(s.name, (perFile.get(s.name) ?? 0) + 1)
-    for (const [n, c] of perFile) declCount.set(`${r.path}\u0000${n}`, c)
+    for (const s of r.symbols) {
+      // the three keys the store receives: name, qualifiedName, metadata.fqn
+      const keys = [s.name, (s as any).qualifiedName, (s.metadata as any)?.fqn]
+      for (const k of keys) {
+        if (typeof k === "string" && k.length > 0) perFile.set(k, (perFile.get(k) ?? 0) + 1)
+      }
+    }
+    for (const [n, c] of perFile) keyCount.set(`${r.path}\u0000${n}`, c)
+  }
+  /** The declaration count for the key an override source binds by: the full string first, else the
+   *  leaf — the resolver's own order. 0 means nothing in this file answers to it. */
+  const keyCountFor = (filePath: string | undefined, source: string): number => {
+    if (filePath === undefined) return 0
+    const exact = keyCount.get(`${filePath}\u0000${source}`) ?? 0
+    if (exact > 0) return exact
+    const leaf = overrideLeafOf(source)
+    return leaf === "" ? 0 : (keyCount.get(`${filePath}\u0000${leaf}`) ?? 0)
+  }
+  /** The leaf of an override source: after the last `::` (the M65 spelling) or the last `.` (the
+   *  pre-M65 spelling). Both are accepted so the probe can read either. */
+  const overrideLeafOf = (source: string): string => {
+    const s = String(source ?? "")
+    if (s.includes("::")) return s.slice(s.lastIndexOf("::") + 2)
+    if (s.includes(".")) return s.slice(s.lastIndexOf(".") + 1)
+    return s
+  }
+  for (const r of recs) {
     for (const s of r.symbols) {
       symbolNames.add(s.name)
       nameCount.set(s.name, (nameCount.get(s.name) ?? 0) + 1)
@@ -353,25 +391,27 @@ async function main(): Promise<void> {
       // more than once is what separates "no endpoint" (which this probe first claimed, wrongly) from
       // "an endpoint shared with another class" (the real defect).
       let ambig = 0
+      let exactKey = 0
+      let noKey = 0
       const ambigSample: string[] = []
       for (const r of ov.rows) {
         const src = String(r.source)
-        // Strip the owner qualifier to get the leaf the resolver would use, then look up how many
-        // symbols in THIS file carry that name.
-        const leaf = src.includes("::") ? src.slice(src.lastIndexOf("::") + 2) : src.includes(".") ? src.slice(src.lastIndexOf(".") + 1) : src
-        if (leaf === "") continue
         const fp = (r as any).__file as string | undefined
-        const n = fp === undefined ? 0 : (declCount.get(`${fp}\u0000${leaf}`) ?? 0)
-        if (n > 1) {
-          ambig++
-          if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> leaf "${leaf}" declared ${n}x`)
-        }
+        // THE RESOLVER'S OWN QUESTION: does any key in this file answer to this source string?
+        // The full string first (`Derived::f` is a published qualifiedName), then the leaf. A count
+        // above 1 means the key is ambiguous; 0 means nothing answers and the edge does not resolve.
+        if (fp === undefined) continue
+        const exact = keyCount.get(`${fp}\u0000${src}`) ?? 0
+        if (exact === 1) { exactKey++; continue }
+        const n = keyCountFor(fp, src)
+        if (n === 0) { noKey++; if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> NO KEY in this file`) }
+        else if (n > 1) { ambig++; if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> key declared ${n}x`) }
       }
       findings.push({
-        check: "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
+        check: "overrides source binds to an AMBIGUOUS key in its file (declared >1x, not merely a repeated name)",
         type: "overrides",
         count: ambig,
-        sample: [`${ambig} of ${ov.rows.length} rows have an ambiguous leaf`, ...ambigSample],
+        sample: [`${exactKey} of ${ov.rows.length} sources bind EXACTLY by their full string; ${ambig} ambiguous; ${noKey} resolve to nothing`, ...ambigSample],
       })
     }
   }
