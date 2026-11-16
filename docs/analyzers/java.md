@@ -858,3 +858,17 @@ Two fixtures distinguish these cases:
 
 This does not yet prove complete Java access resolution for protected,
 package-private, cross-file, or hidden intermediate qualifier types.
+
+## Unbounded method-generic override alpha-equivalence
+
+Generic method type-variable names are not semantic identities:
+`<T> T identity(T)` and `<U> U identity(U)` may override. The in-file
+resolver now compares declaration-position alpha-renamed parameter types
+using the existing token-aware type substituter, independent of enclosing
+class variable bindings. A method variable shadows any equally named
+class variable. Recognized matches carry
+`reasonCode: generic-method-alpha-equivalence`. See regression
+`java/override-unbounded-method-alpha-equivalence` (javac 21-valid):
+interface methods, arrays, parameterized types, class generics and
+shadowed method variables. This path deliberately abstains on bounded
+method parameters and uncertain external ancestors.

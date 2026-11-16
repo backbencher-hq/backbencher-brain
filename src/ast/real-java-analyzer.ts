@@ -93,6 +93,8 @@ type JavaOverrideTask = {
   methodName: string
   signature: string
   ownerFqn: string
+  methodTypeParameters?: readonly string[]
+  unboundedMethodTypeParameters?: boolean
   explicit?: boolean
   line: number
 }
@@ -1429,6 +1431,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // interface body, JLS 9.4.1.3, stays private).
           const effectiveVisibility = visibility ?? (parentContext?.isInterface ? "public" : undefined)
 
+          const methodTypeParameters = this.getJavaGenericParameters(node)
+          const unboundedMethodTypeParameters = this.hasOnlyUnboundedJavaTypeParameters(node)
           const isAnnotatedOverride = annotations.indexOf("@Override") !== -1
           // JLS 8.4.8: @Override is a compile-time CHECK, not a requirement —
           // an un-annotated instance method whose signature matches an
@@ -1447,6 +1451,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                methodName: name,
                signature,
                ownerFqn: parentContext.fqn,
+               methodTypeParameters,
+               unboundedMethodTypeParameters,
                explicit: true,
                // M59 (#825): the OVERRIDING declaration's own line (annotations
                // skipped, so an `@Override` method does not report the
@@ -1461,6 +1467,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               methodName: name,
               signature,
               ownerFqn: parentContext.fqn,
+              methodTypeParameters,
+              unboundedMethodTypeParameters,
               explicit: false,
                line: this.declarationLineNode(node).startPosition.row + 1,
              })
@@ -1524,7 +1532,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             genericParameters: this.getJavaGenericParameters(node),
             ownerName: parentContext?.name,
             ownerKind: parentContext?.kind,
-            metadata: { nodeType: type, modifiers, annotations },
+            metadata: { nodeType: type, modifiers, annotations,
+              ...(unboundedMethodTypeParameters ? { javaUnboundedMethodTypeParameters: true } : {}),
+            },
           }
 
           symbols.push(sym)
@@ -3119,8 +3129,31 @@ currentPackage,
           }
           for (const member of methodsByOwner.get(cand)?.get(task.methodName) ?? []) {
             if (variables.length === 0 || member.visibility === "private" || member.isStatic) continue
-            // Method-level generics introduce a separate scope and require their own compatibility check.
-            if (member.genericParameters?.length || symbolMap.get(task.fqn)?.genericParameters?.length) continue
+            // Method-generic variables have their own alpha-equivalent scope.
+            // Never infer equality of bounded methods from parameter names.
+            const baseVars = member.genericParameters ?? []
+            const childVars = task.methodTypeParameters ?? []
+            if (baseVars.length || childVars.length) {
+              if (!baseVars.length || baseVars.length !== childVars.length ||
+                  !task.unboundedMethodTypeParameters ||
+                  member.metadata?.javaUnboundedMethodTypeParameters !== true) continue
+              const classBindings = new Map(bindings)
+              const methodBindings = new Map<string, string>()
+              for (let i = 0; i < baseVars.length; i++) {
+                classBindings.delete(baseVars[i]) // method declaration shadows class variable
+                methodBindings.set(baseVars[i], childVars[i])
+              }
+              const original = (member.parameters ?? []).map(p => p.type ?? "unknown")
+              const afterClass = original.map(type => substituteJavaType(type, classBindings))
+              if (afterClass.includes(undefined)) continue
+              const normalized = afterClass.map(type => substituteJavaType(type!, methodBindings))
+              if (normalized.includes(undefined) ||
+                  `(${normalized.join(",")})` !== task.signature) continue
+              targetFqn = `${cand}.${task.methodName}(${original.join(",")})`
+              confidence = variables.length > 0 ? 0.9 : 1.0
+              reasonCode = "generic-method-alpha-equivalence"
+              break
+            }
             const original = (member.parameters ?? []).map(p => p.type ?? "unknown")
             const resolved = original.map(type => substituteJavaType(type, bindings))
             if (resolved.includes(undefined) || `(${resolved.join(",")})` !== task.signature) continue
@@ -6054,6 +6087,21 @@ currentPackage,
       }
     }
     return undefined
+  }
+
+  /** Accept alpha-equivalence only for structurally unbounded method variables. */
+  private hasOnlyUnboundedJavaTypeParameters(node: Node): boolean {
+    const params = this.findChildByType(node, "type_parameters")
+    if (!params) return false
+    let count = 0
+    for (let i = 0; i < params.namedChildCount; i++) {
+      const param = params.namedChild(i)
+      if (!param || param.type !== "type_parameter") continue
+      count++
+      if (this.findChildByType(param, "type_bound") || param.namedChildCount !== 1) return false
+      if (param.namedChild(0)?.type !== "type_identifier") return false
+    }
+    return count > 0
   }
 
   private getJavaGenericParameters(node: any): string[] | undefined {
