@@ -887,3 +887,17 @@ Additional compiler-valid regression:
 
 This intentionally leaves bounded method generics, return covariance,
 and cross-file declarations as known gaps; no regex is used.
+
+## Stabilization batch evidence (2026-11-16; supersedes historical M12 status)
+
+See `validation/m12/verification/java-differential-adjudication-2026-11-16.md`.
+The committed (stale) M12 result has TP=95, FP=108,
+FN=21, unknown=4, precision=0.468,
+recall=0.819; the independent agent's pre-batch run
+reported a different FP/unknown breakdown. Neither is a current sealed
+statement about the new generic-method analyzer commits. The older
+"M12 real-java-analyzer.ts has NOT changed" historical observation
+above is no longer true. The first batch's two new generic-method
+fixtures are compiler-valid, but complete Java-fixture verification,
+fresh M12 and pinned corpus remain unmeasured here. CI is currently
+disabled by `if: false` gates in three workflows.
