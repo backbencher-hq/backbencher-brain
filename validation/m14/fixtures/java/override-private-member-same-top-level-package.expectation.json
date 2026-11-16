@@ -1,0 +1,22 @@
+{
+  "fixtureId": "java/override-private-member-same-top-level-package",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Valid javac 21 source in package p: private nested classes can be named by qualified forms within the same enclosing top-level class, including qualified member types inherited through a superclass. The top-level identity is p.Outer, not p.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "Direct.ping",
+      "target": "ping",
+      "meta.declaringType": "Deep",
+      "meta.reasonCode": "exact-in-file"
+    },
+    {
+      "type": "overrides",
+      "from": "ThroughMember.work",
+      "target": "work",
+      "meta.declaringType": "Nested",
+      "meta.reasonCode": "exact-in-file"
+    }
+  ]
+}

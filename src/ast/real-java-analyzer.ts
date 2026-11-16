@@ -2936,14 +2936,37 @@ currentPackage,
     // Resolve an in-file parent relative to the type writing its heritage
     // clause. A same-named nested class elsewhere is not an ancestor.
     // Unknown ambiguous parents do not become guessed override targets.
+    // The first dot is NOT the top-level boundary in named packages.
+    // Walk actual declared type owners until only the package remains.
+    const enclosingTopLevel = (fqn: string): string => {
+      let owner = fqn
+      while (true) {
+        const dot = owner.lastIndexOf(".")
+        if (dot < 0) return owner
+        const enclosing = owner.slice(0, dot)
+        if (!classHierarchy.has(enclosing)) return owner
+        owner = enclosing
+      }
+    }
+    const candidateVisible = (candidate: string, fromOwner: string): boolean => {
+      const sym = symbolMap.get(candidate)
+      if (!sym || sym.visibility !== "private") return true
+      const dot = candidate.lastIndexOf(".")
+      if (dot < 0) return false
+      const declaringType = candidate.slice(0, dot)
+      return enclosingTopLevel(declaringType) === enclosingTopLevel(fromOwner)
+    }
     const parentCandidates = (fromOwner: string, written: string): { matches: string[]; ambiguous: boolean; rejectedInaccessible: boolean } => {
+      const knownParent = (candidate: string) => candidateVisible(candidate, fromOwner)
+        ? { matches: [candidate], ambiguous: false, rejectedInaccessible: false }
+        : { matches: [], ambiguous: false, rejectedInaccessible: true }
       let scope = fromOwner
       while (scope.lastIndexOf(".") !== -1) {
         scope = scope.slice(0, scope.lastIndexOf("."))
         const local = `${scope}.${written}`
-        if (classHierarchy.has(local)) return { matches: [local], ambiguous: false }
+        if (classHierarchy.has(local)) return knownParent(local)
       }
-      if (classHierarchy.has(written)) return { matches: [written], ambiguous: false }
+      if (classHierarchy.has(written)) return knownParent(written)
       // JLS 7.5.1: a single-type import also binds the leading name of
       // a QUALIFIED member type (Map.Entry under import java.util.Map).
       // Lexically enclosing declarations still take priority above. Never
@@ -2953,7 +2976,9 @@ currentPackage,
       const imported = singleTypeImports.get(importedHead)
       if (imported) {
         const resolvedName = imported + (firstDot === -1 ? "" : written.slice(firstDot))
-        return { matches: classHierarchy.has(resolvedName) ? [resolvedName] : [], ambiguous: false }
+        return classHierarchy.has(resolvedName)
+          ? knownParent(resolvedName)
+          : { matches: [], ambiguous: false, rejectedInaccessible: false }
       }
       const leaf = written.slice(written.lastIndexOf(".") + 1)
       const matches = (suffixIndex?.get(leaf) ?? []).filter(fqn => fqn.endsWith(`.${written}`))
@@ -2978,25 +3003,6 @@ currentPackage,
         }
         return undefined
       }
-      // Java access rule for inherited member types (JLS 6.6.1):
-      //   - `private` nested types are accessible only within their directly
-      //     enclosing top-level class — shared by sibling nested types.
-      //   - `protected`/`public` nested types are accessible in subclasses.
-      //   - package-private (no modifier) is accessible within the same package.
-      // We reject `private` member types when the resolving context is not
-      // inside the same top-level class as the declaring type.
-      const topLevel = (fqn: string): string => {
-        const dot = fqn.indexOf(".")
-        return dot < 0 ? fqn : fqn.slice(0, dot)
-      }
-      const candidateVisible = (candidate: string, fromOwner: string): boolean => {
-        const sym = symbolMap.get(candidate)
-        if (!sym) return true // no symbol info: do not fabricate a restriction
-        if (sym.visibility !== "private") return true
-        const dot = candidate.lastIndexOf(".")
-        const declaringType = dot < 0 ? "" : candidate.slice(0, dot)
-        return topLevel(declaringType) === topLevel(fromOwner)
-      }
       const inheritedMemberOwner = (candidate: string): boolean => {
         const dot = candidate.lastIndexOf(".")
         if (dot < 0) return false
@@ -3019,8 +3025,11 @@ currentPackage,
           // "Ancestor.InnerBase.Deep" is accessible through that hierarchy,
           // even though Ancestor.InnerBase was not a BFS vertex.
           if (owner === declaringType || candidate === `${owner}.${written}`) {
-            // Enforce access: a `private` member type is not visible outside
-            // its directly enclosing class, so a subclass cannot inherit it.
+            // A bare private member type is never inherited, even when the
+            // child resides in the same nest. Qualified access is different:
+            // a private nested type may be named through an accessible
+            // qualifier inside its enclosing top-level class.
+            if (written.indexOf(".") === -1 && symbolMap.get(candidate)?.visibility === "private") return false
             return candidateVisible(candidate, fromOwner)
           }
           for (const base of classHierarchy.get(owner) ?? []) {

@@ -1,0 +1,16 @@
+{
+  "fixtureId": "java/override-private-member-inaccessible-abstain",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Deliberately semantically invalid javac 21 source. Negative test of conservative graph output: a package name is not a shared top-level nest; private member types are not inherited as bare names and cannot be extended by another top-level class even through a qualified type. The AST may still record written extends clauses, but neither synthetic method should assert a verified override.",
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "Nested.ping"
+    },
+    {
+      "type": "overrides",
+      "from": "Stranger.ping"
+    }
+  ]
+}

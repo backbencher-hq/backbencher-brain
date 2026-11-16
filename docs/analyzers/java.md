@@ -834,3 +834,27 @@ The `java/override-inherited-qualified-member-chain` regression pins
 in-file overrides rather than a 0.5 first-parent guess.
 This remains an in-file proof; access modifiers and cross-file owner
 resolution still require broader compiler/corpus verification.
+
+## Private member-type access versus inheritance (including packages)
+
+Java's private access boundary is the **enclosing top-level type**, not
+the source package or the immediate declaring class. In a named package
+`p`, the top-level identity of `p.Outer.Inner` is `p.Outer`,
+not `p`. The analyzer now walks its own declaration hierarchy to find
+that boundary. Lexical, exact and import-derived in-file ancestors use
+the same private access check; unqualified private members found through
+an inherited-member fallback are rejected because private member types
+are **not inherited**, even where qualified private access in the same
+nest would be permitted.
+
+Two fixtures distinguish these cases:
+- `java/override-private-member-same-top-level-package`: valid Java
+  with direct qualified access and an inherited-qualified member chain
+  to private nested types within `p.Outer`.
+- `java/override-private-member-inaccessible-abstain`: deliberately
+  compiler-invalid Java; the parser may record the written inheritance,
+  but the analyzer must not fabricate a proven override for an
+  inaccessible member type.
+
+This does not yet prove complete Java access resolution for protected,
+package-private, cross-file, or hidden intermediate qualifier types.
