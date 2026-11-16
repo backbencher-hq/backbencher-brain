@@ -872,3 +872,18 @@ class variable. Recognized matches carry
 interface methods, arrays, parameterized types, class generics and
 shadowed method variables. This path deliberately abstains on bounded
 method parameters and uncertain external ancestors.
+
+## Generic method override return consistency
+
+The in-file `generic-method-alpha-equivalence` proof checks both
+normalized **parameter types** and **return types** after class variable
+substitution and method variable alpha-renaming. The literal-signature
+fast path now excludes methods declaring generic type variables, so it
+cannot bypass bound/alpha checks. The conservative generic proof
+requires equal normalized return types; covariant returns without an
+independently proven subtype relationship are not upgraded to exact.
+Additional compiler-valid regression:
+`java/override-generic-method-return-consistency`.
+
+This intentionally leaves bounded method generics, return covariance,
+and cross-file declarations as known gaps; no regex is used.

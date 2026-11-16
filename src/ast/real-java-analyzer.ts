@@ -95,6 +95,7 @@ type JavaOverrideTask = {
   ownerFqn: string
   methodTypeParameters?: readonly string[]
   unboundedMethodTypeParameters?: boolean
+  returnType?: string
   explicit?: boolean
   line: number
 }
@@ -1453,6 +1454,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                ownerFqn: parentContext.fqn,
                methodTypeParameters,
                unboundedMethodTypeParameters,
+               returnType,
                explicit: true,
                // M59 (#825): the OVERRIDING declaration's own line (annotations
                // skipped, so an `@Override` method does not report the
@@ -1469,6 +1471,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               ownerFqn: parentContext.fqn,
               methodTypeParameters,
               unboundedMethodTypeParameters,
+              returnType,
               explicit: false,
                line: this.declarationLineNode(node).startPosition.row + 1,
              })
@@ -3123,7 +3126,12 @@ currentPackage,
           }
           const potentialTargetFqn = `${cand}.${task.methodName}${task.signature}`
           const baseSym = symbolMap.get(potentialTargetFqn)
-          if (variables.length === 0 && baseSym && baseSym.visibility !== "private" && !baseSym.isStatic) {
+          // A literal signature match is not sufficient when a method has
+          // its own generic scope: its bounds and alpha-equivalent variables
+          // must go through the structured method-generic check below.
+          if (variables.length === 0 && baseSym && baseSym.visibility !== "private" &&
+              !baseSym.isStatic && !(baseSym.genericParameters?.length) &&
+              !(task.methodTypeParameters?.length)) {
             targetFqn = potentialTargetFqn
             break
           }
@@ -3149,6 +3157,13 @@ currentPackage,
               const normalized = afterClass.map(type => substituteJavaType(type!, methodBindings))
               if (normalized.includes(undefined) ||
                   `(${normalized.join(",")})` !== task.signature) continue
+              // Covariant returns require an actual subtype proof; this
+              // syntax-local path only claims equal return types after the
+              // same class and method variable substitutions.
+              if (!member.returnType || !task.returnType) continue
+              const classReturn = substituteJavaType(member.returnType, classBindings)
+              if (classReturn === undefined ||
+                  substituteJavaType(classReturn, methodBindings) !== task.returnType) continue
               targetFqn = `${cand}.${task.methodName}(${original.join(",")})`
               confidence = variables.length > 0 ? 0.9 : 1.0
               reasonCode = "generic-method-alpha-equivalence"
