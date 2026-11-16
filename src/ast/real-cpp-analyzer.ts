@@ -3506,7 +3506,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
         // Macro BODIES are still never walked as code (`isPreprocText`), so a
         // read inside a macro body stays silent exactly as before.
         //
-        // 3,870 -> 21, and the 21 are a GRAMMAR limit, not this branch: a
+        // 3,870 -> 21, and the 21 were a GRAMMAR limit, not this branch: a
         // `#define` the ERROR recovery swallowed yields no
         // `preproc_function_def` to mint from. All 5 remaining names share one
         // shape — a COMMENT between the `#if` and the `#define`. At
@@ -3516,6 +3516,17 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
         // `preproc_params` and `preproc_arg` children: the grammar recognised
         // the shape and not the rule. Same family as R1, same fix — the
         // vendored fork.
+        //
+        // ★ M65 — THAT GRAMMAR LIMIT IS NOW RECOVERED, AND THIS SENTENCE IS KEPT RATHER THAN
+        // DELETED BECAUSE IT EXPLAINS WHY THE PRE-PASS EXISTS. `recoverSwallowedMacros()`, which
+        // runs before the walk, mints a symbol for exactly the directives this branch cannot see:
+        // the ones the ERROR recovery swallowed, so no `preproc_*` node was ever built. Measured
+        // over fmt 10.2.1 + nlohmann-json v3.11.3: 544 such `#define` lines (3,483 in source vs
+        // 2,939 nodes), 543 of them in a file with >=1 ERROR node, and 9,004 `calls` rows targeting
+        // them. The pre-pass closed that: `calls` target resolution moved 77.4% -> 92.6% and the
+        // genuinely-unresolved count fell 13,407 -> 4,403, with `CHECK` (6,734 rows) and
+        // `CHECK_THROWS_WITH_AS` (1,079) going to zero. So the sentence above is now HISTORY: the
+        // grammar still produces no node, and the analyzer no longer depends on one.
         const nameNode = node.childForFieldName("name")
         const macroName = nameNode?.text?.trim()
         if (macroName && isCppSpelledName(macroName) && !symbols.some((s) => s.name === macroName)) {

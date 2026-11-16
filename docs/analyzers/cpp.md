@@ -1888,7 +1888,91 @@ made. Each item states the measurement that makes the need specific.
   the residual is a published `returnType` equal to a macro the file defines later.
   Measured 0 sites over the two pinned corpora (every marker there precedes its use);
   the robust form is a pre-pass over `preproc_def` nodes. Declared rather than
-  hidden.
+  hidden. **PARTLY ADDRESSED IN M65**: `recoverSwallowedMacros()` is now the pre-pass
+  this bullet asked for, and it fills `macroNames` before the walk — so a marker
+  defined later in the file IS in the roster when the declaration is read. The
+  residual is now only the case where the directive is in a file the analyzer never
+  parsed, which is the documented per-file boundary.
+
+## M65 — MACRO RECOVERY: the `#define`s the grammar never produced
+
+**The defect, and it was the lane's largest single measurement.** The `preproc_def` /
+`preproc_function_def` branch is correct — it published 1,277 macro symbols over a two-repo
+corpus. It cannot mint a symbol for a node the grammar **never created**, and on real
+single-header libraries it does not create one for every directive. Measured over fmt 10.2.1 +
+nlohmann-json v3.11.3 (524 files, production entry `ASTEngine.parseFile`):
+
+| measure | value |
+|---|---|
+| `#define` lines in source | 3,483 |
+| `preproc_def` / `preproc_function_def` nodes produced | 2,939 |
+| **macros the grammar never produced** | **544 (15.6%)** |
+| of those, in a file with ≥1 ERROR node | 543 |
+| `calls` rows targeting one of those | **9,004** — 67% of all genuinely-unresolved targets |
+
+Worst case `nlohmann-json/tests/thirdparty/doctest/doctest.h`: 672 `#define` lines, 131
+`preproc_*` nodes, 2,627 ERROR nodes, and a single top-level ERROR span covering the WHOLE
+file (1-7107). `CHECK` alone was **6,734** unresolved `calls` rows.
+
+**The fix.** A pre-pass — `recoverSwallowedMacros()` — that runs before the walk and mints a
+`Macro`/`Constant` from the directive line, plus `recoveredMacroParams()` for a function-like
+macro's parameter tokens. A pre-pass rather than another walk branch, because a directive
+inside an ERROR region has no node to branch on; the shape the branch keys on does not exist.
+That also makes the recovery independent of where the ERROR region happens to fall.
+
+**Deliberately narrow**, because a guessed declaration is the fabrication this lane exists to
+prevent: anchored at line start after whitespace · block comments tracked · `isCppSpelledName`
+on the name · a name the file already publishes gets nothing (the branch's own collision
+guard) · and the KIND comes from the **directive's own shape** (`NAME(` → function-like, else
+object-like), **never from the name's spelling** — `NLOHMANN_JSON_NAMESPACE_BEGIN` is a
+multi-line *object-like* define that a spelling test would mis-kind.
+
+**Measured result.**
+
+| measure | before | after | delta |
+|---|---|---|---|
+| symbols | 17,597 | **17,912** | +315 |
+| `contains` | 10,660 | 10,975 | +315 (exactly one per new symbol) |
+| **`calls` target resolution** | 45,967 / 59,374 (77.4%) | **54,971 / 59,374 (92.6%)** | **+19,004, +15.2 pts** |
+| genuinely-unresolved `calls` targets | 13,407 | **4,403** | **−9,004 (−67%)** |
+| `CHECK` | 6,734 | **0** | resolved |
+| `CHECK_THROWS_WITH_AS` | 1,079 | **0** | resolved |
+
+`calls` **rows** are unchanged at 59,374 — correct: the arm adds and removes no rows, it only
+makes existing reads resolvable. Every other relationship type is byte-identical, and **no
+fabrication gate moved**: D1 (targets and symbol names), D2, D3 (all four types), V3 and R7 all
+still read 0. So the change is a pure resolution gain, which is what the pre-fix comment said a
+macro declaration is for: *"minting the symbol is what makes the read resolvable; the
+alternative — leaving the name unresolvable so the read stays silent — is a missing true edge."*
+
+**The test-first order, and why it matters.** The fixture and the mutant were committed while
+the analyzer still **failed** them (`cpp 58 pass / 1 fail`, the single failure being
+`expected 1 symbol(s) named "NLOHMANN_JSON_NAMESPACE_END" ... got 0`), then the fix
+(`59 pass / 0 fail`), then the mutant run (`CAUGHT cpp/macro-recovery-in-error-spans, 0 -> 9
+failures`; `all 65 mutants caught`, 0 survived). A fix written first and a fixture written to
+match it would prove only that the two agree.
+
+**The fixture is real code, selected rather than written.** It reproduces nlohmann/json's
+`include/nlohmann/detail/abi_macros.hpp` (v3.11.3) unmodified below a marker line, chosen by
+walking every candidate file to find the **smallest** one with a directive inside an ERROR span:
+22 `#define` lines, 21 `preproc_*` nodes, exactly one short. The other 21 are the control, so an
+implementation that deleted the ordinary branch fails here too. An earlier synthetic attempt (a
+hand-written macro-decorated class) did not reproduce at all — ERROR spans appeared but no
+`#define` fell inside one — so it would have pinned nothing while reading as if it did; that
+attempt is recorded in the fixture rather than deleted.
+
+**It corrected my own assertions twice, and the analyzer was right both times.** I claimed
+`NLOHMANN_JSON_NAMESPACE_BEGIN` is `macro` (the grammar says object-like → `constant`), and then
+that the recovered `NLOHMANN_JSON_NAMESPACE_END` is `macro` (no parameter list, body on continued
+lines → `constant`). Both were assertions about *spelling* where the rule is about *shape*.
+
+**What is left unresolved, and why no further change is justified.** 4,403 rows: `vector` 333 ·
+`max` 312 · `check_double` 157 · `Json` 146 · `patch` 141 · `assert` 116 · `min` 113 · `memcmp`
+96 · `check_float` 84 · `back_inserter` 77 · `memcpy` 73 · `TEST_DOUBLE` 66. These are
+stdlib/Win32 names, test macros not `#define`d in the corpus, and template-id spellings.
+Resolving `vector` or `max` would require declaring standard-library symbols, which is the
+fabrication this lane refuses — so the correct action on them is none, and the measurement says
+so rather than leaving it as an open question.
 - **The shared cpp oracle cannot derive an `extends` edge from a decorated head**,
   so one row per 60-file draw counts as `unexplained`. Named and explained above;
   the fix is one arm in `script/m14/differential.ts`, which is master-owned.
