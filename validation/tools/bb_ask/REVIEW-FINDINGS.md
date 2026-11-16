@@ -156,5 +156,5 @@ Changes in two files:
 6. **Lines 346-352:** `runPhase` folded-scan path now conditionally binds `phase.value` only when `phase.clause` contains a `?` placeholder, fixing the "Too many parameter values" crash for unicode substring queries
 
 **Verification results:**
-- All 7 verification gates pass: Contract (27/27), Provenance (27/27), Honesty (30/30), Adversarial (22/22), Integration (15/15), Stats (A1-A4 all VERIFIED), Tool docs (PASS)
+- All 10 verification gates pass: Contract (27/27), Provenance (27/27), Honesty (30/30), Adversarial (22/22), Integration (15/15), Deep (A6-A8 all VERIFIED), Stats (A1-A4 all VERIFIED), Tool docs (PASS), Semantic engine (PASS)
 - Live end-to-end testing confirms all fixes with no regressions across 28+ test cases including unicode, special characters, long queries, single-char queries, exact symbol neighbours, count-by-language, and total-X queries
