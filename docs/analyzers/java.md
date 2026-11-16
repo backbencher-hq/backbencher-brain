@@ -858,3 +858,46 @@ Two fixtures distinguish these cases:
 
 This does not yet prove complete Java access resolution for protected,
 package-private, cross-file, or hidden intermediate qualifier types.
+
+## Unbounded method-generic override alpha-equivalence
+
+Generic method type-variable names are not semantic identities:
+`<T> T identity(T)` and `<U> U identity(U)` may override. The in-file
+resolver now compares declaration-position alpha-renamed parameter types
+using the existing token-aware type substituter, independent of enclosing
+class variable bindings. A method variable shadows any equally named
+class variable. Recognized matches carry
+`reasonCode: generic-method-alpha-equivalence`. See regression
+`java/override-unbounded-method-alpha-equivalence` (javac 21-valid):
+interface methods, arrays, parameterized types, class generics and
+shadowed method variables. This path deliberately abstains on bounded
+method parameters and uncertain external ancestors.
+
+## Generic method override return consistency
+
+The in-file `generic-method-alpha-equivalence` proof checks both
+normalized **parameter types** and **return types** after class variable
+substitution and method variable alpha-renaming. The literal-signature
+fast path now excludes methods declaring generic type variables, so it
+cannot bypass bound/alpha checks. The conservative generic proof
+requires equal normalized return types; covariant returns without an
+independently proven subtype relationship are not upgraded to exact.
+Additional compiler-valid regression:
+`java/override-generic-method-return-consistency`.
+
+This intentionally leaves bounded method generics, return covariance,
+and cross-file declarations as known gaps; no regex is used.
+
+## Stabilization batch evidence (2026-11-16; supersedes historical M12 status)
+
+See `validation/m12/verification/java-differential-adjudication-2026-11-16.md`.
+The committed (stale) M12 result has TP=95, FP=108,
+FN=21, unknown=4, precision=0.468,
+recall=0.819; the independent agent's pre-batch run
+reported a different FP/unknown breakdown. Neither is a current sealed
+statement about the new generic-method analyzer commits. The older
+"M12 real-java-analyzer.ts has NOT changed" historical observation
+above is no longer true. The first batch's two new generic-method
+fixtures are compiler-valid, but complete Java-fixture verification,
+fresh M12 and pinned corpus remain unmeasured here. CI is currently
+disabled by `if: false` gates in three workflows.

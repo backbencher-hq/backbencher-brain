@@ -1,0 +1,44 @@
+{
+  "fixtureId": "java/override-unbounded-method-alpha-equivalence",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Javac 21 accepts alpha-renamed unbounded method generic variables in interface methods, arrays, parameterized arguments, class generic substitution and shadowed class variables. Previously resolveOverrides skipped method-generic signatures and annotated methods fell through to 0.5 guesses. Bounded method generic equivalence is not claimed.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "TransformerImpl.identity",
+      "target": "identity",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "TransformerImpl.consume",
+      "target": "consume",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "TransformerImpl.copy",
+      "target": "copy",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "GenericChild.wrap",
+      "target": "wrap",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "ShadowChild.take",
+      "target": "take",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "WrongChild.choose"
+    }
+  ]
+}

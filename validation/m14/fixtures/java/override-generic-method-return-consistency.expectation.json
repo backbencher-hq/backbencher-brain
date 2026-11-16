@@ -1,0 +1,44 @@
+{
+  "fixtureId": "java/override-generic-method-return-consistency",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Valid javac 21 generic method overrides with renamed variables, class-level substituted return R=>String and method-level shadowing T. The analyzer must prove both parameter and return compatibility, not merely same parameter name/arity. A non-override overload must be absent.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "GenericImpl.id",
+      "target": "id",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "GenericImpl.consume",
+      "target": "consume",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "GenericImpl.copy",
+      "target": "copy",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "GenericSub.wrap",
+      "target": "wrap",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    },
+    {
+      "type": "overrides",
+      "from": "ShadowSub.take",
+      "target": "take",
+      "meta.reasonCode": "generic-method-alpha-equivalence"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "overrides",
+      "from": "DifferentOverloadSub.use"
+    }
+  ]
+}
