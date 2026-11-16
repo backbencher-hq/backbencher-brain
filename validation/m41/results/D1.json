@@ -7,10 +7,10 @@
   "passed": 18,
   "failed": 0,
   "negativeCases": 3,
-  "currentCommit": "cc19ec499e7da953a42695f8ace0dacf38951ba2",
+  "currentCommit": "72703613b32ddf185a412d4d1f52faf24b28367a",
   "verifierCommand": "npx tsx script/m41/verify-design.ts",
   "evidenceFile": "D1.json",
-  "generatedAt": "2026-11-15T21:53:10.105Z",
+  "generatedAt": "2026-11-16T01:51:03.030Z",
   "screenshots": [
     "validation/m41/results/D1-evidence/01-home.png",
     "validation/m41/results/D1-evidence/02-tools.png",

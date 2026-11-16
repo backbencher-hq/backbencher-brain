@@ -7,10 +7,10 @@
   "passed": 63,
   "failed": 0,
   "negativeCases": 3,
-  "currentCommit": "cc19ec499e7da953a42695f8ace0dacf38951ba2",
+  "currentCommit": "72703613b32ddf185a412d4d1f52faf24b28367a",
   "verifierCommand": "npx tsx script/m41/verify-site-truth.ts",
   "evidenceFile": "T2.json",
-  "generatedAt": "2026-11-15T21:56:12.185Z",
+  "generatedAt": "2026-11-16T01:52:09.379Z",
   "rendered": {
     "version": "0.1.4",
     "tools": 16,

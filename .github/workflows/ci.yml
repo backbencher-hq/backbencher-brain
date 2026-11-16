@@ -89,17 +89,22 @@ jobs:
       # what "an evidence batch is a fact, not a claim" actually means: the
       # committed ledger is checked against the committed artifacts, and only
       # then may the gates re-prove the site from scratch.
+      # Gate order matters. Every gate stamps its own evidence with the commit it
+      # ran at, so at the start of a run the ledger is one commit behind. Sync it
+      # after the gates, then run governance LAST: it compares the ledger to the
+      # evidence files, so it cannot pass before they are re-stamped.
       - name: Verify site truth, SEO, and design (M41 chain)
         if: steps.sitechanged.outputs.changed == 'true'
         run: |
           npx tsx script/m41/generate-site-truth.ts --check && \
-          npx tsx script/m41/verify-governance.ts && \
           npx tsx script/m41/verify-truth-pipeline.ts && \
           npx tsx script/m41/verify-design.ts && \
           npx tsx script/m41/verify-site-truth.ts && \
           npx tsx script/m41/verify-site-truth.ts --label T3 && \
           npx tsx script/m41/verify-seo.ts && \
-          npx tsx script/m41/verify-seo-onboarding.ts
+          npx tsx script/m41/verify-seo-onboarding.ts && \
+          npx tsx script/m41/sync-ledger.ts && \
+          npx tsx script/m41/verify-governance.ts
 
       # M56.T1 — the tool reference is single-sourced. Needs website deps
       # (it rebuilds when .next is older than a site source) and website/ has
