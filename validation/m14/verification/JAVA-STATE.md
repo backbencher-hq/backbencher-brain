@@ -54,3 +54,26 @@ measurements. Do not publish unmeasured gate columns as passes.
 Known semantic limitations to challenge: bound compatibility, return covariance,
 cross-file overrides, private/protected/package visibility, ambiguity, and
 canonical declaring-type identity.
+
+## Independent compiler override oracle (after batch checkpoint)
+
+`validation/m14/verification/JavaMethodGenericOverrideOracle.java`
+uses `com.sun.source.util.JavacTask` and javac's
+`javax.lang.model.util.Elements.overrides` to compare the two new
+fixture files against the JDK's compiler semantics. This oracle is
+independent of the Java analyzer, M14 fixture matcher, and M12 truth
+data; it checks twelve method pairs including two non-overrides.
+
+Run using any JDK 17+ (Java 21 used for the author's local run):
+
+```sh
+mkdir -p /tmp/bb-java-oracle
+javac -d /tmp/bb-java-oracle validation/m14/verification/JavaMethodGenericOverrideOracle.java
+java -cp /tmp/bb-java-oracle JavaMethodGenericOverrideOracle \
+  validation/m14/fixtures/java/override-unbounded-method-alpha-equivalence.java \
+  validation/m14/fixtures/java/override-generic-method-return-consistency.java
+```
+
+The 2026-11-16 isolated Java 21 run returned 12/12 true-or-false
+compiler judgments, but the full analyzer fixture suite is still
+unmeasured here and remains a task for the independent verifier.
