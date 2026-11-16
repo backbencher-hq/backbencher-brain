@@ -107,3 +107,79 @@ post-correction verification count. Fresh Java M14, M12, TypeScript and
 corpus checks for this correction remain UNMEASURED until rerun.
 Existing fixtures/expectations and M12 ground truth are intentionally
 unchanged. No regex added.
+
+## Remediation batch — 2026-11-16 (post 91d1401)
+
+**Development base:** `91d1401a12d22860a1d0a7d1d502f568d00ced30`
+(after the previous agent reported 89/89 M14 fixtures and 12/12
+method-generic compiler oracle judgments).
+
+The current remediation commits on `main` are:
+- `18d504f38c46296b12fdfc7d16515325bb92b3dd` —
+  preserve project-owned `Logger`, `String`, and `equals(int)` calls;
+  hoist builtin lookup tables to avoid rebuilding them on each call.
+- `42c82c3eb84a11b0480602cf7bf0616968296e64` —
+  require explicit Lombok and Spring Data identity before generating
+  phantom members; avoid duplicate accessors when declared.
+- `cc81abd3c8ea3876e3a7a98050d14164ecf34e82` —
+  prioritize project ownership over ordinary library namespace prefixes,
+  narrow ambiguous `jakarta.*` external claims, and fix library-citation
+  early termination on one project-owned target.
+
+**Three new M14 Java fixtures:** `local-builtin-name-shadowing`,
+`framework-annotation-identity`, `project-owned-jakarta-namespace`.
+Baseline 89 + 3 = **92 expected**. The `library-import-binding`
+fixture was re-authored only for its `jakarta` *external-claim* expectations
+when no complete project index is supplied; its imports and calls still must
+be emitted. Compare against the baseline, do not hide a changed binding count.
+
+### Available independent checks
+
+- **Java 21:** the three remediation Java fixture programs compile.
+  The `javap` disassembly of the call-collision example shows
+  `audit/Logger.audit`, `audit/String.custom` and `App.equals(I)`.
+- **New JavaCompiler API oracle:** `JavaAnalyzerRemediationOracle.java`
+  was run against four in-memory compiler-valid source files.
+  **12/12 compiler facts passed**, including an overload that is NOT
+  an override and its matching true generic override control.
+- **Full Java analyzer runtime/M14 (post-remediation): UNMEASURED** —
+  GitHub clone DNS unavailable and Bun/project dependencies absent
+  in the authoring environment.
+- **Fresh M12 (post-remediation): UNMEASURED**. Stored result is historic.
+- **Full TypeScript checks: UNMEASURED**. Previous independent report
+  showed main typecheck passed and `typecheck:scripts` exited 2 due to
+  the unrelated `<corpus-root>` imports in `c-k1-loss-probe.ts`.
+- **Pinned corpus/incoming gate: UNMEASURED**; `BB_CORPUS_ROOT`
+  is unavailable here.
+- **GitHub Actions: SKIPPED**, all five workflow jobs intentionally
+  carry `if: false`. This is not a pass.
+- **No regex introduced** in the three production fixes. The project
+  regex census still requires the verification agent's full run.
+
+### Unclosed Java semantics and owner-boundary work
+
+1. Cross-file **canonical symbol identity and overloaded method binding**
+   require an end-to-end owner/member API, not a string-only change in
+   this file. Current `overrides` leaf targets and
+   `metadata.declaringType` are intentionally shaped for the
+   existing arbiter; do not change this without a store migration.
+2. Bounded generics, erasure/capture, covariant return proof, protected
+   and package-private accessibility, and full inherited-field
+   resolution remain unsupported or only partially demonstrated.
+3. The shared `script/m14/oracles/java-heritage-truth.ts` remains
+   insufficient as a compiler-truth oracle (same-name/same-arity
+   heuristic, one-letter generic detection, owner-blind dedup).
+   See `validation/m14/proposals/java-heritage-oracle-binding-remediation.md`;
+   this Java lane did not silently edit shared M14 scripts.
+4. The historical Java docs cite some measurement/ruling files absent
+   from the current Git tree. Those artifacts are NOT certified current
+   evidence. They must be recovered from their proven source revision
+   or marked historical; never invent values.
+5. Re-enabling GitHub Actions may consume CI minutes and requires a
+   deliberate repository-owner decision; do not silently enable them.
+
+**Next owner:** one local verification agent with repo+Bun+TypeScript and
+corpus access. It must inspect the actual M14 failure count, project
+typechecks, M12 input digest, import-binding channel changes, Java
+compiler oracle, and the project-wide corpus gate. No "Java done"
+claim until that consolidated report is accepted.

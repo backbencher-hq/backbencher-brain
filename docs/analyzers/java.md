@@ -1,5 +1,8 @@
 # java.md
 
+> **CURRENT JAVA LANE STATUS (2026-11-16, main after remediation).** This file is an historical engineering log, with sections written against older repository states. For current behavioral contracts, corrections, explicitly unmeasured gates, and source-backed limits, read [JAVA-STATE](../../validation/m14/verification/JAVA-STATE.md) and [JAVA-REMEDIATION](../../validation/m14/verification/JAVA-REMEDIATION-2026-11-16.md). The independent agent reported **89/89 Java fixtures** at commit `91d1401a`; **three new fixtures** now exist in the current remediation batch and the expected total is **92**, not yet tested end-to-end. The pinned corpus and GitHub CI are NOT certified at this head. Several older document links target evidence files absent from this checkout; their figures must not be treated as reproducible current measurements.
+
+
 ## Language
 
 - Analyzer file: `src/ast/real-java-analyzer.ts`
@@ -36,7 +39,7 @@
 | kind | ✅ | `mapTypeToSymbolKind`: class/record/annotation → `Class`; interface → `Interface`; enum → `Enum`; `enum_constant` → `EnumMember`; methods → `Method`; constructors → `Constructor`; fields → `Property`, or `Constant` when `static final`. The nine `SymbolKind` values this analyzer constructs, re-measured 2026-10-02: `Class`, `Constant`, `Constructor`, `Enum`, `EnumMember`, `Interface`, `Method`, `Property`, `Type` |
 | qualified/container name | ✅ | FQN built from `package_declaration` (scoped_identifier) + enclosing scopes (`buildFqn`) |
 | ownerName / ownerKind | ✅ | Parent scope name/kind captured during the single-pass walk |
-| range (start/end line + column) | ✅ | `nodeToRange` from `startPosition`/`endPosition` (node-start convention: annotation line for annotated declarations, matching M11) |
+| range (start/end line + column) | ✅ | `symbolRange` / `declarationLineNode` use the declaration name (not the annotation) for ordinary symbols; AST node range is retained for expression sites. Historic M11 annotation-start text is superseded by M59. |
 | parameters | ✅ | `formal_parameters` → `formal_parameter` → `name` + `type` fields. **Record components are read from `formal_parameters` too, not from a `record_parameters` node** — this file previously named `record_parameters`, which does not occur anywhere in the analyzer; tree-sitter-java models record components as formal parameters, and a varargs component parses as `spread_parameter` whose name lives in the trailing `variable_declarator` rather than in a `name` field. ERROR-node fallback for malformed text |
 | returnType / type | ✅ | `method_declaration` field `type`; `field_declaration` type child |
 | documentation/comments | ✅ | **This row previously read "❌ (not emitted)". That was wrong.** The analyzer sets `comments: [javadoc]` on class-like symbols (line 455), methods (line 796) and fields (line 993), from tree-sitter-java's `line_comment` / `block_comment` nodes (line 1050). The M14 #383 note in the source records the defect this repaired: java method symbols used to carry no comments and the docstrings were silently lost |
@@ -62,7 +65,7 @@ serialises to `"extends"`, `Implementation` to `"implements"`, and `Imports` to
 | instantiates | ✅ | `object_creation_expression` → `type_identifier`; plus PascalCase `method_invocation` heuristics | 0.95 (typed), 0.6 (heuristic) |
 | uses | ✅ | field accesses resolved to the enclosing METHOD (M49 W15 #814: `this`/`super` receivers used to resolve to the enclosing type, the JAD2 exception, which the family-wide ruling removed — a class-level read falls back to the type); Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access, 1.0 framework-derived, 1.0/0.6 conditional on `tableNameIsDeclared` / `columnNameIsDeclared` |
 | exports | ✅ | public top-level symbols; Spring MVC endpoints (`Exports` with route, httpMethod) | 1.0 |
-| overrides | ✅ | Walks in-file ancestors and compares parameter signatures after substituting declared class type arguments. For an explicit `@Override` with an external parent, the companion index suggests a declaring type from method names, or the analyzer guesses the first unresolved parent. | `exact-in-file` 1.0, `generic-substitution` 0.9, `companion-index` 0.65, `first-parent-guess` 0.5. Method type-parameter compatibility and raw-type erasure are outside the substitution check. |
+| overrides | ✅ | Walks in-file ancestors and compares parameter signatures after substituting declared class type arguments. For an explicit `@Override` with an external parent, the companion index suggests a declaring type from method names, or the analyzer guesses the first unresolved parent. | `exact-in-file` 1.0, `generic-substitution` 0.9, `companion-index` 0.65, `first-parent-guess` 0.5. Unbounded method type-variable alpha-equivalence and equal normalized generic return types are supported since November 2026; bounded method constraints, full return covariance, and erasure across files remain unproven. |
 | references | ✅ | import edges and the post-pass that rewrites their source from the package name to the file's primary type (first top-level class/interface/enum); also type references (`references:getStatus:String`, `references:Mapper:B`, `references:genericBound:T` in the recorded differential) | 0.9, 0.95, 1.0 |
 | contains | ✅ | owner → owned symbols (deduped against engine-generated contains in `storeResults`) | 1.0, or 0.6 when the member is a phantom |
 | **imports** | ✅ **EMITTED** | `import_declaration` → the module name as a `RelationshipType.Imports` edge at **1.0** (`metadata.relationshipType: "import_declaration"`, `isWildcard`/`isStatic`), **and** an `ImportInfo[]` entry on the import-site channel; a JLS 7.7.1 `requires` clause is the same edge (1.0, **0.9** for `requires static`, which is optional at compile time). The same directive also publishes the dotted path as a `references` edge at 0.9 — the family's deliberate pairing: `imports` is the DEPENDENCY, `references` is the MENTION. This row read "**never referenced by this analyzer**" from 2026-10-02, which was true of the analyzer that correction was written against and was falsified by the import-edge work that followed it; re-read against the source 2026-10-16 | 1.0 (import, module `requires`), 0.9 (`requires static`) |
@@ -119,7 +122,7 @@ direction; the full before/after tables and the intent census are in
 - Generic classes/interfaces: `Repository<T>`, `BaseService<UserService.User>` — inheritance
   targets stripped of type args (`extractJavaTypeBaseName`) so `extends`/`implements` resolve to
   real symbols — `UserService.java`
-- Methods, constructors (named `constructor`), overloads (signature-keyed FQN),
+- Methods, constructors (named after their declaring class, **not** the literal `constructor`), overloads (signature-keyed internal FQN),
   abstract/default methods — `AdvancedFeatures.java`
 - Annotations: Spring bean markers, `@Entity`/`@Table` (table mapping), JPA
   column/relation mappings, `@RequestMapping`/`@GetMapping`-family routes (class base path +
