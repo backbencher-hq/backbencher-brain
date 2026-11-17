@@ -5287,9 +5287,15 @@ export async function storeResults(
              // it. The analyzer's own spelling is kept in metadata.scopeName
              // (nothing is discarded), and the row's `source_external` now
              // holds the project-relative path every reader keys on.
-             if (!sourceSymbol && rel.metadata?.fileLevel === true) {
+             // Java's import-declaration source can be rewritten to the
+             // primary type's name during parse normalization. That name may
+             // resolve to a class in this file, but a fileLevel dependency is
+             // intentionally NOT a class-to-module relationship. Preserve the
+             // per-file graph identity regardless of name coincidence.
+             if (rel.metadata?.fileLevel === true && (!sourceSymbol || fileLang === "java")) {
                rel.metadata = rel.metadata || {}
                rel.metadata.scopeName = rel.metadata.scopeName ?? sourceName
+               sourceId = null
                sourceExternal = relativePath
              }
 
