@@ -15,6 +15,7 @@
 > | symbols / edges | **17,912** / **78,403** |
 > | relationship types emitting | **11** of the 14-value vocabulary (3 ruled absent with grammar evidence) |
 | receiver facts in the DEFAULT analyzer (2-repo) | **2,863** rows carry `metadata.owner` from the index-free arm, 0 failing the census's file-symbol re-check (§14.18 — the wall is NOT closed by it) |
+| index consumption | **SHIPPED DEFAULT-ON** (§14.19) — with a complete index the 2-repo gate reads resolved **51,034** vs **51,741** per-file; `BB_CPP_INDEX_CONSUME=0` reproduces the per-file numbers EXACTLY |
 > | `calls` target resolved | 54,971 / 59,374 = **92.6%** |
 > | `part_of` target resolved | 347 / 360 = **96.4%** — §6 says 97.5%; §14.2 settles it |
 > | `references` target resolved | 205 / 206 = **99.5%** (the miss is `::std::ostream`) |
@@ -1022,6 +1023,10 @@ retained) so the next agent does not spend a cycle re-deriving a publication tha
 qualified key is unique (the analyzer already computes it), or keep leaves and rule W4 as a documented
 limitation. The lane should not drift into this by accident.
 
+**DECIDED — §14.20.** Keep leaves; W4 is ruled ABSENT-BY-CONTRACT, not a gap. The re-spelling would
+be a cross-consumer vocabulary change for a join measured at 0 net resolutions on this lane, and the
+leaf target is the family's documented contract.
+
 ### 14.14 · Receiver typing measured end-to-end — the wire exists, the yield is 0.3%
 
 The wall ledger's largest instruments gap is receiver typing (W1-C 370,246 + W11 83,169 rows). It was
@@ -1112,6 +1117,10 @@ is the honest answer to "does this close the wall": no — it improves the answe
 **Recorded as a decision for the owner/Lead, with the kill-switch already in place**:
 `BB_CPP_INDEX_CONSUME=1` is the arm; shipping it default-on changes production's stored bindings (858
 rows become NULL here) and is a correctness-over-recall trade the lane should take deliberately.
+
+**TAKEN — §14.19.** Shipped default-on 2026-11-17 with `BB_CPP_INDEX_CONSUME=0` as the kill-switch, on
+the re-measured arithmetic (resolved 51,741 → 51,034 on the current tree, 4,527 owner rows, 860
+withdrawn bindings, and the kill-switch reproducing the per-file numbers exactly).
 
 The instrument condition from §14.15 is now CONFIRMED and quantified: an index arm that omits
 `complete` measures a dead channel — §14.15's zero was the instrument, not the channel.
@@ -1253,3 +1262,85 @@ regressions**, cpp mutants **70/70 CAUGHT**, `tsc --noEmit` clean.
 machine, so the ledger stays corpus-blocked). It does not attempt file-scope receivers, overload
 selection under `using namespace`, or macro-argument calls. The guards are conservative, so 2,863 is
 a floor for THIS instrument, not a ceiling on the shape.
+
+### 14.19 · SHIPPED — `BB_CPP_INDEX_CONSUME` is default-on; the index alone is still an instrument
+
+§14.16 packaged this as a decision with exact arithmetic and said the lane should take it
+deliberately. Taken this round, because it is in-lane (the gate is one boolean in the analyzer) and the
+arithmetic is now re-measured on the tree that carries §14.18's local arm.
+
+**What changed.** `INDEX_CONSUME` is `BB_CPP_INDEX_CONSUME !== "0"` — ON by default, with
+`BB_CPP_INDEX_CONSUME=0` as the KILL-SWITCH that reproduces the pre-consumption output in one
+environment variable. Nothing else about the arm moves: it still requires `context.projectIndex` with
+`complete === true` (fail-closed — an incomplete index attaches NOTHING), it is metadata-only (no row
+emitted, suppressed or re-typed), and the four accepted D1–D6 behaviours are untouched without one.
+
+**Measured on the 2-repo corpus (524 files incl. `.h`), current tree:**
+
+| arm | resolved | ambiguous | unresolved | extOK |
+|---|---|---|---|---|
+| per-file / no index | 51,741 | 18,604 | 7,222 | 782 |
+| **index + KILL-SWITCH (`=0`)** | **51,741** | **18,604** | **7,222** | **782** |
+| **index + default consumption** | **51,034** | **18,244** | **8,289** | **782** |
+
+Two controls in that table: the kill-switch arm is byte-identical to the per-file arm, so **the index
+alone changes nothing** (it is an instrument); the default arm is the arm under test. Owner channel on
+the default arm: **4,527** rows carried `metadata.owner` (the index shapes add 1,664 on top of the
+local arm's 2,863), **3,458 resolved** (direct 2,844 · sameKindDuplicate 614), **1,069 declined**
+(ownerAmbiguous 845 · noMember 224), **151 rows** the name count called ambiguous/unresolved that the
+channel resolves, and **860 rows** the channel DECLINED whose name would have resolved — production
+holds those NULL. Delta vs per-file: resolved **−707**, ambiguous **−360**, unresolved **+1,067**.
+
+**Why the count goes DOWN on purpose.** Production's rule is that a calls/uses row stating its receiver
+and whose owner channel DECLINES must not fall back to the bare-name answer, because the bare-name
+answer is precisely the wrong-owner binding the channel exists to catch. So the 860 withdrawn bindings
+are the trade, and the 151 net wins are what the channel adds in count terms. `resolved` is a count of
+bindings, not a quality score. This does NOT get the incoming gate closer to passing clause 1 — it
+improves the ANSWERS at receiver-bearing rows, not the total. Wall W11's 83,169 whole-population rows
+stay open/corpus-blocked; this is a correctness change, and its whole-population effect was already
+measured at the ledger's scale (+17,955 owner-resolved / −22,656 ambiguous / +4,701 honest NULLs) on
+the 31-repo arm.
+
+**What had to move with it.** `script/m14/cpp-index-consume-verify.ts` now treats `flag=false` as the
+KILL-SWITCH arm (`BB_CPP_INDEX_CONSUME=0`) and keeps its assertions — OFF+index byte-identical to the
+no-context baseline, ON without an index equal to the baseline, incomplete index changes nothing, rows
+invariant. `script/m14/cpp-receiver-wave-verify.ts` sets the kill-switch for its both-off arm.
+`script/m14/cpp-index-reproduce.ts` sets it explicitly for arms A and B-off, because otherwise B-off
+would consume too and the A→B decomposition would lose its control. `docs/indexing/environment-
+variables.md` now documents the default AND the kill-switch, and adds the §14.18 variable
+(`BB_CPP_LOCAL_RECEIVER`).
+
+**Not claimed.** This is not a wall closure, not a recall improvement, and not a statement that the
+index is complete in production — the analyzer still refuses an incomplete index rather than guessing
+from a sample. The 845 `ownerAmbiguous` declines are the same class measured in §14.18 (owner names
+duplicated across the project) and are named as a residual, not fixed: choosing between same-named
+declarations is a project-scope identity problem the per-row metadata does not solve.
+
+### 14.20 · RULED — W4 is a design decision, and the decision is: keep leaf targets
+
+§14.13 established that W4's original reason is false (6,913 distinct `qualifiedName` strings exist;
+the qualified spelling already rides `metadata.qualified`) and left the remaining question open: change
+the edge TARGET to the qualified key where unique, or keep the leaf and rule the wall. That question is
+now decided **against the re-spelling**, and the reason is arithmetic rather than taste:
+
+- the arbiter's qualified-name join is the ONLY consumer that could benefit from a qualified target,
+  and on this lane it **asked 532 rows and resolved 0** (§14.13, measured on the 2-repo corpus);
+- changing a target spelling is a **cross-consumer vocabulary change** — the store's key space, the
+  arbiter's declaration keys, and every lane's fixtures pin targets — for a measured net of zero here;
+- the lane's documented contract is leaf targets for ALL relationship types, with the qualified path in
+  `metadata.qualified`; multiple fixtures pin the leaf spelling (`one-edge-per-pair-959`,
+  `call-target-name-surface-924`, `qualified-declarator-name-924`, …), and the local/global source
+  sentinel already shows what happens when one row family re-spells: two consumers disagree about the
+  same edge.
+
+So W4 is **RULED ABSENT-BY-CONTRACT**: the 2,771 rows are the leaf-vs-qualified mismatch, the lane's
+answer is the leaf contract, and the "needs the Lead" tail is closed rather than left drifting. Nothing
+in the analyzer or the store moved — this is a disposition change with the measurement attached, and the
+errata entry keeps the previous disposition so the decision is auditable.
+
+**What remains Lead/programme-level, now two items rather than four:** wall W1-D's NEW CLAIM KIND
+(122,227 rows: `free-callable-needs-project-fact-claim` 70,493 + `type-shaped-needs-project-fact-claim`
+51,734) requires a vocabulary/claim kind in the SHARED arbiter, and W1-type (4,776 rows) requires
+cross-run TYPE declarations in the shared index. Both are programme infrastructure, not cpp-lane code;
+they stay recorded with their rows and their arithmetic. The corpus-blocked items (W8's 4 rows, the
+31-repo re-derivation, the spec generator's measurement inputs) are unchanged.

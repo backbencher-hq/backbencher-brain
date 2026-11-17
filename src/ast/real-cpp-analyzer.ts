@@ -1949,7 +1949,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const packageScopeRoots: Set<string> = PACKAGE_SCOPE && packageScopePackages.length > 0
       ? cppExternalIncludeRoots(rootNode)
       : new Set<string>()
-    const INDEX_CONSUME = process.env.BB_CPP_INDEX_CONSUME === "1"
+    // SHIPPED DEFAULT-ON 2026-11-17 (NEXT-WORK §14.19). The accepted D1–D6 verdict was measured with
+    // this metadata absent, and the arm was kept behind a flag long enough to price it: on a COMPLETE
+    // index it resolves 3,320 owner-verified bindings, withdraws 858 name-model bindings the owner
+    // channel cannot support, and moves resolved 51,743 -> 51,036 on the 2-repo corpus (a
+    // correctness-over-recall trade: `resolved` counts bindings, and a receiver-bearing row whose
+    // channel DECLINES must not fall back to a bare-name guess). `BB_CPP_INDEX_CONSUME=0` is the
+    // KILL-SWITCH, kept so the pre-consumption output stays reproducible in one environment variable;
+    // script/m14/cpp-index-consume-verify.ts exercises both arms, and the incomplete-index case stays
+    // fail-closed either way.
+    const INDEX_CONSUME = process.env.BB_CPP_INDEX_CONSUME !== "0"
     const indexCandidate: any = INDEX_CONSUME ? (context as any)?.projectIndex : undefined
     const indexUsable = !!indexCandidate && indexCandidate.complete === true
     const indexSymbols: Set<string> = indexUsable && indexCandidate.symbolNames instanceof Set ? indexCandidate.symbolNames : new Set()

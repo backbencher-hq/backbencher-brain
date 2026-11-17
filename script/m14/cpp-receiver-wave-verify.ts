@@ -110,8 +110,9 @@ interface Arm {
 }
 /** One run of the analyzer, with BOTH switches as the caller set them. */
 const runAnalyzer = async (arm: Arm): Promise<any[]> => {
-  if (arm.index) process.env.BB_CPP_INDEX_CONSUME = "1"
-  else delete process.env.BB_CPP_INDEX_CONSUME
+  // CONSUMPTION IS SHIPPED DEFAULT-ON: `arm.index === false` is the KILL-SWITCH arm.
+  if (arm.index) delete process.env.BB_CPP_INDEX_CONSUME
+  else process.env.BB_CPP_INDEX_CONSUME = "0"
   if (arm.local) delete process.env.BB_CPP_LOCAL_RECEIVER
   else process.env.BB_CPP_LOCAL_RECEIVER = "0"
   const result: any = await analyzer.analyze(tree.rootNode, content, FIXTURE, {

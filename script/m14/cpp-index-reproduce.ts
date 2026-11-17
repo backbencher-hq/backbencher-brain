@@ -4,9 +4,9 @@
  * commands with hand-kept paths.
  *
  * WHAT IT RUNS, in order (whole population; the gate's own discovery):
- *   A      incoming-gate cpp <exts> 0
- *   B-off  incoming-gate cpp <exts> 0 --index
- *   B-on   BB_CPP_INDEX_CONSUME=1 incoming-gate cpp <exts> 0 --index
+ *   A      BB_CPP_INDEX_CONSUME=0 incoming-gate cpp <exts> 0
+ *   B-off  BB_CPP_INDEX_CONSUME=0 incoming-gate cpp <exts> 0 --index
+ *   B-on   incoming-gate cpp <exts> 0 --index      (consumption default-on since §14.19)
  * then `cpp-index-arm-compare.ts` over the three captured streams (the owner channel prints on stderr,
  * so both streams are captured per arm), which re-derives the decomposition artifact and asserts the
  * pre-committed checks (edges invariant, B-off == A, extFAIL/bindFAIL/causeFAIL 0, arbitraryTwin not
@@ -49,10 +49,13 @@ if (!fs.existsSync(path.join(CR))) {
 fs.mkdirSync(WORK, { recursive: true })
 
 const gate = path.join(ROOT, "script/m14/incoming-gate.ts")
+// CONSUMPTION IS SHIPPED DEFAULT-ON (NEXT-WORK §14.19): arm A and arm B-off now set the
+// KILL-SWITCH explicitly (`BB_CPP_INDEX_CONSUME=0`), which is what keeps the three-arm design
+// intact — otherwise B-off would consume too and the A→B decomposition would lose its control.
 const arms: Array<{ id: string; env: Record<string, string>; extra: string[] }> = [
-  { id: "a", env: {}, extra: [] },
-  { id: "b-off", env: {}, extra: ["--index"] },
-  { id: "b-on", env: { BB_CPP_INDEX_CONSUME: "1" }, extra: ["--index"] },
+  { id: "a", env: { BB_CPP_INDEX_CONSUME: "0" }, extra: [] },
+  { id: "b-off", env: { BB_CPP_INDEX_CONSUME: "0" }, extra: ["--index"] },
+  { id: "b-on", env: {}, extra: ["--index"] },
 ]
 const paths = Object.fromEntries(arms.map((a) => [a.id, { out: path.join(WORK, `arm-${a.id}.out`), err: path.join(WORK, `arm-${a.id}.err`) }]))
 

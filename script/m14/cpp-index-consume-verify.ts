@@ -1,11 +1,12 @@
 /**
  * cpp-index-consume-verify — the RED-CAPABLE control for the C++ analyzer's project-index consumption
- * (`BB_CPP_INDEX_CONSUME=1`, task-22 milestone 3).
+ * (SHIPPED DEFAULT-ON 2026-11-17; `BB_CPP_INDEX_CONSUME=0` is the kill-switch — NEXT-WORK §14.19)
+ * (task-22 milestone 3; SHIPPED DEFAULT-ON 2026-11-17 — `BB_CPP_INDEX_CONSUME=0` is the kill-switch).
  *
  * WHAT IS VERIFIED, each as an assertion that can FAIL:
- *   1. FLAG OFF (with or without an index in context) the analyzer's output is BYTE-IDENTICAL to the
- *      no-context baseline — the accepted CPP D1–D6 verdict's analyzer behaviour must not move under a
- *      flag nobody set.
+ *   1. KILL-SWITCH (with or without an index in context) the analyzer's output is BYTE-IDENTICAL to the
+ *      no-context baseline — the accepted CPP D1–D6 verdict's analyzer behaviour must stay reproducible
+ *      in one environment variable, and the index alone must change nothing.
  *   2. FLAG ON + a COMPLETE index attaches only the declared facts:
  *        · a call to a project free function            -> meta.declaredInProject + indexDeclarationCount
  *        · a call to a member unique to one project type -> meta.memberOfProjectType (the owner)
@@ -70,8 +71,10 @@ const content = fs.readFileSync(path.join(FIX, "derive.cc"), "utf8")
 
 const analyze = async (flag: boolean, ctx: any) => {
   const prev = process.env.BB_CPP_INDEX_CONSUME
-  if (flag) process.env.BB_CPP_INDEX_CONSUME = "1"
-  else delete process.env.BB_CPP_INDEX_CONSUME
+  // CONSUMPTION IS SHIPPED DEFAULT-ON (NEXT-WORK §14.19): `flag=false` is now the KILL-SWITCH arm
+  // (`BB_CPP_INDEX_CONSUME=0`), which is exactly the pre-ship behavior the assertions below compare.
+  if (flag) delete process.env.BB_CPP_INDEX_CONSUME
+  else process.env.BB_CPP_INDEX_CONSUME = "0"
   const tree: any = parser.parse(content, path.join(FIX, "derive.cc"))
   try {
     return await analyzer.analyze(tree.rootNode, content, "fixtures/cpp/project-index-consume/derive.cc", ctx)
@@ -153,7 +156,7 @@ const out = { schemaVersion: 1, instrument: "script/m14/cpp-index-consume-verify
 if (TEXT) {
   console.log(`cpp-index-consume-verify — ${checks.length} assertions`)
   for (const c of checks) console.log(`  ${c.ok ? "PASS" : "FAIL"}  ${c.id}${c.ok ? "" : ` — ${c.detail}`}`)
-  console.log(failures.length === 0 ? "PASS — consumption is flag-gated, fail-closed and metadata-only" : `FAIL — ${failures.length} assertion(s) failed`)
+  console.log(failures.length === 0 ? "PASS — consumption is DEFAULT-ON with a kill-switch, fail-closed and metadata-only" : `FAIL — ${failures.length} assertion(s) failed`)
 } else {
   console.log(JSON.stringify(out, null, 1))
 }
