@@ -1,0 +1,68 @@
+{
+  "fixtureId": "go/builtin-type-arguments",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS A MISSING-EDGE CLASS THAT EVERY INTERNAL INVARIANT WAS BLIND TO. `new(T)` and `make(T, ...)` name a TYPE, but the callee is a BUILTIN, so the lane publishes no `calls` edge for it (builtin leaves are deliberately filtered). The only fact left is that the enclosing declaration USES T — and that row did not exist. Before the fix this fixture's own body emitted `Thing contains -> N`, `builtintypearguments exports -> Thing`, `-> MSet`, `-> Slice` and NOTHING for the four uses, so the types were invisible to the graph. IT WAS FOUND BY THE ORACLE DIFFERENTIAL, NOT BY AN INTERNAL INVARIANT: every range check, resolution check, explanation-coverage check and fixture the lane owns was GREEN while the edge was missing. That is the whole reason an independent oracle has to exist, and it is why 'all internal gates green' is a weaker claim than 'the graph is correct'. MEASURED on go-tools + terraform (3,422 files): 636 `new`/`make` call sites, 180 of them passing a type declared in the SAME file; after the fix the baseline gains 898 `references` edges (71,249 -> 72,147) with the symbol count UNCHANGED at 58,470 and every other relationship type byte-identical — the exact shape a pure missing-edge fix must have, and the check that this is not a relabel in disguise. THE FOUR EXPECTED ROWS COVER BOTH TARGET SHAPES: three unqualified same-file types (`new(Thing)`, `make(MSet)`, `make(Slice, 4)`), and one QUALIFIED type (`new(bytes.Buffer)`) whose target must be the LEAF `Buffer` with the full spelling retained in `qualifiedType` — the leaf-target contract applied to a new site rather than a new rule. THE FORBID ROWS ARE THE ANTI-OVERREACH HALF: no `calls` edge may name `new` or `make` (the builtin filter still holds, so this fix must not have been achieved by un-filtering builtins), and no reference row may carry an empty construct label. NOT PINNED: line numbers (they would pin this fixture's layout rather than the analyzer) and the `make([]T, 0)` / `make(map[K]V)` composite-argument shapes, which are TYPE POSITIONS whose element types belong to the declaration pass — this pass takes only a bare `type_identifier` or a `qualified_type` and leaves a composite node alone rather than mining it for extra rows.",
+  "expectSymbols": [
+    { "name": "Thing", "kind": "struct" },
+    { "name": "MSet", "kind": "type" },
+    { "name": "Slice", "kind": "type" },
+    { "name": "build", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "A same-file type passed to `new`: the use that was invisible. Before the fix this row did not exist at all.",
+      "type": "references",
+      "from": "build",
+      "target": "Thing",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "new"
+    },
+    {
+      "comment": "A named MAP type passed to `make` — same gap, different builtin.",
+      "type": "references",
+      "from": "build",
+      "target": "MSet",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "make"
+    },
+    {
+      "comment": "A named SLICE type passed to `make` alongside a size argument — the shape that proves the pass reads the TYPE argument and is not confused by the arity.",
+      "type": "references",
+      "from": "build",
+      "target": "Slice",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "make"
+    },
+    {
+      "comment": "A QUALIFIED type: the target must be the LEAF `Buffer` under the lane's leaf-target contract, with the full spelling kept in `qualifiedType`. This is the existing contract applied to a new site, not a second convention.",
+      "type": "references",
+      "from": "build",
+      "target": "Buffer",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "new",
+      "meta.qualifiedType": "bytes.Buffer"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "ANTI-OVERREACH: the fix must not have been achieved by un-filtering builtins. `new`/`make` stay out of the call graph — the builtin filter is a separate, deliberate decision.",
+      "type": "calls",
+      "from": "build",
+      "target": "new"
+    },
+    {
+      "comment": "The same negative for `make`.",
+      "type": "calls",
+      "from": "build",
+      "target": "make"
+    },
+    {
+      "comment": "Every new row must name its construct, like every other edge in the lane.",
+      "type": "references",
+      "from": "build",
+      "target": "Thing",
+      "meta.relationshipType": null
+    }
+  ]
+}

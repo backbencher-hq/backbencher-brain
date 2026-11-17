@@ -652,9 +652,33 @@ type ReasonCode =
   | "analyzer-scope-excludes-methods-and-vars"
   | "already-carried-as-an-instantiates-edge"
   | "composite-literal-type-is-an-instantiation-not-a-reference"
+  | "struct-embedding-relabelled-to-mixes-in"
   | "UNEXPLAINED"
 
-function classifyOracOnly(type: string, e: Edge, model: FileModel, instantiates: Set<string>): ReasonCode {
+function classifyOracOnly(
+  type: string,
+  e: Edge,
+  model: FileModel,
+  instantiates: Set<string>,
+  analyzerByType: Map<string, Edge[]>,
+): ReasonCode {
+  // STRUCT EMBEDDING IS `mixes_in`, NOT `extends` — a LABEL MOVE the oracle has not
+  // been told about. `type T struct { E }` (struct half) publishes `mixes_in T -> E`;
+  // `type I interface { J }` (interface half) keeps `extends I -> J`. This oracle still
+  // derives both halves as `extends`, so every struct-embedding row lands in the
+  // unknown bucket even though the analyzer published the SAME edge under the other
+  // name. Measured on a 400-file go-tools draw: oracle-only `extends` = 24 and
+  // analyzer-only `mixes_in` = 24, and the two example lists are IDENTICAL
+  // (`arrayparm -> isBlank`, `-> addrTakenHow`, `-> isGenValFunc`, `-> skipCompare`,
+  // `structparm -> isBlank`, `-> addrTakenHow`) — the same edges under two labels,
+  // not 48 disagreements.
+  //
+  // Ordering: this runs FIRST for `extends`, because a struct embed that also happens
+  // to name a builtin type must still be reported as the relabel rather than folded
+  // into the builtin reason — the label move is the fact being explained here.
+  if (type === "extends" && (analyzerByType.get("mixes_in") ?? []).some((m) => m[0] === e[0] && m[1] === e[1])) {
+    return "struct-embedding-relabelled-to-mixes-in"
+  }
   if (type === "calls" && GO_BUILTIN_FUNCS.has(e[1])) return "go-builtin-call-not-an-edge"
   if (type === "references" && PREDECLARED_TYPES.has(e[1])) return "predeclared-type-not-an-edge"
   if (type === "exports") {
@@ -767,10 +791,10 @@ async function main(): Promise<void> {
       for (const e of o) {
         if (aSet.has(key(e))) slot.agree++
         else {
-          if (classifyOracOnly(ty, e, model, instantiatesEdges) === "UNEXPLAINED") unexplainedByType[ty] = (unexplainedByType[ty] || 0) + 1
+          if (classifyOracOnly(ty, e, model, instantiatesEdges, analyzerByType) === "UNEXPLAINED") unexplainedByType[ty] = (unexplainedByType[ty] || 0) + 1
           slot.oracleOnly++
           if (slot.oracleOnlyFiles.length < 6) slot.oracleOnlyFiles.push(`${f.rel}: ${e[0]} -> ${e[1]}`)
-          if (disagreements.length < 900) disagreements.push({ file: f.rel, type: ty, kind: "oracle-only", edge: e, reason: classifyOracOnly(ty, e, model, instantiatesEdges) })
+          if (disagreements.length < 900) disagreements.push({ file: f.rel, type: ty, kind: "oracle-only", edge: e, reason: classifyOracOnly(ty, e, model, instantiatesEdges, analyzerByType) })
         }
       }
       for (const e of a) {

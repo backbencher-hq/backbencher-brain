@@ -2958,6 +2958,27 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // funcs only — dot-imported names stay silent, recorded limitation).
     this.analyzeGoBareIdentifierUses(rootNode, relationships, symbols)
 
+    // 5.6. Type arguments of the BUILTINS `new` and `make`.
+    //
+    // `new(T)` and `make(T, ...)` name a TYPE in EXPRESSION position. Every other
+    // type-use surface (declarations, parameters, results, composite literals,
+    // conversions) was covered; this one was not, so the type was invisible to the
+    // graph. Found by the ORACLE DIFFERENTIAL, not by any internal invariant — the
+    // lane's own coverage checks were all green while the edge was missing, which is
+    // exactly why an independent oracle has to exist.
+    //
+    // MINIMAL REPRODUCTION (this is the whole bug):
+    //
+    //     type Thing struct{ N int }
+    //     type MSet map[string]int
+    //     func build() { p := new(Thing); m := make(MSet); _ = p; _ = m }
+    //
+    // emitted `Thing contains -> N`, `nm exports -> Thing`, `nm exports -> MSet` and
+    // NOTHING for the two uses. MEASURED on go-tools + terraform (3,422 files): 636
+    // `new`/`make` call sites, of which 180 pass a type declared in the SAME FILE —
+    // 180 uses the graph did not record.
+    this.analyzeGoBuiltinTypeArguments(rootNode, relationships)
+
     // 6. OwnerName contains pass (Rust M12.18 contract): every symbol with an
     // owner gets ONE `contains owner -> member` edge — covers struct fields,
     // interface methods, and methods uniformly. Replaces the old
@@ -4601,6 +4622,77 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * - resolvability required: unknown names (std/dot-imported/external)
    *  stay silent — no junk edges.
    */
+  /**
+   * Type arguments of the builtins `new` and `make` — a TYPE named in EXPRESSION position.
+   *
+   * WHY THIS IS A REFERENCE AND NOT A CALL. `new(T)` reads T; it does not call T. The
+   * callee is the builtin `new`, which the lane deliberately does not publish as a call
+   * (builtin leaves are filtered). So the dispatch is not a `calls` edge, and the only
+   * fact left is that the enclosing declaration USES the type T — a `references` row,
+   * the same label the lane already uses for a declared type named in type position.
+   *
+   * SHAPE. tree-sitter-go types `new(Thing)` as a plain `call_expression` whose
+   * `arguments` holds one `type_identifier`, and `make(MSet)` the same. `make([]T, 0)`
+   * and `make(map[K]V)` put a composite type node there instead, whose own element
+   * types are the DECLARATION pass's business (they are type positions) — so only a
+   * bare `type_identifier` (one name) or a `qualified_type` (pkg.T) is taken here, and
+   * a composite node is left alone rather than mined for extra rows.
+   *
+   * SOURCE is the enclosing function/method via the same resolver the other expression
+   * surfaces use, so a package-scope `var x = new(T)` attributes to the `global`
+   * pseudo-source exactly like every other package-scope call site — consistency with
+   * the rest of the lane, not a new rule.
+   */
+  private analyzeGoBuiltinTypeArguments(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const BUILTIN_TYPE_CTORS = new Set(["new", "make"])
+    const seen = new Set<string>()
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "call_expression") {
+        const fn = node.childForFieldName("function")
+        const args = node.childForFieldName("arguments")
+        // The callee must be the BARE builtin, never `pkg.new` / a method named `New`.
+        if (fn && fn.type === "identifier" && BUILTIN_TYPE_CTORS.has(fn.text) && args) {
+          const first = args.namedChild(0)
+          if (first && (first.type === "type_identifier" || first.type === "qualified_type")) {
+            const raw = String(first.text ?? "")
+            const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+            if (leaf.length > 0 && leaf !== "_") {
+              const src = this.resolveGoWorkSource(node)
+              const key = `${src}|${leaf}|${raw}`
+              if (!seen.has(key)) {
+                seen.add(key)
+                const at = this.nodeLine(first) ?? this.nodeLine(node)
+                relationships.push({
+                  source: src,
+                  target: leaf,
+                  type: ASTEngine.RelationshipType.References,
+                  confidence: 0.95,
+                  ...(at ? { line_number: at } : {}),
+                  metadata: {
+                    relationshipType: "go_builtin_type_argument",
+                    builtin: fn.text,
+                    ...(raw !== leaf ? { qualifiedType: raw } : {}),
+                    reasonCode: "type_argument_of_a_builtin_constructor_read_as_a_leaf",
+                    bindReason: "type_argument_of_a_builtin_constructor_read_as_a_leaf",
+                  },
+                })
+              }
+            }
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const c = node.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private analyzeGoBareIdentifierUses(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],

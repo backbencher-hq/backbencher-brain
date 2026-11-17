@@ -394,7 +394,7 @@ produce the label.
 | calls, extends, implements, uses, imports, exports, contains, references, overrides, instantiates, decorates | 1 each | fires |
 | renders | **2** (`App -> Panel`, `App -> Inner`; lowercase `div` correctly emits nothing) | fires |
 | mixes_in | 1 | fires |
-| **part_of** | **0** | **silent by declared disposition** — no grammar node, and no JSDoc channel either |
+| **part_of** | **0** | **not applicable to this language** — ECMAScript has no inclusion directive, so no unit's code is merged into another's scope; nesting is `contains`. Ruled on the LANGUAGE, not the grammar; falsifier named in the lane doc |
 
 **PASS — 13 of 13 implementable labels fire.**
 
