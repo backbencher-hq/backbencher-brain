@@ -34,6 +34,32 @@ import { ASTEngine, getParser } from "../../src/ast/engine"
 
 const SIZE_CAP = 512 * 1024
 
+/**
+ * BUILD OUTPUT IS NOT AUTHORED CODE, and measuring it is measuring the bundler.
+ *
+ * The first run over the freshly cloned corpus counted `dist/ramda.js` — a minified UMD bundle — and
+ * reported "JSDoc declarations missed" for names `s` and `Symbol`, which are the bundle's own
+ * minified identifiers appearing in copied-over doc comments. `moment` reported 41,821 variable
+ * declarators for the same reason: its `dist/` and `.min.js` builds are most of the file count.
+ *
+ * Excluded by path SEGMENT and by file suffix. A segment match is exact (not a substring), so
+ * `build.js` in `src/` survives while `build/` does not. Pass --include-dist to measure a bundle
+ * deliberately.
+ */
+const EXCLUDED_SEGMENTS = new Set([
+  "dist", "build", "node_modules", "coverage", "vendor", "umd", "www",
+  "bower_components", "jspm_packages", "tmp", "out", "__snapshots__",
+])
+const EXCLUDED_SUFFIXES = [".min.js", ".bundle.js", ".min.mjs"]
+const INCLUDE_DIST = process.argv.includes("--include-dist")
+
+function isBuildOutput(rel: string): boolean {
+  if (INCLUDE_DIST) return false
+  for (const seg of rel.split("/")) if (EXCLUDED_SEGMENTS.has(seg)) return true
+  for (const suf of EXCLUDED_SUFFIXES) if (rel.endsWith(suf)) return true
+  return false
+}
+
 function argOf(flag: string): string | null {
   const argv = process.argv.slice(2)
   const i = argv.indexOf(flag)
@@ -55,6 +81,7 @@ const tracked: string[] = execFileSync("git", ["-C", REPO, "ls-files", "-z"], {
 }).split("\0").filter(Boolean)
 const jsFiles: string[] = []
 for (const rel of tracked) {
+  if (isBuildOutput(rel)) continue
   const abs = path.join(REPO, rel)
   try {
     if (statSync(abs).size > SIZE_CAP) continue

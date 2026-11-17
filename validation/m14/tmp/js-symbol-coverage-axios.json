@@ -1,0 +1,79 @@
+{
+  "at": "2026-11-17T18:02:30.031Z",
+  "repo": "/home/ishaq2321/mcp/backbencher-brain/.corpus/axios",
+  "jsFiles": 254,
+  "byType": {
+    "function_declaration": {
+      "declared": 184,
+      "covered": 184,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "pair": {
+      "declared": 5023,
+      "covered": 0,
+      "unboundObjectMethod": 5023,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "variable_declarator": {
+      "declared": 4898,
+      "covered": 448,
+      "unboundObjectMethod": 0,
+      "missedLocal": 4421,
+      "missedTop": 0,
+      "importBinding": 29
+    },
+    "method_definition": {
+      "declared": 446,
+      "covered": 445,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 1,
+      "importBinding": 0
+    },
+    "generator_function_declaration": {
+      "declared": 1,
+      "covered": 1,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "class_declaration": {
+      "declared": 66,
+      "covered": 66,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    }
+  },
+  "totals": {
+    "declared": 10618,
+    "covered": 1144,
+    "unboundObjectMethod": 5023,
+    "missedLocal": 4421,
+    "importBinding": 29,
+    "missedTopLevel": 1
+  },
+  "missedExamples": [
+    {
+      "file": "lib/core/AxiosHeaders.js",
+      "type": "method_definition",
+      "name": "concat",
+      "line": 388,
+      "depth": 0
+    }
+  ],
+  "jsdoc": {
+    "declared": 0,
+    "covered": 0,
+    "missed": 0,
+    "missedExamples": []
+  },
+  "note": "A declaration node is COVERED when a published symbol has the same name AND its range contains the declaration's line. unbound-object-method = an object literal member with no binding to name (the lane's documented correct-ownerless contract); MISSED = a named declaration with no symbol, which is the gap this census exists to find."
+}

@@ -1,0 +1,146 @@
+{
+  "at": "2026-11-17T17:59:13.247Z",
+  "repo": "/home/ishaq2321/mcp/backbencher-brain/.corpus/ramda",
+  "jsFiles": 691,
+  "byType": {
+    "pair": {
+      "declared": 1011,
+      "covered": 0,
+      "unboundObjectMethod": 1011,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "variable_declarator": {
+      "declared": 2924,
+      "covered": 647,
+      "unboundObjectMethod": 0,
+      "missedLocal": 2028,
+      "missedTop": 0,
+      "importBinding": 249
+    },
+    "function_declaration": {
+      "declared": 402,
+      "covered": 402,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "method_definition": {
+      "declared": 1,
+      "covered": 1,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    }
+  },
+  "totals": {
+    "declared": 4338,
+    "covered": 1050,
+    "unboundObjectMethod": 1011,
+    "missedLocal": 2028,
+    "importBinding": 249,
+    "missedTopLevel": 0
+  },
+  "missedExamples": [],
+  "jsdoc": {
+    "declared": 42,
+    "covered": 24,
+    "missed": 18,
+    "missedExamples": [
+      {
+        "file": "dist/ramda.js",
+        "name": "s",
+        "line": 8897
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 8078
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 8049
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 8014
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 7987
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "s",
+        "line": 7846
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "s",
+        "line": 6531
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 6500
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "s",
+        "line": 6500
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "s",
+        "line": 6452
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "s",
+        "line": 6387
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 5593
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 5373
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 5231
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 4044
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 2827
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 2238
+      },
+      {
+        "file": "dist/ramda.js",
+        "name": "Symbol",
+        "line": 1369
+      }
+    ]
+  },
+  "note": "A declaration node is COVERED when a published symbol has the same name AND its range contains the declaration's line. unbound-object-method = an object literal member with no binding to name (the lane's documented correct-ownerless contract); MISSED = a named declaration with no symbol, which is the gap this census exists to find."
+}

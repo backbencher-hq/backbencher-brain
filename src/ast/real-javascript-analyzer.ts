@@ -1137,7 +1137,24 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // whole slot (`get x` then `x()` → x is data), while accessors
           // MERGE (get+set coexist). Keys: plain for data, :get/:set for
           // accessors; the cross-kind checks below implement replace-on-val.
-          const kindSlot = isAccessor ? (this.hasToken(node, "get") ? ":get" : ":set") : ""
+          // A STATIC MEMBER AND AN INSTANCE MEMBER ARE DIFFERENT SLOTS, so they cannot share a
+          // dedup key. `class C { concat(){} static concat(){} }` declares TWO members the runtime
+          // keeps apart (`C.prototype.concat` and `C.concat`); the key below carried only the
+          // container + declared name (+ accessor kind), so the second replaced the first and one
+          // of them was never published as a symbol at all.
+          //
+          // Found by the symbol-coverage census on a freshly cloned corpus, not by reading this
+          // code: axios `lib/core/AxiosHeaders.js` declares an instance `concat(...targets)` at
+          // line 388 and a `static concat(first, ...targets)` at line 431, and only the static one
+          // was in the symbol table. Minimal repro (both forms, both orders): exactly one symbol.
+          const isStaticMember = this.hasToken(node, "static")
+          // TWO INDEPENDENT SLOTS in one key: staticness, then accessor kind. They are separate
+          // axes because the B5 cross-kind rule below (a DATA member and an ACCESSOR share one
+          // runtime descriptor slot) must only resolve WITHIN one staticness — `C.x` and
+          // `C.prototype.x` are different slots no matter what kind each is.
+          const staticSlot = isStaticMember ? ":static" : ""
+          const accessorSlot = isAccessor ? (this.hasToken(node, "get") ? ":get" : ":set") : ""
+          const kindSlot = staticSlot + accessorSlot
           // M49 W2 (#769): the CONTAINER is part of a member's identity.
           // `scopeOwnerName` only knows CLASS scopes, so every object-literal
           // member of the module previously shared one key (`module:<name>`):
@@ -1197,7 +1214,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               : isAccessor
                 ? ASTEngine.SymbolKind.Property
                 : ASTEngine.SymbolKind.Method
-            const isStatic = this.hasToken(node, "static")
+            const isStatic = isStaticMember
             const isAsync = this.hasToken(node, "async")
             const isGenerator = this.hasToken(node, "*")
             const isPrivateMethod = name.startsWith("#")
@@ -1213,16 +1230,21 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               // accessor share the runtime descriptor slot. Data kills the
               // whole slot (find either accessor half); an accessor takes
               // over a data member's slot.
-              if (kindSlot === "") {
+              // the key HEAD keeps the staticness and drops only the accessor kind, so a STATIC
+              // method can never resolve to an INSTANCE member's slot. Before this split the head
+              // was the bare key: `static concat` stripped ":static" and found the instance
+              // `concat`, replacing it — so `class C { concat(){} static concat(){} }` published
+              // one symbol instead of two (instance-first only; static-first happened to work).
+              const head = dedupKey.slice(0, dedupKey.length - accessorSlot.length)
+              if (accessorSlot === "") {
                 for (const opp of [":get", ":set"]) {
-                  const k2 = dedupKey + opp
+                  const k2 = head + opp
                   const i2 = seenMethodIdx.get(k2)
                   if (i2 !== undefined) { seenIdx = i2; seenKey = k2; break }
                 }
               } else {
-                const k2 = dedupKey.slice(0, dedupKey.length - kindSlot.length)
-                const i2 = seenMethodIdx.get(k2)
-                if (i2 !== undefined) { seenIdx = i2; seenKey = k2 }
+                const i2 = seenMethodIdx.get(head)
+                if (i2 !== undefined) { seenIdx = i2; seenKey = head }
               }
             }
             {
@@ -1253,7 +1275,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 isAccessor,
                 isAsync,
                 isGenerator,
-                ...((kindSlot ? { accessorKind: kindSlot === ":get" ? "get" : "set" } : {}) as Record<string, unknown>),
+                ...((accessorSlot ? { accessorKind: accessorSlot === ":get" ? "get" : "set" } : {}) as Record<string, unknown>),
                 // M49 #868: the decorator's own line, parallel to
                 // `decorators` (same lockstep as the typescript twin).
                 ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
