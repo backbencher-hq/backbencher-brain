@@ -5608,7 +5608,7 @@ export async function storeResults(
               const sourceIdentity = sourceId ?? `file:${relativePath}`
               // TypeScript calls carry an exact syntax offset. Two calls on one line
               // are separate graph facts even when their source and target names agree.
-              const callSite = fileLang === "typescript" && relType === "calls" &&
+              const callSite = (fileLang === "typescript" || fileLang === "java") && relType === "calls" &&
                 Number.isSafeInteger(rel.metadata?.callSiteStartIndex) && rel.metadata.callSiteStartIndex >= 0
                   ? rel.metadata.callSiteStartIndex : null
               const siteIdentity = callSite === null ? "" : `:site:${callSite}`

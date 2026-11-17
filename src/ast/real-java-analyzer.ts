@@ -1956,7 +1956,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // put c on the line a.b() opened on. java, kotlin and groovy
                 // share this node shape, so this is the family pattern.
                 ...this.lineField(node.childForFieldName("name"), node),
-                metadata: { javaCallExpression: callExpression, ...(argumentCount !== undefined ? { argumentCount } : {}), ...receiverMetadata },
+                metadata: { javaCallExpression: callExpression, callSiteStartIndex: node.startIndex, ...(argumentCount !== undefined ? { argumentCount } : {}), ...receiverMetadata },
               })
             } else {
               // M14 #419 G4: calls outside method bodies (static/instance
@@ -1975,7 +1975,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                   confidence: 0.7,
                   // M59 (#825): same rule as the in-method branch above.
                   ...this.lineField(node.childForFieldName("name"), node),
-                  metadata: { javaCallExpression: callExpression, callSite: parentContext?.node?.type ?? node.parent?.type, inInitializer: true, ...receiverMetadata },
+                  metadata: { javaCallExpression: callExpression, callSiteStartIndex: node.startIndex, callSite: parentContext?.node?.type ?? node.parent?.type, inInitializer: true, ...receiverMetadata },
                 })
               }
             }
