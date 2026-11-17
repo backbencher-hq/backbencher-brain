@@ -1,0 +1,580 @@
+{
+  "corpus": {
+    "roots": [
+      "fmt",
+      "nlohmann-json"
+    ],
+    "files": 524
+  },
+  "classesWithBaseClause": 514,
+  "baseEntries": 519,
+  "multiBaseClasses": 5,
+  "extendsRowsDeficitClasses": 186,
+  "d2SelfLeafClasses": 48,
+  "dependentAliasBaseClasses": 3,
+  "unexplainedMissing": 0,
+  "surplusRows": 340,
+  "unexplained": [],
+  "detail": [
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/args.h",
+      "line": 21,
+      "name": "is_reference_wrapper",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/args.h",
+      "line": 23,
+      "name": "is_reference_wrapper",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 1032,
+      "name": "has_member_data_tm_gmtoff",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 1034,
+      "name": "has_member_data_tm_gmtoff",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 1038,
+      "name": "has_member_data_tm_zone",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 1040,
+      "name": "has_member_data_tm_zone",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 2111,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 2146,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/chrono.h",
+      "line": 2172,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/color.h",
+      "line": 587,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 94,
+      "name": "is_compiled_format",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 107,
+      "name": "is_compiled_format",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 138,
+      "name": "is_compiled_format",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 156,
+      "name": "is_compiled_format",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 188,
+      "name": "is_compiled_format",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 206,
+      "name": "is_compiled_format",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/compile.h",
+      "line": 221,
+      "name": "is_compiled_format",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 289,
+      "name": "is_contiguous",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 291,
+      "name": "is_contiguous",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 924,
+      "name": "iterator_buffer",
+      "expected": [
+        "Traits",
+        "buffer"
+      ],
+      "published": [
+        "Traits",
+        "buffer",
+        "fixed_buffer_traits",
+        "buffer",
+        "buffer",
+        "buffer"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 956,
+      "name": "iterator_buffer",
+      "expected": [
+        "fixed_buffer_traits",
+        "buffer"
+      ],
+      "published": [
+        "Traits",
+        "buffer",
+        "fixed_buffer_traits",
+        "buffer",
+        "buffer",
+        "buffer"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1001,
+      "name": "iterator_buffer",
+      "expected": [
+        "buffer"
+      ],
+      "published": [
+        "Traits",
+        "buffer",
+        "fixed_buffer_traits",
+        "buffer",
+        "buffer",
+        "buffer"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1013,
+      "name": "iterator_buffer",
+      "expected": [
+        "buffer"
+      ],
+      "published": [
+        "Traits",
+        "buffer",
+        "fixed_buffer_traits",
+        "buffer",
+        "buffer",
+        "buffer"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1197,
+      "name": "is_named_arg",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1201,
+      "name": "is_named_arg",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1538,
+      "name": "is_output_iterator",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1541,
+      "name": "is_output_iterator",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1547,
+      "name": "is_back_insert_iterator",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/core.h",
+      "line": 1549,
+      "name": "is_back_insert_iterator",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 769,
+      "name": "is_integral",
+      "expected": [
+        "is_integral"
+      ],
+      "published": [
+        "true_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 823,
+      "name": "is_fast_float",
+      "expected": [
+        "bool_constant"
+      ],
+      "published": [
+        "bool_constant",
+        "false_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 825,
+      "name": "is_fast_float",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "bool_constant",
+        "false_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 849,
+      "name": "is_locale",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 851,
+      "name": "is_locale",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 2739,
+      "name": "has_isfinite",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 2742,
+      "name": "has_isfinite",
+      "expected": [
+        "true_type"
+      ],
+      "published": [
+        "false_type",
+        "true_type"
+      ],
+      "d2SelfLeaf": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 4030,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 4056,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/format.h",
+      "line": 4151,
+      "name": "formatter",
+      "expected": [
+        "formatter"
+      ],
+      "published": [],
+      "d2SelfLeaf": true,
+      "dependentAliasBase": false
+    },
+    {
+      "file": ".cpp-corpus/fmt/include/fmt/ranges.h",
+      "line": 89,
+      "name": "is_range_",
+      "expected": [
+        "false_type"
+      ],
+      "published": [
+        "false_type",
+        "integral_constant"
+      ],
+      "d2SelfLeaf": false
+    }
+  ]
+}

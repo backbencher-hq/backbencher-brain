@@ -838,3 +838,59 @@ population" figure in this document is a floor over roughly half the graph.
 **Caveat, stated because this document has been burned by un-stated scope:** measured on the 2-repo
 corpus, which is unusually header-dense (fmt ships its implementation in `-inl.h` and its API in `.h`).
 The 31-repo corpus's ratio is **not** measurable here and is not claimed.
+
+### 14.9 · `extends` against the grammar's own base clauses — and what the D2 ruling costs
+
+`extends` is the one relationship whose ground truth the pinned grammar states outright: a
+`base_class_clause` node lists the bases. So "one row per base" — the premise of the `mixes_in`
+ruling above — is checkable without a hand-written oracle. Committed as
+`script/cpp-audit/extends-baseline-check.ts`; evidence in `validation/cpp-audit/extends-baseline.json`.
+
+| measure | value |
+|---|---|
+| classes/structs with a base clause | **514** |
+| base entries the grammar names | **519** |
+| multi-base classes | **5** |
+| classes with no `extends` row for some base | 186 |
+| ↳ the DOCUMENTED D2 self-leaf ruling | **48** |
+| ↳ a dependent-ALIAS base (`std::conditional<...>::type`) | **3** |
+| **↳ genuinely missing (a base that does not collapse, no row)** | **0** |
+| surplus rows | 340 (same-NAME bucket collisions — see below) |
+
+**Verdict: no missing `extends` rows on this corpus.** Every base the grammar names is carried by a
+row, except the two explained classes. The `mixes_in` ruling's premise ("multiple inheritance is
+carried as one `extends` per base") is therefore **measured**, not asserted: all 5 multi-base classes
+account for all their bases.
+
+**The 48 are a deliberate product decision, and it is worth knowing its price.** `extendsTargetName`
+(`real-cpp-analyzer.ts:902`) refuses a base whose leaf equals the derived class's own name, because
+the leaf clean destroyed the evidence that told them apart — `priority_tag<N-1> : priority_tag<N-2>`
+and `char_traits : std::char_traits<T>` both collapse to `X : X`. The ruling: "an edge built on lost
+evidence is not a weaker edge, it is no edge". Correct by its own standard, and the override resolver
+was aligned in the same commit.
+
+**But it means 48 legal inheritance facts are absent from the graph on this corpus** — every one of
+them a class specialization inheriting from its own primary template (`formatter<X> : formatter<Y>`,
+`has_member_data_* : std::true_type`). The alternative is not "emit the self edge": it is to emit the
+edge with a target that PRESERVES the evidence (`std::char_traits`, or the un-cleaned base spelling).
+That is a design change with its own risks, so it is recorded here rather than attempted — the lane
+should choose deliberately, not drift.
+
+**The 3 dependent-alias cases are a naming judgement, not a miss.** `struct conjunction<...> :
+std::conditional<...>::type` — the grammar's structural base NAME is the alias `type`; the analyzer
+publishes the template name `conditional`, which is the more identifying of the two (`type` is the
+least specific name in C++). Both are defensible; nothing is lost.
+
+**The 340 "surplus" rows are the probe's known limitation, not duplicates.** Matching is by NAME
+within a file, so two class-template specializations with the same name (`is_reference_wrapper<T>` and
+`is_reference_wrapper<std::reference_wrapper<T>>`) share one row bucket. Each specialization gets its
+own row; the bucket shows both. This is the same C++ ambiguity the `overrides` audit records: a name
+cannot identify a declaration. It is declared in the probe rather than hidden.
+
+**Three probe drafts were wrong before this one was right — 359, 215, then 514 fake mismatches**, and
+each was the PROBE, not the analyzer: (1) splitting the class head at the first `:` lands inside
+`std::false_type`; (2) taking the last `::` segment of a `template_type`'s TEXT lands inside the
+template ARGUMENTS (`std::ratio_divide<std::ratio<1, Period::num>::type, ...>` → `period>`); (3)
+matching a class symbol by LINE is impossible because **this analyzer publishes no line on any
+symbol** (`line` is undefined; only relationships carry `line_number`). All three are recorded in the
+probe's docstring, because each looked like an analyzer defect and none was.
