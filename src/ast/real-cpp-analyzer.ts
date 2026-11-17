@@ -40,10 +40,17 @@ const CPP_CITATION_STDLIB_ROOTS: ReadonlySet<string> = new Set([
   "copy", "fill", "count", "abs", "fabs", "sqrt", "pow", "floor", "ceil", "round", "log", "exp",
 ])
 
-/** `metadata.languageNamespace` for a call this lane may CITE, or {} — see the block above. Flag-gated
- *  (`BB_CPP_CITATION=1`) so the accepted D1–D6 behaviour is byte-identical without it. */
+/** `metadata.languageNamespace` for a call this lane may CITE, or {} — see the block above.
+ *
+ *  SHIPPED 2026-11-16 — the claim is ON by default. It was flag-gated while the §18.27 narrowing
+ *  contract was being measured (a citation may not DISPLACE a name-model answer); that contract is
+ *  now carried by `languageNamespacePolicy: "strict-absent"` and the arbiter honours it, so the
+ *  claim is safe to emit unasked. Measured before the flip: on the 2-repo corpus 782 rows verify as
+ *  `extOK` with 0 refuted, and the whole-population four-bucket partition prices the vocabulary
+ *  bucket at 7,962 rows. `BB_CPP_CITATION=0` is the KILL-SWITCH, kept so the pre-claim output stays
+ *  reproducible in one environment variable; the citation verifier exercises both arms. */
 function cppCitationFacts(qualified: string, leaf: string): Record<string, unknown> {
-  if (process.env.BB_CPP_CITATION !== "1") return {}
+  if (process.env.BB_CPP_CITATION === "0") return {}
   if (leaf === "" || !CPP_CITATION_STDLIB_ROOTS.has(leaf)) return {}
   let t = String(qualified ?? "").trim()
   if (t.startsWith("::")) t = t.slice(2)

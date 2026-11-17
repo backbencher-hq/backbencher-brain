@@ -2,7 +2,7 @@
   "fixtureId": "cpp/citation/citation",
   "language": "cpp",
   "authoredBeforeAnalyzerRun": false,
-  "rationale": "THE ISO C++ CITATION CLAIM (`iso-cpp-stdlib`), pinned in BOTH DIRECTIONS — and the direction the FIXTURE SUITE can see is the FLAG-OFF one, which is a positive assertion about the accepted D1-D6 behaviour rather than a placeholder. WHY THE OFF STATE IS THE ONE A FIXTURE CAN PIN: the emission is flag-gated (`BB_CPP_CITATION=1`) so that the accepted D1-D6 behaviour is byte-identical without it, and the fixture suite runs WITHOUT the flag. So this fixture pins the OFF state — which is a real, falsifiable contract: the flag must not leak, the claim must not be emitted unasked, and the ROWS themselves (the `calls` edges, their targets, their lines, their qualified spellings) must be exactly these whether or not the claim is on. The ON state is pinned in the other direction by the dedicated red-capable control `script/m14/cpp-citation-verify.ts` (12/12 PASS, `--prove-red` exits 3), which sets the flag and asserts the claims, the negatives, the vocabulary-copy drift guard, and the flag-off row-identity. The two controls together cover both directions of the same emission, which is what the lane's own discipline requires; neither is left unpinned. THE VOCABULARY is committed in script/m14/citations.ts (Lead-owned) and the analyzer holds a LITERAL COPY of it (an analyzer may not import script/), so the copy can drift — the drift guard lives in the verifier, and the vocabulary's REACH is what this fixture's rows exercise. A `calls` row's TARGET is the callee LEAF (`move`, `max`), never the qualified path — the qualified spelling rides metadata.qualified — so a claim that read the target's root would find no root to check. The claim is therefore emitted from the QUALIFIED spelling: a listed symbol whose own spelling root is `std`. THE POLICY MARKER is the narrowing contract the lane's OWN falsifier produced (§18.27): the pre-narrowing emission moved `resolved` by 12,883 — 43x the lane's pre-committed 300 bound — because a citation may DISPLACE a name-model answer, and 12,883 of those were DECOY CORRECTIONS (duckdb declares its own `move` at src/include/duckdb/common/helper.hpp:153, so the name model bound every `std::move(...)` row to it). The `languageNamespacePolicy: \"strict-absent\"` marker tells the arbiter to verify the namespace claim ONLY where the run's declaration count for the target is 0, and to fall through to the name model otherwise. A claim that can displace an answer is not accepted even when the answer is wrong, so the marker is part of the claim's MEANING.",
+  "rationale": "THE ISO C++ CITATION CLAIM (`iso-cpp-stdlib`), SHIPPED 2026-11-16 (was flag-gated while the §18.27 narrowing contract was measured; the contract now rides `languageNamespacePolicy: \"strict-absent\"` and the arbiter honours it). BOTH DIRECTIONS ARE PINNED BY THE FIXTURE SUITE NOW: the three LISTED `std::` rows below assert the claim AND its policy marker, and the forbid block asserts every negative — the unlisted symbol, the same symbol under another root, the unqualified call, and the policy marker leaking onto a row with no claim. The OFF direction moved to `BB_CPP_CITATION=0` (the kill-switch) and is asserted by the dedicated red-capable control `script/m14/cpp-citation-verify.ts`, which also carries the vocabulary-copy drift guard and the row-identity check (the claim is metadata-only: it changes no row). WHY THE CLAIM EXISTS: the arbiter verifies the declared root against the committed vocabulary and counts a match as `extOK` — never a resolution, so it can never displace a name-model answer; the §18.27 marker is what confines it to rows where the name model has nothing to say (declaration count 0), because the pre-narrowing emission moved `resolved` by 12,883 (43x the pre-committed 300 bound) and 12,883 of those were decoy corrections. A claim that can displace an answer is not accepted even when the answer is wrong, so the marker is part of the claim's MEANING, not decoration.",
   "expectRelationships": [
     {
       "type": "calls",
@@ -10,7 +10,11 @@
       "target": "move",
       "line_number": 8,
       "meta.qualified": "std::move",
-      "note": "THE POSITIVE SHAPE. `std::move(x)` — the symbol is in the committed vocabulary, the spelling's own root is `std`, so with the flag ON this row carries the claim (the verifier asserts it). What the FIXTURE pins is the row itself: the target is the callee LEAF `move` (a cpp calls row names the callee leaf, never the qualified path — the qualified spelling rides metadata.qualified), and the row is emitted AT ALL, with this line and this spelling. A claim naming anything other than the leaf would be unverifiable against the committed list, and a row that stopped being emitted would take the claim with it."
+      "note": "THE POSITIVE SHAPE. `std::move(x)` — the symbol is in the committed vocabulary, the spelling's own root is `std`, so with the flag ON this row carries the claim (the verifier asserts it). What the FIXTURE pins is the row itself: the target is the callee LEAF `move` (a cpp calls row names the callee leaf, never the qualified path — the qualified spelling rides metadata.qualified), and the row is emitted AT ALL, with this line and this spelling. A claim naming anything other than the leaf would be unverifiable against the committed list, and a row that stopped being emitted would take the claim with it.",
+      "meta.languageNamespace": [
+        "move"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent"
     },
     {
       "type": "calls",
@@ -18,7 +22,11 @@
       "target": "string",
       "line_number": 9,
       "meta.qualified": "std::string",
-      "note": "`std::string(\"x\")` is an EXPRESSION, so it is a `calls` row and not a type declaration — the second shape the verifier claims."
+      "note": "`std::string(\"x\")` is an EXPRESSION, so it is a `calls` row and not a type declaration — the second shape the verifier claims.",
+      "meta.languageNamespace": [
+        "string"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent"
     },
     {
       "type": "calls",
@@ -26,7 +34,11 @@
       "target": "max",
       "line_number": 10,
       "meta.qualified": "std::max",
-      "note": "the third claimed shape, and the one the §18.27 displacement instrument measured as a decoy class (2 rows)."
+      "note": "the third claimed shape, and the one the §18.27 displacement instrument measured as a decoy class (2 rows).",
+      "meta.languageNamespace": [
+        "max"
+      ],
+      "meta.languageNamespacePolicy": "strict-absent"
     },
     {
       "type": "calls",
@@ -72,14 +84,18 @@
       "type": "calls",
       "from": "target",
       "target": "for_each",
-      "meta.languageNamespace": ["for_each"],
+      "meta.languageNamespace": [
+        "for_each"
+      ],
       "note": "THE FABRICATION THIS FIXTURE EXISTS FOR, in the positive direction: an UNLISTED `std::` symbol must carry NO claim. `for_each` is in the analyzer's own file but not in the committed list, and a claim on it would be REFUTED by the arbiter (extFAIL) — the must-not-rise column. This forbidden row is TRUE in the flag-off state the suite runs, and the verifier asserts it in the flag-on state, so the emission is pinned in both directions."
     },
     {
       "type": "calls",
       "from": "target",
       "target": "move",
-      "meta.languageNamespace": ["move"],
+      "meta.languageNamespace": [
+        "move"
+      ],
       "meta.qualified": "mylib::move",
       "note": "the project-root negative, stated as a FORBIDDEN pairing: a claim on the `mylib::move` row would assert that the project's own `mylib::move` is the platform's `std::move`. A namespace claim that ignored the root would make this row a false external citation — the same class the vendoring caveat excludes `absl`/`json`/`testing` for."
     },
@@ -87,7 +103,9 @@
       "type": "calls",
       "from": "target",
       "target": "move",
-      "meta.languageNamespace": ["move"],
+      "meta.languageNamespace": [
+        "move"
+      ],
       "meta.qualified": "move",
       "note": "the unqualified negative, stated as a FORBIDDEN pairing: no root, no subject, no claim."
     },
@@ -102,7 +120,9 @@
       "type": "calls",
       "from": "target",
       "target": "for_each",
-      "meta.languageNamespace": ["for_each"],
+      "meta.languageNamespace": [
+        "for_each"
+      ],
       "meta.languageNamespacePolicy": "strict-absent",
       "note": "the same leak, restated for the unlisted symbol specifically: an unlisted `std::` symbol carries NEITHER the claim NOR the marker. A marker without a claim is the shape the arbiter's narrowing rule would misread."
     }

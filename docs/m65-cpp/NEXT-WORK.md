@@ -957,3 +957,34 @@ as §14. Corrected against the committed census: **360/360 `structural`, 0 `usag
 The lesson is the lane's own: a correction written in prose is not a correction. The prose, the
 instrument, the generated artifact and the committed evidence each have to carry it, and this round
 found the same truth stale in three of those four places.
+
+### 14.12 · SHIPPED — the ISO stdlib citation claim is now the default (wall B, 7,962 rows)
+
+The wall ledger's **CLAIMED** bucket (W1-B, `committed-stdlib-vocabulary`, **7,962 rows**) was claimed
+by the vocabulary but **not shipped**: the analyzer emitted the claim only under `BB_CPP_CITATION=1`, so
+production emitted none and every listed `std::` citation still counted as unresolved. Shipped this
+round.
+
+**What changed.**
+- `cppCitationFacts` is ON by default; `BB_CPP_CITATION=0` is the **kill-switch** (kept so the
+  pre-claim output stays reproducible in one environment variable).
+- The citation fixture now pins the claim **in the default state**: claims + the
+  `languageNamespacePolicy: "strict-absent"` marker on all three listed rows, with every negative
+  (unlisted symbol, same symbol under another root, unqualified call, marker leak) still forbidden.
+  Previously the suite could only see the OFF state, because the flag was off in the fixture run.
+- `script/m14/cpp-citation-verify.ts` now tests the SHIPPED default plus the kill-switch (vocabulary
+  drift guard, negatives, marker contract and row-identity unchanged).
+- New mutant `cpp/citation-claim-dropped` — **CAUGHT, naming `cpp/citation/citation`** — so the claim
+  is load-bearing in the suite rather than only in a side instrument.
+
+**Measured on this corpus, no environment flags:**
+
+| | before ship | after ship |
+|---|---|---|
+| `calls` extOK (arbiter-verified claims) | 0 | **782** |
+| unresolved edges | 8,002 | **7,220** |
+| resolved | 51,743 | 51,743 (unchanged — a claim is never a resolution) |
+| ambiguous | 18,604 | 18,604 (unchanged — the claim speaks only where the name model has nothing) |
+
+The invariance is the design and is now proven by the fixture/mutant pair: the claim changes **metadata
+only**, never a row. Whole-population expectation is the ledger's 7,962 rows.

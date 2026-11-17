@@ -2571,6 +2571,13 @@
       },
       "rootCauseFixedIn": "script/m14/cpp-applicable-set.ts (the instrument now carries the C++ construct surface)",
       "regenerationStatus": "HAND-CORRECTED AND PROVENANCE-RECORDED, because this generator could not be re-run in this checkout: its inputs live under validation/m14/fixtures/cpp/measurements/ and that directory does not exist (cpp-spec-table.ts --check exits ENOENT; the whole-population census / D3 arms / D7 price+walls it embeds were measured on the 31-repo corpus, which is not on this machine). The next run on a corpus machine regenerates from the fixed instrument and must delete this errata block."
+    },
+    {
+      "date": "2026-11-16",
+      "field": "rulings.d7.fourBucketPartition.buckets['B/committed-stdlib-vocabulary'] (status only; the measurement stands)",
+      "change": "Status CLAIMED -> SHIPPED: the ISO stdlib citation claim is emitted by default.",
+      "why": "The claim was gated behind BB_CPP_CITATION=1, so production emitted none and the 7,962 rows stayed unresolved. Shipped 2026-11-16 with BB_CPP_CITATION=0 as the kill-switch. Measured on the 2-repo corpus with no environment flags: extOK 0 -> 782, unresolved 8,002 -> 7,220, and resolved/ambiguous unchanged (a claim is never a resolution and never displaces one). Pinned by the citation fixture's positive rows + policy marker and by mutant cpp/citation-claim-dropped (CAUGHT).",
+      "regenerationStatus": "hand-recorded for the same reason as the part_of errata: the generator's measurement inputs are absent from this checkout."
     }
   ]
 }

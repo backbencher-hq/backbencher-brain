@@ -318,4 +318,23 @@ export const CPP_MUTANTS: Mutant[] = [
       return { ...r, relationships: rels }
     },
   },
+  {
+    id: "cpp/citation-claim-dropped",
+    language: "cpp",
+    defectClass: "claim-loss",
+    description:
+      "THE ISO C++ CITATION CLAIM, shipped 2026-11-16, must stay shippable: this removes `metadata.languageNamespace` and its `languageNamespacePolicy` companion from every row, which is exactly the pre-ship state of the emission (and also what a later refactor that stopped threading the qualified spelling into the facts would produce). The claim is invisible to a row count, so only a fixture that PINS it can catch the loss — cpp/citation/citation now asserts the claim AND the marker on all three listed `std::` rows, and asserts the marker's absence everywhere else. Caught-by names that fixture rather than a class for the same reason as cpp/imports-per-occurrence-not-per-module: a claim with no pin is a claim nothing can refute.",
+    caughtBy: "cpp/citation/citation",
+    transform: (r) => {
+      const strip = (x: any) => {
+        if (!x?.metadata) return x
+        const md = { ...x.metadata }
+        let touched = false
+        if (Array.isArray(md.languageNamespace)) { delete md.languageNamespace; touched = true }
+        if (md.languageNamespacePolicy !== undefined) { delete md.languageNamespacePolicy; touched = true }
+        return touched ? { ...x, metadata: md } : x
+      }
+      return { ...r, relationships: (r?.relationships ?? []).map(strip) }
+    },
+  },
 ]

@@ -4,11 +4,11 @@
  * Asserts, as things that can FAIL:
  *  1. the analyzer's copied vocabulary is IDENTICAL to `ISO_CPP_STDLIB` in script/m14/citations.ts
  *     (a drift between the committed list and the analyzer's copy is the exact defect the copy invites);
- *  2. with BB_CPP_CITATION=1, a LISTED symbol spelled `std::<symbol>` carries
+ *  2. BY DEFAULT (claim shipped), a LISTED symbol spelled `std::<symbol>` carries
  *     `metadata.languageNamespace = [<symbol>]` — and the target is the symbol (exact);
  *  3. NEGATIVES get NO claim: an unlisted `std::` symbol, a listed symbol reached through another root,
  *     and an unqualified call;
- *  4. flag OFF is byte-identical to the baseline (no languageNamespace anywhere, same rows);
+ *  4. the KILL-SWITCH (`BB_CPP_CITATION=0`) removes every claim and leaves the rows identical;
  *  5. population invariance: the flag changes no (type,target) row.
  *
  * The CLAIM's verification (extOK / verifiedBy namespace; unlisted root REFUTES) is the gate's job and is
@@ -31,9 +31,11 @@ const parser: any = await getParser("cpp")
 const analyzer: any = new cppMod.RealCppAnalyzer()
 const src = fs.readFileSync(path.join(FIX, "citation.cpp"), "utf8")
 
-const run = async (flag: boolean) => {
+const run = async (mode: "default" | "off") => {
   const prev = process.env.BB_CPP_CITATION
-  if (flag) process.env.BB_CPP_CITATION = "1"
+  // SHIPPED 2026-11-16: the claim is ON by default, so the DEFAULT arm is the shipped one and the
+  // second arm is the documented kill-switch rather than the old opt-in.
+  if (mode === "off") process.env.BB_CPP_CITATION = "0"
   else delete process.env.BB_CPP_CITATION
   const tree: any = parser.parse(src, path.join(FIX, "citation.cpp"))
   try {
@@ -44,8 +46,8 @@ const run = async (flag: boolean) => {
     else process.env.BB_CPP_CITATION = prev
   }
 }
-const base = await run(false)
-const on = await run(true)
+const off = await run("off")
+const on = await run("default")
 const rows = (r: any) => (r.relationships ?? []) as any[]
 const calls = (r: any, target: string, qualifiedContains?: string) => rows(r).filter((x: any) => x.type === "calls" && x.target === target && (qualifiedContains === undefined || String(x.metadata?.qualified ?? "").includes(qualifiedContains)))
 const claimsOf = (rs: any[]) => rs.filter((x: any) => Array.isArray(x.metadata?.languageNamespace))
@@ -79,9 +81,9 @@ check("policy-marker-on-claims", claimsOf(rows(on)).length > 0 && claimsOf(rows(
 check("policy-marker-only-with-claim", rows(on).filter((x: any) => x.metadata?.languageNamespacePolicy !== undefined).every((x: any) => Array.isArray(x.metadata?.languageNamespace)), "policy marker on a row with no claim")
 // 4. flag-off byte-identity (metadata-only emission; rows identical)
 const key = (x: any) => `${x.type}\u0000${x.target}`
-check("flag-off-no-citation", claimsOf(rows(base)).length === 0, `claims=${claimsOf(rows(base)).length}`)
-check("population-invariant", rows(base).map(key).sort().join("|") === rows(on).map(key).sort().join("|"), "rows differ with the flag")
-check("row-count-unchanged", rows(base).length === rows(on).length, `${rows(base).length} vs ${rows(on).length}`)
+check("killswitch-off-no-citation", claimsOf(rows(off)).length === 0, `claims=${claimsOf(rows(off)).length}`)
+check("population-invariant", rows(off).map(key).sort().join("|") === rows(on).map(key).sort().join("|"), "rows differ with the kill-switch")
+check("row-count-unchanged", rows(off).length === rows(on).length, `${rows(off).length} vs ${rows(on).length}`)
 
 // RED PROOF: a deliberately impossible expectation makes the instrument exit 3, proving the failure path
 // is reachable (the same discipline as the other lane instruments' --wrong-spec modes).
