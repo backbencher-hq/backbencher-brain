@@ -1,7 +1,30 @@
 # C++ analyzer — what to do next, measured
 
-**Evidence:** `validation/cpp-audit/census.json` (523 files, 17,597 symbols, 78,088 edges)
-plus the probes recorded below. Corpus: `.cpp-corpus/fmt` (10.2.1) + `.cpp-corpus/nlohmann-json` (v3.11.3).
+> ## STATUS — READ THIS BEFORE QUOTING ANY NUMBER BELOW
+>
+> This page is a **dated log**, not a current report. Sections 1–5 were written *before* the
+> macro-recovery arm (§11) landed; §6, §12 and §13 are corrections written *after* re-measuring; §14
+> is the latest round. Where a later section contradicts an earlier one, **the later one is the
+> measurement**; earlier text is left standing only as the record of what was believed.
+>
+> **Reproducible from committed code, today** (`bun run script/cpp-audit/census.ts --json`):
+>
+> | | |
+> |---|---|
+> | corpus | 523 cpp files (524 candidates; 1 routes to `c`), 0 engine parse failures |
+> | symbols / edges | **17,912** / **78,403** |
+> | relationship types emitting | **11** of the 14-value vocabulary (3 ruled absent with grammar evidence) |
+> | `calls` target resolved | 54,971 / 59,374 = **92.6%** |
+> | `part_of` target resolved | 347 / 360 = **96.4%** — §6 says 97.5%; §14.2 settles it |
+> | `references` target resolved | 205 / 206 = **99.5%** (the miss is `::std::ostream`) |
+> | `imports` target resolved | 205 / 1,968 = 10.4% — **external by design, must not be "fixed"** |
+> | source endpoints | 100% for 10 of 11 types; `contains` **10,972 / 10,975** — §14.3 traces the 3 |
+> | parse health | **172 / 523 files carry ≥1 grammar ERROR node**; 90.3% of symbols live in them — a disclosure, not a defect rate (§14.4) |
+>
+> **Evidence:** `validation/cpp-audit/census.json` — regenerated for this round, and it now carries
+> the **post-M65** totals (17,912 / 78,403). So the "17,597 symbols / 78,088 edges" figures quoted in
+> §1–§5 below are the *pre-M65* snapshot, not what that file contains today. Corpus:
+> `.cpp-corpus/fmt` (10.2.1) + `.cpp-corpus/nlohmann-json` (v3.11.3).
 
 ---
 
@@ -17,6 +40,12 @@ defensible win available, and it is the same class the C lane already solved (`e
 ---
 
 ## 1 · Resolution, measured
+
+> **⚠ PRE-M65 SNAPSHOT.** This table is what the probe said *before* the macro-recovery arm and before
+> `resolves()` was made type-aware. Four of its cells are wrong: `calls` target (77.4% → **92.6%**),
+> `part_of` (17.5% → **96.4%**), `references` (36.9% → **99.5%**), and the `contains` row count
+> (10,660 → **10,975**). §12/§13/§14 carry the corrections; the current figures are in the STATUS
+> banner. Kept because a lane's history is not its last writer's.
 
 Target resolves against an index built from the analyzer's own output (the population `bb_graph` binds).
 
@@ -34,8 +63,12 @@ Target resolves against an index built from the analyzer's own output (the popul
 | exports | 112 | 0.1% | 112 (100%) | 112 (100%) |
 | implements | 34 | 0.0% | 34 (100%) | 34 (100%) |
 
-**Source endpoints are 100% resolved for every type** — the M65 `::` fix closed the last one.
-The work is now almost entirely about **targets**.
+**Source endpoints: measured again, not assumed** (§14.3). The sentence here used to read "100%
+resolved for every type". That is true for ten of the eleven, and **false for `contains`, which is
+10,972 / 10,975** — the three misses are `AssertHelper -> constructor`, `-> ~AssertHelper` and
+`-> operator=` emitted from `gmock-gtest-all.cc`, where the class is declared in another file and the
+grammar lost that declaration to an ERROR cascade. The M65 `::` fix did close the last `overrides`
+source; it did not make every source resolvable, and no check had ever asked.
 
 ---
 
@@ -104,10 +137,11 @@ grammar-absence evidence and a falsifier).
 |---|---|---|---|---|
 | **1** | **Macro recovery for `#define` inside ERROR spans** — mint `Macro`/`Constant` from the directive line when the grammar produced no `preproc_*` node | ~1 new arm + fixture | **+9,004 resolved `calls` targets** (67% of the gap); `CHECK` 6,734 alone | low — bounded scan, and the analyzer already has the C-lane precedent |
 | 2 | `.h`-by-content population in the M14 gate discovery (`incoming-gate.ts:314`) — 3,095 cpp-routed headers, 87,181 `#define`s sit outside the measured population | one-word/set change, **master-owned** | the lane's own largest residual (83% of `calls`) | touches shared gate; needs Lead |
-| 3 | `part_of` target = file STEM vs the declared module name (17.5% resolve) — a header's module symbol is its stem only when stems are unique | design + measurement | makes `part_of` resolvable | medium — could re-introduce ambiguity |
+| ~~3~~ | ~~`part_of` target = file STEM vs declared module name (17.5% resolve)~~ — **WITHDRAWN, §6.** The 17.5% measured a FILE relation against SYMBOLS. Measured in its own key space it is **96.4%** and the residual is headers outside the checkout. There is no work here. | — | — | — |
 | 4 | `imports` 10.4% is **correct by design** (external module names) — document, do not "fix" | doc only | prevents a wrong fix | none |
 | 5 | Grammar fork: the 544 lost macros are a symptom of ERROR recovery on large single-header libraries; a newer fork would reduce it | upstream | structural | high — byte-pinned fork, 22 fixtures depend on it |
 | 6 | Re-cut the 1,282,777-row whole-population census | needs 31-repo corpus | corroboration only | not available here |
+| **7** | **ERROR-span DECLARATION loss** (new, §14.3/§14.4) — 172 of 523 files carry ERROR nodes; in `gtest.h` one cascade from `GTEST_IMPL_CMP_HELPER_(NE, !=)` swallows the `AssertHelper` class and 3 `contains` sources go unbound. Recovery is possible but is exactly the "invent a declaration" failure mode this lane gates against | design + measurement | 3 unbound rows on this corpus; unknown on the 31-repo corpus | **high** — a loose ERROR-span recovery re-creates the D11/D15 defects |
 
 **Do not** re-litigate the `.h` question through the residual gate: it is already measured as
 "the fix landed in `incoming-gate.ts:219` but the residual gate's population did not move."
@@ -146,20 +180,33 @@ against an index of **symbols** measures a category error — a stem is not a sy
 
 Measured correctly, against the set of **file stems that exist in the corpus**:
 
-| measure | value |
-|---|---|
-| `part_of` rows | 360 |
-| target **IS a file stem present in the corpus** | **351 (97.5%)** |
-| target not present as a file here | 9 |
+| measure | value | |
+|---|---|---|
+| `part_of` rows | 360 | |
+| target **IS a file stem present in the corpus** | **347 (96.4%)** | ← reproducible figure (§14.2) |
+| target not present as a file here | 13 | |
 
-The 9 absent ones are headers outside the checkout (`failure_signal_handler`, `stacktrace`,
-`symbolize`, `str_cat`) plus four **std C++ headers** whose stems collide with project headers
-(`any`, `optional`, `string_view`, `variant` — e.g. `"absl/types/any.h"` vs `<any>`).
+> **★ CORRECTED AGAIN (§14.2).** The table above first read "351 (97.5%) / 9 absent", and that figure
+> **cannot be reproduced from committed code**. The committed probe (`census.ts`, `corpusStems` built
+> from the 523 admitted files) says **347 / 360 = 96.4%**, and §13's independent table already said
+> 347 — so this section and §13 disagreed about the same measurement and §13 was right. The earlier
+> 351 counted four of the absent stems as present; the four are `any`, `optional`, `string_view`,
+> `variant`, and **no file with any of those stems exists in the corpus** (checked by name). The
+> arithmetic also did not close: it claimed 9 absent while listing 8.
+>
+> The 4-row difference is not an analyzer defect either way: **2 of the 13 target a file that IS in the
+> corpus** but outside the probe's population (a `.h` the content router sends to the **C** analyzer —
+> `FuzzerInterface.h`, correctly C, "WARNING: keep the interface in C" — and `FuzzerFlags.def`, an
+> extension the probe does not admit). The other 11 are headers genuinely outside the checkout.
+> So the analyzer-side figure is ≥ **349 / 360 = 96.9%**.
 
-**⇒ Work item #3 is WITHDRAWN.** `part_of` is 97.5% correct and the residual is a missing-file
-artifact, not a target-shape defect. This is the third time in this campaign that a headline number
-measured the wrong thing (`0/134 unresolvable`, `39 fixtures`, now `17.5%`), which is the argument
-for stating what a resolution rate is measured AGAINST, not just its value.
+The absent targets are abseil headers outside the checkout (`failure_signal_handler`, `stacktrace`,
+`symbolize`, `str_cat`) plus four **std C++ headers** (`any`, `optional`, `string_view`, `variant`).
+
+**⇒ Work item #3 is WITHDRAWN.** `part_of` is **96.4%** correct (not 97.5%) and the residual is a
+missing-file artifact, not a target-shape defect. This is the third time in this campaign that a
+headline number measured the wrong thing (`0/134 unresolvable`, `39 fixtures`, now `17.5%`), which is
+the argument for stating what a resolution rate is measured AGAINST, not just its value.
 
 ## 7 · Full unresolved-target decomposition, every type
 
@@ -173,7 +220,7 @@ corpus (so cross-file resolution is excluded, not counted as a defect).
 | extends | 43 / 478 | `integral_constant` 16 (`std::`) · `allocator` 4 | std bases, no in-project declaration — accept |
 | instantiates | 15 / 182 | `stringstream` 3 · `CRITICAL_SECTION` 2 | std/Win32 types — accept |
 | references | 130 / 206 | `nlohmann::literals` 46 · `std::string_view_literals` 9 | namespace targets (inline namespaces) — accept |
-| part_of | 9 / 360 | std/adjacent headers | **97.5% correct — see §6** |
+| part_of | 13 / 360 | abseil/std headers outside the checkout; 2 rows target a corpus file the probe's population excludes | **96.4% correct — see §6, §14.2** |
 | imports | 1,763 / 1,968 | `functional`, `memory`, `vector` | **correct by design** (external modules) |
 
 ⇒ **After the macro class, no other type has a defect worth a change.** The remaining
@@ -462,7 +509,7 @@ spelling defect. **That is a legitimate ambiguous-by-name case, and no resolver 
 a key that distinguishes declarations of the same member.**
 
 **Three times is a pattern, so the check was fixed rather than its output.** `0/134 unresolvable`
-(wrong: it resolved), `part_of 17.5%` (wrong: 97.5%), `overrides 134/134 ambiguous` (wrong: 120
+(wrong: it resolved), `part_of 17.5%` (wrong: 96.4% — §6 said 97.5%, itself unreproducible, §14.2), `overrides 134/134 ambiguous` (wrong: 120
 exact, 14 genuine). Each time the cause was the same: **the number measured a proxy — a name count,
 or symbol resolution for a file-level relation — instead of the question the consumer actually asks.**
 The check now measures against the key space the store receives, which is the thing that decides
@@ -506,7 +553,7 @@ design, since `std` is the standard library.
 | # | the claim | the truth | the proxy that misled |
 |---|---|---|---|
 | 1 | `overrides` "0 of 134 unresolvable" | all 134 resolved | resolver leaf-matching on `.` was unread |
-| 2 | `part_of` "17.5% resolved" | 97.5% | a FILE relation measured against SYMBOLS |
+| 2 | `part_of` "17.5% resolved" | 96.4% (§6 said 97.5%, unreproducible — §14.2) | a FILE relation measured against SYMBOLS |
 | 3 | `overrides` "134/134 ambiguous" | 120 exact + 14 genuine | a NAME count, not the store's key space |
 | 4 | `references` "36.9% resolved" | 99.5% | symbol names for a NAMESPACE target |
 
@@ -519,3 +566,111 @@ probe prints names its space. That is the structural fix; the four numbers above
 outside the checkout and `std` itself. `imports` (10.4%) is external-module by construction and must
 **not** be "fixed". The remaining honest resolution gap is `calls` at 92.6% (4,403 rows), which is
 stdlib/Win32/test-macros and was analysed in §11.4.
+
+---
+
+## 14 · The round after the restore — the instrument itself was reverted, and re-measuring corrected §6
+
+**Start here:** §13 ended by claiming "`resolves()` **now** takes the relationship type and answers in
+that type's own space". That claim was **false at HEAD** when this round began. A release commit
+(`ce3b2a95d`, "Release 0.1.5") had silently reverted the fix: `script/cpp-audit/census.ts` was cut from
+537 to 456 lines and the type-aware resolver, the corrected `overrides` check and the corrected
+`census.json` all went with it. The earlier restoration commits (`02ec6c6b5`, `ff67d9610`) put back the
+analyzer, the fixture, the mutant, the doc and the spec — **they missed the probe and its evidence.**
+
+So the first act of this round was to restore `census.ts` from `ac1352830` (the commit titled "the
+fourth wrong number — `resolves()` measured every type in the symbol-name space") and then
+**re-run it against the current analyzer**, rather than restoring its old output: evidence for today's
+tree has to come from today's tree.
+
+**What the restore proved.** With the type-aware resolver back, the committed census reproduces §13
+exactly — `references` 205/206, `part_of` 347/360, `overrides` 134/134 with 120 exact — and the four
+"corrected" numbers in this document are now checkable from committed code instead of only stated.
+
+### 14.1 · The probe was extended, because a probe that measures one type cannot adjudicate
+
+Two gaps were closed in `census.ts`, both structural:
+
+1. **Every type now reports its residual target AND its residual source**, each in its own key space,
+   with that space printed in the check name. The old loop covered `imports`/`references`/`exports`
+   only, which is precisely why §6's `part_of` number sat next to §13's different `part_of` number
+   with nothing to settle it.
+2. **Every rate names its space.** `perType[type].targetResolvedSpace` carries it, and the non-JSON
+   output prints it on its own line under each type.
+
+### 14.2 · §6 vs §13 — same measurement, two numbers, and §13 was right
+
+| | claim | reproducible? |
+|---|---|---|
+| §6 | `part_of` 351 / 360 = **97.5%**, 9 absent | **NO** — not from any committed code |
+| §13 | `part_of` 347 / 360 = **96.4%** | **YES** — `bun run script/cpp-audit/census.ts` |
+
+Measured: **347 / 360 = 96.4%**, 13 residual rows. The 13 decompose as:
+
+* **2 rows** target a file that **is** in the corpus but **outside the probe's population**: `FuzzerInterface`
+  (the one `.h` whose content correctly routes to the **C** analyzer — its own text says
+  "WARNING: keep the interface in C") and `FuzzerFlags` (`#include "FuzzerFlags.def"`, an extension the
+  probe does not admit). These are **probe-population artifacts**, and the analyzer-side figure is
+  therefore ≥ **349 / 360 = 96.9%**.
+* **11 rows** target headers genuinely outside the checkout: abseil (`failure_signal_handler`,
+  `stacktrace`, `symbolize`, `str_cat`) and `std` (`any`, `optional`, `string_view`, `variant`). Correct
+  to leave unresolved; inventing declarations for them would be the fabrication the lane gates against.
+
+§6's supporting detail was also wrong in a way worth recording: it said "the 9 absent ones are …" and
+then listed **8** names, and **no file with any of those four std stems exists in the corpus** (checked
+by name), so they could not have been "present". A stale number wearing a plausible explanation is
+harder to catch than a bare wrong number — which is why the explanation is corrected too.
+
+### 14.3 · A check no one had run: the SOURCE endpoint is not 100%
+
+§1 asserted "source endpoints are 100% resolved for every type". Measured in each type's own space:
+
+| type | source resolved | note |
+|---|---|---|
+| 10 of 11 types | **100%** | incl. `overrides` 134/134 after the M65 `::` fix |
+| `contains` | **10,972 / 10,975** | 3 misses |
+
+The three are `contains AssertHelper -> constructor`, `-> ~AssertHelper`, `-> operator=`, emitted from
+`fmt/test/gtest/gmock-gtest-all.cc`. The members are published with `ownerName: "AssertHelper"` and a
+proper `qualifiedName`, but **the class symbol is not published anywhere in the corpus**, so those three
+sources bind to nothing. Traced to the cause:
+
+* `class GTEST_API_ AssertHelper { … }` lives at `gtest.h:11673`, and the grammar's tree there is
+  **not** the D15 `function_definition` shape (that fix is intact and its mutant still fires). It is an
+  **ERROR cascade**: `GTEST_IMPL_CMP_HELPER_(NE, !=)` at `:11527` — a namespace-scope, function-like
+  macro invocation whose argument is an **operator token** — desyncs the parse, and one `ERROR` node
+  runs from `:11527` to `:11684`, swallowing the whole class declaration. The nested
+  `struct AssertHelperData` survives but is re-owned to `internal`.
+* `gtest.h` is therefore published with **1,858 symbols and no `AssertHelper`**, which is a *grammar*
+  limitation, not an emission rule. The lane cannot fix it by relaxing an analyzer rule; it would have
+  to recover declarations from an ERROR span, which is the D11/D15 failure mode this lane gates
+  against. **Recorded as ranked item #7, not attempted.**
+
+### 14.4 · Parse health — the lane's "0 parse failures" was hiding a third of the corpus
+
+`corpus.parseFailures: 0` counts only files where the **engine threw**. It says nothing about the
+grammar tree, and `gtest.h` proves the difference. The engine already discloses this (`errors[]` from
+`rootNode.hasError`, `engine.ts:1879`); the probe simply never read the array. It does now:
+
+| measure | value |
+|---|---|
+| files whose parse result carries ≥1 ERROR node | **172 / 523 (32.9%)** |
+| files with a clean tree | 351 |
+| symbols living in ERROR-carrying files | **16,175 / 17,912 = 90.3%** |
+| edges living in ERROR-carrying files | **72,798 / 78,403 = 92.9%** |
+| files at the engine's 50-entry disclosure cap | 35 |
+
+**Read this as a disclosure, never as a defect rate.** tree-sitter is an error-*recovering* parser: one
+ERROR node can be a single unparseable macro region in a 12,000-line header and the other 2,600 lines
+can be exact. So "90.3% of symbols" does **not** mean 90.3% of the output is wrong — the fixture suite,
+this census and the differential are what measure correctness. What it means is: **a reader who sees
+"0 parse failures" must not infer "clean parses"**, and every one of the lane's coverage figures is a
+measured *floor* over a population where a third of the files exercised error recovery.
+
+### 14.5 · Verifier trust, unchanged and still the weakest link
+
+Nothing in this round strengthens the fixture suite's structural weakness recorded in §10: of 873
+assertions only **21 (2.4%) are exact counts**, and `expectRelationships` is a "≥1 match" predicate
+that **cannot fail on an extra or fabricated row**. The census can catch a fabricated row (it did —
+this is how the 3 unbound `contains` sources were found), the mutants can catch a reverted rule, but
+the fixture suite alone cannot. **That is the next thing worth fixing in this lane**, ahead of item #7.

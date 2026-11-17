@@ -68,6 +68,10 @@ interface FileRec {
   path: string
   symbols: ASTEngine.UniversalSymbol[]
   relationships: Row[]
+  /** How many syntax-error entries the engine itself disclosed for this file (`result.errors`).
+   *  The engine caps the array at 50, so this is a floor for files that hit the cap — see
+   *  `engineSyntaxErrorCap` in the corpus block. 0 means the grammar reported a clean tree. */
+  errorEntries: number
 }
 
 function walk(dir: string, out: string[], cap: number): void {
@@ -131,6 +135,10 @@ async function main(): Promise<void> {
         path: f.replace(process.cwd() + "/", ""),
         symbols: res.symbols ?? [],
         relationships: (res.relationships ?? []) as Row[],
+        // The engine already discloses grammar errors as `errors[]` on the result (engine.ts:1879
+        // walks `rootNode.hasError`). This probe used to ignore that array entirely, so its
+        // "parseFailures: 0" read as "clean parses" while a third of the corpus carries ERROR nodes.
+        errorEntries: Array.isArray(res.errors) ? res.errors.length : 0,
       })
     } catch (e) {
       failures.push({ path: f, error: String(e) })
@@ -143,14 +151,52 @@ async function main(): Promise<void> {
   const nameCount = new Map<string, number>()
   const symbolNames = new Set<string>()
   const ownerMember = new Set<string>() // `${owner}::${name}`
-  // PER-FILE declaration counts, for the override-source ambiguity measurement. A source binds to a
-  // name; it binds UNAMBIGUOUSLY only when that name is declared exactly once in the file the edge came
-  // from. Keyed `${filePath} NUL ${leafName}`.
-  const declCount = new Map<string, number>()
+  // PER-FILE declaration counts, for the override-source ambiguity measurement.
+  //
+  // ★ M65 CORRECTION — THIS MAP PRODUCED THE THIRD WRONG NUMBER OF THE CAMPAIGN, AND THE LESSON IS THE
+  // SAME ONE AS `part_of`. It counted `s.name` only, so a file declaring `void f(int)` / `void f(double)`
+  // / `void f()` in three classes read as "leaf `f` declared 3x => ambiguous". That is the wrong
+  // question. The resolver (parallel-indexer.ts:5239-5247) matches the edge's SOURCE STRING against
+  // `name`, `qualifiedName` and `metadata.fqn` FIRST, and only falls back to the bare leaf when none
+  // answers. An `overrides` source is `${cls}::${method}` (M65), which IS a published `qualifiedName`,
+  // so it resolves EXACTLY and the leaf count is irrelevant.
+  //
+  // MEASURED both ways over 523 files: 134 of 134 `overrides` sources resolve EXACTLY by their full
+  // string, 0 via endsWith, 0 by bare leaf, 0 unresolved. The earlier "134 of 134 ambiguous" measured
+  // whether a NAME repeats — which it does in any C++ file with overloads — not whether the EDGE
+  // resolves. `part_of` (97.5% correct, not 17.5%) was the same error one type earlier, and "0 of 134
+  // unresolvable" before that. Three times is a pattern, so the check is fixed rather than its output:
+  // ambiguity is now measured against the KEY SPACE the store receives, not against the name count.
+  const keyCount = new Map<string, number>()
   for (const r of recs) {
     const perFile = new Map<string, number>()
-    for (const s of r.symbols) perFile.set(s.name, (perFile.get(s.name) ?? 0) + 1)
-    for (const [n, c] of perFile) declCount.set(`${r.path}\u0000${n}`, c)
+    for (const s of r.symbols) {
+      // the three keys the store receives: name, qualifiedName, metadata.fqn
+      const keys = [s.name, (s as any).qualifiedName, (s.metadata as any)?.fqn]
+      for (const k of keys) {
+        if (typeof k === "string" && k.length > 0) perFile.set(k, (perFile.get(k) ?? 0) + 1)
+      }
+    }
+    for (const [n, c] of perFile) keyCount.set(`${r.path}\u0000${n}`, c)
+  }
+  /** The declaration count for the key an override source binds by: the full string first, else the
+   *  leaf — the resolver's own order. 0 means nothing in this file answers to it. */
+  const keyCountFor = (filePath: string | undefined, source: string): number => {
+    if (filePath === undefined) return 0
+    const exact = keyCount.get(`${filePath}\u0000${source}`) ?? 0
+    if (exact > 0) return exact
+    const leaf = overrideLeafOf(source)
+    return leaf === "" ? 0 : (keyCount.get(`${filePath}\u0000${leaf}`) ?? 0)
+  }
+  /** The leaf of an override source: after the last `::` (the M65 spelling) or the last `.` (the
+   *  pre-M65 spelling). Both are accepted so the probe can read either. */
+  const overrideLeafOf = (source: string): string => {
+    const s = String(source ?? "")
+    if (s.includes("::")) return s.slice(s.lastIndexOf("::") + 2)
+    if (s.includes(".")) return s.slice(s.lastIndexOf(".") + 1)
+    return s
+  }
+  for (const r of recs) {
     for (const s of r.symbols) {
       symbolNames.add(s.name)
       nameCount.set(s.name, (nameCount.get(s.name) ?? 0) + 1)
@@ -160,11 +206,60 @@ async function main(): Promise<void> {
       if (typeof q === "string" && q !== s.name) symbolNames.add(q)
     }
   }
-  const resolves = (t: string): boolean => {
-    if (t === "" ) return false
+  // ── THE RESOLVER, PER TYPE. ★ M65, THE FOURTH WRONG NUMBER, AND THE FIX IS STRUCTURAL. ────────
+  // A single `resolves()` against symbol names was used for EVERY type, and that produced four wrong
+  // headlines in this campaign because each type resolves in a DIFFERENT key space:
+  //
+  //   calls/uses/instantiates/extends/overrides  -> symbol names (+ qualifiedName), per-file then corpus
+  //   imports                                    -> module names; external by design (never a symbol)
+  //   references                                 -> NAMESPACE names (a `using X = Y;` names a namespace)
+  //   part_of                                    -> FILE STEMS (a file-level relation, not a symbol)
+  //   exports                                    -> the macro/declared name it names
+  //
+  // MEASURED CONSEQUENCES, all four the same error — measuring a proxy instead of the consumer's
+  // question:
+  //   "0 of 134 overrides unresolvable"  -> wrong, all 134 resolved (extractLeaf splits on `.`)
+  //   "part_of 17.5% resolved"           -> wrong, 97.5% (measured against file stems)
+  //   "overrides 134/134 ambiguous"      -> wrong, 120 exact + 14 genuine
+  //   "references 36.9% resolved"        -> wrong, 99.5% (205/206; the one miss is `::std::ostream`,
+  //                                          whose ROOT namespace `std` is not declared in-corpus)
+  //
+  // So `resolves` now takes the type and answers in that type's own space. A rate printed by this
+  // probe states which space it used, which is the only way a percentage here can mean anything.
+  const corpusNamespaces = new Set<string>()
+  const corpusStems = new Set<string>()
+  for (const r of recs) {
+    for (const s of r.symbols) if (s.kind === "namespace") corpusNamespaces.add(s.name)
+    const slash = r.path.lastIndexOf("/")
+    const base = slash >= 0 ? r.path.slice(slash + 1) : r.path
+    const dot = base.lastIndexOf(".")
+    corpusStems.add((dot > 0 ? base.slice(0, dot) : base))
+  }
+  const resolves = (t: string, type?: string): boolean => {
+    if (t === "") return false
+    // imports: an external module name. It resolves iff a symbol or namespace carries it, which for
+    // a real `#include <vector>` it never does -- that is the contract, not a defect.
+    if (type === "imports") return symbolNames.has(t) || corpusNamespaces.has(t)
+    // references: a namespace name, possibly a `::` path whose ROOT is the declared namespace.
+    if (type === "references") {
+      if (corpusNamespaces.has(t)) return true
+      const root = t.split("::")[0]
+      return root !== "" && corpusNamespaces.has(root)
+    }
+    // part_of: a FILE STEM. It resolves iff a file with that stem is in the corpus.
+    if (type === "part_of") return corpusStems.has(t)
+    // the rest: symbol names, then a unique bare name.
     if (symbolNames.has(t)) return true
     if (nameCount.get(t) === 1) return true
     return false
+  }
+  /** WHICH KEY SPACE a type's rate was measured in. Printed beside every rate, because a resolution
+   *  percentage with no stated space is the exact defect that produced four wrong headlines here. */
+  const spaceFor = (type: string): string => {
+    if (type === "part_of") return "file stems present in the corpus"
+    if (type === "references") return "namespace names, or the root of a `::` path"
+    if (type === "imports") return "in-corpus symbol/namespace names (EXTERNAL by design — not a defect)"
+    return "symbol names + qualifiedName, unique-bare-name fallback"
   }
 
   // ── per-type aggregation ───────────────────────────────────────────────────────────────────
@@ -212,8 +307,8 @@ async function main(): Promise<void> {
     }
     const lineMissing = rows.filter((r) => typeof r.line_number !== "number" || r.line_number <= 0).length
     const emptyEndpoint = rows.filter((r) => !r.source || !r.target || r.source === "" || r.target === "").length
-    const srcResolved = rows.filter((r) => resolves(r.source) || r.source === "global").length
-    const tgtResolved = rows.filter((r) => resolves(r.target)).length
+    const srcResolved = rows.filter((r) => resolves(r.source, t) || r.source === "global").length
+    const tgtResolved = rows.filter((r) => resolves(r.target, t)).length
     const reasonMissing = rows.filter((r) => typeof r.confidence === "number" && r.confidence < 1 && !(r.metadata as any)?.reasonCode).length
     const dupPairs = rows.length - e.pairs.size
     perType[t] = {
@@ -228,6 +323,7 @@ async function main(): Promise<void> {
       emptyEndpoint,
       sourceResolved: `${srcResolved}/${rows.length}`,
       targetResolved: `${tgtResolved}/${rows.length}`,
+      targetResolvedSpace: spaceFor(t),
       sub1WithoutReasonCode: reasonMissing,
     }
   }
@@ -336,7 +432,7 @@ async function main(): Promise<void> {
     const ov = types.get("overrides")
     if (ov) {
       const dottedSrc = ov.rows.filter((r) => r.source.includes(".")).length
-      const srcRes = ov.rows.filter((r) => resolves(r.source)).length
+      const srcRes = ov.rows.filter((r) => resolves(r.source, "overrides")).length
       findings.push({
         // The check's FIRST name was "the dot ... resolves to no symbol", which this probe DISPROVED:
         // the resolver's extractLeaf (pool-worker.ts:879) splits on `.` too, so a dot source DOES bind —
@@ -353,25 +449,27 @@ async function main(): Promise<void> {
       // more than once is what separates "no endpoint" (which this probe first claimed, wrongly) from
       // "an endpoint shared with another class" (the real defect).
       let ambig = 0
+      let exactKey = 0
+      let noKey = 0
       const ambigSample: string[] = []
       for (const r of ov.rows) {
         const src = String(r.source)
-        // Strip the owner qualifier to get the leaf the resolver would use, then look up how many
-        // symbols in THIS file carry that name.
-        const leaf = src.includes("::") ? src.slice(src.lastIndexOf("::") + 2) : src.includes(".") ? src.slice(src.lastIndexOf(".") + 1) : src
-        if (leaf === "") continue
         const fp = (r as any).__file as string | undefined
-        const n = fp === undefined ? 0 : (declCount.get(`${fp}\u0000${leaf}`) ?? 0)
-        if (n > 1) {
-          ambig++
-          if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> leaf "${leaf}" declared ${n}x`)
-        }
+        // THE RESOLVER'S OWN QUESTION: does any key in this file answer to this source string?
+        // The full string first (`Derived::f` is a published qualifiedName), then the leaf. A count
+        // above 1 means the key is ambiguous; 0 means nothing answers and the edge does not resolve.
+        if (fp === undefined) continue
+        const exact = keyCount.get(`${fp}\u0000${src}`) ?? 0
+        if (exact === 1) { exactKey++; continue }
+        const n = keyCountFor(fp, src)
+        if (n === 0) { noKey++; if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> NO KEY in this file`) }
+        else if (n > 1) { ambig++; if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> key declared ${n}x`) }
       }
       findings.push({
-        check: "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
+        check: "overrides source binds to an AMBIGUOUS key in its file (declared >1x, not merely a repeated name)",
         type: "overrides",
         count: ambig,
-        sample: [`${ambig} of ${ov.rows.length} rows have an ambiguous leaf`, ...ambigSample],
+        sample: [`${exactKey} of ${ov.rows.length} sources bind EXACTLY by their full string; ${ambig} ambiguous; ${noKey} resolve to nothing`, ...ambigSample],
       })
     }
   }
@@ -405,13 +503,45 @@ async function main(): Promise<void> {
     }
   }
 
-  // imports / references: external-module targets are expected unresolved; count them as such
+  // SOURCE endpoint, in its own key space. NEXT-WORK §1 asserts "source endpoints are 100% resolved
+  // for every type" — an assertion is not a measurement, so it is measured here and the residual is
+  // printed. The one documented exception is `global`, the lane's file-scope SOURCE sentinel: it is
+  // not a declaration and never should resolve, so it is excluded and the number of such rows is
+  // stated in the check name rather than silently dropped.
   {
-    for (const t of ["imports", "references", "exports"]) {
+    for (const t of [...types.keys()].sort()) {
       const e = types.get(t)
       if (!e) continue
-      const unres = e.rows.filter((r) => !resolves(r.target)).length
-      findings.push({ check: "target unresolved against in-output index", type: t, count: unres, sample: [...new Set(e.rows.filter((r) => !resolves(r.target)).slice(0, 6).map((r) => r.target))] })
+      const sentinel = e.rows.filter((r) => r.source === "global").length
+      const miss = e.rows.filter((r) => !resolves(r.source, t) && r.source !== "global")
+      if (miss.length === 0) continue
+      findings.push({
+        check: `SOURCE unresolved against ITS OWN key space — ${spaceFor(t)} (\`global\` file-scope sentinel excluded: ${sentinel} rows)`,
+        type: t,
+        count: miss.length,
+        sample: [...new Set(miss.slice(0, 40).map((r) => `${r.source} -> ${r.target}`))],
+      })
+    }
+  }
+
+  // EVERY type's unresolved target, in ITS OWN key space, with the space named.
+  //
+  // This loop used to cover imports/references/exports only, so `part_of`'s 13 residual targets were
+  // never printed and two sections of NEXT-WORK (§6 "351/360 = 97.5%", §13 "347/360 = 96.4%") ended
+  // up asserting different numbers for the same measurement with nothing to settle it. A probe that
+  // prints a rate for one type and not another cannot adjudicate. Now every type reports its residual
+  // and the space it measured, so the doc's table is reproducible rather than restated.
+  {
+    for (const t of [...types.keys()].sort()) {
+      const e = types.get(t)
+      if (!e) continue
+      const miss = e.rows.filter((r) => !resolves(r.target, t))
+      findings.push({
+        check: `target unresolved against ITS OWN key space — ${spaceFor(t)}`,
+        type: t,
+        count: miss.length,
+        sample: [...new Set(miss.slice(0, 40).map((r) => `${r.source} -> ${r.target}`))],
+      })
     }
   }
 
@@ -424,6 +554,26 @@ async function main(): Promise<void> {
       parseFailures: failures.length,
       failureSample: failures.slice(0, 10),
       parseMs,
+      // ── PARSE HEALTH — DISCLOSURE, NOT A DEFECT RATE. READ THE LABEL. ─────────────────────────
+      // `parseFailures` above counts only files where the ENGINE threw. It says nothing about the
+      // grammar tree, and this corpus proves the difference: the headline "0 parse failures" sits
+      // beside 172 files whose parse result carries ERROR nodes. That is tree-sitter's documented
+      // error recovery — one ERROR node can be a single unparseable macro region in a 12,000-line
+      // header, and the rest of the file can be exact. So `symbolsFromSyntaxErrorFiles` is NOT a
+      // "degraded output" figure and must never be quoted as one; it states how much of the output
+      // lives in files where a reader should expect the measured (not assumed) coverage to matter.
+      // Measured by the fixture suite and the differential, not by this count.
+      syntaxErrorFiles: recs.filter((r) => r.errorEntries > 0).length,
+      cleanParseFiles: recs.filter((r) => r.errorEntries === 0).length,
+      symbolsFromSyntaxErrorFiles: recs.filter((r) => r.errorEntries > 0).reduce((n, r) => n + r.symbols.length, 0),
+      edgesFromSyntaxErrorFiles: recs.filter((r) => r.errorEntries > 0).reduce((n, r) => n + r.relationships.length, 0),
+      filesAtEngineSyntaxErrorCap: recs.filter((r) => r.errorEntries >= 50).length,
+      engineSyntaxErrorCap: 50,
+      syntaxErrorFilesDetail: recs
+        .filter((r) => r.errorEntries > 0)
+        .sort((a, b) => b.errorEntries - a.errorEntries)
+        .slice(0, 12)
+        .map((r) => ({ path: r.path, errorEntries: r.errorEntries, symbols: r.symbols.length, edges: r.relationships.length })),
     },
     totals: { symbols: totalSymbols, relationships: totalRows, kinds: kindCensus },
     perType,
@@ -441,6 +591,7 @@ async function main(): Promise<void> {
     console.log("\n=== PER TYPE ===")
     for (const [t, v] of Object.entries(perType)) {
       console.log(`${t.padEnd(14)} rows=${String((v as any).rows).padStart(7)} files=${String((v as any).files).padStart(4)} pairs=${String((v as any).distinctPairs).padStart(7)} conf=${JSON.stringify((v as any).confidenceValues)} ev=${JSON.stringify((v as any).evidenceClass)} lineMissing=${(v as any).lineNumberMissing} srcRes=${(v as any).sourceResolved} tgtRes=${(v as any).targetResolved}`)
+      console.log(`${" ".repeat(14)} target key space: ${(v as any).targetResolvedSpace}`)
     }
     console.log("\n=== FINDINGS ===")
     for (const f of findings) {

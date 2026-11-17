@@ -2048,6 +2048,17 @@ relationship rows · 0 parse failures** through the production entry (`ASTEngine
 `engine.ts` itself makes, never `analyze()`). Raw evidence: `validation/cpp-audit/census.json`.
 The audit page: `docs/m65-cpp/C++-ANALYZER-AUDIT.md`.
 
+> **Two footnotes added later, because both header figures moved and one of them was misleading.**
+> (1) The macro-recovery arm (§ the M65 section below) added 315 symbols and 315 rows, so the current
+> commit measures **17,912 symbols · 78,403 rows**; `census.json` has been regenerated and now holds
+> those totals, not the 17,597 above. (2) **"0 parse failures" counts only files where the engine
+> threw** — it is not a statement about the grammar tree. The engine *does* disclose syntax errors
+> (`errors[]`, `engine.ts:1879`), and reading that array shows **172 of 523 files carry ≥1 ERROR node**
+> and 90.3% of symbols live in them. That is tree-sitter error recovery rather than a defect rate, and
+> the correctness evidence is the fixture suite / census / differential — but anyone quoting "0 parse
+> failures" as "clean parses" is quoting something this instrument never measured. Full trace and the
+> corrected `part_of`/`references` readings: `docs/m65-cpp/NEXT-WORK.md` §14.
+
 **The headline is favourable and it is measured, not assumed.** The fabrication classes this lane built
 gates for hold on a corpus it has never run: D1 keyword targets **0 / 64,136 rows** (against an
 independently derived ISO keyword list, not `CPP_KEYWORDS`), D1 keyword symbol names **0 / 17,597**,

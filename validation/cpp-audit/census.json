@@ -12,7 +12,87 @@
     },
     "parseFailures": 0,
     "failureSample": [],
-    "parseMs": 26283
+    "parseMs": 23774,
+    "syntaxErrorFiles": 172,
+    "cleanParseFiles": 351,
+    "symbolsFromSyntaxErrorFiles": 16175,
+    "edgesFromSyntaxErrorFiles": 72798,
+    "filesAtEngineSyntaxErrorCap": 35,
+    "engineSyntaxErrorCap": 50,
+    "syntaxErrorFilesDetail": [
+      {
+        "path": ".cpp-corpus/fmt/include/fmt/core.h",
+        "errorEntries": 53,
+        "symbols": 669,
+        "edges": 1041
+      },
+      {
+        "path": ".cpp-corpus/fmt/include/fmt/format.h",
+        "errorEntries": 53,
+        "symbols": 577,
+        "edges": 1606
+      },
+      {
+        "path": ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc",
+        "errorEntries": 53,
+        "symbols": 1378,
+        "edges": 4862
+      },
+      {
+        "path": ".cpp-corpus/fmt/test/gtest/gmock/gmock.h",
+        "errorEntries": 53,
+        "symbols": 1849,
+        "edges": 3150
+      },
+      {
+        "path": ".cpp-corpus/fmt/test/gtest/gtest/gtest.h",
+        "errorEntries": 53,
+        "symbols": 1858,
+        "edges": 2797
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/include/nlohmann/detail/json_pointer.hpp",
+        "errorEntries": 53,
+        "symbols": 49,
+        "edges": 218
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/include/nlohmann/json.hpp",
+        "errorEntries": 53,
+        "symbols": 379,
+        "edges": 1477
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/single_include/nlohmann/json.hpp",
+        "errorEntries": 53,
+        "symbols": 1795,
+        "edges": 6306
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/tests/abi/include/nlohmann/json_v3_10_5.hpp",
+        "errorEntries": 53,
+        "symbols": 1668,
+        "edges": 6152
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/tests/src/unit-bjdata.cpp",
+        "errorEntries": 53,
+        "symbols": 27,
+        "edges": 2074
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/tests/src/unit-bson.cpp",
+        "errorEntries": 53,
+        "symbols": 23,
+        "edges": 414
+      },
+      {
+        "path": ".cpp-corpus/nlohmann-json/tests/src/unit-cbor.cpp",
+        "errorEntries": 53,
+        "symbols": 23,
+        "edges": 1679
+      }
+    ]
   },
   "totals": {
     "symbols": 17912,
@@ -49,6 +129,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "59374/59374",
       "targetResolved": "54971/59374",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "contains": {
@@ -67,6 +148,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "10972/10975",
       "targetResolved": "10975/10975",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "uses": {
@@ -86,6 +168,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "4580/4580",
       "targetResolved": "4351/4580",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "imports": {
@@ -104,6 +187,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "1968/1968",
       "targetResolved": "205/1968",
+      "targetResolvedSpace": "in-corpus symbol/namespace names (EXTERNAL by design — not a defect)",
       "sub1WithoutReasonCode": 0
     },
     "extends": {
@@ -122,6 +206,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "478/478",
       "targetResolved": "435/478",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "part_of": {
@@ -139,7 +224,8 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "360/360",
-      "targetResolved": "63/360",
+      "targetResolved": "347/360",
+      "targetResolvedSpace": "file stems present in the corpus",
       "sub1WithoutReasonCode": 0
     },
     "references": {
@@ -157,7 +243,8 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "206/206",
-      "targetResolved": "76/206",
+      "targetResolved": "205/206",
+      "targetResolvedSpace": "namespace names, or the root of a `::` path",
       "sub1WithoutReasonCode": 0
     },
     "instantiates": {
@@ -176,6 +263,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "182/182",
       "targetResolved": "167/182",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "overrides": {
@@ -196,6 +284,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "134/134",
       "targetResolved": "134/134",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "exports": {
@@ -214,6 +303,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "112/112",
       "targetResolved": "112/112",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     },
     "implements": {
@@ -232,6 +322,7 @@
       "emptyEndpoint": 0,
       "sourceResolved": "34/34",
       "targetResolved": "34/34",
+      "targetResolvedSpace": "symbol names + qualifiedName, unique-bare-name fallback",
       "sub1WithoutReasonCode": 0
     }
   },
@@ -307,15 +398,15 @@
       ]
     },
     {
-      "check": "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
+      "check": "overrides source binds to an AMBIGUOUS key in its file (declared >1x, not merely a repeated name)",
       "type": "overrides",
-      "count": 134,
+      "count": 14,
       "sample": [
-        "134 of 134 rows have an ambiguous leaf",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::unsupported -> leaf \"unsupported\" declared 3x",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_year -> leaf \"on_year\" declared 4x",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_short_year -> leaf \"on_short_year\" declared 4x",
-        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_offset_year -> leaf \"on_offset_year\" declared 4x"
+        "120 of 134 sources bind EXACTLY by their full string; 14 ambiguous; 0 resolve to nothing",
+        ".cpp-corpus/fmt/include/fmt/core.h: iterator_buffer::grow -> key declared 4x",
+        ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc: OsStackTraceGetter::CurrentStackTrace -> key declared 2x",
+        ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc: FuchsiaDeathTest::GetErrorLogs -> key declared 2x",
+        ".cpp-corpus/fmt/test/gtest/gmock/gmock.h: ActionResultHolder::PrintAsActionResult -> key declared 2x"
       ]
     },
     {
@@ -333,36 +424,239 @@
       "sample": []
     },
     {
-      "check": "target unresolved against in-output index",
-      "type": "imports",
-      "count": 1763,
+      "check": "SOURCE unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback (`global` file-scope sentinel excluded: 2181 rows)",
+      "type": "contains",
+      "count": 3,
       "sample": [
-        "functional",
-        "memory",
-        "vector",
-        "algorithm",
-        "chrono",
-        "cmath"
+        "AssertHelper -> constructor",
+        "AssertHelper -> ~AssertHelper",
+        "AssertHelper -> operator="
       ]
     },
     {
-      "check": "target unresolved against in-output index",
-      "type": "references",
-      "count": 130,
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "calls",
+      "count": 4403,
       "sample": [
-        "std::get",
-        "fmt::runtime",
-        "testing::Contains",
-        "fmt::string_view",
-        "fmt::detail::buffer",
-        "testing::_"
+        "push -> unique_ptr",
+        "emplace_arg -> emplace_back",
+        "emplace_arg -> release",
+        "lossless_integral_conversion -> from",
+        "lossless_integral_conversion -> min",
+        "safe_float_conversion -> lowest",
+        "safe_float_conversion -> max",
+        "safe_duration_cast -> min",
+        "safe_duration_cast -> To",
+        "safe_duration_cast -> quiet_NaN",
+        "safe_duration_cast -> isinf",
+        "safe_duration_cast -> lowest",
+        "get_classic_locale -> classic",
+        "write_codecvt -> use_facet",
+        "write_codecvt -> mbstate_t",
+        "write_codecvt -> format_error",
+        "write_encoded_tm_str -> format_error",
+        "do_write -> basic_ostream",
+        "do_write -> imbue",
+        "do_write -> use_facet",
+        "do_write -> Char",
+        "do_write -> format_error",
+        "fmt_duration_cast -> format_error",
+        "fmt_duration_cast -> duration_cast",
+        "to_time_t -> time_since_epoch",
+        "run -> localtime_r",
+        "localtime -> format_error",
+        "localtime -> to_sys",
+        "localtime -> current_zone",
+        "gmtime -> format_error",
+        "write_digit2_separated -> memcpy",
+        "write_digit2_separated -> reverse_copy",
+        "parse_chrono_format -> format_error"
       ]
     },
     {
-      "check": "target unresolved against in-output index",
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "contains",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
       "type": "exports",
       "count": 0,
       "sample": []
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "extends",
+      "count": 43,
+      "sample": [
+        "Factor -> ratio_divide",
+        "is_same_arithmetic_type -> integral_constant",
+        "is_compiled_string -> is_base_of",
+        "is_compile_string -> is_base_of",
+        "is_string -> is_class",
+        "type_constant -> integral_constant",
+        "iterator_buffer -> Traits",
+        "appender -> back_insert_iterator",
+        "format_facet -> facet",
+        "formatbuf -> Streambuf",
+        "make_unsigned_or_bool -> make_unsigned",
+        "is_range_ -> integral_constant",
+        "conjunction -> P",
+        "range_format_kind_ -> integral_constant",
+        "utf8_system_category -> error_category",
+        "wchar_codecvt -> codecvt",
+        "tuple_size -> integral_constant",
+        "mock_streambuf -> streambuf",
+        "assertion_failure -> logic_error",
+        "is_basic_json_context -> integral_constant",
+        "has_key_compare -> integral_constant",
+        "conjunction -> B",
+        "conjunction -> conditional",
+        "negation -> integral_constant",
+        "conjunction -> B1",
+        "byte_container_with_subtype -> BinaryType",
+        "ordered_map -> vector",
+        "bad_allocator -> allocator"
+      ]
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "implements",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — in-corpus symbol/namespace names (EXTERNAL by design — not a defect)",
+      "type": "imports",
+      "count": 1763,
+      "sample": [
+        "global -> functional",
+        "global -> memory",
+        "global -> vector",
+        "global -> algorithm",
+        "global -> chrono",
+        "global -> cmath",
+        "global -> cstring",
+        "global -> ctime",
+        "global -> type_traits",
+        "global -> winapifamily.h",
+        "global -> cstddef",
+        "global -> cstdio",
+        "global -> limits",
+        "global -> experimental/string_view",
+        "global -> cerrno",
+        "global -> climits",
+        "global -> io.h",
+        "global -> cstdint",
+        "global -> initializer_list",
+        "global -> stdexcept",
+        "global -> bit",
+        "global -> intrin.h",
+        "global -> xlocale.h",
+        "global -> fcntl.h",
+        "global -> fstream",
+        "global -> ext/stdio_filebuf.h",
+        "global -> ext/stdio_sync_filebuf.h"
+      ]
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "instantiates",
+      "count": 15,
+      "sample": [
+        "TEST(args_test, move_constructor) -> store_type",
+        "AnsiToUtf16 -> WCHAR",
+        "constructor -> stringstream",
+        "PostFlagParsingInit -> GTEST_CUSTOM_TEST_EVENT_LISTENER_",
+        "os_stack_trace_getter -> GTEST_OS_STACK_TRACE_GETTER_",
+        "constructor -> CRITICAL_SECTION",
+        "ThreadSafeLazyInit -> CRITICAL_SECTION",
+        "SetInjectableArgvs -> vector",
+        "VariadicMatcher -> CombiningMatcher",
+        "ParseFile -> ifstream",
+        "ParseFlags -> vector",
+        "global -> ContextState",
+        "global -> DebugOutputWindowReporter"
+      ]
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "overrides",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — file stems present in the corpus",
+      "type": "part_of",
+      "count": 13,
+      "sample": [
+        "global -> failure_signal_handler",
+        "global -> stacktrace",
+        "global -> symbolize",
+        "global -> str_cat",
+        "global -> any",
+        "global -> optional",
+        "global -> string_view",
+        "global -> variant",
+        "global -> FuzzerInterface",
+        "global -> FuzzerFlags"
+      ]
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — namespace names, or the root of a `::` path",
+      "type": "references",
+      "count": 1,
+      "sample": [
+        "global -> ::std::ostream"
+      ]
+    },
+    {
+      "check": "target unresolved against ITS OWN key space — symbol names + qualifiedName, unique-bare-name fallback",
+      "type": "uses",
+      "count": 229,
+      "sample": [
+        "format_utc_offset_impl -> tm_gmtoff",
+        "format_utc_offset_impl -> tm_isdst",
+        "format_tz_name_impl -> tm_zone",
+        "format_tm -> cb",
+        "operator== -> hi_",
+        "operator> -> hi_",
+        "operator| -> hi_",
+        "operator& -> hi_",
+        "operator~ -> hi_",
+        "operator* -> hi_",
+        "operator- -> hi_",
+        "operator+= -> hi_",
+        "operator&= -> hi_",
+        "get_file -> FileMemberPtr",
+        "global -> module",
+        "size -> st_size",
+        "getpagesize -> dwPageSize",
+        "equal -> tm_isdst",
+        "TEST(format_test, exception_from_lib) -> format_error",
+        "TEST(format_test, unmatched_braces) -> format_error",
+        "TEST(format_test, arg_errors) -> format_error",
+        "TEST(format_test, many_args) -> format_error",
+        "TEST(format_test, named_arg) -> format_error",
+        "TEST(format_test, auto_arg_index) -> format_error",
+        "TEST(format_test, fill) -> format_error",
+        "TEST(format_test, plus_sign) -> format_error",
+        "TEST(format_test, minus_sign) -> format_error",
+        "TEST(format_test, space_sign) -> format_error",
+        "TEST(format_test, hash_flag) -> format_error",
+        "TEST(format_test, zero_flag) -> format_error",
+        "TEST(format_test, width) -> format_error",
+        "TEST(format_test, runtime_width) -> format_error",
+        "TEST(format_test, precision) -> format_error",
+        "TEST(format_test, runtime_precision) -> format_error",
+        "TEST(format_test, format_bool) -> format_error",
+        "check_unknown_types -> format_error",
+        "TEST(format_test, format_int) -> format_error",
+        "TEST(format_test, format_cstring) -> format_error",
+        "TEST(format_test, format_custom) -> format_error",
+        "TEST(format_test, format_examples) -> format_error"
+      ]
     }
   ]
 }

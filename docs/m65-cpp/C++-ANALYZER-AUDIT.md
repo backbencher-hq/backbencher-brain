@@ -5,6 +5,19 @@
 **Corpus:** `.cpp-corpus/fmt` (fmtlib/fmt `10.2.1`) + `.cpp-corpus/nlohmann-json` (nlohmann/json `v3.11.3`)
 **Measured:** 523 C++ files · 17,597 symbols · 78,093 relationship rows · 0 parse failures
 
+> ### ⚠ THIS PAGE IS A PRE-M65 SNAPSHOT. AND "0 parse failures" DOES NOT MEAN "CLEAN PARSES".
+>
+> Both header numbers changed with the macro-recovery arm: the current commit measures **17,912
+> symbols · 78,403 rows**. `census.json` has been regenerated and now holds those totals, so the
+> figures in this page are the snapshot it was written from, not what the file says today.
+>
+> "0 parse failures" counts only files where the **engine threw**. Measured now: **172 of 523 files
+> carry ≥1 grammar ERROR node**, and 90.3% of symbols live in them. That is tree-sitter's documented
+> error recovery, not a defect count — but it means every coverage figure here is a floor over a
+> population where a third of the files exercised it. See `NEXT-WORK.md` §14.3–§14.4 for the trace
+> (one ERROR cascade from `GTEST_IMPL_CMP_HELPER_(NE, !=)` swallows an entire class declaration) and
+> §14 for the correction to this page's `part_of` and `references` readings.
+
 This page exists because the lane's own numbers were measured on a corpus that is **not on this
 machine** — `docs/analyzers/cpp.md` states this itself ("the five corpora it names … are all absent
 from `<corpus-root>`"), and every gate that produced them reports `CANNOT RUN HERE`. So nothing
