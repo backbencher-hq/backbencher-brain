@@ -1351,7 +1351,7 @@
     }
   },
   "wholePopulationArms": {
-    "status": "D2 census MEASURED (7435/7435 files, 31 repos, 1282777 rows); D3 BOTH arms MEASURED with a closure-exact classification (no-index in .d3.noIndexArm; --index in .d3.indexedArm is a measured STRUCTURAL NON-ARM — production builds no cpp project index, so the A->B delta is 0 in every column).",
+    "status": "D2 census MEASURED (7435/7435 files, 31 repos, 1282777 rows); D3 BOTH arms MEASURED with a closure-exact classification (no-index in .d3.noIndexArm; --index in .d3.indexedArm: SUPERSEDED, see that field. Both halves of the index are now wired (PROJECT_INDEX_EXTENSIONS carries the cpp spellings; specByLang.cpp = CPP_DECLARATION_SPEC), so the arm BUILDS 31 repo indexes. The index ALONE still moves no column (it is an instrument); the movement comes from CONSUMPTION behind BB_CPP_INDEX_CONSUME=1 — measured +17,955 resolved, -22,656 ambiguous, +4,701 honest NULLs. A 2026-11-16 re-run on the 2-repo corpus did NOT reproduce that delta (0 movement), which is recorded as an instrument condition, not a refutation: see NEXT-WORK §14.15).",
     "census": {
       "command": "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json",
       "artifact": "validation/m14/fixtures/cpp/measurements/cpp-emission-census-whole.json",
@@ -2586,6 +2586,12 @@
       "why": "The wall claimed cpp member symbols publish no distinct qualifiedName. Measured through the production entry over the 2-repo corpus: 6,913 distinct qualifiedName strings; methods 4,222/4,222, constructors 912/912, properties 1,677/1,677. The real residual is the edge TARGET contract (leaf; qualified spelling in metadata.qualified), which the qualified-name join cannot use unless the target is qualified. Rows: 2,771 (the wall's own count on the 31-repo population, unchanged).",
       "previousDisposition": "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)",
       "nextOwner": "Lead — changing a target spelling is a cross-consumer vocabulary contract"
+    },
+    {
+      "date": "2026-11-16",
+      "field": "wholePopulationArms.status",
+      "change": "Removed the stale clause 'production builds no cpp project index, so the A->B delta is 0 in every column'; the field now agrees with wholePopulationArms.d3.indexedArm, which already recorded the supersession.",
+      "why": "Self-contradiction inside one object: status denied the production cpp index while d3.indexedArm recorded that both halves are wired and that CONSUMPTION moves +17,955 resolved / -22,656 ambiguous. Verified against src/ast/parallel-indexer.ts: PROJECT_INDEX_EXTENSIONS carries .cpp/.cc/.cxx/.c++/.hpp/.hxx/.ipp/.inl/.cu -> cpp and specByLang.cpp = CPP_DECLARATION_SPEC. A 2-repo re-run reproduced NO delta, recorded in NEXT-WORK §14.15 as an instrument condition (the analyzer consumes only a complete===true index, fail-closed)."
     }
   ]
 }

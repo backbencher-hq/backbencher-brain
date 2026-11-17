@@ -1050,3 +1050,31 @@ shapes.
 **Decision recorded rather than assumed:** extending receiver typing is *not* a cheap win, and the
 0.3% base rate is the number to beat. The next campaign step is a shape census of the un-typed
 receivers (`x.m()` where `x`'s declaration exists in the index) to price inference before writing it.
+
+### 14.15 · The consumption arm is real (+17,955) and our 2-repo re-run did not reproduce it — both facts recorded
+
+Found while checking the receiver census: the spec table contradicted ITSELF. `wholePopulationArms.status`
+still said *"production builds no cpp project index, so the A→B delta is 0 in every column"*, while the
+same object's `d3.indexedArm` already recorded the supersession — both halves wired, 31 repo indexes
+built, and the movement coming from **consumption** (`BB_CPP_INDEX_CONSUME=1`), measured on the
+whole population as **+17,955 resolved, −22,656 ambiguous, +4,701 honest NULLs**. Fixed the `status`
+clause to agree (errata entry appended).
+
+**And the honest counter-observation:** re-running the incoming gate on the 2-repo corpus with
+`BB_CPP_INDEX_CONSUME=1 --index` produced **no delta at all** (resolved 51,743 before and after;
+owner metadata on 0 rows). That is not a refutation of the whole-population figure — it is an
+**instrument condition**, and the mechanism is known: the analyzer consumes an index only when
+`candidate.complete === true` (fail-closed), and a locally built index carries `complete: false`
+unless the caller states the walk was whole (`indexScope`, `parallel-indexer.ts:1535-1544`). The
+whole-population arm ran over the full 7,435-file walk, which is where `complete` can be true; a
+2-repo instrument run builds its own index and, unless it sets that flag, measures a dead channel.
+
+**Standing rule this adds to the lane's instrument discipline:** an index arm that reports "0 movement"
+must print whether the analyzer SAW a usable index (`complete === true`), or it cannot distinguish
+"the channel is dead" from "the channel is unused" — the same class as every other proxy this lane has
+caught. Until an instrument prints that, its zero is not evidence.
+
+**Next step, measured and bounded:** either make the 2-repo arm declare a complete walk and re-measure
+(the cheap confirmation), or ship `BB_CPP_INDEX_CONSUME` by default behind a kill-switch and price it
+with the whole-population number as the expected effect. Both are concrete; the first is the
+prerequisite for trusting the second.
