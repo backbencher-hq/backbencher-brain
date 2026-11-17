@@ -1020,3 +1020,33 @@ retained) so the next agent does not spend a cycle re-deriving a publication tha
 **Standing decision request for the Lead:** adopt qualified targets for `calls`/`uses` where the
 qualified key is unique (the analyzer already computes it), or keep leaves and rule W4 as a documented
 limitation. The lane should not drift into this by accident.
+
+### 14.14 · Receiver typing measured end-to-end — the wire exists, the yield is 0.3%
+
+The wall ledger's largest instruments gap is receiver typing (W1-C 370,246 + W11 83,169 rows). It was
+reported as "the analyzer will not invent one", so this round measured what the existing channel
+actually delivers, through the SHIPPED path rather than by reading code:
+
+1. **Production does build a cpp project index.** `PROJECT_INDEX_EXTENSIONS` carries every cpp
+   extension and `specByLang.cpp = CPP_DECLARATION_SPEC` (`src/ast/parallel-indexer.ts:1746,1845`).
+   The spec-table note that "production builds no cpp project index" is **STALE**.
+2. **The analyzer refuses an index that is not `complete`** — fail-closed by design
+   (`indexUsable = candidate.complete === true`). A locally built index reports `complete: false`
+   unless the caller states the walk was whole (`indexScope`), so an instrument that builds its own
+   index and forgets that fact measures a DEAD channel and reports it as an absent one.
+3. **With a complete index the channel does fire** — measured on `fmt/format.h` + `fmt/chrono.h`
+   (1,720 `calls` rows): `metadata.declaredInProject` on **356** rows, `metadata.owner` on **5**.
+   The five are genuine receiver facts (`format -> format`, owner `formatter`; `put -> do_put`, owner
+   `format_facet`; `compile_string_to_view -> to_int_type`, owner `char_traits`).
+
+**So the receiver channel's current yield is 0.3% of call rows, not the tens of thousands the wall
+needs.** The three implemented shapes (constructor temp, typed local, implicit-this) cover only
+receivers whose type is written in the SAME function or is the enclosing class. W1-C's 267,083
+"member-leaf-many-owners" rows are the opposite case — a member call through a receiver whose type is
+nowhere in the function — and closing those requires real type inference (member-declared types,
+parameter types, return types), which is a distinct measured campaign, not an extension of the three
+shapes.
+
+**Decision recorded rather than assumed:** extending receiver typing is *not* a cheap win, and the
+0.3% base rate is the number to beat. The next campaign step is a shape census of the un-typed
+receivers (`x.m()` where `x`'s declaration exists in the index) to price inference before writing it.
