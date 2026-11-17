@@ -418,3 +418,39 @@ repository-owner decision and was not taken here.
 **Verdict: ACCEPT WITH LIMITATIONS.** 93/93 fixtures, both compiler
 oracles green, typecheck clean, M12 unchanged, zero regex. The
 limitations above are documented boundaries, not open defects.
+
+
+---
+
+## 2026-11-17 review branch — semantic hardening, evidence checkpoint
+
+This is a **new draft-PR checkpoint** (PR #1, branch
+`audit/java-semantic-proof-20261116`), not a replacement for the
+2026-11-16 11,152-file incoming-gate measurements above.
+
+### Measured, GitHub-hosted Java verification (run 44019069547)
+
+| Check | Verified outcome |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `bun run script/m14/run-fixtures.ts --lang java` | **98 pass / 0 fail** |
+| Red-control: same 98 fixtures on original analyzer `29a579243` | **93 pass / 5 fail** |
+| `JavaMethodGenericOverrideOracle` | **12/12 javac facts** |
+| `JavaAnalyzerRemediationOracle` | **13/13 javac facts** |
+| `JavaAnalyzerSemanticOracle` | **10/10 javac facts** |
+
+GitHub Actions evidence: https://github.com/backbencher-hq/backbencher-brain/actions/runs/44019069547
+The red-control run uses the identical fixture set and original production
+analyzer, which establishes that the five new regressions fail before the
+fixes. Its failure is expected and asserted by CI.
+
+**Still unmeasured on the review branch:** complete corpus
+`BB_CORPUS_ROOT` incoming gate, full M12 Java differential,
+cross-file owner/member binding in SQLite, and full `npm run verify`.
+The above small-fixture and compiler-oracle passes do not certify the
+whole-lane relationship-resolver or replace its recorded corpus FAIL.
+
+New current behavioral details and accepted limitations are in
+[`JAVA-SEMANTIC-PROOF-2026-11-16.md`](JAVA-SEMANTIC-PROOF-2026-11-16.md)
+and `docs/analyzers/java.md`. Do **not** label the Java analyzer
+production-complete from these green tests alone.
