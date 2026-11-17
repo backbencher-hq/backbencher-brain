@@ -21,6 +21,7 @@ set.
 | 3 | a `#private` field's owner was **never published** | lost owner (safe) | FIXED |
 | 4 | a named `function_expression` did not rebind the `uses` source | wrong source | FIXED |
 | 5 | `importedBinding` was **never populated** on `extends` / `mixes_in` | missing claim | FIXED |
+| 6 | `decorates` carried no `importedBinding` (2,570 rows, 0 claimed) | missing claim | FIXED |
 
 ---
 
@@ -155,7 +156,7 @@ adding one is a store-side, all-lane decision of the same class as the name-rank
 "0 resolved" is still true at the store, and the honest statement of this fix is: **the claim is now
 present and checkable; resolution is still a store question.**
 
-## Finding 6 (OPEN, measured) — `decorates` carries no `importedBinding`, on 2,570 rows in one corpus
+## Finding 6 — `decorates` carried no `importedBinding` on 2,570 rows (FIXED)
 
 Same family as finding 5, much larger population, and it needs node plumbing rather than a one-line
 move, so it is recorded rather than rushed.
@@ -174,12 +175,30 @@ for the sampled rows (`@service`, `@action`, `@computed` are resolved through th
 lines). So the rows carry `{ isDecorator, decoratorLine }` and no claim, exactly the shape finding 5
 had on `extends`/`mixes_in`.
 
-**Why it is not a one-line fix.** `extractDecoratorRelationships` iterates `symbol.decorators`, which is
-an array of NAME STRINGS recorded by the symbol walk — there is no decorator NODE at that site, and
-`importedBindingFor` needs a node to resolve the position (`node.startIndex`). The repair is to carry
-the decorator's node through the symbol metadata (or add a name-keyed import lookup that the decorator
-pass can use), then attach `{ importedBinding }`. That is a plumbing change with a fixture and an arm,
-not an insertion.
+**Fix:** the decorator's own `startIndex` is now recorded beside its name and line
+(`decoratorOffsets` in the symbol metadata, from `collectOwnDecoratorDetails` through
+`collectClassDecoratorDetails`), and `importedBindingFor` gained a position form
+(`importedBindingAt(index, name)`) so the decorator pass — which holds NAMES, not nodes — can ask the
+same question the node-based callers ask. The `decorates` row now carries the same claim `extends` and
+`mixes_in` carry.
+
+**Result, measured on nomad:** **2,554 of 2,570** `decorates` rows now carry `importedBinding` (was
+**0**). The 16 that do not are decorators that are not imports — locally declared or global — which is
+the correct answer.
+
+**And the claim is now measured by the committed instrument**, so the number is reproducible rather
+than quoted: `javascript-vocabulary-census.ts` prints rows carrying `metadata.importedBinding` per
+label. On nomad:
+
+| label | carrying the claim | of rows |
+|---|---|---|
+| `mixes_in` | **70** | 70 |
+| `extends` | **482** | 483 |
+| `decorates` | **2,554** | 2,570 |
+| `instantiates` | 67 | 127 |
+| `references` | 13 | 39 |
+| `calls` | 6,793 | 27,434 |
+| `uses` | 1,297 | 20,811 |
 
 **Why it matters:** `decorates` is the lane's fourth-largest label by population (2,570 on nomad alone,
 1,299 vault, 960 consul), and in the inbound gate its unresolved rows are exactly these names —

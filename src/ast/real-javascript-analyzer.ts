@@ -929,6 +929,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // reference edge can name the line the decorator is written
                 // on (the M59 #860 contract the typescript twin already has).
                 ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
+                ...(dec.offsets.length > 0 ? { decoratorOffsets: dec.offsets } : {}),
               },
             })
             scopeStack.push({ name, kind: JSScopeKind.Class })
@@ -1249,6 +1250,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // M49 #868: the decorator's own line, parallel to
                 // `decorators` (same lockstep as the typescript twin).
                 ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
+                ...(dec.offsets.length > 0 ? { decoratorOffsets: dec.offsets } : {}),
               },
             }
             }
@@ -1320,6 +1322,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: {
                 isPrivate: prop.type === "private_property_identifier",
                 ...(dec.lines.length > 0 ? { decoratorLines: dec.lines } : {}),
+                ...(dec.offsets.length > 0 ? { decoratorOffsets: dec.offsets } : {}),
               },
             })
           }
@@ -3173,9 +3176,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * written on. A name already recorded keeps its FIRST position, so the two
    * lists stay in lockstep by construction.
    */
-  private collectOwnDecoratorDetails(node: Node): { names: string[]; lines: Array<number | null> } {
+  private collectOwnDecoratorDetails(node: Node): { names: string[]; lines: Array<number | null>; offsets: number[] } {
     const names: string[] = []
     const lines: Array<number | null> = []
+    // THE DECORATOR'S OWN OFFSET, because a decorator's name is usually an IMPORT and the only way
+    // to claim that is to resolve the binding at the decorator's position. Measured before this was
+    // carried: 2,570 `decorates` rows on nomad, 0 carrying `importedBinding`, with imported Ember
+    // decorators (`service`, `action`, `computed`, `classic`) as every top target.
+    const offsets: number[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type !== "decorator") continue
@@ -3183,8 +3191,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (name.length === 0 || names.includes(name)) continue
       names.push(name)
       lines.push(c.startPosition.row + 1)
+      offsets.push(c.startIndex)
     }
-    return { names, lines }
+    return { names, lines, offsets }
   }
 
   /**
@@ -3239,20 +3248,22 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * and no reference edge at all, while the typescript twin's
    * `collectDecoratorsForClass` already checks the export_statement.
    */
-  private collectClassDecoratorDetails(node: Node): { names: string[]; lines: Array<number | null> } {
+  private collectClassDecoratorDetails(node: Node): { names: string[]; lines: Array<number | null>; offsets: number[] } {
     const own = this.collectOwnDecoratorDetails(node)
     const wrapping = node.parent?.type === "export_statement"
       ? this.collectOwnDecoratorDetails(node.parent)
-      : { names: [], lines: [] as Array<number | null> }
+      : { names: [], lines: [] as Array<number | null>, offsets: [] as number[] }
     if (wrapping.names.length === 0) return own
     const names = [...own.names]
     const lines = [...own.lines]
+    const offsets = [...own.offsets]
     for (let i = 0; i < wrapping.names.length; i++) {
       if (names.includes(wrapping.names[i])) continue
       names.push(wrapping.names[i])
       lines.push(wrapping.lines[i])
+      offsets.push(wrapping.offsets[i])
     }
-    return { names, lines }
+    return { names, lines, offsets }
   }
 
   /**
@@ -3270,6 +3281,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const symbol of symbols) {
       if (!symbol.decorators || symbol.decorators.length === 0) continue
       const lines = symbol.metadata?.decoratorLines as Array<number | null> | undefined
+      const offsets = symbol.metadata?.decoratorOffsets as number[] | undefined
       for (let i = 0; i < symbol.decorators.length; i++) {
         const decorator = symbol.decorators[i]
         const line = lines?.[i]
@@ -3289,6 +3301,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             isDecorator: true,
             decoratorLine: typeof line === "number" ? line : null,
+            // THE IMPORT CLAIM, the same one `extends`/`mixes_in` carry since finding 5. A decorator's
+            // name is usually an IMPORT (`@service`, `@action`, `@computed` in any Ember app), and
+            // without this the row is a bare name indistinguishable from a fabricated one.
+            ...(() => {
+              const offset = offsets?.[i]
+              if (typeof offset !== "number") return {}
+              const imported = this.importedBindingAt(offset, decorator)
+              return imported ? { importedBinding: imported } : {}
+            })(),
           },
         })
       }
@@ -4822,11 +4843,21 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   · re-export rows never reach here (never-claim (d): different surface).
    */
   private importedBindingFor(node: Node | null | undefined, name: string): { specifier: string; binding: string } | null {
+    return node ? this.importedBindingAt(node.startIndex, name) : null
+  }
+
+  /**
+   * THE POSITION FORM of the same question, for a pass that holds an OFFSET rather than a node.
+   * `extractDecoratorRelationships` iterates `symbol.decorators`, which are NAME STRINGS recorded by
+   * the symbol walk — there is no decorator node at that site — so a decorator's import claim can
+   * only be resolved from the decorator's recorded offset. Same model, same scope rule, same answer.
+   */
+  private importedBindingAt(index: number, name: string): { specifier: string; binding: string } | null {
     const model = this.bindingModel
-    if (!model || !node || !name) return null
+    if (!model || !name) return null
     const specifier = model.moduleBindingSpecs.get(name)
     if (specifier === undefined) return null
-    if (this.resolveBindingKind(model, node.startIndex, name) !== "published") return null
+    if (this.resolveBindingKind(model, index, name) !== "published") return null
     return { specifier, binding: name }
   }
 

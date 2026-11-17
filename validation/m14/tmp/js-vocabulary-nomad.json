@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-13T21:45:53.035Z",
+  "at": "2026-11-17T05:27:07.158Z",
   "repo": "/home/ishaq2321/bb_tests/repositories/nomad",
   "trackedFiles": 6061,
   "jsFiles": 967,
@@ -232,5 +232,14 @@
     ]
   },
   "partOfRows": 0,
+  "withImportClaim": {
+    "uses": 1297,
+    "calls": 6793,
+    "extends": 482,
+    "decorates": 2554,
+    "instantiates": 67,
+    "references": 13,
+    "mixes_in": 70
+  },
   "note": "Whole-population counts for the labels the lane doc reported from a cap-50 triage. The JSX and decorator denominators come from the PARSE TREE (jsx_element / jsx_self_closing_element / decorator nodes), not from a text pattern. mixes_in is split by whether its target is a name the SAME FILE declares, which separates a store-bindable claim from a name no per-file analyzer could bind."
 }

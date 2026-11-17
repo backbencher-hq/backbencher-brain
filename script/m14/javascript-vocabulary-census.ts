@@ -126,6 +126,7 @@ const decoratorFiles = decoratorFileSet.size
 // ── PASS 2: the emitted rows, from the analyzer alone ──────────────────────────────────────────
 const mixesInTargets: Array<{ file: string; target: string; declaredHere: boolean }> = []
 let partOfRows = 0
+const withImportClaim: Record<string, number> = {}
 for (const rel of jsFiles) {
   let src: string
   try {
@@ -145,6 +146,7 @@ for (const rel of jsFiles) {
     if (t === "") continue
     counts[t] = (counts[t] ?? 0) + 1
     if (t === "part_of") partOfRows++
+    if ((r.metadata as any)?.importedBinding) withImportClaim[t] = (withImportClaim[t] ?? 0) + 1
     if (t === "mixes_in") {
       const target = String(r.target ?? "")
       mixesInTargets.push({ file: rel, target, declaredHere: declared.has(target) })
@@ -172,6 +174,9 @@ if (mixesInTargets.length > 0) {
   for (const m of sample) console.log(`      ${m.file}: ${m.target}  declaredHere=${m.declaredHere}`)
 }
 console.log(`\n  part_of rows on this corpus: ${partOfRows}`)
+console.log(`\n  rows carrying metadata.importedBinding, by label (the claim the store-side` +
+  ` arbiter verifies):`)
+for (const l of ALL_LABELS) if (withImportClaim[l]) console.log(`    ${l.padEnd(14)} ${String(withImportClaim[l]).padStart(7)} of ${counts[l]}`)
 
 if (JSON_OUT) {
   mkdirSync(path.dirname(JSON_OUT), { recursive: true })
@@ -193,6 +198,7 @@ if (JSON_OUT) {
           sample: mixesInTargets.slice(0, 40),
         },
         partOfRows,
+        withImportClaim,
         note:
           "Whole-population counts for the labels the lane doc reported from a cap-50 triage. The JSX and decorator denominators come from the PARSE TREE (jsx_element / jsx_self_closing_element / decorator nodes), not from a text pattern. mixes_in is split by whether its target is a name the SAME FILE declares, which separates a store-bindable claim from a name no per-file analyzer could bind.",
       },
