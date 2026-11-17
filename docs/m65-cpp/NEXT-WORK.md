@@ -20,6 +20,7 @@
 > | `imports` target resolved | 205 / 1,968 = 10.4% — **external by design, must not be "fixed"** |
 > | source endpoints | 100% for 10 of 11 types; `contains` **10,972 / 10,975** — §14.3 traces the 3 |
 > | parse health | **172 / 523 files carry ≥1 grammar ERROR node**; 90.3% of symbols live in them — a disclosure, not a defect rate (§14.4) |
+> | population | these 523 files **include `.h`**; the M14 gate's own population admits 9 of the 11 cpp spellings and drops `.h`/`.hh`, which are **43.3% of the symbols** (§14.8) |
 >
 > **Evidence:** `validation/cpp-audit/census.json` — regenerated for this round, and it now carries
 > the **post-M65** totals (17,912 / 78,403). So the "17,597 symbols / 78,088 edges" figures quoted in
@@ -136,7 +137,7 @@ grammar-absence evidence and a falsifier).
 | # | work | size | payoff | risk |
 |---|---|---|---|---|
 | **1** | **Macro recovery for `#define` inside ERROR spans** — mint `Macro`/`Constant` from the directive line when the grammar produced no `preproc_*` node | ~1 new arm + fixture | **+9,004 resolved `calls` targets** (67% of the gap); `CHECK` 6,734 alone | low — bounded scan, and the analyzer already has the C-lane precedent |
-| 2 | `.h`-by-content population in the M14 gate discovery (`incoming-gate.ts:314`) — 3,095 cpp-routed headers, 87,181 `#define`s sit outside the measured population | one-word/set change, **master-owned** | the lane's own largest residual (83% of `calls`) | touches shared gate; needs Lead |
+| 2 | `.h`-by-content population in the M14 gate discovery (`incoming-gate.ts:314`) — 3,095 cpp-routed headers, 87,181 `#define`s sit outside the measured population. **§14.8 measures what that costs: on this corpus the excluded `.h` files are 39/523 files but 43.3% of SYMBOLS, 20.0% of edges and 48.5% of `#define`s** — including fmt's public API headers | one-word/set change, **master-owned** | the lane's own largest residual (83% of `calls`), and roughly half the graph is unmeasured | touches shared gate; needs Lead |
 | ~~3~~ | ~~`part_of` target = file STEM vs declared module name (17.5% resolve)~~ — **WITHDRAWN, §6.** The 17.5% measured a FILE relation against SYMBOLS. Measured in its own key space it is **96.4%** and the residual is headers outside the checkout. There is no work here. | — | — | — |
 | 4 | `imports` 10.4% is **correct by design** (external module names) — document, do not "fix" | doc only | prevents a wrong fix | none |
 | 5 | Grammar fork: the 544 lost macros are a symptom of ERROR recovery on large single-header libraries; a newer fork would reduce it | upstream | structural | high — byte-pinned fork, 22 fixtures depend on it |
@@ -799,3 +800,41 @@ to be checked:
 multiplicity that the note describes — two `<string>` lines ⇒ **two** `result.imports` entries — cannot
 be pinned by any fixture assertion. The graph-side de-dupe is now pinned; the array-side multiplicity
 is not, and cannot be without a runner change.
+
+### 14.8 · The population the lane measures: excluding `.h` excludes 43% of the graph
+
+Work item #2 has been stated as a *file count* ("3,095 cpp-routed headers outside the measured
+population"). Measured by extension on this corpus, the cost is in the graph, not in the file count:
+
+| ext | files | symbols | edges | `#define` | in M14's population? |
+|---|---|---|---|---|---|
+| `.cpp` | 383 | 2,094 | 30,323 | 65 | yes |
+| `.hpp` | 55 | 5,381 | 19,311 | 1,670 | yes |
+| `.cc` | 44 | 2,673 | 13,048 | 59 | yes |
+| `.cu` | 2 | 5 | 9 | 0 | yes |
+| **`.h`** | **39** | **7,759** | **15,712** | **1,688** | **NO** |
+| **total** | **523** | **17,912** | **78,403** | **3,482** | |
+| **M14 population** | **484** | **10,153** | **62,691** | **1,794** | |
+
+**The 39 excluded files carry 43.3% of the symbols, 20.0% of the edges and 48.5% of the `#define`s.**
+It is not a rounding margin — it is where C++ puts its declarations:
+
+```
+1858 sym  gtest.h      1849 sym  gmock.h      901 sym  doctest.h
+ 669 sym  fmt/core.h    577 sym  fmt/format.h   369 sym  fmt/chrono.h
+ 171 sym  fmt/ranges.h  163 sym  test/scan.h     95 sym  fmt/format-inl.h
+```
+
+`fmt/include/fmt/{core,format,chrono,ranges,color,format-inl}.h` are **fmt's public API**. A population
+that omits `.h` measures fmt's tests and its `.cpp` internals and misses the library's interface.
+
+**Why this is a note and not a fix.** The M14 gate's command line passes **9** of the 11 spellings the
+canonical table admits (`script/m14/language-extensions.ts:153`); `h` and `hh` are dropped because a
+`.h` is ambiguous between C and C++ and the gate has no content router. That is `script/m14/**` —
+master-owned, and work item #2. **What this section adds is the number the decision needs**: the
+exclusion is not 7.5% of files, it is 43.3% of the symbols, so every "measured on the lane's
+population" figure in this document is a floor over roughly half the graph.
+
+**Caveat, stated because this document has been burned by un-stated scope:** measured on the 2-repo
+corpus, which is unusually header-dense (fmt ships its implementation in `-inl.h` and its API in `.h`).
+The 31-repo corpus's ratio is **not** measurable here and is not claimed.
