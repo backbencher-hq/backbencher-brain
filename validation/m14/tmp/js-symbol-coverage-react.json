@@ -1,0 +1,71 @@
+{
+  "at": "2026-11-17T21:42:11.437Z",
+  "repo": "/home/ishaq2321/mcp/backbencher-brain/.corpus/react",
+  "jsFiles": 3902,
+  "byType": {
+    "pair": {
+      "declared": 1676,
+      "covered": 0,
+      "unboundObjectMethod": 1676,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "variable_declarator": {
+      "declared": 1135,
+      "covered": 324,
+      "unboundObjectMethod": 0,
+      "missedLocal": 797,
+      "missedTop": 0,
+      "importBinding": 14
+    },
+    "function_declaration": {
+      "declared": 535,
+      "covered": 535,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "class_declaration": {
+      "declared": 4,
+      "covered": 4,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "method_definition": {
+      "declared": 11,
+      "covered": 11,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    },
+    "field_definition": {
+      "declared": 2,
+      "covered": 2,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0,
+      "importBinding": 0
+    }
+  },
+  "totals": {
+    "declared": 3363,
+    "covered": 876,
+    "unboundObjectMethod": 1676,
+    "missedLocal": 797,
+    "importBinding": 14,
+    "missedTopLevel": 0
+  },
+  "missedExamples": [],
+  "jsdoc": {
+    "declared": 0,
+    "covered": 0,
+    "missed": 0,
+    "missedExamples": []
+  },
+  "note": "A declaration node is COVERED when a published symbol has the same name AND its range contains the declaration's line. unbound-object-method = an object literal member with no binding to name (the lane's documented correct-ownerless contract); MISSED = a named declaration with no symbol, which is the gap this census exists to find."
+}

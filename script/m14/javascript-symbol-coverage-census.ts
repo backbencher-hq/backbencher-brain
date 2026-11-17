@@ -30,9 +30,14 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
-import { ASTEngine, getParser } from "../../src/ast/engine"
+import { ASTEngine, getParser, maybeFlowFallback } from "../../src/ast/engine"
 
 const SIZE_CAP = 512 * 1024
+
+/** the root of whatever `maybeFlowFallback` returned (a Tree, or the same tree when it declined) */
+function fbRootOf(tree: any): any {
+  return tree?.rootNode ?? null
+}
 
 /**
  * BUILD OUTPUT IS NOT AUTHORED CODE, and measuring it is measuring the bundler.
@@ -258,6 +263,21 @@ for (const rel of jsFiles) {
     root = parser.parse(src)?.rootNode
   } catch {
     continue
+  }
+  if (!root) continue
+  // MEASURE WHAT THE ANALYZER ACTUALLY SEES. A `@flow`-annotated `.js` file is parsed by the engine
+  // with the TypeScript/TSX grammar, but this census parsed it with the javascript grammar and then
+  // SKIPPED it for having ERROR nodes — so 782 of React's 1,450 authored files were excluded from the
+  // measurement while the analyzer was reading many of them. The census now applies the same fallback
+  // the engine does; a file is skipped only when BOTH grammars fail.
+  if (root.hasError) {
+    // PARENTHESISES MATTER HERE, and getting them wrong made this line a silent no-op for a while:
+    // `await f(x)?.rootNode` awaits `f(x)?.rootNode` — an optional chain on the PROMISE, which has no
+    // `rootNode`, so it awaited `undefined` and `?? root` restored the ERROR tree. Every measurement
+    // taken through the broken form reported "the fallback changes nothing", which is exactly what a
+    // broken control says. `(await f(x))?.rootNode` is the resolved tree's root.
+    const fbTree = await maybeFlowFallback("javascript", src, { rootNode: root } as any)
+    root = fbRootOf(fbTree) ?? root
   }
   if (!root || root.hasError) continue
 
