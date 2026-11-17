@@ -3328,9 +3328,14 @@ currentPackage,
           // (`declaringType`), not in a target no declaration can answer to.
         const localTarget = localEdgeName(targetFqn)
         const localQualified = localEdgeLabel(targetFqn)
-        const declaringType = localQualified.lastIndexOf(".") > 0
-          ? localQualified.slice(0, localQualified.lastIndexOf("."))
-          : ""
+        // Keep the JDK's canonical owner for implicit Object methods.
+        // localEdgeLabel intentionally discards package segments for graph
+        // source/target compatibility; the metadata owner must not.
+        const declaringType = reasonCode === "implicit-java-lang-object"
+          ? "java.lang.Object"
+          : localQualified.lastIndexOf(".") > 0
+            ? localQualified.slice(0, localQualified.lastIndexOf("."))
+            : ""
 
         relationships.push({
           source: localSource,
