@@ -1,0 +1,4592 @@
+{
+  "lang": "cpp",
+  "population": {
+    "sampled": 7778,
+    "parsed": 7778,
+    "failed": 0,
+    "corpusTotal": 7778,
+    "repos": 18,
+    "degraded": 0,
+    "degradedFiles": [],
+    "qualifiedNameAliases": 171031,
+    "excluded": {
+      "absent": 0,
+      "overCap": 7,
+      "overCapLargest": 5568700,
+      "sizeCapBytes": 1048576
+    }
+  },
+  "verdict": "FAIL",
+  "reason": "CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 585993 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  313437 ambiguous + 272556 unresolved of 1061394 edges, resolved against the file's OWN PROJECT (production's scope)",
+  "ambiguityMetric": "declarations (distinct-kind shown for comparison only)",
+  "resolutionScope": "per project (the repository a file belongs to) — parallel-indexer.resolveRelationships' scope",
+  "instrumentSelfTest": {
+    "ok": true,
+    "failures": []
+  },
+  "perType": {
+    "calls": {
+      "type": "calls",
+      "edges": 738609,
+      "project": {
+        "resolved": 241197,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 273246,
+        "ambiguousByKind": 105028,
+        "unresolved": 212447,
+        "markedExternal": 11719,
+        "externalVerified": 11719,
+        "externalVerifiedByOwner": 11719,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "TEST_CASE",
+            "declarations": 4,
+            "kinds": "function|macro"
+          },
+          {
+            "name": "REQUIRE",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "CATCH_REGISTER_LISTENER",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "REQUIRE_THAT",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "REQUIRE_NOTHROW",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "REQUIRE_THROWS",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "WARN",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "CHECK",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "REQUIRE_FALSE",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "CHECK_FALSE",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "size",
+            "declarations": 13,
+            "kinds": "function|method"
+          },
+          {
+            "name": "SECTION",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "TEST_CASE_METHOD",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "TEST_CASE_PERSISTENT_FIXTURE",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "SCENARIO",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "GIVEN",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "WHEN",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "THEN",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "total",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "allPassed",
+            "declarations": 4,
+            "kinds": "method"
+          },
+          {
+            "name": "allOk",
+            "declarations": 4,
+            "kinds": "method"
+          },
+          {
+            "name": "isHidden",
+            "declarations": 4,
+            "kinds": "method"
+          },
+          {
+            "name": "throws",
+            "declarations": 5,
+            "kinds": "function|method"
+          },
+          {
+            "name": "okToFail",
+            "declarations": 4,
+            "kinds": "method"
+          },
+          {
+            "name": "expectedToFail",
+            "declarations": 4,
+            "kinds": "method"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "capacity",
+            "type": "calls"
+          },
+          {
+            "name": "resize",
+            "type": "calls"
+          },
+          {
+            "name": "reserve",
+            "type": "calls"
+          },
+          {
+            "name": "length",
+            "type": "calls"
+          },
+          {
+            "name": "logic_error",
+            "type": "calls"
+          },
+          {
+            "name": "sleep_for",
+            "type": "calls"
+          },
+          {
+            "name": "seconds",
+            "type": "calls"
+          },
+          {
+            "name": "putc",
+            "type": "calls"
+          },
+          {
+            "name": "pubsync",
+            "type": "calls"
+          },
+          {
+            "name": "assert",
+            "type": "calls"
+          },
+          {
+            "name": "getline",
+            "type": "calls"
+          },
+          {
+            "name": "stoi",
+            "type": "calls"
+          },
+          {
+            "name": "tie",
+            "type": "calls"
+          },
+          {
+            "name": "make_tuple",
+            "type": "calls"
+          },
+          {
+            "name": "duration_cast",
+            "type": "calls"
+          },
+          {
+            "name": "push_back",
+            "type": "calls"
+          },
+          {
+            "name": "wrap_estimate",
+            "type": "calls"
+          },
+          {
+            "name": "estimator",
+            "type": "calls"
+          },
+          {
+            "name": "var_out",
+            "type": "calls"
+          },
+          {
+            "name": "c_max",
+            "type": "calls"
+          },
+          {
+            "name": "log",
+            "type": "calls"
+          },
+          {
+            "name": "sqrt",
+            "type": "calls"
+          },
+          {
+            "name": "accumulate",
+            "type": "calls"
+          },
+          {
+            "name": "iter_swap",
+            "type": "calls"
+          },
+          {
+            "name": "nth_element",
+            "type": "calls"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 247044,
+          "unresolved": 207691,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {
+          "namespace": {
+            "verified": 2099,
+            "unverified": 0,
+            "refuted": 0,
+            "contradicted": 0,
+            "ownFileSilent": 0,
+            "notApplicable": 0
+          }
+        },
+        "resolvedWithClaim": {
+          "namespace": {
+            "verified": 628,
+            "unverified": 0,
+            "refuted": 0,
+            "contradicted": 0,
+            "ownFileSilent": 0,
+            "notApplicable": 0
+          }
+        }
+      },
+      "pooled": {
+        "resolved": 126446,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 436697,
+        "ambiguousByKind": 223658,
+        "unresolved": 174962,
+        "markedExternal": 504,
+        "externalVerified": 504,
+        "externalVerifiedByOwner": 504,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Factorial",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "TEST_CASE",
+            "declarations": 5,
+            "kinds": "function|macro"
+          },
+          {
+            "name": "REQUIRE",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "CATCH_REGISTER_LISTENER",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "MatchAllMatcher",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "REQUIRE_THAT",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "MatchAll",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "REQUIRE_NOTHROW",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "REQUIRE_THROWS",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "one",
+            "declarations": 6,
+            "kinds": "enum_member|function|type"
+          },
+          {
+            "name": "WARN",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "CHECK",
+            "declarations": 11,
+            "kinds": "enum_member|macro|method"
+          },
+          {
+            "name": "REQUIRE_FALSE",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "CHECK_FALSE",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "size",
+            "declarations": 181,
+            "kinds": "constant|function|method|property|variable"
+          },
+          {
+            "name": "capacity",
+            "declarations": 40,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "SECTION",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "resize",
+            "declarations": 9,
+            "kinds": "method"
+          },
+          {
+            "name": "reserve",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "length",
+            "declarations": 35,
+            "kinds": "method|property|variable"
+          },
+          {
+            "name": "TEST_CASE_METHOD",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "sleep_for",
+            "declarations": 3,
+            "kinds": "function|property"
+          },
+          {
+            "name": "TEST_CASE_PERSISTENT_FIXTURE",
+            "declarations": 2,
+            "kinds": "macro"
+          },
+          {
+            "name": "SCENARIO",
+            "declarations": 3,
+            "kinds": "macro"
+          },
+          {
+            "name": "GIVEN",
+            "declarations": 3,
+            "kinds": "macro"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "logic_error",
+            "type": "calls"
+          },
+          {
+            "name": "putc",
+            "type": "calls"
+          },
+          {
+            "name": "pubsync",
+            "type": "calls"
+          },
+          {
+            "name": "make_tuple",
+            "type": "calls"
+          },
+          {
+            "name": "duration_cast",
+            "type": "calls"
+          },
+          {
+            "name": "wrap_estimate",
+            "type": "calls"
+          },
+          {
+            "name": "estimator",
+            "type": "calls"
+          },
+          {
+            "name": "var_out",
+            "type": "calls"
+          },
+          {
+            "name": "c_max",
+            "type": "calls"
+          },
+          {
+            "name": "sqrt",
+            "type": "calls"
+          },
+          {
+            "name": "iter_swap",
+            "type": "calls"
+          },
+          {
+            "name": "nth_element",
+            "type": "calls"
+          },
+          {
+            "name": "min_element",
+            "type": "calls"
+          },
+          {
+            "name": "erfc",
+            "type": "calls"
+          },
+          {
+            "name": "count_if",
+            "type": "calls"
+          },
+          {
+            "name": "lround",
+            "type": "calls"
+          },
+          {
+            "name": "cumn",
+            "type": "calls"
+          },
+          {
+            "name": "rd",
+            "type": "calls"
+          },
+          {
+            "name": "async",
+            "type": "calls"
+          },
+          {
+            "name": "isinf",
+            "type": "calls"
+          },
+          {
+            "name": "milliseconds",
+            "type": "calls"
+          },
+          {
+            "name": "skipq",
+            "type": "calls"
+          },
+          {
+            "name": "fopen_s",
+            "type": "calls"
+          },
+          {
+            "name": "strerror_s",
+            "type": "calls"
+          },
+          {
+            "name": "strerror",
+            "type": "calls"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 385200,
+          "unresolved": 174293,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {
+          "namespace": {
+            "verified": 25976,
+            "unverified": 0,
+            "refuted": 0,
+            "contradicted": 0,
+            "ownFileSilent": 0,
+            "notApplicable": 0
+          }
+        },
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 131916,
+        "arbitraryTwin": 431377,
+        "noDeclaration": 175316
+      },
+      "noTarget": 0
+    },
+    "uses": {
+      "type": "uses",
+      "edges": 115385,
+      "project": {
+        "resolved": 61473,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 31893,
+        "ambiguousByKind": 14294,
+        "unresolved": 22019,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "original",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "file",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "line",
+            "declarations": 3,
+            "kinds": "method|property"
+          },
+          {
+            "name": "macroName",
+            "declarations": 4,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "message",
+            "declarations": 4,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "lineInfo",
+            "declarations": 10,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "sequence",
+            "declarations": 2,
+            "kinds": "variable"
+          },
+          {
+            "name": "name",
+            "declarations": 47,
+            "kinds": "method|property|variable"
+          },
+          {
+            "name": "passed",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "failed",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "failedButOk",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "assertions",
+            "declarations": 6,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "testCases",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "runInfo",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "totals",
+            "declarations": 8,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "aborting",
+            "declarations": 8,
+            "kinds": "method|property"
+          },
+          {
+            "name": "className",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "tags",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "properties",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "testInfo",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "stdOut",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "stdErr",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "sectionInfo",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "durationInSeconds",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "missingAssertions",
+            "declarations": 4,
+            "kinds": "property|variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "wAttributes",
+            "type": "uses"
+          },
+          {
+            "name": "kp_proc",
+            "type": "uses"
+          },
+          {
+            "name": "p_flag",
+            "type": "uses"
+          },
+          {
+            "name": "second",
+            "type": "uses"
+          },
+          {
+            "name": "ExceptionCode",
+            "type": "uses"
+          },
+          {
+            "name": "ExceptionRecord",
+            "type": "uses"
+          },
+          {
+            "name": "Length",
+            "type": "uses"
+          },
+          {
+            "name": "_a",
+            "type": "uses"
+          },
+          {
+            "name": "std::enable_if_t",
+            "type": "uses"
+          },
+          {
+            "name": "TargetType",
+            "type": "uses"
+          },
+          {
+            "name": "m_b",
+            "type": "uses"
+          },
+          {
+            "name": "MatcherRHS",
+            "type": "uses"
+          },
+          {
+            "name": "m_redirectedErr",
+            "type": "uses"
+          },
+          {
+            "name": "m_cerr",
+            "type": "uses"
+          },
+          {
+            "name": "m_clog",
+            "type": "uses"
+          },
+          {
+            "name": "m_errFile",
+            "type": "uses"
+          },
+          {
+            "name": "V",
+            "type": "uses"
+          },
+          {
+            "name": "max",
+            "type": "uses"
+          },
+          {
+            "name": "r",
+            "type": "uses"
+          },
+          {
+            "name": "i",
+            "type": "uses"
+          },
+          {
+            "name": "tm_year",
+            "type": "uses"
+          },
+          {
+            "name": "tm_mon",
+            "type": "uses"
+          },
+          {
+            "name": "tm_mday",
+            "type": "uses"
+          },
+          {
+            "name": "first",
+            "type": "uses"
+          },
+          {
+            "name": "st_mtime",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 30676,
+          "unresolved": 21072,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 27973,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 72382,
+        "ambiguousByKind": 35120,
+        "unresolved": 15030,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "uniqueID",
+            "declarations": 2,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "original",
+            "declarations": 12,
+            "kinds": "property|type"
+          },
+          {
+            "name": "file",
+            "declarations": 26,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "line",
+            "declarations": 11,
+            "kinds": "method|property|variable"
+          },
+          {
+            "name": "macroName",
+            "declarations": 6,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "message",
+            "declarations": 35,
+            "kinds": "function|method|property|variable"
+          },
+          {
+            "name": "lineInfo",
+            "declarations": 15,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "sequence",
+            "declarations": 9,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "name",
+            "declarations": 307,
+            "kinds": "class|enum_member|function|method|property|variable"
+          },
+          {
+            "name": "passed",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "failed",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "failedButOk",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "assertions",
+            "declarations": 10,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "testCases",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "runInfo",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "totals",
+            "declarations": 12,
+            "kinds": "property|variable"
+          },
+          {
+            "name": "aborting",
+            "declarations": 14,
+            "kinds": "method|property"
+          },
+          {
+            "name": "className",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "tags",
+            "declarations": 9,
+            "kinds": "property"
+          },
+          {
+            "name": "properties",
+            "declarations": 24,
+            "kinds": "property"
+          },
+          {
+            "name": "testInfo",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "stdOut",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "stdErr",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "sectionInfo",
+            "declarations": 6,
+            "kinds": "property"
+          },
+          {
+            "name": "durationInSeconds",
+            "declarations": 6,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "wAttributes",
+            "type": "uses"
+          },
+          {
+            "name": "kp_proc",
+            "type": "uses"
+          },
+          {
+            "name": "p_flag",
+            "type": "uses"
+          },
+          {
+            "name": "ExceptionCode",
+            "type": "uses"
+          },
+          {
+            "name": "ExceptionRecord",
+            "type": "uses"
+          },
+          {
+            "name": "_a",
+            "type": "uses"
+          },
+          {
+            "name": "std::enable_if_t",
+            "type": "uses"
+          },
+          {
+            "name": "m_b",
+            "type": "uses"
+          },
+          {
+            "name": "MatcherRHS",
+            "type": "uses"
+          },
+          {
+            "name": "m_redirectedErr",
+            "type": "uses"
+          },
+          {
+            "name": "m_errFile",
+            "type": "uses"
+          },
+          {
+            "name": "tm_year",
+            "type": "uses"
+          },
+          {
+            "name": "tm_mon",
+            "type": "uses"
+          },
+          {
+            "name": "tm_mday",
+            "type": "uses"
+          },
+          {
+            "name": "tm_sec",
+            "type": "uses"
+          },
+          {
+            "name": "tm_min",
+            "type": "uses"
+          },
+          {
+            "name": "tm_hour",
+            "type": "uses"
+          },
+          {
+            "name": "tm_wday",
+            "type": "uses"
+          },
+          {
+            "name": "x0",
+            "type": "uses"
+          },
+          {
+            "name": "y0",
+            "type": "uses"
+          },
+          {
+            "name": "to_add",
+            "type": "uses"
+          },
+          {
+            "name": "DynamicDaylightTimeDisabled",
+            "type": "uses"
+          },
+          {
+            "name": "StandardDate",
+            "type": "uses"
+          },
+          {
+            "name": "DaylightDate",
+            "type": "uses"
+          },
+          {
+            "name": "TimeZoneKeyName",
+            "type": "uses"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 70446,
+          "unresolved": 14900,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 49708,
+        "arbitraryTwin": 50647,
+        "noDeclaration": 15030
+      },
+      "noTarget": 0
+    },
+    "contains": {
+      "type": "contains",
+      "edges": 151481,
+      "project": {
+        "resolved": 151481,
+        "resolvedAmongCollision": 102476,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 151481,
+        "resolvedAmongCollision": 104628,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 149341,
+        "sameFileUnproven": 2140,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      },
+      "noTarget": 0
+    },
+    "imports": {
+      "type": "imports",
+      "edges": 10801,
+      "project": {
+        "resolved": 241,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 636,
+        "ambiguousByKind": 333,
+        "unresolved": 9924,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "random",
+            "declarations": 5,
+            "kinds": "function"
+          },
+          {
+            "name": "iterator",
+            "declarations": 12,
+            "kinds": "class|type"
+          },
+          {
+            "name": "map",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "optional",
+            "declarations": 3,
+            "kinds": "method"
+          },
+          {
+            "name": "compare",
+            "declarations": 4,
+            "kinds": "method"
+          },
+          {
+            "name": "set",
+            "declarations": 5,
+            "kinds": "method"
+          },
+          {
+            "name": "list",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "thread",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "memory",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "unordered_map",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "unordered_set",
+            "declarations": 3,
+            "kinds": "property|type"
+          },
+          {
+            "name": "string",
+            "declarations": 155,
+            "kinds": "property|type"
+          },
+          {
+            "name": "vector",
+            "declarations": 58,
+            "kinds": "class|property"
+          },
+          {
+            "name": "mutex",
+            "declarations": 5,
+            "kinds": "property|type|variable"
+          },
+          {
+            "name": "stack",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "array",
+            "declarations": 9,
+            "kinds": "property"
+          },
+          {
+            "name": "queue",
+            "declarations": 8,
+            "kinds": "class|property"
+          },
+          {
+            "name": "variant",
+            "declarations": 15,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "filesystem",
+            "declarations": 8,
+            "kinds": "namespace"
+          },
+          {
+            "name": "exception",
+            "declarations": 6,
+            "kinds": "class|function|type"
+          },
+          {
+            "name": "format",
+            "declarations": 3,
+            "kinds": "method"
+          },
+          {
+            "name": "condition_variable",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "print",
+            "declarations": 13,
+            "kinds": "method|variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "catch2/catch_test_macros.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/reporters/catch_reporter_event_listener.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/reporters/catch_reporter_registrars.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/matchers/catch_matchers_templated.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "vector",
+            "type": "imports"
+          },
+          {
+            "name": "thread",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/catch_test_case_info.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "iostream",
+            "type": "imports"
+          },
+          {
+            "name": "sstream",
+            "type": "imports"
+          },
+          {
+            "name": "cstdio",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/catch_session.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/generators/catch_generators.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/generators/catch_generators_adapters.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "string",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/generators/catch_generators_random.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "windows.h",
+            "type": "imports"
+          },
+          {
+            "name": "algorithm",
+            "type": "imports"
+          },
+          {
+            "name": "chrono",
+            "type": "imports"
+          },
+          {
+            "name": "cmath",
+            "type": "imports"
+          },
+          {
+            "name": "exception",
+            "type": "imports"
+          },
+          {
+            "name": "cassert",
+            "type": "imports"
+          },
+          {
+            "name": "cstddef",
+            "type": "imports"
+          },
+          {
+            "name": "numeric",
+            "type": "imports"
+          },
+          {
+            "name": "future",
+            "type": "imports"
+          },
+          {
+            "name": "limits",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 7605,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 287,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 2033,
+        "ambiguousByKind": 1649,
+        "unresolved": 8481,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "vector",
+            "declarations": 58,
+            "kinds": "class|property"
+          },
+          {
+            "name": "thread",
+            "declarations": 7,
+            "kinds": "function|property|variable"
+          },
+          {
+            "name": "random",
+            "declarations": 11,
+            "kinds": "function|method|property"
+          },
+          {
+            "name": "string",
+            "declarations": 190,
+            "kinds": "class|enum_member|function|method|property|type|variable"
+          },
+          {
+            "name": "exception",
+            "declarations": 6,
+            "kinds": "class|function|type"
+          },
+          {
+            "name": "stack",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "utility",
+            "declarations": 2,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "iterator",
+            "declarations": 49,
+            "kinds": "class|property|type"
+          },
+          {
+            "name": "map",
+            "declarations": 16,
+            "kinds": "function|method|property"
+          },
+          {
+            "name": "optional",
+            "declarations": 13,
+            "kinds": "method|property"
+          },
+          {
+            "name": "variant",
+            "declarations": 15,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "memory",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "set",
+            "declarations": 26,
+            "kinds": "method|property"
+          },
+          {
+            "name": "mutex",
+            "declarations": 15,
+            "kinds": "function|property|type|variable"
+          },
+          {
+            "name": "array",
+            "declarations": 21,
+            "kinds": "class|enum_member|function|method|property|variable"
+          },
+          {
+            "name": "compare",
+            "declarations": 4,
+            "kinds": "method"
+          },
+          {
+            "name": "unordered_map",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "list",
+            "declarations": 13,
+            "kinds": "function|method|property|variable"
+          },
+          {
+            "name": "unordered_set",
+            "declarations": 3,
+            "kinds": "property|type"
+          },
+          {
+            "name": "condition_variable",
+            "declarations": 3,
+            "kinds": "function|type"
+          },
+          {
+            "name": "queue",
+            "declarations": 9,
+            "kinds": "class|property|variable"
+          },
+          {
+            "name": "format",
+            "declarations": 78,
+            "kinds": "function|method|namespace|property"
+          },
+          {
+            "name": "filesystem",
+            "declarations": 8,
+            "kinds": "namespace"
+          },
+          {
+            "name": "expected",
+            "declarations": 28,
+            "kinds": "constant|property"
+          },
+          {
+            "name": "version",
+            "declarations": 24,
+            "kinds": "method|property|variable"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "catch2/catch_test_macros.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/reporters/catch_reporter_event_listener.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/reporters/catch_reporter_registrars.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/matchers/catch_matchers_templated.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/catch_test_case_info.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "iostream",
+            "type": "imports"
+          },
+          {
+            "name": "sstream",
+            "type": "imports"
+          },
+          {
+            "name": "cstdio",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/catch_session.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/generators/catch_generators.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/generators/catch_generators_adapters.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "catch2/generators/catch_generators_random.hpp",
+            "type": "imports"
+          },
+          {
+            "name": "windows.h",
+            "type": "imports"
+          },
+          {
+            "name": "algorithm",
+            "type": "imports"
+          },
+          {
+            "name": "cmath",
+            "type": "imports"
+          },
+          {
+            "name": "cassert",
+            "type": "imports"
+          },
+          {
+            "name": "cstddef",
+            "type": "imports"
+          },
+          {
+            "name": "future",
+            "type": "imports"
+          },
+          {
+            "name": "limits",
+            "type": "imports"
+          },
+          {
+            "name": "fstream",
+            "type": "imports"
+          },
+          {
+            "name": "cstdlib",
+            "type": "imports"
+          },
+          {
+            "name": "iomanip",
+            "type": "imports"
+          },
+          {
+            "name": "ostream",
+            "type": "imports"
+          },
+          {
+            "name": "unistd.h",
+            "type": "imports"
+          },
+          {
+            "name": "android/log.h",
+            "type": "imports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 10,
+          "unresolved": 6247,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 49,
+        "arbitraryTwin": 2271,
+        "noDeclaration": 8481
+      },
+      "noTarget": 0
+    },
+    "references": {
+      "type": "references",
+      "edges": 1560,
+      "project": {
+        "resolved": 286,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 380,
+        "ambiguousByKind": 246,
+        "unresolved": 894,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Detail::ParserResult",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "TestCaseTracking::ITracker",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "TestCaseTracking::TrackerContext",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "TestCaseTracking::SectionTracker",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch::TestCaseInfo",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch::TestCaseStats",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch",
+            "declarations": 571,
+            "kinds": "namespace"
+          },
+          {
+            "name": "Catch::TestCaseInfoHasher",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch::Approx",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Rcpp",
+            "declarations": 13,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb",
+            "declarations": 3622,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "duckdb_yyjson",
+            "declarations": 6,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb_parquet",
+            "declarations": 10,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb_miniz",
+            "declarations": 3,
+            "kinds": "namespace"
+          },
+          {
+            "name": "tpcds",
+            "declarations": 6,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb::idx_t",
+            "declarations": 13,
+            "kinds": "type"
+          },
+          {
+            "name": "duckdb::LogicalType",
+            "declarations": 3,
+            "kinds": "class|type"
+          },
+          {
+            "name": "duckdb::LogicalOperatorType",
+            "declarations": 2,
+            "kinds": "enum"
+          },
+          {
+            "name": "duckdb::PhysicalOperator",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "duckdb::PhysicalOperatorType",
+            "declarations": 3,
+            "kinds": "enum"
+          },
+          {
+            "name": "regexp_util::ParseRegexOptions",
+            "declarations": 4,
+            "kinds": "function"
+          },
+          {
+            "name": "regexp_util::TryParseConstantPattern",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "duckdb::Value",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "duckdb::LogicalTypeId",
+            "declarations": 3,
+            "kinds": "enum"
+          },
+          {
+            "name": "duckdb::make_uniq",
+            "declarations": 2,
+            "kinds": "function"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "std::begin",
+            "type": "references"
+          },
+          {
+            "name": "std::end",
+            "type": "references"
+          },
+          {
+            "name": "std::conjunction",
+            "type": "references"
+          },
+          {
+            "name": "std::disjunction",
+            "type": "references"
+          },
+          {
+            "name": "std::negation",
+            "type": "references"
+          },
+          {
+            "name": "Catch::Detail::count_equidistant_floats",
+            "type": "references"
+          },
+          {
+            "name": "Catch::Detail::fillBitsFrom",
+            "type": "references"
+          },
+          {
+            "name": "Catch::TextFlow::Column",
+            "type": "references"
+          },
+          {
+            "name": "Catch::TextFlow::AnsiSkippingString",
+            "type": "references"
+          },
+          {
+            "name": "Catch::literals",
+            "type": "references"
+          },
+          {
+            "name": "Catch::Matchers",
+            "type": "references"
+          },
+          {
+            "name": "std::nextafter",
+            "type": "references"
+          },
+          {
+            "name": "std",
+            "type": "references"
+          },
+          {
+            "name": "Rcpp::attributes",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_AM_PM",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DATE",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DAY_OF_WEEK",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DAY_OF_WEEK_IN_MONTH",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DAY_OF_YEAR",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DOW_LOCAL",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DST_OFFSET",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_ERA",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_EXTENDED_YEAR",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_HOUR",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_HOUR_OF_DAY",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 55,
+          "unresolved": 854,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 239,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 434,
+        "ambiguousByKind": 256,
+        "unresolved": 887,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Detail::ParserResult",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "TestCaseTracking::ITracker",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "TestCaseTracking::TrackerContext",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "TestCaseTracking::SectionTracker",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch::TestCaseInfo",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch::TestCaseStats",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch",
+            "declarations": 764,
+            "kinds": "enum_member|namespace"
+          },
+          {
+            "name": "Catch::TestCaseInfoHasher",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Catch::Approx",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::Parser",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::Opt",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::Arg",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::Args",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::ExeName",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::Help",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "detail::ParseResultType",
+            "declarations": 2,
+            "kinds": "enum"
+          },
+          {
+            "name": "detail::ParserResult",
+            "declarations": 2,
+            "kinds": "type"
+          },
+          {
+            "name": "Rcpp",
+            "declarations": 13,
+            "kinds": "namespace"
+          },
+          {
+            "name": "std",
+            "declarations": 54,
+            "kinds": "namespace|property|variable"
+          },
+          {
+            "name": "duckdb",
+            "declarations": 3622,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "duckdb_yyjson",
+            "declarations": 6,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb_parquet",
+            "declarations": 10,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb_miniz",
+            "declarations": 3,
+            "kinds": "namespace"
+          },
+          {
+            "name": "tpcds",
+            "declarations": 6,
+            "kinds": "namespace"
+          },
+          {
+            "name": "duckdb::idx_t",
+            "declarations": 13,
+            "kinds": "type"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "std::begin",
+            "type": "references"
+          },
+          {
+            "name": "std::end",
+            "type": "references"
+          },
+          {
+            "name": "std::conjunction",
+            "type": "references"
+          },
+          {
+            "name": "std::disjunction",
+            "type": "references"
+          },
+          {
+            "name": "std::negation",
+            "type": "references"
+          },
+          {
+            "name": "Catch::Detail::count_equidistant_floats",
+            "type": "references"
+          },
+          {
+            "name": "Catch::Detail::fillBitsFrom",
+            "type": "references"
+          },
+          {
+            "name": "Catch::TextFlow::Column",
+            "type": "references"
+          },
+          {
+            "name": "Catch::TextFlow::AnsiSkippingString",
+            "type": "references"
+          },
+          {
+            "name": "Catch::literals",
+            "type": "references"
+          },
+          {
+            "name": "Catch::Matchers",
+            "type": "references"
+          },
+          {
+            "name": "std::nextafter",
+            "type": "references"
+          },
+          {
+            "name": "Rcpp::attributes",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_AM_PM",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DATE",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DAY_OF_WEEK",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DAY_OF_WEEK_IN_MONTH",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DAY_OF_YEAR",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DOW_LOCAL",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_DST_OFFSET",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_ERA",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_EXTENDED_YEAR",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_HOUR",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_HOUR_OF_DAY",
+            "type": "references"
+          },
+          {
+            "name": "datetime::CAL_JULIAN_DAY",
+            "type": "references"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 86,
+          "unresolved": 851,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 77,
+        "arbitraryTwin": 596,
+        "noDeclaration": 887
+      },
+      "noTarget": 0
+    },
+    "exports": {
+      "type": "exports",
+      "edges": 977,
+      "project": {
+        "resolved": 691,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 286,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "ZDICTLIB_STATIC_API",
+            "type": "exports"
+          },
+          {
+            "name": "G_MODULE_EXPORT",
+            "type": "exports"
+          },
+          {
+            "name": "SKWASM_EXPORT",
+            "type": "exports"
+          },
+          {
+            "name": "GTEST_API_",
+            "type": "exports"
+          },
+          {
+            "name": "_LIBUNWIND_EXPORT",
+            "type": "exports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 691,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 286,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [
+          {
+            "name": "ZDICTLIB_STATIC_API",
+            "type": "exports"
+          },
+          {
+            "name": "G_MODULE_EXPORT",
+            "type": "exports"
+          },
+          {
+            "name": "SKWASM_EXPORT",
+            "type": "exports"
+          },
+          {
+            "name": "GTEST_API_",
+            "type": "exports"
+          },
+          {
+            "name": "_LIBUNWIND_EXPORT",
+            "type": "exports"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 48,
+        "arbitraryTwin": 643,
+        "noDeclaration": 286
+      },
+      "noTarget": 0
+    },
+    "extends": {
+      "type": "extends",
+      "edges": 3717,
+      "project": {
+        "resolved": 2505,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 462,
+        "ambiguousByKind": 197,
+        "unresolved": 750,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "EventListenerBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "MatcherGenericBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IGenerator",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IRegistryHub",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IMutableRegistryHub",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "NonCopyable",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ColourImpl",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IStream",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "OutputRedirect",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "TrackerBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IGeneratorTracker",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "ITestInvoker",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IConfig",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IExceptionTranslator",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "GeneratorUntypedBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IExceptionTranslatorRegistry",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IResultCapture",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "ITagAliasRegistry",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "ITestCaseRegistry",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "MatcherBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "MatcherUntypedBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "StreamingReporterBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IEventListener",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "ReporterBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "CumulativeReporterBase",
+            "declarations": 2,
+            "kinds": "class"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "stringbuf",
+            "type": "extends"
+          },
+          {
+            "name": "exception",
+            "type": "extends"
+          },
+          {
+            "name": "streambuf",
+            "type": "extends"
+          },
+          {
+            "name": "true_type",
+            "type": "extends"
+          },
+          {
+            "name": "false_type",
+            "type": "extends"
+          },
+          {
+            "name": "SingletonImplT",
+            "type": "extends"
+          },
+          {
+            "name": "integral_constant",
+            "type": "extends"
+          },
+          {
+            "name": "B1",
+            "type": "extends"
+          },
+          {
+            "name": "conditional_t",
+            "type": "extends"
+          },
+          {
+            "name": "numpunct",
+            "type": "extends"
+          },
+          {
+            "name": "allocator",
+            "type": "extends"
+          },
+          {
+            "name": "TVirtualTransport",
+            "type": "extends"
+          },
+          {
+            "name": "TTransport",
+            "type": "extends"
+          },
+          {
+            "name": "is_same",
+            "type": "extends"
+          },
+          {
+            "name": "disjunction",
+            "type": "extends"
+          },
+          {
+            "name": "is_convertible",
+            "type": "extends"
+          },
+          {
+            "name": "runtime_error",
+            "type": "extends"
+          },
+          {
+            "name": "conditional",
+            "type": "extends"
+          },
+          {
+            "name": "JOB_STATE",
+            "type": "extends"
+          },
+          {
+            "name": "AllocatorData",
+            "type": "extends"
+          },
+          {
+            "name": "Source",
+            "type": "extends"
+          },
+          {
+            "name": "Test",
+            "type": "extends"
+          },
+          {
+            "name": "FileDialogControllerFactory",
+            "type": "extends"
+          },
+          {
+            "name": "UserConsentVerifier",
+            "type": "extends"
+          },
+          {
+            "name": "ExampleHostApi",
+            "type": "extends"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 311,
+          "unresolved": 398,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 1945,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 1067,
+        "ambiguousByKind": 449,
+        "unresolved": 705,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "EventListenerBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "MatcherGenericBase",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IGenerator",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "exception",
+            "declarations": 6,
+            "kinds": "class|function|type"
+          },
+          {
+            "name": "IRegistryHub",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IMutableRegistryHub",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "NonCopyable",
+            "declarations": 5,
+            "kinds": "class"
+          },
+          {
+            "name": "ColourImpl",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "IStream",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "OutputRedirect",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "TrackerBase",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IGeneratorTracker",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ITestInvoker",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ChronometerConcept",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "callable",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "is_range_impl",
+            "declarations": 6,
+            "kinds": "class"
+          },
+          {
+            "name": "Pattern",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IConfig",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "MessageStream",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ResultBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "ResultValueBase",
+            "declarations": 8,
+            "kinds": "class"
+          },
+          {
+            "name": "BoundRef",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "BoundValueRefBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "BoundFlagRefBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "BoundLambda",
+            "declarations": 4,
+            "kinds": "class"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "stringbuf",
+            "type": "extends"
+          },
+          {
+            "name": "streambuf",
+            "type": "extends"
+          },
+          {
+            "name": "true_type",
+            "type": "extends"
+          },
+          {
+            "name": "false_type",
+            "type": "extends"
+          },
+          {
+            "name": "SingletonImplT",
+            "type": "extends"
+          },
+          {
+            "name": "integral_constant",
+            "type": "extends"
+          },
+          {
+            "name": "B1",
+            "type": "extends"
+          },
+          {
+            "name": "conditional_t",
+            "type": "extends"
+          },
+          {
+            "name": "TVirtualTransport",
+            "type": "extends"
+          },
+          {
+            "name": "TTransport",
+            "type": "extends"
+          },
+          {
+            "name": "is_same",
+            "type": "extends"
+          },
+          {
+            "name": "is_convertible",
+            "type": "extends"
+          },
+          {
+            "name": "runtime_error",
+            "type": "extends"
+          },
+          {
+            "name": "conditional",
+            "type": "extends"
+          },
+          {
+            "name": "JOB_STATE",
+            "type": "extends"
+          },
+          {
+            "name": "AllocatorData",
+            "type": "extends"
+          },
+          {
+            "name": "Source",
+            "type": "extends"
+          },
+          {
+            "name": "FileDialogControllerFactory",
+            "type": "extends"
+          },
+          {
+            "name": "UserConsentVerifier",
+            "type": "extends"
+          },
+          {
+            "name": "ExampleHostApi",
+            "type": "extends"
+          },
+          {
+            "name": "MultipleArityHostApi",
+            "type": "extends"
+          },
+          {
+            "name": "NullableArgHostApi",
+            "type": "extends"
+          },
+          {
+            "name": "NullableReturnHostApi",
+            "type": "extends"
+          },
+          {
+            "name": "MethodResult",
+            "type": "extends"
+          },
+          {
+            "name": "BinaryMessenger",
+            "type": "extends"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 791,
+          "unresolved": 376,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 1046,
+        "arbitraryTwin": 1966,
+        "noDeclaration": 705
+      },
+      "noTarget": 0
+    },
+    "implements": {
+      "type": "implements",
+      "edges": 270,
+      "project": {
+        "resolved": 270,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 152,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 118,
+        "ambiguousByKind": 7,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "ChronometerConcept",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "callable",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "Pattern",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IConfig",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ResultBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "BoundValueRefBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "BoundFlagRefBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "ParserBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "ITestInvoker",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IExceptionTranslator",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "GeneratorUntypedBase",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IExceptionTranslatorRegistry",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ITracker",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IResultCapture",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ITagAliasRegistry",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "ITestCaseRegistry",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "MatcherBase",
+            "declarations": 4,
+            "kinds": "class"
+          },
+          {
+            "name": "IEventListener",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "CumulativeReporterBase",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "IReporterFactory",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "EventListenerFactory",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "ColumnReader",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Logger",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "ITransientExpression",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "MatcherUntypedBase",
+            "declarations": 3,
+            "kinds": "class"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 15,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 270,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      },
+      "noTarget": 0
+    },
+    "overrides": {
+      "type": "overrides",
+      "edges": 1692,
+      "project": {
+        "resolved": 1645,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 47,
+        "ambiguousByKind": 39,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "operator=",
+            "declarations": 118,
+            "kinds": "method"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 1692,
+        "ambiguousByKind": 562,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "start",
+            "declarations": 63,
+            "kinds": "function|method|property|variable"
+          },
+          {
+            "name": "finish",
+            "declarations": 10,
+            "kinds": "method|property"
+          },
+          {
+            "name": "call",
+            "declarations": 12,
+            "kinds": "method"
+          },
+          {
+            "name": "matches",
+            "declarations": 42,
+            "kinds": "method|property"
+          },
+          {
+            "name": "serializeTo",
+            "declarations": 18,
+            "kinds": "method"
+          },
+          {
+            "name": "getTestsOrTags",
+            "declarations": 9,
+            "kinds": "method"
+          },
+          {
+            "name": "getPathFilters",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "useNewFilterBehaviour",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "testSpec",
+            "declarations": 15,
+            "kinds": "method"
+          },
+          {
+            "name": "hasTestFilters",
+            "declarations": 9,
+            "kinds": "method"
+          },
+          {
+            "name": "allowThrows",
+            "declarations": 14,
+            "kinds": "method"
+          },
+          {
+            "name": "name",
+            "declarations": 307,
+            "kinds": "class|enum_member|function|method|property|variable"
+          },
+          {
+            "name": "includeSuccessfulResults",
+            "declarations": 9,
+            "kinds": "method"
+          },
+          {
+            "name": "warnAboutMissingAssertions",
+            "declarations": 9,
+            "kinds": "method"
+          },
+          {
+            "name": "warnAboutUnmatchedTestSpecs",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "warnAboutInfiniteGenerators",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "zeroTestsCountAsSuccess",
+            "declarations": 6,
+            "kinds": "method"
+          },
+          {
+            "name": "showDurations",
+            "declarations": 12,
+            "kinds": "method|property"
+          },
+          {
+            "name": "minDuration",
+            "declarations": 12,
+            "kinds": "method|property"
+          },
+          {
+            "name": "runOrder",
+            "declarations": 12,
+            "kinds": "method|property"
+          },
+          {
+            "name": "rngSeed",
+            "declarations": 19,
+            "kinds": "function|method|property"
+          },
+          {
+            "name": "shardCount",
+            "declarations": 8,
+            "kinds": "method|property"
+          },
+          {
+            "name": "shardIndex",
+            "declarations": 10,
+            "kinds": "method|property"
+          },
+          {
+            "name": "defaultColourMode",
+            "declarations": 8,
+            "kinds": "method|property"
+          },
+          {
+            "name": "shouldDebugBreak",
+            "declarations": 14,
+            "kinds": "method|property"
+          }
+        ],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 1640,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 1692,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      },
+      "noTarget": 0
+    },
+    "instantiates": {
+      "type": "instantiates",
+      "edges": 1695,
+      "project": {
+        "resolved": 638,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 167,
+        "ambiguousByKind": 133,
+        "unresolved": 890,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "model",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "string_t",
+            "declarations": 14,
+            "kinds": "class|property"
+          },
+          {
+            "name": "Sort",
+            "declarations": 7,
+            "kinds": "class|method"
+          },
+          {
+            "name": "data_t",
+            "declarations": 3,
+            "kinds": "type"
+          },
+          {
+            "name": "data_ptr_t",
+            "declarations": 8,
+            "kinds": "property|type"
+          },
+          {
+            "name": "AggregateFunction",
+            "declarations": 4,
+            "kinds": "class|method|type"
+          },
+          {
+            "name": "AggregateFunctionSet",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "AppenderWrapper",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "LogicalType",
+            "declarations": 51,
+            "kinds": "class|property|type"
+          },
+          {
+            "name": "Value",
+            "declarations": 8,
+            "kinds": "class|method|property|type"
+          },
+          {
+            "name": "CopyFunction",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "DataChunk",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Vector",
+            "declarations": 5,
+            "kinds": "class|namespace|property|variable"
+          },
+          {
+            "name": "Connection",
+            "declarations": 3,
+            "kinds": "class|enum_member"
+          },
+          {
+            "name": "ScalarFunction",
+            "declarations": 3,
+            "kinds": "class|type"
+          },
+          {
+            "name": "ScalarFunctionSet",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "TableFunction",
+            "declarations": 14,
+            "kinds": "class|method"
+          },
+          {
+            "name": "QualifiedName",
+            "declarations": 3,
+            "kinds": "class|property"
+          },
+          {
+            "name": "ColumnDefinition",
+            "declarations": 3,
+            "kinds": "class|property"
+          },
+          {
+            "name": "ExecuteStatement",
+            "declarations": 3,
+            "kinds": "class|method"
+          },
+          {
+            "name": "PragmaStatement",
+            "declarations": 5,
+            "kinds": "class|method"
+          },
+          {
+            "name": "CreateTypeInfo",
+            "declarations": 3,
+            "kinds": "class|method"
+          },
+          {
+            "name": "BaseStatistics",
+            "declarations": 16,
+            "kinds": "class|property"
+          },
+          {
+            "name": "string",
+            "declarations": 155,
+            "kinds": "property|type"
+          },
+          {
+            "name": "ArrowArray",
+            "declarations": 2,
+            "kinds": "class|property"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "vector",
+            "type": "instantiates"
+          },
+          {
+            "name": "CostMatrix",
+            "type": "instantiates"
+          },
+          {
+            "name": "RM_PROCESS_INFO",
+            "type": "instantiates"
+          },
+          {
+            "name": "XMLHttpRequest",
+            "type": "instantiates"
+          },
+          {
+            "name": "Uint8Array",
+            "type": "instantiates"
+          },
+          {
+            "name": "duckdb_fsst_decoder_t",
+            "type": "instantiates"
+          },
+          {
+            "name": "AdbcDriver",
+            "type": "instantiates"
+          },
+          {
+            "name": "ostringstream",
+            "type": "instantiates"
+          },
+          {
+            "name": "mbedtls_x509_crt",
+            "type": "instantiates"
+          },
+          {
+            "name": "mbedtls_sha256_context",
+            "type": "instantiates"
+          },
+          {
+            "name": "mbedtls_sha1_context",
+            "type": "instantiates"
+          },
+          {
+            "name": "Prog",
+            "type": "instantiates"
+          },
+          {
+            "name": "PrefilterTree",
+            "type": "instantiates"
+          },
+          {
+            "name": "RE2",
+            "type": "instantiates"
+          },
+          {
+            "name": "Regexp",
+            "type": "instantiates"
+          },
+          {
+            "name": "CharClassBuilder",
+            "type": "instantiates"
+          },
+          {
+            "name": "Prefilter",
+            "type": "instantiates"
+          },
+          {
+            "name": "StringPiece",
+            "type": "instantiates"
+          },
+          {
+            "name": "Rune",
+            "type": "instantiates"
+          },
+          {
+            "name": "CaptureEngineListener",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockMediaSource",
+            "type": "instantiates"
+          },
+          {
+            "name": "FakeMediaType",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCaptureSource",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCaptureEngine",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCapturePreviewSink",
+            "type": "instantiates"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 26,
+          "unresolved": 741,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 518,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 318,
+        "ambiguousByKind": 200,
+        "unresolved": 859,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "out_buff",
+            "declarations": 2,
+            "kinds": "class|property"
+          },
+          {
+            "name": "model",
+            "declarations": 4,
+            "kinds": "class|property"
+          },
+          {
+            "name": "vector",
+            "declarations": 58,
+            "kinds": "class|property"
+          },
+          {
+            "name": "Singleton",
+            "declarations": 3,
+            "kinds": "class"
+          },
+          {
+            "name": "base",
+            "declarations": 33,
+            "kinds": "class|method|namespace|property|type|variable"
+          },
+          {
+            "name": "MAP_TYPE",
+            "declarations": 4,
+            "kinds": "type"
+          },
+          {
+            "name": "string_t",
+            "declarations": 51,
+            "kinds": "class|property|type|variable"
+          },
+          {
+            "name": "Sort",
+            "declarations": 7,
+            "kinds": "class|method"
+          },
+          {
+            "name": "data_t",
+            "declarations": 3,
+            "kinds": "type"
+          },
+          {
+            "name": "data_ptr_t",
+            "declarations": 8,
+            "kinds": "property|type"
+          },
+          {
+            "name": "AggregateFunction",
+            "declarations": 4,
+            "kinds": "class|method|type"
+          },
+          {
+            "name": "AggregateFunctionSet",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "AppenderWrapper",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "LogicalType",
+            "declarations": 51,
+            "kinds": "class|property|type"
+          },
+          {
+            "name": "Value",
+            "declarations": 8,
+            "kinds": "class|method|property|type"
+          },
+          {
+            "name": "CopyFunction",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "DataChunk",
+            "declarations": 2,
+            "kinds": "class"
+          },
+          {
+            "name": "Vector",
+            "declarations": 5,
+            "kinds": "class|namespace|property|variable"
+          },
+          {
+            "name": "Connection",
+            "declarations": 3,
+            "kinds": "class|enum_member"
+          },
+          {
+            "name": "ScalarFunction",
+            "declarations": 3,
+            "kinds": "class|type"
+          },
+          {
+            "name": "ScalarFunctionSet",
+            "declarations": 2,
+            "kinds": "class|type"
+          },
+          {
+            "name": "TableFunction",
+            "declarations": 14,
+            "kinds": "class|method"
+          },
+          {
+            "name": "QualifiedName",
+            "declarations": 3,
+            "kinds": "class|property"
+          },
+          {
+            "name": "ColumnDefinition",
+            "declarations": 3,
+            "kinds": "class|property"
+          },
+          {
+            "name": "ExecuteStatement",
+            "declarations": 3,
+            "kinds": "class|method"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "CostMatrix",
+            "type": "instantiates"
+          },
+          {
+            "name": "RM_PROCESS_INFO",
+            "type": "instantiates"
+          },
+          {
+            "name": "XMLHttpRequest",
+            "type": "instantiates"
+          },
+          {
+            "name": "Uint8Array",
+            "type": "instantiates"
+          },
+          {
+            "name": "duckdb_fsst_decoder_t",
+            "type": "instantiates"
+          },
+          {
+            "name": "AdbcDriver",
+            "type": "instantiates"
+          },
+          {
+            "name": "ostringstream",
+            "type": "instantiates"
+          },
+          {
+            "name": "mbedtls_x509_crt",
+            "type": "instantiates"
+          },
+          {
+            "name": "mbedtls_sha256_context",
+            "type": "instantiates"
+          },
+          {
+            "name": "mbedtls_sha1_context",
+            "type": "instantiates"
+          },
+          {
+            "name": "Prog",
+            "type": "instantiates"
+          },
+          {
+            "name": "PrefilterTree",
+            "type": "instantiates"
+          },
+          {
+            "name": "RE2",
+            "type": "instantiates"
+          },
+          {
+            "name": "Regexp",
+            "type": "instantiates"
+          },
+          {
+            "name": "CharClassBuilder",
+            "type": "instantiates"
+          },
+          {
+            "name": "Prefilter",
+            "type": "instantiates"
+          },
+          {
+            "name": "StringPiece",
+            "type": "instantiates"
+          },
+          {
+            "name": "Rune",
+            "type": "instantiates"
+          },
+          {
+            "name": "CaptureEngineListener",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockMediaSource",
+            "type": "instantiates"
+          },
+          {
+            "name": "FakeMediaType",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCaptureSource",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCaptureEngine",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCapturePreviewSink",
+            "type": "instantiates"
+          },
+          {
+            "name": "MockCaptureRecordSink",
+            "type": "instantiates"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 175,
+          "unresolved": 708,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 312,
+        "arbitraryTwin": 524,
+        "noDeclaration": 859
+      },
+      "noTarget": 0
+    },
+    "decorates": {
+      "type": "decorates",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      },
+      "noTarget": 0
+    },
+    "renders": {
+      "type": "renders",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      },
+      "noTarget": 0
+    },
+    "mixes_in": {
+      "type": "mixes_in",
+      "edges": 0,
+      "project": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 0,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 0,
+        "ambiguousByKind": 0,
+        "unresolved": 0,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [],
+        "unresolvedNames": [],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 0,
+          "unresolved": 0,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 0,
+        "arbitraryTwin": 0,
+        "noDeclaration": 0
+      },
+      "noTarget": 0
+    },
+    "part_of": {
+      "type": "part_of",
+      "edges": 35207,
+      "project": {
+        "resolved": 3255,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 6606,
+        "ambiguousByKind": 2109,
+        "unresolved": 25346,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "attributes",
+            "declarations": 7,
+            "kinds": "namespace"
+          },
+          {
+            "name": "rcpp_hello_world",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "internal",
+            "declarations": 2,
+            "kinds": "namespace"
+          },
+          {
+            "name": "dplyr",
+            "declarations": 4,
+            "kinds": "namespace"
+          },
+          {
+            "name": "profiler",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "file_system",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "duckdb",
+            "declarations": 3622,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "vector",
+            "declarations": 58,
+            "kinds": "class|property"
+          },
+          {
+            "name": "string",
+            "declarations": 155,
+            "kinds": "property|type"
+          },
+          {
+            "name": "unique_ptr",
+            "declarations": 195,
+            "kinds": "class|property"
+          },
+          {
+            "name": "optional_idx",
+            "declarations": 29,
+            "kinds": "class|property|type"
+          },
+          {
+            "name": "client_context",
+            "declarations": 14,
+            "kinds": "property"
+          },
+          {
+            "name": "keyword_helper",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "appender",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "random_engine",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "parser",
+            "declarations": 2,
+            "kinds": "property"
+          },
+          {
+            "name": "compiled_grammar",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "types",
+            "declarations": 77,
+            "kinds": "property"
+          },
+          {
+            "name": "serializer",
+            "declarations": 4,
+            "kinds": "property"
+          },
+          {
+            "name": "compare_result",
+            "declarations": 2,
+            "kinds": "function"
+          },
+          {
+            "name": "catalog",
+            "declarations": 20,
+            "kinds": "property"
+          },
+          {
+            "name": "table_function",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "settings",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "matcher",
+            "declarations": 13,
+            "kinds": "property"
+          },
+          {
+            "name": "attached_database",
+            "declarations": 2,
+            "kinds": "property"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "catch_amalgamated",
+            "type": "part_of"
+          },
+          {
+            "name": "NullOStream",
+            "type": "part_of"
+          },
+          {
+            "name": "convolve10_cpp",
+            "type": "part_of"
+          },
+          {
+            "name": "loopmacro",
+            "type": "part_of"
+          },
+          {
+            "name": "Timer",
+            "type": "part_of"
+          },
+          {
+            "name": "testRcppInterfaceExporter",
+            "type": "part_of"
+          },
+          {
+            "name": "config",
+            "type": "part_of"
+          },
+          {
+            "name": "unwound",
+            "type": "part_of"
+          },
+          {
+            "name": "string",
+            "type": "part_of"
+          },
+          {
+            "name": "limits",
+            "type": "part_of"
+          },
+          {
+            "name": "time",
+            "type": "part_of"
+          },
+          {
+            "name": "stdlib",
+            "type": "part_of"
+          },
+          {
+            "name": "stdint",
+            "type": "part_of"
+          },
+          {
+            "name": "stdio",
+            "type": "part_of"
+          },
+          {
+            "name": "fcntl",
+            "type": "part_of"
+          },
+          {
+            "name": "float",
+            "type": "part_of"
+          },
+          {
+            "name": "cxxlib",
+            "type": "part_of"
+          },
+          {
+            "name": "pgmcxxlib",
+            "type": "part_of"
+          },
+          {
+            "name": "costMatrix",
+            "type": "part_of"
+          },
+          {
+            "name": "dynamicCharacterOperations",
+            "type": "part_of"
+          },
+          {
+            "name": "Rectangle",
+            "type": "part_of"
+          },
+          {
+            "name": "cpp_function_lib",
+            "type": "part_of"
+          },
+          {
+            "name": "cpp_overload_wrapper_lib",
+            "type": "part_of"
+          },
+          {
+            "name": "cppwrap_lib",
+            "type": "part_of"
+          },
+          {
+            "name": "utils",
+            "type": "part_of"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 4691,
+          "unresolved": 25073,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "pooled": {
+        "resolved": 2921,
+        "resolvedAmongCollision": 0,
+        "ambiguousByDecl": 8311,
+        "ambiguousByKind": 3532,
+        "unresolved": 23975,
+        "markedExternal": 0,
+        "externalVerified": 0,
+        "externalVerifiedByOwner": 0,
+        "externalVerifiedByProjectFacts": 0,
+        "externalUnverified": 0,
+        "externalRefuted": 0,
+        "bindingVerified": 0,
+        "bindingRefuted": 0,
+        "bindingUnverified": 0,
+        "causeDeclared": 0,
+        "causeRefuted": 0,
+        "ambiguousNames": [
+          {
+            "name": "Timer",
+            "declarations": 5,
+            "kinds": "class|variable"
+          },
+          {
+            "name": "rcpp_hello_world",
+            "declarations": 3,
+            "kinds": "function"
+          },
+          {
+            "name": "attributes",
+            "declarations": 7,
+            "kinds": "namespace"
+          },
+          {
+            "name": "config",
+            "declarations": 32,
+            "kinds": "method|property"
+          },
+          {
+            "name": "internal",
+            "declarations": 48,
+            "kinds": "method|namespace|property|variable"
+          },
+          {
+            "name": "types",
+            "declarations": 78,
+            "kinds": "property"
+          },
+          {
+            "name": "string",
+            "declarations": 190,
+            "kinds": "class|enum_member|function|method|property|type|variable"
+          },
+          {
+            "name": "time",
+            "declarations": 8,
+            "kinds": "method|property|variable"
+          },
+          {
+            "name": "dplyr",
+            "declarations": 4,
+            "kinds": "namespace"
+          },
+          {
+            "name": "utils",
+            "declarations": 2,
+            "kinds": "namespace"
+          },
+          {
+            "name": "profiler",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "file_system",
+            "declarations": 7,
+            "kinds": "property"
+          },
+          {
+            "name": "duckdb",
+            "declarations": 3622,
+            "kinds": "namespace|property"
+          },
+          {
+            "name": "vector",
+            "declarations": 58,
+            "kinds": "class|property"
+          },
+          {
+            "name": "unique_ptr",
+            "declarations": 197,
+            "kinds": "class|property"
+          },
+          {
+            "name": "optional_idx",
+            "declarations": 29,
+            "kinds": "class|property|type"
+          },
+          {
+            "name": "benchmark",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "client_context",
+            "declarations": 14,
+            "kinds": "property"
+          },
+          {
+            "name": "keyword_helper",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "appender",
+            "declarations": 12,
+            "kinds": "property"
+          },
+          {
+            "name": "random_engine",
+            "declarations": 5,
+            "kinds": "property"
+          },
+          {
+            "name": "exception",
+            "declarations": 6,
+            "kinds": "class|function|type"
+          },
+          {
+            "name": "parser",
+            "declarations": 11,
+            "kinds": "class|method|property"
+          },
+          {
+            "name": "compiled_grammar",
+            "declarations": 3,
+            "kinds": "property"
+          },
+          {
+            "name": "serializer",
+            "declarations": 19,
+            "kinds": "class|property|type"
+          }
+        ],
+        "unresolvedNames": [
+          {
+            "name": "catch_amalgamated",
+            "type": "part_of"
+          },
+          {
+            "name": "NullOStream",
+            "type": "part_of"
+          },
+          {
+            "name": "convolve10_cpp",
+            "type": "part_of"
+          },
+          {
+            "name": "loopmacro",
+            "type": "part_of"
+          },
+          {
+            "name": "testRcppInterfaceExporter",
+            "type": "part_of"
+          },
+          {
+            "name": "unwound",
+            "type": "part_of"
+          },
+          {
+            "name": "limits",
+            "type": "part_of"
+          },
+          {
+            "name": "stdlib",
+            "type": "part_of"
+          },
+          {
+            "name": "stdint",
+            "type": "part_of"
+          },
+          {
+            "name": "stdio",
+            "type": "part_of"
+          },
+          {
+            "name": "fcntl",
+            "type": "part_of"
+          },
+          {
+            "name": "float",
+            "type": "part_of"
+          },
+          {
+            "name": "cxxlib",
+            "type": "part_of"
+          },
+          {
+            "name": "pgmcxxlib",
+            "type": "part_of"
+          },
+          {
+            "name": "costMatrix",
+            "type": "part_of"
+          },
+          {
+            "name": "dynamicCharacterOperations",
+            "type": "part_of"
+          },
+          {
+            "name": "Rectangle",
+            "type": "part_of"
+          },
+          {
+            "name": "cpp_function_lib",
+            "type": "part_of"
+          },
+          {
+            "name": "cpp_overload_wrapper_lib",
+            "type": "part_of"
+          },
+          {
+            "name": "cppwrap_lib",
+            "type": "part_of"
+          },
+          {
+            "name": "benchmark_runner",
+            "type": "part_of"
+          },
+          {
+            "name": "string_util",
+            "type": "part_of"
+          },
+          {
+            "name": "duckdb_benchmark",
+            "type": "part_of"
+          },
+          {
+            "name": "interpreted_benchmark",
+            "type": "part_of"
+          },
+          {
+            "name": "catch",
+            "type": "part_of"
+          }
+        ],
+        "refutedNames": [],
+        "causeNames": [],
+        "namesOmitted": {
+          "ambiguous": 6006,
+          "unresolved": 23318,
+          "refuted": 0,
+          "cause": 0
+        },
+        "ambiguousWithClaim": {},
+        "resolvedWithClaim": {}
+      },
+      "marks": {},
+      "intent": {
+        "intended": 0,
+        "sameFileUnproven": 667,
+        "arbitraryTwin": 10565,
+        "noDeclaration": 23975
+      },
+      "noTarget": 0
+    }
+  },
+  "totals": {
+    "resolved": 463682,
+    "resolvedAmongCollision": 102476,
+    "ambiguousByDecl": 313437,
+    "ambiguousByKind": 122379,
+    "unresolved": 272556,
+    "markedExternal": 11719,
+    "externalVerified": 11719,
+    "externalVerifiedByOwner": 11719,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 0,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": [],
+    "namesOmitted": {
+      "ambiguous": 0,
+      "unresolved": 0,
+      "refuted": 0,
+      "cause": 0
+    },
+    "ambiguousWithClaim": {},
+    "resolvedWithClaim": {}
+  },
+  "totalsPooled": {
+    "resolved": 312653,
+    "resolvedAmongCollision": 104628,
+    "ambiguousByDecl": 523052,
+    "ambiguousByKind": 265433,
+    "unresolved": 225185,
+    "markedExternal": 504,
+    "externalVerified": 504,
+    "externalVerifiedByOwner": 504,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 0,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": [],
+    "namesOmitted": {
+      "ambiguous": 0,
+      "unresolved": 0,
+      "refuted": 0,
+      "cause": 0
+    },
+    "ambiguousWithClaim": {},
+    "resolvedWithClaim": {}
+  }
+}

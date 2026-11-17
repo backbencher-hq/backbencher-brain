@@ -1500,6 +1500,34 @@ arithmetic, not only by the targeted re-parse. Evidence:
 `gate-cpp-extension-only.postw8.txt`. The post-W8 wall re-derivation and the corrected kill-switch arm
 are running when this line was written; their artifacts land with the next commit.
 
+### The consume-only delta, now MEASURED whole-population — and it corrects §14.19's reading
+
+The corrected kill-switch arm (`BB_CPP_INDEX_CONSUME=0 --index`) is **byte-identical to the per-file
+arm** on this population — 463,682 / 313,437 / 272,556 (resolved / ambDecl / unresolved), `extOK`
+11,719 — so the index alone is inert here, exactly as the control claimed, and the whole difference
+belongs to CONSUME:
+
+| default consume vs kill-switch | delta |
+|---|---|
+| resolved | **+19,061** |
+| ambiguous-decl | **−40,770** |
+| unresolved | **+21,709** |
+| extOK | **0** |
+
+That is the same channel arithmetic the owner-channel line prints whole-population (25,512 rows the
+name model could not resolve and the channel does; 6,601 rows the channel declines that their name
+would have resolved and that production holds NULL) — net +18,911 through the channel, plus the
+independent per-row effects, = +19,061. **It CORRECTS the two-repo reading**: on the two-repo set
+consume LOWERED resolved by 707 because the local arm had already owned the easy rows and the
+withdrawals dominated; on the whole population consume RAISES resolved by 19,061 because the channel
+decides far more rows than it withdraws. The invariant across both populations is the CORRECTNESS
+property, not the sign of the delta: a channel-declined row is held NULL rather than resolved by name.
+The whole-population wall ledger re-run on the fixed dump confirms the other side: residual rows
+585,993 (= 585,997 − the 4 W8 rows), the nine-wall closure holds, **W7 and W8 are both empty**, and
+every remaining wall's row count is otherwise identical (W1 409,375 · W10 76,830 · W11 53,351 · W2
+42,512 · W1-type 2,619 · W4 910 · W5 286 · W9 110). Evidence:
+`gate-index-killswitch.json`, `wall-disposition.postw8.json`.
+
 ### Reproduction
 
 ```
