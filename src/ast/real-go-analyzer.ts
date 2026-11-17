@@ -1598,9 +1598,32 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_declaration":
           this.extractGoMethod(current, symbols)
           break
-        case "type_declaration":
+        case "type_declaration": {
+          // A FUNCTION-LOCAL type is a symbol (GO38, see the header above) but it is
+          // NOT a package-scope declaration, and nothing said so. Measured: two
+          // functions in one file each declaring `type localState struct{}` published
+          // TWO `struct localState` rows with `ownerName: undefined` and no marker —
+          // indistinguishable from a package-scope declaration, and therefore reading
+          // as "this file declares localState twice", which is illegal Go and is not
+          // what the file contains. Across go-tools + terraform that produced 14
+          // apparent package-scope duplicates (objectpath.go `hasElem` x2,
+          // module_merge_test.go `testCase` x4, and so on) — every one of them legal
+          // Go whose only defect was the missing scope label.
+          //
+          // `isLocalDeclaration` is the FLEET's spelling for this fact (clean's
+          // analyzer publishes the same key), so a consumer filters on one name across
+          // lanes rather than learning a Go-specific one. Additive: no lookup reads it,
+          // so no edge moves.
+          const before = symbols.length
           this.extractGoTypeDeclaration(current, symbols)
+          if (inFunction) {
+            for (let i = before; i < symbols.length; i++) {
+              const sym = symbols[i]
+              sym.metadata = { ...(sym.metadata ?? {}), isLocalDeclaration: true }
+            }
+          }
           break
+        }
         case "var_declaration":
         case "const_declaration":
           if (!inFunction) this.extractGoVariables(current, symbols)

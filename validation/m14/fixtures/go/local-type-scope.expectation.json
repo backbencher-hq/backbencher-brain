@@ -1,0 +1,44 @@
+{
+  "fixtureId": "go/local-type-scope",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the SCOPE LABEL on a function-local type. GO38 made a function-local `type` declaration a symbol (it was previously skipped entirely, so the declared-type pass published `references Local -> Host` whose SOURCE named nothing) — that is right and this fixture keeps it. What was missing is the label saying it is NOT package scope. Two functions in one file may each declare `type localState struct{}` (legal Go, different scopes), and before the fix BOTH rows carried `ownerName: undefined` and no marker, so a consumer reading the symbol list saw 'this file declares localState twice' — illegal Go the file does not contain. MEASURED across go-tools + terraform (3,422 files): 14 apparent package-scope duplicate declarations, headed by objectpath.go `hasElem` x2 and module_merge_test.go `testCase` x4, every one legal Go whose only defect was the absent scope label; after the marker the residue is 1, and that 1 is four `func _()` blank functions, which Go legalises. THE FIX PUBLISHES `metadata.isLocalDeclaration`, the FLEET's spelling for the fact (clean's analyzer carries the same key), so a consumer filters on ONE name across lanes instead of learning a Go-specific one. IT IS ADDITIVE: no lookup reads the key, so no relationship moves — the edge counts on this population are byte-identical before and after, which is the check that makes it safe. THE THREE EXPECTED SYMBOL ROWS ARE THE WHOLE POINT: both `localState` declarations must exist (GO38's half — losing either would re-open the dangling-source defect) AND be marked local (this half); the package-scope `PackageLevel` of the same shape must exist and carry NO mark, so the fix cannot pass by marking everything. THE FORBID ROW pins the negative: a `localState` WITHOUT the marker is exactly the defect, and a rule that simply dropped the key everywhere would satisfy the two positive rows while re-creating it. NOT PINNED: the `property` rows for the two structs' fields, which the same mark covers and which assert nothing new; and the exact line numbers, which would pin the fixture's own layout rather than the analyzer.",
+  "expectSymbols": [
+    { "name": "First", "kind": "function" },
+    { "name": "Second", "kind": "function" },
+    {
+      "name": "localState",
+      "kind": "struct",
+      "meta.isLocalDeclaration": true,
+      "comment": "A function-local type IS a symbol (GO38) and IS marked local. Two of these must exist; this row asserts the marked shape."
+    },
+    {
+      "name": "PackageLevel",
+      "kind": "struct",
+      "meta.isLocalDeclaration": null,
+      "comment": "CONTROL: a package-scope type of the same shape must exist and carry NO local mark, so the fix cannot pass by marking everything."
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "localState",
+      "kind": "struct",
+      "meta.isLocalDeclaration": null,
+      "comment": "THE DEFECT: a `localState` row without the marker is a function-local type presented as package scope — the exact ambiguity that made two legal declarations read as one illegal duplicate. A fix that dropped the key everywhere would satisfy the positive rows above while re-creating this."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "GO38's half, still holding: the local type's field is owned by it, so the type is a real symbol in the graph and not a dangling source.",
+      "type": "contains",
+      "from": "localState",
+      "target": "a"
+    },
+    {
+      "comment": "The control type's field, proving ownership works at package scope as well.",
+      "type": "contains",
+      "from": "PackageLevel",
+      "target": "c"
+    }
+  ]
+}
