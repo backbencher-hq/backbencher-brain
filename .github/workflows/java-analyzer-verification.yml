@@ -6,6 +6,9 @@ on:
     paths:
       - 'src/ast/real-java-analyzer.ts'
       - 'src/ast/parallel-indexer.ts'
+      - 'src/lsp/graph_request.ts'
+      - 'src/lsp/graph_usages.ts'
+      - 'script/m14/java-m12-mismatch-census.ts'
       - 'script/m14/java-store-e2e-smoke.ts'
       - 'validation/m14/fixtures/java/**'
       - 'validation/m14/verification/JavaAnalyzerSemanticOracle.java'

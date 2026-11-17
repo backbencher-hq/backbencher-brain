@@ -1183,3 +1183,47 @@ semantics but DO NOT cover all 105 false-positive or 21 false-negative M12
 IDs. The differential itself remains `passed:false`; no M12 ground truth
 was rewritten. The pinned Java full corpus and query-level consumer
 acceptance gates also remain outstanding.
+
+
+### 2026-11-17 — Real bb/graph usages: resolved Java import targets are still dependencies
+
+A second end-to-end regression was found by extending
+`script/m14/java-store-e2e-smoke.ts` with two valid Java compilation units
+importing **one another's top-level types**. The old query in
+`src/lsp/graph_request.ts` demanded both `source_symbol_id IS NULL`
+and `target_symbol_id IS NULL`. The indexed local import can correctly
+resolve `target_symbol_id` to a project type: the old filter discarded
+the very relationship the analyzer and indexer had preserved.
+
+The corrected `bb/graph` usages dependency query matches the **importing
+file**, not the absence of a target symbol. It still requires an unresolved
+source symbol (`source_symbol_id IS NULL`) and exact importing
+`source_external` path. It does not erase a valid resolved target.
+
+**Proof:** [Java CI run 44121093768](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121093768)
+passed the real store and actual `handleGraphRequest` usages handler
+with both project-local imports. The test includes the historical
+`target_symbol_id IS NULL` query as a NEGATIVE CONTROL: it must return
+zero for those resolved local imports. The handler uses a controlled
+traversal payload, so this proves the real persisted SQL and group
+classification, **not** full graph traversal/impact attribution.
+
+### 2026-11-17 — M12 mismatch census without ground-truth mutation
+
+A new read-only CI census (`script/m14/java-m12-mismatch-census.ts`)
+partitions the existing **105 FP + 21 FN** IDs, checks exact conservation
+of every mismatch, and reports:
+- **28 FP** in `imports`/`exports`, relationship kinds absent from the
+  manual M12 truth. These are coverage omissions, not certified true
+  or false Java statements.
+- **13 mechanically paired FP/FN identity candidates**: 7 annotation-vs-
+  declaration line offsets, 3 constructor symbol naming differences, and
+  3 constructor containment naming differences. Pairing is NOT an
+  independent semantic verdict.
+- **64 FP** and **8 FN** remain unmatched by those classifications.
+  Four of the eight FN are `overrides` facts independently confirmed
+  by `javac` but not correctly adjudicated by the M12 comparison.
+
+[Successful CI run 44121807895](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121807895)
+confirmed the census and its accounting. The M12 gate remains
+`passed:false`; no oracle fact or baseline metric was rewritten.

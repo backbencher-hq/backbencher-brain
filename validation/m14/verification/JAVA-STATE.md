@@ -601,3 +601,23 @@ semantics but DO NOT cover all 105 false-positive or 21 false-negative M12
 IDs. The differential itself remains `passed:false`; no M12 ground truth
 was rewritten. The pinned Java full corpus and query-level consumer
 acceptance gates also remain outstanding.
+
+
+## 2026-11-17 — Local imports and M12 reconciliation
+
+- `bb/graph` usages now serves Java project-local imports even when the
+  imported type resolves to a persisted symbol. Proof is the actual handler
+  over real SQLite, with controlled traversal input:
+  https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121093768
+- A read-only mismatch classification has been exercised in CI:
+  https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121807895
+- M12 raw comparison remains 95 TP / 105 FP / 21 FN / 6 unknown, FAIL.
+  Exactly 28 FP are uncovered imports/exports families. Thirteen FP/FN
+  pairs are candidate old-vs-new symbol/containment identity conventions
+  (7 declaration-line, 3 constructor name, 3 constructor containment).
+  64 FP and 8 FN remain unmatched; four of the eight FN involve compiler-
+  justified overrides awaiting sound cross-file binding.
+- Neither test proves an error-free full Java index or settles the pinned
+  11,152-file corpus. Full `npm run verify` remains unexecuted.
+
+NO MERGE: PR remains draft until all acceptance barriers are independently met.
