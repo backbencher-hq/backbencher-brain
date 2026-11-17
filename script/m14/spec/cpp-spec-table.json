@@ -2526,7 +2526,7 @@
             "wall": "W4-qualified-name-not-published",
             "rows": 2771,
             "share": "0.3%",
-            "disposition": "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)"
+            "disposition": "STALE PREMISE — MEASURED FALSE 2026-11-16; now a DESIGN DECISION, not an instrument gap. The recorded reason ('the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName') does not hold: on the 2-repo corpus the analyzer publishes 6,913 DISTINCT qualifiedName strings — methods 4,222/4,222 with a distinct Owner::member spelling, constructors 912/912, properties 1,677/1,677 (production entry ASTEngine.parseFile). What IS true is narrower: an edge TARGET is the callee/member LEAF by the lane's documented contract (the qualified spelling rides metadata.qualified), so the arbiter's qualified-name join only helps rows whose TARGET is qualified — it asked 532 and resolved 0. Closing W4 means changing the target spelling to the qualified key where unique: a vocabulary/consumer contract change that needs the Lead."
           },
           {
             "wall": "W5-export-marker-not-a-declaration",
@@ -2578,6 +2578,14 @@
       "change": "Status CLAIMED -> SHIPPED: the ISO stdlib citation claim is emitted by default.",
       "why": "The claim was gated behind BB_CPP_CITATION=1, so production emitted none and the 7,962 rows stayed unresolved. Shipped 2026-11-16 with BB_CPP_CITATION=0 as the kill-switch. Measured on the 2-repo corpus with no environment flags: extOK 0 -> 782, unresolved 8,002 -> 7,220, and resolved/ambiguous unchanged (a claim is never a resolution and never displaces one). Pinned by the citation fixture's positive rows + policy marker and by mutant cpp/citation-claim-dropped (CAUGHT).",
       "regenerationStatus": "hand-recorded for the same reason as the part_of errata: the generator's measurement inputs are absent from this checkout."
+    },
+    {
+      "date": "2026-11-16",
+      "field": "wholePopulationArms.d7.wallLedger.walls[W4-qualified-name-not-published].disposition",
+      "change": "INSTRUMENT GAP -> STALE PREMISE / DESIGN DECISION (reason replaced, measurement added).",
+      "why": "The wall claimed cpp member symbols publish no distinct qualifiedName. Measured through the production entry over the 2-repo corpus: 6,913 distinct qualifiedName strings; methods 4,222/4,222, constructors 912/912, properties 1,677/1,677. The real residual is the edge TARGET contract (leaf; qualified spelling in metadata.qualified), which the qualified-name join cannot use unless the target is qualified. Rows: 2,771 (the wall's own count on the 31-repo population, unchanged).",
+      "previousDisposition": "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)",
+      "nextOwner": "Lead — changing a target spelling is a cross-consumer vocabulary contract"
     }
   ]
 }
