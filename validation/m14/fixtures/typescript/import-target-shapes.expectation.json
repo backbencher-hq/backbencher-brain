@@ -11,50 +11,50 @@
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "import-target-shapes\u0000./side-effect.css:*", "meta.localBinding": true,
       "meta.isSideEffectImport": true
     },
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "import-target-shapes\u0000@scope/pkg/styles:*", "meta.localBinding": true,
       "meta.isSideEffectImport": true
     },
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "import-target-shapes\u0000./namespace:*", "meta.localBinding": true
     },
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "alpha"
     },
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "beta"
     },
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "defaultExport"
     },
     {
       "type": "imports",
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "import-target-shapes\u0000./legacy:*", "meta.localBinding": true
     }
   ],
   "forbidRelationships": [
     {
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "renamed",
       "type": "imports"
     },
     {
-      "from": "import-target-shapes",
+      "from": "(file)",
       "target": "default",
       "type": "imports"
     }

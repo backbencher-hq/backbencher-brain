@@ -2,15 +2,15 @@
   "fixtureId": "typescript/dotfile-stem.module.config",
   "language": "typescript",
   "authoredBeforeAnalyzerRun": false,
-  "rationale": "THE CONTROL for module-leaf-declaration-file.d (VERIFY_TS10). Leaf identity is `basename` minus the LAST extension: `dotfile-stem.module.config.ts` publishes `dotfile-stem.module.config`. Only a DECLARATION file's `.d` is part of the extension rather than of the name. The NAME is the assertion and it had to be chosen to make the two rules distinguishable — the first version of this fixture was `module-leaf-dotfile-stem.ts`, whose only dots belong to the extension, so a mutant cutting at the FIRST dot returned the identical string and this control passed under it (measured: the mutant run reported 93 pass / 0 fail with the control still green). A control that cannot tell the two rules apart is not a control.",
+  "rationale": "THE CONTROL for module-leaf-declaration-file.d (VERIFY_TS10). Leaf identity is `basename` minus the LAST extension: `dotfile-stem.module.config.ts` publishes `dotfile-stem.module.config`. Only a DECLARATION file's `.d` is part of the extension rather than of the name. The NAME is the assertion and it had to be chosen to make the two rules distinguishable — the first version of this fixture was `module-leaf-dotfile-stem.ts`, whose only dots belong to the extension, so a mutant cutting at the FIRST dot returned the identical string and this control passed under it (measured: the mutant run reported 93 pass / 0 fail with the control still green). A control that cannot tell the two rules apart is not a control.\n\n2026-11-17: the SOURCE of a module-level row is now the file-level sentinel `(file)` (JS-twin parity; `FILE_LEVEL_SOURCE`), so the leaf is no longer the source spelling — the assertion moved WITH the leaf, to `metadata.scopeName`, and the rows carry `metadata.fileLevel: true`. The leaf rule is unchanged and still load-bearing: the forbid rows below are the over-stripped spelling (cutting at the FIRST dot), now on scopeName where that spelling would live.",
   "expectRelationships": [
-    { "type": "imports", "from": "dotfile-stem.module.config", "target": "unocss:defineConfig", "note": "the leaf keeps every interior dot: basename minus the LAST extension" },
-    { "type": "exports", "from": "dotfile-stem.module.config", "target": "presetName" },
-    { "type": "calls", "from": "dotfile-stem.module.config", "target": "defineConfig", "note": "CONTROL: the call edge names the module too and is affected the same way" }
+    { "type": "imports", "from": "(file)", "target": "unocss:defineConfig", "meta.fileLevel": true, "meta.scopeName": "dotfile-stem.module.config", "note": "the leaf keeps every interior dot: basename minus the LAST extension — asserted on metadata.scopeName, where the module leaf now lives, and the source is the file-level sentinel" },
+    { "type": "exports", "from": "(file)", "target": "presetName", "meta.fileLevel": true, "meta.scopeName": "dotfile-stem.module.config" },
+    { "type": "calls", "from": "(file)", "target": "defineConfig", "meta.fileLevel": true, "meta.scopeName": "dotfile-stem.module.config", "note": "CONTROL: the call edge names the module too and is affected the same way" }
   ],
   "forbidRelationships": [
-    { "type": "imports", "from": "dotfile-stem", "target": "unocss:defineConfig", "note": "over-stripping: cutting at the FIRST dot would name the module `dotfile-stem`" },
-    { "type": "exports", "from": "dotfile-stem", "target": "presetName", "note": "over-stripping, exports channel" },
-    { "type": "calls", "from": "dotfile-stem", "target": "defineConfig", "note": "over-stripping, calls channel" }
+    { "type": "imports", "from": "(file)", "meta.scopeName": "dotfile-stem", "note": "over-stripping: cutting at the FIRST dot would name the module `dotfile-stem` — forbidden on the scopeName half, since that is where the leaf lives now" },
+    { "type": "exports", "from": "(file)", "meta.scopeName": "dotfile-stem", "note": "over-stripping, exports channel" },
+    { "type": "calls", "from": "(file)", "meta.scopeName": "dotfile-stem", "note": "over-stripping, calls channel" }
   ]
 }

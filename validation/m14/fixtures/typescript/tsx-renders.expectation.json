@@ -46,7 +46,7 @@
     },
     {
       "type": "calls",
-      "from": "tsx-renders",
+      "from": "(file)",
       "target": "createElement",
       "line_number": 37,
       "note": "React.createElement stays a CALL; its source is the module leaf because a module-level const's initializer has no enclosing declaration"
@@ -96,7 +96,7 @@
     },
     {
       "type": "calls",
-      "from": "tsx-renders",
+      "from": "(file)",
       "target": "Widget",
       "note": "createElement's ARGUMENT is not called by the module that evaluates the constant"
     }

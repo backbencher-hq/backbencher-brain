@@ -9,8 +9,8 @@
     { "name": "Gamma", "kind": "class" }
   ],
   "expectRelationships": [
-    { "type": "exports", "from": "exports-edges", "target": "alpha" },
-    { "type": "exports", "from": "exports-edges", "target": "beta" },
-    { "type": "exports", "from": "exports-edges", "target": "Gamma" }
+    { "type": "exports", "from": "(file)", "target": "alpha" },
+    { "type": "exports", "from": "(file)", "target": "beta" },
+    { "type": "exports", "from": "(file)", "target": "Gamma" }
   ]
 }

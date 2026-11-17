@@ -2,71 +2,79 @@
   "fixtureId": "typescript/module-leaf-declaration-file.d",
   "language": "typescript",
   "authoredBeforeAnalyzerRun": false,
-  "rationale": "PINS THE MODULE LEAF OF A DECLARATION FILE (VERIFY_TS10). `imports` and `exports` edges are sourced from the module, and `moduleLeafName()` was `path.basename(file, path.extname(file))`. `path.extname(\"env.d.ts\")` is `.ts`, so the leaf came out `env.d` while TypeScript — and every consumer that joins these edges — calls that module `env`. Measured by script/m14/ts-production-drop.mjs on element-plus: 368 imports+exports edges across 3 of its 8 .d.ts files were sourced from `env.d` / `components.d` / `index.d`, and a run of the lane's own imports/exports oracle against the same corpus disagreed with the analyzer on 365 of them for that reason alone. Every assertion here is about the SOURCE half of an edge; the target half is pinned by the imports/exports audit (imports 99.9% covered, exports 100.0%, 0 unexplained over a 150-file draw). The two forbid rows are the defect itself and they are load-bearing: with only the expect rows present, a fix that stopped emitting these edges would pass this fixture. 2026-10-18: the `export * from \"./reexport\"` dependency row now exists (re-export emission landed); the count pin moved 2 -> 3 for that row. Every assertion is still about the SOURCE half, and the source of the new row is the same module STEM. 2026-10-18: `export declare function build()` now emits its exports row (ambient-wrapper form) — exports count pin 1 -> 2. The module-leaf assertions are unchanged; every row is still about the SOURCE half.",
+  "rationale": "PINS THE MODULE LEAF OF A DECLARATION FILE (VERIFY_TS10). `imports` and `exports` edges are sourced from the module, and `moduleLeafName()` was `path.basename(file, path.extname(file))`. `path.extname(\"env.d.ts\")` is `.ts`, so the leaf came out `env.d` while TypeScript — and every consumer that joins these edges — calls that module `env`. Measured by script/m14/ts-production-drop.mjs on element-plus: 368 imports+exports edges across 3 of its 8 .d.ts files were sourced from `env.d` / `components.d` / `index.d`, and a run of the lane's own imports/exports oracle against the same corpus disagreed with the analyzer on 365 of them for that reason alone. 2026-10-18: the `export * from \"./reexport\"` dependency row now exists (re-export emission landed); the count pin moved 2 -> 3 for that row. 2026-10-18: `export declare function build()` now emits its exports row (ambient-wrapper form) — exports count pin 1 -> 2.\n\n2026-11-17: the SOURCE of a module-level row is now the file-level sentinel `(file)` (JS-twin parity; `FILE_LEVEL_SOURCE`), so the leaf is no longer the source spelling — every assertion moved WITH the leaf to `metadata.scopeName`, and the rows carry `metadata.fileLevel: true`. The forbid rows are still load-bearing and now read `(file)` + scopeName: the defect they name is a `.d` left on the module name, which is a scopeName spelling, not a source spelling. The target half is pinned by the imports/exports audit (imports 99.9% covered, exports 100.0%, 0 unexplained over a 150-file draw).",
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "target": "helper",
-      "note": "named import, sourced from the module STEM"
+      "meta.fileLevel": true,
+      "meta.scopeName": "module-leaf-declaration-file",
+      "note": "named import; the module leaf is metadata.scopeName now, and the source is the file-level sentinel"
     },
     {
       "type": "imports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "target": "Config",
-      "note": "named import, sourced from the module STEM"
+      "meta.fileLevel": true,
+      "meta.scopeName": "module-leaf-declaration-file",
+      "note": "named import, second channel"
     },
     {
       "type": "exports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "target": "helper",
-      "note": "`export { helper }`, sourced from the module STEM"
+      "meta.fileLevel": true,
+      "meta.scopeName": "module-leaf-declaration-file",
+      "note": "`export { helper }`, exports channel"
     },
     {
       "type": "imports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "target": "module-leaf-declaration-file\u0000./reexport:*",
       "meta.localBinding": true,
+      "meta.scopeName": "module-leaf-declaration-file",
       "note": "`export * from \"./reexport\"` is a MODULE DEPENDENCY: a barrel cannot be evaluated without the module. Added 2026-10-18 with the re-export emitter; the count below moved 2 -> 3 for this row, not for a leaf change."
     },
     {
       "type": "exports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "target": "build",
-      "note": "`export declare function build()` — the ambient-wrapper export form: the exported name is inside the ambient_declaration wrapper, one level down. Added 2026-10-18 with that extractExports arm; the exports count below moved 1 -> 2 for this row (the module LEAF assertion is untouched)."
+      "meta.scopeName": "module-leaf-declaration-file",
+      "note": "`export declare function build()` — the ambient-wrapper export form: the exported name is inside the ambient_declaration wrapper, one level down. Added 2026-10-18 with that extractExports arm; the exports count below moved 1 -> 2 for this row."
     }
   ],
   "expectRelationshipCount": [
     {
       "type": "imports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "equals": 3,
-      "note": "exactly three: two named imports + the `export * from` dependency (added 2026-10-18); all three sourced from the module STEM"
+      "note": "exactly three: two named imports + the `export * from` dependency (added 2026-10-18)"
     },
     {
       "type": "exports",
-      "from": "module-leaf-declaration-file",
+      "from": "(file)",
       "equals": 2,
-      "note": "exactly two: the `export { helper }` row and the `export declare function build()` row (added 2026-10-18); both sourced from the module STEM"
+      "note": "exactly two: the `export { helper }` row and the `export declare function build()` row (added 2026-10-18)"
     }
   ],
   "forbidRelationships": [
     {
       "type": "imports",
-      "from": "module-leaf-declaration-file.d",
-      "target": "helper",
-      "note": "THE DEFECT: a `.d` left on the module name. No consumer spells the module this way."
+      "from": "(file)",
+      "meta.scopeName": "module-leaf-declaration-file.d",
+      "note": "THE DEFECT: a `.d` left on the module name. No consumer spells the module this way, and the leaf is asserted where it now lives."
     },
     {
       "type": "imports",
-      "from": "module-leaf-declaration-file.d",
-      "target": "Config",
+      "from": "(file)",
+      "meta.scopeName": "module-leaf-declaration-file.d",
       "note": "THE DEFECT, second channel"
     },
     {
       "type": "exports",
-      "from": "module-leaf-declaration-file.d",
-      "target": "helper",
+      "from": "(file)",
+      "meta.scopeName": "module-leaf-declaration-file.d",
       "note": "THE DEFECT, exports channel"
     }
   ]

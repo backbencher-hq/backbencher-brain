@@ -31,7 +31,7 @@
     },
     {
       "type": "imports",
-      "from": "imported-binding-claim",
+      "from": "(file)",
       "target": "some-external-pkg:helper",
       "line_number": 11,
       "meta.module": "some-external-pkg",
@@ -41,7 +41,7 @@
     },
     {
       "type": "imports",
-      "from": "imported-binding-claim",
+      "from": "(file)",
       "target": "localThing",
       "line_number": 13,
       "meta.module": "./local-module",
@@ -51,7 +51,7 @@
     },
     {
       "type": "imports",
-      "from": "imported-binding-claim",
+      "from": "(file)",
       "target": "some-external-pkg:reExported",
       "line_number": 34,
       "meta.module": "some-external-pkg",
@@ -76,7 +76,7 @@
     },
     {
       "type": "imports",
-      "from": "imported-binding-claim",
+      "from": "(file)",
       "target": "some-external-pkg:reExported",
       "meta.importedBindings": [
         "reExported"

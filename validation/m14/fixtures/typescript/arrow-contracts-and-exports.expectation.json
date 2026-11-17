@@ -19,10 +19,10 @@
     { "symbol": "notAHandler", "note": "an arrow with no HTTP call in its body must NOT acquire a contract — the fix is not 'every arrow is a handler'" }
   ],
   "expectRelationships": [
-    { "type": "exports", "from": "arrow-contracts-and-exports", "target": "named", "note": "a NAMED export keeps its edge" }
+    { "type": "exports", "from": "(file)", "target": "named", "note": "a NAMED export keeps its edge" }
   ],
   "forbidRelationships": [
-    { "type": "exports", "from": "arrow-contracts-and-exports", "target": "default", "note": "pre-fix: the anonymous `export default function(){}` emitted an edge to `default`, a target no symbol can own" }
+    { "type": "exports", "from": "(file)", "target": "default", "note": "pre-fix: the anonymous `export default function(){}` emitted an edge to `default`, a target no symbol can own" }
   ],
   "expectMetadata": [
     { "linesOfCode": 43, "comment": "all lines (the javascript twin's count), not the 37 non-empty lines this analyzer used to report" }

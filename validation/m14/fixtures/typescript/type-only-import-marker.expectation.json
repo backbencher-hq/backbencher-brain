@@ -6,37 +6,37 @@
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "Config",
       "meta.isTypeOnly": true
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "type-only-import-marker\u0000./ns:*", "meta.localBinding": true,
       "meta.isTypeOnly": true
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "def",
       "meta.isTypeOnly": false
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "Only",
       "meta.isTypeOnly": true
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "value",
       "meta.isTypeOnly": false
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "helper",
       "meta.isTypeOnly": false
     }
@@ -44,19 +44,19 @@
   "forbidRelationships": [
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "helper",
       "meta.isTypeOnly": true
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "Config",
       "meta.isTypeOnly": false
     },
     {
       "type": "imports",
-      "from": "type-only-import-marker",
+      "from": "(file)",
       "target": "value",
       "meta.isTypeOnly": true
     }

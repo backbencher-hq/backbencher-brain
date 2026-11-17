@@ -7,7 +7,7 @@
   "expectRelationships": [
     {
       "type": "calls",
-      "from": "receiver-owner-from-new",
+      "from": "(file)",
       "target": "run",
       "line_number": 31,
       "meta.owner": "Widget",
@@ -15,7 +15,7 @@
     },
     {
       "type": "calls",
-      "from": "receiver-owner-from-new",
+      "from": "(file)",
       "target": "other",
       "line_number": 37,
       "meta.owner": "Widget",
@@ -24,7 +24,7 @@
     },
     {
       "type": "calls",
-      "from": "receiver-owner-from-new",
+      "from": "(file)",
       "target": "other",
       "line_number": 45,
       "meta.owner": "Widget",
@@ -96,7 +96,7 @@
     },
     {
       "type": "calls",
-      "from": "receiver-owner-from-new",
+      "from": "(file)",
       "target": "other",
       "meta.ownerEvidence": "factory",
       "line_number": 37,

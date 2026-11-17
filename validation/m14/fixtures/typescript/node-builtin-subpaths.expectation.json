@@ -19,20 +19,20 @@
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "node-builtin-subpaths",
+      "from": "(file)",
       "target": "node:fs/promises:fsp",
       "meta.evidenceClass": "import_based",
       "note": "the edge is module:item and unchanged by the classification fix — pinned so a future 'fix' cannot quietly drop builtin imports from the graph"
     },
     {
       "type": "imports",
-      "from": "node-builtin-subpaths",
+      "from": "(file)",
       "target": "node:test:test",
       "meta.evidenceClass": "import_based"
     },
     {
       "type": "imports",
-      "from": "node-builtin-subpaths",
+      "from": "(file)",
       "target": "lodash/merge:merge",
       "meta.evidenceClass": "import_based",
       "note": "control: a package subpath keeps its package identity in the edge"

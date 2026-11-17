@@ -7,7 +7,7 @@
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "process",
+      "from": "(file)",
       "target": "@shopify/network:StatusCode",
       "line_number": 13,
       "meta.module": "@shopify/network",

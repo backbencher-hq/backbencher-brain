@@ -7,62 +7,62 @@
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "alpha",
       "line_number": 29,
       "note": "THE GAIN: a named re-export is a dependency on ./vendor/alpha for the name `alpha`. Same `path:item` shape a static import uses, so one consumer rule covers both"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "beta",
       "line_number": 30,
       "note": "the item is the name ASKED FOR (`beta`), not the name published (`renamedBeta`). An alias is what THIS file calls the binding; the name is what the exporting module calls it, and only the second can be joined against that module. The exports edge below carries `renamedBeta` \u2014 the two halves answer different questions and conflating them asks a module for a name it does not export"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "re-export-module-dependency\u0000./vendor/gamma:*", "meta.localBinding": true,
       "line_number": 31,
       "note": "the STAR form, in the whole-module shape the analyzer already uses for a namespace import and for a side-effect import"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "re-export-module-dependency\u0000./vendor/gamma-ns:*", "meta.localBinding": true,
       "line_number": 32,
       "note": "`export * as ns from` takes the MODULE ITSELF under the alias `ns`, so the dependency is the whole-module `*` shape \u2014 the same target a namespace import publishes, because it asks exactly as much of the module. The `*` token is INSIDE namespace_export, so a bare token check on the statement misses this shape entirely"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "delta",
       "line_number": 33
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "Epsilon",
       "line_number": 34,
       "note": "`export type { \u2026 } from` \u2014 a TYPE-only re-export is still a module dependency: the type cannot be checked without the module"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "zeta",
       "line_number": 39,
       "note": "the CONTROL: an ordinary static import, unchanged by this fix. Pinned so the re-export rows cannot be mistaken for the static-import path having moved"
     },
     {
       "type": "exports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "alpha",
       "line_number": 29,
       "note": "the export half, unchanged: the EXPORTED name, alias when there is one"
     },
     {
       "type": "exports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "gammaNs",
       "line_number": 32
     }
@@ -70,31 +70,31 @@
   "forbidRelationships": [
     {
       "type": "exports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "*",
       "note": "THE REFUSAL, PINNED. `export * from \"./m\"` re-exports a set this file cannot name, and an exports edge needs a NAME. Shipping `exports: barrel -> \"*\"` would be the X8/R7 unresolvable-endpoint class, and pool-worker's angle-bracket filter is not what would stop it \u2014 `*` passes every universal target rule"
     },
     {
       "type": "exports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "beta",
       "note": "forbidden on purpose: `export { beta as renamedBeta } from \"./m\"` publishes the name `renamedBeta` (pinned above), so an edge to `beta` would name a symbol this module does not publish \u2014 the exported name is the alias, and the source name belongs to the other module"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "./vendor/empty:*",
       "note": "`export {} from \"./m\"` has an EMPTY binding list. It is not a dependency-for-side-effects the way `import \"./m\"` is, and the analyzer already distinguishes the two \u2014 the side-effect rule keys on an ABSENT import_clause, not on an empty item list"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "renamedBeta",
       "note": "the module path and the item name belong to the same STATEMENT. An earlier version of the re-export import collector re-scanned the global exports array by line-range overlap and fabricated exactly this cross-module pairing when two export statements shared a line"
     },
     {
       "type": "imports",
-      "from": "re-export-module-dependency",
+      "from": "(file)",
       "target": "renamedBeta",
       "note": "THE DEFECT THIS FIXTURE CAUGHT IN ITS OWN AUTHOR'S FIRST CUT. The dependency edge published the PUBLISHED name, so it asked `./vendor/beta` for `renamedBeta` \u2014 a name that module does not export, i.e. an endpoint no index can join. Found by writing the oracle (script/m14/oracles/typescript-imports-exports.ts), whose import rule states the opposite in as many words: 'an ALIAS is not part of the name, because the alias is what THIS file calls it and the name is what the exporting module calls it'. A gate that had been watching this label would have caught it; this label had none, which is the DERIVATION finding IMPORTS_ENUM is about."
     }

@@ -71,6 +71,19 @@ type Row = { label: string; end: "source" | "target"; value: string; file: strin
 const notIdent: Row[] = []
 const placeholder: Row[] = []
 const empty: Row[] = []
+/** THE FILE-LEVEL SENTINEL: a module-level row's source is `(file)` BY DESIGN (2026-11-17,
+ *  JS-twin parity) — it names the FILE, not a symbol, and `metadata.fileLevel` says so. Applying
+ *  the identifier test to it convicts every correct module row (measured 373 on element-plus/400
+ *  after the migration), so the last two counters test the CONTRACT instead: a sentinel source
+ *  must carry metadata.fileLevel:true, and a row carrying the flag must not be sourced elsewhere. */
+const fileLevel: Row[] = []
+const fileLevelBroken: Row[] = []
+/** BINDING-KEY targets: `<scope>\u0000<binding>` (BINDING_SEP, src/ast/types.ts) is a CLAIM KEY the
+ *  store verifies, not a name — the imports-target argument, one level down. Measured: every
+ *  remaining not-an-identifier endpoint on element-plus/400 after the file-level migration was
+ *  one of these (calls 211, uses 51, references 16 — e.g. `render\u0000encode`), so convicting
+ *  them would report the lane's local-binding channel as fabrication. */
+const bindingKey: Row[] = []
 const unresolvedByLabel = new Map<string, Map<string, number>>()
 const resolveByLabel = new Map<string, { resolves: number; total: number }>()
 
@@ -145,14 +158,32 @@ const secondPass = async (): Promise<void> => {
       for (const [end, key] of [["source", "source"], ["target", "target"]] as const) {
         const v = String((rel0 as any)?.[key] ?? (end === "source" ? rel0?.from : rel0?.to) ?? "")
         if (!v) { if (empty.length < 60) empty.push({ label, end, value: v, file: rel }); continue }
+        const meta = (rel0 as any)?.metadata ?? {}
+        if (end === "source" && v === "(file)") {
+          if (meta.fileLevel === true) { if (fileLevel.length < 400) fileLevel.push({ label, end, value: v, file: rel }); continue }
+          if (fileLevelBroken.length < 40) fileLevelBroken.push({ label, end, value: v, file: rel })
+          continue
+        }
+        if (end === "source" && meta.fileLevel === true && v !== "(file)") {
+          if (fileLevelBroken.length < 40) fileLevelBroken.push({ label, end, value: v, file: rel })
+        }
         // `imports` publishes a COMPOUND endpoint by contract — `<specifier>:<name>`,
         // where the specifier is a PATH and the pair is a lookup key rather than a
         // name. Applying the name test to it convicts 378 correct rows on a 200-file
         // draw, so the test is applied to the NAME HALF, which is the part that is
         // supposed to be a name.
-        const subject = label === "imports" && end === "target" ? (v.slice(v.lastIndexOf(":") + 1) || v) : v
-        if (!nameShapeOk(subject)) { if (notIdent.length < 400) notIdent.push({ label, end, value: v, file: rel }); continue }
-        if (PLACEHOLDER_LITERALS.has(subject.toLowerCase())) { if (placeholder.length < 400) placeholder.push({ label, end, value: v, file: rel }); continue }
+        // `imports` TARGETS are a COMPOUND LOOKUP KEY by contract — `<specifier>:<name>`,
+        // `<scope>\u0000<module>:*`, or a bare declared name for a local named import. Applying a
+        // name test to any half of it convicts correct rows (the `*` member of a namespace row is
+        // not an identifier; a side-effect row names a path). The contract comment in the file
+        // header says the test belongs on the NAME HALF; measurement showed the half is not
+        // recoverable for every row shape, so the fabrication tests are not applied at all and the
+        // shape is audited by the imports/exports audit instead. Resolution is still counted.
+        if (end === "target" && v.indexOf("\u0000") >= 0) { if (bindingKey.length < 5000) bindingKey.push({ label, end, value: v, file: rel }); continue }
+        if (!(label === "imports" && end === "target")) {
+          if (!nameShapeOk(v)) { if (notIdent.length < 5000) notIdent.push({ label, end, value: v, file: rel }); continue }
+          if (PLACEHOLDER_LITERALS.has(v.toLowerCase())) { if (placeholder.length < 5000) placeholder.push({ label, end, value: v, file: rel }); continue }
+        }
         if (end === "target") {
           const hit = universe.has(v) || own.has(v) || v.split(".").every((seg) => universe.has(seg))
           bumpRes(label, hit)
@@ -169,7 +200,7 @@ console.log(`DERIV_TS endpoint probe — ${REPO}@${rev.slice(0, 10)}`)
 console.log(`${admitted.length} files, ${universe.size} distinct declared names in the universe, ${edges.toLocaleString()} edges\n`)
 console.log(`${w("label", 14)}${w("target edges", 14)}${w("corpus-resolves", 16)}${w("%", 8)}top unresolved target names`)
 console.log("-".repeat(120))
-const out: any = { at: new Date().toISOString(), corpus: REPO, revision: rev, files: admitted.length, universeSize: universe.size, edges, types: {}, emptyEndpoints: empty, notAnIdentifier: notIdent, placeholderLiterals: placeholder }
+const out: any = { at: new Date().toISOString(), corpus: REPO, revision: rev, files: admitted.length, universeSize: universe.size, edges, types: {}, emptyEndpoints: empty, notAnIdentifier: notIdent, placeholderLiterals: placeholder, fileLevelSources: fileLevel, fileLevelContractViolations: fileLevelBroken, bindingKeyTargets: bindingKey }
 for (const t of ALL_TYPES) {
   const r = resolveByLabel.get(t) ?? { resolves: 0, total: 0 }
   const un = [...(unresolvedByLabel.get(t) ?? new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
@@ -182,7 +213,12 @@ const byLabel = (rows: Row[]): string => {
   return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k}:${n}`).join("  ")
 }
 console.log(`\nEMPTY endpoints: ${empty.length === 0 ? "(none)" : byLabel(empty)}`)
-console.log(`NOT-AN-IDENTIFIER endpoints: ${notIdent.length === 0 ? "(none)" : byLabel(notIdent)}`)
+console.log(`FILE-LEVEL sources (metadata.fileLevel true, source "(file)"): ${fileLevel.length}`)
+console.log(`BINDING-KEY targets (<scope>\u0000<binding>, a claim key by contract): ${bindingKey.length === 0 ? "(none)" : byLabel(bindingKey)}`)
+console.log(`FILE-LEVEL CONTRACT VIOLATIONS (sentinel without the flag, or flag without the sentinel): ${fileLevelBroken.length === 0 ? "(none)" : byLabel(fileLevelBroken)}`)
+for (const r of fileLevelBroken.slice(0, 40)) console.log(`    ${r.label} ${r.end}=${JSON.stringify(r.value)}  ${r.file}`)
+const CAP = 5000
+console.log(`NOT-AN-IDENTIFIER endpoints: ${notIdent.length === 0 ? "(none)" : byLabel(notIdent)}${notIdent.length >= CAP ? `  ** TRUNCATED AT ${CAP}: the by-label counts above may be a lower bound` : ""}`)
 for (const r of notIdent.slice(0, 60)) console.log(`    ${r.label} ${r.end}=${JSON.stringify(r.value)}  ${r.file}`)
 console.log(`PLACEHOLDER-LITERAL endpoints: ${placeholder.length === 0 ? "(none)" : byLabel(placeholder)}`)
 for (const r of placeholder.slice(0, 20)) console.log(`    ${r.label} ${r.end}=${JSON.stringify(r.value)}  ${r.file}`)

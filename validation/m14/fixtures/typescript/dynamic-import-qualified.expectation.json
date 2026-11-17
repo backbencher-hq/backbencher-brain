@@ -10,6 +10,6 @@
     { "symbol": "load", "notIncludes": ["import"] }
   ],
   "expectRelationships": [
-    { "type": "imports", "from": "dynamic-import-qualified", "target": "dynamic-import-qualified\u0000./lazy:*", "meta.localBinding": true }
+    { "type": "imports", "from": "(file)", "target": "dynamic-import-qualified\u0000./lazy:*", "meta.localBinding": true }
   ]
 }

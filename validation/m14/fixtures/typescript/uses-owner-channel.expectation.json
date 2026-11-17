@@ -1,0 +1,20 @@
+{
+  "fixtureId": "typescript/uses-owner-channel",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE USES HALF OF THE OWNER CHANNEL (2026-11-17, JS-twin parity). A member READ now carries metadata.owner + metadata.ownerEvidence from the same per-file receiver facts the calls pass uses — the keys member-owner-resolution.ts reads to withdraw the name binding and re-resolve inside the owner. The channel is pinned on the four syntactic forms the lane's calls side already covers (this.<field>, assignment from new, param annotation, array element) and the honest other half is pinned too: a read through an untyped local must state NO owner AND carry typescriptUnresolvedReceiver, because a member name on an untyped receiver cannot identify a declaration. The forbid is scoped to meta.owner=Widget so it fails only on an over-claim (the row itself is legitimate and must exist).",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class" },
+    { "name": "Holder", "kind": "class" }
+  ],
+  "expectRelationships": [
+    { "type": "uses", "from": "readThis", "target": "value", "meta.owner": "Widget", "meta.ownerEvidence": "this", "note": "THE GAIN: the read of this.inner.value states the receiver's type — before this change the uses half of the channel was empty (0 of 606 rows on a 200-file stride)" },
+    { "type": "uses", "from": "viaNew", "target": "value", "meta.owner": "Widget", "meta.ownerEvidence": "assignment", "note": "const w = new Widget(): the new expression is the evidence, on the READ side" },
+    { "type": "uses", "from": "viaParam", "target": "value", "meta.owner": "Widget", "meta.ownerEvidence": "param", "note": "w: Widget — annotation evidence on a read" },
+    { "type": "uses", "from": "viaElement", "target": "value", "meta.owner": "Widget", "meta.ownerEvidence": "element", "note": "items: Widget[] — the subscript states the element, one hop" },
+    { "type": "uses", "from": "viaUntyped", "target": "value", "meta.typescriptUnresolvedReceiver": true, "note": "THE CONTROL: the row exists (the read is real) but states no owner and carries the marker, so the store withdraws the name binding instead of guessing" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "viaUntyped", "target": "value", "meta.owner": "Widget", "note": "a member name on an untyped receiver must never be given an owner — the marker is the honest half, not an owner" }
+  ]
+}

@@ -51,6 +51,26 @@ import * as path from "path"
 import * as fs from "fs"
 import { treeContainsNodeType } from "./node-walk"
 
+/**
+ * THE FILE-LEVEL SENTINEL — the SOURCE of a relationship whose actor is the MODULE, not a symbol.
+ *
+ * `(` and `)` cannot appear in a TypeScript identifier, so no declaration can be named `(file)`
+ * and the store's name lookup cannot attach one of these rows to a symbol by accident. The
+ * terminal tag pass at the end of `analyze()` sets `metadata.fileLevel: true` + `metadata.scopeName`
+ * on every row carrying this source, which is what `parallel-indexer.ts` reads (M60/#910) to record
+ * the project-relative path as `source_external`.
+ *
+ * WHY THIS REPLACED `moduleLeafName()` AS A SOURCE (2026-11-17, JS-twin parity): a module leaf is
+ * the file's basename — a FILE PATH FRAGMENT wearing an endpoint's clothes whenever the stem is not
+ * an identifier (`crowdin-credentials`, `api-table`, `component-changelog`). Measured with
+ * `ts-r7-endpoint-probe.ts` on element-plus@1b45ace0: 400 NOT-AN-IDENTIFIER endpoints in 400 files
+ * (261 of them SOURCES: imports 168, exports 49, calls 44) — an edge asserting a caller that cannot
+ * exist. The javascript twin migrated `exports` to this sentinel first; this lane migrates every
+ * module-level source class (imports, exports, and the calls fallback) because the store mechanism
+ * is family-level and already used by nine analyzers.
+ */
+const FILE_LEVEL_SOURCE = "(file)"
+
 // ============================================================================
 // BUILTIN FILTER - C#-family contract
 // Console output (console.log) and Object universal leaf methods are filtered;
@@ -2857,7 +2877,16 @@ class TypeScriptAnalysisRunner {
     this._pendingReExportImports = []
 
     // PHASE 4: Analyze relationships between symbols
-    this.extractRelationships(rootNode, relationships, symbols, exports)
+    //
+    // ONE RECEIVER-TYPE COLLECTION PER FILE (2026-11-17, JS-twin parity). The calls pass used to
+    // build this map itself and the uses pass had no access to it at all — which is why every
+    // member read was published with NO `metadata.owner` (measured 0 of 606 uses rows on a 200-file
+    // stride) while the JavaScript twin had carried owner per chain segment since its audit. The
+    // collection is a pure function of the tree, so building it once here and handing it to BOTH
+    // walks costs one walk instead of two and is what makes a call and a read of the same receiver
+    // unable to disagree.
+    const receiverFacts = this.collectLocalReceiverTypes(rootNode)
+    this.extractRelationships(rootNode, relationships, symbols, exports, receiverFacts)
 
     // PHASE 5: Add containment relationships
     this.addContainmentRelationships(symbols, relationships)
@@ -2909,6 +2938,23 @@ class TypeScriptAnalysisRunner {
     // guarded rather than absent on purpose: the analyzer must be ready to read a node that the
     // current bytes do not produce, and the guard is the node type, not a flag.
     this.extractReferenceDirectives(rootNode, relationships, filePath)
+
+    // THE FILE-LEVEL TAG PASS (2026-11-17, JS-twin parity; see FILE_LEVEL_SOURCE).
+    //
+    // It runs LAST, after every emission pass (calls/imports/exports in PHASE 4, the module-level
+    // `part_of` rows from reference directives included), because a tag pass that runs before an
+    // emitter silently misses that emitter's rows — the reason this block sits here and not beside
+    // PHASE 5. Every row whose actor is the MODULE carries the sentinel as its source; this pass
+    // declares that fact in the metadata the store reads: `metadata.fileLevel: true` makes
+    // `parallel-indexer.ts` record the project-relative path as `source_external` (M60/#910), and
+    // `metadata.scopeName` keeps the module leaf the analyzer would have spelled — nothing is
+    // discarded, the row simply stops asserting that a FILE PATH FRAGMENT is a symbol. It cannot
+    // touch a symbol-sourced row: the test is string identity against a spelling no declaration
+    // can carry.
+    for (const rel of relationships) {
+      if (rel.source !== FILE_LEVEL_SOURCE) continue
+      rel.metadata = { ...(rel.metadata ?? {}), fileLevel: true, scopeName: this.moduleLeafName() }
+    }
 
     // DERIV_TS (2026-10-03): ONE mention, ONE label.
     //
@@ -5744,6 +5790,7 @@ class TypeScriptAnalysisRunner {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     exports: ASTEngine.ExportInfo[],
+    receiverFacts: ReceiverFacts,
   ): void {
     // 1. Extract inheritance (extends) relationships from classes
     this.extractInheritanceRelationships(symbols, relationships)
@@ -5752,10 +5799,10 @@ class TypeScriptAnalysisRunner {
     this.extractImplementsRelationships(symbols, relationships)
 
     // 3. Extract call relationships (and, in the same walk, instantiations)
-    this.extractCallRelationships(node, relationships, symbols)
+    this.extractCallRelationships(node, relationships, symbols, receiverFacts)
 
     // 4. Extract usage/reference relationships
-    this.extractUsageRelationships(node, relationships, symbols)
+    this.extractUsageRelationships(node, relationships, symbols, receiverFacts)
 
     // 6. Extract decorator relationships
     this.extractDecoratorRelationships(symbols, relationships)
@@ -7295,15 +7342,17 @@ class TypeScriptAnalysisRunner {
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    receiverFacts: ReceiverFacts,
   ): void {
     // PERF: `ancestorInDecorator` is threaded rather than recomputed per node.
     // See `inDecoratorPosition`: web-tree-sitter's `.parent` is a WASM descendant
     // search, so the old per-node climb was O(n x depth) of expensive calls and
     // profiled at 5.2% of the vue lane's wall clock.
-    // Read once per file, before the walk: the declaration of a receiver is not
-    // guaranteed to precede its call in every construct (hoisted function
-    // bodies, closures), so an in-walk map would miss it on order alone.
-    const receiverTypes = this.collectLocalReceiverTypes(node)
+    //
+    // THE RECEIVER FACTS ARE BUILT ONCE IN `analyze` and SHARED WITH THE USES WALK (2026-11-17):
+    // a call and a read of the same receiver must not be able to disagree, and the twin has kept
+    // one collection per file since its audit. See the PHASE 4 note at the call site.
+    const receiverTypes = receiverFacts
     const processNode = (
       n: Node,
       currentSymbol: ASTEngine.UniversalSymbol | null,
@@ -7320,7 +7369,7 @@ class TypeScriptAnalysisRunner {
       // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
       // name — the same source imports/exports use — never a "(script)"
       // placeholder no consumer can resolve (JS parity: moduleName).
-      const callSource = currentSymbol || { name: this.moduleLeafName(), scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
+      const callSource = currentSymbol || { name: FILE_LEVEL_SOURCE, scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (
         (n.type === "call_expression" || n.type === "new_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element")
       ) {
@@ -7498,6 +7547,7 @@ class TypeScriptAnalysisRunner {
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
+    receiverFacts: ReceiverFacts,
   ): void {
     // The usage pass only links usages to KNOWN project symbols. This map
     // was previously declared but never populated, making every References/
@@ -7937,7 +7987,31 @@ class TypeScriptAnalysisRunner {
             // stored stripped).
             const lookupName = name
             if (!!symbolNames[lookupName] && lookupName !== currentSymbol.name) {
-              const key = `${currentSymbol.name}:${name}:field`
+              // THE USES HALF OF THE OWNER CHANNEL (2026-11-17, JS-twin parity). A member READ
+              // carries the same receiver evidence a member CALL does, from the SAME per-file
+              // collection: `metadata.owner` + `metadata.ownerEvidence` are the keys
+              // `member-owner-resolution.ts` reads (it withdraws the name binding for an
+              // owner-carrying calls/uses row and re-resolves inside the owner), so without these
+              // two keys a read like `cfg.worker.run()`'s `cfg.worker` was bound by the name model
+              // and its arbitrary winner — measured 0 of 606 uses rows carried an owner on a
+              // 200-file stride before this change.
+              //
+              // The UNRESOLVED marker is the honest other half, exactly as on the calls side: when
+              // the receiver is a local binding whose type this file does not state, a member name
+              // cannot identify a declaration, so the row keeps its spelling and the store
+              // withdraws the name binding (`typescriptUnresolvedReceiver`, consumed by
+              // `claimOwnerCarryingTargets`). Adding the owner WITHOUT the marker would be a
+              // one-sided claim — the name model would keep binding every row the analyzer could
+              // not type.
+              const ownerHint = this.receiverOwnerType(n, receiverFacts, this.scopeIdOf(n))
+              const unresolvedReceiver =
+                !ownerHint && this.hasLocalReceiverBinding(n, receiverFacts, this.scopeIdOf(n))
+              // THE DEDUPE KEY GAINS THE OWNER when one is stated. Two reads of the SAME member
+              // name through receivers of DIFFERENT types are two facts; collapsing them was the
+              // calls-side bug the JS audit fixed for `this.<field>` maps (a row from class A could
+              // be charged to B). Rows with no owner keep the old key byte for byte, so the
+              // no-owner population is unchanged.
+              const key = `${currentSymbol.name}:${name}:field${ownerHint ? `:${ownerHint.type}` : ""}`
               if (!processed[key]) {
                 processed[key] = true
                 relationships.push({
@@ -7949,6 +8023,8 @@ class TypeScriptAnalysisRunner {
                   metadata: {
                     isFieldAccess: true,
                     line: prop.startPosition.row + 1,
+                    ...(ownerHint ? { owner: ownerHint.type, ownerEvidence: ownerHint.evidence } : {}),
+                    ...(unresolvedReceiver ? { typescriptUnresolvedReceiver: true } : {}),
                   },
                 })
               }
@@ -8525,7 +8601,7 @@ class TypeScriptAnalysisRunner {
         // + 5 py external items, recorded at the `bareLocalItem` comment below) — a false binding
         // is worse than an unresolved edge. projectIndex is LEAD-SCOPED separately.
         relationships.push({
-          source: this.moduleLeafName(),
+          source: FILE_LEVEL_SOURCE,
           target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
           type: ASTEngine.RelationshipType.Imports,
           confidence: 1.0,
@@ -8557,7 +8633,7 @@ class TypeScriptAnalysisRunner {
       const hasClause = node.namedChildren.some((c: any) => c && c.type === "import_clause")
       if (!hasClause) {
         relationships.push({
-          source: this.moduleLeafName(),
+          source: FILE_LEVEL_SOURCE,
           // the module-dependency class — binding spelling, reason at the require-clause site above
           target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
           type: ASTEngine.RelationshipType.Imports,
@@ -8599,7 +8675,7 @@ class TypeScriptAnalysisRunner {
         // binding is the whole module, so it takes the binding spelling, not `${modulePath}:*`.
         const wholeModuleBinding = itemName === "*"
         relationships.push({
-          source: this.moduleLeafName(),
+          source: FILE_LEVEL_SOURCE,
           target: wholeModuleBinding
             ? `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`
             : bareLocalItem ? itemName : `${modulePath}:${itemName}`,
@@ -8663,7 +8739,7 @@ class TypeScriptAnalysisRunner {
           const itemName = nameNode ? nameNode.text : ""
           if (itemName.length === 0) continue
           relationships.push({
-            source: this.moduleLeafName(),
+            source: FILE_LEVEL_SOURCE,
             target: localModule ? itemName : `${modulePath}:${itemName}`,
             type: ASTEngine.RelationshipType.Imports,
             confidence: 1.0,
@@ -8684,7 +8760,7 @@ class TypeScriptAnalysisRunner {
       const namespaceExport = node.namedChildren.find((c: any) => c && c.type === "namespace_export")
       const aliasNode = namespaceExport ? namespaceExport.namedChild(namespaceExport.namedChildCount - 1) : null
       relationships.push({
-        source: this.moduleLeafName(),
+        source: FILE_LEVEL_SOURCE,
         target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
         type: ASTEngine.RelationshipType.Imports,
         confidence: 1.0,
@@ -8723,7 +8799,7 @@ class TypeScriptAnalysisRunner {
         const modulePath = pathArg ? literalModulePath(pathArg) : undefined
         if (modulePath) {
           relationships.push({
-            source: this.moduleLeafName(),
+            source: FILE_LEVEL_SOURCE,
             // the module-dependency class — binding spelling, reason at the require-clause site above
             target: `${this.moduleLeafName()}${BINDING_SEP}${modulePath}:*`,
             type: ASTEngine.RelationshipType.Imports,
@@ -8767,7 +8843,7 @@ class TypeScriptAnalysisRunner {
       // one per statement in a file that default-exports twice.
       if (item.name === "default" && item.type === "default_export_expression") continue
       relationships.push({
-        source: this.moduleLeafName(),
+        source: FILE_LEVEL_SOURCE,
         target: item.name,
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
@@ -9479,7 +9555,10 @@ class TypeScriptAnalysisRunner {
           if (!emitted.has(key)) {
             emitted.add(key)
             relationships.push({
-              source: stem,
+              // THE MODULE IS THE ACTOR, so the source is the file-level sentinel (2026-11-17);
+              // `stem` stays in the DEDUPE KEY because it identifies the owner file, and the
+              // terminal tag pass adds the leaf back as `metadata.scopeName`.
+              source: FILE_LEVEL_SOURCE,
               target,
               type: ASTEngine.RelationshipType.PartOf,
               confidence: 0.95,

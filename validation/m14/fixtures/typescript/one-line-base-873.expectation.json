@@ -12,8 +12,8 @@
     { "type": "calls", "from": "use", "target": "make", "line_number": 17, "meta.line": 17, "note": "the call on line 17: the row's line and the mirror agree — PRE-FIX these were 17 and 16" },
     { "type": "references", "from": "use", "target": "make", "line_number": 17, "meta.line": 17, "note": "the same site as the call above; PRE-FIX 17 and 16" },
     { "type": "uses", "from": "use", "target": "obj", "line_number": 18, "meta.line": 18, "note": "a template-interpolation read (isTemplateInterpolation) on line 18; PRE-FIX 18 and 17" },
-    { "type": "exports", "from": "one-line-base-873", "target": "make", "line_number": 10, "note": "CONTROL: a row with NO metadata.line — absence is a state, and the normalisation pass must not invent one" },
-    { "type": "exports", "from": "one-line-base-873", "target": "use", "line_number": 16, "note": "CONTROL: same" }
+    { "type": "exports", "from": "(file)", "target": "make", "line_number": 10, "note": "CONTROL: a row with NO metadata.line — absence is a state, and the normalisation pass must not invent one" },
+    { "type": "exports", "from": "(file)", "target": "use", "line_number": 16, "note": "CONTROL: same" }
   ],
   "forbidRelationships": [
     { "type": "calls", "from": "use", "target": "make", "meta.line": 16, "note": "PRE-FIX: the 0-based mirror — one below its own row" },

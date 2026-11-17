@@ -365,7 +365,7 @@ for (const k of Object.keys(totalTally.byEvidence).sort()) {
   if (order.includes(k)) continue
   console.log(`    ownerEvidence=${k} (UNRECOGNISED) ${totalTally.byEvidence[k]}`)
 }
-console.log(`uses edges                       ${totalTally.uses}   · with metadata.owner ${totalTally.usesWithOwner} (the channel's uses half is not emitted by this lane yet)`)
+console.log(`uses edges                       ${totalTally.uses}   · with metadata.owner ${totalTally.usesWithOwner} (the uses half of the channel; emitted since the 2026-11-17 JS-twin parity fix, measured at 33 of 808 on the 200-file stride — this line was "not emitted by this lane yet" before that commit)`)
 if (Object.keys(totalTally.resolution).length > 0) {
   console.log("")
   console.log("PER-EVIDENCE RESOLUTION (production owner rule over this run's pools; declined = falls back to the name model):")

@@ -7,7 +7,7 @@
     { "name": "load", "kind": "function" }
   ],
   "expectRelationships": [
-    { "type": "imports", "from": "dynamic-import", "target": "dynamic-import\u0000./lazy:*", "meta.localBinding": true, "meta.evidenceClass": "import_based" }
+    { "type": "imports", "from": "(file)", "target": "dynamic-import\u0000./lazy:*", "meta.localBinding": true, "meta.evidenceClass": "import_based" }
   ],
   "forbidRelationships": [
     { "type": "calls", "from": "load", "target": "import" }

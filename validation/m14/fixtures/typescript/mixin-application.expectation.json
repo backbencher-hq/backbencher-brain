@@ -35,7 +35,7 @@
   },
   {
    "type": "part_of",
-   "from": "mixin-application",
+   "from": "(file)",
    "target": "fixture-should-not-matter",
    "meta.relationshipType": "reference_directive",
    "note": "the triple-slash reference directive is the one surface that emits part_of on this lane; the mutant that drops the whole type must fail HERE"

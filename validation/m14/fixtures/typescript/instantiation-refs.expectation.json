@@ -9,7 +9,7 @@
     { "name": "w", "kind": "constant" }
   ],
   "expectRelationships": [
-    { "type": "calls", "from": "instantiation-refs", "target": "wrap" },
+    { "type": "calls", "from": "(file)", "target": "wrap" },
     { "type": "references", "from": "w", "target": "Baz", "meta.relationshipType": "type_argument" },
     { "type": "instantiates", "from": "make", "target": "Thing" }
   ],

@@ -29,7 +29,7 @@
   "expectRelationships": [
     {
       "type": "calls",
-      "from": "object-literal-accessor-pair",
+      "from": "(file)",
       "target": "compute",
       "note": "NOTHING LOST. The call lives in the getter's body, and the getter is the accessor the fix skips. Returning false from the extractor (instead of extracting a second symbol) leaves the walker to descend into that body, so the call is still recorded — attributed to the MODULE, which is where this analyzer puts a call from a literal initializer's accessor body, and identically so before the fix (verified both ways: the pre-fix analyzer emits the same single edge). Note the contrast with the containment pin above, whose `from` is the owner variable `o`: containment names the member's container, while this call names the module."
     }

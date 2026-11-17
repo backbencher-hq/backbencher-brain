@@ -12,19 +12,19 @@
   "expectRelationships": [
     {
       "type": "imports",
-      "from": "import-edges",
+      "from": "(file)",
       "target": "List",
       "meta.evidenceClass": "import_based"
     },
     {
       "type": "imports",
-      "from": "import-edges",
+      "from": "(file)",
       "target": "@pkg/core:Logger",
       "meta.evidenceClass": "import_based"
     },
     {
       "type": "imports",
-      "from": "import-edges",
+      "from": "(file)",
       "target": "Config",
       "meta.evidenceClass": "import_based"
     }
