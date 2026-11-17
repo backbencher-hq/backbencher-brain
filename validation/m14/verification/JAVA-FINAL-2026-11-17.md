@@ -23,48 +23,59 @@ Nothing is copied from another environment, and nothing is inferred.
 **64 independent javac facts** across the four oracles. The compiler, not the
 analyzer, is the authority for each of them.
 
-## 1b. Cross-file ancestry — attempted, measured on the production arm, reverted
+## 1b. Cross-file ancestry — the missing publication, then the instrument
 
 `javaOwnerResolvable` walked only the FILE's own scopes, so a member inherited two or
-more levels up through a cross-file parent was refused. A comment above the function
-recorded that the project index had carried `typeBases` since 2026-10-20 and that
-using it was "a separate instrument, not a lane's unilateral change".
+more levels up through a cross-file parent was refused. A source comment recorded that
+the project index had carried `typeBases` since 2026-10-20 and that using it was "a
+separate instrument, not a lane's unilateral change".
 
-That instrument was implemented with a deliberately conservative shape — it ran only
-when the in-file walk found nothing (`hits === 0`), so no row that resolved today
-could start resolving elsewhere — and a red-controlled three-file fixture
-(`Use extends Middle extends Base`, `Base` declaring `inherited()` in another file)
-was added to prove it:
+The first attempt implemented that instrument directly and **regressed** the production
+arm: resolved 646,596 → 645,690. The mechanism matters more than the number —
+`javaOwnerResolvable` is a guard that decides whether to ATTACH an owner, and attaching
+one re-points an edge from a bare name to `Owner.member`. The indexer had resolved the
+bare name by uniqueness; the owner-qualified name resolved to nothing. Reverted.
 
-```
-without the fallback : 106 pass / 1 fail  (java/inherited-chain/Use)
-with the fallback    : 107 / 107
-```
+**The real defect was one level down.** `member-owner-resolution.ts` builds its ancestor
+frontier from `brain_symbol.super_types`, which the store fills from
+`metadata.superTypes` — and Java published that key **only for anonymous classes**, so
+every named Java type reached the resolver with no ancestry at all. PHP, Python and Dart
+publish it; Java did not.
 
-**Then the production arm was measured, and it regressed.** The `--index` gate, run in
-an isolated worktree at the pre-change commit and again with the change, on the same
-population:
+Fixed by publishing `metadata.superTypes` on every Java type symbol, using the same
+`parents` list that `classHierarchy` and the `extends`/`implements` edges already use —
+one source of truth published one level lower, nothing invented, omitted when a type
+declares no supertype.
 
-| metric | without fallback | with fallback | delta |
+The instrument then pays. Measured on the production arm (`--index`, 11,152 `.java`
+files, whole population, same population every column):
+
+| metric | baseline | + `superTypes` | + `superTypes` + owner fallback |
 | --- | ---: | ---: | ---: |
-| edges | 1,479,393 | 1,479,393 | 0 |
-| **resolved** | **646,596** | **645,690** | **-906** |
-| amb(decl) | 168,051 | 166,792 | -1,259 |
-| **unresolved** | **154,068** | **156,233** | **+2,165** |
-| clause-1 mass | 322,119 | 323,025 | +906 |
-| extOK / extFAIL / bindFAIL / causeFAIL | 507,924 / 0 / 0 / 0 | unchanged | 0 |
+| **resolved** | 646,596 | 654,258 | **655,394** |
+| amb(decl) | 168,051 | 168,051 | **166,792** |
+| **unresolved** | 154,068 | 146,406 | 146,529 |
+| **clause-1 mass** | 322,119 | 314,457 | **313,321** |
+| extOK | 507,924 | 507,924 | 507,924 |
+| extFAIL / bindFAIL / causeFAIL | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
 
-**The change was reverted**, together with the fixture that only it could satisfy, and
-the lane is back to 104/104.
+Net: **+8,798 resolved and −8,798 clause-1 mass**, with no new ambiguity and no new
+failures. `calls` alone moved 132,217 → 140,943 resolved.
 
-**Why it regressed — and why the deferral was correct.** `javaOwnerResolvable` is a
-guard that decides whether to ATTACH an owner. Attaching one is not free: it
-re-points the edge from a bare name to `Owner.member`. A bare name that the indexer
-resolved by uniqueness therefore becomes an owner-qualified lookup that does not
-resolve. The instrument cannot be net-positive until owner-qualified call targets
-resolve in the indexer, which is the same store/member-identity work that the
-override-target convention needs. "Exactly one ancestor declares this member" is not
-by itself sufficient evidence to overwrite an edge that already resolves.
+### Red control
+
+New fixture `java/inherited-chain/` — `Use extends Middle extends Base`, where `Middle`
+declares nothing and `Base` (another file) declares `inherited()`. The level-3 file calls
+`inherited()`, two hops up across a file boundary. Run in an isolated worktree at the
+committed state so the working tree was never touched:
+
+| analyzer | result |
+| --- | --- |
+| without the fallback (superTypes present) | **106 pass / 1 fail — `java/inherited-chain/Use`** |
+| with the fallback | **107 / 107** |
+
+A negative control is included: `notInherited()` is declared nowhere and is forbidden
+from appearing, so the fallback cannot manufacture a resolution.
 
 ## 2. M12 differential — fully adjudicated, still failing
 
@@ -272,12 +283,14 @@ The fixture lanes and the SQL-shape argument support it; they do not prove it.
 1. **M12 differential remains `passed:false`.** Every mismatch is classified and
    none is an unexplained analyzer defect, but the differential is not green and
    ground truth was not rewritten to make it green.
-2. **Incoming gate clause 1 remains failing** for the lane (see §3).
-3. **Cross-file canonical identity** — the four override FNs and the bulk of
-   `calls`/`references` ambiguity need an owner/member store API.
+2. **Incoming gate clause 1 remains failing** for the lane, though it narrowed by
+   8,798 edges this batch (§1b): 322,119 → 313,321 on the production arm.
+3. **Cross-file canonical identity** — the remaining `calls`/`references` ambiguity
+   and the owner-qualified override targets need the owner/member store API. The
+   ancestry half of this shipped (§1b); the naming migration did not.
 4. **Full `npm run verify` cannot run to completion on this host, and the
    blocker is not Java.** `audit:fixtures` — the 50-language fixture baseline —
-   **passes** (`java 104/104`, "fixture baseline gate: no regressions"). But
+   **passes** (`java 107/107`, "fixture baseline gate: no regressions"). But
    `audit:differential`'s canonical sweep refuses because pinned corpus repos
    are absent from the shared shelf: it stops on
    `corpus repo missing: …/repositories/P3D-Legacy`, and the header at
@@ -297,71 +310,51 @@ The fixture lanes and the SQL-shape argument support it; they do not prove it.
    only on pull requests that touch Java paths plus `workflow_dispatch`. A skipped
    job would still not be a passing check, which is exactly why none is skipped here.
 
-## 6b. Two candidate fixes were implemented, measured, and rejected
+## 6b. The one remaining gap, and why it is not an analyzer edit
 
-Both were attempts to close the remaining gap inside this lane. Both were reverted
-because measurement showed they make the lane worse. Recording them is the point: it
-turns "we did not do it" into "we tried it and it loses".
+### Owner-qualified override targets — a store migration, not a Java change
 
-### (a) Cross-file owner attachment for inherited calls/uses — REVERTED
+Running the analyzer in exactly the M12 arm shows the four override FN already carry the
+correct declaring owner in `metadata.declaringType`:
 
-Implemented as a conservative fallback in `javaOwnerResolvable` (run only when the
-in-file walk found nothing), with a red-controlled fixture proving it moves
-106/1 → 107/107. On the **production** `--index` arm it regressed:
+```
+UserService.format -> target "format",  declaringType "BaseService"
+UserService.save   -> target "save",    declaringType "Repository"
+User.getId         -> target "getId",   declaringType "Entity"
+User.getName       -> target "getName", declaringType "Entity"
+```
 
-| metric | before | after | delta |
-| --- | ---: | ---: | ---: |
-| resolved | 646,596 | 645,690 | **-906** |
-| unresolved | 154,068 | 156,233 | **+2,165** |
-| clause-1 mass | 322,119 | 323,025 | **+906** |
+which is precisely what the truth qualifies its targets with. The declaring owner is
+**resolved**; only its placement differs — the truth writes it into the target
+(`Entity.getId`), the analyzer writes the leaf into the target and the owner into
+`metadata.declaringType`. Re-spelling the target is a store migration: the arbiter and
+every consumer read those rows, and every override fixture pins the leaf form.
+`JAVA-STATE.md` already records that constraint.
 
-**Mechanism:** `javaOwnerResolvable` is a guard that decides whether to ATTACH an
-owner, and attaching one re-points the edge from a bare name to an owner-qualified
-name. A bare name the indexer had resolved by uniqueness becomes an owner-qualified
-lookup that does not resolve. "Exactly one ancestor declares this member" is not
-sufficient evidence to overwrite an edge that already resolves. Reverted in
-`e4b668651`; analyzer byte-identical to its pre-change form.
-
-### (b) Owner-qualified override targets to close the 4 M12 override FNs — NOT ATTEMPTED
-
-Running the analyzer in exactly the M12 arm proves the declaring owner is already
-resolved: the four edges carry `declaringType` = `BaseService`, `Repository`,
-`Entity` — the exact owners the truth qualifies its targets with. Closing the gap
-means re-spelling the edge TARGET from `getId` to `Entity.getId`. That is a store
-migration: the arbiter and every consumer read these rows, and every override
-fixture pins the leaf form. `JAVA-STATE.md` already records that constraint. The
-information is present; only its placement differs.
-
-### What both dead-ends share
-
-Owner-qualified targets are the prerequisite for both. Until a call/override target
-spelled `Owner.member` resolves in the indexer, attaching owners loses more than it
-gains and re-spelling targets breaks consumers. That member-identity work is shared
-infrastructure across lanes, not a Java edit, and it is the single change that would
-unblock M12's remaining override rows and a meaningful share of the clause-1 mass.
+That is the one item left, it is 4 edge identities out of 116 truth facts, no
+information is missing, and it is blocked on a migration rather than on analysis.
 
 ## 7. Status
 
-The Java analyzer is **verified within a declared support boundary**: 104
-red-controlled fixtures, 64 independent compiler facts, a real SQLite
-persistence round-trip, 34,067/34,067 override edges resolved on the full
-11,152-file corpus, 0.3% unexplained on the programme's own differential over two
-real repositories, and a complete named cause for every one of the 105 FP and 21
-FN — zero unexplained.
+The Java analyzer is **verified within a declared support boundary**: 107
+red-controlled fixtures (10 of them proven to fail on the pre-fix analyzer), 64
+independent compiler facts, a real SQLite persistence round-trip, 34,067/34,067
+override edges resolved on the full 11,152-file corpus, 0.3% unexplained on the
+programme's own differential over two real repositories, and a complete named cause
+for every one of the 105 FP and 21 FN.
 
-**Everything this lane can close on its own is closed.** Of the five remaining
-items in §6, one (CI posture) is now resolved by decision, and the other two
-substantive gaps — owner-qualified call targets and owner-qualified override
-targets — were taken as far as measurement allows: one was implemented and
-reverted because it regressed the production arm, and the other was proven to be
-a spelling difference over information the analyzer already has (§6b).
+This batch closed two of the items previously listed as blocked:
 
-They are **not** unfinished Java work. Both need the same prerequisite: a target
-spelled `Owner.member` must resolve in the indexer. That is shared member-identity
-infrastructure consumed by every lane, and until it exists, every Java-side
-approximation of it measurably loses more than it gains.
+- **Cross-file ancestry** — the missing publication was found and fixed
+  (`metadata.superTypes` on named Java types), and the owner-attachment instrument that
+  had failed without it now pays: **+8,798 resolved edges and −8,798 clause-1 mass** on
+  the production arm, with no new ambiguity and no new failures (§1b).
+- **CI posture** — resolved by decision: workflows stay enabled for the release (§6.6).
 
-The lane is therefore **complete for its boundary and not declared accepted**:
-M12 remains `passed:false`, incoming clause 1 remains failing, and the shared
-member-identity migration that would move both is named as the next programme
-item rather than silently attempted again.
+What remains is one item, and it is a migration rather than an analysis gap: the edge
+TARGET spelling for overrides (`Entity.getId` versus leaf plus `declaringType`), where
+the information is already present and only its placement differs (§6b).
+
+The lane is therefore **complete for its boundary and not declared accepted**: M12
+remains `passed:false` and incoming clause 1 remains failing, both now smaller or fully
+explained. The member-identity naming migration is named as the next programme item.
