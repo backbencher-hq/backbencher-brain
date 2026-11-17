@@ -12,6 +12,7 @@ import { join } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 import { storeResults } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
+import { handleGraphRequest, GRAPH_SCHEMA_VERSION } from "../../src/lsp/graph_request"
 
 const root = mkdtempSync(join(tmpdir(), "bb-java-sqlite-proof-"))
 const projectId = `java-sqlite-proof-${process.pid}-${Date.now()}` as any
@@ -117,7 +118,30 @@ try {
   const ids: Array<{ qualified_name: string; name: string }> =
     db.prepare(`SELECT qualified_name, name FROM brain_symbol WHERE project_id = ? AND name = 'identity'`).all(projectId)
   assertThat(ids.length >= 3, `overloaded/cross-file method declarations lost during indexing: ${JSON.stringify(ids)}`)
-  console.log(`JAVA_SQLITE_E2E_PASS: 4/4 import channel rows, 2/2 file-level dependencies and ${ids.length} overloaded/cross-file declarations stored`)
+  // Exercise the actual LSP bb/graph usages handler and grouping logic,
+  // not a test-only copy of its SQL. Only graph traversal is stubbed because
+  // this probe targets the real indexed file-dependency consumer.
+  for (const [name, file, imported] of [
+    ["Alpha", "alpha/Alpha.java", "beta.Beta"],
+    ["Beta", "beta/Beta.java", "alpha.Alpha"],
+  ]) {
+    const symbol = db.prepare(
+      "SELECT id FROM brain_symbol WHERE project_id = ? AND name = ? LIMIT 1"
+    ).get(projectId, name) as { id: string } | undefined
+    assertThat(symbol?.id, `class ${name} must be indexed to exercise graph usages`)
+    const result: any = await handleGraphRequest(db, projectId,
+      { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: name, mode: "usages" },
+      { traverse: async () => ({
+        root: { id: symbol.id, name, file, language: "java", line: 3, symbolType: "class" },
+        nodes: {}, callers: [], callees: [],
+        summary: { truncated: false, truncationReason: null },
+      }) as any }
+    )
+    const dependencies = result.fileLevel?.dependencies ?? []
+    assertThat(dependencies.some((e: any) => e.moduleSpecifier === imported),
+      `real bb/graph usages must include ${file} -> ${imported}; got ${JSON.stringify(dependencies)}`)
+  }
+  console.log(`JAVA_SQLITE_E2E_PASS: 4/4 import channel rows, 2/2 file-level dependencies and ${ids.length} overloaded/cross-file declarations stored; live graph usages answered both project-local imports`)
 } finally {
   rmSync(root, { recursive: true, force: true })
 }
