@@ -297,6 +297,46 @@ destructured form should stop publishing or the others should start, and that is
 model decision (it would move symbol counts on every corpus), not a bugfix. Recorded here with the
 measurement.
 
+## Relationship witnesses — every label proved to FIRE, not just documented
+
+**New committed gate: `script/m14/javascript-relationship-witness.ts`.** It feeds the analyzer a
+minimal construct for each of the 14 vocabulary labels and asserts a row comes out. No corpus, no
+sampling, no stride — so a label cannot appear "implemented" because a sample happened not to contain
+the construct.
+
+Why this was needed: `renders` has **0 rows on every corpus this lane measures** (the drawn `.js` files
+contain no JSX) and `mixes_in` is 81 rows across 7 corpora. A zero from a corpus is indistinguishable
+from a broken code path, so "EMITTED" rested on triage counts rather than on a construct known to
+produce the label.
+
+| label | witness rows | verdict |
+|---|---|---|
+| calls, extends, implements, uses, imports, exports, contains, references, overrides, instantiates, decorates | 1 each | fires |
+| renders | **2** (`App -> Panel`, `App -> Inner`; lowercase `div` correctly emits nothing) | fires |
+| mixes_in | 1 | fires |
+| **part_of** | **0** | **silent by declared disposition** — no grammar node, and no JSDoc channel either |
+
+**PASS — 13 of 13 implementable labels fire.**
+
+**The gate is proven to fail, which is the only thing that makes a PASS mean anything.** Breaking the
+`renders` witness (returning a literal instead of JSX) turned it into
+`FAIL — 12 of 13 … renders: NO row. The same witness emitted: (none)`, and restoring the witness
+returned PASS.
+
+**And a sandbox lesson re-learned the hard way in the same minute:** the backup copy of the gate was
+written to `/tmp`, which does not persist here — so the restore had to be done by editing the file
+back in place, not by copying. Workspace paths only.
+
+## No regex in the analyzer — re-confirmed
+
+The lane's standing rule is that the analyzer contains **zero regex**. Re-measured this round:
+
+- `grep` for regex literals, `new RegExp`, and `.replace(/`, `.match(/`, `.test(/`, `.split(/`,
+  `.exec(/` on `src/ast/real-javascript-analyzer.ts` → **0 matches**
+- the additions this campaign made (the JSDoc `@implements` parser, the symbol-coverage work) use
+  `indexOf` / `split` on literal separators / character scans, and the new `jsdocTagBodyEnd` boundary
+  is a character loop specifically to keep that true
+
 ## What the store does with an owner claim, and the one thing still open
 
 `claimOwnerCarryingTargets` withdraws the name binding for an owner-carrying row, then

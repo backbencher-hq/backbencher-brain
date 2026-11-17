@@ -359,6 +359,14 @@ csharp only.
 
 ---
 
+**Six documents referenced elsewhere on this page are MISSING and must be REDONE, not restored.**
+They were deleted from this working tree by the 0.1.5 release cycle and exist in NO git history
+(`git log --all` finds no commit for any of them): `JAVASCRIPT-STATE.md`,
+`JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`, `JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`,
+`JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md`, `JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md`,
+`JAVASCRIPT-2026-10-18-EMISSIONS.md`. The two campaign pages (`JAVASCRIPT-OWNER-CHANNEL-AUDIT.md`,
+`JAVASCRIPT-IMPLEMENTS-JSDOC.md`) were reconstructed and do exist.
+
 ## The receiver-owner and source-attribution campaign (2026-11-12 / 11-13)
 
 Four defects in the two dimensions the label/target instruments cannot see — `metadata.owner`
