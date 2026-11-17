@@ -1,0 +1,27 @@
+{
+  "corpus": {
+    "roots": [
+      "fmt",
+      "nlohmann-json"
+    ],
+    "files": 523
+  },
+  "memberLeafNames": 4126,
+  "callUseRows": 63954,
+  "memberLeafRows": 35605,
+  "alreadyOwned": 0,
+  "unowned": 35605,
+  "unownedFromAClassMember": 20580,
+  "unownedFromFileScope": 15025,
+  "samples": [],
+  "unownedSamples": [
+    "calls typed_node -> data",
+    "calls typed_node -> size",
+    "uses push -> value",
+    "calls push -> move",
+    "calls push -> move",
+    "calls get_types -> size",
+    "calls get_types -> empty",
+    "calls data -> empty"
+  ]
+}
