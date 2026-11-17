@@ -8933,6 +8933,38 @@ class TypeScriptAnalysisRunner {
       )
     }
 
+    // JS-TWIN PARITY (2026-11-17): a NAMED function expression is its own actor.
+    //
+    // The javascript walk has rebound reads inside `function handler(){}` to `handler` since its
+    // calls walk was written, and its uses walk was measured 53 + 77 rows wrong (bootstrap's
+    // bundle, lodash's UMD wrapper) before it caught up. This twin listed `function_expression` in
+    // the branch below but only ever consulted a `variable_declarator` parent, so
+    // `const inner = function handler() { outerRead(x); x + offset }` charged BOTH reads to
+    // whatever enclosed the expression (`outer`) — a name that does not contain the read.
+    //
+    // A named function expression is a real runtime function and its own name is the closest
+    // actor. When that name has no published symbol — the common case, because a function-scope
+    // binding is not a symbol in this lane — a synthetic actor is returned: the same mechanism the
+    // calls pass's module-leaf fallback already uses, and it keeps the row's source as the name
+    // the source wrote instead of a symbol that does not contain the read. An ANONYMOUS function
+    // expression keeps the enclosing actor, exactly as the twin does.
+    if (node.type === "function_expression") {
+      const named = node.childForFieldName("name")?.text
+      if (named) {
+        const published =
+          byPos(named, ASTEngine.SymbolKind.Function, node.startPosition.row, node.startPosition.column) ||
+          firstMatchIn(named, (s) => s.kind === ASTEngine.SymbolKind.Function)
+        if (published) return published
+        const synthetic: ASTEngine.UniversalSymbol = {
+          name: named,
+          kind: ASTEngine.SymbolKind.Function,
+          range: this.nodeRange(node),
+          metadata: {},
+        } as ASTEngine.UniversalSymbol
+        return synthetic
+      }
+    }
+
     if (node.type === "arrow_function" || node.type === "function_expression" || node.type === "function") {
       const parent = node.parent
       if (parent?.type === "variable_declarator") {

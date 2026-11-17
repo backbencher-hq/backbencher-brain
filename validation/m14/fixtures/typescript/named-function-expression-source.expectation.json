@@ -1,0 +1,22 @@
+{
+  "fixtureId": "typescript/named-function-expression-source",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JS-TWIN PARITY. `const inner = function handler() { outerRead(x); x + offset }` — the call and the read happen inside `handler`, a named function expression that is a real runtime function. The javascript twin rebinds the calls AND uses walk to a named function expression's own name; this twin only consulted the variable_declarator, so both rows were attributed to `outer`, a name that does not contain them (the bootstrap/lodash class the JS audit measured at 53 + 77 rows). The fix returns the named expression's own actor (published symbol when one exists, synthetic source actor otherwise). The labels are this lane's: a call is `calls`, a plain identifier read of a declared binding is `references` (the `offset` read is not a member read, so `uses` would be a label defect, and the `uses` forbid below is a label control). The ANONYMOUS function expression beside it is the CONTROL: it has no name of its own, so its body keeps the enclosing actor — a fix that rebound every function expression through its variable declarator would source those rows to `anon` and fail the `outer` expectations.",
+  "expectSymbols": [
+    { "name": "outer", "kind": "function" },
+    { "name": "outerRead", "kind": "function" },
+    { "name": "offset", "kind": "variable" }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "handler", "target": "outerRead", "note": "THE GAIN: the call inside the named function expression is sourced to `handler`, not to the enclosing `outer`" },
+    { "type": "references", "from": "handler", "target": "offset", "note": "THE GAIN on the read side: the module binding read inside the named expression is sourced to `handler`" },
+    { "type": "calls", "from": "outer", "target": "outerRead", "note": "CONTROL: the anonymous function expression has no name, so its body's call stays charged to the enclosing `outer`" },
+    { "type": "references", "from": "outer", "target": "offset", "note": "CONTROL: the anonymous expression's read stays charged to the enclosing `outer`" }
+  ],
+  "forbidRelationships": [
+    { "type": "uses", "from": "handler", "target": "offset", "note": "LABEL CONTROL: a plain identifier read is a `references` row in this lane, not a `uses` member read — a fix that changed the label would pass the positive check above only by accident" },
+    { "type": "calls", "from": "anon", "target": "outerRead", "note": "CONTROL: the anonymous expression must not be rebound through its variable-declarator name" },
+    { "type": "references", "from": "anon", "target": "offset", "note": "CONTROL: the anonymous expression must not be rebound through its variable-declarator name" }
+  ]
+}
