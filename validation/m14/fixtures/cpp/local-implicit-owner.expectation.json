@@ -1,0 +1,128 @@
+{
+  "fixtureId": "cpp/local-implicit-owner",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE PER-FILE RECEIVER SHAPE, pinned before the fix existed. C++ name lookup in a member-function body finds the enclosing class's own members BEFORE the enclosing namespace, so a bare call from a member body is bound to that class's member — a fact checkable against the analyzer's OWN published symbols, with no project index. `this->m()` is the same fact spelled out. The index-gated receiver shapes (constructor temp, `new`, typed local) cannot cover this: they refuse everything when the index is absent or incomplete, which is the DEFAULT state of every run that does not pass a complete index. This fixture therefore pins `metadata.owner` in the DEFAULT state — the state the fixture suite runs.\n\nTHE FIX THIS FIXTURE DEMANDS IS A POST-PASS, and the file is shaped to prove it: `shapeLate()` and `shapeThis()` are declared BELOW `run()`, so a walk-time member table sees `shapeBare` and not those two. The class's member list is only complete once the file's symbols are collected. A fix that attached the owner during the walk would pass `shapeBare` and silently drop the late rows — mutant cpp/local-implicit-owner-walk-time-table models exactly that defect.\n\nTHE NEGATIVES ARE THE OTHER HALF, and they grew after the corpus measurement in NEXT-WORK §14.18 showed the first (name-keyed) version of this arm produced false claims. One negative per guard, each refusing a different way of over-claiming: (1) `helper()` from a member body is a name the class does NOT declare; (2) `shared` is BOTH a free function and a Widget member, and `freeCaller` calling it has no enclosing class — the anchor, not the name, decides; (3) `w.shapeUnknown()` is a member call through a receiver whose type the index-free analyzer cannot know — that evidence belongs to the typed-local shape of the INDEX arm, pinned by script/m14/cpp-receiver-wave-verify.ts; (4) a LOCAL lambda named `shapeBare` shadows the member in `withShadow()` — block scope hides class scope ([basic.scope.block]), so the call names the lambda; (5) `using std::swap;` in `withUsing()` introduces `swap` at block scope and HIDES `Widget::swap` ([namespace.udecl]/11) — the idiom that must resolve to std::swap; (6) `alpha::Pair` and `beta::Pair` are two classes with ONE spelling in one file, so a member table keyed by the owner name cannot tell them apart and neither gets a claim (they are also why template specializations, seven of them spelling `UniversalPrinter` in gtest.h, are refused). Mutant cpp/local-implicit-owner-unchecked re-injects the name-keyed version and is caught by these rows.\n\nWHAT THIS FIXTURE DOES NOT CLAIM: it says nothing about resolution (it pins analyzer output), nothing about the index arm, and nothing about the receiver-typing wall's whole-population size. The local conversion measured on the two-repo corpus is recorded in docs/m65-cpp/NEXT-WORK.md §14.18.",
+  "expectSymbols": [
+    { "name": "Widget", "kind": "class", "note": "the enclosing class the shape turns on; declared ONCE in this file, so the local symbol table can answer whether it declares the callee and the claim is admissible." },
+    { "name": "shapeBare", "kind": "method", "ownerName": "Widget", "note": "a member declared above the calling body." },
+    { "name": "shapeLate", "kind": "method", "ownerName": "Widget", "note": "a member declared BELOW the calling body — the post-pass proof." },
+    { "name": "shapeOutOfLine", "kind": "method", "ownerName": "Widget", "note": "a member declared in the class and called from an out-of-line definition; the anchor comes from the qualified declarator." },
+    { "name": "shared", "kind": "method", "ownerName": "Widget", "note": "the member half of the name collision — same spelling as the free function below." },
+    { "name": "Pair", "kind": "class", "note": "declared TWICE in this file (alpha and beta) — the coalescing negative for the owner-name-keyed member table." },
+    { "name": "helper", "kind": "function", "note": "the free function a member body calls; it must not receive Widget as an owner." },
+    { "name": "freeCaller", "kind": "function", "note": "the no-anchor control: a bare call from file scope." }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "shapeBare",
+      "line_number": 43,
+      "meta.owner": "Widget",
+      "note": "IMPLICIT THIS, member declared above the caller: bare `shapeBare()` in a Widget member body is Widget::shapeBare by [basic.lookup.unqual]."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "shapeLate",
+      "line_number": 44,
+      "meta.owner": "Widget",
+      "note": "IMPLICIT THIS, member declared BELOW the caller. THE POST-PASS ASSERTION: the member table is incomplete at this point of the walk, so only a check against the FINISHED symbol table can attach this owner."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "shapeThis",
+      "line_number": 45,
+      "meta.owner": "Widget",
+      "note": "`this->` RECEIVER, spelled out: the receiver is the enclosing class object, and the member is declared below the body as well."
+    },
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "shared",
+      "line_number": 46,
+      "meta.owner": "Widget",
+      "note": "NAME COLLISION, member side: a free function `shared` exists at namespace scope, and the member scope wins name lookup inside a member body."
+    },
+    {
+      "type": "calls",
+      "target": "shapeLambda",
+      "line_number": 59,
+      "meta.owner": "Widget",
+      "note": "IMPLICIT THIS INSIDE A LAMBDA in a member body: the lambda's lookup reaches the enclosing class scope, so the anchor is still Widget. `from` is deliberately not pinned — the lambda's source symbol name is a walker detail, and the assertion is about the owner."
+    },
+    {
+      "type": "calls",
+      "from": "outOfLine",
+      "target": "shapeOutOfLine",
+      "line_number": 69,
+      "meta.owner": "Widget",
+      "note": "OUT-OF-LINE MEMBER BODY: the definition is outside the class body and the enclosing class comes from the qualified declarator `void Widget::outOfLine()`; the member's DECLARATION is inside the class body, which is what the range guard reads."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "run",
+      "target": "helper",
+      "meta.owner": "Widget",
+      "note": "NO MEMBER: Widget does not declare `helper`; a bare call is not a member call merely because it is bare."
+    },
+    {
+      "type": "calls",
+      "from": "freeCaller",
+      "target": "shared",
+      "meta.owner": "Widget",
+      "note": "NO ANCHOR: `shared` IS a Widget member, but the call is from file scope — the name matching a member must not fabricate a receiver."
+    },
+    {
+      "type": "calls",
+      "from": "freeCaller",
+      "target": "helper",
+      "meta.owner": "Widget",
+      "note": "the same no-anchor control on a name that is not a member at all."
+    },
+    {
+      "type": "calls",
+      "from": "takeRef",
+      "target": "shapeUnknown",
+      "meta.owner": "Widget",
+      "note": "UNKNOWN RECEIVER TYPE: `w.shapeUnknown()` needs the receiver's written type, which is the INDEX arm's typed-local shape. The per-file arm must leave it unowned rather than infer."
+    },
+    {
+      "type": "calls",
+      "from": "withShadow",
+      "target": "shapeBare",
+      "meta.owner": "Widget",
+      "note": "BLOCK-SCOPE SHADOWING: the local lambda `shapeBare` hides the member of the same name, so the call names the lambda. A name-keyed member table would claim Widget here — this row is why the walk refuses shadowed candidates."
+    },
+    {
+      "type": "calls",
+      "from": "withUsing",
+      "target": "swap",
+      "meta.owner": "Widget",
+      "note": "USING-DECLARATION SHADOWING: `using std::swap;` introduces `swap` at block scope and hides `Widget::swap` ([namespace.udecl]/11); the call names std::swap."
+    },
+    {
+      "type": "calls",
+      "from": "runPairAlpha",
+      "target": "compute",
+      "meta.owner": "Pair",
+      "note": "NAME COALESCING: `Pair` is declared twice in this file (alpha, beta), so a member table keyed by owner NAME cannot say which class the call is in — no claim."
+    }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "from": "run", "target": "shapeBare", "equals": 1 },
+    { "type": "calls", "from": "run", "target": "shapeLate", "equals": 1 },
+    { "type": "calls", "from": "run", "target": "shapeThis", "equals": 1 },
+    { "type": "calls", "from": "run", "target": "shared", "equals": 1 },
+    { "type": "calls", "from": "outOfLine", "target": "shapeOutOfLine", "equals": 1 },
+    { "type": "calls", "from": "freeCaller", "target": "shared", "equals": 1 },
+    { "type": "calls", "from": "takeRef", "target": "shapeUnknown", "equals": 1 },
+    { "type": "calls", "from": "withShadow", "target": "shapeBare", "equals": 1 },
+    { "type": "calls", "from": "withUsing", "target": "swap", "equals": 1 },
+    { "type": "calls", "from": "runPairAlpha", "target": "compute", "equals": 1 }
+  ]
+}

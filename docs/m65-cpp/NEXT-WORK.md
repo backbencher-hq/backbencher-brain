@@ -14,6 +14,7 @@
 > | corpus | 523 cpp files (524 candidates; 1 routes to `c`), 0 engine parse failures |
 > | symbols / edges | **17,912** / **78,403** |
 > | relationship types emitting | **11** of the 14-value vocabulary (3 ruled absent with grammar evidence) |
+| receiver facts in the DEFAULT analyzer (2-repo) | **2,863** rows carry `metadata.owner` from the index-free arm, 0 failing the census's file-symbol re-check (§14.18 — the wall is NOT closed by it) |
 > | `calls` target resolved | 54,971 / 59,374 = **92.6%** |
 > | `part_of` target resolved | 347 / 360 = **96.4%** — §6 says 97.5%; §14.2 settles it |
 > | `references` target resolved | 205 / 206 = **99.5%** (the miss is `::std::ostream`) |
@@ -1147,3 +1148,108 @@ class member whose enclosing class (or an index ancestor) declares the target le
 many of the 20,580 it converts. That is a check against published facts (the analyzer's own symbols,
 or the project index), not inference. Everything beyond it is the inference project and stays recorded
 as such.
+
+**DONE — §14.18.** The shape shipped. It converted **2,863** of the 20,580 upper bound (13.9%), and
+the corpus measurement forced THREE guards the design had not anticipated: the first cut's 18 declined
+rows were four distinct false-claim classes (template specializations, block-scope shadowing, vendored
+amalgamations, macro-argument calls). The same round found and fixed a regression in the INDEX arm's
+range-for written-type shape. It is a correctness upgrade, not a wall closer — see §14.18 for the
+gate arithmetic and what stays open.
+
+### 14.18 · SHIPPED — the index-free receiver arm, the false claims its first cut made, and a regression it found in the INDEX arm
+
+§14.17 named one shape as the next in-lane step: a call emitted from a class member whose enclosing
+class declares the leaf. Implemented, measured, and shipped **DEFAULT-ON** with
+`BB_CPP_LOCAL_RECEIVER=0` as the kill-switch. It needs no project index, which is the point: the four
+existing shapes refuse everything unless a COMPLETE index arrives, and that is the default state of
+every caller that does not build one.
+
+**The shape.** A bare callee in a member-function body (implicit `this`) and `this->m()`: both are
+bound by [basic.lookup.unqual] to the enclosing class's own member, and the class's published symbols
+are the evidence. A POST-PASS, not walk-time: a member declared BELOW the calling body (`shapeLate`
+in the fixture) is only visible once the file's symbols are complete. Mutant
+`cpp/local-implicit-owner-walk-time-table` is that exact defect and is CAUGHT.
+
+**The first cut was wrong, and only the corpus said so.** Keyed by owner NAME alone it emitted 3,044
+facts. The gate's owner channel declined 18 of them; reading those 18 found FOUR false-claim classes,
+none of them visible in a fixture:
+
+- **template specializations** — seven class declarations spelled `UniversalPrinter` in one header,
+  so a call inside one specialization inherited a member of another (gtest.h, 2 rows);
+- **block-scope shadowing** — `using std::swap; swap(a, b)` inside `AssertionResult::swap` names
+  `std::swap`, and a local lambda/parameter can hide a member the same way (2 rows measured; the class
+  is general, so the general check is implemented);
+- **vendored amalgamations** — `gmock-gtest-all.cc` carries OUT-OF-LINE definitions whose class
+  bodies live in included headers, and the member table had been built from the definitions
+  themselves (10 rows);
+- **macro-argument calls** — `::FMT_POSIX(close(fildes))` inside `test::close` is a macro's argument,
+  not a member call (8 rows; excluded by the class-in-file guard, not by a macro rule).
+
+**The shipped version carries three guards**, each measured against one of those classes:
+
+1. the class is declared EXACTLY ONCE by that name in the file — refuses specializations and
+   same-named classes in different namespaces (fixture `alpha::Pair` / `beta::Pair`);
+2. the member is declared INSIDE that class body — refuses amalgamations / out-of-line-only evidence;
+3. no function-scope binding shadows the name at the call site — a local or parameter via the existing
+   flow-sensitive `locals` roster, and block-scope `using` names via a receiver-specific set collected
+   on the walk (fixture `withShadow`, `withUsing`). The using-name set is deliberately separate from
+   `locals`, so the bare-`uses` shadow rule does not move for a receiver-only reason.
+
+**Measured, DEFAULT state, 2-repo corpus (523 files, 63,954 calls+uses):**
+
+| measure | value |
+|---|---|
+| owner-bearing rows under the first cut | 3,044 |
+| after the three guards | **2,863** of 35,605 member-leaf rows (8.0%) |
+| … bare implicit-`this` / `this->` | 2,859 / 4 (the four include the template spelling `this.Get<Idx>`) |
+| … emitted on a non-`calls` row (must be 0) | **0** |
+| … failing the census's INDEPENDENT re-check against the emitting file's own symbols | **0** |
+| §14.17's 20,580 anchored rows converted | 2,863 (13.9% of that upper bound) |
+
+**Incoming gate, 524-file population incl. `.h`, no environment flags except the one under test:**
+
+| arm | resolved | ambiguous | unresolved | extOK |
+|---|---|---|---|---|
+| before the arm | 51,743 | 18,604 | 7,220 | 782 |
+| shipped (local arm ON) | **51,741** | **18,604** | **7,222** | **782** |
+| kill-switch `BB_CPP_LOCAL_RECEIVER=0` | 51,743 | 18,604 | 7,220 | 782 |
+
+The kill-switch reproduces the pre-arm numbers EXACTLY, so the change is what moved the two rows. The
+owner channel resolved **2,861 of 2,863** and declined 2; **0 rows moved ambiguous/unresolved →
+resolved**, because every channel-resolved row's target name was already project-unique — the name
+model had already bound it, to the same declaration. ⇒ The arm is a **correctness upgrade with a
+2-row recall cost, not a wall closer**. The wall is NOT closed: **15,025** member-leaf rows are
+file-scope calls with no anchor (genuine type inference), and the **83,169** whole-population rows
+still need the corpus machine. The 2 declines are named: both `ScopedFakeTestPartResultReporter::Init`
+in `fmt/test/gtest/gmock-gtest-all.cc`, an out-of-line constructor calling a member. The claim is TRUE
+(the class declares `Init`), but the owner NAME is declared more than once project-wide and no in-file
+covering class exists at the call's line, so the channel's rule-0 identity fallback reads ambiguous
+and production holds the row NULL — a withdrawn binding, not a resolution. Recorded, not "fixed": a
+per-file analyzer cannot see project-wide declaration counts.
+
+**A regression this round found in the INDEX arm, and fixed.** Re-running
+`script/cpp-receiver-wave-verify` (rewritten to measure BOTH arms) reported **5 of 6** indexed
+shapes: the RANGE-FOR typed-local shape, which commit `35e8aaa8a` recorded as closed, was open again.
+The cause is a premise error in `writtenTypesOf`: the branch EXCLUDED the `for_range_loop` node's
+`type`/`declarator` fields, believing they pointed at the range expression and the body. PROBED with
+the shipped parser: they point at exactly what their names say (`for (Widget w : widgets())` →
+`type` = `Widget`, `declarator` = `w`). While the exclusion guard was wrapper identity (`===`,
+always false) the positional scan accidentally produced the right pair; the KAD2 `sameTsNode` fix made
+the guard real, and the branch then typed the range expression and the body instead. Fixed by READING
+the fields (positional scan kept only as a fallback), and the KAD2 comment — which asserted the wrong
+premise as "measured" — corrected in place. Control now **6 of 6**; the `--prove-red` mechanism is
+unchanged. This is the third stale claim this lane has found in a comment marked MEASURED; the
+fixture-and-control pair caught it, prose had not.
+
+**What pins it.** Fixture `cpp/local-implicit-owner` (6 positive rows, including the member declared
+BELOW the calling body; 7 forbid rows, one per false-claim class); mutants
+`cpp/local-implicit-owner-dropped` (evidence loss), `-walk-time-table` (ordering), `-unchecked` (the
+first cut re-injected — caught by the forbid rows). Census `script/cpp-audit/receiver-shape-census.ts`
+extended to print the shape split and to RE-CHECK every claim against the emitting file's symbols.
+Gates green on the shipped tree: cpp fixtures **60/60**, full suite all-pass with **no baseline
+regressions**, cpp mutants **70/70 CAUGHT**, `tsc --noEmit` clean.
+
+**Not claimed.** The arm is not counted on the whole population (the 31-repo corpus is not on this
+machine, so the ledger stays corpus-blocked). It does not attempt file-scope receivers, overload
+selection under `using namespace`, or macro-argument calls. The guards are conservative, so 2,863 is
+a floor for THIS instrument, not a ceiling on the shape.

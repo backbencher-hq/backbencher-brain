@@ -5,8 +5,15 @@
  * THE QUESTION (wall W1-C/W11). The wall ledger prices receiver typing at 370,246 + 83,169 rows over
  * the whole population, and the analyzer says it "will not invent" a receiver type. Before writing
  * any inference, the lane needs the local shape of the wall: of the calls/uses rows whose TARGET is
- * a member leaf (a name some class declares as a member), how many already carry `metadata.owner`
- * (the three implemented shapes), and how many do not.
+ * a member leaf (a name some class declares as a member), how many carry `metadata.owner`, and how
+ * many do not.
+ *
+ * THE BASELINE IS NOW ZERO-OWNED WITH THE INDEX OFF, AND THAT IS THE POINT OF RE-RUNNING IT. When
+ * this probe was written (NEXT-WORK §14.17) the DEFAULT analyzer emitted `metadata.owner` on 0 of
+ * 35,605 member-leaf rows, and 20,580 of the unowned rows were emitted from a class member — the
+ * population an enclosing-class anchor could address. The local arm (NEXT-WORK §14.18) now attaches
+ * the owner for the index-free shapes, so `alreadyOwned` on a default run IS the conversion count,
+ * and the remaining buckets are what the arm did not convert and why.
  *
  * WHAT IT MEASURES, from the analyzer's own output only:
  *   memberLeafs   — every leaf name that ANY symbol carries as a member (`ownerName` set)
@@ -17,9 +24,15 @@
  * source has an `ownerName`) is the case where the enclosing class is known and a receiver-typed
  * shape is at least conceivable; a file-scope source has no such anchor.
  *
- * It does NOT claim which inference is correct, and it does not attempt resolution. It sizes the
- * work. A row counted here is a row whose target is a member LEAF somewhere — that is necessary, not
- * sufficient, for owner qualification.
+ * IT ALSO INDEPENDENTLY RE-CHECKS THE CLAIM, which is the part a census can do and an emission
+ * cannot: for every owned row, the file that emitted it must publish a CALLABLE member (method,
+ * constructor or destructor) with that name under that owner. `ownedUnverifiedInFile` must be 0;
+ * `ownedNonCallRows` must be 0 (the local arm emits on `calls` only). A census that only counted
+ * owners would repeat the emission's own mistake if the emission were wrong.
+ *
+ * It does NOT claim which inference is correct for the UNOWNED rows, and it does not attempt
+ * resolution. It sizes the work. A row counted here for the unowned buckets is a row whose target is
+ * a member LEAF somewhere — that is necessary, not sufficient, for owner qualification.
  *
  * Usage: bun run script/cpp-audit/receiver-shape-census.ts [--json]
  */
@@ -91,18 +104,68 @@ async function main(): Promise<void> {
   let ownedRows = 0
   let unownedFromMember = 0
   let unownedFromFileScope = 0
+  // The local arm's conversion, split by the SHAPE the emission used. `metadata.qualified` is the
+  // only shape witness a row carries: a bare callee repeats the target, `this->m()` writes
+  // `this.<m>`, and any other spelling is an owner from a different arm (the index shapes, when a
+  // caller passes a complete index — this probe never does).
+  let ownedBareImplicit = 0
+  let ownedThis = 0
+  let ownedOther = 0
+  let ownedNonCallRows = 0
+  let ownedUnverifiedInFile = 0
+  const ownedUnverifiedSamples: string[] = []
   const unownedSamples: string[] = []
   const samples: string[] = []
-  for (const r of recs) {
+
+  // Per-file callable members, from the SAME symbol table the post-pass uses but derived here
+  // independently: the audit asks "does the emitting FILE publish this member on this class", not
+  // "did the emission's own bookkeeping agree with itself".
+  const callableMembersByFile: Array<Map<string, Set<string>>> = recs.map((r) => {
+    const table = new Map<string, Set<string>>()
+    for (const s of r.symbols) {
+      const owner = typeof s.ownerName === "string" ? String(s.ownerName).trim() : ""
+      if (owner === "" || owner === "global") continue
+      const kind = String(s.kind)
+      if (kind !== "method" && kind !== "constructor") continue
+      const name = String(s.name ?? "")
+      if (name === "") continue
+      let set = table.get(owner)
+      if (set === undefined) {
+        set = new Set()
+        table.set(owner, set)
+      }
+      set.add(name)
+    }
+    return table
+  })
+
+  for (let ri = 0; ri < recs.length; ri++) {
+    const r = recs[ri]
     for (const rel of r.rels) {
       if (rel.type !== "calls" && rel.type !== "uses") continue
       callUseRows++
       if (!memberLeafs.has(String(rel.target))) continue
       memberRows++
-      const owned = typeof rel.metadata?.owner === "string"
-      if (owned) {
+      const owner = typeof rel.metadata?.owner === "string" ? (rel.metadata!.owner as string) : ""
+      if (owner !== "") {
         ownedRows++
-        if (samples.length < 6) samples.push(`${rel.type} ${rel.source} -> ${rel.target} owner=${rel.metadata?.owner}`)
+        if (rel.type !== "calls") ownedNonCallRows++
+        const qualified = typeof rel.metadata?.qualified === "string" ? (rel.metadata!.qualified as string) : ""
+        if (qualified === String(rel.target)) ownedBareImplicit++
+        // `this.` covers the plain and the template spelling (`this.Get<Idx>`), since the
+        // qualified name is built from the receiver's SOURCE text: a `this->Get<Idx>()` call
+        // carries `qualified = "this.Get<Idx>"`, not the leaf.
+        else if (qualified.startsWith("this.")) ownedThis++
+        else {
+          ownedOther++
+          if (samples.length < 6) samples.push(`${rel.type} ${rel.source} -> ${rel.target} owner=${owner} (qualified="${qualified}")`)
+        }
+        if (callableMembersByFile[ri].get(owner)?.has(String(rel.target)) !== true) {
+          ownedUnverifiedInFile++
+          if (ownedUnverifiedSamples.length < 8) {
+            ownedUnverifiedSamples.push(`${rel.type} ${rel.source} -> ${rel.target} owner=${owner} qualified="${qualified}"`)
+          }
+        }
         continue
       }
       const srcOwners = sourceOwners.get(String(rel.source))
@@ -118,11 +181,17 @@ async function main(): Promise<void> {
     callUseRows,
     memberLeafRows: memberRows,
     alreadyOwned: ownedRows,
+    ownedBareImplicit,
+    ownedThis,
+    ownedOther,
+    ownedNonCallRows,
+    ownedUnverifiedInFile,
     unowned: memberRows - ownedRows,
     unownedFromAClassMember: unownedFromMember,
     unownedFromFileScope: unownedFromFileScope,
     samples,
     unownedSamples,
+    ownedUnverifiedSamples,
   }
   if (asJson) {
     console.log(JSON.stringify(out, null, 2))
@@ -134,11 +203,17 @@ async function main(): Promise<void> {
   console.log(`distinct member leaf names  : ${memberLeafs.size}`)
   console.log(`calls+uses rows             : ${callUseRows}`)
   console.log(`  target is a member leaf   : ${memberRows} (${pct(memberRows, callUseRows)} of calls+uses)`)
-  console.log(`    already carry owner     : ${ownedRows} (${pct(ownedRows, memberRows)} of member rows)`)
+  console.log(`    carry owner             : ${ownedRows} (${pct(ownedRows, memberRows)} of member rows)`)
+  console.log(`      bare implicit-this    : ${ownedBareImplicit}`)
+  console.log(`      this-> receiver       : ${ownedThis}`)
+  console.log(`      other spelling        : ${ownedOther}`)
+  console.log(`      claim re-checked by the emitting file's own symbols: ${ownedRows - ownedUnverifiedInFile}/${ownedRows} verified, ${ownedUnverifiedInFile} unverified`)
+  console.log(`      emitted on a non-calls row (must be 0): ${ownedNonCallRows}`)
   console.log(`    no owner                : ${out.unowned}`)
   console.log(`      emitted from a class member (owner anchor known): ${unownedFromMember}`)
   console.log(`      emitted from file scope (no anchor)             : ${unownedFromFileScope}`)
   for (const s of samples) console.log(`   owned: ${s}`)
+  for (const s of ownedUnverifiedSamples) console.log(`   UNVERIFIED: ${s}`)
   for (const s of unownedSamples) console.log(`   unowned: ${s}`)
 }
 

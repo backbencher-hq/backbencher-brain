@@ -2496,7 +2496,7 @@
             "wall": "W1-callable-not-declared-in-run",
             "rows": 614081,
             "share": "70.5%",
-            "disposition": "SPLIT (see subs): the project-fact part is an INSTRUMENT GAP priced by the four-bucket partition; the receiver part is an INSTRUMENT GAP (receiver typing); the vocabulary part is CLAIMED; the rest is a NEW CLAIM KIND"
+            "disposition": "SPLIT (see subs): the project-fact part is an INSTRUMENT GAP priced by the four-bucket partition; the receiver part is an INSTRUMENT GAP (receiver typing) now PARTIALLY CLOSED in-lane by a shipped per-file arm (2,863 verified owner facts on the 2-repo default corpus; whole population corpus-blocked — see the W11 errata); the vocabulary part is SHIPPED (ISO stdlib citation claim, BB_CPP_CITATION=0 kill-switch); the rest is a NEW CLAIM KIND"
           },
           {
             "wall": "W10-macro-defined-name",
@@ -2508,7 +2508,7 @@
             "wall": "W11-member-leaf-owner-unresolved",
             "rows": 83169,
             "share": "9.5%",
-            "disposition": "INSTRUMENT GAP (receiver typing) — the rows the index CAN bound but cannot choose"
+            "disposition": "INSTRUMENT GAP (receiver typing), PARTIALLY CLOSED IN-LANE — the rows the index CAN bound but cannot choose. An INDEX-FREE per-file receiver arm is now SHIPPED (NEXT-WORK §14.18): implicit-`this` bare calls and `this->m()` inside a member body, owner attached only when the file declares the enclosing class ONCE, the member INSIDE that class body, and no function-scope binding shadows the name. MEASURED on the 2-repo corpus in the DEFAULT state: 2,863 owner facts (2,859 bare + 4 `this->`), each re-verified against the emitting file's own symbols, 0 non-call rows; incoming gate (524-file population) resolved 51,743->51,741, ambiguous unchanged 18,604, unresolved 7,220->7,222, ext 782 unchanged, and the kill-switch reproduces the pre-arm numbers exactly. The wall itself stays OPEN: 15,025 member-leaf rows are file-scope calls that need genuine type inference, and the 83,169 whole-population rows are not re-measured here."
           },
           {
             "wall": "W2-module-path-not-a-symbol",
@@ -2592,6 +2592,13 @@
       "field": "wholePopulationArms.status",
       "change": "Removed the stale clause 'production builds no cpp project index, so the A->B delta is 0 in every column'; the field now agrees with wholePopulationArms.d3.indexedArm, which already recorded the supersession.",
       "why": "Self-contradiction inside one object: status denied the production cpp index while d3.indexedArm recorded that both halves are wired and that CONSUMPTION moves +17,955 resolved / -22,656 ambiguous. Verified against src/ast/parallel-indexer.ts: PROJECT_INDEX_EXTENSIONS carries .cpp/.cc/.cxx/.c++/.hpp/.hxx/.ipp/.inl/.cu -> cpp and specByLang.cpp = CPP_DECLARATION_SPEC. A 2-repo re-run reproduced NO delta, recorded in NEXT-WORK §14.15 as an instrument condition (the analyzer consumes only a complete===true index, fail-closed)."
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms.d7.wallLedger.walls[W11-member-leaf-owner-unresolved].disposition (and the receiver clause of W1-callable-not-declared-in-run)",
+      "change": "INSTRUMENT GAP (receiver typing) -> INSTRUMENT GAP, PARTIALLY CLOSED IN-LANE. Rows unchanged (83,169 and the W1 split); the disposition now names the arm that shipped and the wall that remains.",
+      "why": "NEXT-WORK §14.17 sized the local opportunity at 20,580 member-leaf rows emitted from a class member (an upper bound). Implemented and shipped the INDEX-FREE arm: implicit-`this` bare calls and `this->m()` are bound by [basic.lookup.unqual] to the enclosing class's own published member, with no project index; the evidence is a post-pass over the finished symbol table (a member declared BELOW the calling body must still be found) and is attached only under three measured guards: (1) the class is declared exactly once by that name in the file (refuses template specializations and same-named classes in different namespaces), (2) the member is declared INSIDE that class body (refuses vendored amalgamations where only out-of-line definitions are in the file), (3) no function-scope binding shadows the name at the call site (a local/parameter or block-scope `using std::swap;` hides the class member). MEASURED on the 2-repo corpus, DEFAULT state: 2,863 owner facts of 35,605 member-leaf rows (2,859 bare implicit-this + 4 `this->`), 0 emitted on a non-`calls` row, 0 failing the census's independent re-check against the emitting file's symbols. The incoming gate (524-file population incl. `.h`): resolved 51,743 -> 51,741, ambiguous 18,604 unchanged, unresolved 7,220 -> 7,222, extOK 782 unchanged; kill-switch BB_CPP_LOCAL_RECEIVER=0 reproduces 51,743/18,604/7,220/782 EXACTLY, so the change is what moved the two rows. The owner channel resolved 2,861 of 2,863; the 2 that remain are both `ScopedFakeTestPartResultReporter::Init` in fmt/test/gtest/gmock-gtest-all.cc — an out-of-line constructor calling a member, claimed TRUE (the class's Init is declared in the included header, and the analyzer's out-of-line definition symbol proves the member) but the owner NAME is declared more than once project-wide and no in-file covering class exists at the call's line, so the channel's rule-0 identity fallback reads ambiguous and production holds the row NULL: a withdrawn binding, not a resolution. NOT closed: 15,025 member-leaf rows are file-scope calls with no anchor (real type inference), the 83,169 whole-population rows need the corpus machine, and the guards are conservative by design. Pinned by fixture cpp/local-implicit-owner (6 positives + 7 forbid rows) and mutants cpp/local-implicit-owner-dropped, -walk-time-table and -unchecked (all CAUGHT); script/m14/cpp-receiver-wave-verify.ts now measures BOTH arms (index-free: 2 of 6 shapes; index: 6 of 6) and asserts neither moves a row.",
+      "regenerationStatus": "hand-recorded for the same reason as the other errata: cpp-spec-table.ts --check exits ENOENT here (its measurement inputs under validation/m14/fixtures/cpp/measurements/ are absent). The next corpus-machine run must regenerate from the fixed instruments and delete this errata block."
     }
   ]
 }

@@ -1342,14 +1342,18 @@ export function isPublishableFunctionName(name: string | null | undefined): bool
  * `===`-false and a wrapper-identity comparison can only ever be false — a guard written with it is
  * DEAD, and it silently does whatever the un-guarded path does.
  *
- * MEASURED, and not hypothetical: this file's `for_range_loop` branch reads the loop's `type` and
- * `declarator` fields only to EXCLUDE them, because on that node the grammar's `type` field is the
- * RANGE EXPRESSION and its `declarator` field is the BODY — the written type and the declared name
- * are the first two named children that are neither. Written with `===`, the exclusion never fired,
- * so the scan typed the RANGE EXPRESSION as the written type and the loop BODY as the declared name,
- * which is the defect the comment above it says the positional scan was introduced to FIX. The
- * guard was decoration over a live bug, which is why this fix changes behaviour and not only a
- * hygiene finding.
+ * MEASURED, and not hypothetical — and its FIRST example was wrong in this very file, which is why
+ * it is replaced here rather than trusted. The `for_range_loop` branch was written believing that
+ * node's `type` field was the RANGE EXPRESSION and its `declarator` field the BODY, i.e. that the
+ * two fields had to be EXCLUDED and the first two non-field named children read instead. The pinned
+ * grammar was then PROBED directly (2026-11-17, the shipped parser): `for (Widget w : widgets())`
+ * reports `type` = type_identifier `Widget` and `declarator` = identifier `w` — the fields name
+ * exactly what their names say, so the exclusion dropped the type and the name and the written-type
+ * table learned NOTHING for a range-for. Written with `===`, the exclusion guard was dead and the
+ * positional scan accidentally produced the right pair; the KAD2 fix made the guard real and the
+ * branch became a live gap (`cpp-receiver-wave-verify` measured 5 of 6 shapes). The branch now READS
+ * the fields, with the positional scan kept only as a fallback for a grammar whose fields really do
+ * point at the range expression and the body.
  *
  * A node's identity is its SPAN: two wrappers describing the same bytes describe the same node.
  * `type` is compared too, because a zero-width node (a missing field) can share a span with its
@@ -3159,24 +3163,32 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
           return
         }
         if (t === "for_range_loop") {
-          // THE RANGE-FOR'S TYPE AND DECLARATOR ARE POSITIONAL, NOT FIELDS. The `for_range_loop`
-          // node's `type` field is the RANGE EXPRESSION (`widgets()`) and its `declarator` field is
-          // the BODY — so the two fields name the wrong things entirely, and a table built from
-          // them typed the loop's BODY and left the loop VARIABLE untyped. The written type and the
-          // declared name are the first two named children that are NEITHER field, in order.
+          // THE RANGE-FOR'S FIELDS NAME WHAT THEY SAY, and an earlier version of this branch got
+          // that exactly backwards. The pinned grammar was PROBED (2026-11-17, the shipped parser):
+          // `for (Widget w : widgets())` gives `type` = type_identifier `Widget` and `declarator` =
+          // identifier `w`. The branch used to EXCLUDE those two fields and read the first two
+          // NON-field named children instead (the range expression and the loop body), because a
+          // comment claimed the fields pointed at those — so the table learned nothing for a
+          // range-for. While the exclusion guard was wrapper-identity (`===`, always false) the
+          // positional scan accidentally produced the right pair; the KAD2 fix made the guard real
+          // and the branch became a live gap (`cpp-receiver-wave-verify` measured 5 of 6 shapes).
+          // Read the fields; keep the positional scan only as a fallback for a grammar whose fields
+          // really do point at the range expression and the body.
           const typeField = n.childForFieldName?.("type")
           const declField = n.childForFieldName?.("declarator")
-          let written: any = null
-          let declared: any = null
-          for (let i = 0; i < n.namedChildCount; i++) {
-            const c = n.namedChild(i)
-            // KAD2/TSD2: the guard the hygiene gate reports (dead wrapper identity). While it was dead,
-            // `written` was the RANGE EXPRESSION and `declared` was the loop BODY.
-            if (sameTsNode(c, typeField) || sameTsNode(c, declField)) continue
-            if (!written) { written = c; continue }
-            if (!declared) { declared = c; break }
+          if (typeField && declField && simpleDeclName(declField) !== "") {
+            add(typeField, declField)
+          } else {
+            let written: any = null
+            let declared: any = null
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (sameTsNode(c, typeField) || sameTsNode(c, declField)) continue
+              if (!written) { written = c; continue }
+              if (!declared) { declared = c; break }
+            }
+            add(written, declared)
           }
-          add(written, declared)
         }
         for (let i = 0; i < n.namedChildCount; i++) scan(n.namedChild(i), depth + 1)
       }
@@ -3257,6 +3269,87 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
         return enclosing !== "" && indexDeclaresMemberForOwner(enclosing, leaf) ? { owner: enclosing } : {}
       }
       return {}
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    // LOCAL ENCLOSING-CLASS RECEIVER EVIDENCE (index-free) — the per-file half of receiver typing.
+    //
+    // The four shapes above are INDEX-gated: with no complete project index they emit nothing, and
+    // that is the DEFAULT state of every caller that does not build one. But one receiver shape does
+    // not need an index at all: [basic.lookup.unqual] says a name used in a member-function body is
+    // looked up in the class's own scope BEFORE the enclosing namespace, so a bare call from a
+    // member body is bound to the enclosing class's member when that class publishes one. The
+    // `this->` spelling states the same fact explicitly. Both can be checked against the analyzer's
+    // OWN published symbols, which is why this is evidence rather than inference.
+    //
+    // WHY A POST-PASS. The class's member list is only complete after this file's symbols are
+    // collected: a member declared BELOW the calling body is not in any table during the walk. A
+    // walk-time check would attach the owner for `shapeBare()` and silently drop `shapeLate()` —
+    // exactly the order-dependent defect cpp/local-implicit-owner exists to refuse. So the walk
+    // RECORDS the candidate row and the post-pass (before the return) decides against the finished
+    // symbol table.
+    //
+    // WHAT THIS DELIBERATELY DOES NOT DO: no name is ever assumed to be a member call because it is
+    // bare (the class's published members decide), no receiver whose type is unknown is inferred
+    // (typed locals stay the INDEX arm's shape), and no row is created or suppressed — metadata
+    // only, the same contract the index arms carry.
+    // ═══════════════════════════════════════════════════════════════════════════════════════════
+    const localReceiverCandidates: Array<{ rel: ASTEngine.UniversalRelationship; owner: string; leaf: string }> = []
+    /**
+     * Names a BLOCK-SCOPE using-declaration introduces, per enclosing function node. A
+     * `using std::swap;` inside a member function body introduces the name as if declared there
+     * ([namespace.udecl]/11), which HIDES the class's member of the same spelling — so the member
+     * `AssertionResult::swap` is not what `swap(...)` names after that declaration. Kept OUT of the
+     * scope's `locals` set on purpose: `locals` drives the bare-`uses` shadow rule, and adding these
+     * would move that edge family for a receiver-specific reason.
+     */
+    const fnUsingDeclNames = new Map<number, Set<string>>()
+    /** The name a `using_declaration` introduces, or "" (`using namespace x;` introduces none). */
+    const usingDeclaredName = (n: any): string => {
+      if (!n || String(n.text ?? "").indexOf("using namespace") !== -1) return ""
+      let last: any = n.namedChild(n.namedChildCount - 1)
+      for (let guard = 0; last && guard < 6; guard++) {
+        const t = String(last.type)
+        if (t === "qualified_identifier" || t === "template_function" || t === "template_type" || t === "dependent_name") {
+          last = last.namedChild(last.namedChildCount - 1)
+          continue
+        }
+        break
+      }
+      const text = String(last?.text ?? "").trim()
+      return isIdentifierShapeWithDollar(text) ? text : ""
+    }
+    /** The enclosing class a call's receiver is KNOWN to be, from the callee's spelling alone, or "". */
+    const localReceiverAnchor = (callee: any): string => {
+      if (!callee) return ""
+      // A bare callee in a member-function body is the implicit `this` shape. `enclosingFunctionScope`
+      // is required because a class SCOPE's recovery calls are not calls (the D25 rule) and the
+      // enclosing class is only a receiver inside a function that has one.
+      if (callee.type === "identifier") {
+        if (enclosingFunctionScope() === null) return ""
+        return enclosingClassForOwner()
+      }
+      // `this->m()` — the receiver is the enclosing class object by the grammar itself. `this` is
+      // its own node type in this grammar; `(*this).m()`/`this.m` are NOT this shape (a parenthesized
+      // or member-access receiver is opaque here) and fall through to "".
+      if (callee.type === "field_expression") {
+        const obj = callee.childForFieldName?.("argument") ?? callee.namedChild(0)
+        if (obj && String(obj.type) === "this" && enclosingFunctionScope() !== null) return enclosingClassForOwner()
+      }
+      return ""
+    }
+    /**
+     * TRUE when a name the enclosing class also declares is SHADOWED at this call site by a
+     * function-scope binding: a parameter/local already declared above the call (the analyzer's
+     * flow-sensitive `locals` roster), or a block-scope using-declaration seen so far. The class
+     * member is not the receiver then, and a receiver claim would be false.
+     */
+    const localNameShadowedAt = (name: string): boolean => {
+      const fnScope: any = enclosingFunctionScope()
+      if (!fnScope) return false
+      if ((fnScope as any)?.locals?.has?.(name) === true) return true
+      const fnNode: any = (fnScope as any)?.node
+      return fnNode !== undefined && fnUsingDeclNames.get(fnNode.id)?.has(name) === true
     }
 
     while (stack.length > 0) {
@@ -3394,6 +3487,24 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                   reasonCode: "using-dependency-name-only",
                 },
               })
+            }
+          }
+        } else {
+          // RECEIVER-SHADOW TRACKING (block-scope `using` only). A using-declaration written inside a
+          // MEMBER-FUNCTION body introduces the name at block scope, hiding the class's member of the
+          // same spelling — the `using std::swap; swap(a, b);` idiom, where the member `swap` is NOT
+          // what the call names. `using namespace …;` introduces no name and is not tracked.
+          const fnScope: any = enclosingFunctionScope()
+          const fnNode: any = (fnScope as any)?.node
+          if (fnNode !== undefined && node.parent && this.insideFunctionBody(node.parent)) {
+            const introduced = usingDeclaredName(node)
+            if (introduced !== "") {
+              let set = fnUsingDeclNames.get(fnNode.id)
+              if (set === undefined) {
+                set = new Set()
+                fnUsingDeclNames.set(fnNode.id, set)
+              }
+              set.add(introduced)
             }
           }
         }
@@ -5294,7 +5405,8 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
             parentContext?.kind === ASTEngine.SymbolKind.Struct
           const classCallingItself = ownerIsTypeScope && parentContext?.name === targetName
           if (!targetName.startsWith("operator") && !calleeIsTempCall && !calleeIsUnnamed && !calleeIsError && !classCallingItself) {
-            relationships.push({
+            const indexReceiverFacts = indexReceiverOwnerFacts(funcNode, targetName)
+            const callRow: ASTEngine.UniversalRelationship = {
               source,
               target: targetName,
               fromSymbol: source,
@@ -5338,7 +5450,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 ...indexOwnerFacts(qualifiedName, targetName),
                 // task-22 milestone 5: the three declaration-bearing RECEIVER classes (constructor-temp,
                 // typed-local, implicit-this). Empty for opaque receivers — the owner is never guessed.
-                ...indexReceiverOwnerFacts(funcNode, targetName),
+                ...indexReceiverFacts,
                 // ISO C++ citation claim (Lead vocabulary `iso-cpp-stdlib`, flag-gated): ONLY a listed
                 // symbol whose own spelling root is std; verified by the arbiter as extOK, never resolved.
                 ...cppCitationFacts(qualifiedName, targetName),
@@ -5348,7 +5460,29 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
                 // arbiter's exact-match verification holds and the claim cannot refute itself.
                 ...cppPackageScopeFacts(targetName, qualifiedName, packageScopeRoots, packageScopePackages),
               },
-            })
+            }
+            relationships.push(callRow)
+            // ── LOCAL ENCLOSING-CLASS RECEIVER EVIDENCE (index-free), recorded for the post-pass.
+            // The INDEX facts win when they exist: the index sees inheritance-closed members this file
+            // cannot. Otherwise the callee's own spelling decides whether an anchor exists at all
+            // (bare callee → implicit `this`; `this->` → the receiver is the enclosing object); the
+            // post-pass then attaches `metadata.owner` ONLY IF this file publishes such a member on
+            // that class — see the block before `classifyEvidenceTier`.
+            //
+            // SHIPPED DEFAULT-ON, with `BB_CPP_LOCAL_RECEIVER=0` as the KILL-SWITCH: the shape adds
+            // `metadata.owner` to rows that already existed, which changes no row and no target, but
+            // DOES change production's stored bindings (a receiver-bearing row the owner channel
+            // declines is held NULL rather than bound by bare name). Keeping one environment variable
+            // that reproduces the pre-shape output is the same contract the ISO citation claim
+            // carries; the incoming gate re-runs both arms and reports the delta.
+            if (process.env.BB_CPP_LOCAL_RECEIVER !== "0" && typeof (indexReceiverFacts as any).owner !== "string") {
+              const anchorOwner = localReceiverAnchor(funcNode)
+              // A class member is not the receiver when a function-scope binding of the same name
+              // shadows it at this call site (a local/parameter, or a block-scope using-declaration).
+              if (anchorOwner !== "" && !localNameShadowedAt(targetName)) {
+                localReceiverCandidates.push({ rel: callRow, owner: anchorOwner, leaf: targetName })
+              }
+            }
             // #383 payload: qualified path WITHOUT argument text (C++ keeps
             // :: separators), attributed to the enclosing function/method
             // symbol DIRECTLY (family contract — groovy/java push onto
@@ -5872,6 +6006,74 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
     for (const sym of symbols) {
       if (Array.isArray(sym.qualified_calls) && sym.qualified_calls.length > 1) {
         sym.qualified_calls = [...new Set(sym.qualified_calls)]
+      }
+    }
+
+    // ── LOCAL ENCLOSING-CLASS RECEIVER EVIDENCE, decided against the FINISHED symbol table.
+    //
+    // Every candidate row was recorded during the walk; here the file's symbols are complete, so a
+    // member declared BELOW the calling body (cpp/local-implicit-owner's `shapeLate`) is visible at
+    // last. THREE CONDITIONS MUST ALL HOLD before the owner is attached, and the second and third
+    // exist because the first version of this arm — keyed by the owner NAME alone — was MEASURED
+    // producing false claims on the two-repo corpus (NEXT-WORK §14.18):
+    //
+    //   1. THE CLASS IS DECLARED IN THIS FILE, EXACTLY ONCE BY THAT NAME. A member table keyed by
+    //      the owner name coalesces template specializations (`UniversalPrinter<Optional<T>>` and six
+    //      siblings in gtest.h) and same-named classes in different namespaces — a call in one would
+    //      inherit a member of another. Two declarations of the name ⇒ no claim. This also refuses
+    //      the amalgamated-vendored shape (gmock-gtest-all.cc), where the class body is in an
+    //      included header and only OUT-OF-LINE definitions live in this file.
+    //   2. THE MEMBER IS DECLARED INSIDE THAT CLASS BODY. A member symbol whose range lies outside
+    //      the class's range is an out-of-line definition; alone it does not prove which declaration
+    //      of the (possibly header-only) class the call's scope belongs to.
+    //   3. NO FUNCTION-SCOPE BINDING SHADOWS THE NAME AT THE CALL SITE — the walk already refused
+    //      those candidates (`localNameShadowedAt`): a local/parameter, or a block-scope
+    //      `using std::swap;`, hides the class member ([basic.scope.block], [namespace.udecl]/11),
+    //      so the member is not the receiver there.
+    //
+    // No member → no owner; no row is created, suppressed or re-typed. A non-callable member with
+    // the same spelling is deliberately NOT evidence: the owner channel would decline a call to a
+    // data member anyway, so claiming it could only withdraw a binding without replacing it.
+    if (localReceiverCandidates.length > 0) {
+      const CLASS_LIKE_OWNER_KINDS = new Set<string>([
+        ASTEngine.SymbolKind.Class, ASTEngine.SymbolKind.Struct, ASTEngine.SymbolKind.Union,
+      ])
+      /** owner name → the line range of its ONE class declaration in this file, or `null` when the
+       *  name is declared more than once here (a coalesced member table is not evidence). */
+      const classDeclByName = new Map<string, { startLine: number; endLine: number } | null>()
+      for (const sym of symbols) {
+        if (!CLASS_LIKE_OWNER_KINDS.has(String((sym as any)?.kind ?? ""))) continue
+        const name = String((sym as any)?.name ?? "")
+        if (name === "") continue
+        const r = (sym as any)?.range
+        if (!r || typeof r.startLine !== "number") continue
+        classDeclByName.set(
+          name,
+          classDeclByName.has(name) ? null : { startLine: r.startLine, endLine: Number(r.endLine ?? r.startLine) },
+        )
+      }
+      const declaresCallableMemberInside = (owner: string, leaf: string): boolean => {
+        const decl = classDeclByName.get(owner)
+        if (!decl) return false
+        for (const sym of symbols) {
+          const kind = String((sym as any)?.kind ?? "")
+          // Method covers every class-scope function INCLUDING the destructor (its name keeps the
+          // source spelling `~T`); Constructor is the lane's normalized ctor name. `function` is
+          // deliberately absent: a friend definition carries no member semantics even when written
+          // inside the class body.
+          if (kind !== ASTEngine.SymbolKind.Method && kind !== ASTEngine.SymbolKind.Constructor) continue
+          if (String((sym as any)?.name ?? "") !== leaf) continue
+          if (String((sym as any)?.ownerName ?? "").trim() !== owner) continue
+          const r = (sym as any)?.range
+          if (!r || typeof r.startLine !== "number") continue
+          if (r.startLine >= decl.startLine && r.startLine <= decl.endLine) return true
+        }
+        return false
+      }
+      for (const cand of localReceiverCandidates) {
+        const md = (cand.rel as any).metadata
+        if (!md || typeof md.owner === "string") continue
+        if (declaresCallableMemberInside(cand.owner, cand.leaf)) md.owner = cand.owner
       }
     }
 

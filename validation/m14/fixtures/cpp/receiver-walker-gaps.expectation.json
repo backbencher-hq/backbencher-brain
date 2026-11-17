@@ -2,7 +2,7 @@
   "fixtureId": "cpp/receiver-walker-gaps",
   "language": "cpp",
   "authoredBeforeAnalyzerRun": false,
-  "rationale": "THE RECEIVER WAVE'S FOUR WALKER GAPS, PINNED AS ROWS — the shapes the closure-verifiable residual names (validation/m14/verification/CPP-RECEIVER-TYPING.md §3e, and the 7,913-row named residual the ledger carries as 'second receiver wave (closure-verifiable coverage gap) · 7,913 · ~1.1 %'). WHAT THIS FIXTURE CAN SEE AND WHAT IT CANNOT: the receiver-typing emission is flag-gated (BB_CPP_INDEX_CONSUME=1) and requires a COMPLETE project index, and the fixture suite runs WITHOUT the flag — by design, so the accepted D1–D6 behaviour stays byte-identical without it. So THIS fixture pins the ROWS, which is the half the suite can see and the half a wave must not disturb: the wave adds RECEIVER EVIDENCE (metadata.owner) to rows that are ALREADY emitted, and a fix that emitted a new row or suppressed an old one would break this fixture. The other half — the owner metadata itself — is pinned in the other direction by the dedicated red-capable control `script/m14/cpp-receiver-wave-verify.ts`, which builds a COMPLETE index over this very fixture with the shipped C++ declaration spec, runs the analyzer with the flag ON, and asserts that EVERY row on every shape's line carries the owner the index says declares the leaf; it also asserts that the flag-ON row set is IDENTICAL to the flag-OFF row set, and that no row carries an owner with the flag OFF. THE SHAPES, one per line of the ruling: a typed local declared where the analyzer's per-function written-type table does not reach it, and a member body whose class scope is not on the scope stack. The measurement that named the gaps (the control, run against this fixture before any fix) says the RANGE-FOR declarator and the MULTI-DECLARATOR'S SECOND NAME are the two the table misses, while the for-init, the C++98 if-init, the out-of-line member body and the lambda-in-a-member-body are REACHED — so the fix is aimed at a MEASURED gap and not at a guess about the grammar. THE MULTI-DECLARATOR'S TWO ROWS ARE THE POINT OF THE SHAPE: `Widget a, b;` is ONE declaration with TWO declarators, and a table that reads a single declarator per declaration gets `a` and loses `b` — which is why the verifier checks EVERY row on the line and not the first one.",
+  "rationale": "THE RECEIVER WAVE'S FOUR WALKER GAPS, PINNED AS ROWS \u2014 the shapes the closure-verifiable residual names (validation/m14/verification/CPP-RECEIVER-TYPING.md \u00a73e, and the 7,913-row named residual the ledger carries as 'second receiver wave (closure-verifiable coverage gap) \u00b7 7,913 \u00b7 ~1.1 %'). WHAT THIS FIXTURE CAN SEE AND WHAT IT CANNOT: the receiver-typing emission has TWO arms. (a) The INDEX arm (BB_CPP_INDEX_CONSUME=1, requires a COMPLETE project index) resolves a receiver from its WRITTEN declaration type \u2014 constructor temp, `new`, typed local \u2014 and the fixture suite runs WITHOUT the flag, so the suite pins the ROWS (a fix that emitted or suppressed a row would break this file) while the OWNER metadata is pinned by the dedicated red-capable control script/m14/cpp-receiver-wave-verify.ts (complete index over this very fixture; asserts each arm covers exactly its own shapes, the kill-switches are clean, the negative carries no owner, and no arm moves a row). (b) The INDEX-FREE arm (default-ON, kill-switch BB_CPP_LOCAL_RECEIVER=0) anchors a bare call in a member body / `this->m()` against the file's own published members \u2014 and TWO shapes here, the OUT-OF-LINE MEMBER BODY (line 18) and the LAMBDA-IN-A-MEMBER-BODY (line 19), are bare calls inside a member body whose class is declared in this file, so the DEFAULT run gives them metadata.owner. This fixture does not pin that metadata (it runs default and asserts no owner state) \u2014 cpp/local-implicit-owner does; the index-free arm is merely WHY a reader must not expect 'no owner with the flag off' to hold on lines 18\u201319 any more. THE SHAPES, one per line of the ruling: a typed local declared where the analyzer's per-function written-type table does not reach it, and a member body whose class scope is not on the scope stack. The measurement that named the gaps says the RANGE-FOR declarator and the MULTI-DECLARATOR'S SECOND NAME are the two the table misses \u2014 both were fixed, and in 2026-11 the range-for fix was found to have been silently undone by the KAD2 sameTsNode change (the branch excluded the two fields that actually carry the type and the name); script/m14/cpp-receiver-wave-verify.ts measured 5 of 6 and the branch was corrected, so the control is 6/6 again. THE MULTI-DECLARATOR'S TWO ROWS ARE THE POINT OF THE SHAPE: `Widget a, b;` is ONE declaration with TWO declarators, and a table that reads a single declarator per declaration gets `a` and loses `b` \u2014 which is why the verifier checks EVERY row on the line and not the first one.",
   "expectSymbols": [
     {
       "name": "Widget",
@@ -24,12 +24,12 @@
     {
       "name": "forRange",
       "kind": "function",
-      "note": "the RANGE-FOR shape: the range-for's declarator is not a `declaration` node, and the measurement says the per-function written-type table does not reach it — so this row's receiver has no owner today."
+      "note": "the RANGE-FOR shape: the range-for's declarator is not a `declaration` node, and the measurement says the per-function written-type table does not reach it \u2014 so this row's receiver has no owner today."
     },
     {
       "name": "forInit",
       "kind": "function",
-      "note": "the FOR-INIT shape: the for-statement's initializer IS a declaration node, and the measurement says the table REACHES it — so this shape is the control that says the fix did not have to touch it."
+      "note": "the FOR-INIT shape: the for-statement's initializer IS a declaration node, and the measurement says the table REACHES it \u2014 so this shape is the control that says the fix did not have to touch it."
     },
     {
       "name": "ifInit",
@@ -61,7 +61,7 @@
       "target": "widgets",
       "line_number": 14,
       "meta.qualified": "widgets",
-      "note": "the range expression — an ordinary call site, and the row that proves the range-for's BODY is walked at all."
+      "note": "the range expression \u2014 an ordinary call site, and the row that proves the range-for's BODY is walked at all."
     },
     {
       "type": "calls",
@@ -117,7 +117,7 @@
       "target": "draw",
       "line_number": 17,
       "meta.qualified": "a.draw",
-      "note": "THE FIRST DECLARATOR'S ROW — and it is emitted today."
+      "note": "THE FIRST DECLARATOR'S ROW \u2014 and it is emitted today."
     },
     {
       "type": "calls",
@@ -125,7 +125,7 @@
       "target": "draw",
       "line_number": 17,
       "meta.qualified": "b.draw",
-      "note": "THE SECOND DECLARATOR'S ROW — also emitted today, and also WITHOUT the receiver evidence, because the table read one declarator per declaration. Two rows with the same target and the same line and different receivers: a verifier that checked only the first row would pass a fix that fixed one name and lost the other, which is precisely the shape this case is about."
+      "note": "THE SECOND DECLARATOR'S ROW \u2014 also emitted today, and also WITHOUT the receiver evidence, because the table read one declarator per declaration. Two rows with the same target and the same line and different receivers: a verifier that checked only the first row would pass a fix that fixed one name and lost the other, which is precisely the shape this case is about."
     },
     {
       "type": "calls",
@@ -141,7 +141,7 @@
       "target": "draw",
       "line_number": 19,
       "meta.qualified": "draw",
-      "note": "the IMPLICIT-THIS row inside a LAMBDA that sits in a member body — the class scope has to survive the lambda's own scope."
+      "note": "the IMPLICIT-THIS row inside a LAMBDA that sits in a member body \u2014 the class scope has to survive the lambda's own scope."
     },
     {
       "type": "calls",
@@ -167,7 +167,7 @@
       "type": "contains",
       "from": "Widget",
       "target": "outOfLine",
-      "note": "the class's membership of its OUT-OF-LINE definition — the structural fact the implicit-this case relies on."
+      "note": "the class's membership of its OUT-OF-LINE definition \u2014 the structural fact the implicit-this case relies on."
     },
     {
       "type": "contains",

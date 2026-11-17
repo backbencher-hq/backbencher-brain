@@ -337,4 +337,92 @@ export const CPP_MUTANTS: Mutant[] = [
       return { ...r, relationships: (r?.relationships ?? []).map(strip) }
     },
   },
+  {
+    id: "cpp/local-implicit-owner-dropped",
+    language: "cpp",
+    defectClass: "claim-loss",
+    description:
+      "THE INDEX-FREE RECEIVER ARM (§14.18), shipped default-on, must stay shippable: this removes `metadata.owner` from EVERY relationship, which is exactly the pre-arm state of the emission (and also what a later refactor that stopped routing the post-pass candidates would produce). The arm adds no row and moves no target, so no row count can catch its loss — only a fixture that PINS the owner can. Caught-by names cpp/local-implicit-owner, whose positive rows (shapeBare/shapeLate/shapeThis/shared, the lambda body and the out-of-line body) each assert `meta.owner: Widget`; the citation-claim-dropped mutant records the same lesson for the other default-on claim.",
+    caughtBy: "cpp/local-implicit-owner",
+    transform: (r) => {
+      const strip = (x: any) => {
+        if (!x?.metadata || typeof x.metadata.owner !== "string") return x
+        const md = { ...x.metadata }
+        delete md.owner
+        return { ...x, metadata: md }
+      }
+      return { ...r, relationships: (r?.relationships ?? []).map(strip) }
+    },
+  },
+  {
+    id: "cpp/local-implicit-owner-walk-time-table",
+    language: "cpp",
+    defectClass: "ordering-defect",
+    description:
+      "THE WALK-TIME FORM OF THE LOCAL RECEIVER ARM — the defect the post-pass exists to prevent. A version that consulted the class's member table DURING the walk cannot see a member declared BELOW the calling body, so it attaches the owner where the declaration came first and silently drops it where the declaration comes later. This mutant replays exactly that: for every owner-bearing `calls` row whose target is declared (as a callable member of that owner) on a LINE GREATER THAN THE CALL'S, the owner is removed. It is what a walker-local `Set<owner, members>` would have produced, and it is faithful rather than arbitrary because the analyzer's symbols are published in walk order — a declaration later in the file genuinely was absent from any table built during the walk. Caught by cpp/local-implicit-owner's shapeLate (declared below run()) and shapeThis (declared below run(), called through `this->`) rows; the shapeBare row is the control that must survive, which is why the mutant removes only the later-declared ones.",
+    caughtBy: "cpp/local-implicit-owner",
+    transform: (r) => {
+      const memberDeclLine = new Map<string, number>()
+      for (const s of r?.symbols ?? []) {
+        if (!s?.ownerName || !s?.name) continue
+        if (s.kind !== "method" && s.kind !== "constructor") continue
+        const k = `${String(s.ownerName)}\u0000${String(s.name)}`
+        const line = Number(s?.range?.startLine ?? 0)
+        if (line > 0) memberDeclLine.set(k, Math.min(memberDeclLine.get(k) ?? Infinity, line))
+      }
+      const keep = (x: any) => {
+        if (x?.type !== "calls" || typeof x?.metadata?.owner !== "string") return x
+        const rowLine = Number(x?.metadata?.line ?? x?.line_number ?? 0)
+        const declLine = memberDeclLine.get(`${String(x.metadata.owner)}\u0000${String(x.target)}`)
+        if (declLine === undefined || rowLine === 0 || declLine <= rowLine) return x
+        const md = { ...x.metadata }
+        delete md.owner
+        return { ...x, metadata: md }
+      }
+      return { ...r, relationships: (r?.relationships ?? []).map(keep) }
+    },
+  },
+  {
+    id: "cpp/local-implicit-owner-unchecked",
+    language: "cpp",
+    defectClass: "false-evidence",
+    description:
+      "THE FIRST VERSION OF THE LOCAL RECEIVER ARM, re-injected: a member table keyed by the owner NAME ALONE, with none of the three guards the shipped version carries (class declared exactly once in the file; member declared INSIDE that class body; no function-scope binding shadows the name at the call site). This mutant attaches an owner to every bare/`this->` call row whose SOURCE symbol belongs to a class that publishes a callable member with the target's name — the name-keyed rule. MEASURED on the two-repo corpus before the guards landed: that rule produced false claims on template specializations (seven `UniversalPrinter` spellings in gtest.h), block-scope shadowing (`using std::swap;` hiding `AssertionResult::swap`), duplicate same-named classes in one file, and vendored amalgamations whose class bodies are in included headers (gmock-gtest-all.cc). Those four defects are pinned as the forbid rows of cpp/local-implicit-owner: withShadow (local lambda shadows a member), withUsing (using-declaration shadows a member), runPairAlpha (two `Pair` classes, one spelling), and the class-must-be-in-file/unique guards named in the fixture rationale. Caught-by names that fixture.",
+    caughtBy: "cpp/local-implicit-owner",
+    transform: (r) => {
+      const callableMembersByOwner = new Map<string, Set<string>>()
+      const sourceOwners = new Map<string, Set<string>>()
+      for (const s of r?.symbols ?? []) {
+        const owner = typeof s?.ownerName === "string" ? String(s.ownerName).trim() : ""
+        if (owner === "" || owner === "global" || !s?.name) continue
+        // guard 1 (class uniqueness), 2 (inside the class body) and 3 (shadowing) ALL removed.
+        if (s.kind === "method" || s.kind === "constructor") {
+          let set = callableMembersByOwner.get(owner)
+          if (set === undefined) {
+            set = new Set()
+            callableMembersByOwner.set(owner, set)
+          }
+          set.add(String(s.name))
+        }
+        let owners = sourceOwners.get(String(s.name))
+        if (owners === undefined) {
+          owners = new Set()
+          sourceOwners.set(String(s.name), owners)
+        }
+        owners.add(owner)
+      }
+      const claim = (x: any) => {
+        if (x?.type !== "calls" || typeof x?.metadata?.owner === "string") return x
+        const owners = sourceOwners.get(String(x?.source ?? ""))
+        if (owners === undefined) return x
+        for (const owner of owners) {
+          if (callableMembersByOwner.get(owner)?.has(String(x?.target ?? "")) === true) {
+            return { ...x, metadata: { ...(x.metadata ?? {}), owner } }
+          }
+        }
+        return x
+      }
+      return { ...r, relationships: (r?.relationships ?? []).map(claim) }
+    },
+  },
 ]
