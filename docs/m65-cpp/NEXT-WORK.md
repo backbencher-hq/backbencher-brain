@@ -373,23 +373,43 @@ pipeline: the `path` node's `.text` carries no quotes, and both sides agree on a
 (`"a/b.h"`→`b`, `"c.h"`→`c`, `<sys/types.h>`, `<vector>`, `"d.e.h"`→`d.e`). Recorded as a
 limitation of the oracle's own helper, not a live defect.
 
-### 10.3 The fixture suite — 873 assertions, but mostly weak
+### 10.3 The fixture suite — 1,077 assertions, and the "2.4% exact" was itself a proxy
 
-| measure | value |
-|---|---|
-| cpp expectation suites | 54 files |
-| total assertions | **873** |
-| **exact-count assertions (`equals`)** | **21** |
-| forbid rows | 268 |
-| suites with zero assertions | 0 |
+> **★ CORRECTED (§14.6).** This section first reported "873 assertions, 21 exact = 2.4%" and called
+> that the suite's ability to fail in the over-emission direction. Measured again by enumerating every
+> assertion key in the 55 suites: **1,077 assertion entries**, and the 21 was `expectRelationshipCount`
+> only — it ignored 38 `expectSymbolCount` (`equals`) and 88 `forbidSymbols`. So the ratio was
+> measuring *relationship* exactness while presenting itself as the *suite's* exactness.
 
-Only **21 of 873** assertions are exact counts. `expectRelationships` means "**at least one**
-match", so a *duplicated* edge satisfies it — which is why the D3 duplicate class was invisible to
-the suite until an `equals` block was added. The ratio is the honest measure of how much of the
-suite can fail in the over-emission direction: **2.4%**.
+| measure | value | can it fail on an EXTRA row/symbol? |
+|---|---|---|
+| cpp expectation suites | **55** | — |
+| total assertion entries | **1,077** | — |
+| `expectRelationships` | 284 | **NO** — "≥1 match"; a duplicate satisfies it |
+| `expectRelationshipCount` (`equals`) | 21 | **YES** |
+| `expectSymbols` | 303 | **NO** — existence only |
+| `expectSymbolCount` (`equals`) | 38 | **YES** |
+| `forbidRelationships` | 268 | **YES**, for the specific rows named |
+| `forbidSymbols` | 88 | **YES**, for the specific symbols named |
+| `expectImports` / `forbidImports` | 12 / 6 | existence / directed negative |
+| everything else (`expectReturnType`, `expectDecorators`, `forbidErrors`, `expectSymbolRanges`, `expectQualifiedCalls`, `expectParameters`, `forbidParameters`, `forbidExports`, `forbidDecorators`, `expectVisibility`, `crossFileOverride`, `expectComplexity`) | 57 | mixed; mostly field/range checks |
 
-The mutation harness compensates: 64 mutants each prove some fixture CAN fail. But a fixture with
-only `expectRelationships` rows cannot catch an extra row, no matter how many mutants target it.
+**The honest reading is two-sided, and the old section only stated one side.**
+
+* **Weakness (real, unchanged):** 284 of 305 relationship assertions are **"at least one match"**, so a
+  *duplicated* or *unspecified extra* edge is invisible to them. Likewise 303 `expectSymbols` rows
+  cannot see an extra symbol. `expectRelationships` was never able to catch the D3 duplicate class —
+  which is exactly why D3 needed `equals` blocks of its own.
+* **Strength the old number hid:** 356 of the 1,077 entries (33%) are **directed negative**
+  assertions (`forbidRelationships` 268 + `forbidSymbols` 88) that fail if a named row reappears, and
+  59 are exact counts. So the suite is not "2.4% capable of catching over-emission"; it is *fully*
+  capable for every row a fixture explicitly forbids, and *blind* for rows nobody named.
+
+That distinction is what determines the next work: adding more `equals` only helps where the fixture's
+own contract implies a number ("one edge per pair", "exactly two overrides"), not everywhere.
+
+The mutation harness compensates in the other direction: 65 mutants each prove some fixture CAN fail.
+But no mutant can prove a fixture would catch an extra row it never asks about.
 
 ### 10.4 The spec — one contradiction, restated
 `script/m14/spec/cpp-completeness.json` lists `preproc_def` / `preproc_function_def` under
@@ -402,7 +422,7 @@ macro symbols. The spec is wrong; the code is right.
 |---|---|---|
 | mutation harness | **YES, after the fix** | 64/64 caught, 0 survived; it is the only check that mutates the subject |
 | `part_of` oracle | **PARTLY** | independent in code, but shares the stem rule — cannot catch a wrong stem |
-| fixture suite | **PARTLY** | 873 assertions but only 21 exact; weak against over-emission |
+| fixture suite | **PARTLY** | 1,077 assertions (§14.6), but 284 of 305 relationship assertions are "≥1 match"; blind to an unspecified extra row, strong on the 356 rows it explicitly forbids |
 | census probe | **YES for row counts**, with the corrections in §6/§7 | row counts are mechanical; *resolution* percentages must state what they resolve against |
 | docs | **NO, not on their own** | 8 claims were false at HEAD when measured (§7 of the audit page); docs are a claim, never evidence |
 
@@ -669,8 +689,66 @@ measured *floor* over a population where a third of the files exercised error re
 
 ### 14.5 · Verifier trust, unchanged and still the weakest link
 
-Nothing in this round strengthens the fixture suite's structural weakness recorded in §10: of 873
-assertions only **21 (2.4%) are exact counts**, and `expectRelationships` is a "≥1 match" predicate
-that **cannot fail on an extra or fabricated row**. The census can catch a fabricated row (it did —
-this is how the 3 unbound `contains` sources were found), the mutants can catch a reverted rule, but
-the fixture suite alone cannot. **That is the next thing worth fixing in this lane**, ahead of item #7.
+Nothing in this round strengthens the fixture suite's structural weakness recorded in §10 — and
+that section's own headline ("873 assertions, 21 exact = 2.4%") turned out to be another proxy, so it
+is corrected in §14.6. The measured position:
+
+* **284 of 305 relationship assertions are "≥1 match"** — they cannot fail on a duplicated or
+  unspecified extra row. That is the real blindness, and nothing here changes it.
+* but the suite is **not** 2.4% capable of catching over-emission: **356 of its 1,077 assertions are
+  directed negatives** (`forbidRelationships` 268, `forbidSymbols` 88) and **59 are exact counts**
+  (21 relationship + 38 symbol).
+
+So the census can catch a fabricated row (it did — that is how the 3 unbound `contains` sources were
+found), the mutants can catch a reverted rule, and the forbid/equals fixtures can catch the rows they
+name. What remains uncovered is the **unnamed extra row**, and closing that is the next thing worth
+doing in this lane — ahead of item #7.
+
+### 14.6 · §10.3 was measuring relationships and calling it the suite
+
+§10.3 said "873 assertions, 21 exact = 2.4%" and used that as the fixture suite's over-emission
+capability. Re-derived by enumerating every assertion key in the 55 suites — committed as
+`script/cpp-audit/fixture-assertion-census.ts` so it can be re-run instead of restated:
+
+```
+bun run script/cpp-audit/fixture-assertion-census.ts
+```
+
+| measure | value |
+|---|---|
+| suites | 55 |
+| **total assertion entries** | **1,077** |
+| `expectSymbols` (exists only) | 303 |
+| `expectRelationships` ("≥1 match") | 284 |
+| `forbidRelationships` (directed negative) | 268 |
+| `forbidSymbols` (directed negative) | 88 |
+| **`expectSymbolCount` (`equals`)** | **38** |
+| **`expectRelationshipCount` (`equals`)** | **21** |
+| `expectImports` / `forbidImports` | 12 / 6 |
+| all other keys | 57 |
+
+| capability | count | share of 1,077 |
+|---|---|---|
+| exact counts — can fail on an extra row/symbol | **59** | 5.5% |
+| directed negatives — fail if a NAMED row/symbol reappears | **356** | 33.1% |
+| "exists / ≥1 match" — **cannot** see an extra row/symbol | **587** | 54.5% |
+
+Of the 305 **relationship** assertions, **21 (6.9%) carry a count** and 284 (93.1%) are "≥1 match".
+That 6.9% is what §10.3's "21" was; the "2.4%" denominator (873) was also wrong — it counted only
+four of the arrays and missed 1,077's real total.
+
+**Both directions of the old claim were wrong, and the correction matters for the work list:**
+
+* The suite's over-emission blindness is **real but scoped**: it applies to the 284 "≥1 match"
+  relationship assertions and the 303 existence-only symbol assertions — i.e. it cannot see an
+  *unspecified extra row*. That is exactly why D3 (duplicate pairs) was invisible to the suite before
+  `equals` blocks were added.
+* It is **not** "2.4% capable": 356 assertions (33%) are directed negatives that fail the moment a
+  named row or symbol returns, and 59 are exact counts. The suite is strong on what it names and
+  blind on what it does not.
+
+So the next fixture work is **not** "add `equals` everywhere" — most fixtures have no contract that
+implies a number, and pinning a count with no contract is just golden-testing. It is: find the
+fixtures whose own documented invariant IS a count ("one edge per pair", "exactly two overrides",
+"one `part_of` per include"), and give those an `equals` block. The rest should stay as they are and
+be understood as existence checks.
