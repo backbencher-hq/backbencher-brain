@@ -1,0 +1,57 @@
+{
+  "fixtureId": "go/generic-instantiation-recovery",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the RECOVERY BOUNDARY of GO-GAP-1, which is the real cost of the grammar pin and not the exotic syntax. Two constructs in this file are LEGAL Go and the PREVIOUSLY wired tree-sitter-go errored on both: a package-scope generic function VALUE (`var _ = Backward[[]int]`, Go 1.21+) and a method on an INSTANTIATED generic receiver (`func (Either[A, B]) Fst() A`, Go 1.18+). The damage was ERROR RECOVERY: everything after the first error was re-read as composite-literal debris, so declarations AFTER the error site stopped being declarations. MEASURED ON A REAL CORPUS FILE (go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go, which carries the same construct on line 11): the old wired build produced 1 symbol, 195 parse errors and 0 `contains` edges; the pinned build produces 40 symbols, 0 errors and 4 `contains`. 39 of that file's 40 declarations were being lost. THIS FIXTURE IS THEREFORE ABOUT THE DECLARATIONS, NOT THE SYNTAX: every expected row below is a fact about a declaration that sits AFTER an error site under the old grammar. THE FOUR EXPECTED-SYMBOL ROWS ARE THE PIN: `afterTheValue` (declared immediately after the generic VALUE) and `afterTheMethod` (declared after the instantiated-receiver method) must be `function` symbols, `Either` must be a `struct`, and `Fst` must be a `method` — a swallowing grammar loses all four silently, publishing neither symbols nor `contains`. THE THREE EDGE GROUPS PIN THE SAME THING FROM THE OTHER SIDE: `afterTheValue -> Lock @32` and `afterTheValue -> Unlock @33` are REAL CALLS inside a function the old grammar never saw as a function at all, so they could not have been attributed to it; `Either -> Fst @43` is the `contains` row that says the method on an instantiated generic receiver belongs to its type; `Fst -> Either @43` is the receiver reference back. WHY THE GRAMMAR IS A PIN BUMP AND NOT A PATCH: e395081 is an upstream commit, so the wired wasm is a stock build; the provenance and the full A/B are in grammars/tree-sitter-go/PIN.md. WHY THE ANALYZER CHANGE SHIPS WITH IT: the newer grammar types a generic CALL as `type_conversion_expression` over a `generic_type` instead of a `call_expression` with an `identifier` function, so the grammar alone would silence 140 corpus calls and 2 fixtures — the same commit teaches the call passes to read the new shape, and the type/call decision stays semantic (`isGoPackageCallable`), which is where Go puts it. NOT PINNED: `imports`, `exports` and the `references` rows into generic type parameters (`Slice`, `E`, `A`, `B`), which the declared-type pass owns unchanged; and the A/B cost, which is stated in PIN.md rather than asserted here.",
+  "expectSymbols": [
+    { "name": "gapfix", "kind": "module" },
+    { "name": "Backward", "kind": "function" },
+    { "name": "afterTheValue", "kind": "function" },
+    { "name": "Either", "kind": "struct" },
+    { "name": "Fst", "kind": "method" },
+    { "name": "afterTheMethod", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "A REAL CALL inside the function declared immediately after the package-scope generic VALUE. The old grammar never saw this as a function at all, so it could not attribute the call to it.",
+      "type": "calls",
+      "from": "afterTheValue",
+      "target": "Lock",
+      "line_number": 32
+    },
+    {
+      "comment": "The second call in the same recovered function.",
+      "type": "calls",
+      "from": "afterTheValue",
+      "target": "Unlock",
+      "line_number": 33
+    },
+    {
+      "comment": "The method on an INSTANTIATED generic receiver belongs to its type — the `contains` row a swallowing grammar cannot produce.",
+      "type": "contains",
+      "from": "Either",
+      "target": "Fst",
+      "line_number": 43
+    },
+    {
+      "comment": "The receiver reference back from the method on the instantiated generic receiver.",
+      "type": "references",
+      "from": "Fst",
+      "target": "Either",
+      "line_number": 43
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "The generic VALUE is not a call. `var _ = Backward[[]int]` names Backward as a value; the analyzer must not claim a call site at line 27.",
+      "type": "calls",
+      "target": "Backward",
+      "line_number": 27
+    },
+    {
+      "comment": "An ERROR-region construct must not become a construction of a name the source never constructs. This is the identical class go/grammar-error-not-a-construction-889 pins, and the grammar bump must not reintroduce it.",
+      "type": "instantiates",
+      "target": "s"
+    }
+  ]
+}

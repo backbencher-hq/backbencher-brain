@@ -2428,6 +2428,42 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const stack = [bodyNode]
       while (stack.length > 0) {
         const node = stack.pop()!
+        // GO-GAP-1, the ANALYZER half. A newer tree-sitter-go types a generic
+        // function CALL as `type_conversion_expression` over a `generic_type`
+        // rather than a `call_expression` with a separate `type_arguments`
+        // child, because Go's grammar cannot tell a conversion from a generic
+        // instantiation without knowing whether the name denotes a type or a
+        // function. Measured on `identity[int](x)`:
+        //
+        //   PINNED grammar   call_expression > identifier "identity" + type_arguments
+        //   NEWER grammar    type_conversion_expression > type: generic_type "identity[int]"
+        //
+        // The PINNED shape reaches `buildGoCallExpression` through the
+        // `function` field and publishes `calls -> identity`; the NEWER shape
+        // matched nothing and the call DISAPPEARED (2 fixtures, 140 corpus
+        // calls). This branch restores it, and it is safe by CONSTRUCTION, not
+        // by inspection: the resolved name is pushed into `qualified_calls` and
+        // `resolveGoFunctionCall` only emits a row when `isGoPackageCallable`
+        // accepts the symbol, so a genuine conversion to a generic TYPE
+        // (`Vec[int](x)`, `Vec` being a struct) still publishes no `calls` row.
+        // The type/conversion decision stays semantic, where Go puts it.
+        if (node.type === "type_conversion_expression") {
+          const ty = node.childForFieldName("type")
+          if (ty && ty.type === "generic_type") {
+            const callExpression = this.buildGoCallExpression(ty)
+            if (callExpression && !this.isGoBuiltin(callExpression) && !seen.has(callExpression)) {
+              seen.add(callExpression)
+              calls.push(callExpression)
+              const base = ty.childForFieldName("type")
+              sites.set(callExpression, base ?? ty)
+            }
+          }
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push(child)
+          }
+          continue
+        }
         if (node.type === "call_expression") {
           const funcNode = node.childForFieldName("function")
           if (funcNode) {
@@ -2473,6 +2509,23 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       case "selector_expression":
         return this.buildGoSelectorExpression(funcNode)
+
+      // GO-GAP-1 (analyzer half): `generic_type` is the callee shape a NEWER
+      // grammar gives a generic function call — `identity[int]` — where the
+      // PINNED grammar puts the base name in the `function` field and the
+      // arguments in a sibling `type_arguments` node. The base is the `type`
+      // FIELD of the `generic_type` (`grammar.js`: `field('type',
+      // choice($._type_identifier, $.qualified_type, $.negated_type))`), and a
+      // QUALIFIED base (`pkg.identity[int]`) keeps its dotted spelling so
+      // `resolveGoFunctionCall` can take the leaf exactly as it does for a
+      // selector callee. A `negated_type` (`~T`) is a constraint and names no
+      // callable, so it is not read here.
+      case "generic_type": {
+        const base = funcNode.childForFieldName("type")
+        if (!base) return undefined
+        if (base.type === "qualified_type" || base.type === "type_identifier") return base.text
+        return undefined
+      }
 
       default:
         return undefined
@@ -2586,6 +2639,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (funcNode.type === "selector_expression") {
       const field = funcNode.childForFieldName("field")
       return field?.text
+    }
+    // GO-GAP-1 (analyzer half): a NEWER grammar puts a generic callee in a
+    // `generic_type` whose `type` FIELD is the base name. Read the LEAF, the
+    // same contract this function applies to a selector callee — `pkg.Fn[int]`
+    // names the leaf `Fn` and keeps the qualified spelling in metadata.
+    if (funcNode.type === "generic_type") {
+      const base = funcNode.childForFieldName("type")
+      if (!base) return undefined
+      if (base.type === "qualified_type") {
+        const dot = base.text.lastIndexOf(".")
+        return dot > 0 ? base.text.slice(dot + 1) : base.text
+      }
+      if (base.type === "type_identifier") return base.text
+      return undefined
     }
     // func_literal / parenthesized / index / generic callees: no static name.
     return undefined
@@ -3886,6 +3953,50 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // executed at init — descending it would over-emit, so it is skipped
       // (children pushed only for immediately-invoked bodies).
       if (node.type === "func_literal" && node.parent?.type !== "call_expression") continue
+      // GO-GAP-1 (analyzer half, package-scope site). A NEWER grammar types a
+      // package-scope generic CALL as `type_conversion_expression` over a
+      // `generic_type` (`var _ = Backward[[]int](tail(nil))`), where the PINNED
+      // grammar gives a `call_expression` with a plain identifier callee. Without
+      // this branch the call is not merely unnamed — it is INVISIBLE, and the
+      // fixture `go/error-region-callee-descend-799` measures exactly that row.
+      // Read the callee out of the `type` field and fall through the SAME
+      // emission rules as a call_expression, so the builtin guard, the
+      // `declared` gate, the GOD12 source and the ctor rule all apply unchanged.
+      if (node.type === "type_conversion_expression") {
+        const ty = node.childForFieldName("type")
+        const generic = ty && ty.type === "generic_type" ? ty : null
+        const leaf = generic ? this.resolveGoCallLeaf(generic) : undefined
+        if (generic && leaf) {
+          const qualified = generic.childForFieldName("type")?.type === "qualified_type"
+          const emit = !this.isGoBuiltin(leaf) && (qualified || dotImported || declared.has(leaf))
+          const callSrc = this.resolveGoWorkSource(node)
+          const callKey = `call:${callSrc}:${leaf}`
+          if (emit && !emitted.has(callKey)) {
+            emitted.add(callKey)
+            const stdlibModule = this.goStdlibCallClaim(generic.text, leaf, symbols, stdlibQualifiers, ownPackageName)
+            relationships.push({
+              source: callSrc,
+              target: leaf,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.8,
+              ...(this.nodeLine(generic.childForFieldName("type")) ? { line_number: this.nodeLine(generic.childForFieldName("type"))! } : {}),
+              metadata: {
+                relationshipType: "go_package_scope_call",
+                callExpression: generic.text,
+                isPackageQualified: qualified,
+                ...(stdlibModule !== null ? { isStdlib: true, stdlibPath: stdlibModule } : {}),
+              },
+            })
+          }
+        }
+        // Descend regardless: a conversion's operand can hold real calls, and an
+        // unnameable callee is never a reason to prune the subtree (#799 round).
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push(child)
+        }
+        continue
+      }
       if (node.type === "call_expression") {
         const fn = node.childForFieldName("function")
         if (fn) {

@@ -17,6 +17,7 @@ to the wasm binaries.
 | `tree-sitter-dart-upstream` | tree-sitter-dart 1.0.0 | ISC | https://github.com/UserNobody14/tree-sitter-dart | PROVENANCE.md | LICENSE |
 | `tree-sitter-elixir` | tree-sitter-elixir 0.3.5 | Apache-2.0 | https://github.com/elixir-lang/tree-sitter-elixir | README.md | LICENSE |
 | `tree-sitter-fsharp` | tree-sitter-fsharp 0.3.11 | MIT | https://github.com/ionide/tree-sitter-fsharp | README.md | LICENSE |
+| `tree-sitter-go` | tree-sitter-go 0.20.0 | MIT | https://github.com/tree-sitter/tree-sitter-go | PIN.md | LICENSE |
 | `tree-sitter-graphql` | tree-sitter-graphql 0.0.1 | MIT | not declared by the upstream package | README.md | LICENSE |
 | `tree-sitter-groovy` | tree-sitter-groovy 0.1.2 | MIT | https://github.com/amaanq/tree-sitter-groovy | README.md | LICENSE |
 | `tree-sitter-haskell` | tree-sitter-haskell 0.23.1 | MIT | https://github.com/tree-sitter/tree-sitter-haskell | README.md | LICENSE |

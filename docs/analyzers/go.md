@@ -1536,9 +1536,43 @@ reason the emission vocabulary is closed.
   across four Go repos, 0.19% dangling source). That re-derivation is a **different corpus** and is
   not a substitute for the differential's `--sample 120` denominators, which no surviving checkout
   can reproduce.
-- **Grammar-version drift.** The analyzer references 54 node types of `tree-sitter-go`; the
-  grammar audit passes with 0 unknown, but the wasm is not registered in
-  `validation/m14/grammar-pins.json`, so a swap of the wasm would be silent.
+- **Grammar pin: REGISTERED 2026-11-16, and how.** The analyzer references node types of
+  `tree-sitter-go`; the grammar audit passes with 0 unknown. The wasm is now pinned in TWO places
+  that must agree: `src/ast/engine.ts` `PATCHED_GRAMMAR_SHA256["tree-sitter-go.wasm"]` (the digest
+  the resolver VERIFIES before serving the repo build) and `grammars/tree-sitter-go/PIN.md`
+  (upstream revision, provenance, build command, and the full A/B). The wired build is
+  `tree-sitter-go` @ `e395081` — an **unpatched upstream commit**, not a modified grammar — chosen
+  because it is the commit that ADDS `type_instantiation_expression` while still emitting
+  `constraint_elem`; upstream HEAD renames that node (and `method_spec`), which would move the
+  analyzer's node contract as a side effect of a parse fix.
+- **GO-GAP-1 is CLOSED by that pin, and the closure is measured on declarations.** Two legal Go
+  constructs used to fall into error recovery — a package-scope generic function VALUE
+  (`var _ = slices.Backward[[]int]`, Go 1.21+) and a method on an instantiated generic receiver
+  (Go 1.18+) — and recovery swallowed the declarations AFTER them. On the real corpus file
+  `go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go`:
+  **previous build 1 symbol / 195 parse errors / 0 `contains`; pinned build 40 symbols / 0 errors /
+  4 `contains`** — 39 of 40 declarations were being lost. Fixture
+  `go/generic-instantiation-recovery` pins the boundary.
+- **The grammar change requires an analyzer change, and both shipped together.** The newer grammar
+  types a generic CALL as `type_conversion_expression` over a `generic_type` instead of a
+  `call_expression` with an `identifier` function. Without the analyzer reading that shape the
+  grammar alone silences **140 corpus calls and 2 fixtures**. Three call sites were taught the new
+  shape (`findGoFunctionCalls`, `buildGoCallExpression`, the package-scope walk) plus
+  `resolveGoCallLeaf`. The type/call decision stays semantic, where Go puts it: a resolved name
+  only becomes a `calls` row when `isGoPackageCallable` accepts it, so `Vec[int](x)` to a struct
+  still publishes no call.
+- **What the swap cost, stated rather than implied.** go-tools + terraform, 3,422 files,
+  `testdata/` excluded: symbols **58,489 → 58,489** (identical), `calls` **128,259 → 128,259**
+  (identical), relations 363,852 → 363,830. The **22 removed edges are fabricated ones** —
+  `instantiates`/`uses` rows read out of composite-literal debris and attached to names the source
+  never mentions, which is the class `go/grammar-error-not-a-construction-889` exists to forbid.
+  Note the census excludes `testdata/`, where most GO-GAP-1 damage lives, which is why the
+  aggregate symbol count is flat while one real file went 1 → 40.
+- **Still open, and NOT a grammar defect.** `GO-GAP-3`: `func (T) NoName()` and `func (s) Untyped()`
+  produce identical trees because the lone identifier lands in the receiver's TYPE slot either way.
+  That is an ambiguity in Go's surface syntax resolved semantically, not a production a grammar
+  revision can add — 1,203 `contains` edges across the five corpora rest on the reading, and the
+  honest fix is package-scope type resolution in the analyzer, not a grammar patch.
 
 ## Unsupported / explicit-unknown constructs
 

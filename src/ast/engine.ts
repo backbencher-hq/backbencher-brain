@@ -700,6 +700,27 @@ export namespace ASTEngine {
    */
   const PATCHED_GRAMMAR_SHA256: Record<string, string> = {
     "tree-sitter-typescript.wasm": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335",
+    // GO-GAP-1: `tree-sitter-go` @ e395081 ("feat: support type instantiation expressions").
+    //
+    // The PREVIOUS wired build predated that commit, so two LEGAL Go constructs fell into error
+    // recovery: a package-scope generic function VALUE (`var _ = slices.Backward[[]int]`) and a
+    // method on an instantiated generic receiver. The damage was not the one line — recovery
+    // swallowed the declarations AFTER it. Measured on the real corpus file
+    // `go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go`:
+    // OLD 1 symbol / 195 errors / 0 `contains`, NEW 40 symbols / 0 errors / 4 `contains` — 39 of 40
+    // declarations lost to recovery. The commit also RENAMES interface nodes
+    // (`constraint_elem`→`type_elem`, `method_spec`→`method_elem`); e395081 is chosen precisely
+    // because it is the commit that ADDS the instantiation production WITHOUT the later breaking
+    // rename (`b82ab80`), so the analyzer's existing node contract is untouched: the A/B over
+    // go-tools+terraform (3,422 files) measured 58,489 symbols on both sides and identical `calls`
+    // (128,259), with only 22 fabricated recovery edges removed.
+    //
+    // THE ANALYZER HALF IS REQUIRED WITH THIS BUILD and ships in the same commit: the newer grammar
+    // types a generic CALL as `type_conversion_expression` over a `generic_type` instead of a
+    // `call_expression` with a `function` identifier, so without `findGoFunctionCalls` / the
+    // package-scope walk reading that shape, 140 corpus calls and 2 fixtures disappear.
+    // Source + license + provenance: `grammars/tree-sitter-go/`.
+    "tree-sitter-go.wasm": "cc55ee8a3579e03a1b94e5371f92f6a5c92045308ee633c25360ab7789573a08",
     // P3 `.RECIPEPREFIX`: the wired build is regenerated from `grammars/tree-sitter-make/recipeprefix/`
     // (external scanner + grammar). Without this entry the resolver served the DEPENDENCY build, whose
     // `_recipeprefix` is the hardcoded tab — so the fixture's `>` recipes parsed as ERROR nodes and the
