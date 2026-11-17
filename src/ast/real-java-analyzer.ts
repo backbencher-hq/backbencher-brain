@@ -882,29 +882,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Measured on the lane's corpus before this change: `imports` 0 edges on
           // 3,275 files while 38,923 `import_declaration` nodes were read. The
           // node was always read; the edge kind was never used.
-          relationships.push({
-            source: currentPackage || "root",
-            target: moduleName,
-            type: ASTEngine.RelationshipType.Imports,
-            confidence: 1.0,
-            // M59 (#825): the line the imported module is NAMED on. 1.0 and not
-            // 0.9: `import_declaration` names the module in the grammar's own
-            // `scoped_identifier`, so this is the dependency the module pass reads,
-            // not a name matched from text. The `references` mention beside it keeps
-            // 0.9, which is the tier the family uses for a name-resolved mention.
-            //
-            // THE TARGET STAYS THE MODULE PATH, and the re-spelling tried here is
-            // MEASURED AND REJECTED rather than forgotten. `d5385c960` restated local
-            // imports to their leaf (+ `module` metadata) and measured "0 false locals" —
-            // a true statement about LOCALITY that is not this gate's question. Re-measured
-            // at cap 400 with `--index`: the gate indexes 4,020 qualifiedName aliases, so
-            // `com.example.core.Foo` ALREADY resolves to the declaration's qualified name,
-            // and the re-spelling moved `imports` resolved 104 → 64 with amb(decl) 0 → 40
-            // (unresolved unchanged at 263). A leaf whose FQN was unique can collide by
-            // name; the FQN cannot. The declaration is reached; the re-spelling lost it.
-            ...this.lineField(this.findChildByType(node, "scoped_identifier") || this.findChildByType(node, "identifier"), node),
-            metadata: { relationshipType: "import_declaration", isJavaImport: true, isWildcard: isAsterisk, isStatic, isModuleDependency: true },
-          })
+          // The file-level dependency is emitted ONCE below. Previously an
+          // earlier Imports row shared the same target and source line but
+          // omitted fileLevel; SQLite ID deduplication retained that row
+          // instead and bb_graph could not find the importing file.
           relationships.push({
             source: currentPackage || "root",
             target: moduleName,
@@ -961,6 +942,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               isJavaImport: true,
               isWildcard: isAsterisk,
               isStatic,
+              isModuleDependency: true,
               fileLevel: true,
             },
           })
