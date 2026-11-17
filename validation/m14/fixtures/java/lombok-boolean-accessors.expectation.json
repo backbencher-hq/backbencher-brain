@@ -1,0 +1,58 @@
+{
+  "fixtureId": "java/lombok-boolean-accessors",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Lombok default primitive boolean accessor uses isX(), primitive isActive uses isActive()/setActive(), boxed Boolean uses getBoxed(), and a final boolean has no setter.",
+  "expectSymbols": [
+    {
+      "name": "isReady",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "setReady",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "isActive",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "setActive",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "getBoxed",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "setBoxed",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "isEnabled",
+      "ownerName": "Flags"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "getReady",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "getIsActive",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "setIsActive",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "setEnabled",
+      "ownerName": "Flags"
+    },
+    {
+      "name": "isBoxed",
+      "ownerName": "Flags"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "fixtureId": "java/implicit-object-equals",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "JLS Object.equals(Object) is an implicit inherited method of an ordinary class, while equals(String) is an overload and cannot claim an Object override.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "EqualityExample.equals",
+      "target": "equals",
+      "meta.reasonCode": "implicit-java-lang-object",
+      "meta.declaringType": "java.lang.Object"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "EqualityExample.equals",
+      "target": "equals",
+      "equals": 1
+    }
+  ]
+}

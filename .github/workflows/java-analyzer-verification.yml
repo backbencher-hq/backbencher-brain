@@ -41,7 +41,7 @@ jobs:
           summaries = re.findall(r"^summary:\s*(\{.*\})\s*$", log, re.MULTILINE)
           assert summaries, "fixture runner did not emit a machine-readable summary"
           java = json.loads(summaries[-1])["java"]
-          assert java["pass"] >= 98, f"expected at least 98 Java fixture passes, got {java}"
+          assert java["pass"] >= 103, f"expected at least 103 Java fixture passes, got {java}"
           assert java["fail"] == 0, f"Java fixtures failed: {java}"
           print("Java fixture gate verified:", java)
           PY

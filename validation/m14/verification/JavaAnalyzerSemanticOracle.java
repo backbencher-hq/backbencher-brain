@@ -56,6 +56,8 @@ public final class JavaAnalyzerSemanticOracle {
             class ImplicitObjectMethods implements Runnable {
                 @Override public String toString() { return "ok"; }
                 @Override public int hashCode() { return 41; }
+                @Override public boolean equals(Object other) { return other == this; }
+                public boolean equals(String other) { return false; }
                 public void toString(int value) {}
                 @Override public void run() {}
             }
@@ -76,6 +78,16 @@ public final class JavaAnalyzerSemanticOracle {
         check(elements.overrides(method(owner, "toString", 0), method(object, "toString", 0), owner), "toString overrides Object");
         check(elements.overrides(method(owner, "hashCode", 0), method(object, "hashCode", 0), owner), "hashCode overrides Object");
         check(!elements.overrides(method(owner, "toString", 1), method(object, "toString", 0), owner), "toString(int) does not override");
+        check(elements.overrides(method(owner, "equals", 1), method(object, "equals", 1), owner), "equals(Object) overrides Object");
+        ExecutableElement equalsString = null;
+        for (Element e : owner.getEnclosedElements()) {
+            if (e.getKind() != ElementKind.METHOD || !e.getSimpleName().contentEquals("equals")) continue;
+            ExecutableElement m = (ExecutableElement)e;
+            if (m.getParameters().size() == 1 && m.getParameters().get(0).asType().toString().equals("java.lang.String")) {
+                equalsString = m;
+            }
+        }
+        check(equalsString != null && !elements.overrides(equalsString, method(object, "equals", 1), owner), "equals(String) overload is not an override");
         TypeElement local = elements.getTypeElement("LocalAnnotations");
         check(local != null, "local annotation class exists");
         check(local.getAnnotationMirrors().stream().anyMatch(m -> m.getAnnotationType().toString().equals("RequestMapping")), "unqualified local RequestMapping is not Spring");

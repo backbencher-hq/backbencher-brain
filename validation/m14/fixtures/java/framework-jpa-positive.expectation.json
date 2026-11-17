@@ -1,0 +1,46 @@
+{
+  "fixtureId": "java/framework-jpa-positive",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Explicit single-type imports are sufficient to bind Jakarta Persistence and Spring; negative hardening must preserve correct positive mappings and bean identity.",
+  "expectSymbols": [
+    {
+      "name": "VerifiedService",
+      "kind": "class",
+      "meta.spring_bean": true
+    },
+    {
+      "name": "VerifiedRow",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "target": "verified_rows",
+      "meta.relationshipType": "mapped_table"
+    },
+    {
+      "type": "uses",
+      "target": "db_id",
+      "meta.relationshipType": "mapped_column"
+    },
+    {
+      "type": "uses",
+      "target": "accessor_db",
+      "meta.relationshipType": "mapped_column"
+    },
+    {
+      "type": "uses",
+      "target": "real.key",
+      "meta.relationshipType": "config_property"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "verifiedrow",
+      "meta.relationshipType": "mapped_table"
+    }
+  ]
+}

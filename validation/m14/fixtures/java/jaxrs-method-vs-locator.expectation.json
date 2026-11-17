@@ -1,0 +1,43 @@
+{
+  "fixtureId": "java/jaxrs-method-vs-locator",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Jakarta REST: @Path alone denotes a subresource locator, not an HTTP method; @GET with method and/or class @Path is a real GET resource method.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "/root/ready",
+      "meta.isApiEndpoint": true,
+      "meta.httpMethod": "GET"
+    },
+    {
+      "type": "exports",
+      "target": "/root",
+      "meta.isApiEndpoint": true,
+      "meta.httpMethod": "GET"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "/root/sub",
+      "meta.isApiEndpoint": true
+    }
+  ],
+  "forbidApiContractPaths": [
+    {
+      "symbol": "locator",
+      "ownerName": "Resource"
+    }
+  ],
+  "expectApiContractPaths": [
+    {
+      "symbol": "ready",
+      "equals": "/root/ready"
+    },
+    {
+      "symbol": "root",
+      "equals": "/root"
+    }
+  ]
+}
