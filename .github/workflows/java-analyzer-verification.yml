@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/ast/real-java-analyzer.ts'
       - 'src/ast/parallel-indexer.ts'
+      - 'src/ast/member-owner-resolution.ts'
       - 'src/lsp/graph_request.ts'
       - 'src/lsp/graph_usages.ts'
       - 'script/m14/java-m12-mismatch-census.ts'
@@ -98,6 +99,20 @@ jobs:
           test "$old_status" -ne 0
           grep -Eq 'JAVA_SQLITE_E2E_FAIL: (two Java files x two import channels|file-level edges attached)' /tmp/bb-java-sqlite-red.log
           echo "JAVA_SQLITE_RED_CONTROL_PASS: original indexer fails the new database invariants"
+      - name: Prove Java overload ambiguity guard against the original resolver
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp src/ast/member-owner-resolution.ts /tmp/bb-java-fixed-owner-resolver.ts
+          git show 29a579243458490ff23d8de3f7f8f46aad120a43:src/ast/member-owner-resolution.ts > src/ast/member-owner-resolution.ts
+          set +e
+          bun script/m14/java-store-e2e-smoke.ts > /tmp/bb-java-overload-red.log 2>&1
+          old_status=$?
+          set -e
+          cp /tmp/bb-java-fixed-owner-resolver.ts src/ast/member-owner-resolution.ts
+          test "$old_status" -ne 0
+          grep -q 'JAVA_SQLITE_E2E_FAIL: overload confusion' /tmp/bb-java-overload-red.log
+          echo "JAVA_OVERLOAD_RED_CONTROL_PASS: old resolver selects one of distinct Java overloads"
       - name: Java M12 differential — enforce recorded baseline without hiding failures
         shell: bash
         run: |

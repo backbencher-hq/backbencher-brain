@@ -158,10 +158,13 @@ try {
     targetFile: string | null
     targetId: string | null
     targetExternal: string
+    rowId: string
+    metadata: string | null
   }> = db.prepare(`
     SELECT s.name AS sourceName, sf.relative_path AS sourceFile,
       t.qualified_name AS targetQualified, tf.relative_path AS targetFile,
-      r.target_symbol_id AS targetId, r.target_external AS targetExternal
+      r.target_symbol_id AS targetId, r.target_external AS targetExternal,
+      r.id AS rowId, r.metadata AS metadata
     FROM brain_relationship r
     LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id
     LEFT JOIN brain_file sf ON sf.id = s.file_id
@@ -182,6 +185,14 @@ try {
   const boundAlpha = alphaCalls.map(row => row.targetId).filter((id): id is string => !!id)
   assertThat(new Set(boundAlpha).size === boundAlpha.length,
     `overload confusion: two different literal argument types both bound to the same concrete method: ${JSON.stringify(alphaCalls)}`)
+  assertThat(new Set(alphaCalls.map(row => row.rowId)).size === 2,
+    "two Java call sites on one line must carry separate persisted relationship ids")
+  assertThat(alphaCalls.every(row => {
+    const metadata = JSON.parse(row.metadata ?? "{}")
+    return row.targetId === null && metadata.javaOverloadAmbiguous === true &&
+      Number.isSafeInteger(metadata.callSiteStartIndex)
+  }), `overload uncertainty must be explicit and source-positioned, not a silent null: ${JSON.stringify(alphaCalls)}`)
+
 
   for (const [sourceFile, targetQualified] of [
     ["alpha/Alpha.java", "alpha.Alpha.identity"],
