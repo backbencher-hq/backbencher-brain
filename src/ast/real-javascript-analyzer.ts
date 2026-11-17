@@ -800,6 +800,25 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const patterns: Record<string, boolean> = {}
     const scopes: JSScopeEntry[] = [{ name: "__global__", kind: JSScopeKind.Global }]
 
+    // THE POSITIONAL SCOPE MODEL MUST EXIST BEFORE THE FIRST PASS, NOT BEFORE THE THIRD.
+    //
+    // This assignment used to sit ~1,300 lines lower, immediately above the containment/call/use
+    // passes that consume it. The CLASS heritage emission runs EARLIER in this method, and it asks
+    // `importedBindingFor`/`localBindingTarget` for a base's binding — so it read `null`, both
+    // helpers returned null, and every `extends` row written as `{ evidenceClass: "structural" }`
+    // with NEITHER `localBinding` nor `importedBinding`.
+    //
+    // Measured before the move (consul, first 400 JS files): 702 `extends` + `mixes_in` rows, **0**
+    // carrying `importedBinding` — while `uses` rows in the same files did carry it for the same
+    // names, because those walks run after the old assignment. `class InternalCompileWarning extends
+    // CompileDiagnostic` (svelte/compiler/warnings.js, an imported base) is the minimal case.
+    //
+    // Blast radius of the move, checked by grepping every binding-dependent call site before the old
+    // position: exactly TWO exist, both class-heritage (`class_declaration` and the class
+    // EXPRESSION form), so no other emission can change. Building the model costs one pass, and it
+    // was already built on every file — this moves it, it does not add it.
+    this.bindingModel = this.collectBindingModel(rootNode)
+
     // PERF (2026-09-30, measured): does this tree contain ANY `decorator` node?
     //
     // `inDecoratorPosition` answers true only when some ancestor is a decorator,
@@ -2095,9 +2114,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- Relationship passes -------------------------------------------------
-    // THE POSITIONAL SCOPE MODEL, built once before any relationship pass: the local-binding claim
-    // resolves each emission SITE by node offset (never by line — minified files are one line).
-    this.bindingModel = this.collectBindingModel(rootNode)
+    // THE POSITIONAL SCOPE MODEL is built at the TOP of analyze (see the assignment there): the
+    // class heritage emission runs before this point and needs it. It is built ONCE.
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     // ONE COLLECTION PER FILE: both walks consume the same receiver-type map, so a member call

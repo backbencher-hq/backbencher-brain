@@ -20,7 +20,7 @@ set.
 | 2 | every chain segment carried the **chain root's** owner | wrong owner on segments past the head | FIXED |
 | 3 | a `#private` field's owner was **never published** | lost owner (safe) | FIXED |
 | 4 | a named `function_expression` did not rebind the `uses` source | wrong source | FIXED |
-| 5 | `importedBinding` is **never populated** on `extends` / `mixes_in` | missing claim | **OPEN** |
+| 5 | `importedBinding` was **never populated** on `extends` / `mixes_in` | missing claim | FIXED |
 
 ---
 
@@ -98,7 +98,7 @@ that already worked"; **that was false**, and the A/B proved all four emitted th
 four regression tests for the one fix, and they prove it COMPOSES with each other rebinding rule
 instead of replacing it. **At pre-fix 96/1, with the fix 97/0.**
 
-## Finding 5 (OPEN) — `importedBinding` is never populated on `extends` or `mixes_in`
+## Finding 5 — `importedBinding` was never populated on `extends` or `mixes_in` (FIXED)
 
 The class pass computes `metadata.importedBinding` for a base that is an imported binding, and
 `callShapedHeritageRows` does the same for a call-shaped base and each mixin. **It never appears.**
@@ -114,17 +114,37 @@ imported Ember mixins (`WithBlockingActions`, `WindowResizable`, `Sortable`). Th
 the store could follow the import is `metadata.importedBinding`, and it is empty. So "0 resolved" is
 not a resolution failure and not a wrong target — it is a **missing claim**.
 
-**Candidates, named not guessed:** (1) `importedBindingFor` requires
-`resolveBindingKind(...) === "published"`; if the heritage base's offset resolves to a scope whose
-`published` flag is false it returns null for every base — which is what 702/702 looks like. (2)
-`model.moduleBindingSpecs` may not hold the name for the import form used. `bindingModel` is **not** the
-cause: it is assigned once before any relationship pass (`:2100`), ahead of the class/call/use passes,
-so pass ordering is ruled out.
+**The root cause is ORDERING, and it was proved by code position, not by guesswork.**
+`this.bindingModel = this.collectBindingModel(rootNode)` sat ~1,300 lines into `analyze()` with the
+containment/call/use passes. The class heritage emission runs EARLIER in the same method, so when it
+asked `importedBindingFor` for a base's binding, `bindingModel` was still `null` and the helper
+returned null on its first guard (`if (!model || !node || !name) return null`).
 
-**Not fixed here:** whatever the cause, the repair changes metadata on `extends` for every JavaScript
-file — a binding-model question, not a one-line omission, and it deserves its own arm and fixture.
+The decisive test was not a guess about scopes: in ONE file,
+`svelte/packages/svelte/src/compiler/warnings.js`, `uses` rows for `CompileDiagnostic` carried
+`importedBinding` while the `extends` row for the SAME name did not. Same model, same file, same name —
+so the model was correct and the class pass was reading it too early.
 
----
+**Fix:** build the model once at the TOP of `analyze()`, and delete the late assignment so it is built
+once. **Blast radius measured before the move**, by grepping every binding-dependent call site before
+the old position: exactly **two** exist, both class-heritage (`class_declaration` and the class
+EXPRESSION form) — so no other emission can change. The model was already built on every file; this
+moves it, it does not add a pass.
+
+**Result, measured:**
+
+| population | before | after |
+|---|---|---|
+| consul, first 400 JS files: `extends` rows carrying `importedBinding` | **0 / 702** | **203 / 702** |
+| nomad `mixes_in` rows carrying `importedBinding` | 0 / 70 | **70 / 70** |
+| consul `mixes_in` rows carrying `importedBinding` | 0 / 11 | **11 / 11** |
+
+The 499 `extends` rows in consul that still carry nothing are bases that are NOT imports — Ember
+globals (`Route`, `Component`) — which is the correct answer, not a gap.
+
+**This is what "0 resolved" for `mixes_in` actually needed.** All 81 measured `mixes_in` targets are
+imported mixins, and the only channel by which the store can follow an import is
+`metadata.importedBinding`. It is now populated on **81 / 81**.
 
 ## What the store does with an owner claim, and the one thing still open
 
