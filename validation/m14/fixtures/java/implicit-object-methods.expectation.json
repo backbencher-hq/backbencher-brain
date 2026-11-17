@@ -1,0 +1,30 @@
+{
+  "fixtureId": "java/implicit-object-methods",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "javac-valid Object overrides need no explicit extends Object, including when a class implements an interface; a similarly named overload is not an override.",
+  "expectRelationships": [
+    {
+      "type": "overrides",
+      "from": "ImplicitObjectMethods.toString",
+      "target": "toString",
+      "meta.reasonCode": "implicit-java-lang-object",
+      "meta.declaringType": "java.lang.Object"
+    },
+    {
+      "type": "overrides",
+      "from": "ImplicitObjectMethods.hashCode",
+      "target": "hashCode",
+      "meta.reasonCode": "implicit-java-lang-object",
+      "meta.declaringType": "java.lang.Object"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "overrides",
+      "from": "ImplicitObjectMethods.toString",
+      "target": "toString",
+      "equals": 1
+    }
+  ]
+}

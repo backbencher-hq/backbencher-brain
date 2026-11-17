@@ -1,0 +1,54 @@
+name: Java analyzer semantic verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/ast/real-java-analyzer.ts'
+      - 'validation/m14/fixtures/java/**'
+      - 'validation/m14/verification/JavaAnalyzerSemanticOracle.java'
+      - '.github/workflows/java-analyzer-verification.yml'
+  workflow_dispatch:
+
+jobs:
+  java-semantic-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - name: Typecheck production TypeScript
+        run: npm run typecheck
+      - name: All Java M14 fixtures, with explicit failure-count assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run script/m14/run-fixtures.ts --lang java | tee java-fixtures.log
+          python3 - <<'PY'
+          import json, pathlib, re
+          log = pathlib.Path("java-fixtures.log").read_text()
+          summaries = re.findall(r"^summary:\s*(\{.*\})\s*$", log, re.MULTILINE)
+          assert summaries, "fixture runner did not emit a machine-readable summary"
+          java = json.loads(summaries[-1])["java"]
+          assert java["pass"] >= 98, f"expected at least 98 Java fixture passes, got {java}"
+          assert java["fail"] == 0, f"Java fixtures failed: {java}"
+          print("Java fixture gate verified:", java)
+          PY
+      - name: Independently compiled Java oracle facts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/bb-java-oracles
+          javac -d /tmp/bb-java-oracles             validation/m14/verification/JavaMethodGenericOverrideOracle.java             validation/m14/verification/JavaAnalyzerRemediationOracle.java             validation/m14/verification/JavaAnalyzerSemanticOracle.java
+          java -cp /tmp/bb-java-oracles JavaMethodGenericOverrideOracle             validation/m14/fixtures/java/override-unbounded-method-alpha-equivalence.java             validation/m14/fixtures/java/override-generic-method-return-consistency.java
+          java -cp /tmp/bb-java-oracles JavaAnalyzerRemediationOracle
+          java -cp /tmp/bb-java-oracles JavaAnalyzerSemanticOracle

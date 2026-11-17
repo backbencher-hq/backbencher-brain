@@ -1,0 +1,42 @@
+{
+  "fixtureId": "java/spring-repository-redeclaration",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Do not duplicate explicitly declared Spring Data members with phantom names. A non-redeclared delete method has void return; unresolved generic phantom return types must not claim Object.",
+  "expectSymbols": [
+    {
+      "name": "count",
+      "ownerName": "LedgerRepository",
+      "returnType": "long"
+    },
+    {
+      "name": "delete",
+      "ownerName": "LedgerRepository",
+      "returnType": "void"
+    },
+    {
+      "name": "save",
+      "ownerName": "LedgerRepository"
+    }
+  ],
+  "expectSymbolCount": [
+    {
+      "name": "count",
+      "ownerName": "LedgerRepository",
+      "kind": "method",
+      "equals": 1
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "save",
+      "ownerName": "LedgerRepository",
+      "returnType": "Object"
+    },
+    {
+      "name": "findById",
+      "ownerName": "LedgerRepository",
+      "returnType": "Object"
+    }
+  ]
+}

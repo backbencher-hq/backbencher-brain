@@ -1,0 +1,27 @@
+{
+  "fixtureId": "java/spring-requestmethod-identity",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "For a proven Spring RequestMapping annotation, the enum constant RequestMethod.GET denotes GET, not REQUESTMETHODGET or ANY.",
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "/orders",
+      "meta.isApiEndpoint": true,
+      "meta.httpMethod": "GET"
+    }
+  ],
+  "expectApiContractPaths": [
+    {
+      "symbol": "orders",
+      "equals": "/orders"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "/orders",
+      "meta.httpMethod": "ANY"
+    }
+  ]
+}

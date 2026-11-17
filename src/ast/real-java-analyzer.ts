@@ -1174,8 +1174,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           // FeignClient presence by AST-resolved name; value read via the
           // same name-matched path.
-          if (inArray(annNames, "FeignClient")) {
-            const targetService = this.getAnnotationValue(node, "FeignClient", "name") || this.getAnnotationValue(node, "FeignClient", "value")
+          const boundFeign = this.findJavaBoundAnnotation(node, {
+            FeignClient: ["org.springframework.cloud.openfeign.FeignClient"],
+          }, receiverTypes)
+          if (boundFeign) {
+            const targetService = this.getAnnotationValue(node, "FeignClient", "name", boundFeign.node) || this.getAnnotationValue(node, "FeignClient", "value", boundFeign.node)
             if (targetService) {
               relationships.push({
                 source: name,
@@ -1219,6 +1222,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               nodeType: type,
               modifiers,
               annotations,
+              javaHasExplicitSuperclass: inheritance.extendsClass !== null,
               isPublic: visibility === "public",
               isAbstract: modifiers.indexOf("abstract") !== -1 || type === "interface_declaration",
               ...(isSpringBean ? { spring_bean: true } : {})
@@ -1364,15 +1368,19 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           let isApiEndpoint = false
           let fullRoute = ""
           
-          let mappingAnnotation = ""
-          const methodAnnNames = this.getJavaAnnotationNames(node)
-          for (let i = 0; i < methodAnnNames.length; i++) {
-             const n = methodAnnNames[i]
-             if (n === "GetMapping" || n === "PostMapping" || n === "PutMapping" || n === "DeleteMapping" || n === "PatchMapping" || n === "RequestMapping" || n === "Path") {
-                mappingAnnotation = n
-                break
-             }
-          }
+          // An annotation's short spelling is not proof of its framework identity.
+          // Only a qualified annotation or an explicit single-type import binds
+          // Spring MVC / JAX-RS; a local @GetMapping must not create an endpoint.
+          const boundMapping = this.findJavaBoundAnnotation(node, {
+            GetMapping: ["org.springframework.web.bind.annotation.GetMapping"],
+            PostMapping: ["org.springframework.web.bind.annotation.PostMapping"],
+            PutMapping: ["org.springframework.web.bind.annotation.PutMapping"],
+            DeleteMapping: ["org.springframework.web.bind.annotation.DeleteMapping"],
+            PatchMapping: ["org.springframework.web.bind.annotation.PatchMapping"],
+            RequestMapping: ["org.springframework.web.bind.annotation.RequestMapping"],
+            Path: ["jakarta.ws.rs.Path", "javax.ws.rs.Path"],
+          }, receiverTypes)
+          const mappingAnnotation = boundMapping?.name ?? ""
           
           if (mappingAnnotation) {
             isApiEndpoint = true
@@ -1388,15 +1396,12 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               // key (probe-verified 2026-09-08). The value is an identifier
               // (GET) or an array_initializer ({GET, POST}); the first element
               // names the primary verb, absent key means ANY (Spring default).
-              const m = this.getAnnotationValue(node, "RequestMapping", "method")
+              const m = this.getAnnotationValue(node, "RequestMapping", "method", boundMapping?.node)
               if (m) {
-                // Char walk, not regex (M12 no-regex census): keep letters only.
-                let verb = ""
-                for (let ci = 0; ci < m.length; ci++) {
-                  const c = m[ci]
-                  if ((c >= "A" && c <= "Z") || (c >= "a" && c <= "z")) verb += c
-                }
-                verb = verb.toUpperCase()
+                // An enum constant such as RequestMethod.GET is a qualified
+                // name, not the concatenated text REQUESTMETHODGET. The last
+                // segment is the verb; an array/unknown expression stays ANY.
+                const verb = m.trim().slice(m.lastIndexOf(".") + 1).toUpperCase()
                 if (verb === "GET" || verb === "POST" || verb === "PUT" || verb === "DELETE" || verb === "PATCH" || verb === "HEAD" || verb === "OPTIONS") httpMethod = verb
                 else httpMethod = "ANY"
               } else httpMethod = "ANY"
@@ -1410,20 +1415,17 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // @GetMapping on a class with no @RequestMapping base) previously
             // fabricated a root endpoint ("/") for every arg-less mapping —
             // the honest output is NO endpoint edge when no route exists.
-            const methodRoute = this.getAnnotationValue(node, mappingAnnotation, "value") || this.getAnnotationValue(node, mappingAnnotation, "path") || ""
+            const methodRoute = this.getAnnotationValue(node, mappingAnnotation, "value", boundMapping?.node) || this.getAnnotationValue(node, mappingAnnotation, "path", boundMapping?.node) || ""
 
             let basePath = ""
             if (parentContext) {
-              const classAnnNames = this.getJavaAnnotationNames(parentContext.node)
-              let classMapping = ""
-              for (let i = 0; i < classAnnNames.length; i++) {
-                 if (classAnnNames[i] === "RequestMapping" || classAnnNames[i] === "Path") {
-                    classMapping = classAnnNames[i]
-                    break
-                 }
-              }
+              const classMapping = this.findJavaBoundAnnotation(parentContext.node, {
+                RequestMapping: ["org.springframework.web.bind.annotation.RequestMapping"],
+                Path: ["jakarta.ws.rs.Path", "javax.ws.rs.Path"],
+              }, receiverTypes)
               if (classMapping) {
-                basePath = this.getAnnotationValue(parentContext.node, classMapping, "value") || this.getAnnotationValue(parentContext.node, classMapping, "path") || ""
+                basePath = this.getAnnotationValue(parentContext.node, classMapping.name, "value", classMapping.node) ||
+                  this.getAnnotationValue(parentContext.node, classMapping.name, "path", classMapping.node) || ""
               }
             }
 
@@ -3246,6 +3248,32 @@ currentPackage,
         }
       }
 
+      // java.lang.Object is the implicit direct superclass of an ordinary
+      // class without an explicit extends clause (JLS 8.1.4). The tree has
+      // no superclass node for it, so the ordinary BFS cannot discover
+      // Object.toString()/hashCode(). Keep this narrowly compiler-justified:
+      // public instance methods with exact return/parameter signatures,
+      // never a similarly named overload or an explicitly derived class.
+      if (!targetFqn) {
+        const ownerSymbol = symbolMap.get(task.ownerFqn)
+        const memberSymbol = symbolMap.get(task.fqn)
+        if (ownerSymbol?.metadata?.nodeType === "class_declaration" &&
+            ownerSymbol.metadata.javaHasExplicitSuperclass === false &&
+            memberSymbol?.visibility === "public" && !memberSymbol.isStatic) {
+          const isToString =
+            task.methodName === "toString" && task.signature === "()" &&
+            (task.returnType === "java.lang.String" ||
+              (task.returnType === "String" && !singleTypeImports.has("String") && !symbolMap.has("String")))
+          const isHashCode = task.methodName === "hashCode" &&
+            task.signature === "()" && task.returnType === "int"
+          if (isToString || isHashCode) {
+            targetFqn = `java.lang.Object.${task.methodName}${task.signature}`
+            confidence = 1.0
+            reasonCode = "implicit-java-lang-object"
+          }
+        }
+      }
+
       // The companion stores names only. An explicit annotation supplies the
       // override intent and the companion suggests its external declaring type.
       if (!targetFqn && companion && unresolvedParents.size > 0) {
@@ -3346,8 +3374,24 @@ currentPackage,
       const isRepo = scope.parents.some((parent: string) => isSpringRepositoryParent(parent))
       if (isRepo) {
         const defaultMethods = ["save", "findById", "findAll", "deleteById", "delete", "count"]
+        // Real declarations take precedence over inferred repository members.
+        // A redeclaration is a single method, not a second phantom method.
+        const body = this.findChildByType(scope.node, "interface_body")
+        const declaredMethods = new Set<string>()
+        if (body) {
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const child = body.namedChild(i)
+            if (child?.type === "method_declaration") {
+              const declaredName = child.childForFieldName("name")
+              if (declaredName) declaredMethods.add(declaredName.text)
+            }
+          }
+        }
         for (let j = 0; j < defaultMethods.length; j++) {
           const method = defaultMethods[j]
+          // Name-level abstention is conservative for overloads: a missing
+          // synthetic overload is safer than duplicating a source declaration.
+          if (declaredMethods.has(method)) continue
           const sym = {
             name: method,
             kind: ASTEngine.SymbolKind.Method,
@@ -3361,8 +3405,11 @@ currentPackage,
             // payload said parameters:[] — resolution and display disagreed.
             // A phantom method with an arity-carrying key has arity.
             parameters: method === "findById" || method === "deleteById" || method === "save" || method === "delete" ? [{ name: "entity", type: "Object", isOptional: false }] : [],
-            returnType: "Object",
-            metadata: { isPhantom: true },
+            // Generic T/S/ID cannot be honestly reduced to Object. Record
+            // return types only where the API contract is exact.
+            returnType: method === "count" ? "long" :
+              method === "deleteById" || method === "delete" ? "void" : undefined,
+            metadata: { isPhantom: true, javaReturnTypeUnbound: method !== "count" && method !== "deleteById" && method !== "delete" },
           }
           symbols.push(sym)
                     let phantomSig = "()"
@@ -3395,6 +3442,10 @@ currentPackage,
       if (isDataOrGetter || isDataOrSetter) {
         for (let idx = 0; idx < scope.fields.length; idx++) {
           const prop = scope.fields[idx]
+          const fieldModifiers = (prop.metadata?.modifiers ?? []) as string[]
+          // Lombok accessors ignore static fields. Final fields cannot
+          // receive generated setters, including those under @Data.
+          if (fieldModifiers.includes("static")) continue
           const capitalizedName = prop.name.charAt(0).toUpperCase() + prop.name.slice(1)
           
           if (isDataOrGetter && !symbolMap.has(`${scope.fqn}.get${capitalizedName}()`)) {
@@ -3414,7 +3465,8 @@ currentPackage,
             symbolMap.set(`${scope.fqn}.get${capitalizedName}()`, sym)
           }
 
-          if (isDataOrSetter && !symbolMap.has(`${scope.fqn}.set${capitalizedName}(${prop.returnType || "Object"})`)) {
+          if (isDataOrSetter && !fieldModifiers.includes("final") &&
+              !symbolMap.has(`${scope.fqn}.set${capitalizedName}(${prop.returnType || "Object"})`)) {
              const sym = {
               name: `set${capitalizedName}`,
               kind: ASTEngine.SymbolKind.Method,
@@ -5534,6 +5586,33 @@ currentPackage,
   }
 
   /**
+   * Prove a framework annotation's declaration identity from its explicit
+   * qualified spelling or single-type import. Wildcard imports and bare-name
+   * conventions are insufficient, because project annotations can shadow them.
+   */
+  private findJavaBoundAnnotation(
+    declaration: Node,
+    acceptedPaths: Readonly<Record<string, readonly string[]>>,
+    index: JavaReceiverTypeIndex,
+  ): { name: string; node: Node } | null {
+    const target = this.findChildByType(declaration, "modifiers") ?? declaration
+    for (let i = 0; i < target.namedChildCount; i++) {
+      const annotation = target.namedChild(i)
+      if (!annotation || (annotation.type !== "annotation" && annotation.type !== "marker_annotation")) continue
+      const nameNode = this.findChildByType(annotation, "scoped_identifier") ||
+        this.findChildByType(annotation, "identifier")
+      if (!nameNode) continue
+      const written = nameNode.text
+      const name = written.slice(written.lastIndexOf(".") + 1)
+      const validPaths = acceptedPaths[name]
+      if (!validPaths) continue
+      const resolved = written.includes(".") ? written : index.importSinglePaths.get(written)
+      if (resolved && validPaths.includes(resolved)) return { name, node: annotation }
+    }
+    return null
+  }
+
+  /**
    * Bare annotation names extracted from the AST (@Service → Service), read
    * from the identifier field of each annotation node — never from text.
    */
@@ -6144,7 +6223,7 @@ currentPackage,
     return marked
   }
 
-  private getAnnotationValue(node: any, annotationName: string, key: string): string | undefined {
+  private getAnnotationValue(node: any, annotationName: string, key: string, exactAnnotation?: Node): string | undefined {
     const findAllAnnotations = (n: Node) => {
       const results = [];
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -6154,7 +6233,7 @@ currentPackage,
       return results;
     };
     
-    let annotations = findAllAnnotations(node);
+    let annotations = exactAnnotation ? [exactAnnotation] : findAllAnnotations(node);
     const modifiersNode = (() => {
       for (let i = 0; i < node.namedChildCount; i++) {
         const child = node.namedChild(i); if (child && child.type === "modifiers") return child;
@@ -6162,7 +6241,7 @@ currentPackage,
       return null;
     })();
     
-    if (modifiersNode) {
+    if (modifiersNode && !exactAnnotation) {
       annotations = annotations.concat(findAllAnnotations(modifiersNode));
     }
     
