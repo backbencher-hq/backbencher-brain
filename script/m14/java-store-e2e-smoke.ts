@@ -94,11 +94,19 @@ try {
     const deps: Array<{ id: string; moduleSpecifier: string }> = db.prepare(
       "SELECT id, target_external AS moduleSpecifier FROM brain_relationship " +
       "WHERE project_id = ? AND relationship_type = 'imports' " +
-      "AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = ? " +
+      "AND source_symbol_id IS NULL AND source_external = ? " +
       "AND target_external = ?"
     ).all(projectId, file, imported)
     assertThat(deps.length === 1,
       `bb_graph file dependencies must include local project import ${file} -> ${imported}; rows=${deps.length}`)
+    const oldQuery: Array<{ id: string }> = db.prepare(
+      "SELECT id FROM brain_relationship WHERE project_id = ? " +
+      "AND relationship_type = 'imports' AND source_symbol_id IS NULL " +
+      "AND target_symbol_id IS NULL AND source_external = ? AND target_external = ?"
+    ).all(projectId, file, imported)
+    assertThat(oldQuery.length === 0,
+      `negative control: old graph query should incorrectly hide resolved local import ${imported}`)
+
   }
   const symbols: Array<{ qualified_name: string; name: string }> =
     db.prepare(`SELECT qualified_name, name FROM brain_symbol

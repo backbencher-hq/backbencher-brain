@@ -333,7 +333,7 @@ export async function handleGraphRequest(
       .prepare(
         "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
           "FROM brain_relationship WHERE project_id = ? AND relationship_type IN ('imports', 'part_of') AND source_symbol_id IS NULL " +
-          "AND target_symbol_id IS NULL AND source_external = ?",
+          "AND source_external = ?",
       )
       .all(projectId, rootNode.file) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
     const dependencies = classifyFileLevel(fileDepsRaw).imports
