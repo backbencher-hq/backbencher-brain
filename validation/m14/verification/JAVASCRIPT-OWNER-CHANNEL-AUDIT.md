@@ -155,6 +155,37 @@ adding one is a store-side, all-lane decision of the same class as the name-rank
 "0 resolved" is still true at the store, and the honest statement of this fix is: **the claim is now
 present and checkable; resolution is still a store question.**
 
+## Finding 6 (OPEN, measured) — `decorates` carries no `importedBinding`, on 2,570 rows in one corpus
+
+Same family as finding 5, much larger population, and it needs node plumbing rather than a one-line
+move, so it is recorded rather than rushed.
+
+**Measured on nomad** (every tracked `.js`/`.mjs`, via `script/m14/javascript-vocabulary-census.ts`
+plus a direct probe):
+
+| measurement | value |
+|---|---|
+| `decorates` rows | **2,570** |
+| carrying `importedBinding` | **0** |
+| top targets | `service` 398, `attr` 394, `action` 364, `computed` 334, `classic` 196, `tracked` 178 |
+
+Every one of those top targets is an **imported** Ember decorator — the probe confirms `imported=true`
+for the sampled rows (`@service`, `@action`, `@computed` are resolved through the file's own import
+lines). So the rows carry `{ isDecorator, decoratorLine }` and no claim, exactly the shape finding 5
+had on `extends`/`mixes_in`.
+
+**Why it is not a one-line fix.** `extractDecoratorRelationships` iterates `symbol.decorators`, which is
+an array of NAME STRINGS recorded by the symbol walk — there is no decorator NODE at that site, and
+`importedBindingFor` needs a node to resolve the position (`node.startIndex`). The repair is to carry
+the decorator's node through the symbol metadata (or add a name-keyed import lookup that the decorator
+pass can use), then attach `{ importedBinding }`. That is a plumbing change with a fixture and an arm,
+not an insertion.
+
+**Why it matters:** `decorates` is the lane's fourth-largest label by population (2,570 on nomad alone,
+1,299 vault, 960 consul), and in the inbound gate its unresolved rows are exactly these names —
+`service`, `action`, `or`, `computed` — because a decorated symbol's target cannot be resolved and
+carries nothing to say why. The claim is the honest fix; it is the same claim finding 5 established.
+
 ## What the store does with an owner claim, and the one thing still open
 
 `claimOwnerCarryingTargets` withdraws the name binding for an owner-carrying row, then
