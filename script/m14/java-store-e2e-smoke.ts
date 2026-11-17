@@ -25,7 +25,7 @@ import beta.Beta;
 public class Alpha {
   public String identity(String x) { return x; }
   public int identity(int x) { return x; }
-  public void use() { identity("a"); }
+  public void use() { identity("a"); identity(7); }
 }`,
   },
   {
@@ -171,6 +171,18 @@ try {
       AND r.target_external = 'identity'
   `).all(projectId)
   console.log("JAVA_SQLITE_CALL_BINDINGS", JSON.stringify(callBindings))
+  // The source has two distinct Alpha.identity overload declarations.
+  // Literal arguments choose separate methods under javac: String vs int.
+  // Reporting the SAME concrete declaration for both would be a fabricated
+  // binding. Null is acceptable as a stated unresolved/ambiguous target.
+  const alphaCalls = callBindings.filter(row => row.sourceName === "use" &&
+    row.sourceFile === "alpha/Alpha.java")
+  assertThat(alphaCalls.length === 2,
+    `expected two distinct Alpha identity call sites, got ${alphaCalls.length}`)
+  const boundAlpha = alphaCalls.map(row => row.targetId).filter((id): id is string => !!id)
+  assertThat(new Set(boundAlpha).size === boundAlpha.length,
+    `overload confusion: two different literal argument types both bound to the same concrete method: ${JSON.stringify(alphaCalls)}`)
+
   for (const [sourceFile, targetQualified] of [
     ["alpha/Alpha.java", "alpha.Alpha.identity"],
     ["beta/Beta.java", "beta.Beta.identity"],
