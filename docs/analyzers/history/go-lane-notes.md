@@ -819,6 +819,89 @@ should hold the source text and does not. Changing it would have been the obviou
 would have broken a pin and a mutant that both encode the intended contract. The fixture caught it
 before the analyzer did, which is the order that matters.
 
+## Round 13 (2026-11-16): the oracle differential found what every internal gate missed
+
+**The lesson first, because it is the reason this round exists.** Round 12 ended with all five fronts
+green, every internal invariant at 100 %, and a verdict that the lane was done. Then the ORACLE
+DIFFERENTIAL — the one check that compares the analyzer against an independent same-file derivation
+— reported **2,640 "unexplained" rows**. Three real gaps were behind them. *Internal consistency is
+not correctness*, and a lane that only ever checks itself will report green while the graph is
+missing edges.
+
+### Gap 1 — three expression-position surfaces named a TYPE and published nothing
+
+| surface | example | before |
+| --- | --- | --- |
+| builtin type argument | `new(T)`, `make(T, ...)` | no edge |
+| type assertion | `x.(*T)` | no edge |
+| type switch case | `case *T:` | no edge |
+
+Minimal reproduction, which emitted the declarations' own rows and **not one** edge for the uses:
+
+```go
+type Thing struct{ N int }
+type Other struct{ M int }
+func build() { p := new(Thing); _ = p }
+func check(x any) { _ = x.(*Other) }
+```
+
+FIXED (one pass, three node types, one emitter that WALKS the type node because a type-switch case
+is a `pointer_type` wrapping a `type_identifier`). MEASURED on go-tools + terraform (3,422 files):
+
+```
+references          71,249  ->  79,108      (+7,859)
+total edges        363,830  -> 371,689
+symbols             58,470  ->  58,470      UNCHANGED
+every other type                       byte-identical
+dangling source      0.2039% -> 0.1999%
+```
+
+The unchanged symbol count and identical per-type counts are the check that this is a pure
+missing-edge fix and not a relabel. ORACLE EFFECT on the 400-file draw: **references recall
+0.678 → 0.772**, oracle-only 1,551 → 605, UNEXPLAINED 2,616 → **1,705**. Pinned by
+`go/builtin-type-arguments`.
+
+### Gap 2 — the oracle itself was stale on a documented relabel
+
+`type T struct{ E }` publishes `mixes_in T -> E`, not `extends T -> E`. The oracle derived both
+embedding halves as `extends`, so 24 oracle-only `extends` rows were the SAME edges as 24
+analyzer-only `mixes_in` rows — provably, since the two example lists were identical. Teaching the
+classifier the relabel took that bucket 24 → 0. **An oracle that is not updated alongside the
+analyzer does not measure the analyzer; it measures the drift.**
+
+### Gap 3 — FOUND, ROOT-CAUSED, NOT YET FIXED: cross-file package calls are INVISIBLE
+
+A **bare call to a function declared in a SIBLING file of the same package is dropped entirely.**
+`isGoResolvableCallTarget` (real-go-analyzer.ts:2792) requires a bare callee to resolve to a
+SAME-FILE callable:
+
+```ts
+if (target.indexOf(".") !== -1) return true            // qualified -> leaf kept
+return someSymbol(symbols, s => this.isGoPackageCallable(s) && s.name === target)
+```
+
+Proven on `cmd/benchcmp`:
+
+| callee | declared in | `calls` edge? |
+| --- | --- | --- |
+| `fatal`, `formatNs`, `parseFile` | `benchcmp.go` (same file) | **yes** |
+| `Correlate` (called at `benchcmp.go:50`) | `compare.go` (**sibling file**) | **NO — no edge at all** |
+
+This is exactly the class the oracle reports as `calls: 934` unexplained, and it is the shape a
+community user would hit first (call a function from another file in your own package, get no edge).
+
+WHY IT IS NOT FIXED IN THIS ROUND: the safe rule is "emit the leaf unless the name is LOCALLY
+BOUND" (a local variable holding a closure must stay silent — `LocalsAreNotSymbols`), and the scope
+machinery that answers that lives as nested closures inside `analyzeGoBareIdentifierUses`
+(real-go-analyzer.ts:4761+), not as a reusable helper. Lifting it into
+`collectGoLocalNames(functionNode)` and relaxing the guard is a bounded but real refactor, and a
+half-done version would either fabricate edges for local closures or keep dropping siblings. It is
+better left declared than shipped wrong.
+
+**RECOMMENDED NEXT JOB (est. one focused session):** lift the scope frames into a reusable method,
+then relax `isGoResolvableCallTarget` for bare callees whose name is not locally bound, and pin
+both halves — a sibling-file call that MUST emit and a local-closure call that MUST NOT.
+
 ## Round 12 (2026-11-16): the five-front sweep before release — symbols, coverage, resolution, explanation, rulings
 
 This is the last pass before the release, so it was run as a CHECKLIST rather than as
