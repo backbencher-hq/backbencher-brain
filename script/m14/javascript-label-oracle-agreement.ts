@@ -82,6 +82,7 @@ const {
 // allowlist by EVALUATING the expression the file uses rather than restating it —
 // a hardcoded copy of a constant is how an instrument keeps reporting the old
 // number after the constant changes (the note on rel-type-coverage-gate.ts).
+const uncompared = new Map<string, number>()
 const COMPARED: string[] = ["extends", "implements", "instantiates", "overrides", "calls", "uses", "contains", "exports", "references", "imports"]
 
 const tracked: string[] = execFileSync("git", ["-C", CR, "ls-files", "-z"], {
@@ -90,7 +91,10 @@ const tracked: string[] = execFileSync("git", ["-C", CR, "ls-files", "-z"], {
 const admitted: string[] = []
 for (const rel of tracked) {
   const abs = path.join(CR, rel)
-  try { if (statSync(abs).size > 512 * 1024) continue } catch { continue }
+  // `git ls-files` lists SUBMODULE entries as directories, and `readFileSync` on one throws EISDIR —
+  // which crashed this tool the first time it was pointed at a corpus that has a submodule (preact).
+  // A non-file is not a source file: skip it rather than letting the walk die on it.
+  try { const st = statSync(abs); if (!st.isFile() || st.size > 512 * 1024) continue } catch { continue }
   if (detectLanguageFromPath(abs, readFileSync(abs, "utf8")) === "javascript") admitted.push(rel)
 }
 admitted.sort()
@@ -169,7 +173,13 @@ async function worker(): Promise<void> {
     const usableTruth = truth.filter((t: any) => String(t.target ?? "").trim().length > 0)
 
     for (const te of usableTruth) {
-      const L = labels.get(String(te.label))!
+      // A LABEL OUTSIDE `COMPARED` IS NAMED, NOT DROPPED. The compared set was written for the
+      // corpora this tool was first pointed at (svelte/lodash, which have no JSX, no decorators and
+      // no mixins). A corpus that DOES have them produces truth rows for labels the set omits, and
+      // the first version read `labels.get(...)!` and crashed on `undefined.truth` — a tool that
+      // cannot measure the very labels a richer corpus adds. Counted here so the omission is visible.
+      const L = labels.get(String(te.label))
+      if (!L) { uncompared.set(String(te.label), (uncompared.get(String(te.label)) ?? 0) + 1); continue }
       L.truth++
       const hit = rels.some((r: any) => r.label === String(te.label) && normTarget(r.target) === normTarget(te.target))
       if (hit) L.covered++

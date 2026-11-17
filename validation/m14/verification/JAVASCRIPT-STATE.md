@@ -115,6 +115,38 @@ Fixed in the census (accept `isFieldAccess` alone; treat code points above 127 a
 now reports **0**. The analyzer needed no change — but the lane's headline number would have been wrong
 without running it on a corpus that contains these shapes.
 
+## OPEN, measured — the per-label oracle tool on a JSX+Flow corpus
+
+`javascript-label-oracle-agreement.ts` had never been pointed at a corpus with JSX, decorators or mixins;
+it was written against svelte/lodash. Two bugs stopped it on the first try, both fixed:
+
+- **EISDIR crash**: `git ls-files` lists SUBMODULE entries as directories and the walk `readFileSync`'d
+  one (preact has a submodule). It now requires `statSync(...).isFile()`.
+- **`undefined.truth` crash**: it read `labels.get(label)!` and preact's truth contains labels outside
+  its `COMPARED` set (`renders`, `decorates`). Those are now counted in an `uncompared` bucket instead
+  of crashing — a tool that cannot measure the labels a richer corpus adds is not measuring the corpus.
+
+With those fixed it runs, and it reports FABRIC/REAL-GAP rows for `uses` on preact:
+
+```
+uses  ModalButton -> ModalButton\0calls   (isFieldAccess, callReceiver, localBinding)
+uses  ModalButton -> ModalButton\0i       (isTemplateInterpolation, localBinding)
+renders App -> App\0ModalButton            (jsxElement, localBinding)
+```
+
+**These are NOT (yet) evidence of an analyzer defect, and the check I built to test them was wrong.**
+I measured "binding-claim resolvability" — does the named container actually declare the name — and got
+**9,033 of 9,535 unresolvable**, which looks catastrophic and is an artefact of the test: the samples are
+DESTRUCTURED PARAMETERS (`createRoot\0children` from `function createRoot(container, { children } = {})`),
+which ARE correctly local bindings but are deliberately not published as symbols. So the claim mechanism
+covers locals and parameters, and a symbol-table lookup cannot validate it.
+
+**The open question is therefore about the ORACLE, not the analyzer**: the tool's `uses` derivation
+appears not to model local-binding claims (`X\0name`) at all, so every such row reads as a fabrication
+on a corpus that has many. That has to be established against the claim contract
+(`JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`) before any analyzer change is contemplated — the failure mode of
+"fix the analyzer to satisfy a wrong oracle" is worse than leaving this open.
+
 ## Still open
 
 1. **The store-side questions** — the name-ranking bind and a `mixes_in` resolution rule. Both are
