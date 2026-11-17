@@ -810,6 +810,43 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     this.classifyEvidenceTier(relationships)
 
+    // AN EMBEDDED-INTERFACE ROW MUST NOT DUPLICATE A DECLARATION IN THE SAME FILE.
+    //
+    // A `constraint_elem` inside an interface produces a join row carrying
+    // (ownerName, embedded leaf). That row is LOAD-BEARING — `getGoInterfaceMethods`
+    // reads the pair to resolve the interface's PROMOTED method set — and it is
+    // deliberately PUBLISHED too: `go/round5-surfaces` RULES that naming it is correct,
+    // because "a predeclared interface embedded in an interface body is real
+    // composition, exactly like `io.Closer`; `comparable` is Go's third predeclared
+    // interface type." That ruling stands and this filter does not touch it.
+    //
+    // WHAT IT DOES FIX is the one shape the ruling does not cover: when the embedded
+    // interface is declared in THIS file, publishing the row puts TWO entries with the
+    // SAME name AND the SAME kind in one symbol list, distinguishable only by a metadata
+    // key. `go/embedding-halves.go` is exactly that — it declares
+    // `type Reader interface{...}` (line 39) and embeds it in `ReadCloser` (line 44), so
+    // the list held `interface Reader` twice. A consumer grouping by (name, kind) cannot
+    // tell the declaration from the reference, and the reference is the one that must go:
+    // the declaration is the symbol, the embedding already has its `extends` row.
+    //
+    // An EXTERNAL embed (`io.Closer`, `http.Handler`, `comparable`) has no local
+    // declaration to collide with, so it keeps its representative row — which is the
+    // pinned, ruled-correct behaviour. MEASURED on go-tools + terraform (3,422 files,
+    // 58,489 symbols): 86 embedded rows, of which this drops only the ones duplicating a
+    // same-file declaration. `implements` is unaffected: that pass reads the rows BEFORE
+    // this filter runs.
+    {
+      const localInterfaceNames = new Set(
+        symbols
+          .filter((s) => s.kind === ASTEngine.SymbolKind.Interface && s.metadata?.isEmbeddedInterface !== true)
+          .map((s) => s.name),
+      )
+      const kept = symbols.filter(
+        (s) => !(s.metadata?.isEmbeddedInterface === true && localInterfaceNames.has(s.name)),
+      )
+      if (kept.length !== symbols.length) symbols.splice(0, symbols.length, ...kept)
+    }
+
     // GO26 (round 5): one traversal, one number, two keys. The pre-fix code
     // called `calculateCyclomaticComplexity(rootNode)` twice in the metadata
     // literal below, and each call is a full recursive walk of the tree — a

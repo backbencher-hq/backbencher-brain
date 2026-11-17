@@ -4,34 +4,156 @@
   "authoredBeforeAnalyzerRun": true,
   "rationale": "THE EMBEDDING CONTRACT'S TWO HALVES, PINNED APART. `type T struct{ E }` is implementation COMPOSITION with no declared supertype (E's methods are promoted into T's method set; there is no single base, no inheritance clause, no conformance declared) — the `mixes_in` member's own definition — so the STRUCT half is `mixes_in`; `type I interface { J }` composes NO implementation (an interface has none) and is the fleet's interface-inheritance rule (java interface extends interface, rust trait supertrait) — so the INTERFACE half stays `extends`. BOTH HALVES ARE COUNTED, and the relabel is 1:1: confidence 0.8, evidenceClass `inferred` (derived from that confidence) and the `go_struct_embedding` construct id are UNCHANGED, so the row moves label and nothing else. The forbid entries are the defect's own signature: the struct half published as `extends` (the pre-relabel spelling) and the interface half published as `mixes_in` (the over-reach in the other direction); the raw-text embedded spelling `Pair[int, string]` is forbidden under BOTH labels because #889 fixed the leaf rule that made it possible. The pointer and generic embeds are both present because `*Pair[int, string]` is embedded as a POINTER to a generic instantiation and its field name is still the leaf `Pair`.",
   "expectSymbols": [
-    { "name": "Inner", "kind": "struct" },
-    { "name": "Pair", "kind": "struct" },
-    { "name": "Holder", "kind": "struct" },
-    { "name": "Reader", "kind": "interface" },
-    { "name": "Closer", "kind": "interface" },
-    { "name": "ReadCloser", "kind": "interface" },
-    { "name": "I", "kind": "property", "ownerName": "Inner" },
-    { "name": "First", "kind": "property", "ownerName": "Pair" },
-    { "name": "Second", "kind": "property", "ownerName": "Pair" },
-    { "name": "Inner", "kind": "property", "ownerName": "Holder" },
-    { "name": "Pair", "kind": "property", "ownerName": "Holder" },
-    { "name": "A", "kind": "property", "ownerName": "Holder" }
+    {
+      "name": "Inner",
+      "kind": "struct"
+    },
+    {
+      "name": "Pair",
+      "kind": "struct"
+    },
+    {
+      "name": "Holder",
+      "kind": "struct"
+    },
+    {
+      "name": "Reader",
+      "kind": "interface"
+    },
+    {
+      "name": "Closer",
+      "kind": "interface"
+    },
+    {
+      "name": "ReadCloser",
+      "kind": "interface"
+    },
+    {
+      "name": "I",
+      "kind": "property",
+      "ownerName": "Inner"
+    },
+    {
+      "name": "First",
+      "kind": "property",
+      "ownerName": "Pair"
+    },
+    {
+      "name": "Second",
+      "kind": "property",
+      "ownerName": "Pair"
+    },
+    {
+      "name": "Inner",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "Pair",
+      "kind": "property",
+      "ownerName": "Holder"
+    },
+    {
+      "name": "A",
+      "kind": "property",
+      "ownerName": "Holder"
+    }
   ],
   "expectRelationships": [
-    { "type": "mixes_in", "from": "Holder", "target": "Inner", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_struct_embedding", "meta.isMixin": true },
-    { "type": "mixes_in", "from": "Holder", "target": "Pair", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_struct_embedding", "meta.isMixin": true },
-    { "type": "extends", "from": "ReadCloser", "target": "Reader", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_interface_embedding" },
-    { "type": "extends", "from": "ReadCloser", "target": "Closer", "confidenceMin": 0.8, "confidenceMax": 0.8, "meta.relationshipType": "go_interface_embedding" },
-    { "type": "contains", "from": "Holder", "target": "Inner" },
-    { "type": "contains", "from": "Holder", "target": "Pair" },
-    { "type": "contains", "from": "Holder", "target": "A" }
+    {
+      "type": "mixes_in",
+      "from": "Holder",
+      "target": "Inner",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8,
+      "meta.relationshipType": "go_struct_embedding",
+      "meta.isMixin": true
+    },
+    {
+      "type": "mixes_in",
+      "from": "Holder",
+      "target": "Pair",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8,
+      "meta.relationshipType": "go_struct_embedding",
+      "meta.isMixin": true
+    },
+    {
+      "type": "extends",
+      "from": "ReadCloser",
+      "target": "Reader",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8,
+      "meta.relationshipType": "go_interface_embedding"
+    },
+    {
+      "type": "extends",
+      "from": "ReadCloser",
+      "target": "Closer",
+      "confidenceMin": 0.8,
+      "confidenceMax": 0.8,
+      "meta.relationshipType": "go_interface_embedding"
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "Inner"
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "Pair"
+    },
+    {
+      "type": "contains",
+      "from": "Holder",
+      "target": "A"
+    }
   ],
   "forbidRelationships": [
-    { "type": "extends", "from": "Holder", "target": "Inner" },
-    { "type": "extends", "from": "Holder", "target": "Pair" },
-    { "type": "mixes_in", "from": "ReadCloser", "target": "Reader" },
-    { "type": "mixes_in", "from": "ReadCloser", "target": "Closer" },
-    { "type": "mixes_in", "from": "Holder", "target": "Pair[int, string]" },
-    { "type": "extends", "from": "Holder", "target": "Pair[int, string]" }
+    {
+      "type": "extends",
+      "from": "Holder",
+      "target": "Inner"
+    },
+    {
+      "type": "extends",
+      "from": "Holder",
+      "target": "Pair"
+    },
+    {
+      "type": "mixes_in",
+      "from": "ReadCloser",
+      "target": "Reader"
+    },
+    {
+      "type": "mixes_in",
+      "from": "ReadCloser",
+      "target": "Closer"
+    },
+    {
+      "type": "mixes_in",
+      "from": "Holder",
+      "target": "Pair[int, string]"
+    },
+    {
+      "type": "extends",
+      "from": "Holder",
+      "target": "Pair[int, string]"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "Reader",
+      "kind": "interface",
+      "meta.isEmbeddedInterface": true,
+      "comment": "A DUPLICATE DECLARATION MUST NOT BE PUBLISHED. This file DECLARES `Reader` (line 39) and also EMBEDS it in `ReadCloser` (line 44), so the embedding produced a second `interface Reader` row carrying isEmbeddedInterface. Two entries with the same name AND the same kind in one symbol list are indistinguishable to a consumer that groups by (name, kind) - and the reference is the row that must go, because the declaration is the symbol and the embedding already has its `extends` row. NOTE the two halves: the forbid row pins that the EMBEDDED row is absent, while forbidRelationships below pins that the embedding EDGE still exists. An EXTERNAL embed keeps its representative row (go/round5-surfaces rules `comparable` correct), so this forbid is scoped by the metadata key, never by the name."
+    },
+    {
+      "name": "Closer",
+      "kind": "interface",
+      "meta.isEmbeddedInterface": true,
+      "comment": "The same duplicate for the second embedded interface: `Closer` is declared on line 41 and embedded in `ReadCloser` on line 45."
+    }
   ]
 }
