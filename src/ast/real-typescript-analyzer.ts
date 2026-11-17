@@ -461,6 +461,60 @@ function stripWhitespace(text: string): string {
   return out
 }
 
+/** EVERY character an ASCII DECIMAL DIGIT, and at least one. The exact `/^\d+$/`
+ *  test, and the exactness matters: JavaScript's `\d` is `[0-9]`, NOT the Unicode
+ *  digit class, so a "numeric" character walk would admit digits the regex refused. */
+function isAsciiDigits(text: string): boolean {
+  if (text.length === 0) return false
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    if (code < 48 || code > 57) return false
+  }
+  return true
+}
+
+/** An ARRAY-INDEX key: `0`, or a decimal integer with NO leading zero, and
+ *  numerically below 2^32-1. Replaces `/^(0|[1-9]\d*)$/.test(key) &&
+ *  Number(key) < 0xffffffff` with the same two decisions: the character walk
+ *  answers the shape, and `Number()` answers the bound, so the arithmetic stays
+ *  the regex version's arithmetic rather than a re-implementation of it. */
+function isArrayIndexKey(key: string): boolean {
+  if (key.length === 0) return false
+  const first = key.charCodeAt(0)
+  if (first === 48) {
+    // `0` alone: the regex's FIRST alternative. A leading zero followed by
+    // anything is refused by BOTH alternatives, so length>1 is false here.
+    if (key.length !== 1) return false
+  } else if (first >= 49 && first <= 57) {
+    // `[1-9]\d*`: a non-zero lead followed by digits only.
+    for (let i = 1; i < key.length; i++) {
+      const code = key.charCodeAt(i)
+      if (code < 48 || code > 57) return false
+    }
+  } else {
+    return false
+  }
+  return Number(key) < 0xffffffff
+}
+
+/** The CONTENT of a quoted-string node's own text, when that text is ONE complete
+ *  quoted literal. Replaces `/^(['"])([^\\\r\n]*)\1$/` + `slice(1, -1)`.
+ *
+ *  The regex's exact semantics are preserved, including the surprising half: the
+ *  INNER text may contain an unescaped quote of either kind, because the character
+ *  class excluded only backslash, CR and LF. A "cleaner" rule that also banned an
+ *  inner quote would change behaviour. */
+function literalStringContent(text: string): string | null {
+  if (text.length < 2) return null
+  const quote = text[0]
+  if (quote !== '"' && quote !== "'") return null
+  if (text[text.length - 1] !== quote) return null
+  for (let i = 1; i < text.length - 1; i++) {
+    const code = text.charCodeAt(i)
+    if (code === 92 /* backslash */ || code === 13 /* CR */ || code === 10 /* LF */) return null
+  }
+  return text.slice(1, -1)
+}
 
 /** Strip a literal prefix. NO trimming — the exact `^prefix` behaviour, so it
  *  replaces `/^\.\.\./` on a rest-parameter pattern (`...args` -> `args`) with
@@ -6463,12 +6517,19 @@ class TypeScriptAnalysisRunner {
     // A symbol cannot collide with a real user-written object key or array index.
     const iteratedElement = Symbol("iterated array element")
     type OriginPath = (string | typeof iteratedElement)[]
-    const isArrayIndex = (key: string): boolean => /^(0|[1-9]\d*)$/.test(key) && Number(key) < 0xffffffff
+    // NO REGEX (the owner's DONE criterion, restored 2026-11-17): this block was the
+    // one place release 0.1.4 reintroduced literals. Both helpers are module-level and
+    // character-driven, and `script/m14/ts-no-regex-count.ts` is the instrument that
+    // reads 0 for this file.
+    const isArrayIndex = (key: string): boolean => isArrayIndexKey(key)
     const literalKey = (node: Node | null): string | null => {
       if (!node) return null
       if (["property_identifier", "identifier", "shorthand_property_identifier", "shorthand_property_identifier_pattern"].includes(node.type)) return node.text
-      if (node.type === "number" && /^\d+$/.test(node.text)) return node.text
-      if (node.type === "string" && /^(['"])([^\\\r\n]*)\1$/.test(node.text)) return node.text.slice(1, -1)
+      if (node.type === "number" && isAsciiDigits(node.text)) return node.text
+      if (node.type === "string") {
+        const content = literalStringContent(node.text)
+        if (content !== null) return content
+      }
       if (node.type === "computed_property_name") {
         const value = node.namedChild(0)
         return value && ["string", "number"].includes(value.type) ? literalKey(value) : null
@@ -6737,7 +6798,7 @@ class TypeScriptAnalysisRunner {
         const property = target.childForFieldName("property") ?? target.childForFieldName("index")
         if (!receiver || !property) continue
         const name = target.type === "member_expression" ? property.text
-          : property.type === "string" && /^(['"])([^\\\r\n]*)\1$/.test(property.text) ? property.text.slice(1, -1) : null
+          : property.type === "string" ? literalStringContent(property.text) : null
         const thisOwner = receiver.type === "this" ? this.thisFieldOwner(target) : null
         const hint = receiver.type === "identifier" ? lookupLocalInScope(scopedFacts, scopeOf(target), receiver.text, target.startIndex) : undefined
         const staticOwner = receiver.type === "identifier" && hint === undefined && classMemberNames.has(receiver.text) ? receiver.text : null
