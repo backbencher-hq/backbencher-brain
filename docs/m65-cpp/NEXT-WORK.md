@@ -1489,6 +1489,17 @@ consume-only delta. The file is renamed `gate-index-default-rerun.json` and the 
 kill-switch measurement is re-run with the env var set; the §14.21 delta paragraph's "owed" status
 stands until that lands.
 
+### Post-W8 whole-population re-run (the fixed analyzer)
+
+Fresh gate dump on the same population, shipped analyzer with the W8 guard: **597,712 residual rows**
+and **1,061,394 edges** — exactly the pre-fix dump's 597,716 / 1,061,398 **minus 4**, with per-type
+splits moving exactly as the four rows required (ambDecl 313,437 = −2; unresolved 272,556 = −2; the two
+`int32_t`/`int64_t` rows were ambDeclOnly, the two `int_fast32_t`/`uint64_t` rows unresolved), resolved
+463,682 and `extOK` 11,719 unchanged. W8's closure is therefore confirmed at whole-population
+arithmetic, not only by the targeted re-parse. Evidence:
+`gate-cpp-extension-only.postw8.txt`. The post-W8 wall re-derivation and the corrected kill-switch arm
+are running when this line was written; their artifacts land with the next commit.
+
 ### Reproduction
 
 ```
