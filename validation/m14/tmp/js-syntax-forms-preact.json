@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-17T19:10:47.175Z",
+  "at": "2026-11-17T19:31:29.888Z",
   "repo": "/home/ishaq2321/mcp/backbencher-brain/.corpus/preact",
   "files": 207,
   "forms": {
@@ -190,12 +190,6 @@
       "emittedRels": 0
     },
     "decorator": {
-      "filesWith": 0,
-      "nodes": 0,
-      "emittedSymbols": 0,
-      "emittedRels": 0
-    },
-    "getter/setter pair same name": {
       "filesWith": 0,
       "nodes": 0,
       "emittedSymbols": 0,
