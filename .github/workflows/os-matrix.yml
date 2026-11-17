@@ -14,7 +14,6 @@ on:
 
 jobs:
   os-matrix:
-    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
