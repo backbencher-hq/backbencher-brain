@@ -919,7 +919,18 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     const exp = JSON.parse(fs.readFileSync(expPath, "utf8"))
 
     const content = fs.readFileSync(path.join(dir, src), "utf8")
-    const tree = parser.parse(content)
+    let tree = parser.parse(content)
+
+    // PRODUCTION PARITY FOR THE FLOW FALLBACK. The engine retries a `@flow`-annotated `.js` file with
+    // the TypeScript/TSX grammar (see `maybeFlowFallback`), but this lane calls `analyzer.analyze()`
+    // DIRECTLY, so a fixture could never exercise that path — the fixture lane would be testing an
+    // analyzer that production does not run. Measured: the `flow-implements-clause` fixture published
+    // no interfaces and no `implements` rows here while the same file through the engine published
+    // both. One implementation, called from both entry points.
+    if (runLangLang === "javascript") {
+      const engine = await import("../../src/ast/engine")
+      tree = await (engine as any).maybeFlowFallback("javascript", content, tree)
+    }
 
     // vue/svelte: production parity — engine parseFile performs the SFC
     // script-block pre-parse exactly as real indexing does.

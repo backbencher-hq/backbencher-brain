@@ -1018,6 +1018,42 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 })
               }
             }
+
+            // THE CLAUSE CHANNEL. When this `.js` file carries `@flow`, the engine parses it with the
+            // TYPESCRIPT grammar (Flow is a typed superset the javascript grammar rejects), and there
+            // an `implements` clause IS a node: `class Circle implements Shape { … }`.
+            //
+            // Measured before this branch, on a Flow file through the engine: symbols Circle/Square
+            // were published and the implements rows were ZERO — the label was achieved from JSDoc
+            // only, so a Flow file written in the clause style was silently read as "implements
+            // nothing". Both channels now emit, and the row carries `viaClause` so a consumer can
+            // tell a type-system CLAUSE from a COMMENT.
+            // IN THE TYPESCRIPT GRAMMAR `implements_clause` LIVES INSIDE `class_heritage`
+            // (`class_heritage: seq(optional(extends_clause), optional(implements_clause))`), so a
+            // direct-child search finds nothing — which is exactly what happened on the first cut:
+            // the branch was present, the node was one level deeper, and zero rows were emitted.
+            const heritageForClause = this.findChildByType(node, "class_heritage")
+            const implClause = this.findChildByType(node, "implements_clause")
+              ?? (heritageForClause ? this.findChildByType(heritageForClause, "implements_clause") : null)
+            if (implClause) {
+              for (let ci = 0; ci < implClause.namedChildCount; ci++) {
+                const ifaceNode = implClause.namedChild(ci)
+                if (!ifaceNode) continue
+                // `implements A, B` and a generic `implements Box<T>` both reduce to the NAME
+                const iface = ifaceNode.type === "generic_type"
+                  ? (ifaceNode.childForFieldName("name") ?? ifaceNode.namedChild(0))?.text ?? ""
+                  : ifaceNode.text
+                if (iface.length === 0 || iface === name) continue
+                relationships.push({
+                  source: name,
+                  target: iface,
+                  type: ASTEngine.RelationshipType.Implements,
+                  confidence: 1.0,
+                  ...this.lineField(ifaceNode),
+                  metadata: { viaClause: true },
+                })
+              }
+            }
           }
           break
         }
@@ -1320,8 +1356,48 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
-        case "field_definition": {
-          const prop = node.childForFieldName("property")
+        // FLOW TYPE DECLARATIONS. `interface Shape { … }` and `type Id = string;` are Flow, not
+        // ECMAScript — a `.js` file carrying `@flow` reaches this analyzer as a TYPESCRIPT-grammar
+        // tree, where they are `interface_declaration` / `type_alias_declaration`. The switch listed
+        // neither, so the declared name was not in the symbol table at all; measured before this
+        // case, `interface Shape {}` published NO symbol while the class implementing it did.
+        case "interface_declaration": {
+          const nm = node.childForFieldName("name")
+          if (nm) {
+            symbols.push({
+              name: nm.text,
+              kind: ASTEngine.SymbolKind.Interface,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: "public",
+              metadata: { isFlowType: true } as Record<string, unknown>,
+            })
+          }
+          break
+        }
+        case "type_alias_declaration": {
+          const nm = node.childForFieldName("name")
+          if (nm) {
+            symbols.push({
+              name: nm.text,
+              kind: ASTEngine.SymbolKind.TypeAlias,
+              range: this.nodeToRange(node),
+              scope: scopeString(scopeStack),
+              visibility: "public",
+              metadata: { isFlowType: true } as Record<string, unknown>,
+            })
+          }
+          break
+        }
+        case "field_definition":
+        // A FLOW-TYPED FIELD ARRIVES UNDER A DIFFERENT NAME. When the engine's Flow fallback hands
+        // this analyzer a tree from the TYPESCRIPT grammar (a `.js` file carrying `@flow`), a typed
+        // class field is `public_field_definition` and its name is in the `name` field, not
+        // `property`. Measured before this case: `class C { count: number = 0 }` published `C` and
+        // NOTHING else — no field symbol, no `contains` — while the same class without the type
+        // annotation published both. The fallback was buying a parse the analyzer then threw away.
+        case "public_field_definition": {
+          const prop = node.childForFieldName("property") ?? node.childForFieldName("name")
           if (prop) {
             // #813: keep the declared `#` spelling.
             const name = prop.text

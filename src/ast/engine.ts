@@ -1839,35 +1839,11 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
     //     reparsed as a different language;
     //   · the fallback tree must parse CLEAN, so a failure is never traded for a different failure.
     // What it recovers is measured, not assumed — see validation/m14/verification/JAVASCRIPT-STATE.md.
-    // A KILL-SWITCH, because a fallback that cannot be turned off cannot be MEASURED: the A/B in the
-    // commit that added this ran with `BB_JS_FLOW_FALLBACK=0` on one side and unset on the other.
-    // It is a measurement control, not a feature flag — production never needs to set it.
-    if (language === "javascript" && tree.rootNode?.hasError && process.env.BB_JS_FLOW_FALLBACK !== "0") {
-      const head = content.length > 400 ? content.slice(0, 400) : content
-      if (head.includes("@flow") || head.includes("@noflow")) {
-        try {
-          // FIRST the TypeScript grammar, THEN TSX. A Flow `.js` file in a React codebase usually
-          // also contains JSX, and the plain TS grammar has no JSX — so a file can fail TS for a
-          // reason TSX answers. Measured on React: TS cleans 426 of the 782 rejected files, and a
-          // TSX retry on the remainder cleans 141 MORE.
-          for (const fallbackLanguage of ["typescript", "tsx"] as const) {
-            try {
-              const fbParser = await getParser(fallbackLanguage)
-              const fbTree = fbParser.parse(content)
-              if (fbTree && !fbTree.rootNode?.hasError) {
-                tree = fbTree
-                break
-              }
-              try { fbTree?.delete?.() } catch {}
-            } catch {
-              // a missing TSX grammar must not cost the file its TS result
-            }
-          }
-        } catch {
-          // any failure leaves the ORIGINAL tree in place — the fallback can only improve on it
-        }
-      }
-    }
+    // FLOW-ANNOTATED `.js` — see `maybeFlowFallback`, which is exported so that a harness driving
+    // `analyzer.analyze()` DIRECTLY (the fixture runner does) applies the SAME fallback this entry
+    // point does. A fallback only one of two entry points applies is a fallback the test lane cannot
+    // see, and a fixture that cannot see it is a fixture testing a different analyzer.
+    tree = await maybeFlowFallback(language, content, tree)
 
     // The SQL analyzer's declaration-resync pass re-parses a badly damaged file
     // one statement at a time (a single unterminated dollar-quote otherwise
@@ -2964,3 +2940,52 @@ export const parseFile = ASTEngine.parseFile
 export const getParser = ASTEngine.getParser
 /** Synchronous companion to `getParser`: the parser already in the cache, or undefined. */
 export const getCachedParser = ASTEngine.getCachedParser
+
+/**
+ * FLOW-ANNOTATED `.js` — RETRY WITH THE TYPESCRIPT GRAMMAR (then TSX).
+ *
+ * A `.js` file carrying `// @flow` (or `/* @flow *\/`) is NOT ECMAScript: it is Flow, a typed
+ * superset. `tree-sitter-javascript` therefore produces an ERROR tree for it, and the analyzer reads
+ * only the fragments error recovery leaves intact.
+ *
+ * MEASURED on React (`facebook/react` @ 6ff2574, authored `.js` only, build output and test fixtures
+ * excluded): the JS grammar rejected **782 of 1,450** files — 53.9% of the project's source — and
+ * **753 of those 782 (96%) carry a Flow pragma in the first 400 characters**. The TypeScript grammar
+ * parses **426** of them CLEAN, and a TSX retry cleans **141 more**: a Flow `.js` file in a React
+ * codebase usually also contains JSX, and the plain TS grammar has no JSX, so a file can fail TS for a
+ * reason TSX answers.
+ *
+ * Why the TypeScript grammar is legitimate: `tree-sitter-typescript` EXTENDS the JavaScript grammar,
+ * so the node types this family's analyzers switch on are the SAME names (verified on a Flow file —
+ * both grammars produce `comment, import_statement` ×8, `export_statement` at top level).
+ * TS-only nodes are types an analyzer's switch does not list, and an unlisted type is ignored rather
+ * than misread. The JS analyzer gained explicit cases for the ones that DO carry meaning
+ * (`public_field_definition`, `interface_declaration`, `type_alias_declaration`, `implements_clause`).
+ *
+ * FOUR GATES, each of which exists to stop this being a general-purpose language switch:
+ *   1. the file is `javascript` (never `.ts`/`.tsx` — those already use the TS grammar);
+ *   2. the primary parse FAILED — a clean parse is never second-guessed;
+ *   3. the source DECLARES FLOW in its head — an ordinary broken `.js` is not silently reparsed;
+ *   4. the fallback tree must parse CLEAN — a failure is never traded for a different failure.
+ *
+ * `BB_JS_FLOW_FALLBACK=0` disables it. That kill-switch is a MEASUREMENT CONTROL, not a feature flag:
+ * a fallback that cannot be turned off cannot be A/B measured, and production never sets it.
+ */
+export async function maybeFlowFallback(language: string, content: string, tree: Tree): Promise<Tree> {
+  if (language !== "javascript") return tree
+  if (!tree?.rootNode?.hasError) return tree
+  if (process.env.BB_JS_FLOW_FALLBACK === "0") return tree
+  const head = content.length > 400 ? content.slice(0, 400) : content
+  if (!head.includes("@flow") && !head.includes("@noflow")) return tree
+  for (const fallbackLanguage of ["typescript", "tsx"] as const) {
+    try {
+      const fbParser = await getParser(fallbackLanguage)
+      const fbTree = fbParser.parse(content)
+      if (fbTree && !fbTree.rootNode?.hasError) return fbTree
+      try { fbTree?.delete?.() } catch {}
+    } catch {
+      // a missing grammar must not cost the file its original tree
+    }
+  }
+  return tree
+}

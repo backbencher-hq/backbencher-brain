@@ -1,0 +1,57 @@
+{
+  "description": "Flow `implements` CLAUSE channel: a .js file carrying @flow is parsed with the TypeScript grammar and its implements_clause nodes must emit `implements` rows. Both interfaces must also be published as symbols (Flow type declarations), and the typed class fields as members.",
+  "expectSymbols": [
+    {
+      "name": "Shape",
+      "kind": "interface"
+    },
+    {
+      "name": "Named",
+      "kind": "interface"
+    },
+    {
+      "name": "Circle",
+      "kind": "class"
+    },
+    {
+      "name": "radius",
+      "kind": "property"
+    },
+    {
+      "name": "Square",
+      "kind": "class"
+    },
+    {
+      "name": "Plain",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "implements",
+      "source": "Circle",
+      "target": "Shape"
+    },
+    {
+      "type": "implements",
+      "source": "Square",
+      "target": "Shape"
+    },
+    {
+      "type": "implements",
+      "source": "Square",
+      "target": "Named"
+    },
+    {
+      "type": "contains",
+      "source": "Circle",
+      "target": "area"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "implements",
+      "source": "Plain"
+    }
+  ]
+}

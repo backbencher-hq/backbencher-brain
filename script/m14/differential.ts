@@ -6344,6 +6344,41 @@ export function deriveTypeScriptDecoratorTruth(root: any): { label: string; from
 export function deriveJavaScriptImplements(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  // THE CLAUSE CHANNEL, derived independently of the JSDoc one.
+  //
+  // A `.js` file carrying `// @flow` is parsed by the engine with the TYPESCRIPT grammar (Flow is a
+  // typed superset the javascript grammar rejects), and there `implements` IS a clause:
+  // `class Circle implements Shape`. The analyzer emits those rows with `viaClause`, so the oracle
+  // must derive them or they read as fabrications. This is a NO-OP on a tree without the node, which
+  // is why it is safe on every corpus that is plain ECMAScript (measured population in authored
+  // source across 16 cloned corpora: 0 — the clause form is Flow, and real projects write the tags).
+  {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()
+      if (!n) continue
+      if (n.type === "implements_clause") {
+        // walk UP for the class this clause belongs to
+        let owner: any = n.parent
+        while (owner && owner.type !== "class_declaration" && owner.type !== "class") owner = owner.parent
+        const className = owner?.childForFieldName?.("name")?.text
+        if (className) {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            const nm = c.type === "generic_type" ? (c.childForFieldName?.("name") ?? c.namedChild(0)) : c
+            const iface = String(nm?.text ?? "").trim()
+            if (iface && !seen.has(iface)) {
+              seen.add(iface)
+              edges.push({ label: "implements", from: className, target: iface })
+            }
+          }
+        }
+        continue
+      }
+      for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+    }
+  }
   const push = (iface: string): void => {
     const t = iface.trim()
     if (!t || seen.has(t)) return
