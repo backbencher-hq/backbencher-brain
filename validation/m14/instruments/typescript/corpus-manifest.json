@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "lane": "typescript",
+  "purpose": "the whole-population numbers of the typescript lane are reproducible from this manifest",
+  "rootPolicy": {
+    "measuredOn": "/home/ishaq2321/bb_tests/repositories",
+    "default": "/home/ishaq2321/bb_tests/repositories",
+    "rule": "BB_CORPUS_ROOT selects the root. The DEFAULT root and the (now deleted) .corpus FARM are DIFFERENT POPULATIONS and their rates are not comparable — incoming-gate.ts prints which root it walked for exactly this reason.",
+    "note": "The declaration recorded 17,689 files / 42 repos on the FARM. That farm no longer exists: $PWD/.corpus is now the JavaScript lane's 22 cloned repositories. The numbers regenerated from this manifest are measured on the root named in `measuredOn`."
+  },
+  "admissionRule": {
+    "source": "script/m14/ts-corpus.ts admitCorpus — the gate's own rule, imported rather than re-implemented",
+    "tracked": "git ls-files",
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".mts",
+      ".cts"
+    ],
+    "sizeCap": 1048576
+  },
+  "generatedAt": "2026-11-17T22:08:21.577Z",
+  "totals": {
+    "repos": 41,
+    "reposSeen": 199,
+    "reposNotGit": 0,
+    "admitted": 17350,
+    "overCap": 1,
+    "absent": 0,
+    "overCapLargest": 3053665,
+    "populationDigest": "4bd7bba5441c534460c5ac1e23fbc38c0c1f682c04b172bcb1be7c6bee4410ec",
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".mts",
+      ".cts"
+    ],
+    "sizeCap": 1048576
+  },
+  "repos": [
+    {
+      "repo": "Fake",
+      "gitHead": "e8e1cae79e3573167d7421c622b51adc8c536004",
+      "trackedTsFamily": 1,
+      "admitted": 1
+    },
+    {
+      "repo": "Grace",
+      "gitHead": "f746b688e0d20fdfdc46eedb42bd8d301be61a34",
+      "trackedTsFamily": 333,
+      "admitted": 333
+    },
+    {
+      "repo": "apollo-server",
+      "gitHead": "0c22029c2af47d3829e730e9820c01cef0557627",
+      "trackedTsFamily": 113,
+      "admitted": 113
+    },
+    {
+      "repo": "bootstrap",
+      "gitHead": "c1f9b9db4dd14d5353e34462ec589cdf8c7270d3",
+      "trackedTsFamily": 24,
+      "admitted": 24
+    },
+    {
+      "repo": "core",
+      "gitHead": "55c9ff79c971557c1c32f6f6ee3183c069bf1ead",
+      "trackedTsFamily": 4,
+      "admitted": 4
+    },
+    {
+      "repo": "dark",
+      "gitHead": "27a12dbeaa29c5dd5ac4436da4b46620bd37652b",
+      "trackedTsFamily": 27,
+      "admitted": 27
+    },
+    {
+      "repo": "element-plus",
+      "gitHead": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+      "trackedTsFamily": 1213,
+      "admitted": 1213
+    },
+    {
+      "repo": "fantomas",
+      "gitHead": "8bf81a121bf52e557b12e710f24a922c172a7ed5",
+      "trackedTsFamily": 1,
+      "admitted": 1
+    },
+    {
+      "repo": "gql-federation",
+      "gitHead": "b95c124ca8376e66ae12fc0b1fbc394ee2c8c58e",
+      "trackedTsFamily": 251,
+      "admitted": 251
+    },
+    {
+      "repo": "gql-gqlgen",
+      "gitHead": "8aab35e4d3d8630cb68b566bbc5e3c8c1fd2df8b",
+      "trackedTsFamily": 10,
+      "admitted": 10
+    },
+    {
+      "repo": "gql-graphql",
+      "gitHead": "ff0637bda0f44c740c8b7f042b98dd8c7ba61e33",
+      "trackedTsFamily": 1678,
+      "admitted": 4152
+    },
+    {
+      "repo": "gql-graphql-eslint",
+      "gitHead": "f1c93592d388b166b4641529b5581d6e98ad1582",
+      "trackedTsFamily": 137,
+      "admitted": 137
+    },
+    {
+      "repo": "gql-graphql-mesh",
+      "gitHead": "8e559541eaa17d115fdd1bd18f94c009c07a0030",
+      "trackedTsFamily": 785,
+      "admitted": 785
+    },
+    {
+      "repo": "gql-graphql-platform",
+      "gitHead": "7b2a0b32edea84b3f8f04a29f279c4d18187896d",
+      "trackedTsFamily": 708,
+      "admitted": 708
+    },
+    {
+      "repo": "gql-graphql-tools",
+      "gitHead": "b81e41207d67055b8c034e5fe60e9d0a999ecfce",
+      "trackedTsFamily": 341,
+      "admitted": 341
+    },
+    {
+      "repo": "gql-graphql-yoga",
+      "gitHead": "85098dff954677229756e82055b29bebf8f26b54",
+      "trackedTsFamily": 503,
+      "admitted": 503
+    },
+    {
+      "repo": "gql-ruby",
+      "gitHead": "6484df1912fe4fd7f9a4caf667350c9ff7b9f083",
+      "trackedTsFamily": 62,
+      "admitted": 62
+    },
+    {
+      "repo": "graphql-js",
+      "gitHead": "9c245018484668b7c35f3ed219092a98855bd51e",
+      "trackedTsFamily": 418,
+      "admitted": 836
+    },
+    {
+      "repo": "graphql-js-full",
+      "gitHead": "ee5ce41d4b68d1852306d3b56dba2cbbb6c43fea",
+      "trackedTsFamily": 418,
+      "admitted": 418
+    },
+    {
+      "repo": "hasura-engine",
+      "gitHead": "94915fe51d6d21bd7f6d4452dc16221bef8cfefd",
+      "trackedTsFamily": 2965,
+      "admitted": 2964
+    },
+    {
+      "repo": "nomad",
+      "gitHead": "3a9af341c94ee3b08826f8057195e11ef55cd6d7",
+      "trackedTsFamily": 7,
+      "admitted": 7
+    },
+    {
+      "repo": "nvim-treesitter",
+      "gitHead": "910fdf6f49e9dee7e7257c7d11a76b040fdfb9de",
+      "trackedTsFamily": 2,
+      "admitted": 2
+    },
+    {
+      "repo": "phpmyadmin",
+      "gitHead": "4061095a59e1769128776ad24154cc7058de51aa",
+      "trackedTsFamily": 105,
+      "admitted": 105
+    },
+    {
+      "repo": "primer-css",
+      "gitHead": "0351f0a3c6f74b6bf0a70113c9b46474ba803f31",
+      "trackedTsFamily": 16,
+      "admitted": 16
+    },
+    {
+      "repo": "proxicall",
+      "gitHead": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
+      "trackedTsFamily": 739,
+      "admitted": 739
+    },
+    {
+      "repo": "r-air",
+      "gitHead": "9a80b9310923cbd4efabc9e993c7211bbfdcb660",
+      "trackedTsFamily": 20,
+      "admitted": 20
+    },
+    {
+      "repo": "redwood",
+      "gitHead": "a7852fb92d0e4ac2bcce1d9a755717ba6cf53ffd",
+      "trackedTsFamily": 1736,
+      "admitted": 1736
+    },
+    {
+      "repo": "riverpod",
+      "gitHead": "90c5a0bb144c3d782475c0d525cb2f6e45eef1c8",
+      "trackedTsFamily": 108,
+      "admitted": 108
+    },
+    {
+      "repo": "sass-spec",
+      "gitHead": "49bf57edf18c4938599b3afd53dd826ee2f4e0e6",
+      "trackedTsFamily": 88,
+      "admitted": 88
+    },
+    {
+      "repo": "shadcn-svelte",
+      "gitHead": "dabbd4c00fbca1feef29a2a155b2eecf6bb4ea7a",
+      "trackedTsFamily": 1048,
+      "admitted": 1048
+    },
+    {
+      "repo": "shopify-api-js",
+      "gitHead": "9dd9284376deaca14598e8dc96c90b868e03086b",
+      "trackedTsFamily": 1279,
+      "admitted": 1279
+    },
+    {
+      "repo": "snacks.nvim",
+      "gitHead": "882c996cf28183f4d63640de0b4c02ec886d01f2",
+      "trackedTsFamily": 1,
+      "admitted": 1
+    },
+    {
+      "repo": "solidity",
+      "gitHead": "32b5b8c4655448291e27272d43607b9e3ae8c1d8",
+      "trackedTsFamily": 51,
+      "admitted": 51
+    },
+    {
+      "repo": "svelte",
+      "gitHead": "26786e92985842a6d563c67049a43bc5857bf792",
+      "trackedTsFamily": 84,
+      "admitted": 84
+    },
+    {
+      "repo": "terragrunt",
+      "gitHead": "8c00bb6bf63336ebfdf0528824a1d141df859096",
+      "trackedTsFamily": 44,
+      "admitted": 44
+    },
+    {
+      "repo": "traefik",
+      "gitHead": "fcbfb8aff229498eddc941ea47f7bd18cbc65078",
+      "trackedTsFamily": 181,
+      "admitted": 181
+    },
+    {
+      "repo": "vault",
+      "gitHead": "c848fd3dc7d44fc1fe8edc7eb4e193db1da1a323",
+      "trackedTsFamily": 717,
+      "admitted": 717
+    },
+    {
+      "repo": "vega",
+      "gitHead": "045d12611007cd65ae5ce68e4179d4ee2f150ef8",
+      "trackedTsFamily": 212,
+      "admitted": 212
+    },
+    {
+      "repo": "vue-core",
+      "gitHead": "f8975657d7451d8e4291406427e6a8ae5e50c8d5",
+      "trackedTsFamily": 491,
+      "admitted": 491
+    },
+    {
+      "repo": "wagtail",
+      "gitHead": "ae4a16dee644638019dd508b448a5315000745f7",
+      "trackedTsFamily": 159,
+      "admitted": 159
+    },
+    {
+      "repo": "waypoint",
+      "gitHead": "b81cf848b44f57b95cb2e9766839582cc625d9c2",
+      "trackedTsFamily": 271,
+      "admitted": 271
+    }
+  ],
+  "selfCorpus": {
+    "path": "/home/ishaq2321/mcp/backbencher-brain",
+    "gitHead": "b79dcd2ffd927dd1da957b60dd31a9170399402a",
+    "trackedTsFamily": 6816,
+    "extensions": [
+      ".ts",
+      ".tsx",
+      ".mts",
+      ".cts"
+    ],
+    "note": "the owner authorised this repository as a corpus; a self-corpus arm records the HEAD it measured"
+  }
+}
