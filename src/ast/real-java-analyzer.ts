@@ -1454,6 +1454,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
 
+            if (parentContext?.name === "Resource" && name === "ready") {
+              console.error("JAX_ROUTE_DIAG", JSON.stringify({
+                mappingAnnotation, boundMapping: boundMapping?.name, boundJaxPath: boundJaxPath?.name,
+                boundJaxVerb: boundJaxVerb?.name, methodRoute, basePath, isApiEndpoint,
+                raw: node.text.slice(0, 130), classRaw: parentContext.node.text.slice(0, 130),
+              }))
+            }
             if ((basePath || methodRoute) && isApiEndpoint) {
               // Collapse repeated slashes in the composed route (pure string normalization).
               // Assigns to the method-scoped fullRoute declared above — redeclaring
