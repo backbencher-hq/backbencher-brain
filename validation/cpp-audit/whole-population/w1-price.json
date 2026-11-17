@@ -1,0 +1,280 @@
+{
+ "schemaVersion": 1,
+ "instrument": "script/m14/cpp-w1-price.ts",
+ "measuredAt": "2026-11-17T18:53:06.109Z",
+ "dump": ".tmp-cpp/pop-dump9.txt",
+ "population": {
+  "residualRowsInDump": 585997,
+  "callsResidualRows": 485697,
+  "w1RowsPriced": 409375,
+  "repos": 17,
+  "reposIndexed": 17,
+  "machine": {
+   "loadAvg1": 5.86,
+   "availableGBAtStart": 3.58,
+   "cores": 8
+  }
+ },
+ "indexPopulation": {
+  "admittedExtensions": [
+   "c++",
+   "cc",
+   "cpp",
+   "cu",
+   "cxx",
+   "hpp",
+   "hxx",
+   "inl",
+   "ipp"
+  ],
+  "headersIndexed": false,
+  "note": "EXTENSION-ONLY index population (headers NOT indexed) — the `.h` decision priced separately."
+ },
+ "rule": {
+  "w1": "the W1 class of script/m14/cpp-dump-classify.ts, re-derived from the ANALYZER's own exported sets (not forked): a `calls` target that is an identifier, not a keyword/builtin/non-class-standard type, not an operator/destructor spelling, not qualified, not template-shaped, and not all-caps (all-caps is the W10 macro class).",
+  "partition": "A = the project index DECLARES the name (a project fact) · B = the COMMITTED iso-cpp-stdlib vocabulary lists it (the namespace claim's reach) · C = the index does not declare it but a class member declares it and the spelling does not name the owner (receiver typing — the per-file model cannot decide it) · D = neither (a new claim kind is needed). EVERY W1 row lands in exactly one bucket; sum == W1 rows; the control exits 3 otherwise.",
+  "vocabulary": {
+   "id": "iso-cpp-stdlib",
+   "source": "ISO/IEC 14882 C++ standard library (namespace std; measured top spellings from the cpp namespace census)",
+   "roots": 46
+  }
+ },
+ "indexBuilds": {
+  "Catch2": {
+   "files": 417,
+   "buildMs": 2301,
+   "msPerFile": 5.52,
+   "types": 535,
+   "damaged": 0
+  },
+  "Rcpp": {
+   "files": 90,
+   "buildMs": 494,
+   "msPerFile": 5.49,
+   "types": 55,
+   "damaged": 0
+  },
+  "cabal": {
+   "files": 4,
+   "buildMs": 51,
+   "msPerFile": 12.8,
+   "types": 0,
+   "damaged": 0
+  },
+  "cython": {
+   "files": 6,
+   "buildMs": 52,
+   "msPerFile": 8.75,
+   "types": 3,
+   "damaged": 0
+  },
+  "dplyr": {
+   "files": 12,
+   "buildMs": 100,
+   "msPerFile": 8.33,
+   "types": 9,
+   "damaged": 0
+  },
+  "duckdb": {
+   "files": 4237,
+   "buildMs": 26488,
+   "msPerFile": 6.25,
+   "types": 8116,
+   "damaged": 0
+  },
+  "flutter": {
+   "files": 1801,
+   "buildMs": 10257,
+   "msPerFile": 5.69,
+   "types": 679,
+   "damaged": 0
+  },
+  "flutter-packages": {
+   "files": 221,
+   "buildMs": 1351,
+   "msPerFile": 6.11,
+   "types": 42,
+   "damaged": 0
+  },
+  "fmt": {
+   "files": 48,
+   "buildMs": 823,
+   "msPerFile": 17.15,
+   "types": 211,
+   "damaged": 0
+  },
+  "intellij_community": {
+   "files": 47,
+   "buildMs": 658,
+   "msPerFile": 14.01,
+   "types": 16,
+   "damaged": 0
+  },
+  "jq": {
+   "files": 2,
+   "buildMs": 55,
+   "msPerFile": 27.27,
+   "types": 0,
+   "damaged": 0
+  },
+  "nlohmann-json": {
+   "files": 481,
+   "buildMs": 5187,
+   "msPerFile": 10.78,
+   "types": 265,
+   "damaged": 0
+  },
+  "otp": {
+   "files": 126,
+   "buildMs": 7504,
+   "msPerFile": 59.55,
+   "types": 187,
+   "damaged": 0
+  },
+  "proxicall": {
+   "files": 8,
+   "buildMs": 61,
+   "msPerFile": 7.65,
+   "types": 2,
+   "damaged": 0
+  },
+  "spdlog": {
+   "files": 42,
+   "buildMs": 423,
+   "msPerFile": 10.08,
+   "types": 18,
+   "damaged": 0
+  },
+  "tree_sitter_clean": {
+   "files": 1,
+   "buildMs": 60,
+   "msPerFile": 59.66,
+   "types": 1,
+   "damaged": 0
+  },
+  "zig": {
+   "files": 234,
+   "buildMs": 2470,
+   "msPerFile": 10.55,
+   "types": 443,
+   "damaged": 0
+  }
+ },
+ "fourWay": {
+  "A": 77910,
+  "B": 2352,
+  "C": 171979,
+  "D": 157134
+ },
+ "buckets": {
+  "C/member-leaf-many-owners-receiver-typing": {
+   "rows": 133693,
+   "unresolved": 14,
+   "ambiguous": 133679,
+   "samples": [
+    "Catch2/examples/100-Fix-Section.cpp:26 size [ambBoth] (owners=7)",
+    "Catch2/examples/100-Fix-Section.cpp:32 size [ambBoth] (owners=7)",
+    "Catch2/examples/100-Fix-Section.cpp:38 size [ambBoth] (owners=7)",
+    "Catch2/examples/100-Fix-Section.cpp:44 size [ambBoth] (owners=7)",
+    "Catch2/examples/100-Fix-Section.cpp:50 size [ambBoth] (owners=7)",
+    "Catch2/examples/120-Bdd-ScenarioGivenWhenThen.cpp:20 size [ambBoth] (owners=7)"
+   ]
+  },
+  "D/free-callable-needs-project-fact-claim": {
+   "rows": 98768,
+   "unresolved": 96451,
+   "ambiguous": 2317,
+   "samples": [
+    "Catch2/examples/100-Fix-Section.cpp:27 capacity [unresolved]",
+    "Catch2/examples/100-Fix-Section.cpp:30 resize [unresolved]",
+    "Catch2/examples/100-Fix-Section.cpp:33 capacity [unresolved]",
+    "Catch2/examples/100-Fix-Section.cpp:36 resize [unresolved]",
+    "Catch2/examples/100-Fix-Section.cpp:39 capacity [unresolved]",
+    "Catch2/examples/100-Fix-Section.cpp:42 reserve [unresolved]"
+   ]
+  },
+  "D/type-shaped-needs-project-fact-claim": {
+   "rows": 58366,
+   "unresolved": 50090,
+   "ambiguous": 8276,
+   "samples": [
+    "Catch2/extras/catch_amalgamated.cpp:126 FDuration [ambDeclOnly]",
+    "Catch2/extras/catch_amalgamated.cpp:127 FDuration [ambDeclOnly]",
+    "Catch2/extras/catch_amalgamated.cpp:128 FDuration [ambDeclOnly]",
+    "Catch2/extras/catch_amalgamated.cpp:135 FDuration [ambDeclOnly]",
+    "Catch2/extras/catch_amalgamated.cpp:149 FDuration [ambDeclOnly]",
+    "Catch2/extras/catch_amalgamated.cpp:160 FDuration [ambDeclOnly]"
+   ]
+  },
+  "A/index-declares-FREE-FNCE-MULTI": {
+   "rows": 43166,
+   "unresolved": 3345,
+   "ambiguous": 39821,
+   "samples": [
+    "Catch2/examples/300-Gen-OwnGenerator.cpp:84 take [ambDeclOnly] (decls=4)",
+    "Catch2/examples/300-Gen-OwnGenerator.cpp:89 take [ambDeclOnly] (decls=4)",
+    "Catch2/examples/300-Gen-OwnGenerator.cpp:89 make_unique [ambDeclOnly] (decls=2)",
+    "Catch2/examples/301-Gen-MapTypeConversion.cpp:34 throw_generator_exception [ambDeclOnly] (decls=4)",
+    "Catch2/examples/301-Gen-MapTypeConversion.cpp:65 map [ambDeclOnly] (decls=7)",
+    "Catch2/examples/302-Gen-Table.cpp:33 table [ambDeclOnly] (decls=2)"
+   ]
+  },
+  "C/member-leaf-one-owner-receiver-typing": {
+   "rows": 38286,
+   "unresolved": 86,
+   "ambiguous": 38200,
+   "samples": [
+    "Catch2/examples/210-Evt-EventListeners.cpp:102 allPassed [ambDeclOnly] (owners=1)",
+    "Catch2/examples/210-Evt-EventListeners.cpp:103 allOk [ambDeclOnly] (owners=1)",
+    "Catch2/examples/210-Evt-EventListeners.cpp:166 isHidden [ambDeclOnly] (owners=1)",
+    "Catch2/examples/210-Evt-EventListeners.cpp:167 throws [ambBoth] (owners=1)",
+    "Catch2/examples/210-Evt-EventListeners.cpp:168 okToFail [ambDeclOnly] (owners=1)",
+    "Catch2/examples/210-Evt-EventListeners.cpp:169 expectedToFail [ambDeclOnly] (owners=1)"
+   ]
+  },
+  "A/index-declares-TYPE-construction": {
+   "rows": 23440,
+   "unresolved": 49,
+   "ambiguous": 23391,
+   "samples": [
+    "Catch2/examples/232-Cfg-CustomMain.cpp:25 Opt [ambDeclOnly] (decls=19)",
+    "Catch2/examples/300-Gen-OwnGenerator.cpp:71 GeneratorWrapper [ambDeclOnly] (decls=6)",
+    "Catch2/examples/300-Gen-OwnGenerator.cpp:89 GeneratorWrapper [ambDeclOnly] (decls=6)",
+    "Catch2/examples/301-Gen-MapTypeConversion.cpp:56 GeneratorWrapper [ambDeclOnly] (decls=6)",
+    "Catch2/extras/catch_amalgamated.cpp:570 Estimate [ambDeclOnly] (decls=2)",
+    "Catch2/extras/catch_amalgamated.cpp:571 Estimate [ambDeclOnly] (decls=2)"
+   ]
+  },
+  "A/index-declares-FREE-FNCE-ONCE": {
+   "rows": 11304,
+   "unresolved": 1763,
+   "ambiguous": 9541,
+   "samples": [
+    "Catch2/examples/111-Fix-PersistentFixture.cpp:33 seconds [unresolved]",
+    "Catch2/examples/111-Fix-PersistentFixture.cpp:43 seconds [unresolved]",
+    "Catch2/extras/catch_amalgamated.cpp:562 rd [unresolved]",
+    "Catch2/extras/catch_amalgamated.cpp:578 rd [unresolved]",
+    "Catch2/extras/catch_amalgamated.cpp:8585 eq [unresolved]",
+    "Catch2/extras/catch_amalgamated.cpp:9092 max [unresolved]"
+   ]
+  },
+  "B/committed-stdlib-vocabulary": {
+   "rows": 2352,
+   "unresolved": 2037,
+   "ambiguous": 315,
+   "samples": [
+    "Catch2/examples/302-Gen-Table.cpp:39 make_tuple [unresolved]",
+    "Catch2/examples/302-Gen-Table.cpp:40 make_tuple [unresolved]",
+    "Catch2/examples/302-Gen-Table.cpp:41 make_tuple [unresolved]",
+    "Catch2/examples/302-Gen-Table.cpp:42 make_tuple [unresolved]",
+    "Catch2/extras/catch_amalgamated.cpp:301 log [unresolved]",
+    "Catch2/extras/catch_amalgamated.cpp:329 sqrt [unresolved]"
+   ]
+  }
+ },
+ "totals": {
+  "w1Rows": 409375,
+  "priced": 409375,
+  "partitionHolds": true
+ }
+}

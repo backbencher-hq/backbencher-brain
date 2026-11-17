@@ -129,7 +129,15 @@ const TYPE_POSITION_LABELS = new Set(["extends", "implements", "instantiates", "
  *  analyzer's own exported sets rather than forked. */
 function wallOf(label: string, target: string): string {
   const s = String(target ?? "").trim()
-  if (label === "imports") return "W2-module-path-not-a-symbol"
+  // A MODULE EDGE'S TARGET IS NOT A DECLARED NAME: `imports` names an include path, and `part_of`
+  // names a QUOTED include's file STEM (the part's module symbol). Both can spell a C++ keyword
+  // without being a keyword-spelled NAME — `#include "catch.hpp"` yields `part_of -> catch`,
+  // `#include "export.h"` yields `part_of -> export`, `#include "new.h"` yields `part_of -> new`.
+  // MEASURED 2026-11-17 on the reconstruction corpus: 244 `part_of` rows landed in W7 before this
+  // line while W7's own disposition said "MEASURED ZERO" — an INSTRUMENT misclassification that the
+  // wider corpus exposed, not analyzer output that changed. The same fix is in cpp-dump-classify.ts
+  // (the lane keeps ONE wall rule).
+  if (label === "imports" || label === "part_of") return "W2-module-path-not-a-symbol"
   if (label === "exports") return "W5-export-marker-not-a-declaration"
   if (CPP_KEYWORDS.has(s) || CPP_BUILTIN_TYPE_KEYWORDS.has(s)) return "W7-keyword-spelled-recovery"
   if (CPP_NON_CLASS_STANDARD_TYPES.has(s)) return "W8-non-class-standard-type"
@@ -276,8 +284,8 @@ const DISPOSITION: Record<string, { disposition: string; falsifier: string; note
   },
   "W2-module-path-not-a-symbol": {
     disposition: "RULED UNDECIDABLE (by construction of the type)",
-    falsifier: "An `imports` edge's target is an include PATH; the resolution key space is SYMBOLS. A file-level endpoint would have to be added to the edge model (a new relationship type or a file-claim endpoint), which is a MODEL change, not an instrument gap. The falsifier: if a file-claim endpoint existed, this wall would be decidable by a project fact (does the repo carry that path?). It is RULED because the fleet's key space is symbols and no amount of indexing changes the TYPE.",
-    note: "50,915 rows. 93% of quoted includes name a real project file (the lane's I2 measurement), so the INFORMATION is there and the ENDPOINT is not.",
+    falsifier: "An `imports` edge's target is an include PATH and a `part_of` edge's target is a QUOTED include's file STEM — module endpoints either way, while the resolution key space is SYMBOLS. A file-level endpoint would have to be added to the edge model (a new relationship type or a file-claim endpoint), which is a MODEL change, not an instrument gap. The falsifier: if a file-claim endpoint existed, this wall would be decidable by a project fact (does the repo carry that path/stem?). It is RULED because the fleet's key space is symbols and no amount of indexing changes the TYPE.",
+    note: "50,915 rows on the original population. 93% of quoted includes name a real project file (the lane's I2 measurement), so the INFORMATION is there and the ENDPOINT is not. MEASURED 2026-11-17 on the reconstruction corpus: 244 `part_of` rows whose quoted stem spells a C++ keyword (`catch`, `export`, `new`, `enum`, `float`) belong on THIS wall — they were misclassified as W7 by an extension-only wall rule that treated them as keyword-spelled NAMES; a stem can be spelled like any word, and being quoted means 'part file', not 'declaration'.",
   },
   "W4-qualified-name-not-published": {
     disposition: "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)",
@@ -305,9 +313,9 @@ const DISPOSITION: Record<string, { disposition: string; falsifier: string; note
     note: "MEASURED ZERO on the production population.",
   },
   "W7-keyword-spelled-recovery": {
-    disposition: "INSTRUMENT GAP (a keyword-spelled recovery) — MEASURED ZERO on the production population",
-    falsifier: "0 rows; printed as 0 so the class is a measured zero and not a missing one.",
-    note: "MEASURED ZERO.",
+    disposition: "INSTRUMENT GAP (a keyword-spelled recovery) — MEASURED ZERO for DECLARATION-POSITION labels on both measured populations",
+    falsifier: "0 rows for any label whose target is a declaration name (calls/uses/overrides/extends/implements/instantiates/references), printed as 0 so the class is a measured zero and not a missing one. THE FALSIFIER THIS WALL NEVER HAD, added 2026-11-17: a MODULE edge can name a stem spelled like a keyword, and the rule above used to send it here. If this wall ever holds a row it must be a DECLARATION-position target, or the wall rule is misclassifying again.",
+    note: "MEASURED ZERO on the original population and on the reconstruction corpus for declaration-position labels. The reconstruction run's only rows here were 244 `part_of` module stems (`catch.hpp` → `catch`, …), now classified W2 — the correction is recorded on W2's note.",
   },
   "W6-non-identifier-shaped": {
     disposition: "INSTRUMENT GAP — MEASURED ZERO on the production population",

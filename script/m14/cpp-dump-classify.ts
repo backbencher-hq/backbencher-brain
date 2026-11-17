@@ -171,12 +171,17 @@ function hasTemplateArgs(s: string): boolean { return s.includes("<") || s.inclu
 function classify(label: string, target: string): { family: string; declaredClass: string } {
   const s = String(target ?? "").trim()
   if (s.length === 0) return { family: "empty", declaredClass: "W-empty-target" }
+  // MODULE EDGES, both of them: `imports` names an include path (`/`-shaped or bare), and
+  // `part_of` names a QUOTED include's file STEM — a module endpoint, not a declaration, so a stem
+  // spelled like a keyword (`#include "catch.hpp"` -> `catch`) is still W2 and never W7. MEASURED
+  // 2026-11-17 on the reconstruction corpus; the same fix is in cpp-wall-disposition.ts.
   if (label === "imports") {
     // An include path: quoted/system spellings were already stripped by the analyzer, so the shape
     // IS the path. The target is a module path, not a symbol, by construction of the type (W2).
     if (s.includes("/") || s.includes("\\")) return { family: "include-path/subdirectory", declaredClass: "W2-module-path-not-a-symbol" }
     return { family: "include-path/bare-header", declaredClass: "W2-module-path-not-a-symbol" }
   }
+  if (label === "part_of") return { family: "include-path/quoted-part-stem", declaredClass: "W2-module-path-not-a-symbol" }
   if (label === "exports") {
     // By construction: the marker as written (FMT_API, __declspec(dllexport), …), never a symbol.
     return { family: "export-marker-token", declaredClass: "W5-export-marker-not-a-declaration" }

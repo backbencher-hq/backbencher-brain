@@ -37,6 +37,7 @@
  * Usage: bun run script/cpp-audit/receiver-shape-census.ts [--json]
  *        [--repos=fmt,nlohmann-json]   named repos under .cpp-corpus/ (the default pair)
  *        [--root=.cpp-corpus/.corpus]  a whole corpus root; every direct subdirectory is a repo
+ *        [--no-headers]                extension-only population (the D7 ledger's, without .h/.hh)
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join, extname, resolve } from "node:path"
@@ -49,6 +50,9 @@ const argOf = (f: string): string | null => {
 const DEFAULT_CORPUS_ROOT = join(process.cwd(), ".cpp-corpus")
 const ROOT_ARG = argOf("--root")
 const REPOS_ARG = argOf("--repos")
+/** The D7 ledger's population is EXTENSION-ONLY (headers are the separately-measured boundary), so
+ *  a whole-population re-derivation needs the same filter: `--no-headers` drops .h/.hh. */
+const NO_HEADERS = process.argv.includes("--no-headers")
 /**
  * THE POPULATION. Default = the two pinned repos the evidence artifact was measured on. `--repos=`
  * selects other named repos under `.cpp-corpus/`. `--root=` selects a WHOLE corpus root (every
@@ -69,7 +73,7 @@ const CORPUS_ROOTS: string[] = (() => {
   const names = REPOS_ARG ? REPOS_ARG.split(",").map((x) => x.trim()).filter(Boolean) : ["fmt", "nlohmann-json"]
   return names.map((r) => join(DEFAULT_CORPUS_ROOT, r))
 })()
-const EXTS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h", ".ipp", ".inl", ".cu"])
+const EXTS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".ipp", ".inl", ".cu", ...(NO_HEADERS ? [] : [".hh", ".h"])])
 
 function walk(dir: string, out: string[]): void {
   let entries: string[]

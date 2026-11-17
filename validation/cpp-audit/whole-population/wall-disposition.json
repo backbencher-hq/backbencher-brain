@@ -1,0 +1,287 @@
+{
+ "schemaVersion": 1,
+ "instrument": "script/m14/cpp-wall-disposition.ts",
+ "measuredAt": "2026-11-17T18:52:02.633Z",
+ "dump": ".tmp-cpp/pop-dump9.txt",
+ "population": {
+  "residualRowsInDump": 585997,
+  "walls": 9,
+  "repos": 18,
+  "reposIndexed": 18,
+  "machine": {
+   "loadAvg1": 8.36,
+   "availableGBAtStart": 3.28,
+   "cores": 8
+  }
+ },
+ "indexPopulation": {
+  "admittedExtensions": [
+   "c++",
+   "cc",
+   "cpp",
+   "cu",
+   "cxx",
+   "hpp",
+   "hxx",
+   "inl",
+   "ipp"
+  ],
+  "headersIndexed": true
+ },
+ "rule": {
+  "wall": "the SAME wall rule as script/m14/cpp-dump-classify.ts, re-derived from the ANALYZER's own exported sets (not forked) so a rename fails here rather than misclassifying.",
+  "disposition": "RESOLVED = the rows moved into `resolved` by a measured mechanism · CLAIMED = an arbiter-verified claim in its own column, never a resolution · INSTRUMENT GAP = a fact EXISTS and the instrument cannot read it · RULED UNDECIDABLE = no fact can decide the rows, with a stated falsifier. Every wall lands in exactly one.",
+  "vocabulary": {
+   "id": "iso-cpp-stdlib",
+   "roots": 46
+  }
+ },
+ "walls": [
+  {
+   "wall": "W1-callable-not-declared-in-run",
+   "rows": 409375,
+   "share": "69.9%",
+   "disposition": "SPLIT (see subs): the project-fact part is an INSTRUMENT GAP priced by the four-bucket partition; the receiver part is an INSTRUMENT GAP (receiver typing); the vocabulary part is CLAIMED; the rest is a NEW CLAIM KIND",
+   "falsifier": "The four-bucket partition (script/m14/cpp-w1-price.ts) closes exactly on 614,081 rows; if a future index population declares a name the partition counted as `nothing-in-the-project-declares-it`, the partition's D bucket shrinks and the W1 split is re-priced. A falsifier for the WHOLE wall: if `projectIndexDeclaration` (the task-24 claim kind) is built and verifies > 1,000 rows on the production population, this wall's D bucket becomes CLAIMED rather than a new-claim-kind request.",
+   "note": "The lane's own §18.9 measurement DEFERRED the task-24 claim kind on 981 sound rows over 35.6% of the wall. The four-bucket partition prices the whole wall on the production population, and it separates the CLAIMED part (the committed `iso-cpp-stdlib` vocabulary) from the part that needs a NEW claim kind.",
+   "subClassification": {
+    "member-leaf-owner-unresolved (receiver typing)": 229024,
+    "nothing-in-the-project-declares-it (a new claim kind is needed)": 99622,
+    "project-declares-MULTIPLE (bounded, not decided)": 59916,
+    "project-declares-ONCE (a project fact decides it)": 19307,
+    "committed-stdlib-vocabulary-reaches-it (a citation's reach)": 1506
+   },
+   "samples": {
+    "member-leaf-owner-unresolved (receiver typing)": [
+     "Catch2/examples/100-Fix-Section.cpp:26 calls size [ambBoth]",
+     "Catch2/examples/100-Fix-Section.cpp:32 calls size [ambBoth]",
+     "Catch2/examples/100-Fix-Section.cpp:38 calls size [ambBoth]",
+     "Catch2/examples/100-Fix-Section.cpp:44 calls size [ambBoth]"
+    ],
+    "nothing-in-the-project-declares-it (a new claim kind is needed)": [
+     "Catch2/examples/100-Fix-Section.cpp:27 calls capacity [unresolved]",
+     "Catch2/examples/100-Fix-Section.cpp:30 calls resize [unresolved]",
+     "Catch2/examples/100-Fix-Section.cpp:33 calls capacity [unresolved]",
+     "Catch2/examples/100-Fix-Section.cpp:36 calls resize [unresolved]"
+    ],
+    "project-declares-ONCE (a project fact decides it)": [
+     "Catch2/examples/111-Fix-PersistentFixture.cpp:33 calls seconds [unresolved]",
+     "Catch2/examples/111-Fix-PersistentFixture.cpp:43 calls seconds [unresolved]",
+     "Catch2/extras/catch_amalgamated.cpp:562 calls rd [unresolved]",
+     "Catch2/extras/catch_amalgamated.cpp:578 calls rd [unresolved]"
+    ],
+    "project-declares-MULTIPLE (bounded, not decided)": [
+     "Catch2/examples/232-Cfg-CustomMain.cpp:25 calls Opt [ambDeclOnly]",
+     "Catch2/examples/300-Gen-OwnGenerator.cpp:71 calls GeneratorWrapper [ambDeclOnly]",
+     "Catch2/examples/300-Gen-OwnGenerator.cpp:84 calls take [ambDeclOnly]",
+     "Catch2/examples/300-Gen-OwnGenerator.cpp:89 calls take [ambDeclOnly]"
+    ],
+    "committed-stdlib-vocabulary-reaches-it (a citation's reach)": [
+     "Catch2/examples/302-Gen-Table.cpp:39 calls make_tuple [unresolved]",
+     "Catch2/examples/302-Gen-Table.cpp:40 calls make_tuple [unresolved]",
+     "Catch2/examples/302-Gen-Table.cpp:41 calls make_tuple [unresolved]",
+     "Catch2/examples/302-Gen-Table.cpp:42 calls make_tuple [unresolved]"
+    ]
+   }
+  },
+  {
+   "wall": "W10-macro-defined-name",
+   "rows": 76830,
+   "share": "13.1%",
+   "disposition": "RULED UNDECIDABLE (macros are not declarations)",
+   "falsifier": "A macro name is resolved by the PREPROCESSOR, not by a declaration — the project index deliberately does not admit macro names (charter §18.8). The falsifier: if a project-index spec were extended to record macro names as name-only declarations AND the gate resolved a call to one, this wall would become RESOLVED; until then it is ruled. The bound that would break the ruling is a corpus measurement showing a macro-defined name that the analyzer's own `#define` scan can attribute to a DEFINITION SITE — the analyzer already scans macros, so the falsifier is a mechanism, not a hope.",
+   "note": "114,398 rows. The lane's own C1 measurement found 83% of the `calls` residual named a declaration in a `.h` the gate never parsed, and 3,040 of fmt's macro `#define`s were the largest single part of that. The MACRO class is the part no index can answer, because a macro is not a declaration.",
+   "subClassification": {
+    "the target is a MACRO name — macros are not declarations (RULED per §18.8)": 76830
+   },
+   "samples": {
+    "the target is a MACRO name — macros are not declarations (RULED per §18.8)": [
+     "Catch2/.conan/test_package/test_package.cpp:7 calls TEST_CASE [ambBoth]",
+     "Catch2/.conan/test_package/test_package.cpp:8 calls REQUIRE [ambDeclOnly]",
+     "Catch2/.conan/test_package/test_package.cpp:9 calls REQUIRE [ambDeclOnly]",
+     "Catch2/.conan/test_package/test_package.cpp:10 calls REQUIRE [ambDeclOnly]"
+    ]
+   }
+  },
+  {
+   "wall": "W11-member-leaf-owner-unresolved",
+   "rows": 53351,
+   "share": "9.1%",
+   "disposition": "INSTRUMENT GAP (receiver typing) — the rows the index CAN bound but cannot choose",
+   "falsifier": "A member leaf whose declaring class is EXACTLY ONE in the project is decidable by a receiver fact; if a receiver-typing mechanism is built and the whole-population run shows the `exactly ONE class declares the leaf` sub-class moving out of the wall, the gap is closed. The pre-committed falsifier for the receiver-typing work was the second wave's 7,913 closure-verifiable rows, already measured and named; this wall's residual is what remains AFTER that wave.",
+   "note": "This is the wall the four-bucket partition's bucket C measures from the other side, and it is the largest single sub-class of it: a bare `m()` names the member without naming its class.",
+   "subClassification": {
+    "SEVERAL classes declare the leaf (the receiver would decide it)": 40141,
+    "exactly ONE class declares the leaf (the receiver would decide it)": 7675,
+    "no class in the project declares the leaf": 5535
+   },
+   "samples": {
+    "exactly ONE class declares the leaf (the receiver would decide it)": [
+     "Catch2/examples/210-Evt-EventListeners.cpp:33 uses original [ambDeclOnly]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:50 uses file [ambDeclOnly]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:63 uses macroName [ambBoth]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:64 uses message [ambBoth]"
+    ],
+    "SEVERAL classes declare the leaf (the receiver would decide it)": [
+     "Catch2/examples/210-Evt-EventListeners.cpp:51 uses line [ambBoth]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:65 uses lineInfo [ambBoth]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:86 uses name [ambBoth]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:104 uses passed [ambDeclOnly]"
+    ],
+    "no class in the project declares the leaf": [
+     "Catch2/examples/210-Evt-EventListeners.cpp:66 uses sequence [ambDeclOnly]",
+     "Catch2/extras/catch_amalgamated.cpp:1060 uses sequence [ambDeclOnly]",
+     "Catch2/extras/catch_amalgamated.cpp:1144 uses sequence [ambDeclOnly]",
+     "Catch2/extras/catch_amalgamated.cpp:3813 uses wAttributes [unresolved]"
+    ]
+   }
+  },
+  {
+   "wall": "W2-module-path-not-a-symbol",
+   "rows": 42512,
+   "share": "7.3%",
+   "disposition": "RULED UNDECIDABLE (by construction of the type)",
+   "falsifier": "An `imports` edge's target is an include PATH and a `part_of` edge's target is a QUOTED include's file STEM — module endpoints either way, while the resolution key space is SYMBOLS. A file-level endpoint would have to be added to the edge model (a new relationship type or a file-claim endpoint), which is a MODEL change, not an instrument gap. The falsifier: if a file-claim endpoint existed, this wall would be decidable by a project fact (does the repo carry that path/stem?). It is RULED because the fleet's key space is symbols and no amount of indexing changes the TYPE.",
+   "note": "50,915 rows on the original population. 93% of quoted includes name a real project file (the lane's I2 measurement), so the INFORMATION is there and the ENDPOINT is not. MEASURED 2026-11-17 on the reconstruction corpus: 244 `part_of` rows whose quoted stem spells a C++ keyword (`catch`, `export`, `new`, `enum`, `float`) belong on THIS wall — they were misclassified as W7 by an extension-only wall rule that treated them as keyword-spelled NAMES; a stem can be spelled like any word, and being quoted means 'part file', not 'declaration'.",
+   "subClassification": {
+    "an include target is a PATH, and the key space is symbols (by construction)": 42512
+   },
+   "samples": {
+    "an include target is a PATH, and the key space is symbols (by construction)": [
+     "Catch2/.conan/test_package/test_package.cpp:1 imports catch2/catch_test_macros.hpp [unresolved]",
+     "Catch2/benchmarks/assertion_listener.cpp:9 imports catch2/reporters/catch_reporter_event_listener.hpp [unresolved]",
+     "Catch2/benchmarks/assertion_listener.cpp:10 imports catch2/reporters/catch_reporter_registrars.hpp [unresolved]",
+     "Catch2/benchmarks/only_include.cpp:16 imports catch2/catch_test_macros.hpp [unresolved]"
+    ]
+   }
+  },
+  {
+   "wall": "W1-type-not-declared-in-run",
+   "rows": 2619,
+   "share": "0.4%",
+   "disposition": "INSTRUMENT GAP (the index has no cross-run TYPE declarations) — the same project-fact question as W1, in type position",
+   "falsifier": "If the project index's `typeKinds` were extended to carry the type's DECLARING FILE (not just its name), a type-position row could be bound to the file that declares it, and this wall's `project-declares-ONCE` sub-class would move from INSTRUMENT GAP to RESOLVED. A falsifier for the ruling: a type-position row whose target the index does NOT declare and which no committed vocabulary lists is a NEW CLAIM KIND request (the same D bucket as W1's).",
+   "note": "The index answers 'does the project declare this NAME' — it does not answer 'which FILE declared it', so a type-position row cannot be bound to a declaration site even when the name is declared. That is the instrument's limit, measured, not assumed.",
+   "subClassification": {
+    "project-declares-MULTIPLE (bounded, not decided)": 1503,
+    "nothing-in-the-project-declares-it (a new claim kind is needed)": 533,
+    "project-declares-ONCE (a project fact decides it)": 296,
+    "member-leaf-owner-unresolved (receiver typing)": 264,
+    "committed-stdlib-vocabulary-reaches-it (a citation's reach)": 23
+   },
+   "samples": {
+    "project-declares-MULTIPLE (bounded, not decided)": [
+     "Catch2/benchmarks/assertion_listener.cpp:16 extends EventListenerBase [ambDeclOnly]",
+     "Catch2/benchmarks/runtime_assertion_benches.cpp:14 extends MatcherGenericBase [ambDeclOnly]",
+     "Catch2/examples/210-Evt-EventListeners.cpp:314 extends EventListenerBase [ambDeclOnly]",
+     "Catch2/examples/300-Gen-OwnGenerator.cpp:24 extends IGenerator [ambDeclOnly]"
+    ],
+    "nothing-in-the-project-declares-it (a new claim kind is needed)": [
+     "Catch2/examples/231-Cfg-OutputStreams.cpp:21 extends stringbuf [unresolved]",
+     "Catch2/extras/catch_amalgamated.cpp:198 extends exception [unresolved]",
+     "Catch2/extras/catch_amalgamated.cpp:4661 extends streambuf [unresolved]",
+     "Catch2/extras/catch_amalgamated.hpp:1569 extends true_type [unresolved]"
+    ],
+    "committed-stdlib-vocabulary-reaches-it (a citation's reach)": [
+     "Catch2/extras/catch_amalgamated.cpp:7032 instantiates vector [unresolved]",
+     "Catch2/src/catch2/internal/catch_singletons.cpp:18 instantiates vector [unresolved]",
+     "Rcpp/inst/tinytest/cpp/XPtr.cpp:28 instantiates vector [unresolved]",
+     "flutter/engine/src/flutter/display_list/skia/dl_sk_conversions.cc:175 instantiates shared_ptr [unresolved]"
+    ],
+    "member-leaf-owner-unresolved (receiver typing)": [
+     "duckdb/benchmark/benchmark_runner.cpp:18 references duckdb [ambBoth]",
+     "duckdb/benchmark/micro/append.cpp:5 references duckdb [ambBoth]",
+     "duckdb/benchmark/micro/append_mix.cpp:7 references duckdb [ambBoth]",
+     "duckdb/benchmark/micro/bulkupdate.cpp:7 references duckdb [ambBoth]"
+    ],
+    "project-declares-ONCE (a project fact decides it)": [
+     "duckdb/src/common/encryption_types.cpp:71 instantiates data_t [ambDeclOnly]",
+     "duckdb/src/common/encryption_types.cpp:98 instantiates data_t [ambDeclOnly]",
+     "duckdb/src/common/encryption_types.cpp:123 instantiates data_t [ambDeclOnly]",
+     "duckdb/src/common/encryption_types.cpp:130 instantiates data_t [ambDeclOnly]"
+    ]
+   }
+  },
+  {
+   "wall": "W4-qualified-name-not-published",
+   "rows": 910,
+   "share": "0.2%",
+   "disposition": "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)",
+   "falsifier": "If the analyzer published a `qualifiedName` for cpp members, a `a::b` target would answer to a published key. The falsifier is a fixture-and-census pair: a member whose qualified name is `A::m` must be published under it, and the W4 sub-class must shrink by that count. The lane's own `isPlainIdentifier` / `buildFullName` machinery shows the shape is available — the cpp member symbol simply does not carry it.",
+   "note": "2,771 rows, and it is the mirror image of the W1 wall: a name the project DOES declare, spelled in a way the key space cannot answer.",
+   "subClassification": {
+    "a dotted spelling answers to no published key (the analyzer publishes LEAF names)": 910
+   },
+   "samples": {
+    "a dotted spelling answers to no published key (the analyzer publishes LEAF names)": [
+     "Catch2/extras/catch_amalgamated.hpp:3054 references std::begin [unresolved]",
+     "Catch2/extras/catch_amalgamated.hpp:3055 references std::end [unresolved]",
+     "Catch2/extras/catch_amalgamated.hpp:5096 references Detail::ParserResult [ambDeclOnly]",
+     "Catch2/extras/catch_amalgamated.hpp:5726 uses std::enable_if_t [unresolved]"
+    ]
+   }
+  },
+  {
+   "wall": "W5-export-marker-not-a-declaration",
+   "rows": 286,
+   "share": "0.0%",
+   "disposition": "RULED UNDECIDABLE (the target is the export MARKER as written)",
+   "falsifier": "An `exports` edge's target is the marker macro (`DART_EXPORT`, `FMT_API`), and the edge's ASSERTION is the syntactic fact that the marker appears in the declaration-specifier position. There is no declaration to bind it to — the declaration is the SOURCE of the row. A claim kind would have to claim a MACRO, which the macro ruling already refuses. The falsifier: a corpus measurement finding a case where the marker is ALSO a real declaration name in the project; that would be a separate, tiny class.",
+   "note": "835 rows, fixture-pinned in both directions (cpp/exports-marker-910).",
+   "subClassification": {
+    "the target is the export MARKER as written, never a declaration": 286
+   },
+   "samples": {
+    "the target is the export MARKER as written, never a declaration": [
+     "duckdb/third_party/zstd/dict/cover.cpp:743 exports ZDICTLIB_STATIC_API [unresolved]",
+     "duckdb/third_party/zstd/dict/cover.cpp:1131 exports ZDICTLIB_STATIC_API [unresolved]",
+     "duckdb/third_party/zstd/dict/fastcover.cpp:552 exports ZDICTLIB_STATIC_API [unresolved]",
+     "duckdb/third_party/zstd/dict/fastcover.cpp:621 exports ZDICTLIB_STATIC_API [unresolved]"
+    ]
+   }
+  },
+  {
+   "wall": "W9-operator-name-not-a-symbol",
+   "rows": 110,
+   "share": "0.0%",
+   "disposition": "RULED UNDECIDABLE (an operator spelling is not a published symbol)",
+   "falsifier": "The analyzer publishes members under their source spelling, and an operator's source spelling is the operator token. A published `operator==` symbol would let these rows bind — and the lane's own `friend-definition-body-owner` fixture records that publishing an `operator==` symbol CONTRADICTS an authored contract (a free-function friend definition). So the ruling is a CONTRACT conflict, and its falsifier is a Lead ruling on that conflict, not a mechanism.",
+   "note": "180 rows. The one fixture failure in the lane's suite is the same contract, and it is recorded rather than overturned.",
+   "subClassification": {
+    "an operator/destructor spelling is not a published symbol": 110
+   },
+   "samples": {
+    "an operator/destructor spelling is not a published symbol": [
+     "Catch2/extras/catch_amalgamated.hpp:2397 calls ~T [unresolved]",
+     "Catch2/extras/catch_amalgamated.hpp:3707 calls ~T [unresolved]",
+     "Catch2/extras/catch_amalgamated.hpp:4571 calls ~T [unresolved]",
+     "Catch2/extras/catch_amalgamated.hpp:4578 calls ~T [unresolved]"
+    ]
+   }
+  },
+  {
+   "wall": "W8-non-class-standard-type",
+   "rows": 4,
+   "share": "0.0%",
+   "disposition": "INSTRUMENT GAP (a guard that escaped) — 4 rows, tracked, not a residual",
+   "falsifier": "The analyzer has a guard for non-class standard typedefs (`CPP_NON_CLASS_STANDARD_TYPES`); 4 rows escaped it. The falsifier is a fixture naming each of the 4 spellings, after which the census must read 0.",
+   "note": "4 rows. Tracked for completeness; the smallest wall in the fleet's D3 tables.",
+   "subClassification": {
+    "a non-class standard typedef that escaped the analyzer's guard": 4
+   },
+   "samples": {
+    "a non-class standard typedef that escaped the analyzer's guard": [
+     "Rcpp/src/date.cpp:1290 calls int_fast32_t [unresolved]",
+     "duckdb/third_party/ska_sort/ska_sort.hpp:119 calls int32_t [ambDeclOnly]",
+     "duckdb/third_party/ska_sort/ska_sort.hpp:129 calls int64_t [ambDeclOnly]",
+     "nlohmann-json/docs/mkdocs/docs/examples/value__return_type.cpp:12 calls uint64_t [unresolved]"
+    ]
+   }
+  }
+ ],
+ "totals": {
+  "wallRows": 585997,
+  "residualRowsInDump": 585997,
+  "closureHolds": true
+ }
+}
