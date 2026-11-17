@@ -6,6 +6,7 @@ package audit;
 @interface FeignClient { String name(); }
 
 @RequestMapping("/local")
+@FeignClient(name = "not-an-http-client")
 class FakeEndpoint {
     @GetMapping("/not-a-route")
     void method() {}
