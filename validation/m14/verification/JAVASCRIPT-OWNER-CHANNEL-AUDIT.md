@@ -350,7 +350,25 @@ stop it being a general-purpose language switch:
 
 356 of the 782 remain: Flow-only syntax the TS grammar does not accept (`declare var`, exact object
 types `{| |}`, existential `*`), and React Compiler's own `component C() {}` DSL in fixtures — which
-is not JavaScript at all. A TSX retry cleans 141 more of those and is the obvious next step.
+is not JavaScript at all.
+
+**A TSX retry was added after the TS one**, because a Flow `.js` file in a React codebase usually also
+contains JSX and the plain TS grammar has no JSX. It cleans 141 further files. The full-corpus A/B, run
+with the engine's own kill-switch (`BB_JS_FLOW_FALLBACK=0`) on one side:
+
+| React authored `.js` (1,441 files) | symbols | relationships |
+|---|---|---|
+| fallback OFF | 9,950 | 113,739 |
+| fallback ON | **11,120** | **113,848** |
+| gain | **+1,170 (+11.8%)** | +109 |
+
+The symbol gain is the real one: an error tree still produces many edges by recovery, but a declaration
+the parser never assembled cannot become a symbol. The TSX addition contributes +24 net symbols beyond
+the TS retry's +1,146 — 141 more clean parses that mostly land on JSX component files with few
+declarations.
+
+**The kill-switch is a measurement control, not a feature flag** — a fallback that cannot be turned off
+cannot be A/B measured — and production never sets it.
 
 ### A measurement trap in my own instruments, recorded
 

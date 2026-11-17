@@ -1839,16 +1839,29 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
     //     reparsed as a different language;
     //   · the fallback tree must parse CLEAN, so a failure is never traded for a different failure.
     // What it recovers is measured, not assumed — see validation/m14/verification/JAVASCRIPT-STATE.md.
-    if (language === "javascript" && tree.rootNode?.hasError) {
+    // A KILL-SWITCH, because a fallback that cannot be turned off cannot be MEASURED: the A/B in the
+    // commit that added this ran with `BB_JS_FLOW_FALLBACK=0` on one side and unset on the other.
+    // It is a measurement control, not a feature flag — production never needs to set it.
+    if (language === "javascript" && tree.rootNode?.hasError && process.env.BB_JS_FLOW_FALLBACK !== "0") {
       const head = content.length > 400 ? content.slice(0, 400) : content
       if (head.includes("@flow") || head.includes("@noflow")) {
         try {
-          const tsParser = await getParser("typescript")
-          const tsTree = tsParser.parse(content)
-          if (tsTree && !tsTree.rootNode?.hasError) {
-            tree = tsTree
-          } else if (tsTree) {
-            try { tsTree.delete?.() } catch {}
+          // FIRST the TypeScript grammar, THEN TSX. A Flow `.js` file in a React codebase usually
+          // also contains JSX, and the plain TS grammar has no JSX — so a file can fail TS for a
+          // reason TSX answers. Measured on React: TS cleans 426 of the 782 rejected files, and a
+          // TSX retry on the remainder cleans 141 MORE.
+          for (const fallbackLanguage of ["typescript", "tsx"] as const) {
+            try {
+              const fbParser = await getParser(fallbackLanguage)
+              const fbTree = fbParser.parse(content)
+              if (fbTree && !fbTree.rootNode?.hasError) {
+                tree = fbTree
+                break
+              }
+              try { fbTree?.delete?.() } catch {}
+            } catch {
+              // a missing TSX grammar must not cost the file its TS result
+            }
           }
         } catch {
           // any failure leaves the ORIGINAL tree in place — the fallback can only improve on it
