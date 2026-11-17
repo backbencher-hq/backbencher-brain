@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'src/ast/real-java-analyzer.ts'
+      - 'src/ast/parallel-indexer.ts'
+      - 'script/m14/java-store-e2e-smoke.ts'
       - 'validation/m14/fixtures/java/**'
       - 'validation/m14/verification/JavaAnalyzerSemanticOracle.java'
       - '.github/workflows/java-analyzer-verification.yml'
