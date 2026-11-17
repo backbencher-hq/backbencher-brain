@@ -9,6 +9,7 @@ on:
       - 'script/m14/java-store-e2e-smoke.ts'
       - 'validation/m14/fixtures/java/**'
       - 'validation/m14/verification/JavaAnalyzerSemanticOracle.java'
+      - 'validation/m14/verification/JavaM12CompilerAdjudication.java'
       - '.github/workflows/java-analyzer-verification.yml'
   workflow_dispatch:
 
@@ -130,7 +131,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/bb-java-oracles
-          javac -d /tmp/bb-java-oracles             validation/m14/verification/JavaMethodGenericOverrideOracle.java             validation/m14/verification/JavaAnalyzerRemediationOracle.java             validation/m14/verification/JavaAnalyzerSemanticOracle.java
+          javac -d /tmp/bb-java-oracles             validation/m14/verification/JavaMethodGenericOverrideOracle.java             validation/m14/verification/JavaAnalyzerRemediationOracle.java             validation/m14/verification/JavaAnalyzerSemanticOracle.java             validation/m14/verification/JavaM12CompilerAdjudication.java
           java -cp /tmp/bb-java-oracles JavaMethodGenericOverrideOracle             validation/m14/fixtures/java/override-unbounded-method-alpha-equivalence.java             validation/m14/fixtures/java/override-generic-method-return-consistency.java
           java -cp /tmp/bb-java-oracles JavaAnalyzerRemediationOracle
           java -cp /tmp/bb-java-oracles JavaAnalyzerSemanticOracle
+          java -cp /tmp/bb-java-oracles JavaM12CompilerAdjudication validation/m12/fixtures/java
