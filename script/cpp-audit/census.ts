@@ -143,52 +143,14 @@ async function main(): Promise<void> {
   const nameCount = new Map<string, number>()
   const symbolNames = new Set<string>()
   const ownerMember = new Set<string>() // `${owner}::${name}`
-  // PER-FILE declaration counts, for the override-source ambiguity measurement.
-  //
-  // ★ M65 CORRECTION — THIS MAP PRODUCED THE THIRD WRONG NUMBER OF THE CAMPAIGN, AND THE LESSON IS THE
-  // SAME ONE AS `part_of`. It counted `s.name` only, so a file declaring `void f(int)` / `void f(double)`
-  // / `void f()` in three classes read as "leaf `f` declared 3x => ambiguous". That is the wrong
-  // question. The resolver (parallel-indexer.ts:5239-5247) matches the edge's SOURCE STRING against
-  // `name`, `qualifiedName` and `metadata.fqn` FIRST, and only falls back to the bare leaf when none
-  // answers. An `overrides` source is `${cls}::${method}` (M65), which IS a published `qualifiedName`,
-  // so it resolves EXACTLY and the leaf count is irrelevant.
-  //
-  // MEASURED both ways over 523 files: 134 of 134 `overrides` sources resolve EXACTLY by their full
-  // string, 0 via endsWith, 0 by bare leaf, 0 unresolved. The earlier "134 of 134 ambiguous" measured
-  // whether a NAME repeats — which it does in any C++ file with overloads — not whether the EDGE
-  // resolves. `part_of` (97.5% correct, not 17.5%) was the same error one type earlier, and "0 of 134
-  // unresolvable" before that. Three times is a pattern, so the check is fixed rather than its output:
-  // ambiguity is now measured against the KEY SPACE the store receives, not against the name count.
-  const keyCount = new Map<string, number>()
+  // PER-FILE declaration counts, for the override-source ambiguity measurement. A source binds to a
+  // name; it binds UNAMBIGUOUSLY only when that name is declared exactly once in the file the edge came
+  // from. Keyed `${filePath} NUL ${leafName}`.
+  const declCount = new Map<string, number>()
   for (const r of recs) {
     const perFile = new Map<string, number>()
-    for (const s of r.symbols) {
-      // the three keys the store receives: name, qualifiedName, metadata.fqn
-      const keys = [s.name, (s as any).qualifiedName, (s.metadata as any)?.fqn]
-      for (const k of keys) {
-        if (typeof k === "string" && k.length > 0) perFile.set(k, (perFile.get(k) ?? 0) + 1)
-      }
-    }
-    for (const [n, c] of perFile) keyCount.set(`${r.path}\u0000${n}`, c)
-  }
-  /** The declaration count for the key an override source binds by: the full string first, else the
-   *  leaf — the resolver's own order. 0 means nothing in this file answers to it. */
-  const keyCountFor = (filePath: string | undefined, source: string): number => {
-    if (filePath === undefined) return 0
-    const exact = keyCount.get(`${filePath}\u0000${source}`) ?? 0
-    if (exact > 0) return exact
-    const leaf = overrideLeafOf(source)
-    return leaf === "" ? 0 : (keyCount.get(`${filePath}\u0000${leaf}`) ?? 0)
-  }
-  /** The leaf of an override source: after the last `::` (the M65 spelling) or the last `.` (the
-   *  pre-M65 spelling). Both are accepted so the probe can read either. */
-  const overrideLeafOf = (source: string): string => {
-    const s = String(source ?? "")
-    if (s.includes("::")) return s.slice(s.lastIndexOf("::") + 2)
-    if (s.includes(".")) return s.slice(s.lastIndexOf(".") + 1)
-    return s
-  }
-  for (const r of recs) {
+    for (const s of r.symbols) perFile.set(s.name, (perFile.get(s.name) ?? 0) + 1)
+    for (const [n, c] of perFile) declCount.set(`${r.path}\u0000${n}`, c)
     for (const s of r.symbols) {
       symbolNames.add(s.name)
       nameCount.set(s.name, (nameCount.get(s.name) ?? 0) + 1)
@@ -198,49 +160,8 @@ async function main(): Promise<void> {
       if (typeof q === "string" && q !== s.name) symbolNames.add(q)
     }
   }
-  // ── THE RESOLVER, PER TYPE. ★ M65, THE FOURTH WRONG NUMBER, AND THE FIX IS STRUCTURAL. ────────
-  // A single `resolves()` against symbol names was used for EVERY type, and that produced four wrong
-  // headlines in this campaign because each type resolves in a DIFFERENT key space:
-  //
-  //   calls/uses/instantiates/extends/overrides  -> symbol names (+ qualifiedName), per-file then corpus
-  //   imports                                    -> module names; external by design (never a symbol)
-  //   references                                 -> NAMESPACE names (a `using X = Y;` names a namespace)
-  //   part_of                                    -> FILE STEMS (a file-level relation, not a symbol)
-  //   exports                                    -> the macro/declared name it names
-  //
-  // MEASURED CONSEQUENCES, all four the same error — measuring a proxy instead of the consumer's
-  // question:
-  //   "0 of 134 overrides unresolvable"  -> wrong, all 134 resolved (extractLeaf splits on `.`)
-  //   "part_of 17.5% resolved"           -> wrong, 97.5% (measured against file stems)
-  //   "overrides 134/134 ambiguous"      -> wrong, 120 exact + 14 genuine
-  //   "references 36.9% resolved"        -> wrong, 99.5% (205/206; the one miss is `::std::ostream`,
-  //                                          whose ROOT namespace `std` is not declared in-corpus)
-  //
-  // So `resolves` now takes the type and answers in that type's own space. A rate printed by this
-  // probe states which space it used, which is the only way a percentage here can mean anything.
-  const corpusNamespaces = new Set<string>()
-  const corpusStems = new Set<string>()
-  for (const r of recs) {
-    for (const s of r.symbols) if (s.kind === "namespace") corpusNamespaces.add(s.name)
-    const slash = r.path.lastIndexOf("/")
-    const base = slash >= 0 ? r.path.slice(slash + 1) : r.path
-    const dot = base.lastIndexOf(".")
-    corpusStems.add((dot > 0 ? base.slice(0, dot) : base))
-  }
-  const resolves = (t: string, type?: string): boolean => {
-    if (t === "") return false
-    // imports: an external module name. It resolves iff a symbol or namespace carries it, which for
-    // a real `#include <vector>` it never does -- that is the contract, not a defect.
-    if (type === "imports") return symbolNames.has(t) || corpusNamespaces.has(t)
-    // references: a namespace name, possibly a `::` path whose ROOT is the declared namespace.
-    if (type === "references") {
-      if (corpusNamespaces.has(t)) return true
-      const root = t.split("::")[0]
-      return root !== "" && corpusNamespaces.has(root)
-    }
-    // part_of: a FILE STEM. It resolves iff a file with that stem is in the corpus.
-    if (type === "part_of") return corpusStems.has(t)
-    // the rest: symbol names, then a unique bare name.
+  const resolves = (t: string): boolean => {
+    if (t === "" ) return false
     if (symbolNames.has(t)) return true
     if (nameCount.get(t) === 1) return true
     return false
@@ -291,8 +212,8 @@ async function main(): Promise<void> {
     }
     const lineMissing = rows.filter((r) => typeof r.line_number !== "number" || r.line_number <= 0).length
     const emptyEndpoint = rows.filter((r) => !r.source || !r.target || r.source === "" || r.target === "").length
-    const srcResolved = rows.filter((r) => resolves(r.source, t) || r.source === "global").length
-    const tgtResolved = rows.filter((r) => resolves(r.target, t)).length
+    const srcResolved = rows.filter((r) => resolves(r.source) || r.source === "global").length
+    const tgtResolved = rows.filter((r) => resolves(r.target)).length
     const reasonMissing = rows.filter((r) => typeof r.confidence === "number" && r.confidence < 1 && !(r.metadata as any)?.reasonCode).length
     const dupPairs = rows.length - e.pairs.size
     perType[t] = {
@@ -415,7 +336,7 @@ async function main(): Promise<void> {
     const ov = types.get("overrides")
     if (ov) {
       const dottedSrc = ov.rows.filter((r) => r.source.includes(".")).length
-      const srcRes = ov.rows.filter((r) => resolves(r.source, "overrides")).length
+      const srcRes = ov.rows.filter((r) => resolves(r.source)).length
       findings.push({
         // The check's FIRST name was "the dot ... resolves to no symbol", which this probe DISPROVED:
         // the resolver's extractLeaf (pool-worker.ts:879) splits on `.` too, so a dot source DOES bind —
@@ -432,27 +353,25 @@ async function main(): Promise<void> {
       // more than once is what separates "no endpoint" (which this probe first claimed, wrongly) from
       // "an endpoint shared with another class" (the real defect).
       let ambig = 0
-      let exactKey = 0
-      let noKey = 0
       const ambigSample: string[] = []
       for (const r of ov.rows) {
         const src = String(r.source)
+        // Strip the owner qualifier to get the leaf the resolver would use, then look up how many
+        // symbols in THIS file carry that name.
+        const leaf = src.includes("::") ? src.slice(src.lastIndexOf("::") + 2) : src.includes(".") ? src.slice(src.lastIndexOf(".") + 1) : src
+        if (leaf === "") continue
         const fp = (r as any).__file as string | undefined
-        // THE RESOLVER'S OWN QUESTION: does any key in this file answer to this source string?
-        // The full string first (`Derived::f` is a published qualifiedName), then the leaf. A count
-        // above 1 means the key is ambiguous; 0 means nothing answers and the edge does not resolve.
-        if (fp === undefined) continue
-        const exact = keyCount.get(`${fp}\u0000${src}`) ?? 0
-        if (exact === 1) { exactKey++; continue }
-        const n = keyCountFor(fp, src)
-        if (n === 0) { noKey++; if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> NO KEY in this file`) }
-        else if (n > 1) { ambig++; if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> key declared ${n}x`) }
+        const n = fp === undefined ? 0 : (declCount.get(`${fp}\u0000${leaf}`) ?? 0)
+        if (n > 1) {
+          ambig++
+          if (ambigSample.length < 4) ambigSample.push(`${fp}: ${src} -> leaf "${leaf}" declared ${n}x`)
+        }
       }
       findings.push({
-        check: "overrides source binds to an AMBIGUOUS key in its file (declared >1x, not merely a repeated name)",
+        check: "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
         type: "overrides",
         count: ambig,
-        sample: [`${exactKey} of ${ov.rows.length} sources bind EXACTLY by their full string; ${ambig} ambiguous; ${noKey} resolve to nothing`, ...ambigSample],
+        sample: [`${ambig} of ${ov.rows.length} rows have an ambiguous leaf`, ...ambigSample],
       })
     }
   }
@@ -491,8 +410,8 @@ async function main(): Promise<void> {
     for (const t of ["imports", "references", "exports"]) {
       const e = types.get(t)
       if (!e) continue
-      const unres = e.rows.filter((r) => !resolves(r.target, t)).length
-      findings.push({ check: "target unresolved against in-output index", type: t, count: unres, sample: [...new Set(e.rows.filter((r) => !resolves(r.target, t)).slice(0, 6).map((r) => r.target))] })
+      const unres = e.rows.filter((r) => !resolves(r.target)).length
+      findings.push({ check: "target unresolved against in-output index", type: t, count: unres, sample: [...new Set(e.rows.filter((r) => !resolves(r.target)).slice(0, 6).map((r) => r.target))] })
     }
   }
 

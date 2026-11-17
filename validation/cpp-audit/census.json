@@ -12,13 +12,13 @@
     },
     "parseFailures": 0,
     "failureSample": [],
-    "parseMs": 17446
+    "parseMs": 23927
   },
   "totals": {
-    "symbols": 17912,
-    "relationships": 78403,
+    "symbols": 17597,
+    "relationships": 78088,
     "kinds": {
-      "constant": 860,
+      "constant": 810,
       "class": 1582,
       "function": 4140,
       "variable": 594,
@@ -29,7 +29,7 @@
       "namespace": 357,
       "constructor": 912,
       "enum": 89,
-      "macro": 1476
+      "macro": 1211
     }
   },
   "perType": {
@@ -48,25 +48,25 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "59374/59374",
-      "targetResolved": "54971/59374",
+      "targetResolved": "45967/59374",
       "sub1WithoutReasonCode": 0
     },
     "contains": {
-      "rows": 10975,
+      "rows": 10660,
       "files": 180,
-      "distinctPairs": 8504,
-      "duplicatePairsVsRows": 2471,
+      "distinctPairs": 8196,
+      "duplicatePairsVsRows": 2464,
       "confidenceMissing": 0,
       "confidenceValues": [
         1
       ],
       "evidenceClass": {
-        "structural": 10975
+        "structural": 10660
       },
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
-      "sourceResolved": "10972/10975",
-      "targetResolved": "10975/10975",
+      "sourceResolved": "10657/10660",
+      "targetResolved": "10660/10660",
       "sub1WithoutReasonCode": 0
     },
     "uses": {
@@ -139,7 +139,7 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "360/360",
-      "targetResolved": "347/360",
+      "targetResolved": "63/360",
       "sub1WithoutReasonCode": 0
     },
     "references": {
@@ -157,7 +157,7 @@
       "lineNumberMissing": 0,
       "emptyEndpoint": 0,
       "sourceResolved": "206/206",
-      "targetResolved": "205/206",
+      "targetResolved": "76/206",
       "sub1WithoutReasonCode": 0
     },
     "instantiates": {
@@ -307,15 +307,15 @@
       ]
     },
     {
-      "check": "overrides source binds to an AMBIGUOUS key in its file (declared >1x, not merely a repeated name)",
+      "check": "overrides source leaf is declared MORE THAN ONCE in its file (binds to a name, not a declaration)",
       "type": "overrides",
-      "count": 14,
+      "count": 134,
       "sample": [
-        "120 of 134 sources bind EXACTLY by their full string; 14 ambiguous; 0 resolve to nothing",
-        ".cpp-corpus/fmt/include/fmt/core.h: iterator_buffer::grow -> key declared 4x",
-        ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc: OsStackTraceGetter::CurrentStackTrace -> key declared 2x",
-        ".cpp-corpus/fmt/test/gtest/gmock-gtest-all.cc: FuchsiaDeathTest::GetErrorLogs -> key declared 2x",
-        ".cpp-corpus/fmt/test/gtest/gmock/gmock.h: ActionResultHolder::PrintAsActionResult -> key declared 2x"
+        "134 of 134 rows have an ambiguous leaf",
+        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::unsupported -> leaf \"unsupported\" declared 3x",
+        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_year -> leaf \"on_year\" declared 4x",
+        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_short_year -> leaf \"on_short_year\" declared 4x",
+        ".cpp-corpus/fmt/include/fmt/chrono.h: tm_format_checker::on_offset_year -> leaf \"on_offset_year\" declared 4x"
       ]
     },
     {
@@ -348,9 +348,14 @@
     {
       "check": "target unresolved against in-output index",
       "type": "references",
-      "count": 1,
+      "count": 130,
       "sample": [
-        "::std::ostream"
+        "std::get",
+        "fmt::runtime",
+        "testing::Contains",
+        "fmt::string_view",
+        "fmt::detail::buffer",
+        "testing::_"
       ]
     },
     {

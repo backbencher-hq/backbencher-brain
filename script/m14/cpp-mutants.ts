@@ -162,23 +162,19 @@ export const CPP_MUTANTS: Mutant[] = [
     language: "cpp",
     defectClass: "relationship-loss",
     description:
-      "THE REPLACEMENT FOR THE NO-OP `cpp/last-sig-wins-overrides` (in script/m14/mutate-analyzer.ts), and it is here because the rule is that a no-op's REPLACEMENT TRAVELS WITH IT. THAT MUTANT IS A NO-OP MEASURED, NOT ASSUMED: it filters the override rows whose `metadata.reasonCode` is EXACTLY `signature-match` and whose source starts with `Derived.f` — but MEASURED on the current analyzer, the `Derived.f` row's reasonCode is `override-keyword+signature-match` (the `override-keyword+` prefix was added later), so the filter matches NOTHING and the mutant reports 0 -> 0 failures. A no-op is not a pass. This replacement models the SAME defect class at the CURRENT spelling: the virtual registry keeps one signature per method name, so the override of the first-declared base overload is silently dropped when the base also declares an overload of the same name. The filter drops the override row for the first-declared overload — the row the fixture cpp/ctor-and-overload-regressions pins as `overrides Derived.f -> f` with `meta.overriddenOwner: Base`."
-      + " ★ M65 RE-SPELLING, AND THE LESSON IS THE POINT. This filter ALSO became a no-op when the analyzer's override SOURCE spelling changed from the DOT form (`Derived.f`) to the C++ scope form (`Derived::f`) — my own change, which silently disabled this mutant. The battery then reported `SURVIVED ... (0 -> 0 failures)`, and the honest reading of `0 -> 0` is NOT 'the suite missed it' but 'the mutant never fired'. A mutant whose filter matches nothing is indistinguishable from a surviving one in the count, so the filter is now matched on the SCOPE-SPELLING-AGNOSTIC leaf pair (`source` ends with `::f` or `.f`, and the owner segment is `Derived`), which survives either spelling. Any future change to how a source is spelled must re-check this filter, not the count.",
+      "THE REPLACEMENT FOR THE NO-OP `cpp/last-sig-wins-overrides` (in script/m14/mutate-analyzer.ts), and it is here because the rule is that a no-op's REPLACEMENT TRAVELS WITH IT. THAT MUTANT IS A NO-OP MEASURED, NOT ASSUMED: it filters the override rows whose `metadata.reasonCode` is EXACTLY `signature-match` and whose source starts with `Derived.f` — but MEASURED on the current analyzer, the `Derived.f` row's reasonCode is `override-keyword+signature-match` (the `override-keyword+` prefix was added later), so the filter matches NOTHING and the mutant reports 0 -> 0 failures. A no-op is not a pass. This replacement models the SAME defect class at the CURRENT spelling: the virtual registry keeps one signature per method name, so the override of the first-declared base overload is silently dropped when the base also declares an overload of the same name. The filter drops the override row for the first-declared overload — the row the fixture cpp/ctor-and-overload-regressions pins as `overrides Derived.f -> f` with `meta.overriddenOwner: Base`.",
     caughtBy: "cpp/ctor-and-overload-regressions",
     transform: (r) => {
-      // The row the fixture pins: the override of the FIRST-declared base overload, matched on the
-      // DECLARATION rather than on one spelling of it. `Derived::f` (M65) and `Derived.f` (pre-M65)
-      // are the same row; matching either keeps the mutant live across the spelling change.
-      const isTarget = (x: any): boolean => {
-        if (x?.type !== "overrides") return false
-        const s = String(x?.source ?? "")
-        return s === "Derived::f" || s === "Derived.f"
-      }
-      const drop = (r?.relationships ?? []).filter(isTarget)
+      // the row the fixture pins: the override of the FIRST-declared base overload
+      const drop = (r?.relationships ?? []).filter(
+        (x: any) => x.type === "overrides" && String(x.source) === "Derived.f",
+      )
       if (drop.length === 0) return r
       return {
         ...r,
-        relationships: (r?.relationships ?? []).filter((x: any) => !isTarget(x)),
+        relationships: (r?.relationships ?? []).filter(
+          (x: any) => !(x.type === "overrides" && String(x.source) === "Derived.f"),
+        ),
       }
     },
   },
@@ -264,31 +260,6 @@ export const CPP_MUTANTS: Mutant[] = [
         x?.metadata?.evidenceClass ? { ...x, metadata: { ...x.metadata, evidenceClass: "structural" } } : x,
       )
       return { ...r, relationships: rels }
-    },
-  },
-  {
-    id: "cpp/macro-recovery-in-error-spans",
-    language: "cpp",
-    defectClass: "symbol-loss",
-    description:
-      "M65 MACRO RECOVERY, the mutant that travels WITH the fix (the rule this lane has learned repeatedly: a fix with no mutant is a fix with no proof it can fail). It removes the RECOVERY ARM — the pass that mints a Macro/Constant for a `#define` the pinned grammar did not produce a `preproc_def` node for — while leaving the ordinary `preproc_def` branch intact. That is exactly the pre-fix state: MEASURED on a two-repo corpus, 544 `#define` lines have no `preproc_*` node (3,483 in source vs 2,939 produced), 543 of them in a file with >=1 ERROR node, and `calls` rows targeting those unpublished macros came to 9,004 of the 13,407 genuinely-unresolved targets. `CHECK` alone is 6,734. The fixture cpp/macro-recovery-in-error-spans pins a macro declared inside an ERROR region and requires the symbol to exist, so removing this arm lands 0 symbols where the fixture expects 1 and fails.",
-    caughtBy: "cpp/macro-recovery-in-error-spans",
-    transform: (r) => {
-      // Drop exactly the symbols the recovery arm mints: `metadata.isMacro === true` AND
-      // `metadata.recoveredFromDirective === true`. The second key is what distinguishes a
-      // recovered macro from an ordinary `preproc_def` one, so the ordinary branch is untouched and
-      // the mutant models the defect rather than deleting every macro.
-      return {
-        ...r,
-        symbols: (r?.symbols ?? []).filter(
-          (s: any) => !(s?.metadata?.isMacro === true && s?.metadata?.recoveredFromDirective === true),
-        ),
-        relationships: (r?.relationships ?? []).filter((x: any) => {
-          if (x?.type !== "contains") return true
-          const md = x?.metadata ?? {}
-          return md.recoveredFromDirective !== true
-        }),
-      }
     },
   },
 ]

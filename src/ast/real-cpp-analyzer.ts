@@ -2196,153 +2196,6 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════════════════
-    // M65 — MACRO RECOVERY: a `#define` the grammar SWALLOWED is still a DECLARATION.
-    //
-    // THE DEFECT, MEASURED. The `preproc_def` / `preproc_function_def` branch below is correct and
-    // it published 1,277 macro symbols over a two-repo corpus. What it cannot do is mint a symbol
-    // for a node the grammar NEVER CREATED — and on real single-header libraries it does not create
-    // one for every directive. Over fmt 10.2.1 + nlohmann-json v3.11.3 (524 files, through the
-    // production entry):
-    //
-    //     `#define` lines in source .................. 3,483
-    //     `preproc_def` / `preproc_function_def` .... 2,939
-    //     macros the grammar never produced ..........   544   (15.6%)
-    //     of those, in a file with >=1 ERROR node ....   543
-    //     `calls` rows targeting one of those ........ 9,004   <- 67% of all genuinely-unresolved
-    //
-    // The worst case is doctest.h: 672 `#define` lines, 131 `preproc_*` nodes, 2,627 ERROR nodes,
-    // and a single top-level ERROR span covering the WHOLE FILE (1-7107). Inside that span the
-    // directive text is still plain source, and `#define CHECK(...)` is unambiguously a macro — the
-    // grammar simply never built a node for it. `CHECK` alone accounts for 6,734 unresolved `calls`
-    // rows corpus-wide, and every one of them names a declaration sitting in the same file.
-    //
-    // WHY A PRE-PASS AND NOT ANOTHER WALK BRANCH. The walk is a stack over the tree; a directive
-    // inside an ERROR region is still visited as part of that region's subtree, but there is no
-    // `preproc_def` NODE to branch on — the shape the branch keys on does not exist. So the
-    // directive has to be recovered from the SOURCE TEXT before the walk, which is also what makes
-    // it independent of where the ERROR region happens to sit.
-    //
-    // THE RECOVERY IS DELIBERATELY NARROW, because the alternative is a guess and a guessed
-    // declaration is the fabrication this lane's gates exist to prevent:
-    //
-    //   * the line must begin (after optional whitespace) with `#`, optional whitespace, `define`,
-    //     whitespace, and an IDENTIFIER — a directive in a comment or a string does not match,
-    //     because the scan is anchored at the line start after whitespace;
-    //   * block comments are tracked, so a `#define` inside `/* … *\/` is skipped;
-    //   * the name must survive `isCppSpelledName` (a keyword is recovery, never a declaration —
-    //     the D1 rule this file holds every declared name to);
-    //   * a name the file ALREADY publishes gets nothing, which is the branch's own collision
-    //     guard applied here too (two symbols of one name is a graph collision, and the one that
-    //     came from a real `preproc_*` node is the more trustworthy of the two);
-    //   * the KIND is decided by the DIRECTIVE'S OWN SHAPE, never by the name's spelling: `NAME(`
-    //     is function-like, anything else is object-like. ALL-CAPS is NOT the test — that is the
-    //     rule the `exports` marker had to learn the hard way (`BENCHMARK_ALWAYS_INLINE` is not an
-    //     export), and a spelling test here would mis-kind `NLOHMANN_JSON_NAMESPACE_BEGIN`, a
-    //     multi-line object-like define.
-    //
-    // WHAT IT COSTS, so the change is checkable rather than asserted: `+~544 symbols` on this
-    // corpus, each with exactly one `contains global -> NAME` edge from the post-loop containment
-    // pass — the declaration's own place in the graph. No `calls`/`uses`/`references` row is added
-    // or removed here, so the arm can only make EXISTING reads resolvable, never invent one.
-    // Gated by the fixture `cpp/macro-recovery-in-error-spans` (a real 3.8 KB ABI header with 22
-    // defines and 21 nodes, the smallest file in the corpus with a directive inside an ERROR span)
-    // and by the mutant `cpp/macro-recovery-in-error-spans`, which drops exactly the symbols this
-    // arm mints (identified by `metadata.recoveredFromDirective`) and must turn the suite red.
-    const recoverSwallowedMacros = (): void => {
-      const lines = content.split("\n")
-      // Byte offset of each line's start, so a recovered directive can carry a RANGE that points
-      // at the real source rather than at the whole file.
-      const lineStarts: number[] = []
-      {
-        let off = 0
-        for (let i = 0; i < lines.length; i++) { lineStarts.push(off); off += lines[i].length + 1 }
-      }
-      const ALREADY = new Set<string>()
-      for (const s of symbols) ALREADY.add(s.name)
-      let inBlock = false
-      for (let i = 0; i < lines.length; i++) {
-        const raw = lines[i]
-        // ── block-comment tracking. A directive inside a block comment is not a directive. The
-        //    state carries across lines; the delimiters are searched on the RAW line because the
-        //    comment markers themselves are what matter here, not the code.
-        if (inBlock) {
-          const close = raw.indexOf("*/")
-          if (close < 0) continue
-          inBlock = false
-          // fall through: anything after the close on this line is code again, and the anchored
-          // scan below will simply not match if the remainder is not a directive.
-        }
-        // ── the anchored scan: optional ws, '#', optional ws, 'define', then the name.
-        let j = 0
-        while (j < raw.length && (raw[j] === " " || raw[j] === "\t" || raw[j] === "\r")) j++
-        if (raw[j] !== "#") {
-          // Not a directive line — but it may OPEN a block comment that swallows later lines.
-          const open = raw.indexOf("/*")
-          if (open >= 0 && raw.indexOf("*/", open + 2) < 0) inBlock = true
-          continue
-        }
-        j++
-        while (j < raw.length && (raw[j] === " " || raw[j] === "\t")) j++
-        if (raw.slice(j, j + 6) !== "define") {
-          const open = raw.indexOf("/*")
-          if (open >= 0 && raw.indexOf("*/", open + 2) < 0) inBlock = true
-          continue
-        }
-        j += 6
-        if (j < raw.length && (raw[j] === " " || raw[j] === "\t")) j++
-        const nameStart = j
-        while (j < raw.length) {
-          const c = raw.charCodeAt(j)
-          const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95
-          if (!ok) break
-          j++
-        }
-        if (j === nameStart) continue
-        const macroName = raw.slice(nameStart, j)
-        // D1: a declared name is an identifier, and C++ has no identifier spelled with a keyword.
-        if (!isCppSpelledName(macroName)) continue
-        // The collision guard: a name the file already publishes (from a real `preproc_*` node, or
-        // from any other declaration) keeps that symbol and gets no second one.
-        if (ALREADY.has(macroName)) continue
-        // Function-like iff the directive writes `NAME(` — the directive's own shape. A
-        // multi-line object-like define (`#define X \` on the first line) is object-like, which is
-        // exactly the case a spelling test would get wrong.
-        const isFunctionLike = raw[j] === "("
-        const startOffset = lineStarts[i] ?? 0
-        const endOffset = startOffset + raw.length
-        const sym: ASTEngine.UniversalSymbol = {
-          name: macroName,
-          kind: isFunctionLike ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Constant,
-          range: {
-            startLine: i + 1,
-            startColumn: nameStart + 1,
-            endLine: i + 1,
-            endColumn: raw.length + 1,
-            startIndex: startOffset + nameStart,
-            endIndex: endOffset,
-          },
-          scope: "global",
-          visibility: "public",
-          ...(isFunctionLike
-            ? { parameters: this.recoveredMacroParams(raw, j) }
-            : {}),
-          metadata: {
-            isMacro: true,
-            isFunctionLikeMacro: isFunctionLike,
-            // THE MARKER THE MUTANT KEYS ON. It says this symbol came from the recovery arm rather
-            // than from a `preproc_*` node, so a mutant can remove exactly this arm's output and
-            // leave the ordinary branch untouched.
-            recoveredFromDirective: true,
-            nameLine: i + 1,
-          },
-        }
-        symbols.push(sym)
-        ALREADY.add(macroName)
-      }
-    }
-    recoverSwallowedMacros()
-
     interface Scope {
       node: Node
       name: string
@@ -3506,7 +3359,7 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
         // Macro BODIES are still never walked as code (`isPreprocText`), so a
         // read inside a macro body stays silent exactly as before.
         //
-        // 3,870 -> 21, and the 21 were a GRAMMAR limit, not this branch: a
+        // 3,870 -> 21, and the 21 are a GRAMMAR limit, not this branch: a
         // `#define` the ERROR recovery swallowed yields no
         // `preproc_function_def` to mint from. All 5 remaining names share one
         // shape — a COMMENT between the `#if` and the `#define`. At
@@ -3516,17 +3369,6 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
         // `preproc_params` and `preproc_arg` children: the grammar recognised
         // the shape and not the rule. Same family as R1, same fix — the
         // vendored fork.
-        //
-        // ★ M65 — THAT GRAMMAR LIMIT IS NOW RECOVERED, AND THIS SENTENCE IS KEPT RATHER THAN
-        // DELETED BECAUSE IT EXPLAINS WHY THE PRE-PASS EXISTS. `recoverSwallowedMacros()`, which
-        // runs before the walk, mints a symbol for exactly the directives this branch cannot see:
-        // the ones the ERROR recovery swallowed, so no `preproc_*` node was ever built. Measured
-        // over fmt 10.2.1 + nlohmann-json v3.11.3: 544 such `#define` lines (3,483 in source vs
-        // 2,939 nodes), 543 of them in a file with >=1 ERROR node, and 9,004 `calls` rows targeting
-        // them. The pre-pass closed that: `calls` target resolution moved 77.4% -> 92.6% and the
-        // genuinely-unresolved count fell 13,407 -> 4,403, with `CHECK` (6,734 rows) and
-        // `CHECK_THROWS_WITH_AS` (1,079) going to zero. So the sentence above is now HISTORY: the
-        // grammar still produces no node, and the analyzer no longer depends on one.
         const nameNode = node.childForFieldName("name")
         const macroName = nameNode?.text?.trim()
         if (macroName && isCppSpelledName(macroName) && !symbols.some((s) => s.name === macroName)) {
@@ -6528,41 +6370,6 @@ private functionDeclaratorOf(node: Node | null): Node | null {
       if (t === "instantiates") { md.evidenceClass = "structural"; continue }
       md.evidenceClass = "usage_contextual"
     }
-  }
-
-  /**
-   * M65: the PARAMETER NAMES of a function-like macro, read off the directive's own text from the
-   * opening paren. This is the same shape the `preproc_function_def` branch produces (name + `any`
-   * type), so a consumer cannot tell a recovered function-like macro from a parsed one.
-   *
-   * Deliberately simple, because a macro parameter list is not a C++ parameter list: the
-   * parameters are TOKENS, not typed declarations, and the `...` of a variadic macro is a token
-   * rather than a `variadic_parameter_declaration`. The scan stops at the matching close paren,
-   * skips whitespace and comments, and splits on the top-level commas.
-   */
-  private recoveredMacroParams(line: string, from: number): ASTEngine.Parameter[] {
-    const out: ASTEngine.Parameter[] = []
-    let i = from
-    while (i < line.length && (line[i] === " " || line[i] === "\t")) i++
-    if (line[i] !== "(") return out
-    i++
-    let depth = 1
-    let cur = ""
-    const flush = (): void => {
-      const t = cur.trim()
-      cur = ""
-      if (t === "") return
-      if (t === "...") { out.push({ name: "...", type: "variadic", modifiers: [] }); return }
-      out.push({ name: t, type: "any" })
-    }
-    for (; i < line.length && depth > 0; i++) {
-      const c = line[i]
-      if (c === "(") { depth++; cur += c; continue }
-      if (c === ")") { depth--; if (depth === 0) { flush(); break } cur += c; continue }
-      if (c === "," && depth === 1) { flush(); continue }
-      cur += c
-    }
-    return out
   }
 
   /**

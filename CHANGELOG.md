@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.5 — Java resolves what it inherits; the tools answer from the same evidence
+
+Owner-facing release. Every claim below was verified on a clean tree built from
+this commit, not on a working tree that carried unfinished language work.
+
+- **Java analyzer: overrides, inheritance and imports now resolve.** Twenty-two fixes,
+  each pinned by a fixture or a compiler-oracle comparison against `javac`:
+  - generic interface methods resolve without class type parameters, and unbounded
+    method-generics compare by alpha-equivalence;
+  - private/nest-aware override parents resolve through the top-level class;
+  - Lombok and Spring Data annotations are identified before members are synthesized;
+  - project-owned namespace bindings outrank JDK imports, and an explicit single-type
+    import outranks a project-wide name collision;
+  - inherited members keep their owner through qualified and imported heads;
+  - lexical visibility precedes builtin import filtering.
+- **bb_ask: two fixes.** A unicode substring query no longer crashes with a parameter
+  overflow, and an exact-symbol query no longer duplicates itself as a neighbour —
+  `total X` count queries now reach the aggregate path.
+- **bb_analyze: one fix.** A not-found graph mode no longer overstates summary bounds,
+  and the test fixture gaps behind it are pinned.
+- **Out of scope, deliberately:** the C++ analyzer is held at its 0.1.4 behaviour. That
+  lane is still in progress, so its macro-recovery work is not in this release; this
+  commit names what to revert when the lane lands. The Go lane had no commits here.
+
 ## 0.1.4 — the security tool reports leads it can defend
 
 Owner-facing release. Every claim below was verified on the release tree: `npm test`,

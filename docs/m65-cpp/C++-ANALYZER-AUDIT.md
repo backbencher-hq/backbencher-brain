@@ -372,7 +372,7 @@ exist. That is a ruling this audit agrees with rather than checked.
 | **`defect-register.ts` D1–D8** over its 1,722-file corpus | its five corpora (fmt, nlohmann-json, Catch2, abseil-cpp, spdlog, zig) are absent; it **cannot run here** | clone Catch2/abseil/spdlog (2 of 6 are now present) and re-run with `BB_CORPUS_ROOT` |
 | **`.h` discovery boundary** — the lane's largest claimed residual (83 % of `calls`) | it is a property of `incoming-gate.ts:314`, not of the analyzer, and CPP-STATE I4 already found that the residual gate's population did not move when the fix landed | a run of the **incoming** gate, not the residual gate, against a `.h`-bearing corpus |
 | **whole-population 1,282,777-row census** | needs the 31-repo corpus | not reproducible from this checkout |
-| ~~**`part_of` oracle**~~ **CLOSED** | does not exist for cpp at all (§7) | **now exists**: `script/m14/oracles/cpp-part-of.ts` + `script/cpp-audit/oracle-check.ts`; 2,328 rows, 0 disagreements, 5 analyzer-extra rows against the pre-fix analyzer |
+| **`part_of` oracle** | does not exist for cpp at all (§7) | a lane-owned `deriveCppPartOfTruth`, mirroring `dart-part-of.ts` |
 | **`calls` resolution to the INTENDED declaration** | this audit resolves against names, and C++ member names repeat across classes; 45,967/59,374 targets resolve and the rest are a mix of external library calls and genuine ambiguity | an owner-qualified key space (which §4.1's `::` fix would partly supply) |
 
 ---
@@ -410,15 +410,8 @@ The arithmetic, because it decides the order:
   kind of defect: *"a documented zero that no runnable gate re-derives"*. Its self-test currently
   cannot pass, so it certifies nothing until it is repaired.
 
-**And `deriveCppPartOfTruth` now exists** — `part_of` was the only emitted type with no second
-opinion, and #2/#3 are exactly the two defects a second opinion catches.
-`script/m14/oracles/cpp-part-of.ts` (151 lines, lane-owned, sharing no code/tables/helpers with the
-analyzer) plus `script/cpp-audit/oracle-check.ts`. **Result: 2,328 rows, 0 disagreements in either
-direction** (`imports` 1,968, `part_of` 360). It is a real gate, not a mirror: against the pre-fix
-analyzer it reports **5 analyzer-extra rows**, naming each by file — the same 5 measured by hand. The
-harness itself needed one fix first: it compared SETS, so pre-fix and post-fix read identically (a set
-of one duplicated element equals a set of one); it now compares MULTISETS per file. Wiring it into
-`differential.ts`'s cpp arm is master-owned and is the single remaining item.
+Then, and only then, add **`deriveCppPartOfTruth`** — because `part_of` is the only emitted type
+with no second opinion, and #2/#3 are exactly the two defects a second opinion would have caught.
 
 **Deliberately not recommended:** re-cutting the 1,282,777-row whole-population census, and
 re-litigating the `.h` boundary. Both need a corpus machine this checkout does not have, and the
