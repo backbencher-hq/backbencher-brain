@@ -359,13 +359,13 @@ csharp only.
 
 ---
 
-**Six documents referenced elsewhere on this page are MISSING and must be REDONE, not restored.**
-They were deleted from this working tree by the 0.1.5 release cycle and exist in NO git history
-(`git log --all` finds no commit for any of them): `JAVASCRIPT-STATE.md`,
-`JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`, `JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`,
-`JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md`, `JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md`,
-`JAVASCRIPT-2026-10-18-EMISSIONS.md`. The two campaign pages (`JAVASCRIPT-OWNER-CHANNEL-AUDIT.md`,
-`JAVASCRIPT-IMPLEMENTS-JSDOC.md`) were reconstructed and do exist.
+**The six verification pages that were lost are REGENERATED from measured facts (2026-11-13).**
+They had been deleted from this working tree by the 0.1.5 release cycle and existed in no git history,
+so they could not be restored: `JAVASCRIPT-STATE.md`, `JAVASCRIPT-RESOLUTION-CLASSIFICATION.md`,
+`JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`, `JAVASCRIPT-RECEIVER-POSITION-CLAIM-CONTRACT.md`,
+`JAVASCRIPT-EXPORTS-CLAIM-CONTRACT.md`, `JAVASCRIPT-2026-10-18-EMISSIONS.md`. Each carries a
+REGENERATED banner naming what was lost, and states only what the code and the committed instruments
+show now. `JAVASCRIPT-OWNER-CHANNEL-AUDIT.md` and `JAVASCRIPT-IMPLEMENTS-JSDOC.md` are present too.
 
 ## The receiver-owner and source-attribution campaign (2026-11-12 / 11-13)
 
