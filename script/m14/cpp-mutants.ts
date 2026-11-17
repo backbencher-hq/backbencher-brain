@@ -447,4 +447,57 @@ export const CPP_MUTANTS: Mutant[] = [
       return { ...r, relationships: [...(r?.relationships ?? []), ...injected] }
     },
   },
+  {
+    id: "cpp/attribute-is-decorates",
+    language: "cpp",
+    defectClass: "ruled-value-resurrection",
+    description:
+      "DECORATES RESURRECTED FROM ITS CLOSEST NEIGHBOUR. C++ has no decorator application (attributes are compiler metadata; an attribute's call-shaped argument is evaluated inside the attribute grammar, nothing is applied to the declaration). This mutant injects `decorates` rows for the attribute-argument call targets a source spells — the exact false edge a reader who equated 'attribute' with 'decorator' would expect. Caught by cpp/ruled-decorates-attribute, whose forbid rows pin that even the call-shaped attribute form may not become a decorator, while its expect rows keep the honest `calls` mapping.",
+    caughtBy: "cpp/ruled-decorates-attribute",
+    transform: (r, source) => {
+      const src = String(source ?? "")
+      const injected: any[] = []
+      // the attribute forms this fixture writes; a spelling table keeps the injected rows honest
+      // (the mutant models an instrument that reads an attribute NAME as a decorator)
+      for (const target of ["aligned", "format", "deprecated", "annotate"]) {
+        if (src.includes(`${target}(`)) {
+          injected.push({ source: "global", target, fromSymbol: "global", toSymbol: target, type: "decorates", confidence: 0.9, line_number: 1, metadata: { line: 1 } })
+        }
+      }
+      return { ...r, relationships: [...(r?.relationships ?? []), ...injected] }
+    },
+  },
+  {
+    id: "cpp/render-verb-is-renders",
+    language: "cpp",
+    defectClass: "ruled-value-resurrection",
+    description:
+      "RENDERS RESURRECTED FROM ITS CLOSEST NEIGHBOUR. C++ has no component construct; calls whose names are render verbs (`addWidget`, `paint`, `draw`) are ordinary calls. This mutant injects `renders` rows for exactly those call spellings — the false edge a reader who trusted the verb name would expect. Caught by cpp/ruled-renders-verb-calls, which pins all three calls honestly and forbids any renders row.",
+    caughtBy: "cpp/ruled-renders-verb-calls",
+    transform: (r, source) => {
+      const src = String(source ?? "")
+      const injected: any[] = []
+      for (const m of src.matchAll(/\b(?:[A-Za-z_]\w*\s*(?:\.|->)\s*)?(addWidget|addChild|paint|draw|render|show|display|createElement|mount)\s*\(/g)) {
+        injected.push({ source: "buildPanel", target: m[1], fromSymbol: "buildPanel", toSymbol: m[1], type: "renders", confidence: 0.9, line_number: 1, metadata: { line: 1 } })
+      }
+      return { ...r, relationships: [...(r?.relationships ?? []), ...injected] }
+    },
+  },
+  {
+    id: "cpp/base-is-mixes-in",
+    language: "cpp",
+    defectClass: "ruled-value-resurrection",
+    description:
+      "MIXES_IN RESURRECTED FROM ITS CLOSEST NEIGHBOUR. C++ supertype composition has exactly one construct — the base-clause — and every entry declares a base class (is-a), including the CRTP idiom (`class Widget : public Mixin<Widget>`) and multi-base clauses that programmers call mixins. This mutant re-labels every measured `extends` row as `mixes_in` (keeping the honest row too), the false edge a reader who equated 'C++ mixin idiom' with the Dart `with` construct would expect. Caught by cpp/ruled-mixes-in-crtp, whose forbid rows reject any mixes_in row while its expect rows pin the CRTP base as `extends`.",
+    caughtBy: "cpp/ruled-mixes-in-crtp",
+    transform: (r) => {
+      const injected: any[] = []
+      for (const rel of r?.relationships ?? []) {
+        if (rel.type === "extends") {
+          injected.push({ ...rel, type: "mixes_in", metadata: { ...(rel.metadata ?? {}), fromExtendsMutant: true } })
+        }
+      }
+      return { ...r, relationships: [...(r?.relationships ?? []), ...injected] }
+    },
+  },
 ]

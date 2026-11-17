@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "instrument": "script/m14/cpp-applicable-set.ts",
- "measuredAt": "2026-11-17T21:47:35.969Z",
+ "measuredAt": "2026-11-17T22:28:54.361Z",
  "language": "cpp",
  "admissibilityRule": "APPLICABLE iff every construct production the value needs exists in the pinned grammar's own enumeration AND the analyzer has an emission site AND at least one fixture carries a positive expectation row AND that fixture goes RED when the emission is removed. A value failing any conjunct is a finding, not a note.",
  "canonicalVocabulary": [
@@ -800,7 +800,8 @@
  "notApplicableSurface": {
   "decorates": {
    "applicable": false,
-   "grammarAbsenceProven": true,
+   "rulingBasis": "LANGUAGE-SEMANTIC (2026-11-17) — grammar absence is consistent evidence, never the basis",
+   "grammarAbsenceEvidence": true,
    "requiredProductions": [
     "decorator",
     "annotation",
@@ -809,12 +810,18 @@
     "decorator_expression"
    ],
    "productionsFound": [],
-   "reason": "no decorator/annotation production exists in the pinned C++ grammar. It DOES have attribute_specifier / attribute_declaration / __attribute__ (GNU and C++11 attributes), adjudicated here rather than ignored: an attribute names no callable declaration of its own (it is a keyword/macro-written specifier), and the analyzer records export attributes as the `exports` edge + symbol metadata — the same ruling the java lane applied to annotations (references+isAnnotation; decorates reserved for runtime callable decorators). No cpp fixture expects a `decorates` row and the analyzer emits none.",
-   "vocabularyRuling": "extended value, NOT APPLICABLE to C++."
+   "reason": "ISO C++ has no decorator-application construct. Its closest neighbour is ATTRIBUTES, MEASURED whole-corpus (reconstruction, 7,778 files): 1,425 attribute sites, 28 of them carrying a CALL expression inside the attribute argument list. An attribute is compiler metadata ([dcl.attr]); even a call-shaped argument is evaluated inside the attribute's own grammar and NOTHING is applied to the declaration, while the canonical contract (src/ast/types.ts, Decorates) is 'a decorator is APPLIED TO a declaration ... the runtime applies it while the declaration is created'. The near-misses are emitted under their honest values: attribute-argument calls are `calls` (fixture cpp/ruled-decorates-attribute pins them and forbids any decorates row), export attributes are `exports`.",
+   "falsifier": "A standardised C++ LANGUAGE construct that names a callable and applies it to a declaration at declaration-construction time (a call-semantics attribute or new syntax). A grammar patch that merely parses attribute tokens does not retire this ruling.",
+   "nearMissCensus": "attributeSites 1425; attributeArgumentCalls 28 (validation/cpp-audit/relationship-coverage.json)",
+   "pinnedByFixtures": [
+    "cpp/ruled-decorates-attribute"
+   ],
+   "vocabularyRuling": "extended value, NOT APPLICABLE to C++ — LANGUAGE-SEMANTIC ruling; supersedes the earlier grammar-absence framing."
   },
   "renders": {
    "applicable": false,
-   "grammarAbsenceProven": true,
+   "rulingBasis": "LANGUAGE-SEMANTIC (2026-11-17) — grammar absence is consistent evidence, never the basis",
+   "grammarAbsenceEvidence": true,
    "requiredProductions": [
     "jsx_element",
     "jsx_self_closing_element",
@@ -822,20 +829,31 @@
     "jsx_attribute"
    ],
    "productionsFound": [],
-   "reason": "no JSX/element-construction production exists in the pinned C++ grammar; C++ never creates a component-element pair.",
-   "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to C++."
+   "reason": "C++ has no component/markup construct, so no callable can RENDER another component. The closest neighbours are ordinary calls whose names are render verbs, MEASURED whole-corpus: 763 CALLEE calls (Draw 185 · Render 175 · Paint 150 · AddChild 91 · paint 57 · Show 40 · draw 34 · Display 11 · addChild 6 · render 2 · show 2). Every one is emitted as `calls` — what the source says — because no element type, renderer hook or standard semantics distinguishes a rendering from any other call. The canonical population is TSX/JSX `<Button/>` inside a component; C++ has no equivalent construct (fixture cpp/ruled-renders-verb-calls).",
+   "falsifier": "A C++ LANGUAGE construct in which a callable produces a component of a declared component type as output, distinguishable from a call by syntax or standard semantics. A grammar that parses call-shaped text does not retire this ruling.",
+   "nearMissCensus": "renderVerbCalleeCalls 763 (validation/cpp-audit/relationship-coverage.json)",
+   "pinnedByFixtures": [
+    "cpp/ruled-renders-verb-calls"
+   ],
+   "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to C++ — LANGUAGE-SEMANTIC ruling; supersedes the earlier grammar-absence framing."
   },
   "mixes_in": {
    "applicable": false,
-   "grammarAbsenceProven": true,
+   "rulingBasis": "LANGUAGE-SEMANTIC (2026-11-17) — grammar absence is consistent evidence, never the basis",
+   "grammarAbsenceEvidence": true,
    "requiredProductions": [
     "mixin",
     "mixin_application_class",
     "with_clause"
    ],
    "productionsFound": [],
-   "reason": "no mixin/with production exists in the pinned C++ grammar. Multiple inheritance expresses composition of base classes and is carried by `extends`; there is no separate mixin application construct to publish.",
-   "vocabularyRuling": "extended value (Dart `with`), NOT APPLICABLE to C++."
+   "reason": "C++ spells supertype composition in exactly ONE way — the base clause — and every entry in it DECLARES A BASE CLASS (is-a, with base constructor/vtable/subtyping semantics). MEASURED whole-corpus: 3,695 base clauses / 3,790 bases / 66 multi-base clauses / 59 CRTP bases (a base template specialised on the derived class itself — the C++ MIXIN IDIOM). The mixin idiom is inheritance in the language's semantics, so the honest value for every base-clause row is `extends` (fixture cpp/ruled-mixes-in-crtp pins the idiom as extends and forbids mixes_in). The canonical contract is Dart's `with` list, explicitly NOT an inheritance clause: C++ has no composition construct that does not declare a base.",
+   "falsifier": "A C++ LANGUAGE construct that composes a class's members into a type WITHOUT declaring that type as a base class (a language-level `with`-list). More inheritance — including CRTP — is not it.",
+   "nearMissCensus": "baseClauses 3695; baseTypes 3790; multiBaseClauses 66; crtpBases 59 (validation/cpp-audit/relationship-coverage.json)",
+   "pinnedByFixtures": [
+    "cpp/ruled-mixes-in-crtp"
+   ],
+   "vocabularyRuling": "extended value (Dart `with`), NOT APPLICABLE to C++ — LANGUAGE-SEMANTIC ruling; supersedes the earlier grammar-absence framing."
   }
  },
  "constructTable": {
@@ -1107,11 +1125,14 @@
     "cpp/one-edge-per-pair-959",
     "cpp/preproc-has-include",
     "cpp/receiver-walker-gaps",
+    "cpp/ruled-decorates-attribute",
+    "cpp/ruled-mixes-in-crtp",
+    "cpp/ruled-renders-verb-calls",
     "cpp/system-completeness",
     "cpp/template-declarator-name-612",
     "cpp/typedef-functional-cast"
    ],
-   "positiveRows": 70,
+   "positiveRows": 76,
    "forbidRows": 73
   },
   "uses": {
@@ -1213,9 +1234,10 @@
     "cpp/pure-virtual-abstract-919",
     "cpp/pure-virtual-signature-910",
     "cpp/reason-code-4",
+    "cpp/ruled-mixes-in-crtp",
     "cpp/virtual-override-resolution"
    ],
-   "positiveRows": 18,
+   "positiveRows": 21,
    "forbidRows": 8
   },
   "part_of": {
@@ -1264,16 +1286,16 @@
  },
  "fixtureBaseline": {
   "command": "imported runLang('cpp') from script/m14/run-fixtures.ts (the real runner)",
-  "pass": 61,
+  "pass": 64,
   "fail": 0,
   "failingFixtures": []
  },
  "redProof": {
   "calls": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
    "mutatedPass": 35,
-   "mutatedFail": 26,
+   "mutatedFail": 29,
    "fixturesThatWentRed": [
     "cpp/bare-value-reads",
     "cpp/call-target-name-surface-924",
@@ -1298,6 +1320,9 @@
     "cpp/package-scope/package_scope_loose",
     "cpp/preproc-has-include",
     "cpp/receiver-walker-gaps",
+    "cpp/ruled-decorates-attribute",
+    "cpp/ruled-mixes-in-crtp",
+    "cpp/ruled-renders-verb-calls",
     "cpp/system-completeness",
     "cpp/template-declarator-name-612",
     "cpp/typedef-functional-cast"
@@ -1305,9 +1330,9 @@
    "redProven": true
   },
   "uses": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 43,
+   "mutatedPass": 46,
    "mutatedFail": 18,
    "fixturesThatWentRed": [
     "cpp/bare-macro-statements",
@@ -1332,9 +1357,9 @@
    "redProven": true
   },
   "contains": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 41,
+   "mutatedPass": 44,
    "mutatedFail": 20,
    "fixturesThatWentRed": [
     "cpp/bare-macro-statements",
@@ -1361,9 +1386,9 @@
    "redProven": true
   },
   "imports": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 48,
+   "mutatedPass": 51,
    "mutatedFail": 13,
    "fixturesThatWentRed": [
     "cpp/callsite-lines-825",
@@ -1383,9 +1408,9 @@
    "redProven": true
   },
   "references": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 56,
+   "mutatedPass": 59,
    "mutatedFail": 5,
    "fixturesThatWentRed": [
     "cpp/imports-include-910",
@@ -1397,9 +1422,9 @@
    "redProven": true
   },
   "exports": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 58,
+   "mutatedPass": 61,
    "mutatedFail": 3,
    "fixturesThatWentRed": [
     "cpp/exports-cxx11-attribute",
@@ -1409,10 +1434,10 @@
    "redProven": true
   },
   "extends": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 50,
-   "mutatedFail": 11,
+   "mutatedPass": 52,
+   "mutatedFail": 12,
    "fixturesThatWentRed": [
     "cpp/cross-file-override",
     "cpp/ctor-and-overload-regressions",
@@ -1424,14 +1449,15 @@
     "cpp/pure-virtual-abstract-919",
     "cpp/pure-virtual-signature-910",
     "cpp/reason-code-4",
+    "cpp/ruled-mixes-in-crtp",
     "cpp/virtual-override-resolution"
    ],
    "redProven": true
   },
   "part_of": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 56,
+   "mutatedPass": 59,
    "mutatedFail": 5,
    "fixturesThatWentRed": [
     "cpp/imports-include-910",
@@ -1443,9 +1469,9 @@
    "redProven": true
   },
   "implements": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 59,
+   "mutatedPass": 62,
    "mutatedFail": 2,
    "fixturesThatWentRed": [
     "cpp/implements-pure-virtual-interface",
@@ -1454,9 +1480,9 @@
    "redProven": true
   },
   "overrides": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 53,
+   "mutatedPass": 56,
    "mutatedFail": 8,
    "fixturesThatWentRed": [
     "cpp/cross-file-override",
@@ -1471,9 +1497,9 @@
    "redProven": true
   },
   "instantiates": {
-   "baselinePass": 61,
+   "baselinePass": 64,
    "baselineFail": 0,
-   "mutatedPass": 57,
+   "mutatedPass": 60,
    "mutatedFail": 4,
    "fixturesThatWentRed": [
     "cpp/callsite-lines-825",

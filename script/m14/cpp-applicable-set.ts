@@ -144,22 +144,38 @@ const APPLICABLE: Record<string, {
 const NOT_APPLICABLE: Record<string, {
   needs: string[]               // productions that would have to exist
   reason: string
+  falsifier: string             // a LANGUAGE construct that would retire the ruling
+  nearMissCensus: string
+  pinnedByFixtures: string[]
   vocabularyRuling: string
 }> = {
+  // RULED ON LANGUAGE SEMANTICS, NOT ON GRAMMAR (owner ruling 2026-11-17): grammar is fixable, so
+  // a grammar absence can never rule a language construct out. Each ruling states what ISO C++ does
+  // express, measures the near-miss constructs on the reconstruction corpus, and pins the honest
+  // value in fixtures; the `needs` list is kept as CONSISTENT GRAMMAR EVIDENCE, not as the basis.
   decorates: {
     needs: ["decorator", "annotation", "annotation_declaration", "marker_annotation", "decorator_expression"],
-    reason: "no decorator/annotation production exists in the pinned C++ grammar. It DOES have attribute_specifier / attribute_declaration / __attribute__ (GNU and C++11 attributes), adjudicated here rather than ignored: an attribute names no callable declaration of its own (it is a keyword/macro-written specifier), and the analyzer records export attributes as the `exports` edge + symbol metadata — the same ruling the java lane applied to annotations (references+isAnnotation; decorates reserved for runtime callable decorators). No cpp fixture expects a `decorates` row and the analyzer emits none.",
-    vocabularyRuling: "extended value, NOT APPLICABLE to C++.",
+    reason: "ISO C++ has no decorator-application construct. Its closest neighbour is ATTRIBUTES, MEASURED whole-corpus (reconstruction, 7,778 files): 1,425 attribute sites, 28 of them carrying a CALL expression inside the attribute argument list. An attribute is compiler metadata ([dcl.attr]); even a call-shaped argument is evaluated inside the attribute's own grammar and NOTHING is applied to the declaration, while the canonical contract (src/ast/types.ts, Decorates) is 'a decorator is APPLIED TO a declaration ... the runtime applies it while the declaration is created'. The near-misses are emitted under their honest values: attribute-argument calls are `calls` (fixture cpp/ruled-decorates-attribute pins them and forbids any decorates row), export attributes are `exports`.",
+    falsifier: "A standardised C++ LANGUAGE construct that names a callable and applies it to a declaration at declaration-construction time (a call-semantics attribute or new syntax). A grammar patch that merely parses attribute tokens does not retire this ruling.",
+    nearMissCensus: "attributeSites 1425; attributeArgumentCalls 28 (validation/cpp-audit/relationship-coverage.json)",
+    pinnedByFixtures: ["cpp/ruled-decorates-attribute"],
+    vocabularyRuling: "extended value, NOT APPLICABLE to C++ — LANGUAGE-SEMANTIC ruling; supersedes the earlier grammar-absence framing.",
   },
   renders: {
     needs: ["jsx_element", "jsx_self_closing_element", "jsx_opening_element", "jsx_attribute"],
-    reason: "no JSX/element-construction production exists in the pinned C++ grammar; C++ never creates a component-element pair.",
-    vocabularyRuling: "extended value (TSX/JSX), NOT APPLICABLE to C++.",
+    reason: "C++ has no component/markup construct, so no callable can RENDER another component. The closest neighbours are ordinary calls whose names are render verbs, MEASURED whole-corpus: 763 CALLEE calls (Draw 185 · Render 175 · Paint 150 · AddChild 91 · paint 57 · Show 40 · draw 34 · Display 11 · addChild 6 · render 2 · show 2). Every one is emitted as `calls` — what the source says — because no element type, renderer hook or standard semantics distinguishes a rendering from any other call. The canonical population is TSX/JSX `<Button/>` inside a component; C++ has no equivalent construct (fixture cpp/ruled-renders-verb-calls).",
+    falsifier: "A C++ LANGUAGE construct in which a callable produces a component of a declared component type as output, distinguishable from a call by syntax or standard semantics. A grammar that parses call-shaped text does not retire this ruling.",
+    nearMissCensus: "renderVerbCalleeCalls 763 (validation/cpp-audit/relationship-coverage.json)",
+    pinnedByFixtures: ["cpp/ruled-renders-verb-calls"],
+    vocabularyRuling: "extended value (TSX/JSX), NOT APPLICABLE to C++ — LANGUAGE-SEMANTIC ruling; supersedes the earlier grammar-absence framing.",
   },
   mixes_in: {
     needs: ["mixin", "mixin_application_class", "with_clause"],
-    reason: "no mixin/with production exists in the pinned C++ grammar. Multiple inheritance expresses composition of base classes and is carried by `extends`; there is no separate mixin application construct to publish.",
-    vocabularyRuling: "extended value (Dart `with`), NOT APPLICABLE to C++.",
+    reason: "C++ spells supertype composition in exactly ONE way — the base clause — and every entry in it DECLARES A BASE CLASS (is-a, with base constructor/vtable/subtyping semantics). MEASURED whole-corpus: 3,695 base clauses / 3,790 bases / 66 multi-base clauses / 59 CRTP bases (a base template specialised on the derived class itself — the C++ MIXIN IDIOM). The mixin idiom is inheritance in the language's semantics, so the honest value for every base-clause row is `extends` (fixture cpp/ruled-mixes-in-crtp pins the idiom as extends and forbids mixes_in). The canonical contract is Dart's `with` list, explicitly NOT an inheritance clause: C++ has no composition construct that does not declare a base.",
+    falsifier: "A C++ LANGUAGE construct that composes a class's members into a type WITHOUT declaring that type as a base class (a language-level `with`-list). More inheritance — including CRTP — is not it.",
+    nearMissCensus: "baseClauses 3695; baseTypes 3790; multiBaseClauses 66; crtpBases 59 (validation/cpp-audit/relationship-coverage.json)",
+    pinnedByFixtures: ["cpp/ruled-mixes-in-crtp"],
+    vocabularyRuling: "extended value (Dart `with`), NOT APPLICABLE to C++ — LANGUAGE-SEMANTIC ruling; supersedes the earlier grammar-absence framing.",
   },
 }
 
@@ -369,10 +385,14 @@ for (const [value, row] of Object.entries(NOT_APPLICABLE)) {
   const found = row.needs.filter((c) => namedSet.has(c) || tokenSet.has(c))
   notApplicableSurface[value] = {
     applicable: false,
-    grammarAbsenceProven: found.length === 0,
+    rulingBasis: "LANGUAGE-SEMANTIC (2026-11-17) — grammar absence is consistent evidence, never the basis",
+    grammarAbsenceEvidence: found.length === 0,
     requiredProductions: row.needs,
     productionsFound: found,
     reason: row.reason,
+    falsifier: row.falsifier,
+    nearMissCensus: row.nearMissCensus,
+    pinnedByFixtures: row.pinnedByFixtures,
     vocabularyRuling: row.vocabularyRuling,
   }
 }
@@ -441,13 +461,16 @@ for (const value of applicableValues) {
   if (!redProof[value].redProven) findings.push(`${value}: fixture-pinned but NO fixture went RED when the emission was removed`)
 }
 for (const value of notApplicableValues) {
-  if (!notApplicableSurface[value].grammarAbsenceProven) findings.push(`${value}: claimed NOT APPLICABLE but the grammar carries ${notApplicableSurface[value].productionsFound.join(", ")}`)
+  // grammar absence is CONSISTENT EVIDENCE, never the ruling basis (owner ruling 2026-11-17: grammar
+  // is fixable); the basis lives in NOT_APPLICABLE's language-semantic reason + falsifier.
+  if (!notApplicableSurface[value].grammarAbsenceEvidence) findings.push(`${value}: claimed NOT APPLICABLE but the grammar carries ${notApplicableSurface[value].productionsFound.join(", ")}`)
 }
 for (const [construct, row] of Object.entries(constructTable)) {
   if (row.grammarPresent.length === 0) findings.push(`construct "${construct}": NONE of its grammar productions exist`)
   if (row.invalidCarriedBy) findings.push(`construct "${construct}": carriedBy names a value that is not in the applicable set — ${row.invalidCarriedBy}`)
 }
-// The rulings are STATEMENTS ABOUT THE GRAMMAR: a ruling whose absence claim is false must fail.
+// The grammar-absence EVIDENCE behind a ruling must not be stale (a ruling's BASIS is language
+// semantics — see NOT_APPLICABLE — but a stale absence claim would still be a false statement).
 for (const r of RULINGS) {
   if (r.id === "CPP-R1") {
     const absent = ["implements_clause", "class_interface_clause", "super_interfaces"].filter((c) => namedSet.has(c) || tokenSet.has(c))

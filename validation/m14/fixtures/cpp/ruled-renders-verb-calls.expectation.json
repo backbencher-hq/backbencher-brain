@@ -1,0 +1,21 @@
+{
+  "fixtureId": "cpp/ruled-renders-verb-calls",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE CLOSEST C++ CONSTRUCT TO `renders`, MEASURED. The canonical contract (src/ast/types.ts, Renders) is 'a component RENDERS another component: source = the rendering symbol, target = the rendered component', measured on TSX/JSX. C++ has no component/markup construct: what exists is ordinary calls whose NAMES are render verbs — `panel.addWidget(button)`, `panel.paint()`, `draw(panel, button)`. Each is emitted as `calls`, which is what the source says; a `renders` edge would assert a component-production relation the language never declares. RULED on LANGUAGE semantics: the construct is a call, not a rendering. This fixture PINS that mapping.",
+  "expectSymbols": [
+    { "name": "Button", "kind": "class", "note": "the would-be rendered component — a plain struct." },
+    { "name": "Panel", "kind": "class", "note": "the would-be renderer." },
+    { "name": "draw", "kind": "function", "note": "free render-verb function." },
+    { "name": "buildPanel", "kind": "function", "note": "the enclosing symbol all three call edges originate from." }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "buildPanel", "target": "addWidget", "line_number": 19, "note": "a member call to a widget-container method is a `calls` edge." },
+    { "type": "calls", "from": "buildPanel", "target": "paint", "line_number": 20, "note": "a render-verb METHOD call is still a call: the target is a method, not a component." },
+    { "type": "calls", "from": "buildPanel", "target": "draw", "line_number": 21, "note": "a render-verb FREE function call is still a call." }
+  ],
+  "forbidRelationships": [
+    { "type": "renders", "note": "NO `renders` row may exist for call-of-a-render-verb: the value's contract is a component RENDERS another component, and C++ has no component construct." },
+    { "type": "renders", "target": "Button", "note": "the struct is never 'rendered' by the language; it is passed as an argument." }
+  ]
+}

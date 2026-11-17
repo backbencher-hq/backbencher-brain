@@ -1,0 +1,22 @@
+{
+  "fixtureId": "cpp/ruled-decorates-attribute",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE CLOSEST C++ CONSTRUCT TO `decorates`, MEASURED. The canonical contract (src/ast/types.ts, Decorates) is 'a decorator is APPLIED TO a declaration ... the runtime applies it while the declaration is created'. C++ has no such construct: attributes are COMPILER METADATA, and even when an attribute's argument list carries a CALL expression the call is evaluated inside the attribute's own grammar, nothing is applied to the declaration, and no decorator value exists. The analyzer emits both near-misses as what they are: `calls` (attribute-argument calls `aligned(16)` and `compute(1)` become calls edges from the file scope). RULED on LANGUAGE semantics, not grammar: this fixture PINS the mapping that would be wrong if `decorates` were ever emitted for an attribute.",
+  "expectSymbols": [
+    { "name": "logf", "kind": "function", "note": "attribute-decorated declaration; an attribute exists, a decorator does not." },
+    { "name": "oldlog", "kind": "function", "note": "`[[deprecated]]` — compiler diagnostics metadata, no application." },
+    { "name": "Aligned", "kind": "class", "note": "GNU attribute spelling on a class head." },
+    { "name": "compute", "kind": "function", "note": "declared so the attribute-argument call PARSES as a call." },
+    { "name": "annotated", "kind": "function", "note": "`annotate(compute(1))`: a call expression INSIDE an attribute — still not a decorator application." }
+  ],
+  "expectRelationships": [
+    { "type": "calls", "from": "global", "target": "aligned", "line_number": 15, "note": "the GNU-attribute argument is call-shaped; it is emitted as `calls`, the honest value." },
+    { "type": "calls", "from": "global", "target": "compute", "line_number": 18, "note": "a call inside an attribute argument list is a CALL; `decorates` would claim the declaration is decorated by it, which C++ does not say." }
+  ],
+  "forbidRelationships": [
+    { "type": "decorates", "note": "NO `decorates` row may exist for any attribute form — the value's contract requires a decorator applied to a declaration at run time, which the language does not spell." },
+    { "type": "decorates", "target": "aligned", "note": "the near-miss target must never become a decorator." },
+    { "type": "decorates", "target": "compute", "note": "neither may the call-expression argument." }
+  ]
+}

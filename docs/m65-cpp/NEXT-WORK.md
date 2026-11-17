@@ -18,6 +18,8 @@
 | index consumption | **SHIPPED DEFAULT-ON** (§14.19) — with a complete index the 2-repo gate reads resolved **51,034** vs **51,741** per-file; `BB_CPP_INDEX_CONSUME=0` reproduces the per-file numbers EXACTLY |
 | whole-population corpus | **RECONSTRUCTED, REPRODUCIBLE** (§14.21) — `script/cpp-audit/reconstruct-corpus.ts` + `validation/cpp-audit/corpus-manifest.json`: 46 repos / 23,058 C++-spelling files (38 pinned, 8 head-pinned, 1 absent, 5 fetch-failed recorded); the extension-only gate population on it is **7,778 files / 18 repos**, within 4.6% of the original ledger's 7,435 |
 | wall W8 | **CLOSED** (§14.22) — the 4 rows (on BOTH populations) were functional casts of `<cstdint>`/`<cstddef>` value types; `calleeLeafNode` now applies the guard the `instantiates` path already had; fixture `cpp/typedef-functional-cast` + mutant `cpp/standard-typedef-cast-call` (71/71 mutants) |
+| relationship coverage | **ALL 14 VALUES DISPOSED, BOTH DIRECTIONS** (§14.23) — 11 emitted with outgoing emission-site + whole-population edge counts and incoming gate/census evidence; 3 ruled on **LANGUAGE semantics** (the grammar-based ruling basis is withdrawn — grammar is fixable). Near-miss census whole-corpus: 1,425 attribute sites / 28 attribute-argument calls · 763 render-verb calls · 3,695 base clauses / 66 multi-base / 59 CRTP; each pinned by a fixture + a resurrection mutant (**74/74 mutants**) |
+| spec table | **REGENERATED, `--check` PASSES** (§14.24) — from committed reconstruction inputs: D2 census 7,778/18, D3 THREE arms incl. the B-off kill-switch (consume-only +19,061 resolved / −40,770 ambDecl / +21,709 unresolved / extOK 0; index-alone delta 0), post-W8 wall ledger, applicable-set, cap-50 log; hand-written provenance merged from `script/m14/spec/cpp-spec-table.errata.json`. The original-population rows are preserved in the errata and §14.21 |
 > | `calls` target resolved | 54,971 / 59,374 = **92.6%** |
 > | `part_of` target resolved | 347 / 360 = **96.4%** — §6 says 97.5%; §14.2 settles it |
 > | `references` target resolved | 205 / 206 = **99.5%** (the miss is `::std::ostream`) |
@@ -1580,3 +1582,98 @@ KIND (157,134 reconstruction rows / 122,227 original) and W1-type (2,619 / 4,776
 programme-level items — both need shared-infrastructure vocabulary, not cpp-lane code. The
 corpus-blocked label is retired: the corpus is reconstructed and every measurement above is
 reproducible from the committed manifest.
+
+---
+
+## 14.23 · RELATIONSHIP COVERAGE — all 14 values, both directions, and rulings re-derived on LANGUAGE semantics
+
+> **Owner ruling, 2026-11-17 (this is the LAST cpp pass):** every canonical relationship value must be
+> covered — outgoing emission AND incoming resolution — and a value may be called NOT APPLICABLE only
+> when **the C++ language has no such construct**. A ruling whose reason is "the grammar cannot see
+> it" is invalid: **grammar is fixable**, so grammar absence is consistent evidence, never a ruling.
+
+### The ledger
+
+Instrument: `script/cpp-audit/relationship-coverage.ts` → `validation/cpp-audit/relationship-coverage.{json,md}`,
+run on the reconstruction population (**7,778 files parsed, 0 parse errors**). Outgoing counts are the
+whole-population gate's per-type rows; the two-repo column is the committed 2-repo census.
+
+| value | disposition | emission sites | whole-pop edges | 2-repo edges | incoming evidence |
+|---|---|---|---|---|---|
+| calls | EMITTED | 1 | **738,609** | 59,374 | gate TABLE 1 + 92.6% 2-repo target resolution |
+| contains | EMITTED | 1 | **151,481** | 10,975 | gate TABLE 1; source 10,972/10,975 (2-repo) |
+| uses | EMITTED | 2 | **115,385** | 4,580 | gate TABLE 1 |
+| part_of | EMITTED | 1 | **35,207** | 360 | gate TABLE 1; 96.4% 2-repo target resolution |
+| imports | EMITTED | 1 | **10,801** | 1,968 | gate TABLE 1; 10.4% by design (external modules) |
+| extends | EMITTED | 2 | **3,717** | 478 | gate TABLE 1 |
+| overrides | EMITTED | 1 | **1,692** | 134 | gate TABLE 1; signature-aware, transitive |
+| instantiates | EMITTED | 1 | **1,695** | 182 | gate TABLE 1; `new` only (CPP-R2) |
+| references | EMITTED | 1 | **1,560** | 206 | gate TABLE 1; 99.5% 2-repo target resolution |
+| exports | EMITTED | 3 | **977** | 112 | gate TABLE 1 |
+| implements | EMITTED | 1 | **270** | 34 | gate TABLE 1; pure-virtual contract (CPP-R1) |
+| decorates | RULED — LANGUAGE | 0 | 0 | 0 | n/a: no construct; near-miss measures below |
+| renders | RULED — LANGUAGE | 0 | 0 | 0 | n/a: no construct; near-miss measures below |
+| mixes_in | RULED — LANGUAGE | 0 | 0 | 0 | n/a: no construct; near-miss measures below |
+
+**Incoming evidence** for the 11 emitted values: the post-W8 gate's TABLE 1 carries per-type
+resolved / ambiguous / unresolved for the whole population (`validation/cpp-audit/whole-population/gate-cpp-extension-only.postw8.txt`),
+and the 2-repo census carries per-type target-resolution rates and evidence tiers
+(`validation/cpp-audit/census.json`). **Outgoing evidence**: emission sites counted from
+`src/ast/real-cpp-analyzer.ts`, plus the whole-population edge counts above.
+
+### The three rulings, re-derived on language semantics (the grammar framing is WITHDRAWN)
+
+Each carries the canonical contract quoted from `src/ast/types.ts`, a MEASURED near-miss census of
+every C++ construct that could be mistaken for it, a LANGUAGE-level falsifier, a fixture that pins the
+honest value and forbids the ruled one, and a mutant that resurrects the ruled value from the nearest
+construct — CAUGHT by that fixture.
+
+| value | canonical contract (src/ast/types.ts) | near-miss census (whole corpus) | language reason | falsifier |
+|---|---|---|---|---|
+| decorates | "a decorator is APPLIED TO a declaration … the runtime applies it while the declaration is created" | **1,425 attribute sites; 28 attribute-argument CALL expressions** | ISO C++ attributes are compiler metadata ([dcl.attr]); even a call-shaped argument is evaluated inside the attribute grammar and NOTHING is applied to the declaration. No decorator-application construct exists. Near-misses emit honestly: attribute-argument calls are `calls`; export attributes are `exports` | a standardised C++ construct that names a callable and applies it to a declaration at construction time |
+| renders | "a component RENDERS another component: source = the rendering symbol, target = the rendered component" (TSX/JSX) | **763 render-verb CALLEE calls** (Draw 185 · Render 175 · Paint 150 · AddChild 91 · paint 57 · …) | C++ has no component/markup construct: no element type, no renderer hook, no syntax or standard semantics distinguishing a rendering from any other call. The 763 near-misses are all emitted as `calls` | a C++ construct in which a callable produces a component of a declared component type as output, distinguishable from a call |
+| mixes_in | "a class COMPOSES a mixin into its supertype chain" (Dart `with`; contract states the with-list is NOT an inheritance clause) | **3,695 base clauses / 3,790 bases / 66 multi-base / 59 CRTP bases** | C++ has exactly ONE supertype-composition construct — the base clause — and every entry DECLARES A BASE CLASS (is-a, with base ctor/vtable/subtyping semantics). The CRTP "mixin idiom" is inheritance in the language's semantics; all rows emit as one `extends` per base | a C++ construct that composes a class's members into a type WITHOUT declaring it as a base class |
+
+Fixtures: `cpp/ruled-decorates-attribute`, `cpp/ruled-renders-verb-calls`, `cpp/ruled-mixes-in-crtp`
+(each expects the honest `calls`/`extends` rows, forbids the ruled value, and keeps the control call).
+Mutants: `cpp/attribute-is-decorates`, `cpp/render-verb-is-renders`, `cpp/base-is-mixes-in` — all
+**CAUGHT; 74/74 cpp mutants**. No grammar-based ruling remains anywhere in the cpp lane: the spec
+table's `notApplicableEvidence` now carries `rulingBasis: LANGUAGE-SEMANTIC`, the reasons/falsifiers
+above, the near-miss numbers, and `grammarAbsenceEvidence` only as *consistent* evidence.
+
+**Coverage ≠ everything resolves.** Two walls are relationship-level instrument gaps, not vocabulary
+gaps, and remain priced: W11 receiver typing (C bucket 171,979 rows) and W1-D new claim kind (157,134
+rows) — both recorded in §14.21/§14.22 and the spec table.
+
+## 14.24 · THE SPEC TABLE IS REGENERATED FROM THE RECONSTRUCTION — announced population replacement
+
+Every input `script/m14/cpp-spec-table.ts` reads now exists as a committed artifact measured on the
+pinned reconstruction corpus: D2 census (7,778/7,778 files · 18 repos · 1,061,394 rows), D3 no-index +
+index arms + the **B-off kill-switch arm**, D7 four-bucket partition + post-W8 wall ledger,
+applicable-set (`ok: true`), and the cap-50 gate log. The generator itself was completed:
+
+- it reads the ARM's population (7,778 / 18) instead of hardcoding the original 7,435 / 31;
+- its D3 prose is now THREE measured arms, with the consume-only delta computed from the B-off arm
+  (**+19,061 resolved · −40,770 ambDecl · −10,072 ambKind · +21,709 unresolved · extOK 0**) and the
+  index-alone delta **0**, measured as byte-identical B-off vs no-index;
+- its construct counts come from the census artifact (concept/requires, template instantiation,
+  structured bindings, lambdas, operator/destructor names, friends, namespace aliases, pure-virtual
+  clauses, multiple inheritance — 66 multi-base classes / 46 files / 4 repos / 3,790 bases) instead of
+  the original fleet-corpus literals;
+- **hand-written provenance is merged from `script/m14/spec/cpp-spec-table.errata.json`** (10 entries,
+  including this population replacement), so a regeneration can never silently drop the correction
+  history.
+
+`bun run script/m14/cpp-spec-table.ts --check` **PASSES** on the regenerated table. The previous rows
+(original population, 7,435 files/31 repos) are preserved in the errata and §14.21; W8 is absent from
+the regenerated wall ledger because it is CLOSED, and the three ruled values carry the language-semantic
+evidence from §14.23. Rebuild:
+
+```
+bun run script/cpp-audit/reconstruct-corpus.ts
+BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/cpp-emission-census.ts --cap=0 --json > .../cpp-emission-census-whole.json
+BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump > dump.txt
+# + wall-disposition / w1-price / gate index arms / cap-50 log / applicable-set (all committed)
+bun run script/cpp-audit/cpp-d3-arm-artifacts.ts --noindex-report=<report> --indexed-json=<gate json>
+bun run script/m14/cpp-spec-table.ts --check
+```

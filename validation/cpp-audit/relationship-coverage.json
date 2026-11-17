@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "instrument": "script/cpp-audit/relationship-coverage.ts",
+  "measuredAt": "2026-11-17T22:25:44.992Z",
+  "corpus": {
+    "root": ".cpp-corpus/.corpus",
+    "files": 7778,
+    "parsed": 7778,
+    "parseErrors": 0,
+    "population": "9 C++ spellings, 1 MiB cap"
+  },
+  "coverage": [
+    {
+      "value": "calls",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 738609,
+      "twoRepoEdges": 59374,
+      "twoRepoFiles": 429,
+      "twoRepoDistinctPairs": 13602,
+      "evidenceTiers": {
+        "usage_contextual": 59374
+      }
+    },
+    {
+      "value": "extends",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 2,
+      "wholePopulationEdges": 3717,
+      "twoRepoEdges": 478,
+      "twoRepoFiles": 50,
+      "twoRepoDistinctPairs": 300,
+      "evidenceTiers": {
+        "structural": 478
+      }
+    },
+    {
+      "value": "implements",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 270,
+      "twoRepoEdges": 34,
+      "twoRepoFiles": 9,
+      "twoRepoDistinctPairs": 28,
+      "evidenceTiers": {
+        "structural": 34
+      }
+    },
+    {
+      "value": "uses",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 2,
+      "wholePopulationEdges": 115385,
+      "twoRepoEdges": 4580,
+      "twoRepoFiles": 162,
+      "twoRepoDistinctPairs": 3469,
+      "evidenceTiers": {
+        "usage_contextual": 4580
+      }
+    },
+    {
+      "value": "imports",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 10801,
+      "twoRepoEdges": 1968,
+      "twoRepoFiles": 493,
+      "twoRepoDistinctPairs": 207,
+      "evidenceTiers": {
+        "import_based": 1968
+      }
+    },
+    {
+      "value": "exports",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 3,
+      "wholePopulationEdges": 977,
+      "twoRepoEdges": 112,
+      "twoRepoFiles": 7,
+      "twoRepoDistinctPairs": 105,
+      "evidenceTiers": {
+        "structural": 112
+      }
+    },
+    {
+      "value": "contains",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 151481,
+      "twoRepoEdges": 10975,
+      "twoRepoFiles": 180,
+      "twoRepoDistinctPairs": 8504,
+      "evidenceTiers": {
+        "structural": 10975
+      }
+    },
+    {
+      "value": "references",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 1560,
+      "twoRepoEdges": 206,
+      "twoRepoFiles": 133,
+      "twoRepoDistinctPairs": 60,
+      "evidenceTiers": {
+        "import_based": 206
+      }
+    },
+    {
+      "value": "overrides",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 1692,
+      "twoRepoEdges": 134,
+      "twoRepoFiles": 12,
+      "twoRepoDistinctPairs": 128,
+      "evidenceTiers": {
+        "usage_contextual": 69,
+        "structural": 65
+      }
+    },
+    {
+      "value": "instantiates",
+      "contract": "",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 1695,
+      "twoRepoEdges": 182,
+      "twoRepoFiles": 23,
+      "twoRepoDistinctPairs": 157,
+      "evidenceTiers": {
+        "structural": 182
+      }
+    },
+    {
+      "value": "decorates",
+      "contract": "A decorator is APPLIED TO a declaration. Python is the measured population (`@deco` on a def/class); TS and JS decorators emit the same edge once their lanes land the sites. THE DIRECTION IS THE DECORATED DECLARATION → THE DECORATOR. It was stated the other way round",
+      "disposition": "RULED",
+      "outgoingEmissionSites": 0,
+      "wholePopulationEdges": 0,
+      "twoRepoEdges": 0,
+      "twoRepoFiles": 0,
+      "twoRepoDistinctPairs": 0,
+      "evidenceTiers": null
+    },
+    {
+      "value": "renders",
+      "contract": "A component RENDERS another component: source = the rendering symbol, target = the rendered component. Measured population is TSX/JSX (`<Button/>` inside a component); the JSX layer of TypeScript emitted `uses` for it, which is a value read and not element creation, and the JS",
+      "disposition": "RULED",
+      "outgoingEmissionSites": 0,
+      "wholePopulationEdges": 0,
+      "twoRepoEdges": 0,
+      "twoRepoFiles": 0,
+      "twoRepoDistinctPairs": 0,
+      "evidenceTiers": null
+    },
+    {
+      "value": "mixes_in",
+      "contract": "A class COMPOSES a mixin into its supertype chain: source = the class, target = the mixin. Measured on Dart (`class C with M`), which published `uses{isMixin:true}` — a value READ, while the mixin is a supertype member. A mixin is not `extends` either (there is no single base and the",
+      "disposition": "RULED",
+      "outgoingEmissionSites": 0,
+      "wholePopulationEdges": 0,
+      "twoRepoEdges": 0,
+      "twoRepoFiles": 0,
+      "twoRepoDistinctPairs": 0,
+      "evidenceTiers": null
+    },
+    {
+      "value": "part_of",
+      "contract": "A library unit INCLUDES a part file. Measured on Dart (`part 'x.dart'` / `part of`), published as `imports{isPart:true}` — an import names a module and creates binding scope; a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module.",
+      "disposition": "EMITTED",
+      "outgoingEmissionSites": 1,
+      "wholePopulationEdges": 35207,
+      "twoRepoEdges": 360,
+      "twoRepoFiles": 174,
+      "twoRepoDistinctPairs": 55,
+      "evidenceTiers": {
+        "structural": 360
+      }
+    }
+  ],
+  "nearMisses": {
+    "decorates": {
+      "attributeSites": 1425,
+      "attributeCallArgs": 28,
+      "samples": [
+        "flutter/engine/src/flutter/testing/android/native_activity/native_activity.cc:131 __attribute__((visibility(\"default\")))",
+        "nlohmann-json/tests/thirdparty/Fuzzer/FuzzerTracePC.cpp:262 __attribute__((visibility(\"default\")))",
+        "nlohmann-json/tests/thirdparty/Fuzzer/FuzzerTracePC.cpp:268 __attribute__((visibility(\"default\")))",
+        "nlohmann-json/tests/thirdparty/Fuzzer/FuzzerTracePC.cpp:273 __attribute__((visibility(\"default\")))",
+        "nlohmann-json/tests/thirdparty/Fuzzer/FuzzerTracePC.cpp:279 __attribute__((visibility(\"default\")))",
+        "nlohmann-json/tests/thirdparty/Fuzzer/FuzzerTracePC.cpp:283 __attribute__((visibility(\"default\")))"
+      ]
+    },
+    "renders": {
+      "calls": 763,
+      "byName": {
+        "Show": 40,
+        "Render": 175,
+        "render": 2,
+        "paint": 57,
+        "Paint": 150,
+        "Draw": 185,
+        "draw": 34,
+        "Dispatch": 9,
+        "AddChild": 91,
+        "show": 2,
+        "Display": 11,
+        "addChild": 6,
+        "DISPLAY": 1
+      },
+      "samples": [
+        "flutter/dev/a11y_assessments/windows/runner/flutter_window.cpp:35 this->Show()",
+        "flutter/dev/manual_tests/windows/runner/flutter_window.cpp:35 this->Show()",
+        "flutter/dev/integration_tests/windows_startup_test/windows/runner/flutter_window.cpp:62 this->Show()",
+        "flutter/dev/integration_tests/windowing_test/windows/runner/flutter_window.cpp:35 this->Show()",
+        "flutter/dev/integration_tests/data_asset_app/windows/runner/flutter_window.cpp:35 this->Show()",
+        "flutter/dev/integration_tests/ui/windows/runner/flutter_window.cpp:35 this->Show()"
+      ]
+    },
+    "mixesIn": {
+      "baseClauses": 3695,
+      "baseTypes": 3790,
+      "multiBaseClauses": 66,
+      "crtpBases": 59,
+      "samples": [
+        "flutter/engine/src/flutter/fml/memory/ref_counted_unittest.cc:47 : public RefCountedThreadSafe<MyClass>",
+        "flutter/engine/src/flutter/fml/memory/ref_counted_unittest.cc:573 : public RefCountedThreadSafe<MyPublicClass>",
+        "flutter/engine/src/flutter/impeller/toolkit/interop/object_unittests.cc:16 : public Object<FlagObject, IMPELLER_INTERNAL_HANDLE_NAME(FlagHandle)>",
+        "flutter/engine/src/flutter/impeller/toolkit/interop/object_unittests.cc:35 : public Object<TestObject, IMPELLER_INTERNAL_HANDLE_NAME(TestHandle)>",
+        "flutter/engine/src/flutter/third_party/tonic/tests/ffi_native_unittest.cc:14 : public RefCountedDartWrappable<MyNativeClass>",
+        "otp/erts/emulator/asmjit/arm/a64rapass.cpp:82 : public RACFGBuilderT<RACFGBuilder>"
+      ]
+    }
+  },
+  "populationEvidence": {
+    "wholePopulationGate": "validation/cpp-audit/whole-population/gate-index-default.json",
+    "twoRepoCensus": "validation/cpp-audit/census.json"
+  },
+  "note": "The three RULED values are re-audited on LANGUAGE semantics: the nearMisses block counts every C++ construct that could be mistaken for them, and each is emitted by the analyzer under its honest value (attribute-argument calls are calls, base clauses are extends, render-verb calls are calls). A separate ruling text lives in script/m14/spec/cpp-spec-table.json and docs/analyzers/cpp.md."
+}

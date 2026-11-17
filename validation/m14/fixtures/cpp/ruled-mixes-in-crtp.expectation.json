@@ -1,0 +1,21 @@
+{
+  "fixtureId": "cpp/ruled-mixes-in-crtp",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "THE CLOSEST C++ CONSTRUCT TO `mixes_in`, MEASURED. The canonical contract (src/ast/types.ts, MixesIn) is 'a class COMPOSES a mixin into its supertype chain', measured on Dart's `class C with M`, where the `with` list is NOT an inheritance clause. C++ has exactly ONE construct for supertype composition — the base-clause — and EVERY entry in it declares a BASE CLASS (the is-a relation). That includes the CRTP idiom (`class Widget : public Mixin<Widget>`) and multi-base classes, which C++ programmers CALL mixins: the language still spells them as inheritance, so `extends` is the honest value. RULED on LANGUAGE semantics (there is no non-inheritance composition construct), and this fixture PINS that even the mixin-idiom base class emits `extends`, never `mixes_in`.",
+  "expectSymbols": [
+    { "name": "Mixin", "kind": "class", "note": "the CRTP mixin template." },
+    { "name": "Widget", "kind": "class", "note": "derived from Mixin<Widget> — the idiom." },
+    { "name": "Fancy", "kind": "class", "note": "two bases, one CRTP: still two base classes." }
+  ],
+  "expectRelationships": [
+    { "type": "extends", "from": "Widget", "target": "Mixin", "note": "the CRTP mixin base is a BASE CLASS: `extends`." },
+    { "type": "extends", "from": "Fancy", "target": "Mixin", "note": "first base of the multi-base clause." },
+    { "type": "extends", "from": "Fancy", "target": "Button", "note": "second base — a multi-base clause is still one `extends` per base, not a mixin composition." },
+    { "type": "calls", "from": "tick", "target": "onTick", "line_number": 14, "note": "the CRTP dispatch itself is a member call — near-miss shape preserved as `calls`." }
+  ],
+  "forbidRelationships": [
+    { "type": "mixes_in", "note": "NO `mixes_in` row may exist: the value needs a `with`-like composition that does NOT declare a base, and C++ expresses supertype composition only through the base-clause." },
+    { "type": "mixes_in", "target": "Mixin", "note": "the mixin-idiom template is still declared as a base class." }
+  ]
+}
