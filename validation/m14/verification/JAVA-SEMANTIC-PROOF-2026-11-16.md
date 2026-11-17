@@ -22,10 +22,14 @@ claim of complete Spring Data signature modeling.
 2. Production TypeScript must typecheck.
 3. The existing generic-override and remediation compiler oracles plus
    `JavaAnalyzerSemanticOracle` must pass on JDK 21.
-4. Full M12 Java differential, full incoming corpus, and indexer/SQLite
-   integration must be run separately where dependencies and the admitted
-   `BB_CORPUS_ROOT` repository population are available. **None is
-   represented by the fixture + javac checks.**
+4. M12 Java differential has been remeasured on GitHub Actions and
+   remains **known failing** (TP=95 FP=105 FN=21 unknown=6), unchanged
+   from the pre-batch baseline. CI checks for that exact baseline rather
+   than concealing the nonzero differential exit.
+5. Full incoming corpus and indexer/SQLite integration remain
+   unmeasured here; they require the admitted `BB_CORPUS_ROOT`
+   population and end-to-end runtime. Fixture and javac success does not
+   substitute for these checks.
 5. Comparisons should include before/after row counts, not just green tests.
 
 ## Remaining limitations
