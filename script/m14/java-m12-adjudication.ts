@@ -210,8 +210,16 @@ for (const id of FN) {
     if (r.kind === "overrides") {
       const leaf = r.to.slice(r.to.lastIndexOf(".") + 1)
       const unkPair = UNK.map(splitRel).some(x => !!x && x.kind === "overrides" && x.file === r.file && x.from === r.from && x.to === leaf)
+      // MEASURED, NOT ASSUMED: with the pass-1 companion the analyzer emits these
+      // edges at confidence 0.65/0.5 with `metadata.declaringType` set to exactly
+      // the owner the truth qualifies the target with (BaseService, Repository,
+      // Entity). The declaring owner IS resolved; only the SPELLING differs -
+      // truth writes `Entity.getId`, the analyzer writes target `getId` plus
+      // `declaringType: Entity`. Changing the edge's target spelling is a store
+      // migration (the arbiter and every consumer read these rows), so the
+      // mismatch is recorded as an encoding difference rather than a missing fact.
       set(fnCause, id, unkPair
-        ? "limitation:override-target-owner-unresolved (edge emitted with leaf target)"
+        ? "encoding:override-target-leaf-vs-owner-qualified (declaringType carries the owner)"
         : "limitation:cross-file-override")
       continue
     }

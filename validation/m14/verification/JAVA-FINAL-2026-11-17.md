@@ -9,7 +9,7 @@ Nothing is copied from another environment, and nothing is inferred.
 | Gate | Command | Result |
 | --- | --- | --- |
 | Production typecheck | `npm run typecheck` | **exit 0** |
-| M14 Java fixtures | `bun run script/m14/run-fixtures.ts --lang java` | **107 / 107 pass, 0 fail** |
+| M14 Java fixtures | `bun run script/m14/run-fixtures.ts --lang java` | **104 / 104 pass, 0 fail** |
 | Red control (analyzer at `29a579243`) | same, after reverting the analyzer | **94 pass / 10 fail** — exactly the ten named fixtures |
 | Method-generic oracle | `java -cp … JavaMethodGenericOverrideOracle` | **12 / 12** |
 | Remediation oracle | `java -cp … JavaAnalyzerRemediationOracle` | **13 / 13** |
@@ -23,40 +23,48 @@ Nothing is copied from another environment, and nothing is inferred.
 **64 independent javac facts** across the four oracles. The compiler, not the
 analyzer, is the authority for each of them.
 
-## 1b. Cross-file ancestry — the deferred instrument, now implemented
+## 1b. Cross-file ancestry — attempted, measured on the production arm, reverted
 
-`javaOwnerResolvable` walked only the FILE's own scopes. When a parent was declared
-in another file it consulted that parent's DIRECT members and stopped, so a member
-inherited two or more levels up through a cross-file parent was refused. A comment
-above the function recorded that the project index had carried `typeBases` since
-2026-10-20 and that using it was "a separate instrument, not a lane's unilateral
-change". That decision has now been taken.
+`javaOwnerResolvable` walked only the FILE's own scopes, so a member inherited two or
+more levels up through a cross-file parent was refused. A comment above the function
+recorded that the project index had carried `typeBases` since 2026-10-20 and that
+using it was "a separate instrument, not a lane's unilateral change".
 
-**The safety property is structural, not argued.** The new project-ancestry walk
-runs only when the in-file walk found nothing (`hits === 0`). A row that resolves
-today therefore cannot start resolving somewhere else, so the change cannot take a
-decision away from any file. It can only turn a `missing` into a `resolved`, and it
-keeps the same "exactly one declaration" rule: two declarations across the chain
-still decline. Visited-set bounded, depth-capped at 12, and gated on
-`projectIndex.complete === true`.
+That instrument was implemented with a deliberately conservative shape — it ran only
+when the in-file walk found nothing (`hits === 0`), so no row that resolved today
+could start resolving elsewhere — and a red-controlled three-file fixture
+(`Use extends Middle extends Base`, `Base` declaring `inherited()` in another file)
+was added to prove it:
 
-### Red control
+```
+without the fallback : 106 pass / 1 fail  (java/inherited-chain/Use)
+with the fallback    : 107 / 107
+```
 
-New fixture `java/inherited-chain/` — `Use extends Middle extends Base`, where
-`Middle` declares nothing and `Base` (another file) declares `inherited()`. The
-level-3 file calls `inherited()`, which is two hops up across a file boundary.
+**Then the production arm was measured, and it regressed.** The `--index` gate, run in
+an isolated worktree at the pre-change commit and again with the change, on the same
+population:
 
-| analyzer | result |
-| --- | --- |
-| without the fallback (committed `HEAD`) | **106 pass / 1 fail — `java/inherited-chain/Use`** |
-| with the fallback | **107 / 107** |
+| metric | without fallback | with fallback | delta |
+| --- | ---: | ---: | ---: |
+| edges | 1,479,393 | 1,479,393 | 0 |
+| **resolved** | **646,596** | **645,690** | **-906** |
+| amb(decl) | 168,051 | 166,792 | -1,259 |
+| **unresolved** | **154,068** | **156,233** | **+2,165** |
+| clause-1 mass | 322,119 | 323,025 | +906 |
+| extOK / extFAIL / bindFAIL / causeFAIL | 507,924 / 0 / 0 / 0 | unchanged | 0 |
 
-A negative control is included: `notInherited()` is declared nowhere and is
-forbidden from appearing, so the fallback cannot manufacture a resolution.
+**The change was reverted**, together with the fixture that only it could satisfy, and
+the lane is back to 104/104.
 
-**This instrument is inert without a complete project index**, which is why the
-`--index`-less corpus arm is byte-identical before and after. It acts only on the
-production arm, where the indexer supplies one.
+**Why it regressed — and why the deferral was correct.** `javaOwnerResolvable` is a
+guard that decides whether to ATTACH an owner. Attaching one is not free: it
+re-points the edge from a bare name to `Owner.member`. A bare name that the indexer
+resolved by uniqueness therefore becomes an owner-qualified lookup that does not
+resolve. The instrument cannot be net-positive until owner-qualified call targets
+resolve in the indexer, which is the same store/member-identity work that the
+override-target convention needs. "Exactly one ancestor declares this member" is not
+by itself sufficient evidence to overwrite an edge that already resolves.
 
 ## 2. M12 differential — fully adjudicated, still failing
 
@@ -104,16 +112,28 @@ JAVA_M12_ADJUDICATION_PASS: all 105 FP and 21 FN classified, 0 unexplained
 | --- | ---: |
 | `convention:declaration-line` | 7 |
 | `attribution:method-vs-class` | 4 |
-| `limitation:override-target-owner-unresolved` | 4 |
+| `encoding:override-target-leaf-vs-owner-qualified` | 4 |
 | `convention:constructor-containment` | 3 |
 | `convention:constructor-name` | 3 |
 
-The four override FNs are **not missing edges**. The differential scores the
-emitted edges as `unknown` (`overrides:User.getId:getId`), because the analyzer
-targets the leaf `getId` while the truth wants the owner-qualified
-`Entity.getId`; `Entity` is declared in `BaseService.java`, another file. This
-is the documented cross-file declaring-owner limitation, and it is now stated
-precisely rather than as "four overrides are missing".
+The four override FNs are **not missing knowledge and not missing edges**. Running
+the analyzer in exactly the M12 arm (pass-1 companion, no project index) emits
+these four edges with the DECLARING OWNER already correct:
+
+```
+UserService.format -> target "format",  declaringType "BaseService"
+UserService.save   -> target "save",    declaringType "Repository"
+User.getId         -> target "getId",   declaringType "Entity"
+User.getName       -> target "getName", declaringType "Entity"
+```
+
+which is precisely what the truth qualifies its targets with (`BaseService.format`,
+`Repository.save`, `Entity.getId`, `Entity.getName`). The difference is purely
+SPELLING: the truth writes the owner into the target, the analyzer writes the leaf
+into the target and the owner into `metadata.declaringType`. Re-spelling the target
+is a store migration — the arbiter and every consumer read these rows — and
+`JAVA-STATE.md` already records that constraint, so the mismatch is classified as
+an encoding difference rather than a missing fact.
 
 ### Program-wide context — M12 is not a Java gate
 

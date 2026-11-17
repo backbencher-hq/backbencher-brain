@@ -5404,41 +5404,6 @@ currentPackage,
       }
     }
     walk(ownerName, 0)
-    // THE CROSS-FILE ANCESTRY FALLBACK — the instrument the paragraph above deferred.
-    //
-    // The walk above reads `index.typeScopesByName`, so it sees this FILE's ancestry.
-    // When a parent is declared in another file it consults that parent's DIRECT
-    // members and stops: a member inherited two or more levels up through a
-    // cross-file parent was refused (`missing`, never wrong) even though the project
-    // index has carried `typeBases` since 2026-10-20.
-    //
-    // THE FALLBACK RUNS ONLY WHEN THE IN-FILE WALK FOUND NOTHING (`hits === 0`), and
-    // that condition is the whole safety argument: a row that resolves today cannot
-    // start resolving elsewhere, so this cannot take a decision away from any file.
-    // It can only turn a `missing` into a `resolved`, and it still refuses when the
-    // project chain offers MORE than one declaration — the same "exactly one" rule the
-    // in-file walk uses. Visited-set bounded, depth-capped, complete-index-only.
-    if (hits === 0 && projectIndex?.complete === true) {
-      const visited = new Set<string>()
-      const projectWalk = (name: string, depth: number): void => {
-        if (depth > 12 || hits > 1) return
-        if (visited.has(name)) return
-        visited.add(name)
-        for (const base of projectIndex.typeBases.get(name) ?? []) {
-          // A base declared in THIS file is read from its own scope (the richer
-          // source); a base declared elsewhere is read from the project members.
-          const baseScope = index.typeScopesByName.get(base)
-          const has = baseScope
-            ? (wantsMethod
-                ? (baseScope.methodNames?.has(memberName) ?? false)
-                : (baseScope.memberNames?.has(memberName) ?? false))
-            : (projectIndex.typeMembers.get(base)?.has(memberName) ?? false)
-          if (has) hits++
-          projectWalk(base, depth + 1)
-        }
-      }
-      projectWalk(ownerName, 0)
-    }
     return hits === 1
   }
 
