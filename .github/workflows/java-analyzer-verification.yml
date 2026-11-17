@@ -78,6 +78,20 @@ jobs:
           cp /tmp/bb-fixed-java-analyzer.ts src/ast/real-java-analyzer.ts
       - name: Java indexed SQLite store round-trip
         run: bun script/m14/java-store-e2e-smoke.ts
+      - name: Prove SQLite regression catches the original indexer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp src/ast/parallel-indexer.ts /tmp/bb-java-fixed-indexer.ts
+          git show 29a579243458490ff23d8de3f7f8f46aad120a43:src/ast/parallel-indexer.ts > src/ast/parallel-indexer.ts
+          set +e
+          bun script/m14/java-store-e2e-smoke.ts > /tmp/bb-java-sqlite-red.log 2>&1
+          old_status=$?
+          set -e
+          cp /tmp/bb-java-fixed-indexer.ts src/ast/parallel-indexer.ts
+          test "$old_status" -ne 0
+          grep -q 'JAVA_SQLITE_E2E_FAIL' /tmp/bb-java-sqlite-red.log
+          echo "JAVA_SQLITE_RED_CONTROL_PASS: original indexer fails the new database invariants"
       - name: Java M12 differential — enforce recorded baseline without hiding failures
         shell: bash
         run: |
