@@ -514,3 +514,67 @@ not a superseded successful run, before signoff.
 **Conclusion:** Verified targeted improvement; **not yet a production-grade
 acceptance certificate**. Leave this PR draft and leave `main` unchanged
 until the remaining evidence has been reviewed.
+
+
+---
+
+## 2026-11-17 — Java SQLite import-channel closure, pre-handoff
+
+**Current verification record** (the previous 103-fixture snapshot is historical):
+
+- Source branch `audit/java-semantic-proof-20261116` at the latest PR head.
+- [Successful Java semantic CI run 44025333667](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025333667) on commit `bc9fdd80faa862fb7ac3d46a242671e5d26f4f6c`:
+  **104/104 Java fixtures**; pre-fix analyzer **94 pass, 10 fail** (each of
+  ten named regressions asserted); existing compiler oracles 12/12 and 13/13,
+  semantic oracle **15/15**, total **40/40**; TypeScript typecheck PASS.
+- REAL SQLite/store: **4/4 Java import-channel rows retained**, including
+  **2/2 file-level imports from two separate files**, and three overload/cross-file
+  method declarations retained.
+- Red control: replacing the corrected indexer with the original one MUST
+  fail specifically on an import-channel persistence invariant. Verified in
+  the successful Java CI job.
+- M12: still TP=95, FP=105, FN=21, unknown=6, `passed:false`.
+  **Baseline equality only**, NOT a passing differential.
+- Standard CI has a separate longer runner; check its latest-head result before
+  using it as evidence.
+
+### Closed concrete defect, not papered over
+
+An ordinary Java import publishes two **different** `imports` edges:
+declaration/binding evidence and file-level module dependency. Previous
+store-row IDs collapsed both because they shared target and line. The first
+insertion won and could leave `source_external=Alpha` instead of
+`alpha/Alpha.java`, making `bb_graph` per-file imports disappear.
+
+An attempted workaround deleting the declaration evidence edge was
+**reverted** because import-label and imported-binding fixtures correctly
+require it. The accepted implementation changes
+`src/ast/parallel-indexer.ts` to give the Java `fileLevel` imports channel
+a distinct ID suffix while preserving existing declaration-edge IDs.
+It also sets file-level source identity to NULL symbol ID / relative
+file pathname even when the analyzer-supplied source name resembles
+a local class. The SQLite probe and its negative control validate both.
+
+### Remaining acceptance blockers (NOT closed)
+
+1. Full pinned **11,152-file** Java incoming corpus check. The pinned
+   `BB_CORPUS_ROOT` tree is unavailable in the authoring runtime.
+   Do not infer a PASS from a two-file SQLite probe.
+2. M12's **105 FP / 21 FN** reference disagreements need independent
+   per-fact adjudication. The ground truth lacks imports/exports and
+   carries stale naming contracts; neither a blind truth rewrite nor
+   accepting all observed rows is allowed.
+3. Full worker/indexer/SQLite/public `bb_graph` and impact cross-file
+   canonical method resolution, including overloads and generic
+   substitutions, needs the admitted corpus and queried truth oracle.
+4. Full `npm run verify` (not only `verify:fast`), plus Java-specific
+   mutant suites and documentation checks under the local environment.
+5. Out-of-scope features must be published explicitly: composed Spring
+   annotations, multi-route arrays, classpath-resolved generic inheritance,
+   runtime annotation processing. They are not covered simply because the
+   narrow fixtures pass.
+
+**Decision: remain DRAFT, DO NOT MERGE.** This document reports the actual
+verified improvements and explicit open work, not a promise that no further
+Java issue exists. A final acceptance decision requires independent evidence
+on the missing full-population and consumer gates.

@@ -17,7 +17,7 @@ claim of complete Spring Data signature modeling.
 
 ## Verification contract
 
-1. Java M14 fixtures must report **at least 103 passes, zero failures**.
+1. Java M14 fixtures must report **at least 104 passes, zero failures**.
    The runner's exit code alone is insufficient.
 2. Production TypeScript must typecheck.
 3. The existing generic-override and remediation compiler oracles plus
@@ -58,3 +58,24 @@ uncertainty without manufacturing a concrete generic signature.
 The analyzer is **NOT accepted/final** until the missing full corpus and
 end-to-end verification and the still-failing M12 mismatch adjudication are
 completed. The later review of CI must be against the latest PR head.
+
+
+## Additional real-storage proof (2026-11-17)
+
+[CI run 44025333667](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025333667)
+executes **104/104** Java fixtures, 10 explicitly named killed regressions
+on the original analyzer, **40/40** independent compiler judgments and
+a self-contained production `ASTEngine.parseFile` →
+`storeResults` → `BrainDatabase` SQLite test with two Java files.
+
+Two files, two deliberate import channels per file: **all 4 edges survive**
+under distinct persisted IDs; both file-level rows have the correct
+project-relative importing filename and NULL source_symbol_id. A red
+control swaps in the uncorrected indexer and requires the missing-channel
+defect to manifest. The source mutation that removed one of the two
+necessary import edges was rejected and reverted after existing fixtures
+proved the second channel is contractually required.
+
+This corrects an actual end-to-end defect and extends verification depth,
+but does not replace the missing pinned large-corpus, API-level reference
+attribution, or fully passing M12 differential.
