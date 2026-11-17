@@ -1,0 +1,66 @@
+{
+  "fixtureId": "go/type-parameter-explained",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS A TRUE EXPLANATION, not merely a present one. A type parameter is a real Go declaration (spec, Type parameter declarations) but it is SCOPED to its function or type, so it is not a symbol — the same reading LocalsAreNotSymbols applies to locals. The lane still EMITS the reference and that is right: `Pair -> K` is a true fact (Pair uses its parameter K) and suppressing it would hide a real dependency. What was wrong is the EXPLANATION. With no type-parameter set to consult, those rows fell through to the generic declared-type code `declared_type_leaf_whose_declaring_file_is_out_of_scope`, which says the declaring file is outside this one — and for `K` that is FALSE, because its declaration is the `type_parameter_list` on the very same line. MEASURED on go-tools + terraform (3,422 files, 363,830 edges): 981 edges carried that false code; after the fix 0 do, and all 981 carry the new one. THE POINT OF THE NEW CODE IS THAT IT STATES TWO FACTS AT ONCE: the declaration IS in this file (`..._declared_here_...`, the half the old code got backwards) and it is scoped rather than package-level (`..._scoped_to_its_declaration_not_a_symbol`, the half that tells a consumer why no symbol exists to navigate to). A code that stated only one of those would be less wrong but still incomplete. THE CONTROL ROW IS WHAT MAKES THIS A FIX AND NOT A RELABEL: `Plain -> Missing` is a parameter-free reference to a type this file does not declare, so it must KEEP the generic out-of-scope code. A change that stamped the new code on every declared-type row would satisfy the positive rows while destroying the meaning of the old one, and this row would fail. THE FORBID ROW pins the absence direction: a `Generic -> T` row still claiming an out-of-scope declaring file is precisely the defect. NOT PINNED: the duplicate `Generic -> T` row (the signature mentions T twice; the emitter's source|target|relType key collapses them only when identical), and confidence/evidenceClass, which classifyEvidenceTier derives unchanged.",
+  "expectSymbols": [
+    { "name": "Generic", "kind": "function" },
+    { "name": "Pair", "kind": "struct" },
+    { "name": "Key", "kind": "property" },
+    { "name": "Val", "kind": "property" },
+    { "name": "Plain", "kind": "struct" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "A generic function's own type parameter: the declaration is the type_parameter_list on this very line, so the out-of-scope code this row used to carry was false.",
+      "type": "references",
+      "from": "Generic",
+      "target": "T",
+      "meta.relationshipType": "declared_type",
+      "meta.bindReason": "type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol",
+      "meta.reasonCode": "type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol",
+      "meta.isTypeParameter": true
+    },
+    {
+      "comment": "The second parameter of the same declaration, so the fix is not keyed to one letter.",
+      "type": "references",
+      "from": "Generic",
+      "target": "U",
+      "meta.bindReason": "type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol",
+      "meta.isTypeParameter": true
+    },
+    {
+      "comment": "A generic TYPE's parameter, reached from a struct FIELD rather than a signature — a different construction path, same explanation.",
+      "type": "references",
+      "from": "Pair",
+      "target": "K",
+      "meta.bindReason": "type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol",
+      "meta.isTypeParameter": true
+    },
+    {
+      "comment": "CONTROL: a parameter-free reference to a type this file DOES NOT declare must KEEP the generic out-of-scope code. If this row started claiming the type-parameter code, the change would be a relabel that destroyed the old code's meaning.",
+      "type": "references",
+      "from": "Plain",
+      "target": "Missing",
+      "meta.relationshipType": "declared_type",
+      "meta.bindReason": "declared_type_leaf_whose_declaring_file_is_out_of_scope",
+      "meta.isTypeParameter": null
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "THE DEFECT: a type-parameter reference still explained as an out-of-scope declaring file. The declaring file is this one.",
+      "type": "references",
+      "from": "Generic",
+      "target": "T",
+      "meta.bindReason": "declared_type_leaf_whose_declaring_file_is_out_of_scope"
+    },
+    {
+      "comment": "The same lie on the struct-field path.",
+      "type": "references",
+      "from": "Pair",
+      "target": "K",
+      "meta.bindReason": "declared_type_leaf_whose_declaring_file_is_out_of_scope"
+    }
+  ]
+}

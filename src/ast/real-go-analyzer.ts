@@ -1083,6 +1083,47 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * confused with an inherited member — the same Object.prototype hazard the
    * interface and promotion passes defend against separately.
    */
+  /**
+   * Every TYPE PARAMETER name declared in this file, across all `type_parameter_list`s.
+   *
+   * A type parameter is a real Go declaration (spec, Type parameter declarations) but it is
+   * SCOPED to its function or type, so it is not a symbol — the same reading LocalsAreNotSymbols
+   * applies to locals. The lane still EMITS the reference (`Pair -> K` is a true fact: Pair uses
+   * its parameter K), which is right. What was wrong is the EXPLANATION: with no set to consult,
+   * those rows fell through to `declared_type_leaf_whose_declaring_file_is_out_of_scope`, which
+   * says the declaring file is outside this one. It is not — the declaration is the
+   * `type_parameter_list` on the very same line. Measured on `type Pair[K comparable, V any]`:
+   * `Pair -> K` and `Pair -> V` both claimed an out-of-scope declaring file.
+   */
+  private collectGoTypeParameterNames(root: Node): Set<string> {
+    const names = new Set<string>()
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "type_parameter_list") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const decl = n.namedChild(i)
+          if (!decl) continue
+          // `type_parameter_declaration` holds IdentifierList Type; the names are its
+          // leading `identifier` children. Read them by TYPE, never by field, because this
+          // grammar gives the declaration node no name field.
+          for (let j = 0; j < decl.namedChildCount; j++) {
+            const id = decl.namedChild(j)
+            if (id && id.type === "identifier") {
+              const text = String(id.text ?? "")
+              if (text.length > 0 && text !== "_") names.add(text)
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return names
+  }
+
   private collectGoPackageScopeNames(root: Node): Set<string> {
     const names = new Set<string>()
     const addSpecNames = (spec: Node): void => {
@@ -1146,6 +1187,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The file's own package name, for the same reason the call surfaces read it: a qualifier equal
     // to it names a sibling declaration, never a stdlib package.
     const ownPackageName = this.goOwnPackageName(rootNode)
+    // Type parameters are declared in this file but not symbols (see the method). Consulted per
+    // edge so `Pair -> K` is explained as what it is instead of as an out-of-scope declaring file.
+    const fileTypeParams = this.collectGoTypeParameterNames(rootNode)
     const emitted = new Set<string>()
     // Go's PREDECLARED identifiers (spec, Predeclared identifiers): the types
     // `bool`, the numeric types, `string`, `error`, and the two predeclared
@@ -1349,6 +1393,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               relationshipType: relType,
               ...(qualified ? { qualifiedType: qualified } : {}),
               ...(stdlibModule !== null ? { isStdlib: true, stdlibPath: stdlibModule } : {}),
+              // A TYPE PARAMETER IS DECLARED HERE, not in an unreachable file. The default
+              // explanation for a declared-type row is `declared_type_leaf_whose_declaring_file_is_out_of_scope`,
+              // which is TRUE for a name that lives in another package and FALSE for `Pair`'s
+              // own `K` — that parameter's declaration is the `type_parameter_list` on the same
+              // line. Stamping both reasonCode and bindReason here wins over the reason table's
+              // fallback because both publication loops skip a row that already carries one.
+              ...(fileTypeParams.has(target)
+                ? {
+                    reasonCode: "type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol",
+                    bindReason: "type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol",
+                    isTypeParameter: true,
+                  }
+                : {}),
             },
           })
         }
