@@ -281,6 +281,39 @@ every published name whether it is a declaration's name *and* not a macro's.
 
 The three **NO** rows are not gaps waiting for an implementation: each carries the rung that was unavailable and why, and each carries a falsifier written as a construct that would retire it. `part_of` is the row that MOVED — it was `grammar-remedy-pending` at commit f7c23081c and is now emitted, because the construct it needs (`preproc_include`) was a named node type of the served build all along; the rung was R3 and no grammar change was needed.
 
+### Receiver evidence — `metadata.owner`, two arms, both metadata-only
+
+A `calls` row whose RECEIVER the analyzer can name carries `metadata.owner` = the class-like type the
+receiver has. The store's owner channel is authoritative over such a row: it re-binds the target
+through that owner's members and ancestors, and a row it DECLINES stays NULL rather than falling back
+to the bare-name answer (the bare-name answer is exactly the wrong-owner binding the channel exists to
+catch). `metadata.owner` is a NAME, not an identity: same-named classes project-wide decline instead of
+guessing (measured on the index arm: 845 `ownerAmbiguous` declines). Two arms emit it, and neither
+adds, suppresses or re-types a row:
+
+- **the INDEX arm** — a complete project index is required (`complete === true`, fail-closed; an
+  incomplete index attaches nothing) and consumption is SHIPPED DEFAULT-ON with
+  `BB_CPP_INDEX_CONSUME=0` as the kill-switch. Shapes: constructor temporary, `new` expression, typed
+  local (written declaration type in the same function), and implicit `this` with the index's
+  inheritance-closed member view. On the 2-repo corpus this arm adds ~1.7k owner rows on top of the
+  local arm; without the index it emits nothing.
+- **the INDEX-FREE arm** — a bare implicit-`this` callee in a member-function body and a spelled
+  `this->m()`, bound by [basic.lookup.unqual] to the enclosing class's own published member. It needs
+  no index, and is SHIPPED DEFAULT-ON with `BB_CPP_LOCAL_RECEIVER=0` as the kill-switch. The evidence
+  is a POST-PASS over the finished symbol table (a member declared BELOW the calling body must still be
+  found) and is attached only under three guards, each added after the corpus refuted the first cut:
+  the class is declared ONCE by that name in the file (template specializations and namespaced
+  duplicates refused), the member is declared INSIDE that class body (vendored amalgamations whose
+  class bodies live in included headers refused), and no function-scope binding shadows the name at
+  the call site (a local/parameter or a block-scope `using std::swap;` hides the class member).
+  Measured on the 2-repo corpus: **2,863 rows**, 0 emitted on a non-`calls` row, and 0 failing the
+  census's independent re-check against the emitting file's own symbols; the gate's owner channel
+  resolves 2,861 of them and the two declines are named in `docs/m65-cpp/NEXT-WORK.md` §14.18.
+
+Both arms are metadata-only, both have kill-switches, and the incoming gate reproduces the pre-arm
+numerals exactly with the switch set (verified for each: 51,741 / 18,604 / 7,222 / 782 on the 2-repo
+population).
+
 ### The measured per-type counts (the emission verdicts above, counted)
 
 The table below is the count table the earlier rounds produced; it counts the ten values the engine carried at the time, so `part_of` (added to the vocabulary later) has no column here and its measurement lives in `validation/m14/measurements/cpp-four-types-census-11spelling.json`.

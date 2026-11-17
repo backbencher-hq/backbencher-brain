@@ -111,7 +111,19 @@
       "target": "compute",
       "meta.owner": "Pair",
       "note": "NAME COALESCING: `Pair` is declared twice in this file (alpha, beta), so a member table keyed by owner NAME cannot say which class the call is in — no claim."
-    }
+    },
+    {"type":"calls","from":"Widget::run","target":"helper","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"freeCaller","target":"Widget::shared","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"takeRef","target":"Widget::shapeUnknown","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"withShadow","target":"Widget::shapeBare","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"Widget::withShadow","target":"shapeBare","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"withUsing","target":"Widget::swap","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"Widget::withUsing","target":"swap","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"runPairAlpha","target":"Pair::compute","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"Pair::runPairAlpha","target":"compute","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"Widget::withShadow","target":"Widget::shapeBare","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"Widget::withUsing","target":"Widget::swap","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."},
+    {"type":"calls","from":"Pair::runPairAlpha","target":"Pair::compute","note":"SPELLING CONTRACT (L-2026-10-21-07): a defect that re-spells this end of the row as the owner-qualified spelling would NOT be caught by the bare-spelling forbid beside it, so the spelling is pinned here too."}
   ],
   "expectRelationshipCount": [
     { "type": "calls", "from": "run", "target": "shapeBare", "equals": 1 },
