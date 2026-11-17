@@ -1285,12 +1285,55 @@ export function filterNoiseRelationships(
     const declaredTarget =
       !!declaredNames &&
       (declaredNames.has(String(r.target ?? r.to ?? "")) || declaredNames.has(leaf))
+    // ★ WRITTEN-SITE EVIDENCE (typescript lane, 2026-11-17). THE TWO GROUPS THIS BLOCK EXISTS FOR —
+    // web-tree-sitter accessor names and CSS property names — are fabrication guards: they exist
+    // because an analyzer might pass an API member name where a symbol name belongs. A row that
+    // carries the analyzer's own WRITTEN-SITE evidence cannot be that: `calls` rows from this
+    // family publish `callSiteStartIndex` + `calleeExpression` (the exact callee spelling read at
+    // the call node), and `uses` member reads publish `isFieldAccess: true`. So when the name is
+    // in one of the two FABRICATION families and the row carries written-site evidence, the guard's
+    // premise is refuted and the row is kept — the same evidence-based posture as `declaredTarget`
+    // and `boundNames` above, not a blanket exemption.
+    //
+    // MEASURED COST OF NOT HAVING IT (element-plus@1b45ace0, script/m14/ts-production-drop-probe.ts):
+    // 613 emitted `calls` rows (1.30%, 117 files) were deleted on the way to the index, every one a
+    // REAL call whose callee leaf collides with an accessor name — `wrapper.text()`, `.type(...)` —
+    // plus 3 binding-spelled `uses` rows (`<scope>\0type`), where the leaf extractor correctly
+    // recovers `type` and then the guard eats the row. The TS lane's own UIs showed the consequence
+    // as a graph missing calls it had verified; the analyzer was correct, the filter was not.
+    //
+    // SCOPE: the TEST-LIFECYCLE group (`setUp`/`tearDown`/`beforeEach`/`afterEach`) is NOT exempted
+    // by written-site evidence — its rationale is graph noise, not fabrication, so a written
+    // `beforeEach(...)` call is still dropped as intended. Its IMPORTS rows are exempted below for
+    // a different, structural reason.
+    const writtenSite =
+      typeof (r as any)?.metadata?.callSiteStartIndex === "number" ||
+      (r as any)?.metadata?.isFieldAccess === true
+    // ★ A MODULE-LEVEL DEPENDENCY ROW IS A DECLARATION, NOT A GUESS (typescript lane, 2026-11-17).
+    // `imports`/`exports` targets are compound lookup keys (`<specifier>:<item>`,
+    // `<scope>\0<module>:*`, or the declared member of a re-export); the leaf is one half of that
+    // key. `import { beforeEach } from "vitest"` and `export { beforeEach }` are legal, ordinary
+    // dependencies, and MEASURED on element-plus: 101 imports rows (1.18%, 71 files) were deleted
+    // because the item half is a test-framework name — a renamed dependency the graph must have.
+    // A module row cannot be a web-tree-sitter leak: the source wrote an import/export statement,
+    // the analyzer read its specifier, and nothing about a file accessor enters the spelling.
+    const moduleLevelKind = String(r.type ?? "") === "imports" || String(r.type ?? "") === "exports"
+    // ★ A BINDING-KEY TARGET IS A CLAIM KEY, NOT A NAME (typescript lane, 2026-11-17). `<read
+    // source>\u0000<binding>` is the family mechanism for a local binding: the analyzer states the
+    // spelling it claims, and the STORE's arbiter verifies or refutes that claim. Its leaf is the
+    // binding half, which can legitimately be a name in the noise list — measured: the last 3 lost
+    // `uses` rows on element-plus were `getCssVarName\u0000type`, dropped because the recovered leaf
+    // `type` is in the accessor family while the row is a verified claim about a written name.
+    // Exempted like imports/exports: a claim key is structured data, not an API member guess.
+    const bindingKeyTarget = String(r.target ?? r.to ?? "").includes(BINDING_SEP)
     if (
       NOISE_TARGETS.has(leaf) &&
       !declaredTarget &&
       // UNION: main's second hatch — a name the file BINDS without declaring (an imported binding is
       // not framework noise). Absent here, present there, and the probe taken from main depends on it.
-      !(boundNames && boundNames.has(leaf))
+      !(boundNames && boundNames.has(leaf)) &&
+      !moduleLevelKind &&
+      !bindingKeyTarget
     ) {
       // M60 LUA-16: `NOISE_TARGETS` bundles three groups whose names are noise
       // ONLY in the languages that own the convention, and all three were applied
@@ -1312,6 +1355,9 @@ export function filterNoiseRelationships(
       // such frameworks, which is not a question this function can answer.
       const family = NOISE_TARGET_FAMILIES[leaf]
       if (family && !family.has(language)) return true
+      // THE FABRICATION GUARD IS REFUTED BY WRITTEN-SITE EVIDENCE (see above). Only the families
+      // the guard was written for qualify; the lifecycle group has no family entry and stays dropped.
+      if (family && writtenSite) return true
       return false
     }
 
