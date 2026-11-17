@@ -1,7 +1,0 @@
-.vercel
-.next/
-.env.vercel
-.env.local
-*.log
-*.tsbuildinfo
-.astro/
