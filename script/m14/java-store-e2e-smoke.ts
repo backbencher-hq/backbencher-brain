@@ -66,18 +66,21 @@ try {
                 FROM brain_relationship
                 WHERE project_id = ? AND relationship_type = 'imports'
                   AND target_external = 'java.util.List' ORDER BY source_external`).all(projectId)
-  console.log("JAVA_SQLITE_DIAG", JSON.stringify({
-    allImports: results.flatMap((f) => f.relationships).filter((e:any) => String(e.type ?? e.relationshipType)==="imports" && e.target==="java.util.List").map((e:any)=>({source:e.source,target:e.target,fileLevel:e.metadata?.fileLevel,line:e.line_number,meta:e.metadata})),
-    rows
-  }))
-  assertThat(rows.length === 2, `two distinct file-level imports must survive storage; got ${rows.length}`)
-  const actualSources = rows.map((row) => row.source_external).sort()
+  // Both import channels are intentional: 2 declaration-evidence imports
+  // and 2 file-level graph dependencies. The storage ID must preserve all 4.
+  assertThat(rows.length === 4,
+    `two Java files x two import channels must survive storage; got ${rows.length}`)
+  const fileRows = rows.filter((row) =>
+    row.source_external === "alpha/Alpha.java" || row.source_external === "beta/Beta.java")
+  assertThat(fileRows.length === 2,
+    `expected two file-level graph dependencies, got ${fileRows.length}`)
+  const actualSources = fileRows.map((row) => row.source_external).sort()
   assertThat(
     actualSources[0] === "alpha/Alpha.java" && actualSources[1] === "beta/Beta.java",
     `file-level edges attached to wrong files: ${actualSources.join(",")}`,
   )
-  assertThat(rows.every((row) => row.source_symbol_id === null), "file-level import sources must be NULL symbol ids")
-  assertThat(new Set(rows.map((row) => row.id)).size === 2, "two files must not collide on a relationship id")
+  assertThat(fileRows.every((row) => row.source_symbol_id === null), "file-level import sources must be NULL symbol ids")
+  assertThat(new Set(rows.map((row) => row.id)).size === 4, "both import channels in both files must have distinct relationship ids")
   const symbols: Array<{ qualified_name: string; name: string }> =
     db.prepare(`SELECT qualified_name, name FROM brain_symbol
                 WHERE project_id = ? AND name IN ('Alpha', 'Beta') ORDER BY qualified_name`).all(projectId)
@@ -87,7 +90,7 @@ try {
   const ids: Array<{ qualified_name: string; name: string }> =
     db.prepare(`SELECT qualified_name, name FROM brain_symbol WHERE project_id = ? AND name = 'identity'`).all(projectId)
   assertThat(ids.length >= 3, `overloaded/cross-file method declarations lost during indexing: ${JSON.stringify(ids)}`)
-  console.log(`JAVA_SQLITE_E2E_PASS: 2/2 imports and ${ids.length} overloaded/cross-file declarations stored`)
+  console.log(`JAVA_SQLITE_E2E_PASS: 4/4 import channel rows, 2/2 file-level dependencies and ${ids.length} overloaded/cross-file declarations stored`)
 } finally {
   rmSync(root, { recursive: true, force: true })
 }

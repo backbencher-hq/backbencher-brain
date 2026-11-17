@@ -5612,7 +5612,17 @@ export async function storeResults(
                 Number.isSafeInteger(rel.metadata?.callSiteStartIndex) && rel.metadata.callSiteStartIndex >= 0
                   ? rel.metadata.callSiteStartIndex : null
               const siteIdentity = callSite === null ? "" : `:site:${callSite}`
-              const relId = `${projectId}:rel:${sourceIdentity}:${targetName}:${relType}:${relLine ?? "?"}${siteIdentity}`
+              // Java intentionally emits a declaration-evidence import and
+              // a fileLevel dependency for the SAME source import statement.
+              // Their source/target/line identifiers can coincide after
+              // source attribution; without a semantic key, INSERT OR IGNORE
+              // discards whichever channel loses the insertion race.
+              // Only distinguish the fileLevel member of the pair; existing
+              // non-fileLevel relationship identities stay backwards-compatible.
+              const importChannelIdentity =
+                fileLang === "java" && relType === "imports" && rel.metadata?.fileLevel === true
+                  ? ":channel:file-level" : ""
+              const relId = `${projectId}:rel:${sourceIdentity}:${targetName}:${relType}:${relLine ?? "?"}${siteIdentity}${importChannelIdentity}`
 
  
              stmt.insertRelationship.run(
