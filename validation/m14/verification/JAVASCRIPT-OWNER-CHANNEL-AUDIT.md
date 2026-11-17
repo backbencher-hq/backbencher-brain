@@ -297,6 +297,68 @@ destructured form should stop publishing or the others should start, and that is
 model decision (it would move symbol counts on every corpus), not a bugfix. Recorded here with the
 measurement.
 
+## Finding 8 — Flow-annotated `.js` was HALF-unreadable, and a grammar fallback recovers it (FIXED)
+
+**The largest coverage gain of this campaign, and only a freshly cloned corpus could expose it.** Every
+corpus this lane had measured before (svelte, lodash, bootstrap, Ember apps) is plain ECMAScript. React
+is not: its source is **Flow**, a typed superset of JavaScript that `tree-sitter-javascript` cannot
+parse. So the analyzer read only the fragments error-recovery left intact.
+
+### The measurement
+
+Parse health of AUTHORED source (build output AND test fixtures excluded — the fixtures are
+deliberately Flow/proposal samples, and measuring them measures the test data):
+
+| repo | authored `.js` | ERROR trees | rate |
+|---|---|---|---|
+| **react** | 1,450 | **782** | **53.9%** |
+| prettier | 671 | 1 | 0.1% |
+| three | 1,463 | 0 | 0.0% |
+| moment | 433 | 2 | 0.5% |
+| preact, jquery, underscore, ramda, d3, express, axios, chartjs, socket.io, vue, mongoose | — | 0 | 0.0% |
+
+**753 of React's 782 (96%) carry a `@flow` / `@noflow` pragma in the first 400 characters.** That is
+the key: the failure is a *declared* dialect, not general brokenness.
+
+### The fix, and why the TypeScript grammar is legitimate here
+
+`tree-sitter-typescript` **extends** the JavaScript grammar, so the node types the javascript analyzer
+switches on are the SAME names (verified on a Flow file: both grammars produce
+`comment, import_statement ×8, export_statement` at top level). Parsing a Flow file with it yields the
+structure the analyzer already understands, and TS-only nodes (`type_annotation` and friends) are
+simply types its switch does not list — an unlisted type is ignored, not misread.
+
+`src/ast/engine.ts` now retries with the TypeScript grammar, under FOUR gates, each of which exists to
+stop it being a general-purpose language switch:
+
+1. the file is `javascript` (never `.ts`/`.tsx` — those already use the TS grammar);
+2. the primary JS parse **failed** — a clean parse is never second-guessed;
+3. the source **declares Flow in its head** — an ordinary broken `.js` is not silently reparsed as
+   another language;
+4. the fallback tree must parse **CLEAN** — a failure is never traded for a different failure.
+
+### The gain, measured A/B on the same 426 files
+
+| | JS-grammar tree (before) | engine path (after) | delta |
+|---|---|---|---|
+| symbols | 2,766 | **3,912** | **+1,146 (+41%)** |
+| relationships | 33,885 | **34,841** | **+956** |
+
+426 of React's 782 rejected files parse clean under the TypeScript grammar and are now fully read.
+
+### Still unreadable, and named rather than implied
+
+356 of the 782 remain: Flow-only syntax the TS grammar does not accept (`declare var`, exact object
+types `{| |}`, existential `*`), and React Compiler's own `component C() {}` DSL in fixtures — which
+is not JavaScript at all. A TSX retry cleans 141 more of those and is the obvious next step.
+
+### A measurement trap in my own instruments, recorded
+
+`getParser` recreates a parser every 500 files (a WASM-memory mitigation), so a probe that holds ONE
+parser reference across thousands of parses is reading from a deleted object. My first A/B was
+distorted by exactly that, and it also silently made the census skip files. Every census that walks a
+corpus must re-fetch the parser periodically; the fix is in the census, not the analyzer.
+
 ## Relationship witnesses — every label proved to FIRE, not just documented
 
 **New committed gate: `script/m14/javascript-relationship-witness.ts`.** It feeds the analyzer a

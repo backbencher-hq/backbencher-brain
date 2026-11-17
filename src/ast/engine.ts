@@ -1814,6 +1814,48 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       throw new Error(`Failed to parse file: ${filePath}`)
     }
 
+    // ------------------------------------------------------------------------
+    // FLOW-ANNOTATED `.js` — RETRY WITH THE TYPESCRIPT GRAMMAR.
+    //
+    // A `.js` file carrying `// @flow` (or `/* @flow */`) is NOT ECMAScript: it is Flow, a typed
+    // superset. `tree-sitter-javascript` therefore produces an ERROR tree for it, and the analyzer
+    // reads only the fragments the error recovery leaves intact.
+    //
+    // MEASURED on React (`facebook/react` @ 6ff2574, authored `.js` only, build output and test
+    // fixtures excluded): the JS grammar rejected **782 of 1,450** files — 53.9% of the project's
+    // source — and **753 of those 782 (96%) carry a Flow pragma in the first 400 characters**.
+    //
+    // The TypeScript grammar parses **426** of them CLEAN. That is not a coincidence: Flow and TS
+    // annotation syntax overlap heavily, and tree-sitter-typescript EXTENDS the JavaScript grammar,
+    // so the node types the javascript analyzer switches on are the SAME names. Verified on a Flow
+    // file: both grammars produce `comment, import_statement ×8, export_statement` at top level.
+    // TS-only nodes (`type_annotation` and friends) are simply node types the analyzer's switch does
+    // not list, and an unlisted type is ignored rather than misread.
+    //
+    // THE GATE IS DELIBERATELY NARROW, and it is the pragma, not the failure:
+    //   · the file must be `javascript` (never .ts/.tsx — those already use the TS grammar);
+    //   · the primary parse must have FAILED, so a clean JS parse is never second-guessed;
+    //   · the source must declare Flow in its head, so an ordinary broken .js file is not silently
+    //     reparsed as a different language;
+    //   · the fallback tree must parse CLEAN, so a failure is never traded for a different failure.
+    // What it recovers is measured, not assumed — see validation/m14/verification/JAVASCRIPT-STATE.md.
+    if (language === "javascript" && tree.rootNode?.hasError) {
+      const head = content.length > 400 ? content.slice(0, 400) : content
+      if (head.includes("@flow") || head.includes("@noflow")) {
+        try {
+          const tsParser = await getParser("typescript")
+          const tsTree = tsParser.parse(content)
+          if (tsTree && !tsTree.rootNode?.hasError) {
+            tree = tsTree
+          } else if (tsTree) {
+            try { tsTree.delete?.() } catch {}
+          }
+        } catch {
+          // any failure leaves the ORIGINAL tree in place — the fallback can only improve on it
+        }
+      }
+    }
+
     // The SQL analyzer's declaration-resync pass re-parses a badly damaged file
     // one statement at a time (a single unterminated dollar-quote otherwise
     // swallows the rest of the file — measured at 33% of corpus declarations
