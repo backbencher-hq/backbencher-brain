@@ -2,7 +2,7 @@
   "fixtureId": "cpp/imports-include-910",
   "language": "cpp",
   "authoredBeforeAnalyzerRun": false,
-  "rationale": "ONTOLOGY `imports`. The lane emitted 913 `#include` rows over 128 admitted C++ files as `references`, and 0 as `imports` \u2014 so the `imports` relationship type existed in the engine's enum, was the kind the ONE downstream reader of file-level dependencies filters on (`src/lsp/graph_request.ts`: `WHERE relationship_type = 'imports' AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = ?`), and a C++ translation unit's include list was unreachable there. This is the relabel the C lane made in M60/#910 and the one `script/m14/mutate-analyzer.ts` already carries a reverting mutant for ('downgrades the include edge from the first-class `imports` kind back to the old `references` + metadata shape \u2014 the asymmetry every harness was blind to'). `references` is NOT emptied by it: the `using`-dependency shape stays `references`, because an include dependency and a using-dependency are two facts about two different constructs and the fixture pins them apart by TARGET (`vector` vs `std::vector`) as well as by kind. `module` and `fileLevel` are pinned because they are the contract: `module` is what a consumer reads as the module specifier and `fileLevel` is what tells the indexer that a row with no resolvable source symbol belongs to the FILE. EXPECTED-RELATIONSHIP, not `equals`: three `#include <string>` lines must still produce one EDGE (D3) while the `imports` ARRAY keeps three entries, and the two are different questions.",
+  "rationale": "ONTOLOGY `imports`. The lane emitted 913 `#include` rows over 128 admitted C++ files as `references`, and 0 as `imports` \u2014 so the `imports` relationship type existed in the engine's enum, was the kind the ONE downstream reader of file-level dependencies filters on (`src/lsp/graph_request.ts`: `WHERE relationship_type = 'imports' AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = ?`), and a C++ translation unit's include list was unreachable there. This is the relabel the C lane made in M60/#910 and the one `script/m14/mutate-analyzer.ts` already carries a reverting mutant for ('downgrades the include edge from the first-class `imports` kind back to the old `references` + metadata shape \u2014 the asymmetry every harness was blind to'). `references` is NOT emptied by it: the `using`-dependency shape stays `references`, because an include dependency and a using-dependency are two facts about two different constructs and the fixture pins them apart by TARGET (`vector` vs `std::vector`) as well as by kind. `module` and `fileLevel` are pinned because they are the contract: `module` is what a consumer reads as the module specifier and `fileLevel` is what tells the indexer that a row with no resolvable source symbol belongs to the FILE. EXPECTED-RELATIONSHIP, not `equals`: two `#include <string>` lines must still produce one EDGE (D3) while the `imports` ARRAY keeps three entries, and the two are different questions.",
   "expectRelationships": [
     {
       "type": "imports",
@@ -34,6 +34,21 @@
       "from": "global",
       "target": "std::vector",
       "note": "CONTROL: the `using` shape stays `references`. It names a namespace, not a header, and the target is deliberately different from the `vector` include's \u2014 one edge per fact, and the facts are different."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "string",
+      "equals": 1,
+      "note": "D3, PINNED BY COUNT BECAUSE `expectRelationships` CANNOT SEE THIS. That predicate is a `>=1 match`, so a de-dupe regressing into one edge per LINE would still satisfy every relationship row in this file. There are TWO `#include <string>` lines (31-32) and they must be exactly ONE `imports` edge whose target is the module `string`. This is the invariant the fixture's own rationale documents ('one edge per MODULE') and, until this count was added, nothing enforced it: the pin was prose."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "equals": 2,
+      "note": "and the whole file has exactly TWO `imports` edges — `vector` and `string`. The quoted include is `part_of` and the `using` is `references`, so this count also fails if either of them is promoted into `imports`, which is the #910 defect direction the directed forbids below cover from the other side."
     }
   ],
   "forbidRelationships": [
@@ -83,7 +98,7 @@
   "expectImports": [
     {
       "module": "string",
-      "note": "the `imports` ARRAY keeps every occurrence \u2014 three `#include <string>` lines push three entries, while the GRAPH keeps one edge. 'How many times was it included' is a count; 'what does this file depends on' is an edge."
+      "note": "the `imports` ARRAY keeps every occurrence \u2014 two `#include <string>` lines push two entries, while the GRAPH keeps one edge. 'How many times was it included' is a count; 'what does this file depends on' is an edge."
     }
   ]
 }

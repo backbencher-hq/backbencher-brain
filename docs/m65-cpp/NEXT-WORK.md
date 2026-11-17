@@ -752,3 +752,50 @@ implies a number, and pinning a count with no contract is just golden-testing. I
 fixtures whose own documented invariant IS a count ("one edge per pair", "exactly two overrides",
 "one `part_of` per include"), and give those an `equals` block. The rest should stay as they are and
 be understood as existence checks.
+
+### 14.7 · The first count that was added: `imports` de-dupe, which the fixture documented but did not enforce
+
+`cpp/imports-include-910`'s rationale states the D3 invariant in words — "one edge per MODULE" — and the
+fixture file repeats it. Measured, the invariant held: two `#include <string>` lines produced **one**
+`imports -> string` edge. But **nothing enforced it**: every row in that file was an
+`expectRelationships` (">=1 match"), and a duplicate satisfies `some()`. The fixture's own rationale
+even said so in passing ("EXPECTED-RELATIONSHIP, not `equals`") — the de-dupe was pinned by prose.
+
+Closed:
+
+| change | why it is legitimate and not golden testing |
+|---|---|
+| `expectRelationshipCount { type: imports, from: global, target: string, equals: 1 }` | the fixture's own documented invariant IS a count ("one edge per MODULE") |
+| `expectRelationshipCount { type: imports, from: global, equals: 2 }` | the whole file's contract is two `imports` facts (`vector`, `string`); the quoted include is `part_of` and the `using` is `references` |
+| `script/m14/cpp-mutants.ts` → `cpp/imports-per-occurrence-not-per-module` | the mutant that proves the new counts are load-bearing |
+
+The mutant models the pre-dedupe state faithfully rather than by editing source: `result.imports` is
+the **occurrence** array (it still holds every `#include`), so the transform re-emits each `imports`
+edge once per occurrence. Run:
+
+```
+BB_MUTANT_ONLY="cpp/imports-per-occurrence-not-per-module" bun run script/m14/mutate-analyzer.ts
+→ CAUGHT  cpp/imports-per-occurrence-not-per-module  (0 -> 3 failures;
+          new failures: cpp/imports-include-910, cpp/include-kind-imports, cpp/one-edge-per-pair-959)
+```
+
+`cpp/imports-include-910` is the **first** named failure, which is the attribution that matters: the two
+count rows added here are what fails. The other two are collateral — those fixtures also carry repeated
+includes — and they were already dedupe-sensitive by other means.
+
+**Two inaccuracies in the fixture were corrected while doing this**, because the count forced the prose
+to be checked:
+
+* the `.cpp` comment said a quoted `#include "local.h"` emits `imports`; the pin and the analyzer both
+  emit `part_of` with `meta.isSystem: false` and the part's **module symbol** as target. The comment was
+  stale from before the target moved off the checkout-dependent path — corrected to `part_of`.
+* the rationale and the `expectImports` note both said "three `#include <string>` lines"; the file has
+  **two**. Corrected to two in both places. (The `expectImports` note's *contract* — "the ARRAY keeps
+  every occurrence while the GRAPH keeps one edge" — is right and is now demonstrated by the mutant
+  above.)
+
+**Runner gap this exposed, for the master-owned file.** `expectImports` is a ">=1 match" matcher with
+**no count variant** (unlike `expectRelationships`/`expectRelationshipCount`), so the occurrence
+multiplicity that the note describes — two `<string>` lines ⇒ **two** `result.imports` entries — cannot
+be pinned by any fixture assertion. The graph-side de-dupe is now pinned; the array-side multiplicity
+is not, and cannot be without a runner change.

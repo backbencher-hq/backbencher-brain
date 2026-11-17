@@ -291,4 +291,31 @@ export const CPP_MUTANTS: Mutant[] = [
       }
     },
   },
+  {
+    id: "cpp/imports-per-occurrence-not-per-module",
+    language: "cpp",
+    defectClass: "duplicate-emission",
+    description:
+      "D3 ON THE `imports` KIND: one edge per OCCURRENCE (per `#include` line) instead of one edge per MODULE. This is the pre-dedupe state the `referencesSeen` / `depKey(type, target)` guard in real-cpp-analyzer.ts exists to prevent, and it is the mutation that proves the guard is load-bearing. Two facts make it a faithful model rather than an arbitrary edit: (1) `result.imports` is the OCCURRENCE array and still carries every `#include` (the analyzer emits it separately from the graph, which is the documented contract 'the ARRAY keeps every occurrence, the GRAPH keeps one edge'); (2) cpp/imports-include-910 includes `<string>` TWICE, so a per-occurrence emission produces two `imports -> string` rows where the contract requires exactly one. The fixture pins that with `expectRelationshipCount { equals: 1 }` — an assertion that did not exist before this mutant: every relationship row in that file was an `expectRelationships` '>=1 match', which a duplicate satisfies, so the de-dupe was documented in prose and enforced by nothing. Caught-by names the fixture rather than the class for that reason.",
+    caughtBy: "cpp/imports-include-910",
+    transform: (r) => {
+      // How many times each module is #included in THIS file, from the occurrence array.
+      const occurrences = new Map<string, number>()
+      for (const imp of r?.imports ?? []) {
+        const m = String((imp as any)?.module ?? "")
+        if (m) occurrences.set(m, (occurrences.get(m) ?? 0) + 1)
+      }
+      const rels: any[] = []
+      for (const x of r?.relationships ?? []) {
+        if (x?.type !== "imports") {
+          rels.push(x)
+          continue
+        }
+        // Emit the edge once per OCCURRENCE: the duplicate-injection under test.
+        const n = occurrences.get(String(x?.target ?? "")) ?? 1
+        for (let i = 0; i < Math.max(1, n); i++) rels.push(x)
+      }
+      return { ...r, relationships: rels }
+    },
+  },
 ]

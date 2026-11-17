@@ -15,7 +15,12 @@
 // the defect the family keeps re-making:
 //
 //   1. `#include <vector>`   -> `imports`, one edge per MODULE (D3)
-//   2. `#include "local.h"`  -> `imports`, quoted, not a system include
+//   2. `#include "local.h"`  -> `part_of`, `meta.isSystem: false`, the part's MODULE
+//      SYMBOL (the file stem). NOT `imports`: a quoted include is a part-of-project
+//      fact, and the pin was moved to `part_of` when the target became the stem
+//      rather than a checkout-dependent path (see the expectation's note). This
+//      comment said `imports` until it was corrected against the measurement;
+//      the pin and the analyzer had disagreed with the prose.
 //   3. `using std::vector;`  -> `references`, a DIFFERENT fact: the source names
 //      a namespace and brings its names into scope; it is not a file-level
 //      dependency on a header, and an include dependency and a using-dependency
@@ -23,6 +28,12 @@
 //
 // `module` and `fileLevel` are the metadata `parallel-indexer.ts` reads to know
 // which FILE a symbol-less dependency row belongs to, so both are pinned.
+//
+// D3 IS PINNED BY COUNT IN THE EXPECTATION, not only by existence. There are TWO
+// `#include <string>` lines below and they must produce exactly ONE `imports` edge
+// whose target is `string`. An `expectRelationships` row cannot test that — it is a
+// ">=1 match" predicate, so a de-duplicated fix regressing into one edge per LINE
+// would satisfy it. That is what `expectRelationshipCount { equals: 1 }` is for.
 
 #include <vector>  // vector
 
@@ -32,6 +43,8 @@
 #include <string>
 
 using std::vector;
+
+
 
 struct Holder {
   std::vector<int> items;
