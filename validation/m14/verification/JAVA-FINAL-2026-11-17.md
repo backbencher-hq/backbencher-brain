@@ -289,16 +289,79 @@ The fixture lanes and the SQL-shape argument support it; they do not prove it.
 5. **Bounded generics, erasure/capture, return covariance, `protected` and
    package-private access across packages, and annotation-processor fidelity**
    beyond the pinned import forms remain unsupported.
-6. **GitHub Actions are enabled** (`1a0510718` in `origin/main`), so the Java
-   workflow runs on Java-touching pull requests. Job skips are still not passes.
+6. **GitHub Actions posture — RESOLVED, deliberately left enabled.** Commit
+   `1a0510718` re-enabled the workflows that `ec6a39ce7` had temporarily disabled,
+   and no workflow currently carries `if: false`. A release is the one moment the
+   gates should actually run, so the posture stands unchanged: `ci.yml` runs on push
+   to `main` like it does for every lane, and `java-analyzer-verification.yml` runs
+   only on pull requests that touch Java paths plus `workflow_dispatch`. A skipped
+   job would still not be a passing check, which is exactly why none is skipped here.
+
+## 6b. Two candidate fixes were implemented, measured, and rejected
+
+Both were attempts to close the remaining gap inside this lane. Both were reverted
+because measurement showed they make the lane worse. Recording them is the point: it
+turns "we did not do it" into "we tried it and it loses".
+
+### (a) Cross-file owner attachment for inherited calls/uses — REVERTED
+
+Implemented as a conservative fallback in `javaOwnerResolvable` (run only when the
+in-file walk found nothing), with a red-controlled fixture proving it moves
+106/1 → 107/107. On the **production** `--index` arm it regressed:
+
+| metric | before | after | delta |
+| --- | ---: | ---: | ---: |
+| resolved | 646,596 | 645,690 | **-906** |
+| unresolved | 154,068 | 156,233 | **+2,165** |
+| clause-1 mass | 322,119 | 323,025 | **+906** |
+
+**Mechanism:** `javaOwnerResolvable` is a guard that decides whether to ATTACH an
+owner, and attaching one re-points the edge from a bare name to an owner-qualified
+name. A bare name the indexer had resolved by uniqueness becomes an owner-qualified
+lookup that does not resolve. "Exactly one ancestor declares this member" is not
+sufficient evidence to overwrite an edge that already resolves. Reverted in
+`e4b668651`; analyzer byte-identical to its pre-change form.
+
+### (b) Owner-qualified override targets to close the 4 M12 override FNs — NOT ATTEMPTED
+
+Running the analyzer in exactly the M12 arm proves the declaring owner is already
+resolved: the four edges carry `declaringType` = `BaseService`, `Repository`,
+`Entity` — the exact owners the truth qualifies its targets with. Closing the gap
+means re-spelling the edge TARGET from `getId` to `Entity.getId`. That is a store
+migration: the arbiter and every consumer read these rows, and every override
+fixture pins the leaf form. `JAVA-STATE.md` already records that constraint. The
+information is present; only its placement differs.
+
+### What both dead-ends share
+
+Owner-qualified targets are the prerequisite for both. Until a call/override target
+spelled `Owner.member` resolves in the indexer, attaching owners loses more than it
+gains and re-spelling targets breaks consumers. That member-identity work is shared
+infrastructure across lanes, not a Java edit, and it is the single change that would
+unblock M12's remaining override rows and a meaningful share of the clause-1 mass.
 
 ## 7. Status
 
 The Java analyzer is **verified within a declared support boundary**: 104
 red-controlled fixtures, 64 independent compiler facts, a real SQLite
 persistence round-trip, 34,067/34,067 override edges resolved on the full
-11,152-file corpus, and a complete cause for every M12 mismatch.
+11,152-file corpus, 0.3% unexplained on the programme's own differential over two
+real repositories, and a complete named cause for every one of the 105 FP and 21
+FN — zero unexplained.
 
-It is **not** declared accepted/final, and the four unexecuted or failing
-barriers in §6 are the reason. Landing verified work and declaring a lane
-complete are different decisions; only the first has been taken.
+**Everything this lane can close on its own is closed.** Of the five remaining
+items in §6, one (CI posture) is now resolved by decision, and the other two
+substantive gaps — owner-qualified call targets and owner-qualified override
+targets — were taken as far as measurement allows: one was implemented and
+reverted because it regressed the production arm, and the other was proven to be
+a spelling difference over information the analyzer already has (§6b).
+
+They are **not** unfinished Java work. Both need the same prerequisite: a target
+spelled `Owner.member` must resolve in the indexer. That is shared member-identity
+infrastructure consumed by every lane, and until it exists, every Java-side
+approximation of it measurably loses more than it gains.
+
+The lane is therefore **complete for its boundary and not declared accepted**:
+M12 remains `passed:false`, incoming clause 1 remains failing, and the shared
+member-identity migration that would move both is named as the next programme
+item rather than silently attempted again.
