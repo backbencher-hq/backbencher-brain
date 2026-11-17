@@ -15,8 +15,8 @@
     { "name": "Implements", "kind": "class" }
   ],
   "expectRelationships": [
-    { "type": "overrides", "from": "Sub.run", "target": "Base.run", "note": "THE GAIN: no `override` keyword, and the edge exists anyway" },
-    { "type": "overrides", "from": "SubKeyword.run", "target": "Base.run", "note": "with the keyword: exactly one edge — the keyword arm and the structural arm must not both fire" },
+    { "type": "overrides", "from": "Sub.run", "target": "Base.run", "meta.evidenceClass": "structural", "note": "THE GAIN: no `override` keyword, and the edge exists anyway. evidenceClass is STRUCTURAL because the row is emitted only after the base declaration resolves in this file (the lane's 2026-11-17 fix: it read usage_contextual before, though the arm abstains rather than guessing)" },
+    { "type": "overrides", "from": "SubKeyword.run", "target": "Base.run", "meta.evidenceClass": "structural", "note": "with the keyword: exactly one edge — the keyword arm and the structural arm must not both fire" },
     { "type": "overrides", "from": "SubTransitive.run", "target": "Base.run", "note": "transitive through a base that declares nothing itself" },
     { "type": "overrides", "from": "WithField.helper", "target": "Base.helper", "note": "the field `run2` pairs with nothing; a class FIELD is public_field_definition, which the oracle excludes by name" },
     { "type": "overrides", "from": "Implements.handle", "target": "Contract.handle", "note": "CONTROL: the implements path the analyzer already carried is unchanged" },

@@ -4745,7 +4745,15 @@ class TypeScriptAnalysisRunner {
         continue
       }
       if (t === "overrides") {
-        md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
+        // STRUCTURAL UNCONDITIONALLY (the lane's own recorded defect, fixed 2026-11-17). A
+        // structural override row is emitted only after the base declaration RESOLVES IN THIS FILE
+        // (`resolveRelationshipSymbol` + the base method lookup); when the base is not declared
+        // here the arm ABSTAINS rather than emitting a contextual guess. So every emitted row is
+        // read off two declarations, which is the `contains`/`exports` class, and the old
+        // `conf >= 1 ? structural : usage_contextual` ladder therefore labelled a node-derived fact
+        // as contextual for every high-confidence structural row (measured 71/71 on element-plus
+        // resolving rows). Confidence is a separate axis and is unchanged.
+        md.evidenceClass = "structural"
         continue
       }
       if (t === "instantiates") {
