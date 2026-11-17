@@ -1026,3 +1026,50 @@ New compiler-valid negative regression:
 `java/local-builtin-name-shadowing`. The receiver-type model still
 does not constitute full javac name binding across compilation units;
 that remains a documented limitation, not a 100% proof.
+
+
+## 2026-11-17 — Framework and implicit-Object semantic proof (draft PR #1)
+
+The review branch `audit/java-semantic-proof-20261116` adds five M14 Java
+regressions and a dedicated GitHub Actions verification workflow. Source:
+[`validation/m14/verification/JAVA-SEMANTIC-PROOF-2026-11-16.md`](../../validation/m14/verification/JAVA-SEMANTIC-PROOF-2026-11-16.md).
+
+**Executed on GitHub Actions (run 44019069547; reviewed code prior to this
+documentation-only update):** Java M14 **98 pass / 0 fail**; comparison
+against the original analyzer from base `29a579243458490ff23d8de3f7f8f46aad120a43`:
+**93 pass / 5 fail**; independent javac checks 12/12 (generic overrides),
+13/13 (remediation oracle), and 10/10 (new Java semantic oracle); production
+TypeScript typecheck PASS. The red control is essential: five new fixtures
+detect five previously unguarded defect families. This is **not** a full
+repository/corpus accuracy certificate.
+
+### Behaviors now specifically pinned
+
+- `@GetMapping` / `@RequestMapping` / `@FeignClient` must bind through an
+  explicit framework single-type import or their fully qualified name;
+  project-local same-name annotations do not manufacture framework edges.
+  Wildcard imports and classpath-only attribution remain unknown.
+- Spring `RequestMethod.GET` is treated as the named enum constant `GET`,
+  rather than concatenating `RequestMethod` and `GET` into an unknown verb.
+  Array-valued HTTP verb expressions still need fuller modeling.
+- Plain class methods `public String toString()` and `public int hashCode()`
+  recognize their implicit `java.lang.Object` override. Graph sources still
+  use `Owner.method`, while `metadata.declaringType` preserves the canonical
+  JDK owner `java.lang.Object`. This narrow case must not be represented as
+  full Object override inference.
+- Lombok `@Data` no longer synthesizes setters for `final` instance fields
+  or any accessors for `static` fields.
+- Spring Data synthetic method claims do not duplicate declared same-name
+  repository methods. `count()` has `long` return and delete methods `void`
+  where known; generic return types that cannot be substituted remain absent,
+  not invented as `Object`.
+
+### Remaining verification gates
+
+**Not run in this CI job:** the full M12 differential, the complete
+`BB_CORPUS_ROOT` Java incoming gate, and an end-to-end SQLite/indexer
+relationship-identity comparison. The existing Java corpus-gate FAIL recorded
+above remains an open result until a fresh comparable run. Compiler-oracle and
+small-fixture success cannot overwrite that result. The implementation and its
+documentation remain **acceptance pending** until those measurements and the
+normal project CI matrix are reviewed.
