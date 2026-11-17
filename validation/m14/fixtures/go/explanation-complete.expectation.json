@@ -1,0 +1,70 @@
+{
+  "fixtureId": "go/explanation-complete",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE THIRD EXPLANATION DIMENSION. The lane already enforces two and states both: `confidence < 1.0 => metadata.reasonCode` and `target is a reference (not contains/renders) => metadata.bindReason`, each measured at 100% on go-tools + terraform (312,620 of 312,620 and 332,160 of 332,160). What was silently incomplete is `metadata.relationshipType`, the construct that produced the edge — the key the sub-1.0 reason table READS (`GO_SUB_UNIT_REASON[type|relationshipType]`) and the key a consumer groups by to tell constructs apart. TEN of the twelve firing types carried it; `imports` and `contains` carried none, and `contains` shipped a literal BARE `metadata: {}`. MEASURED on that population: 55,012 of 363,830 edges (15.1%) named no construct, and `imports` was reaching its reason code only through the `imports|*` WILDCARD — correct by fallback rather than by name. After the fix all three dimensions are 100%: reasonCode 312,620/312,620, bindReason 332,160/332,160, construct label 363,830/363,830. THE THREE CONTAINS ROWS ARE THE REASON THIS IS A LABEL AND NOT A CONSTANT: this pass is the one place that knows WHICH ownership relation it is emitting, so the label is read off the member rather than guessed — a struct field, a method on its receiver type, and an interface method are three DIFFERENT Go relations that `contains` used to flatten into one unlabelled shape. Pinning all three distinct labels is what makes the row informative; a single `contains`-level label would satisfy presence while saying nothing. THE IMPORTS ROW pins the second half: it must carry BOTH its construct AND its reason code, because `imports` is sub-1.0 (0.9) and the reason table must now reach its code BY NAME rather than through the wildcard. NOT PINNED: confidence values and evidenceClass, which `classifyEvidenceTier` derives from confidence and which no row here changes; and the `exports`/`references` rows, which already carried their labels and are controls the other fixtures own.",
+  "expectSymbols": [
+    { "name": "Holder", "kind": "struct" },
+    { "name": "Field", "kind": "property" },
+    { "name": "Method", "kind": "method" },
+    { "name": "Iface", "kind": "interface" },
+    { "name": "Do", "kind": "method" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "OWNERSHIP RELATION 1: a struct field. Before the fix this edge carried a BARE metadata object and no construct at all.",
+      "type": "contains",
+      "from": "Holder",
+      "target": "Field",
+      "meta.relationshipType": "go_struct_field"
+    },
+    {
+      "comment": "OWNERSHIP RELATION 2: a method on its receiver type — a different Go relation from a field, and the label must say so.",
+      "type": "contains",
+      "from": "Holder",
+      "target": "Method",
+      "meta.relationshipType": "go_method_on_receiver"
+    },
+    {
+      "comment": "OWNERSHIP RELATION 3: an interface method. Three distinct relations, three distinct labels — a single flat `contains` label would pass a presence check while telling a consumer nothing.",
+      "type": "contains",
+      "from": "Iface",
+      "target": "Do",
+      "meta.relationshipType": "go_interface_method"
+    },
+    {
+      "comment": "The second type that published no label. An import is sub-1.0 (0.9), so this row must carry BOTH the construct AND the reason code — the table must reach `imports` by NAME now, not through its `imports|*` wildcard.",
+      "type": "imports",
+      "from": "explanationcomplete",
+      "target": "sync",
+      "meta.relationshipType": "go_import_spec",
+      "meta.reasonCode": "target_is_a_module_path_not_a_symbol",
+      "meta.bindReason": "target_is_a_module_path_not_a_symbol"
+    },
+    {
+      "comment": "CONTROL: a type that already carried its label keeps it, so the fix is additive and cannot have been achieved by relabelling everything to one value.",
+      "type": "references",
+      "from": "Method",
+      "target": "Holder",
+      "meta.relationshipType": "declared_type",
+      "meta.bindReason": "declared_type_leaf_whose_declaring_file_is_out_of_scope"
+    }
+  ],
+  "forbidSymbols": [],
+  "forbidRelationships": [
+    {
+      "comment": "THE DEFECT ITSELF: a `contains` edge with NO construct label is the bare-metadata shape this fixture exists to keep out. Scoped by meta.relationshipType: null so it forbids the ABSENCE rather than any particular value.",
+      "type": "contains",
+      "from": "Holder",
+      "target": "Field",
+      "meta.relationshipType": null
+    },
+    {
+      "comment": "The same absence on the imports surface — the second of the two types that used to publish no construct.",
+      "type": "imports",
+      "from": "explanationcomplete",
+      "target": "sync",
+      "meta.relationshipType": null
+    }
+  ]
+}

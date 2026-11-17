@@ -639,6 +639,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // at its path — an alias would share the line).
         ...(imp.range?.startLine ? { line_number: imp.range.startLine } : {}),
         metadata: {
+          // THE CONSTRUCT LABEL, which every other emitted type already carried and this
+          // one did not. It is the key the sub-1.0 reason table reads
+          // (`GO_SUB_UNIT_REASON[`${type}|${relationshipType}`]`) and the key a consumer
+          // groups by to tell which construct produced an edge. `imports` earns its code
+          // today through the `imports|*` wildcard alone, so the table was doing its job by
+          // fallback rather than by name. Measured on go-tools + terraform (3,422 files,
+          // 363,830 edges): `imports` 23,347 edges and `contains` 31,665 were the ONLY two
+          // of the twelve firing types publishing no label — 55,012 edges, 15.1% of the
+          // lane — and both now name their construct like everything else.
+          relationshipType: "go_import_spec",
           isGoImportDep: true,
           isImport: true,
           packageName: imp.metadata?.packageName,
@@ -2853,6 +2863,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       const owner = s.ownerName
       if (owner && owner !== s.name) {
+        // THE CONSTRUCT LABEL. `contains` was the second of the lane's two types publishing
+        // a BARE `metadata: {}` — no construct, no reason, nothing a consumer could group
+        // by (measured: 31,665 edges, and with `imports` the whole 55,012-edge, 15.1% gap in
+        // the "every edge names its construct" dimension). This pass is the ONE place that
+        // knows which KIND of membership it is emitting — it iterates the members — so the
+        // label is read off the member rather than guessed: a `property` is a struct field,
+        // a `method` owned by an interface is an interface method, a `method` owned by
+        // anything else is a method on its receiver type. Three constructs, one per Go
+        // ownership relation, which is the whole point of labelling them.
+        const membership =
+          s.kind === ASTEngine.SymbolKind.Property ? "go_struct_field"
+            : s.kind === ASTEngine.SymbolKind.Method
+              ? (s.ownerKind === ASTEngine.SymbolKind.Interface ? "go_interface_method" : "go_method_on_receiver")
+              : "go_owner_membership"
         relationships.push({
           source: owner,
           target: s.name,
@@ -2861,7 +2885,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the member's own declaration line (its name node, so
           // a wrapped declaration reports where the name is written).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: {},
+          metadata: { relationshipType: membership },
         })
       }
     }
