@@ -819,6 +819,100 @@ should hold the source text and does not. Changing it would have been the obviou
 would have broken a pin and a mutant that both encode the intended contract. The fixture caught it
 before the analyzer did, which is the order that matters.
 
+## Round 12 (2026-11-16): the five-front sweep before release — symbols, coverage, resolution, explanation, rulings
+
+This is the last pass before the release, so it was run as a CHECKLIST rather than as
+opportunistic hunting: for each front, state the invariant, measure it over a real corpus, fix what
+fails, pin the fix, and re-measure. Population throughout: go-tools + terraform, 3,422 files,
+58,470 symbols, 363,830 relationships, `testdata/` excluded.
+
+### Front 1 — SYMBOL EXTRACTION
+
+| invariant | measured |
+| --- | --- |
+| every symbol's range is a real slice containing its own name | **0 bad of 58,470** |
+| every Go type-declaration form maps to the right kind | **11/11** (`type Num int`, alias, struct, interface, func, chan, map, array, slice, pointer, generic) |
+| `init` distinguished from ordinary functions | **yes** (`metadata.isInit`) |
+| multi-name declarations emit one symbol per name | **yes** (`var a, b T`, `A, B int` fields) |
+| no member lacks its `contains` edge | **0 missing of 31,646** |
+| no duplicate package-scope declaration | **0** (see the two defects below) |
+| every declared field name reaches a symbol | **0 missing** on the two worst files (tsprotocol.go: 391/391; macho.go: 99/99) |
+
+**Two defects found and fixed.**
+
+1. An embedded interface was published as a **duplicate declaration symbol**. `go/embedding-halves.go`
+   declares `Reader` and embeds it in `ReadCloser`, so the list held `interface Reader` TWICE —
+   same name, same kind, separable only by a metadata key. Fixed by dropping the embedded row only
+   when a same-file declaration of that name exists; an EXTERNAL embed (`io.Closer`, `comparable`)
+   keeps its representative row, which `go/round5-surfaces` rules correct. **−19 symbols, and ZERO
+   relationships moved** — the check that makes it a symbol-only fix.
+
+2. A **function-local type carried no scope label**. Two functions may each declare
+   `type localState struct{}` — legal Go, different scopes — and both rows read as package scope,
+   so the file appeared to declare `localState` twice. **14 apparent duplicates → 1**, and that 1 is
+   four legal `func _()`. Fixed with `metadata.isLocalDeclaration`, the FLEET's spelling (clean's
+   analyzer carries the same key), strictly additive.
+
+### Front 2 — RELATIONSHIP COVERAGE
+
+12 of 14 canonical types fire. The 2 silent ones are `decorates` and `part_of`, both **ontological**
+(language-level absence), re-filed from `grammar-absence` in round 10 so neither can be misread as a
+grammar gap. **0 types are grammar-blocked.** GO-GAP-1's grammar gap was closed in round 10 by
+pinning upstream `e395081`.
+
+### Front 3 — INCOMING AND OUTGOING RESOLUTION
+
+| invariant | measured |
+| --- | --- |
+| a target's leaf is written at or near its own line | 295,703 checked, **514 exceptions, all `declared_type`** — and all 514 are GO39's inherited const types, where the type is *deliberately* not on the member's line |
+| `implements` targets a declared interface | **404/404** |
+| `extends` targets a declared interface | **86/86** |
+| `contains` source is a real owner | 1,101 name a SIBLING-file owner — GO44's documented, correct case |
+| self-loops are leaf collisions, not wrong edges | 2,774; disambiguation raised 75.74% → **86.59%** in round 11 |
+
+**A methodology error worth recording**: the first `implements` check reported 122 "targets that are
+not interfaces". It was the PROBE — a last-wins name→kind map, where `node` is both an interface and
+a field, so the field overwrote the interface. Checking "does ANY symbol with this name have kind
+interface" returned 0 defects. The analyzer was right and the instrument was wrong, which is the
+direction that wastes a round if it is not caught.
+
+### Front 4 — EVERY RELATIONSHIP EXPLAINED
+
+| dimension | before | after |
+| --- | --- | --- |
+| `reasonCode` on confidence < 1.0 | 100% (312,620/312,620) | 100% |
+| `bindReason` on reference targets | 100% (332,160/332,160) | 100% |
+| `relationshipType` construct label | 308,818/363,830 (84.9%) | **363,830/363,830 (100%)** |
+
+**Two defects fixed.** `imports` and `contains` published no construct label at all — `contains`
+shipped a literal bare `metadata: {}` — for 55,012 edges (15.1%), and `imports` reached its reason
+code only through the `imports|*` wildcard. `contains` now names three DISTINCT ownership relations
+(`go_struct_field`, `go_method_on_receiver`, `go_interface_method`) because that pass is the one
+place that knows which relation it is emitting.
+
+And the sharper one: **981 edges carried a reason code that was present and FALSE.** A type-parameter
+reference was explained as `declared_type_leaf_whose_declaring_file_is_out_of_scope`, but `Pair`'s
+`K` is declared in the `type_parameter_list` on that very line. They now carry
+`type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol` — stating both that the
+declaration IS here and that it is scoped, hence not a symbol. 100% coverage had certified a lie,
+which is why "every edge explains itself" is a weaker claim than "every explanation is true".
+
+### Front 5 — RULED ITEMS JUSTIFIED
+
+Both exclusions are language-level and registered as `ontological`: `decorates` (Go has no applied
+callable; annotation forms are passive metadata) and `part_of` (no `part`/`include` directive;
+`//go:embed` includes bytes — 0 source inclusions). **Nothing is ruled because the grammar cannot
+parse it.**
+
+### What genuinely remains
+
+`GO-GAP-3` (receiver `func (T) NoName()` vs `func (s) Untyped()` — identical trees, 1,203 `contains`
+edges resting on one reading) is **architecturally blocked for this lane**: `analyze()` is per-file,
+`AnalyzeContext` carries a project index but the CALLER populates it, and GO44 proves a file-local
+test would delete 1,251 legitimate sibling-file owners to fix 1,203 that cannot compile. It needs a
+new `AnalyzeContext` field built by the shared indexer — a fleet-level change, not a Go-lane commit.
+`GO-GAP-2`'s 4 EXTRA `uses` rows are an analyzer superset on `testdata/` fixtures, not hidden reads.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/go/`
