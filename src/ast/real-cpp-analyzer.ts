@@ -5337,6 +5337,16 @@ const declaredReturnType = (node: Node | null, declarator: Node | null): string 
               // The membership test and its justification are `isCppSpelledName`
               // (exported: the F5 oracle applies the same rule, never a copy).
               if (t === "identifier" && !isCppSpelledName(cur.text)) return null
+              // W8 (D7 wall ledger, CLOSED 2026-11-17). A call whose callee spells a NON-CLASS
+              // STANDARD TYPE is a FUNCTIONAL CAST, not a call: [cstdint]/[cstddef] guarantee those
+              // names denote integer/value types, so no function can carry them and the edge has no
+              // reading. The `instantiates` path has held this exact guard since `new uint8_t[5]`
+              // published `instantiates -> uint8_t`; the calls path never consulted the set, and the
+              // D1 keyword funnel cannot see the class because `size_t x;` is a legal declaration.
+              // MEASURED: 4 residual `calls` rows over the reconstruction corpus's 7,778 files — the
+              // whole of wall W8 (Rcpp `(int_fast32_t)(…)`, duckdb `std::int32_t(…)`/`std::int64_t(…)`,
+              // nlohmann `std::uint64_t(0)`). Pinned by fixture cpp/typedef-functional-cast.
+              if (CPP_NON_CLASS_STANDARD_TYPES.has(cur.text)) return null
               return cur
             }
             return null

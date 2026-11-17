@@ -25,6 +25,9 @@
  * were closed.
  */
 import type { Mutant } from "./mutate-analyzer"
+// The set the W8 guard reads. A mutant that re-adds the defect must name the SAME spellings the
+// analyzer's own exported set names — a copy here would drift the moment the set grows.
+import { CPP_NON_CLASS_STANDARD_TYPES } from "../../src/ast/real-cpp-analyzer"
 
 /** The owner each published symbol name has, from the analyzer's OWN result. */
 const ownersOf = (r: any): Map<string, Set<string>> => {
@@ -423,6 +426,25 @@ export const CPP_MUTANTS: Mutant[] = [
         return x
       }
       return { ...r, relationships: (r?.relationships ?? []).map(claim) }
+    },
+  },
+  {
+    id: "cpp/standard-typedef-cast-call",
+    language: "cpp",
+    defectClass: "fabricated-call",
+    description:
+      "WALL W8, RE-ADDED. The calls path declines a callee that spells a NON-CLASS STANDARD TYPE because such a spelling is a functional cast, not a call ([cstdint]/[cstddef] guarantee the name denotes a value type; the `instantiates` path has held the same guard since `new uint8_t[5]`). This mutant re-injects the pre-fix payload: for every standard-typedef spelling the SOURCE writes in call/cast position (`std::uint64_t(0)`, `int_fast32_t(v * 2)`, `(int32_t)(x)`, `size_t(4)`), it appends a `calls` row from `global` with that typedef as the target. It is a payload-level model of the emission the guard removes — the analyzer rows are gone, so the only way to keep the forbidden class testable is to inject it. Caught by cpp/typedef-functional-cast, whose four forbid rows pin one shape each plus the real-call control that any over-broad guard would lose. MEASURED motivation: these are exactly the 4 rows of wall W8 on the reconstruction corpus (Rcpp, duckdb, nlohmann-json).",
+    caughtBy: "cpp/typedef-functional-cast",
+    transform: (r, source) => {
+      const src = String(source ?? "")
+      const injected: any[] = []
+      for (const name of CPP_NON_CLASS_STANDARD_TYPES) {
+        // the four SPELLINGS a cast can take: `T(`, `std::T(`, `(T)`, `(T)(`
+        if (src.includes(`${name}(`) || src.includes(`(${name})`)) {
+          injected.push({ source: "global", target: name, fromSymbol: "global", toSymbol: name, type: "calls", confidence: 1, line_number: 1, metadata: { line: 1 } })
+        }
+      }
+      return { ...r, relationships: [...(r?.relationships ?? []), ...injected] }
     },
   },
 ]

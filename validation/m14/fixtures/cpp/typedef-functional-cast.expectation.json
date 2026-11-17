@@ -1,0 +1,47 @@
+{
+  "fixtureId": "cpp/typedef-functional-cast",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A STANDARD TYPEDEF IS A TYPE, NOT A CALLEE. `int32_t(x)`, `std::uint64_t(0)`, `int_fast32_t(v * 2)` and `size_t(4)` are functional casts, and `(int32_t)(x)` is a C-style cast: [cstdint]/[cstddef] guarantee these names denote integer/value types, so no function can carry them and a `calls` edge naming one is a FABRICATION with no reading. The analyzer ALREADY holds this rule on the `instantiates` path (`CPP_NON_CLASS_STANDARD_TYPES`, measured on `new uint8_t[5]` → `instantiates -> uint8_t`), but the calls path never consulted it, and the D1 keyword funnel cannot see the class because `size_t x;` is a legal declaration. MEASURED on the reconstruction corpus: exactly 4 residual `calls` rows over 7,778 files, one per shape here — Rcpp/src/date.cpp:1290 `(int_fast32_t)(...)`, duckdb/third_party/ska_sort/ska_sort.hpp:119 `std::int32_t(...)`/`:129 std::int64_t(...)`, nlohmann-json/docs/mkdocs/docs/examples/value__return_type.cpp:12 `std::uint64_t(0)`. These are the whole of wall W8 ('non-class-standard-type', 4 rows), which the D7 ledger carried as an INSTRUMENT GAP on both corpora — so this fixture closes a wall rather than only a row. THE CONTROL IS THE LAST LINE: `helper()` is a real function and its `calls` edge must survive any guard aimed at type spellings.",
+  "expectSymbols": [
+    { "name": "take_int32", "kind": "function", "note": "the C-style-cast shape's enclosing function." },
+    { "name": "take_uint64", "kind": "function", "note": "the qualified functional-cast shape." },
+    { "name": "take_fast", "kind": "function", "note": "the unqualified functional cast of a <cstdint> fast variant." },
+    { "name": "take_size", "kind": "function", "note": "the <cstddef> shape." },
+    { "name": "helper", "kind": "function", "note": "the real callee the control needs." }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "real_call",
+      "target": "helper",
+      "line_number": 26,
+      "note": "THE CONTROL: an ordinary function call emits its `calls` edge. A guard keyed on the callee SPELLING rather than its NODE KIND would have to keep this row, because `helper` is not a standard typedef."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "target": "int32_t",
+      "note": "THE DEFECT, C-style cast: `(int32_t)(x)` is a cast expression, not a call. It must emit no `calls` edge in either spelling (`int32_t` or `std::int32_t` reduces to this leaf)."
+    },
+    {
+      "type": "calls",
+      "target": "uint64_t",
+      "note": "THE DEFECT, qualified functional cast: `std::uint64_t(0)` constructs a value of a standard integer type; no function is named here."
+    },
+    {
+      "type": "calls",
+      "target": "int_fast32_t",
+      "note": "THE DEFECT, unqualified functional cast: the `_fast` variants have the same language guarantee as the exact-width ones."
+    },
+    {
+      "type": "calls",
+      "target": "size_t",
+      "note": "THE DEFECT, <cstddef>: `size_t(4)` is a functional cast. It is also the reason the D1 keyword funnel cannot close the class — `size_t x;` is legal, so the name is not a keyword."
+    }
+  ],
+  "expectRelationshipCount": [
+    { "type": "calls", "from": "real_call", "target": "helper", "equals": 1 }
+  ]
+}
