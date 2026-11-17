@@ -9,7 +9,7 @@ Nothing is copied from another environment, and nothing is inferred.
 | Gate | Command | Result |
 | --- | --- | --- |
 | Production typecheck | `npm run typecheck` | **exit 0** |
-| M14 Java fixtures | `bun run script/m14/run-fixtures.ts --lang java` | **104 / 104 pass, 0 fail** |
+| M14 Java fixtures | `bun run script/m14/run-fixtures.ts --lang java` | **107 / 107 pass, 0 fail** |
 | Red control (analyzer at `29a579243`) | same, after reverting the analyzer | **94 pass / 10 fail** — exactly the ten named fixtures |
 | Method-generic oracle | `java -cp … JavaMethodGenericOverrideOracle` | **12 / 12** |
 | Remediation oracle | `java -cp … JavaAnalyzerRemediationOracle` | **13 / 13** |
@@ -22,6 +22,41 @@ Nothing is copied from another environment, and nothing is inferred.
 
 **64 independent javac facts** across the four oracles. The compiler, not the
 analyzer, is the authority for each of them.
+
+## 1b. Cross-file ancestry — the deferred instrument, now implemented
+
+`javaOwnerResolvable` walked only the FILE's own scopes. When a parent was declared
+in another file it consulted that parent's DIRECT members and stopped, so a member
+inherited two or more levels up through a cross-file parent was refused. A comment
+above the function recorded that the project index had carried `typeBases` since
+2026-10-20 and that using it was "a separate instrument, not a lane's unilateral
+change". That decision has now been taken.
+
+**The safety property is structural, not argued.** The new project-ancestry walk
+runs only when the in-file walk found nothing (`hits === 0`). A row that resolves
+today therefore cannot start resolving somewhere else, so the change cannot take a
+decision away from any file. It can only turn a `missing` into a `resolved`, and it
+keeps the same "exactly one declaration" rule: two declarations across the chain
+still decline. Visited-set bounded, depth-capped at 12, and gated on
+`projectIndex.complete === true`.
+
+### Red control
+
+New fixture `java/inherited-chain/` — `Use extends Middle extends Base`, where
+`Middle` declares nothing and `Base` (another file) declares `inherited()`. The
+level-3 file calls `inherited()`, which is two hops up across a file boundary.
+
+| analyzer | result |
+| --- | --- |
+| without the fallback (committed `HEAD`) | **106 pass / 1 fail — `java/inherited-chain/Use`** |
+| with the fallback | **107 / 107** |
+
+A negative control is included: `notInherited()` is declared nowhere and is
+forbidden from appearing, so the fallback cannot manufacture a resolution.
+
+**This instrument is inert without a complete project index**, which is why the
+`--index`-less corpus arm is byte-identical before and after. It acts only on the
+production arm, where the indexer supplies one.
 
 ## 2. M12 differential — fully adjudicated, still failing
 
@@ -132,6 +167,12 @@ lane has no `overrides` oracle, so analyzer override rows enter with no truth to
 meet and are reported as a declared ruling rather than counted as fabrications.
 
 ## 3. Real corpus — whole population, no sampling
+
+> **Which arm this is.** The numbers in this section are the `--index`-LESS arm:
+> the gate parses every file but supplies no project index, so the analyzer's
+> cross-file instrument is inert here by construction. The production arm
+> (`--index`, which is what the indexer actually supplies) is measured separately
+> and reported below it.
 
 ```
 BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories \

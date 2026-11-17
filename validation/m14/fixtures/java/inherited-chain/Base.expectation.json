@@ -1,0 +1,16 @@
+{
+  "fixtureId": "java/inherited-chain/Base",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Level 1 of the chain: declares the inherited member that the level-3 fixture must reach through the project's ancestry.",
+  "expectSymbols": [
+    {
+      "name": "Base",
+      "kind": "class"
+    },
+    {
+      "name": "inherited",
+      "kind": "method"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "fixtureId": "java/inherited-chain/Use",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "CROSS-FILE ANCESTRY, TWO HOPS UP (java lane, 2026-11-17). This fixture lives in a sub-directory, so the runner gives it a real project index (JAVA_DECLARATION_SPEC, complete=true). `Use` calls `inherited()`, declared by `Base` - its grandparent, in another file; the direct parent `Middle` declares nothing. The owner channel's in-file walk reads `index.typeScopesByName`, so it sees `Use`'s parents, finds `Middle` among the project's members with no `inherited`, and previously STOPPED there: a member inherited two or more levels up through a cross-file parent was refused (`missing`, never wrong). The analyzer now falls back to the project's own ancestry (`projectIndex.typeBases`) ONLY when the in-file walk found nothing, so no row that resolved before can change, and it still requires EXACTLY ONE declaration across the chain. NEGATIVE CONTROL: `notInherited()` is declared nowhere, so it must not appear - the fallback must not manufacture a resolution.",
+  "expectSymbols": [
+    {
+      "name": "Use",
+      "kind": "class"
+    },
+    {
+      "name": "run",
+      "kind": "method"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "inherited",
+      "meta.owner": "Use",
+      "meta.ownerEvidence": "this"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "source": "run",
+      "target": "notInherited",
+      "comment": "declared nowhere: the cross-file fallback must not invent a resolution"
+    }
+  ]
+}
