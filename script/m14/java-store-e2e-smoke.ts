@@ -140,8 +140,16 @@ try {
     const dependencies = result.fileLevel?.dependencies ?? []
     assertThat(dependencies.some((e: any) => e.moduleSpecifier === imported),
       `real bb/graph usages must include ${file} -> ${imported}; got ${JSON.stringify(dependencies)}`)
+    // Unlike the assertion above, this call uses the actual graphTraversal
+    // implementation rather than a controlled traversal payload.
+    const liveResult: any = await handleGraphRequest(db, projectId,
+      { schemaVersion: GRAPH_SCHEMA_VERSION, symbol: name, mode: "usages" })
+    const liveDependencies = liveResult.fileLevel?.dependencies ?? []
+    assertThat(liveDependencies.some((e: any) => e.moduleSpecifier === imported),
+      `real traversal + graph usages lost local import ${file} -> ${imported}; ${JSON.stringify(liveDependencies)}`)
+
   }
-  console.log(`JAVA_SQLITE_E2E_PASS: 4/4 import channel rows, 2/2 file-level dependencies and ${ids.length} overloaded/cross-file declarations stored; live graph usages answered both project-local imports`)
+  console.log(`JAVA_SQLITE_E2E_PASS: 4/4 import channel rows, 2/2 file-level dependencies and ${ids.length} overloaded/cross-file declarations stored; real traversal and graph usages answered both project-local imports`)
 } finally {
   rmSync(root, { recursive: true, force: true })
 }
