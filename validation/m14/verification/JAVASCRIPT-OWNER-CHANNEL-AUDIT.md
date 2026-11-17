@@ -142,9 +142,18 @@ moves it, it does not add a pass.
 The 499 `extends` rows in consul that still carry nothing are bases that are NOT imports — Ember
 globals (`Route`, `Component`) — which is the correct answer, not a gap.
 
-**This is what "0 resolved" for `mixes_in` actually needed.** All 81 measured `mixes_in` targets are
-imported mixins, and the only channel by which the store can follow an import is
-`metadata.importedBinding`. It is now populated on **81 / 81**.
+**What this does and does NOT fix — corrected after checking the consumer, because the first
+statement of this paragraph was an overclaim.** All 81 measured `mixes_in` targets are imported
+mixins. `metadata.importedBinding` is consumed by the **inbound-gate arbiter**
+(`script/m14/incoming-gate.ts`, `classifyEdge` kind `importedBinding`), which verifies the claim
+against the run's OWN import evidence — so before this fix an imported mixin target was a bare name
+indistinguishable from a fabricated one, and now it is a **verifiable claim** on 81 / 81 rows.
+
+It does **not** make the store resolve them. `member-owner-resolution.ts` and `parallel-indexer.ts`
+have no `mixes_in` handling at all and do not read `importedBinding`; that is a resolution RULE, and
+adding one is a store-side, all-lane decision of the same class as the name-ranking bind above. So
+"0 resolved" is still true at the store, and the honest statement of this fix is: **the claim is now
+present and checkable; resolution is still a store question.**
 
 ## What the store does with an owner claim, and the one thing still open
 
