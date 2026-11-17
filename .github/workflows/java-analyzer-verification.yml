@@ -116,6 +116,8 @@ jobs:
           assert not result["passing"]["passed"], "M12 known deficiencies unexpectedly reported passing"
           print("M12 Java unchanged from known failing baseline, NOT fully passing:", measured)
           PY
+      - name: Classify Java M12 identity and oracle coverage differences without changing truth
+        run: bun script/m14/java-m12-mismatch-census.ts | tee java-m12-census.log
       - name: Upload Java gate logs for independent review
         if: always()
         uses: actions/upload-artifact@v4
@@ -124,6 +126,7 @@ jobs:
           path: |
             java-fixtures.log
             m12-java.log
+            java-m12-census.log
             validation/m12/results/java-differential.json
           if-no-files-found: warn
       - name: Independently compiled Java oracle facts
