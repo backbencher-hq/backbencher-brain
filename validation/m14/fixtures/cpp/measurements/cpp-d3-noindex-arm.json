@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "instrument": "script/cpp-audit/cpp-d3-arm-artifacts.ts",
+  "command": "BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump",
+  "population": {
+    "parsed": 7778,
+    "admitted": 7778,
+    "repos": 18,
+    "failed": 0,
+    "degraded": 0
+  },
+  "table1": [
+    "TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):",
+    "type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL",
+    "----------------------------------------------------------------------------------------------------------------------------------------------------",
+    "calls         738609   241197    0         273246     105028     212447      11719   0       0        0        0       0         0        0",
+    "uses          115385   61473     0         31893      14294      22019       0       0       0        0        0       0         0        0",
+    "contains      151481   151481    102476    0          0          0           0       0       0        0        0       0         0        0",
+    "imports       10801    241       0         636        333        9924        0       0       0        0        0       0         0        0",
+    "references    1560     286       0         380        246        894         0       0       0        0        0       0         0        0",
+    "exports       977      691       0         0          0          286         0       0       0        0        0       0         0        0",
+    "extends       3717     2505      0         462        197        750         0       0       0        0        0       0         0        0",
+    "implements    270      270       0         0          0          0           0       0       0        0        0       0         0        0",
+    "overrides     1692     1645      0         47         39         0           0       0       0        0        0       0         0        0",
+    "instantiates  1695     638       0         167        133        890         0       0       0        0        0       0         0        0",
+    "decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+    "renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+    "mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0",
+    "part_of       35207    3255      0         6606       2109       25346       0       0       0        0        0       0         0        0",
+    "---------------------------------------------------------------------------------------------",
+    "TOTAL         1061394  463682    102476    313437     122379     272556      11719   0       0        0        0       0         0        0"
+  ],
+  "sourceReport": "validation/cpp-audit/whole-population/gate-cpp-extension-only.postw8.txt"
+}

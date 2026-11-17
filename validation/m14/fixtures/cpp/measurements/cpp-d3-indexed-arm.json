@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "instrument": "script/cpp-audit/cpp-d3-arm-artifacts.ts",
+  "command": "BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --index --json",
+  "population": {
+    "sampled": 7778,
+    "parsed": 7778,
+    "failed": 0,
+    "corpusTotal": 7778,
+    "repos": 18,
+    "degraded": 0,
+    "degradedFiles": [],
+    "qualifiedNameAliases": 171031,
+    "excluded": {
+      "absent": 0,
+      "overCap": 7,
+      "overCapLargest": 5568700,
+      "sizeCapBytes": 1048576
+    }
+  },
+  "table1": null,
+  "totals": {
+    "resolved": 482743,
+    "resolvedAmongCollision": 102476,
+    "ambiguousByDecl": 272667,
+    "ambiguousByKind": 112307,
+    "unresolved": 294265,
+    "markedExternal": 11719,
+    "externalVerified": 11719,
+    "externalVerifiedByOwner": 11719,
+    "externalVerifiedByProjectFacts": 0,
+    "externalUnverified": 0,
+    "externalRefuted": 0,
+    "bindingVerified": 0,
+    "bindingRefuted": 0,
+    "bindingUnverified": 0,
+    "causeDeclared": 0,
+    "causeRefuted": 0,
+    "ambiguousNames": [],
+    "unresolvedNames": [],
+    "refutedNames": [],
+    "causeNames": [],
+    "namesOmitted": {
+      "ambiguous": 0,
+      "unresolved": 0,
+      "refuted": 0,
+      "cause": 0
+    },
+    "ambiguousWithClaim": {},
+    "resolvedWithClaim": {}
+  },
+  "perType": {
+    "calls": {
+      "edges": 738609
+    },
+    "uses": {
+      "edges": 115385
+    },
+    "contains": {
+      "edges": 151481
+    },
+    "imports": {
+      "edges": 10801
+    },
+    "references": {
+      "edges": 1560
+    },
+    "exports": {
+      "edges": 977
+    },
+    "extends": {
+      "edges": 3717
+    },
+    "implements": {
+      "edges": 270
+    },
+    "overrides": {
+      "edges": 1692
+    },
+    "instantiates": {
+      "edges": 1695
+    },
+    "decorates": {
+      "edges": 0
+    },
+    "renders": {
+      "edges": 0
+    },
+    "mixes_in": {
+      "edges": 0
+    },
+    "part_of": {
+      "edges": 35207
+    }
+  },
+  "sourceJson": "validation/cpp-audit/whole-population/gate-index-default.json"
+}
