@@ -4862,7 +4862,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               // the FIELD identifier's line, not the receiver's —
               // the c lane's receiver-start lesson applied to `a.b`.
               ...(this.nodeLine(field) ? { line_number: this.nodeLine(field)! } : {}),
-              metadata: { relationshipType: "go_selector_use", selectorExpression: key },
+              // `selectorExpression` is the (resolved source . field leaf) PAIR, pinned by
+              // `go/incoming-resolve-outgoing-only` as `Describe.Label` for source text `p.Label`,
+              // so it is deliberately unchanged here. But that pair cannot disambiguate a LEAF
+              // COLLISION, and this pass is where the lane's worst collisions live: measured on
+              // go-tools+terraform (3,422 files) 301 `uses` self-loops carried no field naming the
+              // receiver at all, e.g. `Analyzer uses -> Analyzer` for the source text
+              // `inspect.Analyzer` — the target leaf and the enclosing var simply share a name.
+              // The LITERAL selector text is what tells those apart, so it is published beside the
+              // pair. Additive: no pinned key moves, and a consumer that ignores it is unaffected.
+              metadata: {
+                relationshipType: "go_selector_use",
+                selectorExpression: key,
+                selectorText: node.text,
+              },
             })
           }
         }

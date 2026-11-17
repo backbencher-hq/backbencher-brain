@@ -192,7 +192,9 @@
       "from": "Describe",
       "target": "Label",
       "confidence": 0.7,
-      "meta.selectorExpression": "Describe.Label"
+      "meta.selectorExpression": "Describe.Label",
+      "meta.selectorText": "w.Label",
+      "comment": "A selector read publishes TWO disambiguators and they are different facts. `selectorExpression` is the resolved PAIR (owner . field leaf) = \"Describe.Label\"; `selectorText` is the LITERAL source text at this site = \"w.Label\" (the read is `w.Label` inside Describe; the same pair from Describe2 is text \"p.Label\"). Neither alone distinguishes every leaf collision: the pair collides when a local symbol shares the target name (measured: 305 `references` self-loops are one name on both a method and a type), the text collides when two receivers share a field name. Publishing both lets a consumer pick, and pinning both keeps the two facts from being silently conflated."
     },
     {
       "type": "references",

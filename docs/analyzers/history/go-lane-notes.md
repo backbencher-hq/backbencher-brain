@@ -762,6 +762,63 @@ reading the grammar cannot settle. Go resolves it semantically, so the remedy is
 resolution in the analyzer. Separately, `GO-GAP-2`'s 4 EXTRA `uses` rows are an analyzer superset on
 `testdata/` fixtures, not hidden reads.
 
+**`GO-GAP-3` is ARCHITECTURALLY blocked for this lane, and that is now established rather than
+assumed.** `LanguageAnalyzer.analyze(rootNode, content, filePath, context?)` is a PER-FILE entry
+point; `AnalyzeContext` does carry a project-level companion index (`overrideCompanion`), but it is
+populated by the CALLER — the indexer / differential harness — and the Go analyzer receives no type
+index today. So "does this lone identifier name a type declared in a sibling file of the same
+package" is unanswerable inside the analyzer, and `GO44`'s measurement (1,251 legitimate `contains`
+edges DO name a sibling-file owner) is what forbids guessing: a file-local test would delete every
+one of them to fix 1,203 that cannot compile. The remedy is a new `AnalyzeContext` field built by
+the shared indexer, which is a fleet-level change touching every caller — not a Go-lane commit. It
+stays declared, not hidden.
+
+## Round 11 (2026-11-16): target correctness, self-loops, and the second disambiguator
+
+Rounds 9–10 audited the SOURCE end of every edge. This round audited the other end, which nobody
+had: **is the TARGET the declaration the source actually reaches?**
+
+### Leaf collisions are not defects, but they are only half-explained
+
+Measured on go-tools + terraform (3,422 files): **2,470 edges** (0.68%) carry a target whose name is
+declared more than once in the same file, and **2,774** (0.76%) are outright SELF-LOOPS
+(`source === target`). Neither number is a bug on its own — the lane's contract is that a target is
+a LEAF, so `var Analyzer = &analysis.Analyzer{}` legitimately produces `Analyzer -> Analyzer`, and
+`src/lsp/relations.ts:211` says so in as many words: "self-loops are analyzer artifacts, not usages
+— the collector skips them". That defence is correct and stays.
+
+But "the consumer skips them" is only acceptable while the consumer CAN tell what it is skipping.
+So the audit asked the sharper question — **does each self-loop carry the spelling that
+disambiguates it?** — and the first answer was 75.74% (2,101 of 2,774). The 673 that did not were
+dominated by 301 `uses` rows whose single disambiguator was the (owner . leaf) PAIR:
+`Analyzer uses -> Analyzer` for the source text **`inspect.Analyzer`**. The pair says
+`Analyzer.Analyzer`, which is exactly the collision it was supposed to dissolve.
+
+### The fix: publish the literal selector text beside the pair
+
+`selectorText` now carries `node.text` on every `go_selector_use` row. The two facts are different
+and neither subsumes the other:
+
+- `selectorExpression` = `"Describe.Label"` — the resolved PAIR (owner . field leaf). It pins the
+  OWNER, and it is unchanged (it is pinned by `go/incoming-resolve-outgoing-only` as
+  `Describe.Label` and by a mutant), so this is strictly additive.
+- `selectorText` = `"w.Label"` — the LITERAL text at the site. It pins the RECEIVER, which the pair
+  cannot recover when the owner name collides.
+
+Measured effect on self-loop disambiguation: **75.74% → 86.59%** (+301), with zero fixture
+regressions. The remaining 372 are, on inspection, all *correct-but-inherently-ambiguous* rather
+than wrong: 305 `references` are a METHOD and a TYPE sharing one name in one file
+(`func (f *Function) selection(...) *selection` — the method reaches the type, both named
+`selection`), 65 `instantiates` are the same shape for a composite literal, and 2 `imports` are a
+local package named `testing` importing the stdlib package `testing`. Every one is a true fact whose
+two endpoints happen to share a leaf; a consumer resolves them from the graph (the source's own
+`contains` row names its kind), not from more metadata.
+
+**A note on method, because one candidate "defect" was NOT one.** `selectorExpression` looks like it
+should hold the source text and does not. Changing it would have been the obvious "fix" — and it
+would have broken a pin and a mutant that both encode the intended contract. The fixture caught it
+before the analyzer did, which is the order that matters.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/go/`
