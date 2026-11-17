@@ -216,7 +216,13 @@ for (const value of applicable.applicableValues) {
         }
       : { status: "not present in the gate log" },
     gateNoIndex: d3Table[value]
-      ? { ...d3Table[value], command: d3.command, population: { parsed: 7435, admitted: 7435, repos: 31, failed: 0, degraded: 0 } }
+      // THE POPULATION COMES FROM THE ARM, not from this file. The original D3 artifact carried no
+      // population field and this line hardcoded the original ledger's 7,435 files / 31 repos, which
+      // made every regenerated table claim that population regardless of the measurement inputs. The
+      // artifacts now record what the gate actually read (script/cpp-audit/cpp-d3-arm-artifacts.ts);
+      // the literal remains only as the fallback for a legacy artifact that carries none, and a null
+      // population would be the honest answer there — kept as-is so an old artifact still regenerates.
+      ? { ...d3Table[value], command: d3.command, population: d3.population ?? { parsed: 7435, admitted: 7435, repos: 31, failed: 0, degraded: 0 } }
       : { status: "OWED — the D3 no-index arm has not landed" },
     cap50ResidualClass: LANE_NOTES[value]?.cap50ResidualClass ?? "",
     wholePopulation: census && censusPopulation && census.perType?.[value]
