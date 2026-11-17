@@ -1365,17 +1365,27 @@ script or this analyzer** (other lanes' pre-existing errors are not this lane's 
 > character-class-exhaustive corpus, with the whole-population emission census reading `perType == perType`
 > and `totalEdges 1,282,777` against the recorded baseline — byte-identical. The census reads CLEAN again.
 > The fixture count moved 50 → 51 because the citation fixture, which had been committed WITHOUT its
-> `.expectation.json` and therefore pinned nothing, now pins the emission in both directions (the flag-off
-> rows the suite runs, and the flag-on claim state `cpp-citation-verify.ts` asserts at 12/12 PASS).
+> `.expectation.json` and therefore pinned nothing, now pins the emission in both directions.
+> **CORRECTED 2026-11-16: the claim is now SHIPPED (default ON), so the sides swapped** — the suite
+> runs the claim ON and pins it (claims + the `strict-absent` marker on all three listed rows, with
+> every negative still forbidden), and the OFF state is the `BB_CPP_CITATION=0` kill-switch that
+> `cpp-citation-verify.ts` asserts. The earlier direction ("flag-off rows the suite runs") applied
+> only while the claim was opt-in.
 > Evidence: `validation/m14/verification/CPP-VERDICT-PROPOSAL.md` §5.
 
 **D6 — truthfulness.** `arbitraryTwin` whole-population baseline recorded **564,803** (arm A = arm B, delta 0);
-`extFAIL`/`bindFAIL`/`causeFAIL` **0** on both arms; claims are never merged into resolutions (this lane emits
-no external claims, and the gate's own claim block reads a MEASURED zero of 469,395 ambiguous rows); every
+`extFAIL`/`bindFAIL`/`causeFAIL` **0** on both arms; claims are never merged into resolutions; every
 number above travels with its command and scope; negative results written down (indexed arm structurally
 inert, `contains/global`-owner contract question, shared-oracle over-derivations where the ANALYZER is the
 deciding side, the `.h`-by-content population boundary, the `friend-definition-body-owner` stale pin
 (now closed — 57/0 — but kept in this list because it is what the D6 run actually recorded).
+
+> **D6 CORRECTED 2026-11-16.** The paragraph above used to say "this lane emits no external claims, and the
+> gate's own claim block reads a MEASURED zero of 469,395 ambiguous rows". The claim block reading zero was
+> correct for the per-file arm, but the lane NOW DOES emit external claims: the ISO stdlib citation claim
+> ships by default (`BB_CPP_CITATION=0` is the kill-switch) and the incoming gate verifies **782** of them as
+> `extOK` on the 2-repo corpus (0 refuted, `extFAIL` still 0). The whole-population wall ledger prices that
+> bucket at 7,962 rows. Claims are still never merged into resolutions — a claim is counted in its own column.
 
 ## Differential ground truth
 
