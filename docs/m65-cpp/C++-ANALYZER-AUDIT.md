@@ -5,18 +5,22 @@
 **Corpus:** `.cpp-corpus/fmt` (fmtlib/fmt `10.2.1`) + `.cpp-corpus/nlohmann-json` (nlohmann/json `v3.11.3`)
 **Measured:** 523 C++ files · 17,597 symbols · 78,093 relationship rows · 0 parse failures
 
-> ### ⚠ THIS PAGE IS A PRE-M65 SNAPSHOT. AND "0 parse failures" DOES NOT MEAN "CLEAN PARSES".
+> ### ⚠ TWO FOOTNOTES — THIS PAGE'S HEADER NUMBERS ARE THE PRE-M65 SNAPSHOT
 >
-> Both header numbers changed with the macro-recovery arm: the current commit measures **17,912
-> symbols · 78,403 rows**. `census.json` has been regenerated and now holds those totals, so the
-> figures in this page are the snapshot it was written from, not what the file says today.
+> **(1) The totals moved.** The macro-recovery arm added symbols and rows; the current commit measures
+> **17,912 symbols · 78,403 rows**, and `census.json` has been regenerated to hold those. The figures
+> in this page are the snapshot it was written from, not what that file says today.
 >
-> "0 parse failures" counts only files where the **engine threw**. Measured now: **172 of 523 files
-> carry ≥1 grammar ERROR node**, and 90.3% of symbols live in them. That is tree-sitter's documented
-> error recovery, not a defect count — but it means every coverage figure here is a floor over a
-> population where a third of the files exercised it. See `NEXT-WORK.md` §14.3–§14.4 for the trace
-> (one ERROR cascade from `GTEST_IMPL_CMP_HELPER_(NE, !=)` swallows an entire class declaration) and
-> §14 for the correction to this page's `part_of` and `references` readings.
+> **(2) "0 parse failures" counts only files where the ENGINE threw** — it is not a statement about the
+> grammar tree. Measured now: **172 of 523 files carry ≥1 grammar ERROR node**, and 90.3% of symbols
+> live in them. That is tree-sitter's documented error recovery, not a defect count, but it means every
+> coverage figure here is a floor over a population where a third of the files exercised it.
+>
+> **This page was also silently reverted by `ce3b2a95d` and has now been restored from `ce3b2a95d^`.**
+> For one release cycle it claimed the `part_of` oracle "does not exist for cpp at all" while the oracle
+> existed, passed (`agree 2328, 0/0`) and was cited elsewhere in the lane. The row is CLOSED again, and
+> the restoration is byte-exact plus these two footnotes. Full trace and the corrected
+> `part_of`/`references` readings: `NEXT-WORK.md` §14.
 
 This page exists because the lane's own numbers were measured on a corpus that is **not on this
 machine** — `docs/analyzers/cpp.md` states this itself ("the five corpora it names … are all absent
@@ -385,7 +389,7 @@ exist. That is a ruling this audit agrees with rather than checked.
 | **`defect-register.ts` D1–D8** over its 1,722-file corpus | its five corpora (fmt, nlohmann-json, Catch2, abseil-cpp, spdlog, zig) are absent; it **cannot run here** | clone Catch2/abseil/spdlog (2 of 6 are now present) and re-run with `BB_CORPUS_ROOT` |
 | **`.h` discovery boundary** — the lane's largest claimed residual (83 % of `calls`) | it is a property of `incoming-gate.ts:314`, not of the analyzer, and CPP-STATE I4 already found that the residual gate's population did not move when the fix landed | a run of the **incoming** gate, not the residual gate, against a `.h`-bearing corpus |
 | **whole-population 1,282,777-row census** | needs the 31-repo corpus | not reproducible from this checkout |
-| **`part_of` oracle** | does not exist for cpp at all (§7) | a lane-owned `deriveCppPartOfTruth`, mirroring `dart-part-of.ts` |
+| ~~**`part_of` oracle**~~ **CLOSED** | does not exist for cpp at all (§7) | **now exists**: `script/m14/oracles/cpp-part-of.ts` + `script/cpp-audit/oracle-check.ts`; 2,328 rows, 0 disagreements, 5 analyzer-extra rows against the pre-fix analyzer |
 | **`calls` resolution to the INTENDED declaration** | this audit resolves against names, and C++ member names repeat across classes; 45,967/59,374 targets resolve and the rest are a mix of external library calls and genuine ambiguity | an owner-qualified key space (which §4.1's `::` fix would partly supply) |
 
 ---
@@ -423,8 +427,15 @@ The arithmetic, because it decides the order:
   kind of defect: *"a documented zero that no runnable gate re-derives"*. Its self-test currently
   cannot pass, so it certifies nothing until it is repaired.
 
-Then, and only then, add **`deriveCppPartOfTruth`** — because `part_of` is the only emitted type
-with no second opinion, and #2/#3 are exactly the two defects a second opinion would have caught.
+**And `deriveCppPartOfTruth` now exists** — `part_of` was the only emitted type with no second
+opinion, and #2/#3 are exactly the two defects a second opinion catches.
+`script/m14/oracles/cpp-part-of.ts` (151 lines, lane-owned, sharing no code/tables/helpers with the
+analyzer) plus `script/cpp-audit/oracle-check.ts`. **Result: 2,328 rows, 0 disagreements in either
+direction** (`imports` 1,968, `part_of` 360). It is a real gate, not a mirror: against the pre-fix
+analyzer it reports **5 analyzer-extra rows**, naming each by file — the same 5 measured by hand. The
+harness itself needed one fix first: it compared SETS, so pre-fix and post-fix read identically (a set
+of one duplicated element equals a set of one); it now compares MULTISETS per file. Wiring it into
+`differential.ts`'s cpp arm is master-owned and is the single remaining item.
 
 **Deliberately not recommended:** re-cutting the 1,282,777-row whole-population census, and
 re-litigating the `.h` boundary. Both need a corpus machine this checkout does not have, and the
