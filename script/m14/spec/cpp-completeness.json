@@ -46,7 +46,9 @@
       "field_initializer",
       "operator_cast",
       "macro_prefixed_type_specifier",
-      "ERROR"
+      "ERROR",
+      "preproc_def",
+      "preproc_function_def"
     ],
     "_notes": {
       "ERROR": "produced by every tree-sitter parser and not a construct: the analyzer consults it to refuse an emission and report a diagnostic (src/ast/real-cpp-analyzer.ts:2386-2387 and :315), and `exports-marker-910.cpp` is a committed fixture whose parse tree contains one — the same ruling as javascript's ERROR row and the php/error-recovery precedent (reported, not turned into a symbol, neighbours survive)."
@@ -56,8 +58,6 @@
     "types": [
       "preproc_arg",
       "preproc_directive",
-      "preproc_def",
-      "preproc_function_def",
       "preproc_params",
       "preproc_call",
       "preproc_if",
@@ -128,7 +128,6 @@
       "initializer_list",
       "initializer_pair",
       "field_initializer_list",
-      "enum_specifier",
       "enumerator_list",
       "field_declaration_list",
       "bitfield_clause",
@@ -205,7 +204,9 @@
     ],
     "_notes": {
       "macro_access_specifier": "produced by the pinned cpp grammar and not a construct: a macro-side access specifier, read 0 times by src/ast/real-cpp-analyzer.ts (measured 2026-10-12). Silent by contract.",
-      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-cpp-analyzer.ts:2386-2387); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means."
+      "MISSING": "produced by every tree-sitter parser and not a construct: tree-sitter marks an ABSENT required token with `isMissing` on the TOKEN'S OWN type, so the string \"MISSING\" is never a node type a fixture can contain — a `handled_verified` row would read `uncovered: MISSING` forever. The lane's error walk does read `isMissing` off the whole tree (real-cpp-analyzer.ts:2386-2387); every lane in the fleet records that read with this same row, so the class is named here rather than claimed. A node type that no fixture can witness is not evidence, and a bucket has to say which of the two it means.",
+      "preproc_def / preproc_function_def — MOVED TO handled_verified (M65)": "THIS BUCKET SAID 'NOT READ' AND THE CODE READ THEM. Both types were listed here with no _notes entry and no handled_verified row, while src/ast/real-cpp-analyzer.ts:3317 has an explicit branch for exactly these two node types (`} else if (type === \"preproc_def\" || type === \"preproc_function_def\") {`) that mints a Macro (function-like) or Constant (object-like) and pushes a `contains global -> NAME` edge. MEASURED: 1,277 macro symbols published over a two-repo corpus; 315 more after the M65 recovery pre-pass, which mints the directives the grammar never produced a node for (3,483 #define lines in source vs 2,939 preproc_* nodes; 543 of the 544 missing ones sit in a file with >=1 ERROR node). A spec that says 'not read' about a branch that reads them is the exact class of defect this lane has now hit repeatedly -- a document a reviewer trusts instead of re-measuring. The two types are therefore HANDLED, and the honest statement is that `preproc_arg` (the macro BODY) remains silent by contract: a macro body is never walked as code, which is why a read inside a macro body stays silent. Gated by validation/m14/fixtures/cpp/macro-recovery-in-error-spans and the mutant cpp/macro-recovery-in-error-spans.",
+      "enum_specifier — REMOVED FROM THIS BUCKET (M65)": "IT WAS IN BOTH BUCKETS, WHICH IS A CONTRADICTION THIS FILE CANNOT EXPRESS: `internal_silent` means 'the analyzer does not read this', `handled_verified` means it does, and `enum_specifier` was listed in both with no note in either. The code is unambiguous -- src/ast/real-cpp-analyzer.ts:4232 has an explicit `} else if (type === \"enum_specifier\") {` branch that publishes an Enum symbol and pushes a scope, and five further sites read the type (the CGD19 recovery guard, the declaring-chain scan, and the isPlainIdentifier/recovered-type rosters). So the type is HANDLED and this bucket was wrong. Pre-existing at HEAD, not introduced by M65; found while fixing the preproc_def/preproc_function_def contradiction in the same file, and recorded rather than fixed silently because a bucket membership is a claim. The gate reads 46 handled / 0 uncovered / 0 deadLiterals after the change."
     }
   },
   "gap": {
