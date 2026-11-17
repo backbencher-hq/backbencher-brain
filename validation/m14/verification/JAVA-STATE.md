@@ -459,3 +459,58 @@ New current behavioral details and accepted limitations are in
 [`JAVA-SEMANTIC-PROOF-2026-11-16.md`](JAVA-SEMANTIC-PROOF-2026-11-16.md)
 and `docs/analyzers/java.md`. Do **not** label the Java analyzer
 production-complete from these green tests alone.
+
+
+---
+
+## 2026-11-17 — Final pre-handoff evidence checkpoint (PR #1 remains draft)
+
+This supersedes the **older numerical snapshot** in this file's previous
+review-branch section, not its historical account of how the work evolved.
+
+| Evidence | Latest independently executed result |
+| --- | --- |
+| Source commit under test | `a817d82b53832e390833f2ba8f86ee37b72d3890` |
+| Java M14 fixtures | **103 pass / 0 fail** |
+| Original analyzer on same fixture set | **94 pass / 9 fail** |
+| Java 21 compiler oracles | **12/12 + 13/13 + 12/12 = 37/37** |
+| Production TS typecheck | **PASS** |
+| M12 Java differential | **TP 95, FP 105, FN 21, unknown 6 — still FAILING** |
+| Full admitted Java incoming/corpus gate | **UNMEASURED on this branch** |
+| Persisted indexer/SQLite cross-file binding | **UNMEASURED on this branch** |
+| Full `npm run verify` | **UNMEASURED on this branch** |
+
+Proof:
+https://github.com/backbencher-hq/backbencher-brain/actions/runs/44022401654
+
+A later verification workflow change strengthens the red-control assertion to
+name all nine regression fixtures explicitly. CI on that workflow change must
+pass independently before the final state can be considered verified.
+
+**Correction to stale historical CI paragraphs above:** statements saying
+`ci.yml` and `lane-protection.yml` still carry `if: false` described
+an older snapshot. The current branch's Java semantic workflow and lane
+protection have actually executed successfully; the normal CI workflow's
+Node build/test matrix has likewise run. Reconfirm the **final head SHA**,
+not a superseded successful run, before signoff.
+
+### Outstanding acceptance requirements — do not relabel as passed
+
+1. Run the admitted `BB_CORPUS_ROOT` Java incoming gate on a fixed, repeatable
+   corpus checkout. Record the original failure counts and after-correction
+   counts for ambiguous, unresolved, inaccessible and unverified edges, and
+   independently inspect changed claims.
+2. Independently adjudicate M12's 105 FP / 21 FN rather than overwriting
+   ground truth to make metrics green; separate obsolete oracle/identity
+   assumptions from extraction defects.
+3. Test the actual worker/indexer/SQLite pipeline and the public graph/impact
+   APIs with overloaded and same-name Java method declarations in multiple files.
+4. Run the full repository verification command, including the relevant Java
+   scripts/doc link checks, in the authorized local development environment.
+5. Review the 103 fixtures' assertion sensitivity, plus Java compiler-backed
+   negative/positive controls. The red-control comparison currently detects
+   nine previously unguarded defects but is not an exhaustive mutation score.
+
+**Conclusion:** Verified targeted improvement; **not yet a production-grade
+acceptance certificate**. Leave this PR draft and leave `main` unchanged
+until the remaining evidence has been reviewed.

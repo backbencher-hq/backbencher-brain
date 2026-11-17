@@ -58,8 +58,21 @@ jobs:
           summaries = re.findall(r"^summary:\s*(\{.*\})\s*$", content, re.MULTILINE)
           assert summaries, "pre-fix fixture run did not emit a summary"
           java = json.loads(summaries[-1])["java"]
-          assert java["fail"] >= 4, f"new regressions did not go red on baseline: {java}"
-          print("Regression sensitivity proved on baseline:", java)
+          expected_failures = {
+              "java/framework-endpoint-identity",
+              "java/framework-jpa-bean-identity",
+              "java/implicit-object-equals",
+              "java/implicit-object-methods",
+              "java/jaxrs-method-vs-locator",
+              "java/lombok-accessor-restrictions",
+              "java/lombok-boolean-accessors",
+              "java/spring-repository-redeclaration",
+              "java/spring-requestmethod-identity",
+          }
+          actual_failures = set(re.findall(r"^FAIL\\s+(java/[^\\s]+)", content, re.MULTILINE))
+          assert expected_failures <= actual_failures, f"regression controls not red: {sorted(expected_failures - actual_failures)}"
+          assert java["fail"] >= len(expected_failures), f"new regressions did not go red on baseline: {java}"
+          print("Regression sensitivity proved on baseline:", java, sorted(actual_failures))
           PY
           cp /tmp/bb-fixed-java-analyzer.ts src/ast/real-java-analyzer.ts
       - name: Java M12 differential — enforce recorded baseline without hiding failures

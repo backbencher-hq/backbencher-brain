@@ -1078,3 +1078,43 @@ recorded Java corpus-gate FAIL remains open until a fresh comparable run.
 Compiler-oracle and small-fixture success cannot overwrite that result.
 The implementation remains **acceptance pending** until these measurements
 and the normal project CI matrix are reviewed.
+
+
+### 2026-11-17 — Pre-handoff follow-up: additional corrections
+
+The second review batch is grounded by GitHub Actions
+[`44022401654`](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44022401654)
+on commit `a817d82b53832e390833f2ba8f86ee37b72d3890`.
+It reports **103/103 Java M14 fixture passes**, a 94-pass/9-fail
+**red-control** run with the original `29a579243` analyzer, and
+**37/37 independent compiler facts** (12 generic override, 13 existing
+remediation, 12 semantic). TypeScript typecheck PASS.
+
+Further source corrections (all present in that run):
+
+- JPA `Entity`, `Table` and column mapping, Spring bean role and Spring
+  `@Value` injection now require a qualified or single-type-imported
+  framework annotation rather than the same short name in project code.
+  A lone JPA `@Table` is not evidence of an `@Entity`.
+- Jakarta REST `@Path` without an HTTP-method designator is a **subresource
+  locator** rather than an HTTP method. Proven `@GET`/`@POST` annotations
+  preserve their verb with class- and method-level URI paths.
+- Lombok-generated primitive boolean `isReady()` / `isActive()` use
+  the correct conventions; boxed `Boolean` retains `getX()`.
+- Exact `equals(java.lang.Object)` overrides the implicit
+  `java.lang.Object` member for ordinary classes, but `equals(String)`
+  is not counted as that override.
+- Spring Data generic `save(S)` / `findById(ID)` / `deleteById(ID)`
+  no longer claim their parameters have concrete `Object` types.
+  Parameter type is absent with `javaParameterTypeUnbound` metadata;
+  fully substituted generic method signatures remain out of scope.
+
+**Known incomplete Java features, not certified by these fixes:** array-valued
+HTTP methods/routes, Spring composed annotations, classpath-dependent mapping
+and inherited Spring Data generics, exact overload identity in the persisted
+cross-file graph, JPMS/runtime integration, and the full M14 corpus gate.
+The M12 reference run still has **95 TP / 105 FP / 21 FN / 6 unknown**
+and remains **FAILING**: its unchanged baseline is not a correctness pass.
+All 103 M14 fixtures are small authored examples, not a statistical precision
+or recall certificate. Do not declare this analyzer production-complete until
+the full admitted corpus and persisted API claims are independently evaluated.
