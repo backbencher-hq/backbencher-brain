@@ -988,3 +988,35 @@ round.
 
 The invariance is the design and is now proven by the fixture/mutant pair: the claim changes **metadata
 only**, never a row. Whole-population expectation is the ledger's 7,962 rows.
+
+### 14.13 · Wall W4 was chasing a symbol that already exists — the real gap is the TARGET contract
+
+The wall ledger's W4 (`qualified-name-not-published`, 2,771 rows) was dispositioned **INSTRUMENT GAP**
+on the reason *"the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName."*
+**That reason is false.** Measured through the production entry on this corpus:
+
+| kind | symbols | with `qualifiedName` | distinct from `name` |
+|---|---|---|---|
+| method | 4,222 | 4,222 | **4,222** |
+| constructor | 912 | 912 | **912** |
+| property | 1,677 | 1,677 | **1,677** |
+| class | 1,582 | 945 | 945 |
+| enum_member | 491 | 485 | 485 |
+| **total distinct strings** | | | **6,913** |
+
+Real examples: `dynamic_arg_list::node`, `node::~node`, `typed_node::head_`. So the publication the
+wall says is missing exists and is complete for members.
+
+**What is actually true is narrower and is a design contract, not a gap:** an edge **target** is the
+callee/member **leaf** (the qualified spelling rides `metadata.qualified` — documented, and multiple
+fixtures pin leaf targets). The arbiter's qualified-name join can only help a row whose *target* is
+qualified; it asked **532** such rows and resolved 0. So closing W4 means changing the target spelling
+to the qualified key where it is unique — a **vocabulary/consumer contract change**, which is why the
+correct disposition is "design decision, needs the Lead", not "instrument gap".
+
+Corrected in the machine-readable table (disposition replaced, measurement appended, `previousDisposition`
+retained) so the next agent does not spend a cycle re-deriving a publication that already exists.
+
+**Standing decision request for the Lead:** adopt qualified targets for `calls`/`uses` where the
+qualified key is unique (the analyzer already computes it), or keep leaves and rule W4 as a documented
+limitation. The lane should not drift into this by accident.
