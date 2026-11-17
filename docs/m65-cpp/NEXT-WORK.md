@@ -1677,3 +1677,69 @@ BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/incoming-gate.ts cpp 
 bun run script/cpp-audit/cpp-d3-arm-artifacts.ts --noindex-report=<report> --indexed-json=<gate json>
 bun run script/m14/cpp-spec-table.ts --check
 ```
+
+## 14.25 · SHIP-DECISION TABLE — per-relationship resolution on three populations
+
+Same gate rule (target resolves against the file's OWN PROJECT), same shipped analyzer; the only
+variable is the measured population. `accepted = resolved + project-verified claims (extOK)`;
+`ambiguous` = the store refuses to guess between several declarations; `unresolved` = no declaration
+in the project carries the target leaf. Every "not resolved" row is reported, never fabricated.
+
+**A · shipping gate population (extension-only, 7,778 files / 18 repos, 1,061,394 edges)** —
+`gate-cpp-extension-only.postw8.txt`:
+
+| type | edges | accepted | ambiguous | unresolved |
+|---|---|---|---|---|
+| calls | 738,609 | **34.2%** | 37.0% | 28.8% |
+| uses | 115,385 | **53.3%** | 27.6% | 19.1% |
+| contains | 151,481 | **100.0%** | 0.0% | 0.0% |
+| imports | 10,801 | **2.2%** (external by design) | 5.9% | 91.9% |
+| references | 1,560 | **18.3%** | 24.4% | 57.3% |
+| exports | 977 | **70.7%** | 0.0% | 29.3% |
+| extends | 3,717 | **67.4%** | 12.4% | 20.2% |
+| implements | 270 | **100.0%** | 0.0% | 0.0% |
+| overrides | 1,692 | **97.2%** | 2.8% | 0.0% |
+| instantiates | 1,695 | **37.6%** | 9.9% | 52.5% |
+| part_of | 35,207 | **9.2%** (part stems; quoted parts outside) | 18.8% | 72.0% |
+| TOTAL | 1,061,394 | **44.8%** | 29.5% | 25.7% |
+
+**B · headers admitted (production's routing includes content-routed `.h`; 23,043 files / 22 repos,
+1,944,856 edges)** — `gate-cpp-with-headers.json`:
+
+| type | edges | accepted | ambiguous | unresolved |
+|---|---|---|---|---|
+| calls | 929,375 | **39.6%** | 47.2% | 13.2% |
+| uses | 204,125 | **53.6%** | 44.4% | 2.0% |
+| contains | 622,315 | **100.0%** | 0.0% | 0.0% |
+| imports | 41,962 | **1.3%** (external by design) | 4.9% | 93.8% |
+| references | 80,650 | **96.9%** | 0.7% | 2.4% |
+| exports | 7,053 | **81.5%** | 17.1% | 1.3% |
+| extends | 8,664 | **61.9%** | 25.5% | 12.6% |
+| implements | 564 | **87.1%** | 5.3% | 7.6% |
+| overrides | 3,890 | **90.8%** | 4.1% | 5.1% |
+| instantiates | 1,899 | **77.1%** | 13.8% | 9.0% |
+| part_of | 44,359 | **9.2%** (part stems; quoted parts outside) | 20.2% | 70.6% |
+| TOTAL | 1,944,856 | **61.7%** | 28.0% | 10.3% |
+
+**C · 2-repo corpus with headers (524 files / 78,349 edges, committed round artifact)** — TOTAL
+**67.0% accepted** / 23.7% ambiguous / 9.2% unresolved; calls 61.9%.
+
+### What the three columns say for shipping
+
+1. **The unresolved mass in the extension-only arm was the HEADER BOUNDARY, not emission quality:**
+   admitting headers on the same corpus moves unresolved **25.7% → 10.3%** and accepted
+   **44.8% → 61.7%** (references 18.3% → 96.9%, instantiates 37.6% → 77.1%, uses 53.3% → 53.6% with
+   ambiguity taking its place). Production routes `.h` by content, so arm B is the production-like view.
+2. **Ambiguity grows with the project key space and is honest by design:** calls ambiguous-decl
+   **37.0% → 47.2%** as headers add same-leaf declarations across the 22 repos. The store refuses to
+   guess; where the analyzer supplies `metadata.owner` the owner channel resolves it (73,325 rows
+   carried an owner whole-population; 51,466 resolved). This is the measured ceiling of the
+   LEAF-NAME key space, not a wrong edge — the fixture/mutant/oracle suite pins emission separately.
+3. **Two kinds are external by construction and must not be "fixed":** `imports` (2.2%/1.3%) names a
+   module path and `part_of` (9.2%) a quoted part's file stem; the key space is symbols. Together they
+   are 86,321 edges (4.4% of arm B); excluding them, accepted is **64.3%** with unresolved at **~7.6%**.
+4. **Ship verdict: SHIP.** Emission is proven (64/64 cpp fixtures, 74/74 mutants, citation 11,719
+   verified claims / 0 refuted, consume and receiver-wave controls green); 100% resolution is not the
+   contract and is set by the arbiter key space + the two external kinds + macro wall (W10, 76,830
+   rows) + receiver typing (W11, 53,351 rows), all ruled and numbered. The shipping snapshot should
+   quote arm B (headers admitted) as the production-like view and arm A as the gate's own population.
