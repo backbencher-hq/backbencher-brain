@@ -205,7 +205,12 @@ class expression) — the master's file. Reported, not taken.
 - **Confident**: uniformly 1.0, which is right for the shape (`extends B` is unambiguous) and does not claim the base resolves.
 - **R7**: 0 empty endpoints; 0 placeholder endpoints.
 
-### 3. implements — RULED (six instruments; JSD33 plus JSD38–JSD40)
+### 3. implements — WAS RULED, NOW EMITTED (six instruments; JSD33 plus JSD38–JSD40)
+
+**Current status: EMITTED, from TWO channels — the JSDoc `@implements` tag and the Flow `implements`
+clause.** The section below is the audit that produced the original ruling and is retained as the
+record of how the clause route was eliminated; the ruling itself was later SUPERSEDED because it
+measured the grammar and the language states conformance in a comment AND in Flow's clause.
 Full table and reasoning in "What was RULED" below. The two decisive additions this round are **A1/A2** (the grammar package's own `node-types.json` says 118 named types and none is a supertype clause, while the same scan on the sibling `tree-sitter-typescript` returns `implements_clause` — so the scan is not blind) and **E**, the counterfactual: `class A implements B { }` parses to `(ERROR …)` with **no `class_heritage` node at all**, and `class A extends B implements C { }` puts only `B` under `class_heritage` and leaves `implements C` as an ERROR sibling. The falsifier is therefore a single predicate: **a real multi-supertype clause is a `class_heritage` with more than one named child and no ERROR anywhere in it.** Measured: 0 such clause on svelte (18 clauses, 0 multi), 0 on lodash (0 clauses), **97** on the ts corpus — and **all 97 sit inside an ERROR node** (`ERROR+identifier` 86, `ERROR+binary_expression` 11), produced by `extends (0, __extends)(A, B)` helper output and `extends A, B`, neither of which is JavaScript. The previous round reported "multi-supertype clauses 8" from a counter capped at 8 in the census instrument; the structural count is **97**. The first version of this round's own ruling instrument repeated the same cap and printed 40, and the census's shape table — which had accounted for all 97 independently — is what caught it.
 
 ### 4. instantiates — EMITTED
@@ -293,7 +298,17 @@ Full table and reasoning in "What was RULED" below. The two decisive additions t
 - **Parameter decorators**: none exist in this grammar or in ECMAScript decorators, so that
   position has nothing to emit from.
 
-## What was RULED, and the measurement that rules it
+## What was RULED, and where each ruling stands NOW
+
+**TWO SUPERSESSIONS since this table was written, both recorded in their rows below:**
+
+1. `implements` — ruled out because no CLAUSE exists in the JavaScript grammar, and now **EMITTED**
+   from two channels: the JSDoc tag (`viaJSDoc`) and Flow's `implements` clause (`viaClause`). The
+   ruling asked a grammar question; the language answers in a comment, and Flow answers in a clause.
+2. `part_of` — its reason was "no composition-part node in the pinned grammar", which is a
+   GRAMMAR reason and therefore not admissible: the grammar is ours to patch. It is now ruled on the
+   LANGUAGE — ECMAScript has no inclusion directive, so no unit's code is merged into another's
+   scope — with the falsifier named. See its row.
 
 | Type | Verdict | The measurement |
 | --- | --- | --- |
@@ -734,7 +749,7 @@ agreement.
 | no unknown symbols, no empty names, no placeholder-literal endpoints | 0 empty endpoints, 0 `global` sources, 0 empty symbol names, re-measured on all three corpora. Remaining "placeholder-looking" endpoints enumerated and classified, with one **classification corrected this round**: `module` as a `calls` TARGET is a written method name (`template.module(data)` in `lodash/lib/fp/build-modules.js:102`, `QUnit.module(…)` in `lodash/test/test-fp.js`), not the CommonJS free variable — 100 rows on lodash that the R7 heuristic mislabels, 0 on svelte |
 | fixtures assert the new behaviour and a mutant must die | **[re-measured 2026-10-17]** 77 fixtures, **76 pass / 1 fail**, baseline `validation/m14/fixture-baseline.json` allowed 3 failing and now allows the run's 1. The pass count rose from 74 by recovering the lost lineage's two re-export fixture halves (`reexport-forms`, `star-reexport` were RED at HEAD) — see `validation/m14/verification/JAVASCRIPT-STATE.md`. The one remaining failure is `non-name-callee-refused`, whose analyzer half is four lines but whose ORACLE half lives in master-owned `script/m14/differential.ts`; it is proposed, not silently ignored (`validation/m14/proposals/javascript-callee-guard-and-store-wiring.md`). The old sentence here claimed "no analyzer behaviour changed this round" — that was true of the round it was written for and is FALSE of this one; the fixture count and the payload both moved. Mutation/differential rows below are from that earlier round and were NOT re-run this iteration. |
 | mutation, differential and payload/latency re-run | mutation: javascript **56 caught / 0 survived** in the shared registry, plus **4 caught / 0 survived** through `javascript-mutant-runner.ts`; the 6 registry survivors are java 1, groovy 2, scala 1, make 1, php 1. differential: svelte 120 files 1,457 truth / 1,456 covered / MISSING=1 / unexplained=0 / heuristic=0, hash `fc839056ff888724`; lodash 55 files 12,819 / 12,819 / MISSING=0 / unexplained=0, hash `494e1b94766e8ade`; ts corpus 200 files 3,445 truth / 3,406 covered / MISSING=39 / unexplained=1 (an `exports` row), all 39 MISSING in `tsc/testdata/baselines` files the JS grammar cannot parse. payload: **399-file svelte sample 34,569 relationships at this commit** — see the caveat below |
-| doc + spec updated | this file; JSD33 (`implements` RULED), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), **JSD38–JSD40 added this round** (grammar-declared inventory, the probe that fires on the sibling grammar, the counterfactual parse, and the JSDoc resolvability measurement) |
+| doc + spec updated | this file; JSD33 (`implements` — ruled then SUPERSEDED: now emitted from two channels), JSD34 (class-expression heritage), JSD35 (R7 runtime), JSD36 (`pool-worker` loss), **JSD38–JSD40 added this round** (grammar-declared inventory, the probe that fires on the sibling grammar, the counterfactual parse, and the JSDoc resolvability measurement) |
 
 ### Payload and latency
 
