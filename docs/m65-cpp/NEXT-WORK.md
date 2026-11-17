@@ -924,3 +924,36 @@ is absent by omission. The residual unresolved targets are, in every case, names
 declare (stdlib, Win32/libc, headers outside the checkout, external modules) — leaving them unresolved
 is the correct behavior, and the one thing that would be *wrong* is to "fix" them by inventing
 declarations.
+
+### 14.11 · The machine-readable applicable set contradicted the analyzer — two directions, both fixed
+
+The prose doc had already recorded one part_of correction (its own correction table, row 6), but the
+**machine-readable layer never got it**, and a second cell was stale in the opposite direction.
+
+**1. `part_of` was ruled NOT APPLICABLE by the instrument.** `script/m14/cpp-applicable-set.ts` asked
+for grammar productions `part_directive` / `part_of_directive` / `part_clause` — **the DART grammar's
+node names** — so the test could never pass for C++, and the generated
+`script/m14/spec/cpp-spec-table.json` listed `part_of` among the ruled-absent values. That denies a
+value the analyzer emits from `preproc_include` (360 rows / 3,974 whole-population), pins with two
+fixtures, and audits with an oracle (2,328 rows, 0 disagreements). It is a **category error in the
+instrument**, not a ruling: the ontology's own definition of the value is the directive that NAMES A
+PART (`part 'x.dart'` / `#include "x.h"`), and C++ writes exactly that construct.
+
+Fixed at the root: the instrument now carries the C++ construct surface
+(`preproc_include` + `string_literal` + `system_lib_string`) with the quoted/angle split and the
+metadata contract. The committed table was corrected the same way (11 applicable, 3 ruled) **by hand,
+with an `errata` block recording why**: the generator cannot be re-run in this checkout because its
+measurement inputs live under `validation/m14/fixtures/cpp/measurements/`, which does not exist
+(`cpp-spec-table.ts --check` exits `ENOENT`). That directory, not the analyzer, is the release-relevant
+gap: the whole-population census / D3 arms / D7 price+walls embedded in the table were measured on the
+31-repo corpus. **The next run on a corpus machine regenerates from the fixed instrument and deletes
+the errata block.**
+
+**2. `part_of`'s evidence CLASS was documented backwards.** `docs/analyzers/cpp.md` asserted every row
+carries `usage_contextual` because `classifyEvidenceTier` had "no arm for `part_of`". M65 added that
+arm (`real-cpp-analyzer.ts:6523`) and the cell was never updated — the same revert-and-restore drift
+as §14. Corrected against the committed census: **360/360 `structural`, 0 `usage_contextual`**.
+
+The lesson is the lane's own: a correction written in prose is not a correction. The prose, the
+instrument, the generated artifact and the committed evidence each have to carry it, and this round
+found the same truth stale in three of those four places.

@@ -118,6 +118,11 @@ const APPLICABLE: Record<string, {
     rule: "class/struct -> each base in its base_class_clause, one edge per base. MULTIPLE INHERITANCE is a LIST in one clause (base_class_clause_repeat1), so `class D : public B, private C` is two edges, not a special case.",
     emissionSymbol: "Extends",
   },
+  part_of: {
+    constructs: ["preproc_include", "string_literal", "system_lib_string"],
+    rule: "FILE INCLUSION, SPLIT BY WRITTEN FORM — the ONTOLOGY'S OWN definition of this value is the directive that NAMES A PART (`part 'x.dart'` / `#include \"x.h\"`, src/ast/types.ts), and C++ writes exactly that construct. A QUOTED include is the unit's own fragment -> `part_of`, with the CONTRACT-MANDATORY metadata.partRole = \"part\" plus partFile / partPath / partSymbol; an ANGLE include names ANOTHER MODULE's header -> `imports`. They are DIFFERENT FACTS that can share a leaf — measured in fmt's ranges-test.cc, `#include \"fmt/ranges.h\"` yields part_of:ranges and `#include <ranges>` yields imports:ranges, both real — so the edge set is one row per (kind, target) and never one per module. TARGET IS THE PART'S MODULE SYMBOL (the file stem), not a path: measured path => 0 resolved of 4,612 vs symbol => 383 resolved of 4,612 on the same population, the target's FORM the only variable, so the stem is the only form the arbiter can bind. Pinned by cpp/imports-include-910 and cpp/part-of-quoted-include; the lane's part_of oracle measures 2,328 rows with 0 disagreements. THIS VALUE WAS WRONGLY RULED NOT APPLICABLE until 2026-11-16: the ruling asked for Dart's `part_directive`/`part_of_directive`/`part_clause` productions, which is a category error (those are the DART grammar's node names), and it ignored that the analyzer emits the edge from `preproc_include`. Corrected here; the committed spec table was corrected by hand with a provenance note because this generator's measurement inputs are not in this checkout.",
+    emissionSymbol: "PartOf",
+  },
   implements: {
     constructs: ["class_specifier", "struct_specifier", "base_class_clause", "pure_virtual_clause", "virtual_specifier"],
     rule: "ADAPTED SEMANTICS, declared: C++ has no `implements` clause. The construct the value carries is the CONTRACT BASE — a base whose body declares a pure virtual (`virtual R f() = 0;`). One edge per (derived, base) pair where the base is in-file and declares at least one pure virtual; the edge is NOT a duplicate of `extends` (two readings of the same clause: 'inherits from' and 'implements this contract'), and it carries metadata.reasonCode pure-virtual-base + the pure-virtual member list so a consumer can re-derive it. A base with no in-file declaration, or with no pure virtual, emits NO edge (a guess here is the fabrication the workstream exists to prevent).",
@@ -155,11 +160,6 @@ const NOT_APPLICABLE: Record<string, {
     needs: ["mixin", "mixin_application_class", "with_clause"],
     reason: "no mixin/with production exists in the pinned C++ grammar. Multiple inheritance expresses composition of base classes and is carried by `extends`; there is no separate mixin application construct to publish.",
     vocabularyRuling: "extended value (Dart `with`), NOT APPLICABLE to C++.",
-  },
-  part_of: {
-    needs: ["part_directive", "part_of_directive", "part_clause"],
-    reason: "C++'s file-inclusion construct is `#include`, which IS a module edge and is published as `imports`; there is no part-file directive that shares one scope without importing (the construct `part_of` exists to distinguish).",
-    vocabularyRuling: "extended value (Dart `part`/`part of`), NOT APPLICABLE to C++.",
   },
 }
 
