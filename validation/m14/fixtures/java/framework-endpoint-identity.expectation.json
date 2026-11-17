@@ -1,0 +1,40 @@
+{
+  "fixtureId": "java/framework-endpoint-identity",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Compiler-valid local same-spelling annotations are not Spring MVC or OpenFeign. Neither a route nor a Feign relationship may be fabricated.",
+  "expectSymbols": [
+    {
+      "name": "FakeEndpoint",
+      "kind": "class"
+    },
+    {
+      "name": "method",
+      "kind": "method",
+      "ownerName": "FakeEndpoint"
+    },
+    {
+      "name": "feign",
+      "kind": "method",
+      "ownerName": "FakeEndpoint"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "/not-a-route",
+      "meta.isApiEndpoint": true
+    },
+    {
+      "type": "calls",
+      "from": "FakeEndpoint",
+      "target": "not-an-http-client"
+    }
+  ],
+  "forbidApiContractPaths": [
+    {
+      "symbol": "method",
+      "ownerName": "FakeEndpoint"
+    }
+  ]
+}

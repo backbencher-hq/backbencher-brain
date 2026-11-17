@@ -204,7 +204,8 @@ export interface UsageGroup {
   rows: GroupedRow[]
 }
 
-/** A raw file-level relationship row as stored (no symbol endpoint). The
+/** A raw file-level relationship row as stored (no source symbol endpoint;
+ * a project-local dependency may still resolve its target symbol). The
  *  SQL that fetches these lives in graph_request.ts (the only db-touching
  *  layer); classification is pure and lives here. */
 export interface FileLevelRawRow {

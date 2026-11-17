@@ -276,7 +276,7 @@ export async function handleGraphRequest(
   }
 
   // Usages mode serves the GROUPED shape. File-level
-  // imports/exports rows (NULL source symbol, targeting the root) are read
+  // imports/exports rows (NULL source symbol, with either a resolved or external target) are read
   // directly and land in the declared file-level sections — the traversal's
   // symbol JOIN cannot carry them (no symbol endpoint), and dropping them
   // would hide how the module reaches the codebase.
@@ -308,12 +308,14 @@ export async function handleGraphRequest(
     // above answers "what imports this symbol" (rows targeting the root). A
     // file-level dependency — `#include "util.h"`, emitted by c as the
     // first-class `imports` kind and stored with the importing file in
-    // source_external — has no symbol endpoint on EITHER side, so no symbol
-    // JOIN and no root target can ever reach it: c's include list was
+    // source_external — has no SOURCE symbol endpoint (a project-local import
+    // MAY have a resolved target), so traversal cannot reliably find it
+    // through a symbol JOIN: c's include list was
     // unanswerable in this surface no matter how the edge was typed. Read it
-    // by IMPORTER instead: rows whose source is this file, whose type is the
-    // first-class `imports` kind, and whose target is external (a specifier,
-    // not a symbol). Exact path match on source_external — no basename
+    // by IMPORTER instead: rows whose source is this file and whose type is a
+    // file-level dependency. A target may be external OR successfully resolve
+    // to an in-project symbol; both remain genuine file dependencies.
+    // Exact path match on source_external — no basename
     // guessing, so a language whose imports rows name a module leaf is
     // untouched, and a row that cannot name its importer is NOT returned
     // here (it stays a declared external row).
@@ -329,11 +331,14 @@ export async function handleGraphRequest(
     // (`node:fs:fs`, `node:path:path`, `node:url:fileURLToPath`), 2 for
     // `clean_effects.bench.js`, and 924 `imports` rows addressable by path across
     // the 250-file sample. Typescript still names a module leaf.
+    // Java regression: beta.Beta can resolve to a target_symbol_id while
+    // alpha/Alpha.java still imports it. Filtering on target_symbol_id IS
+    // NULL silently erased such local dependencies; source_file is the key.
     const fileDepsRaw = db
       .prepare(
         "SELECT id AS rowId, relationship_type AS relationshipType, target_external AS moduleSpecifier, confidence " +
           "FROM brain_relationship WHERE project_id = ? AND relationship_type IN ('imports', 'part_of') AND source_symbol_id IS NULL " +
-          "AND target_symbol_id IS NULL AND source_external = ?",
+          "AND source_external = ?",
       )
       .all(projectId, rootNode.file) as Array<{ rowId: string; relationshipType: string; moduleSpecifier: string | null; confidence: number }>
     const dependencies = classifyFileLevel(fileDepsRaw).imports

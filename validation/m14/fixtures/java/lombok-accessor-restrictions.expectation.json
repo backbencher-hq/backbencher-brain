@@ -1,0 +1,34 @@
+{
+  "fixtureId": "java/lombok-accessor-restrictions",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Lombok @Data does not create setters for final fields and does not create getters/setters for static fields; instance mutable fields still receive both.",
+  "expectSymbols": [
+    {
+      "name": "getId",
+      "ownerName": "AccessorRestrictions"
+    },
+    {
+      "name": "getAmount",
+      "ownerName": "AccessorRestrictions"
+    },
+    {
+      "name": "setAmount",
+      "ownerName": "AccessorRestrictions"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "setId",
+      "ownerName": "AccessorRestrictions"
+    },
+    {
+      "name": "getCounter",
+      "ownerName": "AccessorRestrictions"
+    },
+    {
+      "name": "setCounter",
+      "ownerName": "AccessorRestrictions"
+    }
+  ]
+}

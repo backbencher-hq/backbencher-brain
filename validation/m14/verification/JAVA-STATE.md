@@ -418,3 +418,206 @@ repository-owner decision and was not taken here.
 **Verdict: ACCEPT WITH LIMITATIONS.** 93/93 fixtures, both compiler
 oracles green, typecheck clean, M12 unchanged, zero regex. The
 limitations above are documented boundaries, not open defects.
+
+
+---
+
+## 2026-11-17 review branch — semantic hardening, evidence checkpoint
+
+This is a **new draft-PR checkpoint** (PR #1, branch
+`audit/java-semantic-proof-20261116`), not a replacement for the
+2026-11-16 11,152-file incoming-gate measurements above.
+
+### Measured, GitHub-hosted Java verification (run 44019069547)
+
+| Check | Verified outcome |
+| --- | --- |
+| `npm run typecheck` | PASS |
+| `bun run script/m14/run-fixtures.ts --lang java` | **98 pass / 0 fail** |
+| Red-control: same 98 fixtures on original analyzer `29a579243` | **93 pass / 5 fail** |
+| `JavaMethodGenericOverrideOracle` | **12/12 javac facts** |
+| `JavaAnalyzerRemediationOracle` | **13/13 javac facts** |
+| `JavaAnalyzerSemanticOracle` | **10/10 javac facts** |
+
+GitHub Actions evidence: https://github.com/backbencher-hq/backbencher-brain/actions/runs/44019069547
+The red-control run uses the identical fixture set and original production
+analyzer, which establishes that the five new regressions fail before the
+fixes. Its failure is expected and asserted by CI.
+
+**M12 differential measured on this review branch:** TP=95, FP=105,
+FN=21, unknown=6, unchanged from the pre-batch reading; **the M12
+differential still FAILS**. The CI diagnostic step records the result
+and enforces baseline equality rather than concealing its nonzero exit.
+
+**Still unmeasured on the review branch:** complete corpus
+`BB_CORPUS_ROOT` incoming gate, cross-file owner/member binding in
+SQLite, and full `npm run verify`. Small-fixture and compiler-oracle
+passes do not certify the whole-lane relationship resolver or replace
+the recorded corpus FAIL.
+
+New current behavioral details and accepted limitations are in
+[`JAVA-SEMANTIC-PROOF-2026-11-16.md`](JAVA-SEMANTIC-PROOF-2026-11-16.md)
+and `docs/analyzers/java.md`. Do **not** label the Java analyzer
+production-complete from these green tests alone.
+
+
+---
+
+## 2026-11-17 — Final pre-handoff evidence checkpoint (PR #1 remains draft)
+
+This supersedes the **older numerical snapshot** in this file's previous
+review-branch section, not its historical account of how the work evolved.
+
+| Evidence | Latest independently executed result |
+| --- | --- |
+| Source commit under test | `a817d82b53832e390833f2ba8f86ee37b72d3890` |
+| Java M14 fixtures | **103 pass / 0 fail** |
+| Original analyzer on same fixture set | **94 pass / 9 fail** |
+| Java 21 compiler oracles | **12/12 + 13/13 + 12/12 = 37/37** |
+| Production TS typecheck | **PASS** |
+| M12 Java differential | **TP 95, FP 105, FN 21, unknown 6 — still FAILING** |
+| Full admitted Java incoming/corpus gate | **UNMEASURED on this branch** |
+| Persisted indexer/SQLite cross-file binding | **UNMEASURED on this branch** |
+| Full `npm run verify` | **UNMEASURED on this branch** |
+
+Proof:
+https://github.com/backbencher-hq/backbencher-brain/actions/runs/44022401654
+
+A later verification workflow change strengthens the red-control assertion to
+name all nine regression fixtures explicitly. CI on that workflow change must
+pass independently before the final state can be considered verified.
+
+**Correction to stale historical CI paragraphs above:** statements saying
+`ci.yml` and `lane-protection.yml` still carry `if: false` described
+an older snapshot. The current branch's Java semantic workflow and lane
+protection have actually executed successfully; the normal CI workflow's
+Node build/test matrix has likewise run. Reconfirm the **final head SHA**,
+not a superseded successful run, before signoff.
+
+### Outstanding acceptance requirements — do not relabel as passed
+
+1. Run the admitted `BB_CORPUS_ROOT` Java incoming gate on a fixed, repeatable
+   corpus checkout. Record the original failure counts and after-correction
+   counts for ambiguous, unresolved, inaccessible and unverified edges, and
+   independently inspect changed claims.
+2. Independently adjudicate M12's 105 FP / 21 FN rather than overwriting
+   ground truth to make metrics green; separate obsolete oracle/identity
+   assumptions from extraction defects.
+3. Test the actual worker/indexer/SQLite pipeline and the public graph/impact
+   APIs with overloaded and same-name Java method declarations in multiple files.
+4. Run the full repository verification command, including the relevant Java
+   scripts/doc link checks, in the authorized local development environment.
+5. Review the 103 fixtures' assertion sensitivity, plus Java compiler-backed
+   negative/positive controls. The red-control comparison currently detects
+   nine previously unguarded defects but is not an exhaustive mutation score.
+
+**Conclusion:** Verified targeted improvement; **not yet a production-grade
+acceptance certificate**. Leave this PR draft and leave `main` unchanged
+until the remaining evidence has been reviewed.
+
+
+---
+
+## 2026-11-17 — Java SQLite import-channel closure, pre-handoff
+
+**Current verification record** (the previous 103-fixture snapshot is historical):
+
+- Source branch `audit/java-semantic-proof-20261116` at the latest PR head.
+- [Successful Java semantic CI run 44025333667](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025333667) on commit `bc9fdd80faa862fb7ac3d46a242671e5d26f4f6c`:
+  **104/104 Java fixtures**; pre-fix analyzer **94 pass, 10 fail** (each of
+  ten named regressions asserted); existing compiler oracles 12/12 and 13/13,
+  semantic oracle **15/15**, total **40/40**; TypeScript typecheck PASS.
+- REAL SQLite/store: **4/4 Java import-channel rows retained**, including
+  **2/2 file-level imports from two separate files**, and three overload/cross-file
+  method declarations retained.
+- Red control: replacing the corrected indexer with the original one MUST
+  fail specifically on an import-channel persistence invariant. Verified in
+  the successful Java CI job.
+- M12: still TP=95, FP=105, FN=21, unknown=6, `passed:false`.
+  **Baseline equality only**, NOT a passing differential.
+- Standard CI has a separate longer runner; check its latest-head result before
+  using it as evidence.
+
+### Closed concrete defect, not papered over
+
+An ordinary Java import publishes two **different** `imports` edges:
+declaration/binding evidence and file-level module dependency. Previous
+store-row IDs collapsed both because they shared target and line. The first
+insertion won and could leave `source_external=Alpha` instead of
+`alpha/Alpha.java`, making `bb_graph` per-file imports disappear.
+
+An attempted workaround deleting the declaration evidence edge was
+**reverted** because import-label and imported-binding fixtures correctly
+require it. The accepted implementation changes
+`src/ast/parallel-indexer.ts` to give the Java `fileLevel` imports channel
+a distinct ID suffix while preserving existing declaration-edge IDs.
+It also sets file-level source identity to NULL symbol ID / relative
+file pathname even when the analyzer-supplied source name resembles
+a local class. The SQLite probe and its negative control validate both.
+
+### Remaining acceptance blockers (NOT closed)
+
+1. Full pinned **11,152-file** Java incoming corpus check. The pinned
+   `BB_CORPUS_ROOT` tree is unavailable in the authoring runtime.
+   Do not infer a PASS from a two-file SQLite probe.
+2. M12's **105 FP / 21 FN** reference disagreements need independent
+   per-fact adjudication. The ground truth lacks imports/exports and
+   carries stale naming contracts; neither a blind truth rewrite nor
+   accepting all observed rows is allowed.
+3. Full worker/indexer/SQLite/public `bb_graph` and impact cross-file
+   canonical method resolution, including overloads and generic
+   substitutions, needs the admitted corpus and queried truth oracle.
+4. Full `npm run verify` (not only `verify:fast`), plus Java-specific
+   mutant suites and documentation checks under the local environment.
+5. Out-of-scope features must be published explicitly: composed Spring
+   annotations, multi-route arrays, classpath-resolved generic inheritance,
+   runtime annotation processing. They are not covered simply because the
+   narrow fixtures pass.
+
+**Decision: remain DRAFT, DO NOT MERGE.** This document reports the actual
+verified improvements and explicit open work, not a promise that no further
+Java issue exists. A final acceptance decision requires independent evidence
+on the missing full-population and consumer gates.
+
+
+## 2026-11-17 — Independently attributed M12 Java compiler proof
+
+[Successful Java CI job 44025860094](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025860094)
+ran the four actual `validation/m12/fixtures/java` source files through
+Java 21's `JavacTask`, with a minimal isolated Spring stereotype stub.
+`JavaM12CompilerAdjudication.java` verified **24/24 attributed compiler
+facts**: declarations of nested/record/enum/interface types, true generic
+and nested-interface overrides, a false-overload negative control, and
+fully-qualified Spring annotation identity.
+
+The three earlier compiler oracles remain **12/12 + 13/13 + 15/15**,
+for a total **64/64** compiler checks in that CI run. The Java M14
+fixtures remain **104/104**, the original analyzer fails the 10 named
+regression fixtures, and the SQLite file-level dependency test and
+its original-indexer negative control pass.
+
+**Limit:** these 24 independent facts validate specific disputed Java
+semantics but DO NOT cover all 105 false-positive or 21 false-negative M12
+IDs. The differential itself remains `passed:false`; no M12 ground truth
+was rewritten. The pinned Java full corpus and query-level consumer
+acceptance gates also remain outstanding.
+
+
+## 2026-11-17 — Local imports and M12 reconciliation
+
+- `bb/graph` usages now serves Java project-local imports even when the
+  imported type resolves to a persisted symbol. Proof is the actual handler
+  over real SQLite, with controlled traversal input:
+  https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121093768
+- A read-only mismatch classification has been exercised in CI:
+  https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121807895
+- M12 raw comparison remains 95 TP / 105 FP / 21 FN / 6 unknown, FAIL.
+  Exactly 28 FP are uncovered imports/exports families. Thirteen FP/FN
+  pairs are candidate old-vs-new symbol/containment identity conventions
+  (7 declaration-line, 3 constructor name, 3 constructor containment).
+  64 FP and 8 FN remain unmatched; four of the eight FN involve compiler-
+  justified overrides awaiting sound cross-file binding.
+- Neither test proves an error-free full Java index or settles the pinned
+  11,152-file corpus. Full `npm run verify` remains unexecuted.
+
+NO MERGE: PR remains draft until all acceptance barriers are independently met.

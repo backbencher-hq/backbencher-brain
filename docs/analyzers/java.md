@@ -1026,3 +1026,204 @@ New compiler-valid negative regression:
 `java/local-builtin-name-shadowing`. The receiver-type model still
 does not constitute full javac name binding across compilation units;
 that remains a documented limitation, not a 100% proof.
+
+
+## 2026-11-17 — Framework and implicit-Object semantic proof (draft PR #1)
+
+The review branch `audit/java-semantic-proof-20261116` adds five M14 Java
+regressions and a dedicated GitHub Actions verification workflow. Source:
+[`validation/m14/verification/JAVA-SEMANTIC-PROOF-2026-11-16.md`](../../validation/m14/verification/JAVA-SEMANTIC-PROOF-2026-11-16.md).
+
+**Executed on GitHub Actions (run 44019069547; reviewed code prior to this
+documentation-only update):** Java M14 **98 pass / 0 fail**; comparison
+against the original analyzer from base `29a579243458490ff23d8de3f7f8f46aad120a43`:
+**93 pass / 5 fail**; independent javac checks 12/12 (generic overrides),
+13/13 (remediation oracle), and 10/10 (new Java semantic oracle); production
+TypeScript typecheck PASS. The red control is essential: five new fixtures
+detect five previously unguarded defect families. This is **not** a full
+repository/corpus accuracy certificate.
+
+### Behaviors now specifically pinned
+
+- `@GetMapping` / `@RequestMapping` / `@FeignClient` must bind through an
+  explicit framework single-type import or their fully qualified name;
+  project-local same-name annotations do not manufacture framework edges.
+  Wildcard imports and classpath-only attribution remain unknown.
+- Spring `RequestMethod.GET` is treated as the named enum constant `GET`,
+  rather than concatenating `RequestMethod` and `GET` into an unknown verb.
+  Array-valued HTTP verb expressions still need fuller modeling.
+- Plain class methods `public String toString()` and `public int hashCode()`
+  recognize their implicit `java.lang.Object` override. Graph sources still
+  use `Owner.method`, while `metadata.declaringType` preserves the canonical
+  JDK owner `java.lang.Object`. This narrow case must not be represented as
+  full Object override inference.
+- Lombok `@Data` no longer synthesizes setters for `final` instance fields
+  or any accessors for `static` fields.
+- Spring Data synthetic method claims do not duplicate declared same-name
+  repository methods. `count()` has `long` return and delete methods `void`
+  where known; generic return types that cannot be substituted remain absent,
+  not invented as `Object`.
+
+### Remaining verification gates
+
+**M12 differential (measured separately on the review branch):** TP=95,
+FP=105, FN=21, unknown=6, identical to the previously recorded Java baseline.
+This is a **known-failing differential**, not a pass. The CI workflow records
+the failing result and asserts that these four metrics did not regress; it
+does not pretend that a nonzero FP/FN report is green.
+
+**Not run here:** the complete `BB_CORPUS_ROOT` Java incoming gate and an
+end-to-end SQLite/indexer relationship-identity comparison. The previously
+recorded Java corpus-gate FAIL remains open until a fresh comparable run.
+Compiler-oracle and small-fixture success cannot overwrite that result.
+The implementation remains **acceptance pending** until these measurements
+and the normal project CI matrix are reviewed.
+
+
+### 2026-11-17 — Pre-handoff follow-up: additional corrections
+
+The second review batch is grounded by GitHub Actions
+[`44022401654`](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44022401654)
+on commit `a817d82b53832e390833f2ba8f86ee37b72d3890`.
+It reports **103/103 Java M14 fixture passes**, a 94-pass/9-fail
+**red-control** run with the original `29a579243` analyzer, and
+**37/37 independent compiler facts** (12 generic override, 13 existing
+remediation, 12 semantic). TypeScript typecheck PASS.
+
+Further source corrections (all present in that run):
+
+- JPA `Entity`, `Table` and column mapping, Spring bean role and Spring
+  `@Value` injection now require a qualified or single-type-imported
+  framework annotation rather than the same short name in project code.
+  A lone JPA `@Table` is not evidence of an `@Entity`.
+- Jakarta REST `@Path` without an HTTP-method designator is a **subresource
+  locator** rather than an HTTP method. Proven `@GET`/`@POST` annotations
+  preserve their verb with class- and method-level URI paths.
+- Lombok-generated primitive boolean `isReady()` / `isActive()` use
+  the correct conventions; boxed `Boolean` retains `getX()`.
+- Exact `equals(java.lang.Object)` overrides the implicit
+  `java.lang.Object` member for ordinary classes, but `equals(String)`
+  is not counted as that override.
+- Spring Data generic `save(S)` / `findById(ID)` / `deleteById(ID)`
+  no longer claim their parameters have concrete `Object` types.
+  Parameter type is absent with `javaParameterTypeUnbound` metadata;
+  fully substituted generic method signatures remain out of scope.
+
+**Known incomplete Java features, not certified by these fixes:** array-valued
+HTTP methods/routes, Spring composed annotations, classpath-dependent mapping
+and inherited Spring Data generics, exact overload identity in the persisted
+cross-file graph, JPMS/runtime integration, and the full M14 corpus gate.
+The M12 reference run still has **95 TP / 105 FP / 21 FN / 6 unknown**
+and remains **FAILING**: its unchanged baseline is not a correctness pass.
+All 103 M14 fixtures are small authored examples, not a statistical precision
+or recall certificate. Do not declare this analyzer production-complete until
+the full admitted corpus and persisted API claims are independently evaluated.
+
+
+### 2026-11-17 — Real Java indexer/storage contract: two import channels
+
+**Verified on GitHub Actions** in
+[Java semantic proof run 44025080288](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025080288):
+104/104 M14 Java fixtures, 94 passes / 10 failures on the original analyzer
+(10 specifically named negative controls), Java compiler semantic oracle
+15/15, existing compiler oracles 12/12 + 13/13, production TS typecheck PASS,
+and **JAVA_SQLITE_E2E_PASS: 4/4 import rows, 2/2 file-level dependencies,
+3 overloaded/cross-file method declarations stored**.
+
+This is a new *real database* integration test, not a mock of SQLite:
+`script/m14/java-store-e2e-smoke.ts` uses `ASTEngine.parseFile`,
+`storeResults`, and `BrainDatabase` with two temporary source files
+whose imports occupy the same line.
+
+**Defect found:** a Java import intentionally emits two imports-typed facts:
+(1) an `import_declaration` evidence row enriched with import binding metadata,
+and (2) the actual `fileLevel` dependency row used by `bb_graph`.
+Both have the same target and line. The old relationship primary key omitted
+the semantic channel, causing `INSERT OR IGNORE` to retain the first row and
+silently discard the file-level one. A mutation that simply removed one emission
+would pass the persistence test while violating the existing M14 import-label
+and imported-binding contracts. It was **rejected**, not merged.
+
+**Fix:** `src/ast/parallel-indexer.ts` now gives Java file-level import
+rows a distinct `:channel:file-level` identity suffix. Their
+`source_symbol_id` is NULL and `source_external` is the relative file path
+even when a primary-type symbol matches the source spelling. The declaration
+evidence row retains its original identity and imported-binding data.
+
+The dedicated Java CI workflow also runs a **red-control** against the base
+indexer. A failure caused by losing an import channel (not an arbitrary command
+failure) is required before the corrected indexer is considered covered.
+
+**Unresolved acceptance requirements:** the pinned full Java corpus
+`BB_CORPUS_ROOT` incoming gate, M12 source-level FP/FN adjudication,
+cross-file canonical overloaded-method target binding in the public graph,
+and the whole repository `npm run verify`. An in-memory two-file SQLite
+round-trip is a positive, necessary regression, not sufficient evidence for
+the 11,152-file pinned corpus or complete API semantic correctness.
+
+
+## 2026-11-17 — Independently attributed M12 Java compiler proof
+
+[Successful Java CI job 44025860094](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025860094)
+ran the four actual `validation/m12/fixtures/java` source files through
+Java 21's `JavacTask`, with a minimal isolated Spring stereotype stub.
+`JavaM12CompilerAdjudication.java` verified **24/24 attributed compiler
+facts**: declarations of nested/record/enum/interface types, true generic
+and nested-interface overrides, a false-overload negative control, and
+fully-qualified Spring annotation identity.
+
+The three earlier compiler oracles remain **12/12 + 13/13 + 15/15**,
+for a total **64/64** compiler checks in that CI run. The Java M14
+fixtures remain **104/104**, the original analyzer fails the 10 named
+regression fixtures, and the SQLite file-level dependency test and
+its original-indexer negative control pass.
+
+**Limit:** these 24 independent facts validate specific disputed Java
+semantics but DO NOT cover all 105 false-positive or 21 false-negative M12
+IDs. The differential itself remains `passed:false`; no M12 ground truth
+was rewritten. The pinned Java full corpus and query-level consumer
+acceptance gates also remain outstanding.
+
+
+### 2026-11-17 — Real bb/graph usages: resolved Java import targets are still dependencies
+
+A second end-to-end regression was found by extending
+`script/m14/java-store-e2e-smoke.ts` with two valid Java compilation units
+importing **one another's top-level types**. The old query in
+`src/lsp/graph_request.ts` demanded both `source_symbol_id IS NULL`
+and `target_symbol_id IS NULL`. The indexed local import can correctly
+resolve `target_symbol_id` to a project type: the old filter discarded
+the very relationship the analyzer and indexer had preserved.
+
+The corrected `bb/graph` usages dependency query matches the **importing
+file**, not the absence of a target symbol. It still requires an unresolved
+source symbol (`source_symbol_id IS NULL`) and exact importing
+`source_external` path. It does not erase a valid resolved target.
+
+**Proof:** [Java CI run 44121093768](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121093768)
+passed the real store and actual `handleGraphRequest` usages handler
+with both project-local imports. The test includes the historical
+`target_symbol_id IS NULL` query as a NEGATIVE CONTROL: it must return
+zero for those resolved local imports. The handler uses a controlled
+traversal payload, so this proves the real persisted SQL and group
+classification, **not** full graph traversal/impact attribution.
+
+### 2026-11-17 — M12 mismatch census without ground-truth mutation
+
+A new read-only CI census (`script/m14/java-m12-mismatch-census.ts`)
+partitions the existing **105 FP + 21 FN** IDs, checks exact conservation
+of every mismatch, and reports:
+- **28 FP** in `imports`/`exports`, relationship kinds absent from the
+  manual M12 truth. These are coverage omissions, not certified true
+  or false Java statements.
+- **13 mechanically paired FP/FN identity candidates**: 7 annotation-vs-
+  declaration line offsets, 3 constructor symbol naming differences, and
+  3 constructor containment naming differences. Pairing is NOT an
+  independent semantic verdict.
+- **64 FP** and **8 FN** remain unmatched by those classifications.
+  Four of the eight FN are `overrides` facts independently confirmed
+  by `javac` but not correctly adjudicated by the M12 comparison.
+
+[Successful CI run 44121807895](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44121807895)
+confirmed the census and its accounting. The M12 gate remains
+`passed:false`; no oracle fact or baseline metric was rewritten.

@@ -512,6 +512,20 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
         continue
       }
       if (direct.length > 1) {
+        // A Java class legally declares several methods with the SAME name
+        // but DIFFERENT parameter signatures. Those methods are distinct
+        // declarations; the generic same-kind duplicate rule below (needed
+        // for Python overload stubs) cannot choose among Java overloads.
+        // The Java call payload currently carries arity, not a compiler-
+        // resolved signature, so abstain rather than invent a concrete target.
+        if (row.relationship_type === "calls" &&
+            typeof metadata.javaCallExpression === "string" &&
+            direct.every(member => member.kind === "method")) {
+          rawDb.prepare("UPDATE brain_relationship SET metadata = ? WHERE id = ?")
+            .run(JSON.stringify({ ...metadata, javaOverloadAmbiguous: true }), row.id)
+          out.ambiguousInChain++
+          continue
+        }
         // SAME-KIND candidates are ONE member, and the rule is a fact about the CANDIDATES rather
         // than about a language. A language can publish two symbols for a single member — python's
         // `x: T` (class-body annotation, PEP 526) beside `self.x = ...` (instance assignment) is

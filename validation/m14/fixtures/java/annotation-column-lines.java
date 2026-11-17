@@ -9,6 +9,7 @@
 package lines;
 
 import java.time.Instant;
+import jakarta.persistence.Column;
 
 class Items {
   @Column

@@ -1,0 +1,44 @@
+{
+  "fixtureId": "java/framework-jpa-bean-identity",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Compiler-valid project-local annotation declarations are not JPA, Spring stereotypes, or Spring @Value; they cannot produce database/config claims or framework flags.",
+  "expectSymbols": [
+    {
+      "name": "LocalAnnotationCollision",
+      "kind": "class"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "LocalAnnotationCollision",
+      "meta.spring_bean": true
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "target": "not_real",
+      "meta.relationshipType": "mapped_table"
+    },
+    {
+      "type": "uses",
+      "target": "not_column",
+      "meta.relationshipType": "mapped_column"
+    },
+    {
+      "type": "uses",
+      "target": "not_getter",
+      "meta.relationshipType": "mapped_column"
+    },
+    {
+      "type": "uses",
+      "target": "not.real",
+      "meta.relationshipType": "config_property"
+    }
+  ],
+  "forbidFrameworks": [
+    "jpa",
+    "spring"
+  ]
+}
