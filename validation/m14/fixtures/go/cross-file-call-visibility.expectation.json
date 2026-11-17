@@ -1,0 +1,56 @@
+{
+  "fixtureId": "go/cross-file-call-visibility",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS A CALL EDGE THAT WAS MISSING FOR EVERY FUNCTION IN ANOTHER FILE OF THE SAME PACKAGE. `resolveGoFunctionCall`'s bare branch required the callee to resolve to a SAME-FILE callable, so a sibling-file package function — routine Go, not an edge case — was DROPPED ENTIRELY: no `calls` edge at any confidence. PROVEN on go-tools/cmd/benchcmp, where `fatal`, `formatNs` and `parseFile` (declared in benchcmp.go) all publish `calls` rows while `Correlate` (declared in compare.go, called at benchcmp.go:50 as `cmps, warnings := Correlate(before, after)`) publishes NOTHING. FOUND BY THE ORACLE DIFFERENTIAL, NOT BY AN INTERNAL INVARIANT: every range check, resolution check, explanation-coverage check and fixture the lane owned was GREEN while 16,004 cross-file calls were invisible — 4.4% of the whole graph. MEASURED on go-tools + terraform (3,422 files): `calls` 128,259 -> 142,609 and total edges 363,830 -> 386,039, with the symbol count UNCHANGED at 58,470 and every other relationship type byte-identical; on the 400-file oracle draw `calls` recall 0.607 -> 0.634 and the UNEXPLAINED `calls` bucket 934 -> 461. THE FIXTURE PINS BOTH HALVES, AND THAT IS THE POINT: a bare callee is emitted when it is NOT locally bound, and stays SILENT when it is. Emitting everything would fabricate calls for closures and parameters (LocalsAreNotSymbols); emitting only same-file declarations is the bug. The one expected row is the sibling shape; the three forbid rows are the three ways a name is locally bound — a `:=` closure variable, a parameter, and a range variable. A fix that emitted every unresolved bare callee would satisfy the expected row and fail all three forbid rows, which is exactly the over-reach this fixture is built to catch. THE CONVERSION GUARD IS ALSO COVERED BY AN EXISTING PIN rather than here: the relaxation first published `calls startWork -> float64`, and go/relationship-and-payloads forbids `calls -> float64` and caught it, which is why predeclared types are excluded in the resolver (a conversion is not a call). NOT PINNED: line numbers, and the qualified branch, which already kept its leaf before this change and is unaffected.",
+  "expectSymbols": [
+    {
+      "name": "Set",
+      "kind": "struct"
+    },
+    {
+      "name": "localClosure",
+      "kind": "function"
+    },
+    {
+      "name": "paramCall",
+      "kind": "function"
+    },
+    {
+      "name": "rangeCall",
+      "kind": "function"
+    },
+    {
+      "name": "siblingCaller",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "THE BUG: a bare call to a function that is not declared in this file can only name a package-level function from a SIBLING file. It must publish the leaf, exactly as the qualified branch already does for an unresolved `strings.ToUpper` -> `ToUpper`.",
+      "type": "calls",
+      "from": "siblingCaller",
+      "target": "SiblingHelper"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "OVER-REACH 1: a `:=` CLOSURE variable. `done()` is not a static call to a declared symbol, and LocalsAreNotSymbols keeps locals out of the graph.",
+      "type": "calls",
+      "from": "localClosure",
+      "target": "done"
+    },
+    {
+      "comment": "OVER-REACH 2: a PARAMETER that is callable.",
+      "type": "calls",
+      "from": "paramCall",
+      "target": "fn"
+    },
+    {
+      "comment": "OVER-REACH 3: a RANGE variable used as a callee — bound by the loop, so it names a local closure value, not a package function.",
+      "type": "calls",
+      "from": "rangeCall",
+      "target": "f"
+    }
+  ]
+}

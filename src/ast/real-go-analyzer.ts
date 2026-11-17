@@ -468,6 +468,43 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   private goCallSites = new Map<number, Map<string, Node>>()
 
   /**
+   * Every name BOUND anywhere inside each function body, keyed by the function's
+   * `startIndex` (file-local, like `goCallSites`).
+   *
+   * WHY: a bare call target must be emitted even when no symbol in THIS file declares it —
+   * `Correlate(...)` where `Correlate` lives in a sibling file of the same package is a real
+   * call and was being dropped entirely, because `resolveGoFunctionCall`'s bare branch
+   * required a SAME-FILE callable. The one thing that must still be suppressed is a call to a
+   * name that is LOCALLY BOUND (a parameter, a `:=` variable, a range target, a closure
+   * variable) — `done()` where `done := func(){}` is not a static call to a declared symbol,
+   * and `LocalsAreNotSymbols` says locals are execution artifacts.
+   *
+   * The set is a CONSERVATIVE OVER-APPROXIMATION for the whole function rather than a
+   * position-sensitive scope stack: a name bound anywhere in the body suppresses the bare-call
+   * edge everywhere in that body. That errs toward silence, never toward fabrication — the
+   * failure mode it can still have is missing a sibling-file call whose name happens to be
+   * bound elsewhere in the same function, which is rare and is the safe direction.
+   */
+  private goBoundNames = new Map<number, Set<string>>()
+
+  /**
+   * Go's PREDECLARED TYPE identifiers (spec, Predeclared identifiers).
+   *
+   * `float64(x)` reaches the grammar as an ordinary `call_expression`, so the bare-call
+   * relaxation would publish `calls -> float64` — but a CONVERSION is not a call. The
+   * builtin-FUNCTION filter (`isGoBuiltin`) does not cover these because they are types:
+   * `go/relationship-and-payloads` caught exactly one such row (`calls startWork ->
+   * float64`) the moment the relaxation landed, which is the fixture doing its job.
+   */
+  private static readonly GO_PREDECLARED_TYPES: ReadonlySet<string> = new Set([
+    "int", "int8", "int16", "int32", "int64",
+    "uint", "uint8", "uint16", "uint32", "uint64", "uintptr",
+    "float32", "float64", "complex64", "complex128",
+    "string", "bool", "byte", "rune", "error", "any", "comparable",
+  ])
+
+
+  /**
    * The canonical signature text of each method symbol, keyed by the method
    * node's `startIndex` (file-local, so it cannot collide) — see `goCallSites`
    * for the same discipline. The pre-fix code re-derived it on EVERY
@@ -485,6 +522,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: GoContext = { filePath, content }
     this.goCallSites = new Map()
+    this.goBoundNames = new Map()
     this.goSignatures = new Map()
 
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -2664,6 +2702,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.goCallSites.set(functionNode.startIndex, sites)
+    this.goBoundNames.set(functionNode.startIndex, this.collectGoBoundNames(functionNode))
     return calls
   }
 
@@ -4038,7 +4077,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       forEachSymbol(qualifiedCalls, (call) => {
         const callLine = this.nodeLine(callSites?.get(call))
         // Handle package-qualified calls (package.Function) — leaf target
-        const targetFunction = this.resolveGoFunctionCall(call, symbols, dotImported)
+        // The LOCAL-BINDING set for THIS function: a bare callee that resolves to nothing in
+        // this file is still a real call when the name is not locally bound — it names a
+        // sibling-file package function (GO-GAP-4).
+        const boundNames = this.goBoundNames.get(func.range?.startIndex ?? -1)
+        const targetFunction = this.resolveGoFunctionCall(call, symbols, dotImported, boundNames)
         // Builtin-leaf guard (deep-review 2026-08-29, go-tools @200): the
         // oracle filters Go builtins by RESOLVED leaf name. findGoFunctionCalls
         // checks the FULL call text (`v.len` -> prefix `v`), so a method call
@@ -4739,6 +4782,79 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c) stack.push(c)
       }
     }
+  }
+
+  /**
+   * Every name BOUND anywhere inside a function: parameters, the receiver, generic type
+   * parameters, `:=` targets, `var`/`const` spec names, range targets and type-switch
+   * scrutinee bindings. Used by the bare-call resolver to keep a call to a LOCAL binding out
+   * of the graph while letting a call to a sibling-file package function through.
+   *
+   * CONSERVATIVE BY DESIGN: this is a flat set for the whole function, not a position-sensitive
+   * stack. A name bound in one branch suppresses the bare-call edge in every branch. That can
+   * only ever MISS an edge (a sibling-file call whose name is also a local elsewhere in the same
+   * body); it can never fabricate one, and fabrication is the failure this lane must not have.
+   */
+  private collectGoBoundNames(functionNode: Node): Set<string> {
+    const names = new Set<string>()
+    const bindIdentifiersUnder = (root: Node): void => {
+      const walk: Node[] = [root]
+      while (walk.length > 0) {
+        const m = walk.pop()!
+        if (m.type === "identifier" && m.text !== "_") names.add(String(m.text))
+        for (let i = 0; i < m.namedChildCount; i++) {
+          const c = m.namedChild(i)
+          if (c) walk.push(c)
+        }
+      }
+    }
+    const walk: Node[] = [functionNode]
+    while (walk.length > 0) {
+      const n = walk.pop()!
+      switch (n.type) {
+        // Parameters, receivers and generic type parameters all live in one of these lists.
+        // Binding every identifier under them is deliberate: an unnamed parameter's type
+        // identifier is a type, and over-binding it can only suppress an edge.
+        case "parameter_list":
+        case "type_parameter_list":
+          bindIdentifiersUnder(n)
+          break
+        case "short_var_declaration": {
+          const left = n.childForFieldName("left") ?? (n.namedChildCount > 0 ? n.namedChild(0) : null)
+          if (left) bindIdentifiersUnder(left)
+          break
+        }
+        case "var_spec":
+        case "const_spec":
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "identifier" && c.text !== "_") names.add(String(c.text))
+          }
+          break
+        case "range_clause": {
+          // Every child except the LAST (the ranged-over expression) binds.
+          for (let i = 0; i < n.namedChildCount - 1; i++) {
+            const c = n.namedChild(i)
+            if (c) bindIdentifiersUnder(c)
+          }
+          break
+        }
+        case "type_switch_statement":
+          // `switch t := x.(type)` binds only when a scrutinee follows the expression list.
+          if (n.namedChildCount > 2) {
+            const first = n.namedChild(0)
+            if (first) bindIdentifiersUnder(first)
+          }
+          break
+        default:
+          break
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk.push(c)
+      }
+    }
+    return names
   }
 
   private analyzeGoBareIdentifierUses(
@@ -6297,7 +6413,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Resolve Go function call to find target
    */
-  private resolveGoFunctionCall(callExpression: string, symbols: ASTEngine.UniversalSymbol[], dotImported = false): string | undefined {
+  private resolveGoFunctionCall(
+    callExpression: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    dotImported = false,
+    boundNames?: Set<string>,
+  ): string | undefined {
     // Handle package-qualified calls (package.Function) — always resolve to
     // the LEAF name (Rust M12.18 contract): `strings.ToUpper` -> `ToUpper`,
     // `s.repo.Save` -> `Save`. Stdlib/external leaves are kept as call
@@ -6317,8 +6438,23 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // by callers) — resolve leniently, mirrored by the oracle.
     if (dotImported) return callExpression || undefined
     const targetFunction = findSymbol(symbols, (s) => this.isGoPackageCallable(s) && s.name === callExpression)
+    if (targetFunction) return targetFunction.name
 
-    return targetFunction?.name
+    // GO-GAP-4: not declared in THIS file, but still a real call. A bare callee that is not
+    // LOCALLY BOUND names a package-level function that may live in a SIBLING file of the same
+    // package — `Correlate(...)` declared in compare.go and called from benchcmp.go is the
+    // measured case, and it published NO edge at all before this branch existed. Emitting the
+    // leaf is the same contract the qualified branch above already applies to an unresolved
+    // `strings.ToUpper` -> `ToUpper`: an external leaf is kept as the target rather than
+    // dropped. What stays silent is a callee the enclosing function BINDS (parameter, `:=`
+    // target, range variable, closure variable): `done()` where `done := func(){}` is not a
+    // static call to a declared symbol, and LocalsAreNotSymbols keeps locals out of the graph.
+    // A CONVERSION is not a call: `float64(x)` has call_expression shape but names a
+    // predeclared TYPE. `go/relationship-and-payloads` forbids `calls -> float64` and
+    // caught the relaxation publishing exactly that, so the guard lives here.
+    if (RealGoAnalyzer.GO_PREDECLARED_TYPES.has(callExpression)) return undefined
+    if (boundNames && !boundNames.has(callExpression)) return callExpression
+    return undefined
   }
 
   /**
