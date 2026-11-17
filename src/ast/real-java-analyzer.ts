@@ -1233,6 +1233,24 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               javaHasExplicitSuperclass: inheritance.extendsClass !== null,
               isPublic: visibility === "public",
               isAbstract: modifiers.indexOf("abstract") !== -1 || type === "interface_declaration",
+              // DIRECT SUPER TYPES, PUBLISHED (java lane, 2026-11-17).
+              //
+              // `metadata.superTypes` is the field the store copies into
+              // `brain_symbol.super_types`, and that column is the ancestry the resolution
+              // machinery walks: `member-owner-resolution.ts` builds its ancestor frontier
+              // from it (`superTypesById` -> `ancestorsOf`), and `override-retarget.ts`
+              // reads it. Before this, java published the key ONLY for anonymous classes,
+              // so every named java type had NO ancestry in the resolver — an
+              // owner-carrying call could not be resolved through the class that inherits
+              // the member, and attaching an owner to an inherited member measurably LOST
+              // resolutions (pinned corpus: resolved 646,596 -> 645,690).
+              //
+              // The list is the same one `classHierarchy` and the `extends`/`implements`
+              // edges already use, so nothing is invented here: one source of truth,
+              // published one level lower. Omitted when the type declares no supertype —
+              // JLS 8.1.4 makes an omitted superclass `Object` for member lookup, but
+              // claiming `Object` here would publish ancestry the source never wrote.
+              ...(parents.length > 0 ? { superTypes: [...parents] } : {}),
               ...(isSpringBean ? { spring_bean: true, springBeanRole: springBeanAnnotation!.name } : {})
             },
           }
