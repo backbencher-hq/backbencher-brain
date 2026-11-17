@@ -1066,10 +1066,15 @@ repository/corpus accuracy certificate.
 
 ### Remaining verification gates
 
-**Not run in this CI job:** the full M12 differential, the complete
-`BB_CORPUS_ROOT` Java incoming gate, and an end-to-end SQLite/indexer
-relationship-identity comparison. The existing Java corpus-gate FAIL recorded
-above remains an open result until a fresh comparable run. Compiler-oracle and
-small-fixture success cannot overwrite that result. The implementation and its
-documentation remain **acceptance pending** until those measurements and the
-normal project CI matrix are reviewed.
+**M12 differential (measured separately on the review branch):** TP=95,
+FP=105, FN=21, unknown=6, identical to the previously recorded Java baseline.
+This is a **known-failing differential**, not a pass. The CI workflow records
+the failing result and asserts that these four metrics did not regress; it
+does not pretend that a nonzero FP/FN report is green.
+
+**Not run here:** the complete `BB_CORPUS_ROOT` Java incoming gate and an
+end-to-end SQLite/indexer relationship-identity comparison. The previously
+recorded Java corpus-gate FAIL remains open until a fresh comparable run.
+Compiler-oracle and small-fixture success cannot overwrite that result.
+The implementation remains **acceptance pending** until these measurements
+and the normal project CI matrix are reviewed.
