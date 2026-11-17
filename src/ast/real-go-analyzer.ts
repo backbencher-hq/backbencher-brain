@@ -4649,6 +4649,67 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     const BUILTIN_TYPE_CTORS = new Set(["new", "make"])
     const seen = new Set<string>()
+
+    // Collect the NAMES a TYPE node reaches: a bare `type_identifier` is one name, a
+    // `qualified_type` is `pkg.Name` (leaf + full spelling), and a composite
+    // (`*T`, `[]T`, `map[K]V`, `func(T)`, `interface{...}`) is walked so its inner named
+    // types are reached too — because in a type ASSERTION or a type SWITCH the whole
+    // type is the operand, so `case []Thing:` genuinely reads `Thing`.
+    const collectTypeLeaves = (n: Node, out: Array<{ leaf: string; raw: string }>): void => {
+      if (n.type === "type_identifier") {
+        const raw = String(n.text ?? "")
+        if (raw.length > 0 && raw !== "_") out.push({ leaf: raw, raw })
+        return
+      }
+      if (n.type === "qualified_type") {
+        const raw = String(n.text ?? "")
+        const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+        if (leaf.length > 0) out.push({ leaf, raw })
+        return
+      }
+      // A hole from error recovery has no text and no children worth reading.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeLeaves(c, out)
+      }
+    }
+
+    const emit = (source: Node, typeNode: Node, construct: string, extra: Record<string, unknown>): void => {
+      const leaves: Array<{ leaf: string; raw: string }> = []
+      collectTypeLeaves(typeNode, leaves)
+      for (const { leaf, raw } of leaves) {
+        const src = this.resolveGoWorkSource(source)
+        const key = `${src}|${leaf}|${raw}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const at = this.nodeLine(typeNode) ?? this.nodeLine(source)
+        relationships.push({
+          source: src,
+          target: leaf,
+          type: ASTEngine.RelationshipType.References,
+          confidence: 0.95,
+          ...(at ? { line_number: at } : {}),
+          metadata: {
+            relationshipType: construct,
+            ...extra,
+            ...(raw !== leaf ? { qualifiedType: raw } : {}),
+            reasonCode: "type_named_in_expression_position_read_as_a_leaf",
+            bindReason: "type_named_in_expression_position_read_as_a_leaf",
+          },
+        })
+      }
+    }
+
+    // Which child of a `type_case` is the TYPE? The grammar puts the type node first and
+    // an optional `assignment_statement` after it; `default:` has no type child at all, and
+    // `case nil:` carries a bare `nil` identifier — neither is a type use, so both fall
+    // through because `nil` is not a `type_identifier`.
+    const TYPE_NODE_TYPES = new Set([
+      "type_identifier", "qualified_type", "pointer_type", "slice_type", "array_type",
+      "map_type", "channel_type", "function_type", "interface_type", "struct_type",
+      "generic_type", "type_instantiation_expression", "parenthesized_type",
+    ])
+
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const node = stack.pop()!
@@ -4659,32 +4720,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (fn && fn.type === "identifier" && BUILTIN_TYPE_CTORS.has(fn.text) && args) {
           const first = args.namedChild(0)
           if (first && (first.type === "type_identifier" || first.type === "qualified_type")) {
-            const raw = String(first.text ?? "")
-            const leaf = raw.lastIndexOf(".") !== -1 ? raw.slice(raw.lastIndexOf(".") + 1) : raw
-            if (leaf.length > 0 && leaf !== "_") {
-              const src = this.resolveGoWorkSource(node)
-              const key = `${src}|${leaf}|${raw}`
-              if (!seen.has(key)) {
-                seen.add(key)
-                const at = this.nodeLine(first) ?? this.nodeLine(node)
-                relationships.push({
-                  source: src,
-                  target: leaf,
-                  type: ASTEngine.RelationshipType.References,
-                  confidence: 0.95,
-                  ...(at ? { line_number: at } : {}),
-                  metadata: {
-                    relationshipType: "go_builtin_type_argument",
-                    builtin: fn.text,
-                    ...(raw !== leaf ? { qualifiedType: raw } : {}),
-                    reasonCode: "type_argument_of_a_builtin_constructor_read_as_a_leaf",
-                    bindReason: "type_argument_of_a_builtin_constructor_read_as_a_leaf",
-                  },
-                })
-              }
-            }
+            emit(node, first, "go_builtin_type_argument", { builtin: fn.text })
           }
         }
+      }
+      // A TYPE ASSERTION `x.(*T)` — the type is a real use of T.
+      else if (node.type === "type_assertion_expression") {
+        const last = node.namedChild(node.namedChildCount - 1)
+        if (last && TYPE_NODE_TYPES.has(last.type)) emit(node, last, "go_type_assertion", {})
+      }
+      // A TYPE SWITCH case `case *T:` — one row per named type in the case's type node.
+      else if (node.type === "type_case") {
+        const first = node.namedChild(0)
+        if (first && TYPE_NODE_TYPES.has(first.type)) emit(node, first, "go_type_switch_case", {})
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const c = node.namedChild(i)

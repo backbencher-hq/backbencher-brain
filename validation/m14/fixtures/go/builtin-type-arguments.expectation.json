@@ -2,12 +2,40 @@
   "fixtureId": "go/builtin-type-arguments",
   "language": "go",
   "authoredBeforeAnalyzerRun": true,
-  "rationale": "PINS A MISSING-EDGE CLASS THAT EVERY INTERNAL INVARIANT WAS BLIND TO. `new(T)` and `make(T, ...)` name a TYPE, but the callee is a BUILTIN, so the lane publishes no `calls` edge for it (builtin leaves are deliberately filtered). The only fact left is that the enclosing declaration USES T — and that row did not exist. Before the fix this fixture's own body emitted `Thing contains -> N`, `builtintypearguments exports -> Thing`, `-> MSet`, `-> Slice` and NOTHING for the four uses, so the types were invisible to the graph. IT WAS FOUND BY THE ORACLE DIFFERENTIAL, NOT BY AN INTERNAL INVARIANT: every range check, resolution check, explanation-coverage check and fixture the lane owns was GREEN while the edge was missing. That is the whole reason an independent oracle has to exist, and it is why 'all internal gates green' is a weaker claim than 'the graph is correct'. MEASURED on go-tools + terraform (3,422 files): 636 `new`/`make` call sites, 180 of them passing a type declared in the SAME file; after the fix the baseline gains 898 `references` edges (71,249 -> 72,147) with the symbol count UNCHANGED at 58,470 and every other relationship type byte-identical — the exact shape a pure missing-edge fix must have, and the check that this is not a relabel in disguise. THE FOUR EXPECTED ROWS COVER BOTH TARGET SHAPES: three unqualified same-file types (`new(Thing)`, `make(MSet)`, `make(Slice, 4)`), and one QUALIFIED type (`new(bytes.Buffer)`) whose target must be the LEAF `Buffer` with the full spelling retained in `qualifiedType` — the leaf-target contract applied to a new site rather than a new rule. THE FORBID ROWS ARE THE ANTI-OVERREACH HALF: no `calls` edge may name `new` or `make` (the builtin filter still holds, so this fix must not have been achieved by un-filtering builtins), and no reference row may carry an empty construct label. NOT PINNED: line numbers (they would pin this fixture's layout rather than the analyzer) and the `make([]T, 0)` / `make(map[K]V)` composite-argument shapes, which are TYPE POSITIONS whose element types belong to the declaration pass — this pass takes only a bare `type_identifier` or a `qualified_type` and leaves a composite node alone rather than mining it for extra rows.",
+  "rationale": "PINS THREE MISSING-EDGE CLASSES THAT EVERY INTERNAL INVARIANT WAS BLIND TO. Three expression-position surfaces name a TYPE: `new(T)`/`make(T, ...)` (the callee is a BUILTIN, so no `calls` edge exists), a TYPE ASSERTION `x.(*T)`, and a TYPE SWITCH case `case *T:`. All three published NOTHING before this fix, so the types were invisible to the graph. THIS FIXTURE'S OWN BODY, BEFORE: it emitted `Thing contains -> N`, `builtintypearguments exports -> Thing`, `-> MSet`, `-> Slice` and NOT ONE edge for the six uses. IT WAS FOUND BY THE ORACLE DIFFERENTIAL, NOT BY AN INTERNAL INVARIANT: every range check, resolution check, explanation-coverage check and fixture the lane owns was GREEN while these edges were missing. That is the whole reason an independent oracle has to exist, and it is why 'all internal gates green' is a weaker claim than 'the graph is correct'. MEASURED on go-tools + terraform (3,422 files): 636 `new`/`make` call sites, 180 passing a type declared in the SAME file. After BOTH fixes the baseline gains 7,859 `references` edges (71,249 -> 79,108; +898 new/make, +6,961 assertions and type switches) with the symbol count UNCHANGED at 58,470 and every other relationship type byte-identical — the exact shape a pure missing-edge fix must have. Dangling source improved 0.2039 % -> 0.1999 % as a side effect. THE SIX EXPECTED ROWS COVER ALL THREE CONSTRUCTS AND BOTH TARGET SHAPES: four via the builtins including one QUALIFIED type (`new(bytes.Buffer)`) whose target must be the LEAF `Buffer` with the full spelling in `qualifiedType`; one assertion; one type-switch case. THE FORBID ROWS ARE THE ANTI-OVERREACH HALF: no `calls` edge may name `new` or `make` (the builtin filter still holds, so the fix cannot have been achieved by un-filtering builtins), and no reference row may carry an empty construct label. NOT PINNED: line numbers (they would pin this fixture's layout rather than the analyzer), and `make([]T, 0)` / `make(map[K]V)`, whose composite-argument ELEMENT types belong to the declaration pass — this pass takes a bare `type_identifier` or `qualified_type` there and leaves a composite node alone rather than mining it for extra rows.",
   "expectSymbols": [
-    { "name": "Thing", "kind": "struct" },
-    { "name": "MSet", "kind": "type" },
-    { "name": "Slice", "kind": "type" },
-    { "name": "build", "kind": "function" }
+    {
+      "name": "Thing",
+      "kind": "struct"
+    },
+    {
+      "name": "MSet",
+      "kind": "type"
+    },
+    {
+      "name": "Slice",
+      "kind": "type"
+    },
+    {
+      "name": "Other",
+      "kind": "struct"
+    },
+    {
+      "name": "Third",
+      "kind": "struct"
+    },
+    {
+      "name": "build",
+      "kind": "function"
+    },
+    {
+      "name": "check",
+      "kind": "function"
+    },
+    {
+      "name": "sw",
+      "kind": "function"
+    }
   ],
   "expectRelationships": [
     {
@@ -42,6 +70,20 @@
       "meta.relationshipType": "go_builtin_type_argument",
       "meta.builtin": "new",
       "meta.qualifiedType": "bytes.Buffer"
+    },
+    {
+      "comment": "A TYPE ASSERTION `x.(*Other)` — the second invisible surface. The type is a real use of Other.",
+      "type": "references",
+      "from": "check",
+      "target": "Other",
+      "meta.relationshipType": "go_type_assertion"
+    },
+    {
+      "comment": "A TYPE SWITCH case `case *Third:` — the third invisible surface. Its type node is a pointer_type wrapping type_identifier, so the pass walks the TYPE node rather than assuming a bare identifier.",
+      "type": "references",
+      "from": "sw",
+      "target": "Third",
+      "meta.relationshipType": "go_type_switch_case"
     }
   ],
   "forbidRelationships": [
