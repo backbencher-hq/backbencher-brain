@@ -62,12 +62,27 @@ jobs:
           print("Regression sensitivity proved on baseline:", java)
           PY
           cp /tmp/bb-fixed-java-analyzer.ts src/ast/real-java-analyzer.ts
-      - name: Java M12 differential (diagnostic; record oracle limits)
+      - name: Java M12 differential — enforce recorded baseline without hiding failures
         shell: bash
         run: |
           set -euo pipefail
+          rm -f validation/m12/results/java-differential.json
+          set +e
           bun script/m12/verify-analyzer.ts java | tee m12-java.log
+          differential_status=${PIPESTATUS[0]}
+          set -e
           test -s validation/m12/results/java-differential.json
+          DIFF_STATUS="$differential_status" python3 - <<'PY'
+          import json, os, pathlib
+          result = json.loads(pathlib.Path("validation/m12/results/java-differential.json").read_text())
+          metrics = result["passing"]["metrics"]
+          measured = {k:metrics[k] for k in ("truePositive","falsePositive","falseNegative","unknown")}
+          baseline = {"truePositive":95,"falsePositive":105,"falseNegative":21,"unknown":6}
+          assert measured == baseline, f"M12 Java metrics changed; independently adjudicate delta: {measured} != {baseline}"
+          assert os.environ["DIFF_STATUS"] == "1", "M12 differential should report outstanding mismatches; investigate status change"
+          assert not result["passing"]["passed"], "M12 known deficiencies unexpectedly reported passing"
+          print("M12 Java unchanged from known failing baseline, NOT fully passing:", measured)
+          PY
       - name: Upload Java gate logs for independent review
         if: always()
         uses: actions/upload-artifact@v4
