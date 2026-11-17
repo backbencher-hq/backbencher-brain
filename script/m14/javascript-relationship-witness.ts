@@ -107,6 +107,74 @@ console.log("javascript relationship witnesses — 14 vocabulary labels")
 console.log(`\n  ${"label".padEnd(14)} ${"rows".padStart(5)}  verdict`)
 for (const r of table) console.log(`  ${r.label.padEnd(14)} ${String(r.rows).padStart(5)}  ${r.verdict}`)
 
+// ---------------------------------------------------------------------------
+// SYNTAX-FORM WITNESSES
+//
+// The relationship witnesses above answer "does each LABEL fire". These answer a different question
+// that no corpus can settle: when the analyzer meets a specific ES form, does it produce the thing it
+// should? The forms here were chosen by `javascript-syntax-form-census.ts`, which counts the forms a
+// corpus's parse tree actually contains — and the answer for the lane's original corpora was that most
+// of these never appeared there, so "0 rows" proved nothing either way.
+//
+// Each case asserts the symbols that must appear (by name) and the relationship labels that must
+// appear. `none` in either column means "asserted absent", which is only used where the lane's
+// documented contract says there is nothing to emit.
+// ---------------------------------------------------------------------------
+type FormWitness = { name: string; source: string; symbols: string[]; rels: string[] }
+
+const FORM_WITNESSES: FormWitness[] = [
+  // an object literal bound to a name: its members ARE symbols, owned by the binding
+  { name: "object shorthand method", source: "const api = { run(){ return 1; }, stop(){ return 2; } };\n", symbols: ["api", "api.run", "api.stop"], rels: ["contains"] },
+  // an accessor pair: BOTH halves are published, each carrying its own accessorKind
+  { name: "getter + setter pair", source: "class C { get value(){ return 1; } set value(v){} }\n", symbols: ["C", "C.value"], rels: ["contains"] },
+  // both sides of a comma expression are walked
+  { name: "sequence expression", source: "function f(){ g(), h(); }\nfunction g(){}\nfunction h(){}\n", symbols: ["f", "g", "h"], rels: ["calls"] },
+  { name: "dynamic import()", source: "async function f(){ const m = await import('./x.js'); }\n", symbols: ["f"], rels: ["imports"] },
+  { name: "top-level await", source: "const data = await fetch('/x');\n", symbols: ["data"], rels: ["calls"] },
+  { name: "import.meta", source: "const u = import.meta.url;\n", symbols: ["u"], rels: [] },
+  { name: "for-await-of", source: "async function f(){ for await (const x of y) { use(x); } }\n", symbols: ["f"], rels: ["calls"] },
+  { name: "computed method key", source: "class C { [Symbol.iterator](){ return 1; } }\n", symbols: ["C"], rels: ["contains"] },
+  { name: "async generator", source: "async function* gen(){ yield 1; }\n", symbols: ["gen"], rels: [] },
+  { name: "class static block", source: "class C { static { init(); } }\n", symbols: ["C"], rels: ["calls"] },
+  { name: "private field + method", source: "class C { #count = 0; #bump(){ this.#count++; } }\n", symbols: ["C"], rels: [] },
+  { name: "nullish + optional chaining", source: "function f(o){ return o?.a ?? 1; }\n", symbols: ["f"], rels: [] },
+  { name: "labelled loop", source: "outer: for (const a of [1]) { break outer; }\n", symbols: [], rels: [] },
+]
+
+const formFailures: string[] = []
+const formTable: Array<{ name: string; verdict: string }> = []
+for (const w of FORM_WITNESSES) {
+  let res: any
+  try {
+    res = await ASTEngine.parseFile(`/tmp/form-${w.name.replace(/[^a-z0-9]+/gi, "-")}.js`, w.source)
+  } catch (e) {
+    formFailures.push(`${w.name}: the analyzer THREW (${(e as Error)?.message ?? e})`)
+    formTable.push({ name: w.name, verdict: "THREW" })
+    continue
+  }
+  const symNames = new Set((res.symbols ?? []).map((s: any) => (s.ownerName ? `${s.ownerName}.${s.name}` : String(s.name))))
+  const relLabels = new Set((res.relationships ?? []).map((r: any) => String(r.type)))
+  const missingSyms = w.symbols.filter((n) => !symNames.has(n) && !symNames.has(n.split(".").pop() ?? n))
+  const missingRels = w.rels.filter((n) => !relLabels.has(n))
+  if (missingSyms.length === 0 && missingRels.length === 0) {
+    formTable.push({ name: w.name, verdict: "ok" })
+  } else {
+    const bits: string[] = []
+    if (missingSyms.length > 0) bits.push(`missing symbols [${missingSyms.join(", ")}] (saw [${[...symNames].join(", ")}])`)
+    if (missingRels.length > 0) bits.push(`missing rels [${missingRels.join(", ")}] (saw [${[...relLabels].join(", ")}])`)
+    formFailures.push(`${w.name}: ${bits.join("; ")}`)
+    formTable.push({ name: w.name, verdict: "FAIL" })
+  }
+}
+
+console.log("\njavascript SYNTAX-FORM witnesses")
+console.log(`\n  ${"form".padEnd(30)} verdict`)
+for (const r of formTable) console.log(`  ${r.name.padEnd(30)} ${r.verdict}`)
+if (formFailures.length > 0) {
+  console.log("\nfailures:")
+  for (const f of formFailures) console.log(`  ${f}`)
+}
+
 const missing = table.filter((r) => r.verdict.startsWith("MISSING") || r.verdict === "THREW" || r.verdict === "UNEXPECTED ROWS")
 console.log(
   `\n${missing.length === 0 ? "PASS" : "FAIL"} — ${table.length - 1 - (missing.length > 0 ? missing.length : 0)}` +
@@ -115,5 +183,8 @@ console.log(
 if (failures.length > 0) {
   console.log("\nfailures:")
   for (const f of failures) console.log(`  ${f}`)
+}
+if (formFailures.length > 0) {
   process.exit(1)
 }
+if (failures.length > 0) process.exit(1)

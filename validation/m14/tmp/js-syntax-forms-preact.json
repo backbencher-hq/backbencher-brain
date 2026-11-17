@@ -1,0 +1,218 @@
+{
+  "at": "2026-11-17T19:10:47.175Z",
+  "repo": "/home/ishaq2321/mcp/backbencher-brain/.corpus/preact",
+  "files": 207,
+  "forms": {
+    "JSX element": {
+      "filesWith": 127,
+      "nodes": 127,
+      "emittedSymbols": 2369,
+      "emittedRels": 30708
+    },
+    "destructuring pattern": {
+      "filesWith": 94,
+      "nodes": 94,
+      "emittedSymbols": 2187,
+      "emittedRels": 28379
+    },
+    "rest/spread": {
+      "filesWith": 44,
+      "nodes": 44,
+      "emittedSymbols": 1426,
+      "emittedRels": 17228
+    },
+    "regex literal": {
+      "filesWith": 28,
+      "nodes": 28,
+      "emittedSymbols": 392,
+      "emittedRels": 5824
+    },
+    "object shorthand method": {
+      "filesWith": 19,
+      "nodes": 19,
+      "emittedSymbols": 425,
+      "emittedRels": 5453
+    },
+    "class field": {
+      "filesWith": 16,
+      "nodes": 16,
+      "emittedSymbols": 653,
+      "emittedRels": 5912
+    },
+    "async function": {
+      "filesWith": 15,
+      "nodes": 15,
+      "emittedSymbols": 608,
+      "emittedRels": 9288
+    },
+    "static method": {
+      "filesWith": 12,
+      "nodes": 12,
+      "emittedSymbols": 598,
+      "emittedRels": 5980
+    },
+    "module.exports assignment": {
+      "filesWith": 6,
+      "nodes": 6,
+      "emittedSymbols": 33,
+      "emittedRels": 488
+    },
+    "sequence (comma) expression": {
+      "filesWith": 4,
+      "nodes": 4,
+      "emittedSymbols": 43,
+      "emittedRels": 532
+    },
+    "default parameter": {
+      "filesWith": 4,
+      "nodes": 4,
+      "emittedSymbols": 207,
+      "emittedRels": 2388
+    },
+    "dynamic import()": {
+      "filesWith": 3,
+      "nodes": 3,
+      "emittedSymbols": 18,
+      "emittedRels": 87
+    },
+    "optional chaining": {
+      "filesWith": 2,
+      "nodes": 2,
+      "emittedSymbols": 46,
+      "emittedRels": 516
+    },
+    "exports.name assignment": {
+      "filesWith": 2,
+      "nodes": 2,
+      "emittedSymbols": 6,
+      "emittedRels": 21
+    },
+    "getter": {
+      "filesWith": 1,
+      "nodes": 1,
+      "emittedSymbols": 24,
+      "emittedRels": 160
+    },
+    "top-level await": {
+      "filesWith": 1,
+      "nodes": 1,
+      "emittedSymbols": 20,
+      "emittedRels": 218
+    },
+    "labelled statement": {
+      "filesWith": 1,
+      "nodes": 1,
+      "emittedSymbols": 14,
+      "emittedRels": 311
+    },
+    "try/catch without binding": {
+      "filesWith": 1,
+      "nodes": 1,
+      "emittedSymbols": 55,
+      "emittedRels": 313
+    },
+    "switch/fallthrough": {
+      "filesWith": 1,
+      "nodes": 1,
+      "emittedSymbols": 14,
+      "emittedRels": 300
+    },
+    "setter": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "private method (#m)": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "private field (#f)": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "class static block": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "generator": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "async generator": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "for-await-of": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "nullish coalescing": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "new.target": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "import.meta": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "with statement": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "tagged template": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "decorator": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "getter/setter pair same name": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "computed method key": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    },
+    "UMD wrapper": {
+      "filesWith": 0,
+      "nodes": 0,
+      "emittedSymbols": 0,
+      "emittedRels": 0
+    }
+  },
+  "note": "presence = files whose parse tree contains the form (0 means the corpus never exercises it, NOT that the analyzer is broken); emitted* = the analyzer's totals summed over those files."
+}

@@ -417,6 +417,59 @@ The lane's standing rule is that the analyzer contains **zero regex**. Re-measur
   `indexOf` / `split` on literal separators / character scans, and the new `jsdocTagBodyEnd` boundary
   is a character loop specifically to keep that true
 
+## Syntax forms — what the corpora actually contain, and what the analyzer does with it
+
+**New instrument: `script/m14/javascript-syntax-form-census.ts`.** It counts the ES forms a corpus's
+PARSE TREE contains, per form, so "0 rows" and "never exercised" stop looking identical. That
+distinction was the whole problem with the original corpora: they are Ember/svelte-shaped, so most
+forms simply never appear, and a zero proved nothing.
+
+Presence measured (files containing the form):
+
+| form | preact | react |
+|---|---|---|
+| JSX element | 127 | **618** |
+| destructuring pattern | 94 | 469 |
+| rest/spread | 44 | 77 |
+| optional chaining | 2 | 76 |
+| object shorthand method | 19 | 39 |
+| sequence (comma) expression | 4 | 34 |
+| nullish coalescing | 0 | 29 |
+| `module.exports` assignment | 6 | 22 |
+| default parameter | 4 | 21 |
+| try/catch without binding | 1 | 17 |
+| labelled statement | 1 | 12 |
+| class field | 16 | 6 |
+| getter / setter | 1 / 0 | 1 / 1 |
+| private field `#f` | 0 | 1 |
+| generator · for-await · new.target · import.meta · dynamic import | 0 | 1 each |
+| **not exercised on either** | setter, private method, static block, async generator, top-level await, with, tagged template, decorator, computed key | same |
+
+`with` and `class static block` are absent from both — and `with` is worth naming: it is
+**sloppy-mode-only, forbidden in strict mode and in modules**, so a modern corpus will not contain it,
+which makes "0 rows" the correct answer there rather than a gap.
+
+### The behaviour, asserted rather than observed once
+
+The forms were probed individually, then the results were made permanent as **syntax-form witnesses in
+`script/m14/javascript-relationship-witness.ts`** — 13 cases, each asserting the symbols and
+relationship labels a form must produce. Every one passes:
+
+| form | asserted | result |
+|---|---|---|
+| object shorthand method | symbols `api`, `api.run`, `api.stop` + `contains` | ok |
+| getter + setter pair | both halves published as `C.value` | ok |
+| sequence expression | `calls` from both sides of the comma | ok |
+| dynamic `import()` | `imports` | ok |
+| top-level await | symbol + `calls` | ok |
+| `import.meta` | symbol + `uses` | ok |
+| for-await-of | `calls` | ok |
+| computed method key | `C` + `contains` (the computed name itself is not a stable symbol) | ok |
+| async generator · class static block · private `#field`+`#method` · nullish+optional chain · labelled loop | documented expectations | ok |
+
+**The witness gate is proven to fail**: setting one expected symbol to a name that cannot appear made
+it exit **1** with `missing symbols [api.NEVER]`, and restoring it returned **0**.
+
 ## What the store does with an owner claim, and the one thing still open
 
 `claimOwnerCarryingTargets` withdraws the name binding for an owner-carrying row, then
