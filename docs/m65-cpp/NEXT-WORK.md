@@ -1458,6 +1458,26 @@ the files, with ZERO false claims — a density fact, not a defect: this populat
 dominated by untyped receivers, which is the wall §14.17 priced. Evidence:
 `validation/cpp-audit/whole-population/receiver-shape-census.json`.
 
+### The index arm on the reconstruction — consume default-on, measured whole-population
+
+The `--index` arm (shipped defaults: `BB_CPP_INDEX_CONSUME` unset = ON) over the same 7,778 files and
+the same fixed analyzer: **1,061,394 edges** (the dump's 1,061,398 minus exactly the 4 W8 rows),
+resolved **482,743** (+19,061 vs the per-file arm), ambiguous-decl **272,667** (−40,772), unresolved
+**294,265** (+21,707), `extOK` **11,719 — unchanged**, so the claim surface is untouched by the arm.
+The owner channel (production rule, modelled): **73,325 rows carried `metadata.owner`; 51,466 resolved
+(70.2%), 21,859 declined** (direct 39,441 · ownerAmbiguous 16,961 · sameKindDuplicate 12,025 · noMember
+4,898); **25,512 rows the name model called ambiguous/unresolved are resolved by the channel, and
+6,601 rows the channel DECLINED would have resolved by name and are held NULL** (withdrawn binding).
+
+READ THE DELTA CORRECTLY: this arm differs from the dump arm in TWO ways — the index itself and
+consume — so +19,061 is the NET of index-scope resolution gains (+25,512 channel decidables) and
+consume's withdrawals (−6,601), NOT a consume-only delta. The consume-ONLY delta was measured on the
+two-repo control (§14.19: resolved 51,741 → 51,034, −707, 860 bindings withdrawn); on THIS population
+it needs the kill-switch arm (`BB_CPP_INDEX_CONSUME=0 --index`), which is the NEXT measurement and is
+recorded here as owed rather than inferred. What this run does establish whole-population: consume does
+not move the claim surface (`extOK` exactly unchanged), and the channel's declines are 100% accounted
+by four named causes.
+
 ### Reproduction
 
 ```
