@@ -39,9 +39,12 @@ import { readFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 import { RelationshipType } from "../../../src/ast/types"
 import { collectAllGoFiles, splitTestAndNonTest, strideSample, topPackage } from "./go-corpus-files"
+import { GO_STDLIB_DEFAULT, requireCorpusDir } from "./go-corpus-root"
 
 const WANT = Number(process.argv[2] || 140)
-const CORPUS_ROOT = process.argv[3] || "/home/ishaq2321/bb_tests/repositories/go-stdlib"
+const CORPUS_ROOT = process.argv[3] || GO_STDLIB_DEFAULT
+// ABSENT CORPUS IS FATAL, never a zero-file run that reads as clean.
+requireCorpusDir(CORPUS_ROOT)
 const ENUM_VALUES: string[] = [...new Set(Object.values(RelationshipType))]
 const OFF_ENUM_IMPORTS = "imports"
 // `src/ast/types.ts` was corrected on 2026-10-05: `Imports` read

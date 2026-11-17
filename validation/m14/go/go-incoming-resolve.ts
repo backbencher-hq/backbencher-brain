@@ -96,8 +96,11 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 import { RelationshipType } from "../../../src/ast/types"
 import { collectAllGoFiles, splitTestAndNonTest, strideSample, type CorpusFile } from "./go-corpus-files"
+import { GO_STDLIB_DEFAULT, requireCorpusDir } from "./go-corpus-root"
 
-const CORPUS_ROOT = process.env.GO_CORPUS_ROOT || "/home/ishaq2321/bb_tests/repositories/go-stdlib"
+const CORPUS_ROOT = process.env.GO_CORPUS_ROOT || GO_STDLIB_DEFAULT
+// ABSENT CORPUS IS FATAL, never a zero-file run that reads as clean.
+requireCorpusDir(CORPUS_ROOT)
 const REPO_ROOT = process.env.GO_REPO_ROOT || "/tmp/opencode/wt/INCOMING_RESOLVE_GO"
 
 const ENUM_VALUES: string[] = [...new Set(Object.values(RelationshipType))]

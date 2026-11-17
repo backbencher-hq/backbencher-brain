@@ -72,10 +72,13 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
+import { GO_STDLIB_DEFAULT, requireCorpusDir } from "./go-corpus-root"
 
 const ARGS = process.argv.slice(2)
 const MODE = ARGS[0] ?? "--usage"
-const CORPUS_ROOT = process.env.GO_CORPUS ?? "/home/ishaq2321/bb_tests/repositories/go-stdlib"
+const CORPUS_ROOT = process.env.GO_CORPUS ?? GO_STDLIB_DEFAULT
+// ABSENT CORPUS IS FATAL, never a zero-file run that reads as clean.
+requireCorpusDir(CORPUS_ROOT)
 // The lane's recorded admission rule (docs/analyzers/go.md,
 // "Draws, stated once"): git-tracked, <=512 KB, detected as go, testdata out.
 // The cap is NOT the engine's own 16 MiB truncation limit; it is this lane's

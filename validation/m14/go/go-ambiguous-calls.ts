@@ -73,10 +73,13 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { ASTEngine } from "../../../src/ast/engine"
 import { detectLanguageFromPath } from "../../../src/ast/language-detection"
+import { GO_STDLIB_DEFAULT, requireCorpusDir } from "./go-corpus-root"
 
 const ARGS = process.argv.slice(2)
 const MODE = ARGS[0] ?? "--usage"
-const CORPUS_ROOT = process.env.GO_CORPUS ?? "/home/ishaq2321/bb_tests/repositories/go-stdlib"
+const CORPUS_ROOT = process.env.GO_CORPUS ?? GO_STDLIB_DEFAULT
+// ABSENT CORPUS IS FATAL, never a zero-file run that reads as clean.
+requireCorpusDir(CORPUS_ROOT)
 const MAX_BYTES = Number(process.env.GO_MAX_BYTES ?? 512 * 1024)
 const SKIP_DIRS: ReadonlySet<string> = new Set([".git", "node_modules", "testdata"])
 

@@ -600,6 +600,15 @@ surface both before and after; what changed is how many rows of that pre-existin
 ### Re-deriving every number in THIS section
 
 ```
+# EVERY COMMAND BELOW NAMES A CORPUS THAT IS GONE (see the banner at the top of this page).
+# The scripts no longer fall back to a host path or to a missing repo: each one now exits 1
+# and names the directory, because a corpus root that does not exist used to produce a
+# zero-file run that read exactly like a clean pass. To run any of them against a corpus that
+# DOES exist, pass the root as the third argument (or set GO_CORPUS_ROOT), e.g.
+#     bun run validation/m14/go/go-firing-census.ts 12000 <corpus-root>/bb_tests/repositories/go-tools
+# The figures these commands produced are the historical record described in the banner; they
+# are NOT re-derivable here, and the current re-runnable baseline is the one in the banner.
+
 # whole-corpus firing census: per-type counts, files, confidence, evidenceClass, reasonCode
 bun run validation/m14/go/go-firing-census.ts 12000 \
   && GO_ARTIFACT=validation/m14/go/go-firing-census-fullcorpus-after.json \

@@ -18,9 +18,12 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import { ASTEngine } from "../../../src/ast/engine"
 import { collectAllGoFiles, splitTestAndNonTest, strideSample } from "./go-corpus-files"
+import { GO_STDLIB_DEFAULT, requireCorpusDir } from "./go-corpus-root"
 
 const WANT = Number(process.argv[2] || 200)
-const CORPUS_ROOT = process.argv[3] || "/home/ishaq2321/bb_tests/repositories/go-stdlib"
+const CORPUS_ROOT = process.argv[3] || GO_STDLIB_DEFAULT
+// ABSENT CORPUS IS FATAL, never a zero-file run that reads as clean.
+requireCorpusDir(CORPUS_ROOT)
 
 const PREDECLARED: ReadonlySet<string> = new Set([
   "bool", "byte", "complex64", "complex128", "error", "float32", "float64",
