@@ -444,11 +444,16 @@ The red-control run uses the identical fixture set and original production
 analyzer, which establishes that the five new regressions fail before the
 fixes. Its failure is expected and asserted by CI.
 
+**M12 differential measured on this review branch:** TP=95, FP=105,
+FN=21, unknown=6, unchanged from the pre-batch reading; **the M12
+differential still FAILS**. The CI diagnostic step records the result
+and enforces baseline equality rather than concealing its nonzero exit.
+
 **Still unmeasured on the review branch:** complete corpus
-`BB_CORPUS_ROOT` incoming gate, full M12 Java differential,
-cross-file owner/member binding in SQLite, and full `npm run verify`.
-The above small-fixture and compiler-oracle passes do not certify the
-whole-lane relationship-resolver or replace its recorded corpus FAIL.
+`BB_CORPUS_ROOT` incoming gate, cross-file owner/member binding in
+SQLite, and full `npm run verify`. Small-fixture and compiler-oracle
+passes do not certify the whole-lane relationship resolver or replace
+the recorded corpus FAIL.
 
 New current behavioral details and accepted limitations are in
 [`JAVA-SEMANTIC-PROOF-2026-11-16.md`](JAVA-SEMANTIC-PROOF-2026-11-16.md)
