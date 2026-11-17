@@ -906,12 +906,26 @@ parse it.**
 
 ### What genuinely remains
 
-`GO-GAP-3` (receiver `func (T) NoName()` vs `func (s) Untyped()` — identical trees, 1,203 `contains`
-edges resting on one reading) is **architecturally blocked for this lane**: `analyze()` is per-file,
-`AnalyzeContext` carries a project index but the CALLER populates it, and GO44 proves a file-local
-test would delete 1,251 legitimate sibling-file owners to fix 1,203 that cannot compile. It needs a
-new `AnalyzeContext` field built by the shared indexer — a fleet-level change, not a Go-lane commit.
+**Nothing that a per-file analyzer can close.** `GO-GAP-3` (receiver `func (T) NoName()` vs
+`func (s) Untyped()` — identical trees) was the last open item, and it is now **DISAMBIGUATED
+rather than resolved**, which is the strongest honest claim available at this layer:
+
+- `analyze()` is a per-file entry point and `AnalyzeContext`'s project index is populated by the
+  CALLER, so the analyzer cannot ask whether a name is a type declared in a sibling file.
+- Deletion is not a remedy: `GO44` recorded 1,251 legitimate `contains` edges naming a sibling-file
+  owner, so a file-local test would delete all of them to fix rows in files that cannot compile.
+- Every method `contains` edge therefore carries `metadata.receiverOwnerScope`.
+  **MEASURED (3,422 files): 14,979 method `contains` edges — 13,729 `same_file_type` (91.65 %),
+  1,250 `type_not_declared_in_this_file`, 0 unlabelled.** The 8.35 % says "cannot verify" instead of
+  guessing; a consumer needing certainty filters, one needing coverage keeps the rows. Pinned by
+  `go/receiver-owner-scope`.
+
 `GO-GAP-2`'s 4 EXTRA `uses` rows are an analyzer superset on `testdata/` fixtures, not hidden reads.
+
+The 372 remaining self-loop rows are a different thing and are NOT a defect: each is a true fact
+whose two endpoints share a leaf under the leaf-target contract (a method and a type both named
+`selection`; a local package `testing` importing stdlib `testing`). A consumer resolves them from the
+graph — the source's own `contains` row names its kind — not from more metadata.
 
 ## Evidence pointers
 
