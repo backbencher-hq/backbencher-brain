@@ -5422,6 +5422,34 @@ currentPackage,
       }
     }
     walk(ownerName, 0)
+    // CROSS-FILE ANCESTRY FALLBACK — now that `metadata.superTypes` is published, the
+    // resolution machinery can walk a java owner's ancestors, so attaching an owner to an
+    // inherited member is no longer a one-way trade of a resolved bare name for an
+    // unresolvable qualified one.
+    //
+    // Runs ONLY when the in-file walk found nothing (`hits === 0`): a row that resolves
+    // today cannot start resolving elsewhere, so this cannot take a decision away from any
+    // file. Keeps the same "exactly one declaration" rule, is visited-set bounded,
+    // depth-capped, and gated on `projectIndex.complete === true`.
+    if (hits === 0 && projectIndex?.complete === true) {
+      const visited = new Set<string>()
+      const projectWalk = (name: string, depth: number): void => {
+        if (depth > 12 || hits > 1) return
+        if (visited.has(name)) return
+        visited.add(name)
+        for (const base of projectIndex.typeBases.get(name) ?? []) {
+          const baseScope = index.typeScopesByName.get(base)
+          const has = baseScope
+            ? (wantsMethod
+                ? (baseScope.methodNames?.has(memberName) ?? false)
+                : (baseScope.memberNames?.has(memberName) ?? false))
+            : (projectIndex.typeMembers.get(base)?.has(memberName) ?? false)
+          if (has) hits++
+          projectWalk(base, depth + 1)
+        }
+      }
+      projectWalk(ownerName, 0)
+    }
     return hits === 1
   }
 
