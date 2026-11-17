@@ -3248,15 +3248,6 @@ currentPackage,
         }
       }
 
-      if (task.ownerFqn.includes("ImplicitObjectMethods")) {
-        const dbgOwner = symbolMap.get(task.ownerFqn)
-        const dbgMember = symbolMap.get(task.fqn)
-        console.error("JAVA_OBJECT_DIAGNOSTIC", JSON.stringify({
-          task, targetFqn, ownerMeta: dbgOwner?.metadata,
-          memberVisibility: dbgMember?.visibility, memberStatic: dbgMember?.isStatic,
-          stringSymbol: symbolMap.has("String"), importedString: singleTypeImports.has("String"),
-        }))
-      }
       // java.lang.Object is the implicit direct superclass of an ordinary
       // class without an explicit extends clause (JLS 8.1.4). The tree has
       // no superclass node for it, so the ordinary BFS cannot discover
