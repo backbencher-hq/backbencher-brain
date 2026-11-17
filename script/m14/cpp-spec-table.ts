@@ -32,6 +32,12 @@ const D3_NOINDEX = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp
 const D3_INDEXED = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-d3-indexed-arm.json")
 const D7_PRICE = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-w1-price.json")
 const D7_WALLS = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-wall-disposition.json")
+/** The B-off arm (BB_CPP_INDEX_CONSUME=0 --index). Without it the D3 columns cannot state a
+ *  consume-ONLY delta; with it, "the index alone moves nothing" is a measured equality. */
+const KILLSWITCH = path.join(ROOT, "validation/m14/fixtures/cpp/measurements/cpp-index-killswitch-arm.json")
+/** Hand-written provenance (corrections, population replacements) merged into the generated table;
+ *  the generator never invents or drops it. */
+const ERRATA = path.join(ROOT, "script/m14/spec/cpp-spec-table.errata.json")
 const CHECK = process.argv.includes("--check")
 
 interface GateRow {
@@ -142,6 +148,8 @@ const d3Indexed: any = fs.existsSync(D3_INDEXED) ? JSON.parse(fs.readFileSync(D3
  *  MEASURED on the production population and both carry their own closure controls. */
 const d7Price: any = fs.existsSync(D7_PRICE) ? JSON.parse(fs.readFileSync(D7_PRICE, "utf8")) : null
 const d7Walls: any = fs.existsSync(D7_WALLS) ? JSON.parse(fs.readFileSync(D7_WALLS, "utf8")) : null
+const killswitch: any = fs.existsSync(KILLSWITCH) ? JSON.parse(fs.readFileSync(KILLSWITCH, "utf8")) : null
+const errataFile: any = fs.existsSync(ERRATA) ? JSON.parse(fs.readFileSync(ERRATA, "utf8")) : null
 /** TABLE 1 lines of the gate arm, parsed into per-type rows (the table IS the verdict's scope). */
 const d3Table: Record<string, any> = {}
 if (d3?.table1) {
@@ -303,7 +311,9 @@ const spec = {
   },
   wholePopulationArms: {
     status: census
-      ? `D2 census MEASURED (${census.population.parsed}/${census.population.admitted} files, ${census.population.repos} repos, ${census.closure.totalEdges} rows); D3 BOTH arms MEASURED with a closure-exact classification (no-index in .d3.noIndexArm; --index in .d3.indexedArm is a measured STRUCTURAL NON-ARM — production builds no cpp project index, so the A->B delta is 0 in every column).`
+      ? `D2 census MEASURED (${census.population.parsed}/${census.population.admitted} files, ${census.population.repos} repos, ${census.closure.totalEdges} rows); D3 measured as THREE arms on the same population: the no-index arm (.d3.noIndexArm), the index B-off arm (${
+          killswitch ? `BB_CPP_INDEX_CONSUME=0 --index: ${killswitch.totals.resolved} resolved / ${killswitch.totals.ambiguousByDecl} ambiguous / ${killswitch.totals.unresolved} unresolved, byte-identical to the no-index arm — the INDEX ALONE is inert` : "OWED"
+        }), and the shipped default-consume B-on arm (.d3.indexedArm: ${d3Indexed ? `${d3Indexed.totals.resolved} resolved / ${d3Indexed.totals.ambiguousByDecl} ambiguous / ${d3Indexed.totals.unresolved} unresolved` : "OWED"}) — the movement is the CONSUMPTION, and its only delta is stated in .d3.consumeOnlyDelta.`
       : "OWED — filled by the D2 whole-population emission census and the D3 incoming-gate arms.",
     census: census
       ? {
@@ -341,31 +351,42 @@ const spec = {
           },
           indexedArm: d3Indexed
             ? {
-                status:
-                  "SUPERSEDED — the 'measured STRUCTURAL NON-ARM' reading was TRUE when production's " +
-                  "PROJECT_INDEX_EXTENSIONS carried no C++ spelling and the gate's INDEX_SPECS had no cpp entry. " +
-                  "BOTH halves are now wired (PROJECT_INDEX_EXTENSIONS carries .cpp/.cc/.cxx/.c++/.hpp/.hxx/.ipp/" +
-                  ".inl/.cu -> cpp, specByLang.cpp = CPP_DECLARATION_SPEC, and the gate's INDEX_SPECS.cpp carries the " +
-                  "spec + the tree-sitter-cpp wasm), so the `--index` arm now BUILDS 31 repo indexes (0 damaged) over " +
-                  "the 7,435-file population and the analyzer CONSUMES the index behind BB_CPP_INDEX_CONSUME=1. The " +
-                  "A->B delta is still 0 in every column for the INDEX ALONE (measured: arm A == arm B-off, column for " +
-                  "column) — the index is an INSTRUMENT and the movement comes from the CONSUMPTION, which is a separate " +
-                  "flag and a separate arm (+17,955 resolved, -22,656 amb, +4,701 honest NULLs). The POPULATION caveat " +
-                  "is measured and stated in CPP-POPULATION-RECONCILIATION.md: the gate's discovery admits 7,435 " +
-                  "extension-only files while production's ROUTER admits 11,146 (a difference of exactly 3,711 " +
-                  "C++-looking .h headers), so the arm is production-parsed for the 7,435 and the .h boundary is the one " +
-                  "open population question.",
+                status: killswitch
+                  ? `MEASURED on the reconstruction population (${d3Indexed.population?.parsed ?? "?"} files / ${d3Indexed.population?.repos ?? "?"} repos). THE INDEX ALONE MOVES NOTHING: the B-off arm (BB_CPP_INDEX_CONSUME=0 --index) is byte-identical to the no-index arm column for column (${killswitch.totals.resolved} resolved / ${killswitch.totals.ambiguousByDecl} ambiguous / ${killswitch.totals.unresolved} unresolved). THE SHIPPED DEFAULT CONSUME ARM MOVES: resolved ${d3Indexed.totals.resolved} (consume-only ${d3Indexed.totals.resolved - killswitch.totals.resolved >= 0 ? "+" : ""}${d3Indexed.totals.resolved - killswitch.totals.resolved}), ambiguous-decl ${d3Indexed.totals.ambiguousByDecl} (consume-only ${d3Indexed.totals.ambiguousByDecl - killswitch.totals.ambiguousByDecl}), unresolved ${d3Indexed.totals.unresolved} (consume-only ${d3Indexed.totals.unresolved - killswitch.totals.unresolved >= 0 ? "+" : ""}${d3Indexed.totals.unresolved - killswitch.totals.unresolved}), extOK ${d3Indexed.totals.markedExternal} (UNCHANGED — the claim surface does not move). The consume-only delta CORRECTS the two-repo reading: there consume lowered resolved by 707 because the local arm already owned the easy rows; whole-population it raises resolved because the owner channel decides far more rows than it withdraws, and the invariant is the correctness property (a channel-declined row is held NULL), not the sign. The .h content-routing boundary is measured in validation/m14/proposals/cpp-h-routing.md and is NOT folded into these extension-only arms.`
+                  : "OWED — the index B-off arm has not landed",
                 command: d3Indexed.command,
                 population: d3Indexed.population,
                 table1: d3Indexed.table1,
                 evidencePage: "validation/m14/verification/CPP-D3.md",
-                aToBDelta: { classified: 0, resolved: 0, ambiguous: 0, unresolved: 0, arbitraryTwin: 0, classRows: 0 },
+                consumeOnlyDelta: killswitch
+                  ? {
+                      resolved: d3Indexed.totals.resolved - killswitch.totals.resolved,
+                      ambiguousByDecl: d3Indexed.totals.ambiguousByDecl - killswitch.totals.ambiguousByDecl,
+                      ambiguousByKind: d3Indexed.totals.ambiguousByKind - killswitch.totals.ambiguousByKind,
+                      unresolved: d3Indexed.totals.unresolved - killswitch.totals.unresolved,
+                      markedExternal: d3Indexed.totals.markedExternal - killswitch.totals.markedExternal,
+                      // the B-off arm must be byte-identical to the no-index arm: compare against the
+                      // no-index TABLE 1 TOTAL row's resolved column, which is the measured no-index arm
+                      indexAloneDeltaResolved: (() => {
+                        const totalLine = (d3?.table1 ?? []).find((l: string) => String(l).startsWith("TOTAL"))
+                        if (!totalLine) return null
+                        const cols = String(totalLine).trim().split(/\s+/)
+                        return killswitch.totals.resolved - Number(cols[2] ?? NaN)
+                      })(),
+                    }
+                  : null,
               }
             : { status: "OWED — the --index arm has not landed" },
         }
       : { status: "OWED — the D3 no-index arm has not landed" },
-    noNewValueConfirmations:
-      "The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population by the same census, so the ruling is a number and not a silence: concepts+requires (concept_definition 2 · requires_clause 10 · requires_expression 2 — RULED construct, no symbol/no edge); template instantiation (template_instantiation 267 sites, versus `instantiates` 3,093 rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator 389 sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression 5,614 · lambda_capture_specifier 5,670 — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name 3,335 · operator_cast 159 · destructor_name 2,873 — symbols contained, no `overloads` value exists); friend declarations (573 — a friend declaration publishes no edge); namespace aliases (83 — a namespace is not a published declaration); pure-virtual clauses (75 — the pure-virtual CONTRACT is why `implements` fires, CPP-R1); multiple inheritance (114 classes with >1 base in 58 files across 5 repos — N extends edges, CPP-R4).",
+    noNewValueConfirmations: census
+      ? (() => {
+          const c = (k: string) => Number(census.constructs?.[k]?.edges ?? 0)
+          const pt = (k: string) => Number(census.perType?.[k]?.edges ?? 0)
+          const mi = census.multipleInheritance ?? {}
+          return `The constructs that carry NO relationship (or a DIFFERENT one than their spelling suggests) and are therefore carried as METADATA/symbol facts rather than as a vocabulary value — each counted at whole population (${census.population.parsed}/${census.population.admitted} files, ${census.population.repos} repos, ${census.closure.totalEdges} rows), so the ruling is a number and not a silence: concepts+requires (concept_definition ${c("concept_definition")} · requires_clause ${c("requires_clause")} · requires_expression ${c("requires_expression")} — RULED construct, no symbol/no edge); template instantiation (template_instantiation ${c("template_instantiation")} sites, versus \`instantiates\` ${pt("instantiates")} rows emitted from new_expression only — CPP-R2); structured bindings (structured_binding_declarator ${c("structured_binding_declarator")} sites; binding names are declarations, the initializer read is the uses edge); lambda expressions (lambda_expression ${c("lambda_expression")} · lambda_capture_specifier ${c("lambda_capture_specifier")} — captures of declared names are uses, the lambda publishes no symbol); operator/destructor names (operator_name ${c("operator_name")} · operator_cast ${c("operator_cast")} · destructor_name ${c("destructor_name")} — symbols contained, no \`overloads\` value exists); friend declarations (${c("friend_declaration")} — a friend declaration publishes no edge); namespace aliases (${c("namespace_alias_definition")} — a namespace is not a published declaration); pure-virtual clauses (${c("pure_virtual_clause")} — the pure-virtual CONTRACT is why \`implements\` fires, CPP-R1); multiple inheritance (${mi.classesWithMultipleBases?.edges ?? 0} classes with >1 base in ${mi.classesWithMultipleBases?.files ?? 0} files across ${mi.classesWithMultipleBases?.repos ?? 0} repos, ${mi.totalBases?.edges ?? 0} bases total — N extends edges, CPP-R4; the mixin idiom is base-clause inheritance, see the mixes_in ruling).`
+        })()
+      : "OWED — the D2 whole-population emission census has not landed.",
     /**
      * THE D7 WALL LEDGER — the four-bucket partition of the W1 wall and the disposition of every
      * named wall, MEASURED on the production population. Both blocks carry their own closure
@@ -401,6 +422,10 @@ const spec = {
       : { status: "OWED — the D7 four-bucket partition and the wall ledger have not landed" },
   },
 }
+
+// Hand-written provenance is MERGED, never generated: the generated cells are the measurements.
+;(spec as any).errata = errataFile?.entries ?? []
+;(spec as any).errataSource = "script/m14/spec/cpp-spec-table.errata.json (hand-written provenance merged by the generator; the generated cells come from measurements)"
 
 const json = JSON.stringify(spec, null, 1) + "\n"
 if (CHECK) {

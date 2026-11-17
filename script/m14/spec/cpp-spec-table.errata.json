@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "note": "HAND-WRITTEN PROVENANCE for script/m14/spec/cpp-spec-table.json. The generator merges this file into the generated table as `errata`; the generated cells themselves come from measurements and are never hand-edited.",
+  "entries": [
+    {
+      "date": "2026-11-16",
+      "field": "applicableValues / notApplicableValues / notApplicableEvidence",
+      "change": "`part_of` moved from NOT APPLICABLE to APPLICABLE.",
+      "why": "The ruling required grammar productions `part_directive`, `part_of_directive`, `part_clause` \u2014 the DART grammar's node names \u2014 so it could never be satisfied by the C++ grammar, and it denied a value the analyzer emits from `preproc_include`. The ONTOLOGY's own definition (src/ast/types.ts) is the directive that NAMES A PART (`part 'x.dart'` / `#include \"x.h\"`); the C++ lane emits a QUOTED include as `part_of` (contract-mandatory metadata.partRole, partFile/partPath/partSymbol, target = the part's module symbol) and an ANGLE include as `imports`, with one row per (kind, target) so the two facts cannot suppress each other. Pinned by fixtures cpp/imports-include-910 and cpp/part-of-quoted-include; the lane's part_of oracle measures 2,328 rows, 0 disagreements.",
+      "previousRuling": {
+        "applicable": false,
+        "grammarAbsenceProven": true,
+        "requiredProductions": [
+          "part_directive",
+          "part_of_directive",
+          "part_clause"
+        ],
+        "productionsFound": [],
+        "reason": "C++'s file-inclusion construct is `#include`, which IS a module edge and is published as `imports`; there is no part-file directive that shares one scope without importing (the construct `part_of` exists to distinguish).",
+        "vocabularyRuling": "extended value (Dart `part`/`part of`), NOT APPLICABLE to C++."
+      },
+      "rootCauseFixedIn": "script/m14/cpp-applicable-set.ts (the instrument now carries the C++ construct surface)",
+      "regenerationStatus": "HAND-CORRECTED AND PROVENANCE-RECORDED, because this generator could not be re-run in this checkout: its inputs live under validation/m14/fixtures/cpp/measurements/ and that directory does not exist (cpp-spec-table.ts --check exits ENOENT; the whole-population census / D3 arms / D7 price+walls it embeds were measured on the 31-repo corpus, which is not on this machine). The next run on a corpus machine regenerates from the fixed instrument and must delete this errata block."
+    },
+    {
+      "date": "2026-11-16",
+      "field": "rulings.d7.fourBucketPartition.buckets['B/committed-stdlib-vocabulary'] (status only; the measurement stands)",
+      "change": "Status CLAIMED -> SHIPPED: the ISO stdlib citation claim is emitted by default.",
+      "why": "The claim was gated behind BB_CPP_CITATION=1, so production emitted none and the 7,962 rows stayed unresolved. Shipped 2026-11-16 with BB_CPP_CITATION=0 as the kill-switch. Measured on the 2-repo corpus with no environment flags: extOK 0 -> 782, unresolved 8,002 -> 7,220, and resolved/ambiguous unchanged (a claim is never a resolution and never displaces one). Pinned by the citation fixture's positive rows + policy marker and by mutant cpp/citation-claim-dropped (CAUGHT).",
+      "regenerationStatus": "hand-recorded for the same reason as the part_of errata: the generator's measurement inputs are absent from this checkout."
+    },
+    {
+      "date": "2026-11-16",
+      "field": "wholePopulationArms.d7.wallLedger.walls[W4-qualified-name-not-published].disposition",
+      "change": "INSTRUMENT GAP -> STALE PREMISE / DESIGN DECISION (reason replaced, measurement added).",
+      "why": "The wall claimed cpp member symbols publish no distinct qualifiedName. Measured through the production entry over the 2-repo corpus: 6,913 distinct qualifiedName strings; methods 4,222/4,222, constructors 912/912, properties 1,677/1,677. The real residual is the edge TARGET contract (leaf; qualified spelling in metadata.qualified), which the qualified-name join cannot use unless the target is qualified. Rows: 2,771 (the wall's own count on the 31-repo population, unchanged).",
+      "previousDisposition": "INSTRUMENT GAP (the analyzer publishes LEAF names; a cpp member symbol has no distinct qualifiedName)",
+      "nextOwner": "Lead \u2014 changing a target spelling is a cross-consumer vocabulary contract"
+    },
+    {
+      "date": "2026-11-16",
+      "field": "wholePopulationArms.status",
+      "change": "Removed the stale clause 'production builds no cpp project index, so the A->B delta is 0 in every column'; the field now agrees with wholePopulationArms.d3.indexedArm, which already recorded the supersession.",
+      "why": "Self-contradiction inside one object: status denied the production cpp index while d3.indexedArm recorded that both halves are wired and that CONSUMPTION moves +17,955 resolved / -22,656 ambiguous. Verified against src/ast/parallel-indexer.ts: PROJECT_INDEX_EXTENSIONS carries .cpp/.cc/.cxx/.c++/.hpp/.hxx/.ipp/.inl/.cu -> cpp and specByLang.cpp = CPP_DECLARATION_SPEC. A 2-repo re-run reproduced NO delta, recorded in NEXT-WORK \u00a714.15 as an instrument condition (the analyzer consumes only a complete===true index, fail-closed)."
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms.d7.wallLedger.walls[W11-member-leaf-owner-unresolved].disposition (and the receiver clause of W1-callable-not-declared-in-run)",
+      "change": "INSTRUMENT GAP (receiver typing) -> INSTRUMENT GAP, PARTIALLY CLOSED IN-LANE. Rows unchanged (83,169 and the W1 split); the disposition now names the arm that shipped and the wall that remains.",
+      "why": "NEXT-WORK \u00a714.17 sized the local opportunity at 20,580 member-leaf rows emitted from a class member (an upper bound). Implemented and shipped the INDEX-FREE arm: implicit-`this` bare calls and `this->m()` are bound by [basic.lookup.unqual] to the enclosing class's own published member, with no project index; the evidence is a post-pass over the finished symbol table (a member declared BELOW the calling body must still be found) and is attached only under three measured guards: (1) the class is declared exactly once by that name in the file (refuses template specializations and same-named classes in different namespaces), (2) the member is declared INSIDE that class body (refuses vendored amalgamations where only out-of-line definitions are in the file), (3) no function-scope binding shadows the name at the call site (a local/parameter or block-scope `using std::swap;` hides the class member). MEASURED on the 2-repo corpus, DEFAULT state: 2,863 owner facts of 35,605 member-leaf rows (2,859 bare implicit-this + 4 `this->`), 0 emitted on a non-`calls` row, 0 failing the census's independent re-check against the emitting file's symbols. The incoming gate (524-file population incl. `.h`): resolved 51,743 -> 51,741, ambiguous 18,604 unchanged, unresolved 7,220 -> 7,222, extOK 782 unchanged; kill-switch BB_CPP_LOCAL_RECEIVER=0 reproduces 51,743/18,604/7,220/782 EXACTLY, so the change is what moved the two rows. The owner channel resolved 2,861 of 2,863; the 2 that remain are both `ScopedFakeTestPartResultReporter::Init` in fmt/test/gtest/gmock-gtest-all.cc \u2014 an out-of-line constructor calling a member, claimed TRUE (the class's Init is declared in the included header, and the analyzer's out-of-line definition symbol proves the member) but the owner NAME is declared more than once project-wide and no in-file covering class exists at the call's line, so the channel's rule-0 identity fallback reads ambiguous and production holds the row NULL: a withdrawn binding, not a resolution. NOT closed: 15,025 member-leaf rows are file-scope calls with no anchor (real type inference), the 83,169 whole-population rows need the corpus machine, and the guards are conservative by design. Pinned by fixture cpp/local-implicit-owner (6 positives + 7 forbid rows) and mutants cpp/local-implicit-owner-dropped, -walk-time-table and -unchecked (all CAUGHT); script/m14/cpp-receiver-wave-verify.ts now measures BOTH arms (index-free: 2 of 6 shapes; index: 6 of 6) and asserts neither moves a row.",
+      "regenerationStatus": "hand-recorded for the same reason as the other errata: cpp-spec-table.ts --check exits ENOENT here (its measurement inputs under validation/m14/fixtures/cpp/measurements/ are absent). The next corpus-machine run must regenerate from the fixed instruments and delete this errata block."
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms.status + rulings.d7 (the BB_CPP_INDEX_CONSUME clauses) and the d3 indexed arm",
+      "change": "The consumption flag is SHIPPED DEFAULT-ON; the field's 'behind BB_CPP_INDEX_CONSUME=1' now names a KILL-SWITCH (`=0`), not an opt-in.",
+      "why": "The arm was kept opt-in long enough to price it, and \u00a714.16 packaged the trade for the Lead: with a COMPLETE index it resolves owner-verified bindings and withdraws name-model bindings the owner channel cannot support, so resolved falls while answers improve. Taken on the current tree (which also carries the index-free receiver arm): the 2-repo incoming gate reads resolved 51,741 / ambiguous 18,604 / unresolved 7,222 / extOK 782 per-file, the SAME numbers with the index present but the kill-switch set (`BB_CPP_INDEX_CONSUME=0`), and 51,034 / 18,244 / 8,289 / 782 with default consumption. Owner channel: 4,527 rows carried metadata.owner, 3,458 resolved, 1,069 declined, 151 net name-model wins, 860 withdrawn bindings held NULL. The index ALONE still moves nothing (the kill-switch row proves the instrument/consumption split); incomplete indexes still attach nothing (fail-closed); rows are invariant. Whole-population expectation remains the ledger's +17,955 / -22,656 / +4,701 on the 31-repo arm. Controls updated with the flag semantics: cpp-index-consume-verify (kill-switch arm), cpp-receiver-wave-verify (both-off arm), cpp-index-reproduce (arms A and B-off set the kill-switch explicitly). docs/indexing/environment-variables.md documents the default and adds BB_CPP_LOCAL_RECEIVER.",
+      "regenerationStatus": "hand-recorded for the same reason as the other errata (cpp-spec-table.ts --check exits ENOENT; the generator's measurement inputs are absent from this checkout)."
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms.d7.wallLedger.walls[W4-qualified-name-not-published].disposition",
+      "change": "STALE PREMISE / DESIGN DECISION -> RULED (design decision): leaf edge targets are the contract; the wall is closed by ruling, not by re-spelling.",
+      "why": "The 2026-11-16 measurement stood: 6,913 distinct qualifiedName strings exist and the qualified spelling rides metadata.qualified on every edge, so the wall's original reason is false. The open question it left was whether to CHANGE the target spelling to the qualified key where unique. That would be a cross-consumer vocabulary change \u2014 store keys, the arbiter's key space, and every lane's fixtures \u2014 and the qualified-name join it would serve asked 532 cpp rows and resolved 0 on the 2-repo corpus. The lane's documented contract is leaf targets for every relationship type (multiple fixtures pin the leaf spelling), so the decision is to keep the contract and rule the wall ABSENT-BY-CONTRACT rather than leave a design question drifting. The wall's 2,771 rows remain counted exactly as they were; nothing in the analyzer or the store moved.",
+      "previousDisposition": "STALE PREMISE \u2014 MEASURED FALSE 2026-11-16; now a DESIGN DECISION, not an instrument gap (awaiting the Lead)",
+      "nextOwner": "none \u2014 decided; revisit only if a consumer demonstrates a qualified-target requirement"
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms.d7.wallLedger.walls[W8-non-class-standard-type].disposition",
+      "change": "INSTRUMENT GAP (tracked, not fixed) -> CLOSED: the 4 rows were functional casts of standard typedefs; the calls path now applies the guard the instantiates path already had.",
+      "why": "The reconstruction corpus (validation/cpp-audit/corpus-manifest.json) supplied the rows the original ledger could not name: 4 residual `calls` edges, one per shape, in Rcpp/src/date.cpp:1290 (`(int_fast32_t)(\u2026)`), duckdb/third_party/ska_sort/ska_sort.hpp:119 and :129 (`std::int32_t(\u2026)`, `std::int64_t(\u2026)`) and nlohmann-json docs/.../value__return_type.cpp:12 (`std::uint64_t(0)`). A standard typedef is a TYPE; [cstdint]/[cstddef] guarantee it denotes a value type, so a call naming one is a fabrication with no reading. The analyzer already declines the identical class on the `instantiates` path via CPP_NON_CLASS_STANDARD_TYPES (`new uint8_t[5]`); the calls path simply never consulted the set. Fix: calleeLeafNode returns null for a callee spelled as a non-class standard type. Evidence: fixture cpp/typedef-functional-cast (RED pre-fix; real-call control), mutant cpp/standard-typedef-cast-call (CAUGHT, 71/71 cpp mutants), targeted re-parse of the 4-row files = 0 residual, and the whole-population re-measurement that follows. Rows stay 4 in the wall ledger because that is the row count the original population measured; the DISPOSITION is what changed.",
+      "previousDisposition": "INSTRUMENT GAP (a guard that escaped) \u2014 4 rows, tracked, not a residual",
+      "nextOwner": "none \u2014 closed; revisit only if a non-standard typedef spelling is proven callable"
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms (D2 census, D3 arms, D7 wall ledger, W1 four-way) \u2014 provenance",
+      "change": "Not regenerated: the committed rows remain the ORIGINAL population's measurement, and a reproducible RECONSTRUCTION re-derivation is recorded beside it (validation/cpp-audit/whole-population/, doc \u00a714.21).",
+      "why": "The generator's inputs were absent because the corpus was an unpinned fleet checkout whose repo list was never committed. script/cpp-audit/reconstruct-corpus.ts now rebuilds a documented corpus from committed evidence (validation/cpp-audit/corpus-manifest.json: 46 repos, 38 pinned + 8 head-pinned, 1 absent, 5 fetch-failed; 23,058 C++-spelling files), and the full whole-population battery was re-run on it: gate 1,061,398 edges / 463,682 resolved / extOK 11,719 (0 refuted), wall ledger closes exactly with the original SHAPE (W1 69.86% v 70.49%, W10 13.11% v 13.13%, W11 9.10% v 9.55%, W1-type 0.45% v 0.55%, W8 4 = 4), W1 four-way A-share 19.03% v 18.51%. W4 is smaller and W2 larger on the reconstruction because its repo mix differs; the committed ledger stays the original measurement, and the differences are stated rather than averaged. TWO CORRECTIONS came from the wider corpus and are applied in code: (a) the wall rule filed QUOTED-INCLUDE STEMS spelled like keywords (`part_of -> catch` from `#include \"catch.hpp\"`) under W7; they are module edges and now check into W2 (cpp-wall-disposition.ts and cpp-dump-classify.ts, same rule both places), with W7's measured-zero claim narrowed to declaration-position labels and given its falsifier; (b) wall W8's 4 rows were named and CLOSED in the analyzer (\u00a714.22). The table is NOT regenerated because the generator's last missing inputs \u2014 the D2/D3 arm artifacts `cpp-d3-noindex-arm.json` / `cpp-d3-indexed-arm.json` \u2014 have no producer script in this tree; overwriting the table with a different population to satisfy --check would be exactly the silent measurement swap this file's errata exist to prevent.",
+      "nextOwner": "Lead/programme: a producer for the D3 arm artifacts (then the generator can regenerate from the reconstruction; all other inputs are now producible)"
+    },
+    {
+      "date": "2026-11-17",
+      "field": "wholePopulationArms (D2 census, D3 arms, D7 ledger) \u2014 POPULATION REPLACED",
+      "change": "The table is REGENERATED from the reconstruction corpus (validation/cpp-audit/corpus-manifest.json: 46 repos, 23,058 C++-spelling files; gate population 7,778 files/18 repos). The previous rows were measured on the unpinned original fleet corpus (7,435 files/31 repos) that no longer exists; those numbers remain in this errata history and in docs/m65-cpp/NEXT-WORK.md \u00a714.21.",
+      "why": "Announced replacement, per the lane's final-pass decision: every generator input (D2 census, D3 no-index/index arms + kill-switch arm, D7 w1-price + wall ledger, applicable-set, cap-50 gate log) now exists as a committed artifact measured on a pinned, reproducible population, and cpp-spec-table.ts --check now passes against it. The generator also stopped hardcoding the original population/original D3 prose: it reads the arm's population, the kill-switch arm for the consume-only delta, and the census for the construct counts. The ruled values' evidence is language-semantic (see the notApplicableEvidence entries and the three near-miss fixtures); W8 is CLOSED (absent from the post-fix wall ledger, which this regeneration reads).",
+      "nextOwner": "none in the cpp lane \u2014 the table is now reproducible from committed inputs; regenerate only when a measurement changes."
+    }
+  ]
+}
