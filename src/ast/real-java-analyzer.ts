@@ -1068,7 +1068,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (inheritance.extendsClass && inheritance.extendsClass.name) {
             relationships.push({
               source: name,
-              target: inheritance.extendsClass.name,
+              target: this.javaDisambiguateTypeTarget(inheritance.extendsClass.name, currentPackage, receiverTypes, context?.projectIndex),
               type: ASTEngine.RelationshipType.Inheritance,
               confidence: 1.0,
               // M59 (#825): the parent's OWN line — a long `extends A\n implements B`
@@ -1083,7 +1083,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!iface.name) continue
             relationships.push({
               source: name,
-              target: iface.name,
+              target: this.javaDisambiguateTypeTarget(iface.name, currentPackage, receiverTypes, context?.projectIndex),
               type: ASTEngine.RelationshipType.Inheritance,
               confidence: 1.0,
               line_number: iface.line,
@@ -1094,7 +1094,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!iface.name) continue
             relationships.push({
               source: name,
-              target: iface.name,
+              target: this.javaDisambiguateTypeTarget(iface.name, currentPackage, receiverTypes, context?.projectIndex),
               type: ASTEngine.RelationshipType.Implementation,
               confidence: 1.0,
               line_number: iface.line,
@@ -5451,6 +5451,49 @@ currentPackage,
       projectWalk(ownerName, 0)
     }
     return hits === 1
+  }
+
+  /** SPELL A BARE TYPE NAME THE WAY THE PROJECT CAN RESOLVE IT — but only when the
+   *  bare spelling is AMBIGUOUS, and only when the qualified path is PROVEN to name a
+   *  project declaration.
+   *
+   *  WHY THIS EXISTS. `class Foo extends Action` writes the leaf `Action`. If the project
+   *  declares more than one `Action`, the indexer cannot pick one and the edge is counted
+   *  ambiguous — the largest addressable share of this lane's ambiguity. The compilation
+   *  unit ordinarily says WHICH `Action` it means: a single-type import (JLS 7.5.1) or the
+   *  file's own package (JLS 6.5.5). This reads that evidence and re-spells the target.
+   *
+   *  WHY IT IS DELIBERATELY NARROW — each guard removes a way to turn a resolution into
+   *  something worse, which is the failure mode measured when owners were attached without
+   *  ancestry (`e4b668651`):
+   *    * no COMPLETE project index -> return the source spelling untouched (a fragment's
+   *      opinion about collisions is not evidence);
+   *    * already qualified -> nothing to do;
+   *    * exactly one or zero project declarations -> return untouched: the name is not
+   *      ambiguous, so re-spelling can only lose the spelling the source wrote (and the
+   *      zero case is external, where a bare leaf is the honest form);
+   *    * the FILE declares the name -> JLS 6.4.1, the local declaration shadows the import,
+   *      so re-spelling would point at the wrong type;
+   *    * the imported path is NOT a project declaration -> external; re-spelling would trade
+   *      an ambiguity for an unresolved edge and move nothing, so it is left alone.
+   *  When a rule fires, the target becomes a path `projectIndex.typeKinds` already holds,
+   *  which is the same key space `qualifiedName` aliases are built from. */
+  private javaDisambiguateTypeTarget(
+    leaf: string,
+    currentPackage: string,
+    index: JavaReceiverTypeIndex,
+    projectIndex: ProjectIndex | undefined,
+  ): string {
+    if (!leaf || leaf.indexOf(".") !== -1) return leaf
+    if (projectIndex?.complete !== true) return leaf
+    const declCount = projectIndex.symbolCounts.get(leaf) ?? 0
+    if (declCount <= 1) return leaf
+    if (index.typeNames.has(leaf)) return leaf
+    const imported = index.importSinglePaths.get(leaf)
+    if (imported && projectIndex.typeKinds.has(imported)) return imported
+    const ownPackage = currentPackage ? `${currentPackage}.${leaf}` : ""
+    if (ownPackage && projectIndex.typeKinds.has(ownPackage)) return ownPackage
+    return leaf
   }
 
   /** Can an owner spelled `ownerName` be attached at all?
