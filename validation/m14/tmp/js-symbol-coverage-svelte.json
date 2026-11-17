@@ -1,0 +1,262 @@
+{
+  "at": "2026-11-17T16:19:20.389Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "jsFiles": 3383,
+  "byType": {
+    "variable_declarator": {
+      "declared": 4789,
+      "covered": 584,
+      "unboundObjectMethod": 0,
+      "missedLocal": 4205,
+      "missedTop": 0
+    },
+    "function_declaration": {
+      "declared": 1562,
+      "covered": 1562,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "pair": {
+      "declared": 2488,
+      "covered": 1,
+      "unboundObjectMethod": 2487,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "method_definition": {
+      "declared": 564,
+      "covered": 564,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "class_declaration": {
+      "declared": 37,
+      "covered": 37,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "field_definition": {
+      "declared": 216,
+      "covered": 216,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "generator_function_declaration": {
+      "declared": 2,
+      "covered": 2,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    }
+  },
+  "totals": {
+    "declared": 9658,
+    "covered": 2966,
+    "unboundObjectMethod": 2487,
+    "missedLocal": 4205,
+    "missedTopLevel": 0
+  },
+  "missedExamples": [],
+  "jsdoc": {
+    "declared": 38,
+    "covered": 0,
+    "missed": 38,
+    "missedExamples": [
+      {
+        "file": "packages/svelte/scripts/process-messages/templates/compile-errors.js",
+        "name": "NodeLike",
+        "line": 3
+      },
+      {
+        "file": "packages/svelte/scripts/process-messages/templates/compile-warnings.js",
+        "name": "NodeLike",
+        "line": 4
+      },
+      {
+        "file": "packages/svelte/src/compiler/errors.js",
+        "name": "NodeLike",
+        "line": 5
+      },
+      {
+        "file": "packages/svelte/src/compiler/migrate/index.js",
+        "name": "State",
+        "line": 463
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/1-parse/acorn.js",
+        "name": "CommentWithLocation",
+        "line": 12
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/1-parse/index.js",
+        "name": "LastAutoClosedTag",
+        "line": 337
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/1-parse/index.js",
+        "name": "ParserState",
+        "line": 335
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/1-parse/utils/fuzzymatch.js",
+        "name": "MatchTuple",
+        "line": 281
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/2-analyze/css/css-analyze.js",
+        "name": "CssVisitors",
+        "line": 17
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/2-analyze/css/css-analyze.js",
+        "name": "CssState",
+        "line": 9
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/2-analyze/css/css-prune.js",
+        "name": "Direction",
+        "line": 13
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/2-analyze/css/css-prune.js",
+        "name": "NodeExistsValue",
+        "line": 12
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/2-analyze/index.js",
+        "name": "Tuple",
+        "line": 1274
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/3-transform/client/visitors/shared/fragment.js",
+        "name": "Sequence",
+        "line": 24
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/3-transform/css/index.js",
+        "name": "State",
+        "line": 10
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/3-transform/utils.js",
+        "name": "Tag",
+        "line": 22
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/bindings.js",
+        "name": "BindingProperty",
+        "line": 1
+      },
+      {
+        "file": "packages/svelte/src/compiler/phases/scope.js",
+        "name": "State",
+        "line": 922
+      },
+      {
+        "file": "packages/svelte/src/compiler/state.js",
+        "name": "NodeLike",
+        "line": 7
+      },
+      {
+        "file": "packages/svelte/src/compiler/utils/ast.js",
+        "name": "DestructuredAssignment",
+        "line": 222
+      },
+      {
+        "file": "packages/svelte/src/compiler/utils/compile_diagnostic.js",
+        "name": "ICompileDiagnostic",
+        "line": 37
+      },
+      {
+        "file": "packages/svelte/src/compiler/validate-options.js",
+        "name": "Validator",
+        "line": 5
+      },
+      {
+        "file": "packages/svelte/src/compiler/warnings.js",
+        "name": "NodeLike",
+        "line": 6
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dev/debug.js",
+        "name": "BranchInfo",
+        "line": 361
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dev/ownership.js",
+        "name": "Location",
+        "line": 1
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dev/tracing.js",
+        "name": "TraceEntry",
+        "line": 8
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dom/blocks/await.js",
+        "name": "AwaitState",
+        "line": 25
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dom/blocks/boundary.js",
+        "name": "BoundaryProps",
+        "line": 45
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dom/blocks/branches.js",
+        "name": "Branch",
+        "line": 15
+      },
+      {
+        "file": "packages/svelte/src/internal/client/dom/elements/custom-element.js",
+        "name": "CustomElementPropDefinition",
+        "line": 7
+      },
+      {
+        "file": "packages/svelte/src/internal/server/dev.js",
+        "name": "Element",
+        "line": 13
+      },
+      {
+        "file": "packages/svelte/src/internal/server/renderer.js",
+        "name": "RendererItem",
+        "line": 21
+      },
+      {
+        "file": "packages/svelte/src/internal/server/renderer.js",
+        "name": "AccumulatedContent",
+        "line": 19
+      },
+      {
+        "file": "packages/svelte/src/internal/server/renderer.js",
+        "name": "RendererType",
+        "line": 18
+      },
+      {
+        "file": "packages/svelte/src/legacy/legacy-client.js",
+        "name": "LegacyComponentType",
+        "line": 63
+      },
+      {
+        "file": "packages/svelte/src/legacy/legacy-server.js",
+        "name": "LegacyRenderResult",
+        "line": 11
+      },
+      {
+        "file": "packages/svelte/src/utils.js",
+        "name": "StateCreationRuneName",
+        "line": 465
+      },
+      {
+        "file": "packages/svelte/src/utils.js",
+        "name": "RuneName",
+        "line": 455
+      }
+    ]
+  },
+  "note": "A declaration node is COVERED when a published symbol has the same name AND its range contains the declaration's line. unbound-object-method = an object literal member with no binding to name (the lane's documented correct-ownerless contract); MISSED = a named declaration with no symbol, which is the gap this census exists to find."
+}

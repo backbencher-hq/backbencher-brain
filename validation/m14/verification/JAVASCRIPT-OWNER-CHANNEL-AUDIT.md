@@ -205,6 +205,98 @@ label. On nomad:
 `service`, `action`, `or`, `computed` — because a decorated symbol's target cannot be resolved and
 carries nothing to say why. The claim is the honest fix; it is the same claim finding 5 established.
 
+## Finding 7 — JSDoc declares names that were not symbols at all (FIXED)
+
+**The largest symbol hole in this lane, and no node-type census could see it.** A JSDoc type
+declaration lives in a COMMENT:
+
+```js
+/** @typedef {{ code: string; message: string }} ICompileDiagnostic */
+/** @implements {ICompileDiagnostic} */
+export class CompileDiagnostic { … }
+```
+
+`ICompileDiagnostic` is referenced by other JSDoc, by `@implements`, and by JSDoc-typed parameters —
+and there is no grammar node of type "typedef" to enumerate, so every symbol census this lane ran
+measured zero gaps while the name was absent from the symbol table entirely.
+
+Instrument: `script/m14/javascript-symbol-coverage-census.ts`, which measures BOTH axes — declaration
+**nodes** from the grammar, and declaration **names** from comment text.
+
+| corpus | JSDoc declared | covered | missed |
+|---|---|---|---|
+| svelte | 38 | **38** | **0** |
+| nomad | 22 | 20 | 2 |
+| vault | 14 | 13 | 1 |
+| proxicall | 13 | 12 | 1 |
+| consul | 4 | **4** | **0** |
+| lodash / bootstrap | 0 | 0 | 0 |
+
+**Fix:** `extractJsdocDeclarationSymbols` publishes `@typedef` / `@callback` / `@interface` / `@enum`
+names as symbols (`TypeAlias` / `Interface` / `Enum`) with `{ viaJSDoc: true, jsdocTag }`. A REAL
+declaration always wins: if the file already declares a symbol of that name, the tag is a comment
+about it and adds nothing — which is what the 4 residual "misses" are (the name IS a symbol, declared
+later in the same file, so the census's line join does not see it).
+
+**No relationship changes**, and that is by construction: `addContainmentRelationships` emits only for
+a symbol with an `ownerName`, and a module-level type declaration has none — exactly like a module-level
+`const`. Both differential hashes are byte-identical afterwards, which is the evidence.
+
+**This is also what makes `implements` followable.** The `implements` edge added for
+`@implements {ICompileDiagnostic}` named a type no symbol carried, so the graph could not land on it.
+
+### The bug this fix had in its own first version, and how it was caught
+
+The tag-body boundary was a fixed-string search for `"\n * @"` — which matched NOTHING, because real
+JSDoc is indented further (`"\n   * @property"`). The body then swallowed every following `@property`
+line and the "last identifier in the body" became a PROPERTY name: a multi-line
+`@typedef {Object} HealthStatus` + two `@property` lines published **`canary`**, not `HealthStatus`.
+Measured on nomad: **16 of 22** declared names missed for that one reason. The boundary is now a
+character scan (`jsdocTagBodyEnd`, no regex — the lane's rule).
+
+## Symbol coverage, measured — grammar declarations
+
+Same instrument, the other axis. A declaration node is covered when a published symbol has the same
+name and its range contains the **NAME node's** line.
+
+| corpus | class | function | generator | method | field | var(top) | MISSED |
+|---|---|---|---|---|---|---|---|
+| svelte | 37/37 | 1562/1562 | 2/2 | 564/564 | 216/216 | 0 | **0** |
+| nomad | 446/446 | 77/77 | — | 1494/1494 | 1831/1831 | 0 | **0** |
+| consul | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | **0** |
+| vault | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | **0** |
+| bootstrap | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | **0** |
+| lodash | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | **0** |
+| proxicall | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | **1** |
+
+Two census bugs were found and fixed before these numbers meant anything, and both had made the
+analyzer look worse than it is:
+
+1. **Locals counted as gaps.** The first run reported **4,205** missed variable declarators on svelte;
+   every sampled one was a loop counter inside a function. This lane publishes no LOCAL symbols by
+   design, so the bucket is `local(ok)` now.
+2. **Decorator lines counted as gaps.** In the pinned grammar a decorated declaration's node STARTS AT
+   ITS DECORATOR, so `@computed('x') get features() {}` has its node start on the `@computed` line
+   while the symbol's range starts on the `get` line. Joining on the node start reported **522**
+   published nomad methods as missing — every sampled one a decorated getter that WAS in the symbol
+   table (`features kind=property owner=Abstract`, verified). The join is on the NAME node's line now.
+
+### Dispositions that are NOT gaps, now measured as such
+
+| class | population | why it is correct |
+|---|---|---|
+| object-literal members | 2,223 nomad / 2,487 svelte | this lane publishes NO symbol for an object-literal member; a bound literal's member is placed by its OWNER, an unbound one is correctly ownerless |
+| function locals | 1,229 nomad / 4,205 svelte | a declaration at function depth > 0 is not a symbol in this lane |
+| import bindings | 1 nomad / 63 lodash / 742 proxicall | `const fs = require('fs')` publishes an `imports` EDGE and no symbol — and ESM default/named/namespace imports behave identically (measured: 0 symbols, 1 imports edge each) |
+
+### One inconsistency found and recorded, not fixed
+
+`const { a } = require('m')` **does** publish a symbol `a`, while every other import binding —
+ESM default, named, namespace, and a bare `const fs = require('m')` — publishes none. Either the
+destructured form should stop publishing or the others should start, and that is a lane-wide symbol
+model decision (it would move symbol counts on every corpus), not a bugfix. Recorded here with the
+measurement.
+
 ## What the store does with an owner claim, and the one thing still open
 
 `claimOwnerCarryingTargets` withdraws the name binding for an owner-carrying row, then

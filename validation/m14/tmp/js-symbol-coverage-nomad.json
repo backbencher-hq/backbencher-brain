@@ -1,0 +1,83 @@
+{
+  "at": "2026-11-17T16:48:13.685Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/nomad",
+  "jsFiles": 967,
+  "byType": {
+    "pair": {
+      "declared": 2223,
+      "covered": 0,
+      "unboundObjectMethod": 2223,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "variable_declarator": {
+      "declared": 1313,
+      "covered": 83,
+      "unboundObjectMethod": 0,
+      "missedLocal": 1229,
+      "missedTop": 1
+    },
+    "function_declaration": {
+      "declared": 77,
+      "covered": 77,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "class_declaration": {
+      "declared": 446,
+      "covered": 446,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "method_definition": {
+      "declared": 1494,
+      "covered": 1494,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    },
+    "field_definition": {
+      "declared": 1831,
+      "covered": 1831,
+      "unboundObjectMethod": 0,
+      "missedLocal": 0,
+      "missedTop": 0
+    }
+  },
+  "totals": {
+    "declared": 7384,
+    "covered": 3931,
+    "unboundObjectMethod": 2223,
+    "missedLocal": 1229,
+    "missedTopLevel": 1
+  },
+  "missedExamples": [
+    {
+      "file": "scripts/combine-ui-test-results.js",
+      "type": "variable_declarator",
+      "name": "fs",
+      "line": 8,
+      "depth": 0
+    }
+  ],
+  "jsdoc": {
+    "declared": 22,
+    "covered": 20,
+    "missed": 2,
+    "missedExamples": [
+      {
+        "file": "ui/app/components/variable-form.js",
+        "name": "conflictingVariable",
+        "line": 39
+      },
+      {
+        "file": "ui/app/models/variable.js",
+        "name": "pathLinkedEntities",
+        "line": 92
+      }
+    ]
+  },
+  "note": "A declaration node is COVERED when a published symbol has the same name AND its range contains the declaration's line. unbound-object-method = an object literal member with no binding to name (the lane's documented correct-ownerless contract); MISSED = a named declaration with no symbol, which is the gap this census exists to find."
+}

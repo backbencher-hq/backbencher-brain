@@ -129,6 +129,13 @@ function segmentName(node: Node): string {
  * The claim pass refuses everything else: a dotted, path-like or fragment target is either
  * looked up by its owner (refutable) or unreachable to the arbiter's verifier.
  */
+/** is this code point a JavaScript identifier character? (letters, `_`, `$`, digits) — no regex */
+function isPlainJsIdentifierChar(c: number): boolean {
+  const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+  const isDigit = c >= 48 && c <= 57
+  return isLetter || isDigit || c === 95 || c === 36
+}
+
 function isPlainJsIdentifier(text: string): boolean {
   if (text.length === 0) return false
   for (let i = 0; i < text.length; i++) {
@@ -2116,6 +2123,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // JSDoc DECLARATIONS, before the relationship passes so they are part of the symbol table from
+    // the start. They live in COMMENTS, which is why every symbol census this lane ran could not see
+    // them: there is no node of type "typedef" to enumerate.
+    this.extractJsdocDeclarationSymbols(rootNode, symbols)
+
     // --- Relationship passes -------------------------------------------------
     // THE POSITIONAL SCOPE MODEL is built at the TOP of analyze (see the assignment there): the
     // class heritage emission runs before this point and needs it. It is built ONCE.
@@ -2276,6 +2288,129 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ============================================================================
   // RELATIONSHIP PASSES
   // ============================================================================
+
+  /**
+   * JSDOC TYPE DECLARATIONS AS SYMBOLS — `@typedef`, `@callback`, `@enum`, `@interface`.
+   *
+   * THE HOLE THIS CLOSES, and why every earlier census missed it: a JSDoc type declaration lives in
+   * a COMMENT. `@typedef {{ code: string }} ICompileDiagnostic` declares a name that other JSDoc,
+   * `@implements` and JSDoc-typed parameters all reference — and no grammar node of type "typedef"
+   * exists to enumerate, so a census built on node types reports zero gaps while the name is absent
+   * from the symbol table entirely.
+   *
+   * Measured before this pass (`script/m14/javascript-symbol-coverage-census.ts`, svelte, 3,383 JS
+   * files): **38 declared, 0 covered — a 100% gap** — `NodeLike`, `ParserState`, `CssVisitors`,
+   * `CommentWithLocation`, `MatchTuple`, `CssState`, `Direction`, `NodeExistsValue`, `LastAutoClosedTag`,
+   * and so on.
+   *
+   * THIS IS ALSO WHAT MAKES `implements` FOLLOWABLE. The `implements` edge added for
+   * `/** @implements {ICompileDiagnostic} *\/` names a type that, before this pass, no symbol
+   * carried — so the edge pointed at a name the graph could not land on.
+   *
+   * A REAL DECLARATION ALWAYS WINS: if the file already declares a symbol of the same name (a class,
+   * function or const), the JSDoc tag is a comment ABOUT it and adds nothing.
+   *
+   * NO CONTAINMENT EDGE follows from these symbols, deliberately: `addContainmentRelationships` only
+   * emits for a symbol with an `ownerName`, and a module-level type declaration has none — exactly
+   * like a module-level `const`. So this pass adds symbols and changes no relationship.
+   */
+  /**
+   * WHERE A JSDoc TAG'S BODY ENDS — the offset of the next line that starts a new tag
+   * (optional whitespace, `*`, optional whitespace, `@`) or of the comment terminator.
+   *
+   * A fixed-string search cannot do this: JSDoc indentation is not fixed, and getting it wrong makes
+   * the body swallow the following tags, so the "last identifier in the body" becomes a PROPERTY name
+   * instead of the declared one. Scanned by character, no regex, which is this lane's rule.
+   */
+  private jsdocTagBodyEnd(rest: string): number {
+    let i = 0
+    for (;;) {
+      const nl = rest.indexOf("\n", i)
+      if (nl < 0) return rest.length
+      let j = nl + 1
+      while (j < rest.length && (rest[j] === " " || rest[j] === "\t")) j++
+      if (rest[j] === "*") {
+        let k = j + 1
+        while (k < rest.length && (rest[k] === " " || rest[k] === "\t")) k++
+        if (rest[k] === "@") return nl
+      }
+      if (rest[j] === "*" && rest[j + 1] === "/") return nl
+      i = nl + 1
+    }
+  }
+
+  private extractJsdocDeclarationSymbols(
+    rootNode: Node,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): void {
+    const DECLARING_TAGS: Array<{ tag: string; kind: ASTEngine.SymbolKind }> = [
+      { tag: "@typedef", kind: ASTEngine.SymbolKind.TypeAlias },
+      { tag: "@callback", kind: ASTEngine.SymbolKind.TypeAlias },
+      { tag: "@interface", kind: ASTEngine.SymbolKind.Interface },
+      { tag: "@enum", kind: ASTEngine.SymbolKind.Enum },
+    ]
+    const taken = new Set(symbols.map((s) => s.name))
+    const comments: Node[] = []
+    {
+      // comments are EXTRAS: walk every child, not just the named ones
+      const stack: Node[] = [rootNode]
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (n.type === "comment") {
+          const text = n.text
+          if (text.startsWith("/**")) comments.push(n)
+          continue
+        }
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c) stack.push(c)
+        }
+      }
+    }
+    for (const comment of comments) {
+      const text = comment.text
+      for (const { tag, kind } of DECLARING_TAGS) {
+        let from = 0
+        for (;;) {
+          const at = text.indexOf(tag, from)
+          if (at < 0) break
+          from = at + tag.length
+          const rest = text.slice(from)
+          // THE TAG BODY ENDS AT THE NEXT `@` TAG OR AT THE COMMENT END. This was a fixed-string
+          // search for "\n * @" and it matched NOTHING, because the real text is indented further
+          // ("\n   * @property"). The body then swallowed every following @property line and the
+          // "last identifier" became a PROPERTY name: a multi-line typedef
+          // `@typedef {Object} HealthStatus` + two `@property` lines published `canary`, not
+          // `HealthStatus` — measured on nomad, 16 of 22 declared names missed for that one reason.
+          const body = rest.slice(0, this.jsdocTagBodyEnd(rest))
+          // THE DECLARED NAME IS THE LAST IDENTIFIER IN THE TAG BODY:
+          //   `{…} ICompileDiagnostic` -> ICompileDiagnostic
+          //   `{function(string): boolean} Predicate` -> Predicate
+          //   `{import('./x').Foo} Bar` -> Bar
+          let name = ""
+          let i = body.length - 1
+          while (i >= 0) {
+            while (i >= 0 && !isPlainJsIdentifierChar(body.charCodeAt(i))) i--
+            if (i < 0) break
+            const end = i + 1
+            while (i >= 0 && isPlainJsIdentifierChar(body.charCodeAt(i))) i--
+            const token = body.slice(i + 1, end)
+            if (isPlainJsIdentifier(token)) { name = token; break }
+            // keep looking left for the first identifier-looking token
+          }
+          if (name.length === 0 || taken.has(name)) continue
+          taken.add(name)
+          symbols.push({
+            name,
+            kind,
+            range: this.nodeToRange(comment),
+            visibility: "public",
+            metadata: { viaJSDoc: true, jsdocTag: tag } as Record<string, unknown>,
+          })
+        }
+      }
+    }
+  }
 
   private addContainmentRelationships(
     symbols: ASTEngine.UniversalSymbol[],
