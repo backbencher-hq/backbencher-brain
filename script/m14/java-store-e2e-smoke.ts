@@ -66,7 +66,10 @@ try {
                 FROM brain_relationship
                 WHERE project_id = ? AND relationship_type = 'imports'
                   AND target_external = 'java.util.List' ORDER BY source_external`).all(projectId)
-  console.log("JAVA_SQLITE_DIAG", JSON.stringify({ importsEmitted: emitted.map((e:any) => ({ source:e.source,target:e.target,fileLevel:e.metadata?.fileLevel,line:e.line_number })),rows }))
+  console.log("JAVA_SQLITE_DIAG", JSON.stringify({
+    allImports: results.flatMap((f) => f.relationships).filter((e:any) => String(e.type ?? e.relationshipType)==="imports" && e.target==="java.util.List").map((e:any)=>({source:e.source,target:e.target,fileLevel:e.metadata?.fileLevel,line:e.line_number,meta:e.metadata})),
+    rows
+  }))
   assertThat(rows.length === 2, `two distinct file-level imports must survive storage; got ${rows.length}`)
   const actualSources = rows.map((row) => row.source_external).sort()
   assertThat(
