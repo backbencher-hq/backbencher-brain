@@ -6,14 +6,14 @@
   "expectRelationships": [
     {
       "type": "overrides",
-      "from": "ImplicitObjectMethods.toString",
+      "from": "audit.ImplicitObjectMethods.toString",
       "target": "toString",
       "meta.reasonCode": "implicit-java-lang-object",
       "meta.declaringType": "java.lang.Object"
     },
     {
       "type": "overrides",
-      "from": "ImplicitObjectMethods.hashCode",
+      "from": "audit.ImplicitObjectMethods.hashCode",
       "target": "hashCode",
       "meta.reasonCode": "implicit-java-lang-object",
       "meta.declaringType": "java.lang.Object"
@@ -22,7 +22,7 @@
   "expectRelationshipCount": [
     {
       "type": "overrides",
-      "from": "ImplicitObjectMethods.toString",
+      "from": "audit.ImplicitObjectMethods.toString",
       "target": "toString",
       "equals": 1
     }
