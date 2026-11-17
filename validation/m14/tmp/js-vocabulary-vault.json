@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-17T04:21:05.634Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/vault",
+  "trackedFiles": 9495,
+  "jsFiles": 1729,
+  "parsedClean": 1728,
+  "labelCounts": {
+    "calls": 73651,
+    "extends": 427,
+    "implements": 0,
+    "uses": 35002,
+    "imports": 9573,
+    "exports": 1404,
+    "contains": 2499,
+    "references": 15,
+    "overrides": 1267,
+    "instantiates": 296,
+    "decorates": 1299,
+    "renders": 0,
+    "mixes_in": 0,
+    "part_of": 0
+  },
+  "denominators": {
+    "jsxFiles": 0,
+    "decoratorFiles": 309
+  },
+  "mixesIn": {
+    "rows": 0,
+    "targetDeclaredInSameFile": 0,
+    "targetNotDeclaredHere": 0,
+    "sample": []
+  },
+  "partOfRows": 0,
+  "note": "Whole-population counts for the labels the lane doc reported from a cap-50 triage. The JSX and decorator denominators come from the PARSE TREE (jsx_element / jsx_self_closing_element / decorator nodes), not from a text pattern. mixes_in is split by whether its target is a name the SAME FILE declares, which separates a store-bindable claim from a name no per-file analyzer could bind."
+}
