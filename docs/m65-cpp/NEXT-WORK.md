@@ -16,6 +16,8 @@
 > | relationship types emitting | **11** of the 14-value vocabulary (3 ruled absent with grammar evidence) |
 | receiver facts in the DEFAULT analyzer (2-repo) | **2,863** rows carry `metadata.owner` from the index-free arm, 0 failing the census's file-symbol re-check (§14.18 — the wall is NOT closed by it) |
 | index consumption | **SHIPPED DEFAULT-ON** (§14.19) — with a complete index the 2-repo gate reads resolved **51,034** vs **51,741** per-file; `BB_CPP_INDEX_CONSUME=0` reproduces the per-file numbers EXACTLY |
+| whole-population corpus | **RECONSTRUCTED, REPRODUCIBLE** (§14.21) — `script/cpp-audit/reconstruct-corpus.ts` + `validation/cpp-audit/corpus-manifest.json`: 46 repos / 23,058 C++-spelling files (38 pinned, 8 head-pinned, 1 absent, 5 fetch-failed recorded); the extension-only gate population on it is **7,778 files / 18 repos**, within 4.6% of the original ledger's 7,435 |
+| wall W8 | **CLOSED** (§14.22) — the 4 rows (on BOTH populations) were functional casts of `<cstdint>`/`<cstddef>` value types; `calleeLeafNode` now applies the guard the `instantiates` path already had; fixture `cpp/typedef-functional-cast` + mutant `cpp/standard-typedef-cast-call` (71/71 mutants) |
 > | `calls` target resolved | 54,971 / 59,374 = **92.6%** |
 > | `part_of` target resolved | 347 / 360 = **96.4%** — §6 says 97.5%; §14.2 settles it |
 > | `references` target resolved | 205 / 206 = **99.5%** (the miss is `::std::ostream`) |
@@ -1344,3 +1346,167 @@ errata entry keeps the previous disposition so the decision is auditable.
 cross-run TYPE declarations in the shared index. Both are programme infrastructure, not cpp-lane code;
 they stay recorded with their rows and their arithmetic. The corpus-blocked items (W8's 4 rows, the
 31-repo re-derivation, the spec generator's measurement inputs) are unchanged.
+
+---
+
+## 14.21 · THE CORPUS IS RECONSTRUCTED — the whole-population ledger re-derived, and the wall rule it broke
+
+**The first blocking condition is gone.** The lane's whole-population numbers (the D7 wall ledger, the
+23,237-file closure, the W1 four-bucket partition) were measured on an unpinned fleet checkout at
+`$PWD/.corpus` that no longer exists and whose repository list was never committed. On 2026-11-17 that
+was replaced by a **documented reconstruction** — `script/cpp-audit/reconstruct-corpus.ts`, provenance
+in `validation/cpp-audit/corpus-manifest.json`:
+
+| | |
+|---|---|
+| repositories | **46** (1 absent: the private `vscode` fork's remote no longer exists; 5 cpp-carrying repos — julia, abseil-cpp, googletest, protobuf, dart-sdk — failed their fetch on a GitHub connectivity flap and are recorded as failed, not omitted) |
+| pins | 38 at a committed revision (M11 manifest / parse-success registry), 8 head-pinned with the observed SHA recorded |
+| files | **23,058** C++-spelling files (15,273 `.h` · 3,752 `.cpp` · 2,140 `.hpp` · 1,875 `.cc` · 18 others) |
+| gate population (9 spellings, extension-only) | **7,778 files across 18 repos** — the original ledger's population was 7,435 files/31 repos, so the population is within **4.6%** on file count (composition differs, see caveats) |
+
+The reconstruction is a **STAND-IN, not a reproduction**: the original repo list is unrecoverable, so
+the numbers below are comparable in SHAPE and not claimed to reproduce the ledger's counts. Clone is
+sparse (`*.cpp *.cc *.cxx *.c++ *.hpp *.hxx *.hh *.h *.ipp *.inl *.cu`) against `--filter=blob:none`;
+the corpus root's last segment is literally `.corpus` because `cpp-wall-disposition` and
+`cpp-w1-price` derive the repository as the path segment after that marker.
+
+### The whole-population gate on the reconstruction (extensions-only, no `--index`, no env flags)
+
+| | |
+|---|---|
+| edges | **1,061,398** |
+| resolved | **463,682 (43.7%)** |
+| ambiguous (decl) / (kind) | **313,439 / 122,379** |
+| unresolved | **272,558** |
+| `extOK` — external claims the PROJECT CONFIRMS | **11,719, 0 refuted** |
+| binds | 0 / 0 / 0 |
+
+That `extOK` is the number worth reading twice: the ISO stdlib citation claim shipped by default in
+`5cc82967e` verifies **11,719 rows on a population ~23× the two-repo evidence set** (782 there), with
+**0 refuted** — the first whole-population validation of that ship. Population: 7,778 parsed of 7,778
+sampled; 7 files over the 1 MB cap disclosed by the gate's own exclusion line.
+
+### The D7 wall ledger, re-derived on the same dump
+
+`cpp-wall-disposition` over the gate's own dump (`585,997` residual rows): the **closure holds exactly**
+— nine walls sum to the dump's residual rows — and the shape reproduces the original ledger:
+
+| wall | reconstruction | share | original ledger | share |
+|---|---|---|---|---|
+| W1-callable-not-declared-in-run | 409,375 | 69.86% | 614,081 | 70.49% |
+| W10-macro-defined-name | 76,830 | 13.11% | 114,398 | 13.13% |
+| W11-member-leaf-owner-unresolved | 53,351 | 9.10% | 83,169 | 9.55% |
+| W2-module-path-not-a-symbol | 42,512 | 7.25% | 50,915 | 5.84% |
+| W1-type-not-declared-in-run | 2,619 | 0.45% | 4,776 | 0.55% |
+| W4-qualified-name-not-published | 910 | 0.16% | 2,771 | 0.32% |
+| W5-export-marker-not-a-declaration | 286 | 0.05% | 835 | 0.10% |
+| W9-operator-name-not-a-symbol | 110 | 0.02% | 180 | 0.02% |
+| W8-non-class-standard-type | 4 | 0.00% | 4 | 0.00% |
+
+W4 is smaller and W2 larger because the reconstruction's repo mix differs (fewer vendored
+gtest/abseil-style headers, more quoted-include-heavy projects); the DISPOSITIONS are unchanged, and
+W8 is **4 rows on both populations** — see §14.22, where those rows are named and closed.
+
+### The W1 four-bucket partition, re-priced from the same dump
+
+| bucket | reconstruction rows | share of W1 | original ledger | share |
+|---|---|---|---|---|
+| A — index declares it (project fact) | 77,910 | 19.03% | 113,646 | 18.51% |
+| B — committed stdlib vocabulary reaches it | 2,352 | 0.57% | 7,962 | 1.30% |
+| C — member leaf, receiver typing decides | 171,979 | 42.01% | 370,246 | 60.30% |
+| D — needs a NEW claim kind | 157,134 | 38.38% | 122,227 | 19.90% |
+| **partition** | **409,375** | 100% | 614,081 | 100% |
+
+The A share reproduces (18.5% vs 19.0% — the project-fact part of the wall is a stable ~1/5) and the
+partition closes on both runs. The C/D weights differ mechanically: this population is dominated by
+codebases (`Catch2` amalgamations, `duckdb`, `Rcpp`) whose free calls and members are declared in
+headers OUTSIDE the extension-only population, so rows that the original corpus's index could decide
+from a sibling header here have no declaration to bind — the C/D boundary is population-sensitive and
+is why the ledger's raw C/D weights must not be quoted as corpus-independent.
+
+### The wider corpus broke the wall RULE, and that is the correction of record
+
+`cpp-wall-disposition` REFUSED on the first run — `CONTROL DID NOT FIRE: wall W7-keyword-spelled-
+recovery has 244 unclassified rows` — and it was right to refuse. All 244 rows are `part_of` targets:
+a QUOTED include's file STEM that happens to spell a keyword (`#include "catch.hpp"` → `catch`,
+`"export.h"` → `export`, `"new.h"` → `new`, plus `enum…`/`float…`). A module stem is not a
+keyword-spelled NAME. The wall rule now sends **`part_of` (with `imports`) to
+W2-module-path-not-a-symbol**, W2's disposition text states that it owns module endpoints (paths and
+stems), W7 keeps its measured-zero claim only for DECLARATION-position labels and gains the falsifier
+that would refute it, and the SAME fix landed in `cpp-dump-classify.ts` (the lane keeps one wall rule).
+The committed `whole-population/wall-disposition.json` is the POST-fix run (W2 42,512 includes the 244;
+W7 empty, control passes). The original ledger's numbers are unchanged — this correction is to the
+instrument that re-derives them, not to the historical measurement.
+
+### The receiver arm, sized whole-population for the first time
+
+`script/cpp-audit/receiver-shape-census.ts --root=.cpp-corpus/.corpus --no-headers` over the same
+7,778 files:
+
+| | |
+|---|---|
+| calls+uses rows / member-leaf rows | 766,767 / 513,745 |
+| rows already carrying `metadata.owner` (DEFAULT analyzer) | **6,524** |
+| — bare implicit-`this` / `this->m()` | 6,519 / 5 |
+| — emitted on a non-`calls` row | **0** |
+| — failing the census's independent file-symbol re-check | **0** |
+| unowned rows whose source is a class member | 355,641 |
+| unowned rows whose source is file scope | 151,580 |
+
+The local (index-free) arm's whole-population yield is 2.28× its 2-repo yield (2,863 → 6,524) at 12×
+the files, with ZERO false claims — a density fact, not a defect: this population's member calls are
+dominated by untyped receivers, which is the wall §14.17 priced. Evidence:
+`validation/cpp-audit/whole-population/receiver-shape-census.json`.
+
+### Reproduction
+
+```
+bun run script/cpp-audit/reconstruct-corpus.ts                       # builds .cpp-corpus/.corpus + manifest
+BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus BB_DUMP_LIMIT=3000000 \
+  bun run script/m14/incoming-gate.ts cpp cpp,cc,cxx,c++,hpp,hxx,ipp,inl,cu 0 --dump > dump.txt
+BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/cpp-wall-disposition.ts --dump=dump.txt --json=...
+BB_CORPUS_ROOT=$PWD/.cpp-corpus/.corpus bun run script/m14/cpp-w1-price.ts --dump=dump.txt --no-headers --json=...
+```
+
+**What this does NOT change:** every original-ledger number above stands as the ORIGINAL measurement;
+the reconstruction is a second, reproducible population that agrees with it on shape, closure and the
+A-share, and disagrees where composition explains the difference. The spec generator's measurement
+inputs are still absent from the tree (the generator needs the D2/D3 arm artifacts that no committed
+script produces), so `cpp-spec-table.ts --check` still cannot run from a clean checkout; the
+reconstruction makes every input except those arms producible.
+
+## 14.22 · WALL W8 IS CLOSED — the 4 rows were one defect class, and the analyzer guard already existed
+
+Wall W8 carried **4 rows on both populations** and its disposition said `INSTRUMENT GAP (a guard that
+escaped) — tracked, not a residual` only because the original ledger could not name the rows. The
+reconstruction run supplied them, all four:
+
+```
+Rcpp/src/date.cpp:1290                                  seconds = (int_fast32_t)(tdays * SECSPERDAY);
+duckdb/third_party/ska_sort/ska_sort.hpp:119            sign_bit = static_cast<std::uint32_t>(-std::int32_t(as_union.u >> 31));
+duckdb/third_party/ska_sort/ska_sort.hpp:129            std::int64_t(...)
+nlohmann-json/docs/mkdocs/docs/examples/value__return_type.cpp:12   std::uint64_t(0)
+```
+
+Every one is a FUNCTIONAL CAST / cast expression whose callee spelling names a `<cstdint>`/`<cstddef>`
+value type. `[cstdint]`/`[cstddef]` guarantee those names denote integer/value types, so no function
+can carry them: a `calls` edge naming one is a fabrication with no reading. The analyzer ALREADY held
+this exact guard on the `instantiates` path (`CPP_NON_CLASS_STANDARD_TYPES`, added when
+`new uint8_t[5]` published `instantiates -> uint8_t`); the calls path never consulted the set, and the
+D1 keyword funnel cannot see the class because `size_t x;` is a legal declaration.
+
+Fix: `calleeLeafNode` now returns null for a callee that spells a non-class standard type. Test-first:
+fixture `cpp/typedef-functional-cast` was RED on the shipped tree (the two functional-cast shapes DID
+emit `calls` rows) and is green after, with the real `helper()` call as the control an over-broad
+spelling guard would lose. Mutant `cpp/standard-typedef-cast-call` re-injects the pre-fix payload and
+is CAUGHT by that fixture (**71/71 cpp mutants**). Targeted re-parse of the three source files that
+carried all four rows: **0 residual W8 rows**. Wall W8's disposition in
+`script/m14/spec/cpp-spec-table.json` is now **CLOSED** (rows stay 4 because that is the row count the
+ORIGINAL population measured; the disposition is what changed), and the whole-population re-run after
+this fix is the next artifact — the committed `wall-disposition.json` is the PRE-fix run and says so.
+
+**What this round changes about the remaining ledger:** W8 joins the closed walls. W1-D's NEW CLAIM
+KIND (157,134 reconstruction rows / 122,227 original) and W1-type (2,619 / 4,776) remain the only
+programme-level items — both need shared-infrastructure vocabulary, not cpp-lane code. The
+corpus-blocked label is retired: the corpus is reconstructed and every measurement above is
+reproducible from the committed manifest.
