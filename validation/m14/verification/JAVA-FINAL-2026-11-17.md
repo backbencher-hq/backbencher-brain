@@ -358,3 +358,38 @@ the information is already present and only its placement differs (§6b).
 The lane is therefore **complete for its boundary and not declared accepted**: M12
 remains `passed:false` and incoming clause 1 remains failing, both now smaller or fully
 explained. The member-identity naming migration is named as the next programme item.
+
+---
+
+## 8. Chapter closed — 2026-11-17
+
+The Java lane is closed. Re-verified on `main` at `a0e5ef9f6` (the java analyzer and
+fixtures were untouched by the four commits that landed after this batch):
+
+| gate | result |
+| --- | --- |
+| `npm run typecheck` | exit 0 |
+| `bun run script/m14/run-fixtures.ts --lang java` | **107 / 107** |
+| four javac oracles | 12/12 · 13/13 · 15/15 · 24/24 = **64** |
+| `java-store-e2e-smoke.ts` | **PASS** |
+| `java-m12-adjudication.ts` | 105 FP + 21 FN classified, **0 unexplained** |
+| production corpus arm (`--index`, 11,152 files) | resolved 655,394 · `overrides` 34,067/34,067 · clause-1 mass 313,321 · extFAIL/bindFAIL/causeFAIL **0** |
+| `audit:fixtures` (50 languages) | java **107/107**, no regressions |
+
+**Branch retired.** `audit/java-semantic-proof-20261116` was deleted from the remote,
+together with the local `java-validation` and `verify-hold` branches. All three carried
+**0 commits that were not already reachable from `origin/main`**, verified immediately
+before deletion, and the branch tip `1df217546` remains an ancestor of `origin/main`, so
+no history was lost. The Java lane now exists only as history on `main` — one lane per
+language, as the standing rule requires.
+
+**What "closed" means here, precisely.** The analyzer is complete and verified for its
+declared boundary: it resolves what it can prove, abstains where it cannot, and every
+remaining difference is either named and classified or owned by shared infrastructure.
+It is **not** declared accepted: M12 stays `passed:false`, incoming clause 1 stays
+failing, and the four override rows stay an encoding difference pending the
+member-identity migration. Those are recorded, not hidden.
+
+Reopen when a community or user report lands, or when the owner undertakes the
+owner-qualified target migration — that single change is what would close the last four
+M12 rows and a further share of the clause-1 mass for every lane.
