@@ -62,6 +62,24 @@ import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from "n
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile, filterNoiseRelationships } from "../../src/ast/pool-worker"
+import { BINDING_SEP } from "../../src/ast/types"
+
+/**
+ * A TARGET THAT CARRIES A LOCAL-BINDING CLAIM IS COMPARED AS ITS BINDING NAME.
+ *
+ * The analyzer spells a locally-bound target `<container><BINDING_SEP><name>` — the claim tells the
+ * store to resolve inside the container rather than by project-wide name ranking. The AUTHORITATIVE
+ * differential normalises exactly this way (`auditTarget`, differential.ts:1405), and this tool did
+ * not: it compared the raw claim string against the oracle's bare name, so EVERY binding-claim row on
+ * a corpus that has them read as a FABRICATION. Measured on preact before this fix: `uses` reported
+ * fabrications such as `ModalButton\0calls` and `App\0ModalButton`, all of which are correct claims.
+ * Measured as a signal of that bug: this file contained ZERO references to BINDING_SEP while the
+ * differential contained four.
+ */
+function auditTarget(target: string): string {
+  const at = target.lastIndexOf(BINDING_SEP)
+  return at >= 0 ? target.slice(at + BINDING_SEP.length) : target
+}
 
 function arg(name: string, fallback: string): string {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
@@ -181,7 +199,7 @@ async function worker(): Promise<void> {
       const L = labels.get(String(te.label))
       if (!L) { uncompared.set(String(te.label), (uncompared.get(String(te.label)) ?? 0) + 1); continue }
       L.truth++
-      const hit = rels.some((r: any) => r.label === String(te.label) && normTarget(r.target) === normTarget(te.target))
+      const hit = rels.some((r: any) => r.label === String(te.label) && normTarget(auditTarget(r.target)) === normTarget(te.target))
       if (hit) L.covered++
       else {
         L.missing++
@@ -201,7 +219,7 @@ async function worker(): Promise<void> {
       const L = labels.get(r.label)!
       L.analyzer++
       L.confidence[String(r.confidence)] = (L.confidence[String(r.confidence)] ?? 0) + 1
-      const hit = usableTruth.some((te: any) => te.label === r.label && (normTarget(te.target) === normTarget(r.target) || String(te.target).includes(normTarget(r.target))))
+      const hit = usableTruth.some((te: any) => te.label === r.label && (normTarget(te.target) === normTarget(auditTarget(r.target)) || String(te.target).includes(normTarget(auditTarget(r.target)))))
       if (hit) { L.explained++; continue }
       if (r.confidence < 0.7) L.heuristic++
       else {

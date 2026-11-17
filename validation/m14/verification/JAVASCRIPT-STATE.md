@@ -115,37 +115,43 @@ Fixed in the census (accept `isFieldAccess` alone; treat code points above 127 a
 now reports **0**. The analyzer needed no change — but the lane's headline number would have been wrong
 without running it on a corpus that contains these shapes.
 
-## OPEN, measured — the per-label oracle tool on a JSX+Flow corpus
+## The per-label oracle tool on a JSX corpus — three tool bugs, and FABRIC = 0
 
 `javascript-label-oracle-agreement.ts` had never been pointed at a corpus with JSX, decorators or mixins;
-it was written against svelte/lodash. Two bugs stopped it on the first try, both fixed:
+it was written against svelte/lodash. Getting it to run took three fixes, all in the TOOL:
 
-- **EISDIR crash**: `git ls-files` lists SUBMODULE entries as directories and the walk `readFileSync`'d
-  one (preact has a submodule). It now requires `statSync(...).isFile()`.
-- **`undefined.truth` crash**: it read `labels.get(label)!` and preact's truth contains labels outside
-  its `COMPARED` set (`renders`, `decorates`). Those are now counted in an `uncompared` bucket instead
-  of crashing — a tool that cannot measure the labels a richer corpus adds is not measuring the corpus.
+1. **EISDIR** — `git ls-files` lists SUBMODULE entries as directories and the walk `readFileSync`'d one
+   (preact has a submodule). Now requires `isFile()`.
+2. **`undefined.truth`** — it read `labels.get(label)!` and preact's truth contains labels outside its
+   `COMPARED` set (`renders`, `decorates`). Counted in an `uncompared` bucket now.
+3. **BINDING CLAIMS WERE COMPARED RAW** — the decisive one. The analyzer spells a locally-bound target
+   `<container><BINDING_SEP><name>`; the AUTHORITATIVE differential normalises exactly that
+   (`auditTarget`, differential.ts:1405) and this tool did not, so **every** binding-claim row on a
+   corpus that has them read as a fabrication. The tell is stark: this file had **zero** references to
+   `BINDING_SEP` while the differential has four. `uses` fabrications dropped away once it normalised.
 
-With those fixed it runs, and it reports FABRIC/REAL-GAP rows for `uses` on preact:
+**Result on preact (150 files), after the fixes:**
 
-```
-uses  ModalButton -> ModalButton\0calls   (isFieldAccess, callReceiver, localBinding)
-uses  ModalButton -> ModalButton\0i       (isTemplateInterpolation, localBinding)
-renders App -> App\0ModalButton            (jsxElement, localBinding)
-```
+| label | truth | analyzer | covered | MISSING | real | **FABRIC** |
+|---|---|---|---|---|---|---|
+| imports | 947 | 947 | **947** | 0 | 0 | **0** |
+| exports | 220 | 220 | **220** | 0 | 0 | **0** |
+| contains | 177 | 177 | **177** | 0 | 0 | **0** |
+| extends | 135 | 42 | **135** | 0 | 0 | **0** |
+| instantiates | 10 | 10 | **10** | 0 | 0 | **0** |
+| references | 4 | 4 | **4** | 0 | 0 | **0** |
+| calls | 2,082 | 2,010 | 1,968 | 114 (all noise-filter) | 0 | **0** |
+| uses | 3,659 | 3,586 | 2,918 | 741 (688 real) | 688 | **0** |
 
-**These are NOT (yet) evidence of an analyzer defect, and the check I built to test them was wrong.**
-I measured "binding-claim resolvability" — does the named container actually declare the name — and got
-**9,033 of 9,535 unresolvable**, which looks catastrophic and is an artefact of the test: the samples are
-DESTRUCTURED PARAMETERS (`createRoot\0children` from `function createRoot(container, { children } = {})`),
-which ARE correctly local bindings but are deliberately not published as symbols. So the claim mechanism
-covers locals and parameters, and a symbol-table lookup cannot validate it.
+**FABRIC = 0 on every label** is the ship-critical number: the analyzer invents nothing the independent
+oracle cannot derive, on a corpus shape (JSX) it was never measured against before.
 
-**The open question is therefore about the ORACLE, not the analyzer**: the tool's `uses` derivation
-appears not to model local-binding claims (`X\0name`) at all, so every such row reads as a fabrication
-on a corpus that has many. That has to be established against the claim contract
-(`JAVASCRIPT-LOCAL-BINDING-CONTRACT.md`) before any analyzer change is contemplated — the failure mode of
-"fix the analyzer to satisfy a wrong oracle" is worse than leaving this open.
+The remaining MISSING is on the TRUTH side and is a known convention difference to settle, not a proven
+analyzer defect: the samples are `uses (expr) -> <JsxComponent>`, where the oracle derives a `uses` row
+from an expression context while the analyzer attributes the JSX reference to the enclosing named
+function and the `renders` label. Settling it means deciding which convention is correct for a JSX
+reference — the analyzer's named-source `renders` row, or an oracle `(expr)` `uses` row — and that is a
+family decision, not a lane one.
 
 ## Still open
 
