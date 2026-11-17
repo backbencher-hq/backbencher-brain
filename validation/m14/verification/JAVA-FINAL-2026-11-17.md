@@ -103,6 +103,34 @@ The differential compares an analyzer's full fact set against a hand audit that
 records a chosen subset. That gap is programme-wide, and treating Java's share
 of it as a Java defect would be a category error.
 
+## 2b. Programme differential harness, scoped to Java — 0.3% unexplained
+
+`npm run verify`'s `audit:differential` is the programme's own full-fidelity
+harness. Its canonical 50-language sweep cannot run on this host (see §6), but
+the harness supports lane scoping, and scoping it to java executes and measures
+two real repositories:
+
+```
+bun script/m14/differential.ts --lang java
+```
+
+| repo | files | tree-truth | label-target covered | MISSING | analyzer edges | unexplained | heuristic |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| grails-core | 60 | 2,873 | 2,873 (100%) | 0 | 2,826 | **8 (0.3%)** | 81 |
+| clojure | 60 | 3,927 | 3,927 (100%) | 0 | 3,593 | **12 (0.3%)** | 62 |
+
+unexplained-by-label: grails-core `calls=7, overrides=1`;
+clojure `overrides=10, calls=2`.
+
+**100% file-level label-target coverage with 0 missing on both**, and 0.3% of
+emitted edges unexplained. This is a different question from M12: M12 scores
+symbol/relationship ids against a hand audit of four fixtures, while this
+compares analyzer edges against tree truth on real repositories.
+
+The `overrides` label is **declared, not hidden**: the harness prints that this
+lane has no `overrides` oracle, so analyzer override rows enter with no truth to
+meet and are reported as a declared ruling rather than counted as fabrications.
+
 ## 3. Real corpus — whole population, no sampling
 
 ```
@@ -186,9 +214,17 @@ The fixture lanes and the SQL-shape argument support it; they do not prove it.
 2. **Incoming gate clause 1 remains failing** for the lane (see §3).
 3. **Cross-file canonical identity** — the four override FNs and the bulk of
    `calls`/`references` ambiguity need an owner/member store API.
-4. **Full `npm run verify` was not executed.** It is a ~400-gate programme-wide
-   suite requiring corpus, IntelliJ and benchmark checkouts; it is not a Java
-   gate and it is not claimed as passing here.
+4. **Full `npm run verify` cannot run to completion on this host, and the
+   blocker is not Java.** `audit:fixtures` — the 50-language fixture baseline —
+   **passes** (`java 104/104`, "fixture baseline gate: no regressions"). But
+   `audit:differential`'s canonical sweep refuses because pinned corpus repos
+   are absent from the shared shelf: it stops on
+   `corpus repo missing: …/repositories/P3D-Legacy`, and the header at
+   `script/m14/differential.ts:345` already records that P3D-Legacy and
+   DISMTools were absent from this host on 2026-11-04. The lane-scoped run of
+   that same harness **does** execute and reports 0.3% unexplained (§2b), so
+   the Java part of the differential is measurable here; the whole-programme
+   sweep needs the missing VB checkouts restored.
 5. **Bounded generics, erasure/capture, return covariance, `protected` and
    package-private access across packages, and annotation-processor fidelity**
    beyond the pinned import forms remain unsupported.
