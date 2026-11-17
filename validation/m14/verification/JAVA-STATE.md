@@ -2,6 +2,15 @@
 
 ## Authority and status
 
+> **CORRECTION (2026-11-17): the workflow-disable statements below are STALE.**
+> The `if: false` guards introduced in `ec6a39ce7` were re-enabled by
+> `1a0510718` ("CI: re-enable the workflows disabled for the 0.1.4 push"),
+> which is present in `origin/main`. GitHub Actions are therefore currently
+> **ENABLED**, and `.github/workflows/java-analyzer-verification.yml` is active
+> for pull requests that touch Java paths. Every "still disabled" row quoted
+> below describes the earlier state and must not be read as current. Whether to
+> disable workflows again is a repository-owner decision and was not taken here.
+
 This file is a **new, reconstructed checkpoint** because
 `validation/m14/verification/JAVA-STATE.md` was absent from the branch when
 the 2026-11-16 stabilization batch started. It does **not** recreate

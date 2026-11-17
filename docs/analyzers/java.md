@@ -1,27 +1,44 @@
 # java.md
 
-> **CURRENT JAVA LANE STATUS (2026-11-16, main at `fe5f105de`).** This file is an historical
-> engineering log; many sections were written against older repository states. For current
-> behavioral contracts, corrections, explicitly unmeasured gates, and source-backed limits,
-> read [JAVA-STATE](../../validation/m14/verification/JAVA-STATE.md) and
+> **CURRENT JAVA LANE STATUS (2026-11-17, after merging
+> `audit/java-semantic-proof-20261116`).** This file is an historical engineering log; many
+> sections were written against older repository states. For current behavioral contracts,
+> corrections, explicitly unmeasured gates, and source-backed limits, read
+> [JAVA-STATE](../../validation/m14/verification/JAVA-STATE.md),
+> [JAVA-SEMANTIC-PROOF](../../validation/m14/verification/JAVA-SEMANTIC-PROOF-2026-11-16.md) and
 > [JAVA-REMEDIATION](../../validation/m14/verification/JAVA-REMEDIATION-2026-11-16.md).
 >
-> **Measured on this host (not copied from the developer's authoring environment):**
-> M14 Java fixtures **93/93 pass**; `npm run typecheck` exit 0;
-> `JavaMethodGenericOverrideOracle` 12/12; `JavaAnalyzerRemediationOracle` 13/13;
-> M12 java TP=95 FP=105 FN=21 unknown=6 (precision .475, recall .819 — unchanged);
+> **Measured on the merged tree, on this host:**
+> M14 Java fixtures **104/104 pass**; `npm run typecheck` exit 0;
+> `JavaMethodGenericOverrideOracle` 12/12, `JavaAnalyzerRemediationOracle` 13/13,
+> `JavaAnalyzerSemanticOracle` 15/15, `JavaM12CompilerAdjudication` 24/24 (**64** independent
+> javac facts); `java-store-e2e-smoke.ts` PASS (4/4 import channels, 2/2 file-level
+> dependencies, 3 overloaded/cross-file declarations, real `bb_graph` usages answered);
 > regex literals in `real-java-analyzer.ts` **0**.
 >
-> **Real-codebase measurement:** the java incoming gate ran over the full corpus
-> (`BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories`, 11,155 `.java` files).
-> Its verdict and per-clause counts are recorded in JAVA-STATE.md; a FAIL there is a
-> statement about whole-corpus name collisions and cross-file resolution, not about
-> fixture correctness.
+> **Red control:** reverting `real-java-analyzer.ts` to `29a579243` makes exactly the ten named
+> framework/Object/Lombok/Spring fixtures fail (94 pass / 10 fail), so the new fixtures are
+> proven to catch the defects they claim.
 >
-> GitHub Actions jobs carry `if: false` (commit `ec6a39ce7`): their runs are **skipped,
-> not passing**. Several older document links target evidence files absent from this
-> checkout; their figures must not be treated as reproducible current measurements.
-
+> **M12 remains known-failing and is not concealed:** TP=95 FP=105 FN=21 unknown=6,
+> precision .475, recall .819, `passed:false`. The batch enforces that exact baseline rather
+> than rewriting truth; `script/m14/java-m12-mismatch-census.ts` classifies 28 oracle-coverage
+> gaps, 13 structural-identity drifts and leaves 64 FP / 8 FN for independent adjudication.
+>
+> **Real corpus** (`BB_CORPUS_ROOT`, 11,152 `.java` files across 19 repositories, whole
+> population): 1,479,238 edges, 643,264 resolved, **`overrides` 34,067 of 34,067 resolved —
+> 0 ambiguous, 0 unresolved**, and `extFAIL` / `bindFAIL` / `causeFAIL` all **0**. The incoming
+> gate still returns `VERDICT: FAIL` on clause 1 (174,366 ambiguous + 341,852 unresolved), which
+> is whole-lane bare-name resolution in `calls`/`references`/`instantiates` — not an override or
+> fixture defect.
+>
+> **GitHub Actions are currently ENABLED** (`1a0510718` re-enabled the `ec6a39ce7` temporary
+> disable, and that commit is in `origin/main`), including
+> `.github/workflows/java-analyzer-verification.yml`. A skipped job is still not a passing check;
+> re-disabling workflows is a repository-owner decision.
+>
+> Several older document links target evidence files absent from this checkout; their figures
+> must not be treated as reproducible current measurements.
 
 ## Language
 
