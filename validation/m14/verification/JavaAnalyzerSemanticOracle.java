@@ -105,6 +105,33 @@ public final class JavaAnalyzerSemanticOracle {
             }
         }
         check(enumGet, "enum-valued RequestMethod.GET is GET");
+        // An in-scope member annotation shadows an imported same-name annotation.
+        // The fully qualified framework spelling remains unambiguous.
+        String frameworkSource = """
+            package org.springframework.web.bind.annotation;
+            public @interface GetMapping { String value(); }
+            """;
+        String shadowSource = """
+            package shadow;
+            import org.springframework.web.bind.annotation.GetMapping;
+            class Outer {
+                @interface GetMapping { String value(); }
+                @GetMapping("/fake") void fake() {}
+                @org.springframework.web.bind.annotation.GetMapping("/real") void real() {}
+            }
+            """;
+        JavacTask shadowTask = (JavacTask)compiler.getTask(null, null, null,
+            List.of("-proc:none"), null,
+            List.of(new Source("org/springframework/web/bind/annotation/GetMapping", frameworkSource),
+                    new Source("shadow/Outer", shadowSource)));
+        shadowTask.parse();
+        shadowTask.analyze();
+        TypeElement shadowOwner = shadowTask.getElements().getTypeElement("shadow.Outer");
+        check(shadowOwner != null, "shadow owner compiles");
+        String fakeAnnotation = method(shadowOwner, "fake", 0).getAnnotationMirrors().get(0).getAnnotationType().toString();
+        String realAnnotation = method(shadowOwner, "real", 0).getAnnotationMirrors().get(0).getAnnotationType().toString();
+        check(fakeAnnotation.equals("shadow.Outer.GetMapping"), "nested project annotation wins over a same-name import");
+        check(realAnnotation.equals("org.springframework.web.bind.annotation.GetMapping"), "FQN framework annotation remains bound");
         System.out.println("JavaAnalyzerSemanticOracle: " + checks + "/" + checks + " passed");
     }
 }

@@ -41,7 +41,7 @@ jobs:
           summaries = re.findall(r"^summary:\s*(\{.*\})\s*$", log, re.MULTILINE)
           assert summaries, "fixture runner did not emit a machine-readable summary"
           java = json.loads(summaries[-1])["java"]
-          assert java["pass"] >= 103, f"expected at least 103 Java fixture passes, got {java}"
+          assert java["pass"] >= 104, f"expected at least 104 Java fixture passes, got {java}"
           assert java["fail"] == 0, f"Java fixtures failed: {java}"
           print("Java fixture gate verified:", java)
           PY
@@ -60,6 +60,7 @@ jobs:
           java = json.loads(summaries[-1])["java"]
           expected_failures = {
               "java/framework-endpoint-identity",
+              "java/framework-import-shadow",
               "java/framework-jpa-bean-identity",
               "java/implicit-object-equals",
               "java/implicit-object-methods",
@@ -75,6 +76,8 @@ jobs:
           print("Regression sensitivity proved on baseline:", java, sorted(actual_failures))
           PY
           cp /tmp/bb-fixed-java-analyzer.ts src/ast/real-java-analyzer.ts
+      - name: Java indexed SQLite store round-trip
+        run: bun script/m14/java-store-e2e-smoke.ts
       - name: Java M12 differential — enforce recorded baseline without hiding failures
         shell: bash
         run: |

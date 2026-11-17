@@ -1,0 +1,45 @@
+{
+  "fixtureId": "java/framework-import-shadow",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Java member annotation type takes precedence over a conflicting single-type import in its enclosing scope; the fully-qualified Spring annotation remains a real route.",
+  "expectSymbols": [
+    {
+      "name": "fake",
+      "kind": "method",
+      "ownerName": "Outer"
+    },
+    {
+      "name": "real",
+      "kind": "method",
+      "ownerName": "Outer"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "exports",
+      "target": "/real",
+      "meta.isApiEndpoint": true,
+      "meta.httpMethod": "GET"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "exports",
+      "target": "/fake",
+      "meta.isApiEndpoint": true
+    }
+  ],
+  "expectApiContractPaths": [
+    {
+      "symbol": "real",
+      "equals": "/real"
+    }
+  ],
+  "forbidApiContractPaths": [
+    {
+      "symbol": "fake",
+      "ownerName": "Outer"
+    }
+  ]
+}

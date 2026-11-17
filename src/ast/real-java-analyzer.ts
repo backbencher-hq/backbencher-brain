@@ -5664,6 +5664,38 @@ currentPackage,
       const name = written.slice(written.lastIndexOf(".") + 1)
       const validPaths = acceptedPaths[name]
       if (!validPaths) continue
+      // A locally declared member annotation type in an enclosing scope
+      // shadows a single-type import under Java's member-type lookup rules.
+      // An explicit fully qualified annotation bypasses this ambiguity.
+      if (!written.includes(".")) {
+        let scope: Node | null = declaration
+        let locallyShadowed = false
+        while (scope && !locallyShadowed) {
+          if (
+            scope.type === "class_declaration" ||
+            scope.type === "record_declaration" ||
+            scope.type === "interface_declaration" ||
+            scope.type === "enum_declaration" ||
+            scope.type === "annotation_type_declaration"
+          ) {
+            const body =
+              this.findChildByType(scope, "class_body") ||
+              this.findChildByType(scope, "interface_body") ||
+              this.findChildByType(scope, "enum_body") ||
+              this.findChildByType(scope, "annotation_type_body")
+            if (body) {
+              for (let j = 0; j < body.namedChildCount; j++) {
+                const member = body.namedChild(j)
+                if (member?.type !== "annotation_type_declaration") continue
+                const memberName = member.childForFieldName("name")
+                if (memberName?.text === written) { locallyShadowed = true; break }
+              }
+            }
+          }
+          scope = scope.parent
+        }
+        if (locallyShadowed) continue
+      }
       const resolved = written.includes(".") ? written : index.importSinglePaths.get(written)
       if (resolved && validPaths.includes(resolved)) return { name, node: annotation }
     }
