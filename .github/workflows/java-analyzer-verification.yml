@@ -62,6 +62,22 @@ jobs:
           print("Regression sensitivity proved on baseline:", java)
           PY
           cp /tmp/bb-fixed-java-analyzer.ts src/ast/real-java-analyzer.ts
+      - name: Java M12 differential (diagnostic; record oracle limits)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun script/m12/verify-analyzer.ts java | tee m12-java.log
+          test -s validation/m12/results/java-differential.json
+      - name: Upload Java gate logs for independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-semantic-gate-logs
+          path: |
+            java-fixtures.log
+            m12-java.log
+            validation/m12/results/java-differential.json
+          if-no-files-found: warn
       - name: Independently compiled Java oracle facts
         shell: bash
         run: |
