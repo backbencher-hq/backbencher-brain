@@ -149,6 +149,39 @@ try {
       `real traversal + graph usages lost local import ${file} -> ${imported}; ${JSON.stringify(liveDependencies)}`)
 
   }
+  // Calls to a shared leaf must not silently bind to the wrong file.
+  // Alpha and Beta both declare identity(...), while Alpha also overloads it.
+  const callBindings: Array<{
+    sourceName: string | null
+    sourceFile: string | null
+    targetQualified: string | null
+    targetFile: string | null
+    targetId: string | null
+    targetExternal: string
+  }> = db.prepare(`
+    SELECT s.name AS sourceName, sf.relative_path AS sourceFile,
+      t.qualified_name AS targetQualified, tf.relative_path AS targetFile,
+      r.target_symbol_id AS targetId, r.target_external AS targetExternal
+    FROM brain_relationship r
+    LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id
+    LEFT JOIN brain_file sf ON sf.id = s.file_id
+    LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id
+    LEFT JOIN brain_file tf ON tf.id = t.file_id
+    WHERE r.project_id = ? AND r.relationship_type = 'calls'
+      AND r.target_external = 'identity'
+  `).all(projectId)
+  console.log("JAVA_SQLITE_CALL_BINDINGS", JSON.stringify(callBindings))
+  for (const [sourceFile, targetQualified] of [
+    ["alpha/Alpha.java", "alpha.Alpha.identity"],
+    ["beta/Beta.java", "beta.Beta.identity"],
+  ]) {
+    const calls = callBindings.filter(row => row.sourceName === "use" && row.sourceFile === sourceFile)
+    assertThat(calls.length >= 1, `expected indexed identity call in ${sourceFile}`)
+    for (const call of calls) {
+      assertThat(call.targetId === null || call.targetQualified === targetQualified,
+        `WRONG JAVA TARGET: ${sourceFile} must call ${targetQualified} or remain unresolved, got ${JSON.stringify(call)}`)
+    }
+  }
   console.log(`JAVA_SQLITE_E2E_PASS: 4/4 import channel rows, 2/2 file-level dependencies and ${ids.length} overloaded/cross-file declarations stored; real traversal and graph usages answered both project-local imports`)
 } finally {
   rmSync(root, { recursive: true, force: true })
