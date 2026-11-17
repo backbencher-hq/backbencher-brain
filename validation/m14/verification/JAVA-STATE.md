@@ -2,6 +2,11 @@
 
 ## Authority and status
 
+> **FINAL LEDGER:** the consolidated, end-to-end verification record for this lane is
+> [JAVA-FINAL-2026-11-17.md](./JAVA-FINAL-2026-11-17.md). It carries the gate matrix, the
+> complete M12 mismatch adjudication (105 FP + 21 FN, 0 unexplained), the whole-corpus
+> numbers, the cross-lane safety check, and the explicit list of what remains undone.
+>
 > **CORRECTION (2026-11-17): the workflow-disable statements below are STALE.**
 > The `if: false` guards introduced in `ec6a39ce7` were re-enabled by
 > `1a0510718` ("CI: re-enable the workflows disabled for the 0.1.4 push"),

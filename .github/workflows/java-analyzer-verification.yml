@@ -10,6 +10,7 @@ on:
       - 'src/lsp/graph_request.ts'
       - 'src/lsp/graph_usages.ts'
       - 'script/m14/java-m12-mismatch-census.ts'
+      - 'script/m14/java-m12-adjudication.ts'
       - 'script/m14/java-store-e2e-smoke.ts'
       - 'validation/m14/fixtures/java/**'
       - 'validation/m14/verification/JavaAnalyzerSemanticOracle.java'
@@ -136,6 +137,12 @@ jobs:
           PY
       - name: Classify Java M12 identity and oracle coverage differences without changing truth
         run: bun script/m14/java-m12-mismatch-census.ts | tee java-m12-census.log
+      - name: Require every Java M12 mismatch to carry a named cause
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun script/m14/java-m12-adjudication.ts | tee java-m12-adjudication.log
+          grep -q 'JAVA_M12_ADJUDICATION_PASS' java-m12-adjudication.log
       - name: Upload Java gate logs for independent review
         if: always()
         uses: actions/upload-artifact@v4
@@ -145,6 +152,7 @@ jobs:
             java-fixtures.log
             m12-java.log
             java-m12-census.log
+            java-m12-adjudication.log
             validation/m12/results/java-differential.json
           if-no-files-found: warn
       - name: Independently compiled Java oracle facts
