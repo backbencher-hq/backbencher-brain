@@ -629,4 +629,20 @@ acceptance gates also remain outstanding.
 - Neither test proves an error-free full Java index or settles the pinned
   11,152-file corpus. Full `npm run verify` remains unexecuted.
 
-NO MERGE: PR remains draft until all acceptance barriers are independently met.
+## Landing decision — 2026-11-17
+
+The **code** in this branch is landed on `main` as verified improvements, after an
+independent end-to-end re-verification on the merged tree (104/104 fixtures, 64 javac
+facts, SQLite round-trip, red control 94/10 on baseline, corpus `overrides`
+34,067/34,067 resolved with `extFAIL`/`bindFAIL`/`causeFAIL` all 0, and 504 fixtures
+across the 11 other `fileLevel`-emitting languages still green).
+
+**The Java lane is NOT declared accepted/final.** The acceptance barriers listed above
+are unchanged and still unmet: the M12 differential remains `passed:false`
+(TP=95 FP=105 FN=21 unknown=6), the incoming corpus gate still fails clause 1 on
+bare-name resolution, and full `npm run verify` remains unexecuted. Landing verified
+improvements and declaring a lane complete are different decisions, and only the first
+was taken here.
+
+Note also that `main` already failed the same two barriers before this merge, so this
+branch does not introduce that debt; it narrows the gap without clearing it.
