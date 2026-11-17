@@ -894,3 +894,33 @@ template ARGUMENTS (`std::ratio_divide<std::ratio<1, Period::num>::type, ...>` �
 matching a class symbol by LINE is impossible because **this analyzer publishes no line on any
 symbol** (`line` is undefined; only relationships carry `line_number`). All three are recorded in the
 probe's docstring, because each looked like an analyzer defect and none was.
+
+### 14.10 · The 14-value vocabulary on the current tree — one table, every kind, with its evidence
+
+This is the "all kinds covered, working, verified" answer, and every row is reproducible from
+`validation/cpp-audit/census.json` unless a different instrument is named. "Resolved" is always in
+**that kind's own key space** (§13/§14.2).
+
+| # | kind | emitted | rows | target resolved | evidence / residual verdict |
+|---|---|---|---|---|---|
+| 1 | `calls` | yes | 59,374 | 54,971 = **92.6%** | residual analysed (§7, §11.4): stdlib/Win32/absent-header macros — **no further change justified**, would require inventing declarations |
+| 2 | `contains` | yes | 10,975 | 10,975 = **100%** | sources 10,972/10,975; the 3 traced to a grammar ERROR cascade (§14.3) |
+| 3 | `uses` | yes | 4,580 | 4,351 = **95.0%** | residual = std header members (`tm_gmtoff`, `tm_isdst`, `tm_zone`) — accept |
+| 4 | `imports` | yes | 1,968 | 205 = **10.4%** | **external by design — must NOT be "fixed"** (§4 item, §7) |
+| 5 | `extends` | yes | 478 | 435 = **91.0%** | residual = std bases not declared in-corpus; **one row per base VERIFIED against the grammar** (§14.9): 0 missing, 48 documented D2 cases, 3 alias-naming |
+| 6 | `part_of` | yes | 360 | 347 = **96.4%** | §14.2: 2 probe-population artifacts + 11 headers outside the checkout |
+| 7 | `references` | yes | 206 | 205 = **99.5%** | one miss `::std::ostream`, root `std` not declared — correct |
+| 8 | `instantiates` | yes | 182 | 167 = **91.8%** | residual std/Win32 types (`stringstream`, `CRITICAL_SECTION`) — accept |
+| 9 | `overrides` | yes | 134 | **134 = 100%** | 120 bind exactly + 14 genuinely ambiguous declarations (§12) |
+| 10 | `exports` | yes | 112 | **112 = 100%** | re-measured over every row this round: **112/112 are macro-path** (`FMT_API`×13, `GTEST_API_`×99), all with `metadata.exportMacro` + `reasonCode: export-marker-in-specifier` + `evidenceClass: structural` + confidence 1.0. The attribute path (`metadata.exportSpelling`) is **0/112**, correct here: the corpus's `__attribute__((visibility))` sites live inside `#define` bodies, not on declarations |
+| 11 | `implements` | yes | 34 | **34 = 100%** | pure-virtual interface rule; small count is this corpus, not the emission |
+| 12 | `decorates` | **no** | — | — | ruled `ontological`: a C++ attribute is PASSIVE METADATA, the value's contract is an APPLIED CALLABLE. Partially re-verified here: 13 attribute-argument sites in this corpus, **0** whose argument invokes a callable |
+| 13 | `renders` | **no** | — | — | ruled `grammar-remedy-ruled`: no JSX/component production exists in C++ |
+| 14 | `mixes_in` | **no** | — | — | ruled `grammar-remedy-ruled`: multiple inheritance carries as one `extends` per base — **the premise is now measured, not asserted** (§14.9: 5 multi-base classes, every base accounted for) |
+
+**Verdict.** Eleven kinds emit; three are absent under rulings that this round either re-verified
+(`decorates`, partially) or whose stated premise it measured for the first time (`mixes_in`). No kind
+is absent by omission. The residual unresolved targets are, in every case, names the corpus does not
+declare (stdlib, Win32/libc, headers outside the checkout, external modules) — leaving them unresolved
+is the correct behavior, and the one thing that would be *wrong* is to "fix" them by inventing
+declarations.
