@@ -1614,6 +1614,40 @@ reason the emission vocabulary is closed.
   verified share is exactly what a per-file analyzer can honestly claim; the remaining 8.35 % says
   it cannot verify rather than guessing either way. Pinned by `go/receiver-owner-scope`.
 
+## The symbol-kind policy, stated exhaustively
+
+Front 1 of the release sweep requires that EVERY Go declaration kind be either a symbol or a
+documented decision, so the whole policy is written out rather than left to be inferred from
+behaviour. MEASURED on go-tools + terraform (3,422 files, 58,470 symbols): 0 symbols whose range
+does not contain its own name, and 0 declared field names missing a symbol on the two largest files
+checked (`tsprotocol.go` 391/391, `macho.go` 99/99).
+
+| Go construct | symbol? | kind | why |
+| --- | --- | --- | --- |
+| `package` clause | yes | `module` | the file's own namespace |
+| `func` declaration | yes | `function` | (incl. `init`, which carries `metadata.isInit`) |
+| `method` declaration | yes | `method` | owner = receiver type |
+| `type S struct` | yes | `struct` | |
+| `type I interface` | yes | `interface` | |
+| `type N int`, alias, `func`/`chan`/`map`/`array`/`slice`/`pointer` types | yes | `type` | all 6 non-struct/interface `type_spec` shapes verified |
+| struct field (named) | yes | `property` | one per name in a multi-name field (`A, B int` → 2) |
+| struct field (EMBEDDED) | yes | `property` | its leaf is a real selector (`s.Client`), so it is a member |
+| interface method | yes | `method` | owner = the interface |
+| embedded interface | yes | `interface` | a representative row — **EXCEPT** when it would duplicate a same-file declaration, which is suppressed |
+| package `var` / `const` (incl. grouped and multi-name) | yes | `variable` / `constant` | one per name |
+| function-local `type` | yes | its kind + `metadata.isLocalDeclaration` | GO38: the declared-type pass publishes references to it, so it must exist; the label keeps it from reading as package scope |
+| function-local `var` / `const` | **no** | — | `LocalsAreNotSymbols` (C# M12.07 / Swift M12.21) |
+| **type parameter** (`[T any]`) | **no** | — | a real declaration but SCOPED to its function/type, so it is not a file-scope node — the same reading `LocalsAreNotSymbols` applies to locals. References to it are still EMITTED (`Pair -> K` is a true fact) and carry `bindReason: type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol`, which names the declaration's home instead of falsely claiming an unreachable file |
+| **`import` spec** | **no** | — | an import is a DEPENDENCY, not a declaration this file makes; it is published as the `imports` relationship plus `ImportInfo`, so a symbol would duplicate the node with no owner and no members |
+| func literal / anonymous struct | **no** | — | execution artifacts with no name to key on |
+| `//go:generate`, `//go:linkname`, cgo, assembly | **no** | — | not interpreted (see above) |
+
+Both "no" decisions are deliberate and cost something, which is why they are stated: a consumer
+cannot navigate to a type parameter or an import node. The alternative — publishing them — was
+rejected because a type parameter would then be indistinguishable from a package-scope type of the
+same name, and an import would appear to be a declaration the file makes. The reason code and the
+`imports` edge keep the FACTS without the false node.
+
 ## Unsupported / explicit-unknown constructs
 
 - Function-local declarations are out of scope by contract (see above), so a symbol census
