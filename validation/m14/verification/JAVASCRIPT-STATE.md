@@ -25,7 +25,7 @@ that is not re-derivable here is intentionally absent rather than invented.
 | relationship witnesses | PASS — **13 of 13** implementable labels fire; `part_of` silent by disposition |
 | syntax-form witnesses | PASS — **13 of 13** forms behave as asserted |
 | source attribution | **0** unattributed |
-| target validity | **0** invalid |
+| target validity | **0** invalid — measured on svelte (3,271 rows) and on the new corpus preact (13,185 rows, 3,423 using the binding claim) |
 
 ## The 14 vocabulary labels
 
@@ -100,6 +100,20 @@ engine's kill-switch `BB_JS_FLOW_FALLBACK=0`:
 | `javascript-source-attribution-census.ts` | replays `resolveCurrent` per line to check each row's source |
 | `javascript-target-validity-census.ts` | target rows that are not names |
 | `clone-js-corpus.sh` | re-creates the measurement corpus at recorded commits |
+
+## A metric that was wrong before the code was
+
+Running the target-validity census on the NEW corpus reported **9 invalid targets on preact** where
+svelte had 0. All nine were the census's own over-strictness, and both classes are legal JavaScript:
+
+| case | example | why it is legal |
+|---|---|---|
+| a RESERVED WORD as a property | `return this.class`, `….to.be.false` | a property may be spelled with any reserved word; `isFieldAccess` is the evidence, and the census additionally demanded `receiverRoot`, which a `this.class` read does not carry |
+| a NON-ASCII identifier | `Math.sin(θ)` | a Greek letter is a legal JavaScript identifier |
+
+Fixed in the census (accept `isFieldAccess` alone; treat code points above 127 as letters), and preact
+now reports **0**. The analyzer needed no change — but the lane's headline number would have been wrong
+without running it on a corpus that contains these shapes.
 
 ## Still open
 

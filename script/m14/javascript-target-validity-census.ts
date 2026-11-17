@@ -64,7 +64,7 @@ function isIdentifierName(s: string): boolean {
   }
   for (; i < s.length; i++) {
     const c = s.charCodeAt(i)
-    const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    const isLetter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c > 127
     const isDigit = c >= 48 && c <= 57
     const isStart = isLetter || c === 95 || c === 36
     if (i === 0 || (i === 1 && s.charCodeAt(0) === 35)) {
@@ -75,6 +75,17 @@ function isIdentifierName(s: string): boolean {
   }
   return true
 }
+
+/**
+ * A TARGET IS AN IdentifierName — which is NOT the same as an ASCII identifier.
+ *
+ * Two legal classes were being reported as unnameable and both are measurement bugs, not analyzer
+ * defects: a RESERVED WORD as a property (`this.class`, `.to.be.false`) and a NON-ASCII identifier
+ * (`Math.sin(θ)` — a Greek letter is a perfectly legal JavaScript identifier, U+03B8). The character
+ * test treats every code point above 127 as a letter, which over-accepts exotic punctuation but cannot
+ * reject legal Unicode identifiers, and the property-position test accepts `isFieldAccess` as the
+ * evidence it is.
+ */
 
 /** true when the string is only separator/empty on one side — no name at all */
 function hasBindingSepOnly(s: string): boolean {
@@ -188,9 +199,14 @@ for (const rel of sample) {
     // analyzer already agrees — it reduces a member callee to its PROPERTY leaf — so counting these
     // as defects would condemn legal syntax (measured: all three of svelte's remaining "keyword
     // targets" were `next.class`, `node.catch` and `b.true`).
+    // `isFieldAccess` ALONE is the evidence. It says the row came from a MEMBER position, and a
+    // property may legally be spelled with any reserved word. The first cut also required
+    // `receiverRoot`, which a `this.class` read does not always carry — so eight legal property
+    // reads were reported as unnameable targets on preact (`this.class`, `.to.be.false`), and the
+    // census was measuring its own metadata expectations rather than the rows.
     const fromPropertyPosition =
       (typeof md.calleeExpression === "string" && md.calleeExpression.endsWith(`.${t}`)) ||
-      (md.isFieldAccess === true && typeof md.receiverRoot === "string" && md.receiverRoot.length > 0)
+      md.isFieldAccess === true
     // `exports -> default` is the ECMAScript default export, which IS the module's public name and
     // is legal precisely because `default` is a keyword: it cannot be imported by any other spelling.
     const isDefaultExport = label === "exports" && t === "default"
