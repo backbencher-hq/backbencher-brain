@@ -49,6 +49,9 @@
 > reduction was re-measured on the `go-stdlib` stdlib subset (1,398 → 1,053) before that corpus was
 > removed.
 
+- **Final measured review:** `validation/m14/go/GO-FINAL-REVIEW.md` — every relationship type,
+  symbol kind, reason/bind code and resolution rate in one place, with the population and the
+  command that reproduces it. That page is the release record; this page is the reference.
 - Analyzer file: `src/ast/real-go-analyzer.ts`
 - Parser: `tree-sitter-go`. The engine's grammar-name map (`src/ast/engine.ts`) carries
   `go: "tree-sitter-go"`, and `parseFile` resolves it through `resolveWasm`, which takes the
@@ -225,6 +228,32 @@ comparison, after this lane's three fixes:
 | `extends` | yes | 1,703 / 636 | 34 / 56 / **33 agree**, recall 0.579 | yes | src and tgt **100% file-local** | conf 0.8 on 100%, `inferred`; **1,703 sub-1.0 edges, 0 reason codes** |
 | `implements` | yes | 1,222 / 324 | 0 oracle / 40 analyzer | yes | src and tgt **100% file-local** | conf **1.0 on all 1,222** — the matcher's computed confidence, answerable now that it is counted |
 | `overrides` | yes | 78 / 26 | 2 / 2 / **2 agree** | yes | src and tgt **100% file-local** | conf 0.95 on 100%, `usage_contextual`; **the only type whose sub-1.0 edges carry a `reasonCode`** |
+
+> **COLUMN 6 IS A DATED SNAPSHOT AND ITS "reason codes" CLAUSES ARE SUPERSEDED.** This table
+> records one 400-file differential draw from before the sub-1.0 reason table was extended, and
+> it is kept as the record of that comparison — but read literally today it says the opposite of
+> what the lane does, so the correction is stated here rather than edited into the rows.
+>
+> Six of the "**0 reason codes**" / "**the only type**" claims are no longer true. Every
+> sub-1.0 edge in the lane now carries a `reasonCode`, measured at **100 %** (671,104 of 671,104
+> on the four-repo population; 312,620 of 312,620 on the current baseline). Per type, on the
+> current re-runnable baseline (3,422 files):
+>
+> | type | sub-1.0 edges | with `reasonCode` | code(s) |
+> | --- | --- | --- | --- |
+> | `calls` | 128,259 | 128,259 | `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` |
+> | `uses` | 74,919 | 74,919 | selector / bare-identifier / channel-operation codes |
+> | `references` | 71,249 | 71,249 | `declared_type_leaf_*`, `qualified_type_*`, type-parameter code |
+> | `imports` | 23,347 | 23,347 | `target_is_a_module_path_not_a_symbol` |
+> | `instantiates` | 20,124 | 20,124 | `type_read_from_a_composite_literal_*`, `pascal_case_name_*` |
+> | `extends` | 86 | 86 | `interface_method_set_inclusion_not_a_declared_supertype` |
+> | `mixes_in` | 640 | 640 | `promotion_by_embedding_not_a_declared_supertype` |
+> | `overrides` | 22 | 22 | `promoted-method-shadowed-by-outer-declaration` |
+> | `renders` | 5 | 5 | template-execution code |
+> | `contains` · `exports` · `implements` | 0 | — | every edge is at confidence **1.0**, so no code is required or emitted |
+>
+> So `overrides` is **not** the only such type — it was the first. `extends`' "1,703 sub-1.0
+> edges, 0 reason codes" and `instantiates`' "0 reason codes" are likewise superseded.
 
 Read honestly, that table says four things.
 
