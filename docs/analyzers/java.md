@@ -1118,3 +1118,45 @@ and remains **FAILING**: its unchanged baseline is not a correctness pass.
 All 103 M14 fixtures are small authored examples, not a statistical precision
 or recall certificate. Do not declare this analyzer production-complete until
 the full admitted corpus and persisted API claims are independently evaluated.
+
+
+### 2026-11-17 — Real Java indexer/storage contract: two import channels
+
+**Verified on GitHub Actions** in
+[Java semantic proof run 44025080288](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025080288):
+104/104 M14 Java fixtures, 94 passes / 10 failures on the original analyzer
+(10 specifically named negative controls), Java compiler semantic oracle
+15/15, existing compiler oracles 12/12 + 13/13, production TS typecheck PASS,
+and **JAVA_SQLITE_E2E_PASS: 4/4 import rows, 2/2 file-level dependencies,
+3 overloaded/cross-file method declarations stored**.
+
+This is a new *real database* integration test, not a mock of SQLite:
+`script/m14/java-store-e2e-smoke.ts` uses `ASTEngine.parseFile`,
+`storeResults`, and `BrainDatabase` with two temporary source files
+whose imports occupy the same line.
+
+**Defect found:** a Java import intentionally emits two imports-typed facts:
+(1) an `import_declaration` evidence row enriched with import binding metadata,
+and (2) the actual `fileLevel` dependency row used by `bb_graph`.
+Both have the same target and line. The old relationship primary key omitted
+the semantic channel, causing `INSERT OR IGNORE` to retain the first row and
+silently discard the file-level one. A mutation that simply removed one emission
+would pass the persistence test while violating the existing M14 import-label
+and imported-binding contracts. It was **rejected**, not merged.
+
+**Fix:** `src/ast/parallel-indexer.ts` now gives Java file-level import
+rows a distinct `:channel:file-level` identity suffix. Their
+`source_symbol_id` is NULL and `source_external` is the relative file path
+even when a primary-type symbol matches the source spelling. The declaration
+evidence row retains its original identity and imported-binding data.
+
+The dedicated Java CI workflow also runs a **red-control** against the base
+indexer. A failure caused by losing an import channel (not an arbitrary command
+failure) is required before the corrected indexer is considered covered.
+
+**Unresolved acceptance requirements:** the pinned full Java corpus
+`BB_CORPUS_ROOT` incoming gate, M12 source-level FP/FN adjudication,
+cross-file canonical overloaded-method target binding in the public graph,
+and the whole repository `npm run verify`. An in-memory two-file SQLite
+round-trip is a positive, necessary regression, not sufficient evidence for
+the 11,152-file pinned corpus or complete API semantic correctness.
