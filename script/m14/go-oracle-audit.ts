@@ -111,6 +111,7 @@ const GO_ORACLE_LABELS = [
 // derivations does NOT start a 42-language run — verified by reading the guard,
 // and this runner completes in seconds on 36 files where a sweep would not.
 import {
+import { GO_DEFAULT_REPOS, requireGoRepoDir } from "./go-corpus"
   normTarget,
   strictTargetText,
   deriveGoEdges,
@@ -128,7 +129,7 @@ function argOf(flag: string, dflt?: string): string | undefined {
   const j = process.argv.find((a) => a.startsWith(`${flag}=`))
   return j ? j.slice(flag.length + 1) : dflt
 }
-const REPOS = (argOf("--repo", "go-stdlib,cobra") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+const REPOS = (argOf("--repo", GO_DEFAULT_REPOS) ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 const OUT = argOf("--out")
 const MAX_BYTES = 512 * 1024
 const SAMPLE = 8
@@ -230,8 +231,8 @@ if (process.argv.includes("--merge")) {
 const files: Array<{ repo: string; dir: string; rel: string; abs: string }> = []
 const revisions: Record<string, string> = {}
 for (const repo of REPOS) {
-  const dir = path.join(CR, repo)
-  try { statSync(dir) } catch { continue }
+  // ABSENT REPO IS FATAL, never a silent skip — see script/m14/go-corpus.ts.
+  const dir = requireGoRepoDir(repo)
   try { revisions[repo] = execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim() } catch { continue }
   let tracked: string[]
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z", "--", "*.go"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }

@@ -33,19 +33,23 @@ import { readFileSync, statSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { GO_DEFAULT_REPOS, requireGoRepoDir } from "./go-corpus"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 function argOf(flag: string, dflt?: string): string | undefined {
   const i = process.argv.indexOf(flag)
   return i !== -1 && i + 1 < process.argv.length ? process.argv[i + 1] : dflt
 }
-const REPOS = (argOf("--repo", "go-stdlib,cobra") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+const REPOS = (argOf("--repo", GO_DEFAULT_REPOS) ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 const SAMPLE = parseInt(argOf("--sample", "2000") ?? "2000")
 
 const files: { repo: string; dir: string; rel: string; abs: string }[] = []
 for (const e of REPOS) {
-  const dir = path.join(CR, e)
-  try { if (!statSync(dir).isDirectory()) continue; execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
+  // ABSENT REPO IS FATAL, never a silent skip — see script/m14/go-corpus.ts. The
+  // existence test is deliberately SEPARATE from the git test below: a repo that is
+  // present but not a git checkout is a different fault and must not read as absence.
+  const dir = requireGoRepoDir(e)
+  try { execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
   let tracked: string[]
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }
   for (const rel of tracked) {

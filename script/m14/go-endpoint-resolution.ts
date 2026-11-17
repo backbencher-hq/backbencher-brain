@@ -64,6 +64,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import * as path from "node:path"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { parseFile } from "../../src/ast/pool-worker"
+import { GO_DEFAULT_REPOS, requireGoRepoDir } from "./go-corpus"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
@@ -75,7 +76,7 @@ function argOf(flag: string, dflt?: string): string | undefined {
   const j = process.argv.find((a) => a.startsWith(`${flag}=`))
   return j ? j.slice(flag.length + 1) : dflt
 }
-const REPOS = (argOf("--repo", "go-stdlib") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+const REPOS = (argOf("--repo", GO_DEFAULT_REPOS) ?? "").split(",").map((s) => s.trim()).filter(Boolean)
 const OUT = argOf("--out")
 /** How many FILES to score. The corpus INDEX is always complete; only the
  *  per-file draw is a sample, and the sample size is reported so the rate is
@@ -101,8 +102,8 @@ type File = { repo: string; dir: string; rel: string; abs: string; pkgDir: strin
 const files: File[] = []
 const revisions: Record<string, string> = {}
 for (const e of REPOS) {
-  const dir = path.join(CR, e)
-  try { if (!statSync(dir).isDirectory()) continue } catch { continue }
+  // ABSENT REPO IS FATAL, never a silent skip — see script/m14/go-corpus.ts.
+  const dir = requireGoRepoDir(e)
   try { revisions[e] = execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim() } catch { continue }
   let tracked: string[]
   try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }

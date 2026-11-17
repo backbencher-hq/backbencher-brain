@@ -4,31 +4,50 @@
 
 > ## ⚠ Corpus scope — read before quoting any number in this document
 >
-> This document's measurements were taken on `go-stdlib` @ `6f5c275e` and on `cobra`, under
-> `<corpus-root>/bb_tests/repositories/`. **Both repositories have been removed from that
-> directory.** They cannot be re-cloned from this document, and no artifact in `validation/`
+> **Two corpora this document was measured on are BOTH gone, and only one of them says so loudly.**
+> A third exists and is re-runnable; it is the baseline below.
+>
+> **1. The original pinned draw — GONE, and disclosed throughout.** `go-stdlib` @ `6f5c275e` and
+> `cobra`, under `<corpus-root>/bb_tests/repositories/`. **Both repositories have been removed from
+> that directory.** They cannot be re-cloned from this document, and no artifact in `validation/`
 > retains the raw per-file rows, so every count attributed to them — 9,447 files / 280,587 symbols /
 > 866,760 relationships in the firing section, the `--sample 120` differential rows, the payload and
 > latency tables — is **unreproducible on this machine**. Those figures are retained as the record
 > of measurements that did happen; they are not presented as current.
 >
-> **The one current, re-runnable Go measurement** is the R7 re-derivation further down: `.corpus/`
-> — the standard library at `f0acd179`, plus `grpc-go`, `prometheus`, `terraform` — **13,523 files,
-> 1,431,632 relationships, 0.1614% dangling source**, 0 parse crashes. Two things about it matter:
+> **2. `.corpus/` — ALSO GONE, and this document previously called it "the one current, re-runnable
+> measurement".** That was true when written and stopped being true when the working tree dropped
+> `.corpus/` (the "Public tree: drop internal-ops docs and the local corpus path" change). So the
+> R7 re-derivation below — the stdlib at `f0acd179` plus `grpc-go`, `prometheus`, `terraform` —
+> **13,523 files / 1,431,632 relationships / 0.1614 % dangling source** is a HISTORICAL RECORD, not a
+> live number, exactly like the pinned draw. Its apples-to-apples claim (the stdlib rate moving
+> **0.1914 % → 0.1378 %** between the two stdlib revisions, same definitions) still stands as the
+> answer to "did the lane improve" — but it cannot be re-run here, and its per-fix splits live in the
+> GO39/GO40 sections, each measured on a fixed corpus.
 >
-> - The **stdlib subset of that measurement is an apples-to-apples replacement** for the pinned
->   draw: it is the same repository at a later revision, measured with the same definitions, and it
->   is what makes the "did the lane improve?" question answerable again — the rate went from
->   **0.1914%** at `6f5c275e` to **0.1378%** now. That comparison spans a revision and several fixes,
->   so it answers "is it better", not "which fix did it"; the per-fix splits are in the GO39/GO40
->   sections, each measured on a fixed corpus. Use the per-repo table in the R7 section; do not
->   difference its 13,523-file total against the pinned 9,447-file totals.
-> - The other three repos are additive and have no counterpart in the old draw, so they belong in
->   any *current* total but never in a before/after against `6f5c275e`.
+> **3. The CURRENT, re-runnable baseline — `go-tools` + `terraform`, 3,422 files.** This is what
+> every round-11/12 measurement in the lane notes cites, and it is the population to re-run:
 >
-> The `global` audit that opened GO39 also ran on `.corpus/` (15,914 files). Its conclusion — that
-> the `global` classification is correct across the population, and that GO39 was a **missing** edge
-> rather than a mislabelled one — is unaffected by which corpus measures it.
+> ```
+> BB_CORPUS_ROOT=<corpus-root>/bb_tests/repositories bun run script/m14/go-firing-probe.ts
+> ```
+>
+> MEASURED (2026-11-16, `testdata/` excluded): **3,422 files · 58,470 symbols · 363,830
+> relationships · 742 `global` sources · 0.2039 % dangling · 0 parse crashes.** Twelve of the
+> fourteen canonical types fire; `decorates` and `part_of` are silent ontologically. Explanation
+> coverage is complete: `reasonCode` **312,620/312,620**, `bindReason` **332,160/332,160**, construct
+> label **363,830/363,830**. Resolution: **0** symbols whose range fails to contain their own name,
+> **0** empty endpoints, `implements` **404/404** and `extends` **86/86** targeting declared
+> interfaces, method `contains` **14,979** with **13,729** (`91.65 %`) verified `same_file_type`.
+>
+> **Do not difference across these three.** Different repositories, different revisions, different
+> file counts; a cross-corpus delta measures the corpus, not the lane.
+>
+> The `global` audit that opened GO39 ran on `.corpus/` (15,914 files). Its conclusion — that the
+> `global` classification is correct across the population, and that GO39 was a **missing** edge
+> rather than a mislabelled one — is unaffected by which corpus measures it, and GO40's `global`
+> reduction was re-measured on the `go-stdlib` stdlib subset (1,398 → 1,053) before that corpus was
+> removed.
 
 - Analyzer file: `src/ast/real-go-analyzer.ts`
 - Parser: `tree-sitter-go`. The engine's grammar-name map (`src/ast/engine.ts`) carries
