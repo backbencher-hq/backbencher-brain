@@ -2,7 +2,7 @@
   "fixtureId": "java/spring-repository-redeclaration",
   "language": "java",
   "authoredBeforeAnalyzerRun": true,
-  "rationale": "Do not duplicate explicitly declared Spring Data members with phantom names. A non-redeclared delete method has void return; unresolved generic phantom return types must not claim Object.",
+  "rationale": "Do not duplicate explicitly declared Spring Data members with phantom names. A non-redeclared delete method has void return; unresolved generic phantom return types must not claim Object. Unknown Spring Data type parameters are not java.lang.Object; the phantom keeps its arity but does not invent a parameter type.",
   "expectSymbols": [
     {
       "name": "count",
@@ -17,6 +17,11 @@
     {
       "name": "save",
       "ownerName": "LedgerRepository"
+    },
+    {
+      "name": "save",
+      "ownerName": "LedgerRepository",
+      "meta.javaParameterTypeUnbound": true
     }
   ],
   "expectSymbolCount": [
@@ -37,6 +42,51 @@
       "name": "findById",
       "ownerName": "LedgerRepository",
       "returnType": "Object"
+    }
+  ],
+  "expectParameters": [
+    {
+      "symbol": "save",
+      "ownerName": "LedgerRepository",
+      "parameters": [
+        {
+          "name": "entity",
+          "isOptional": false
+        }
+      ]
+    },
+    {
+      "symbol": "findById",
+      "ownerName": "LedgerRepository",
+      "parameters": [
+        {
+          "name": "entity",
+          "isOptional": false
+        }
+      ]
+    }
+  ],
+  "forbidParameters": [
+    {
+      "symbol": "save",
+      "ownerName": "LedgerRepository",
+      "types": [
+        "Object"
+      ]
+    },
+    {
+      "symbol": "findById",
+      "ownerName": "LedgerRepository",
+      "types": [
+        "Object"
+      ]
+    },
+    {
+      "symbol": "deleteById",
+      "ownerName": "LedgerRepository",
+      "types": [
+        "Object"
+      ]
     }
   ]
 }

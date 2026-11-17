@@ -3445,17 +3445,25 @@ currentPackage,
             // REAL signature (findById(Object), save(Object)) while the symbol
             // payload said parameters:[] — resolution and display disagreed.
             // A phantom method with an arity-carrying key has arity.
-            parameters: method === "findById" || method === "deleteById" || method === "save" || method === "delete" ? [{ name: "entity", type: "Object", isOptional: false }] : [],
+            // Spring Data's S, T and ID are NOT universally Object. Keep
+            // arity, but do not publish a made-up declared parameter type.
+            parameters: method === "findById" || method === "deleteById" || method === "save" || method === "delete" ? [{ name: "entity", isOptional: false }] : [],
             // Generic T/S/ID cannot be honestly reduced to Object. Record
             // return types only where the API contract is exact.
             returnType: method === "count" ? "long" :
               method === "deleteById" || method === "delete" ? "void" : undefined,
-            metadata: { isPhantom: true, javaReturnTypeUnbound: method !== "count" && method !== "deleteById" && method !== "delete" },
+            metadata: {
+              isPhantom: true,
+              javaReturnTypeUnbound: method !== "count" && method !== "deleteById" && method !== "delete",
+              javaParameterTypeUnbound: method === "findById" || method === "deleteById" || method === "save" || method === "delete",
+            },
           }
           symbols.push(sym)
                     let phantomSig = "()"
           if (method === "findById" || method === "deleteById" || method === "save" || method === "delete") {
-             phantomSig = "(Object)"
+             // Unknown generic signature must never collide with a real
+             // declaration named method(Object).
+             phantomSig = "(unknown)"
           }
           symbolMap.set(`${scope.fqn}.${method}${phantomSig}`, sym)
         }
