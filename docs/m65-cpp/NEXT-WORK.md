@@ -1478,6 +1478,17 @@ recorded here as owed rather than inferred. What this run does establish whole-p
 not move the claim surface (`extOK` exactly unchanged), and the channel's declines are 100% accounted
 by four named causes.
 
+### CORRECTION, same round: the "kill-switch" run was a mislabeled DUPLICATE
+
+The first run filed as `gate-index-killswitch.json` was launched WITHOUT `BB_CPP_INDEX_CONSUME=0`
+(authoring error in the command, not in the analyzer). Its numbers are therefore a SECOND independent
+default-consume run, and they are byte-identical to the first default run — 482,743 / 272,667 /
+112,307 / 294,265 / extOK 11,719, owner channel 73,325 / 51,466 / 21,859 — which is a usable
+DETERMINISM fact (two whole-population runs, same inputs, identical every column) but NOT the
+consume-only delta. The file is renamed `gate-index-default-rerun.json` and the consume-only
+kill-switch measurement is re-run with the env var set; the §14.21 delta paragraph's "owed" status
+stands until that lands.
+
 ### Reproduction
 
 ```
