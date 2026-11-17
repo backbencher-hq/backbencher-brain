@@ -549,6 +549,51 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // PHASE 1: Extract Go symbols with proper understanding
     this.extractGoSymbols(rootNode, symbols)
 
+    // GO-GAP-3 — DISAMBIGUATE THE RECEIVER OWNER, which is the one thing this analyzer CANNOT
+    // decide per-file, made explicit instead of left silent.
+    //
+    // `func (T) NoName()` and `func (s) Untyped()` produce IDENTICAL trees — the lone identifier
+    // lands in the receiver's TYPE slot either way — so the owner of a method is read from a slot
+    // that cannot tell a type from a variable. The first is a legal method on a declared type; the
+    // second names no type and does not compile. Go resolves it semantically, and this analyzer is
+    // a PER-FILE entry point (`analyze(rootNode, content, filePath, context?)`), so it cannot ask
+    // whether the identifier names a type declared in a SIBLING file of the same package.
+    //
+    // Deletion is not available as a remedy and the measurement is why: GO44 recorded 1,251
+    // `contains` edges that legitimately name an owner declared in a sibling file, so a file-local
+    // "is it declared here" test would delete every one of them to fix 1,203 rows in files that
+    // cannot compile. The 1,203 stay. What they stop being is INDISTINGUISHABLE: each such
+    // `contains` edge now says which side of the line it is on, so a consumer that needs certainty
+    // can filter, and a consumer that needs coverage can keep the rows.
+    //
+    // `same_file_type`     the owner IS a type declared in this file — the method provably has a
+    //                      type owner, no ambiguity at all.
+    // `type_not_declared_in_this_file`
+    //                      the owner is not declared here. This is the GO44 case (a sibling-file
+    //                      type) OR the GO-GAP-3 case (a receiver that names no type). The two
+    //                      are indistinguishable per-file BY CONSTRUCTION, and the label says
+    //                      exactly that rather than pretending to resolve it.
+    {
+      const fileTypes = new Set(
+        symbols
+          .filter(
+            (s) =>
+              !s.ownerName &&
+              (s.kind === ASTEngine.SymbolKind.Struct ||
+                s.kind === ASTEngine.SymbolKind.Interface ||
+                s.kind === ASTEngine.SymbolKind.Type),
+          )
+          .map((s) => s.name),
+      )
+      for (const s of symbols) {
+        if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+        s.metadata = {
+          ...(s.metadata ?? {}),
+          receiverOwnerScope: fileTypes.has(s.ownerName) ? "same_file_type" : "type_not_declared_in_this_file",
+        }
+      }
+    }
+
     // PHASE 2: Analyze Go-specific relationships. The imports are read FIRST because the call,
     // reference and construction surfaces now need the qualifiers they declare (a `json.Marshal`
     // call can only be PROVED a stdlib call by the `encoding/json` import written in this same
@@ -2942,7 +2987,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the member's own declaration line (its name node, so
           // a wrapped declaration reports where the name is written).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: { relationshipType: membership },
+          // `receiverOwnerScope` rides along ONLY on method members: it is the GO-GAP-3
+          // disambiguator stamped in PHASE 1, and it tells a consumer whether this ownership
+          // edge rests on a type declared in this file or on a receiver whose owner cannot be
+          // verified from here. Fields need no such label — a field's owner is the named struct
+          // or interface its declaration sits in, read directly off the tree.
+          metadata: {
+            relationshipType: membership,
+            ...(typeof s.metadata?.receiverOwnerScope === "string"
+              ? { receiverOwnerScope: s.metadata.receiverOwnerScope }
+              : {}),
+          },
         })
       }
     }

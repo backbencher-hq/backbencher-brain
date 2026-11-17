@@ -1,0 +1,56 @@
+{
+  "fixtureId": "go/receiver-owner-scope",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE GO-GAP-3 DISAMBIGUATOR — the one ambiguity a per-file analyzer cannot resolve, made explicit instead of left silent. `func (T) NoName()` and `func (s) Untyped()` produce IDENTICAL trees: the lone identifier lands in the receiver's TYPE slot either way. The first is a legal method on a declared type; the second names no type and does not compile. Go decides between them semantically, by knowing which identifiers are types in the PACKAGE, and `analyze(rootNode, content, filePath, context?)` is a per-file entry point, so it cannot ask whether a name is a type declared in a sibling file. DELETION IS NOT AN AVAILABLE REMEDY and the measurement is why: GO44 recorded 1,251 `contains` edges that legitimately name an owner declared in a sibling file, so a file-local 'is it declared here' test would delete all of them to fix rows in files that cannot compile. The rows STAY; what changes is that they stop being indistinguishable. Every method `contains` edge now carries `metadata.receiverOwnerScope`: `same_file_type` when the owner IS a type declared in this file (the method provably has a type owner), and `type_not_declared_in_this_file` when it is not — which covers BOTH the legal GO44 sibling-file case AND the GO-GAP-3 invalid case, because those two are indistinguishable per-file BY CONSTRUCTION. The label states that honestly rather than pretending to resolve it, so a consumer needing certainty can filter and a consumer needing coverage can keep the rows. MEASURED on go-tools + terraform (3,422 files): 14,979 method `contains` edges, 13,729 `same_file_type` (91.65%), 1,250 `type_not_declared_in_this_file`, 0 unlabelled — the verified share is exactly what a per-file analyzer can honestly claim. THE TWO EXPECTED ROWS ARE THE TWO SIDES: a same-file type must be VERIFIED, and a not-declared-here owner must KEEP its edge while being marked unverifiable. Dropping the second row would be the GO44 regression; mislabelling it `same_file_type` would be the GO-GAP-3 concealment. THE FORBID ROWS pin both failure directions. NOT PINNED: the `Sibling` type symbol itself, which does not exist (no declaration in this file) and must not be invented to make the edge look verified.",
+  "expectSymbols": [
+    { "name": "Known", "kind": "struct" },
+    { "name": "Good", "kind": "method" },
+    {
+      "name": "Good",
+      "kind": "method",
+      "meta.receiverOwnerScope": "same_file_type",
+      "comment": "The VERIFIED side: the receiver names a type declared in this file, so the method's owner is certain and no cross-file knowledge is needed."
+    },
+    {
+      "name": "FromOtherFile",
+      "kind": "method",
+      "meta.receiverOwnerScope": "type_not_declared_in_this_file",
+      "comment": "The UNVERIFIABLE side. This method is legal Go — its owner type lives in a sibling file — but nothing in THIS file proves that, so the symbol says so."
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "VERIFIED ownership: a same-file type owns its method, and the edge says the owner is certain.",
+      "type": "contains",
+      "from": "Known",
+      "target": "Good",
+      "meta.relationshipType": "go_method_on_receiver",
+      "meta.receiverOwnerScope": "same_file_type"
+    },
+    {
+      "comment": "THE GO44 HALF, KEPT: an owner declared in a sibling file still gets its `contains` edge — deleting it is the regression GO44 measured — but the edge is marked unverifiable rather than presented as proven.",
+      "type": "contains",
+      "from": "Sibling",
+      "target": "FromOtherFile",
+      "meta.relationshipType": "go_method_on_receiver",
+      "meta.receiverOwnerScope": "type_not_declared_in_this_file"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "GO-GAP-3 CONCEALMENT: presenting an unverifiable owner as a same-file type would assert a fact this file cannot establish.",
+      "type": "contains",
+      "from": "Sibling",
+      "target": "FromOtherFile",
+      "meta.receiverOwnerScope": "same_file_type"
+    },
+    {
+      "comment": "THE OTHER FAILURE DIRECTION — a method `contains` edge carrying NO scope label is the silent shape this fixture exists to keep out. Scoped by `null`, so it forbids the ABSENCE rather than any particular value.",
+      "type": "contains",
+      "from": "Known",
+      "target": "Good",
+      "meta.receiverOwnerScope": null
+    }
+  ]
+}

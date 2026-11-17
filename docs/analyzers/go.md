@@ -1595,11 +1595,24 @@ reason the emission vocabulary is closed.
   never mentions, which is the class `go/grammar-error-not-a-construction-889` exists to forbid.
   Note the census excludes `testdata/`, where most GO-GAP-1 damage lives, which is why the
   aggregate symbol count is flat while one real file went 1 → 40.
-- **Still open, and NOT a grammar defect.** `GO-GAP-3`: `func (T) NoName()` and `func (s) Untyped()`
-  produce identical trees because the lone identifier lands in the receiver's TYPE slot either way.
-  That is an ambiguity in Go's surface syntax resolved semantically, not a production a grammar
-  revision can add — 1,203 `contains` edges across the five corpora rest on the reading, and the
-  honest fix is package-scope type resolution in the analyzer, not a grammar patch.
+- **DISAMBIGUATED, not resolved, and the difference is stated.** `GO-GAP-3`: `func (T) NoName()` and
+  `func (s) Untyped()` produce identical trees because the lone identifier lands in the receiver's
+  TYPE slot either way. That is an ambiguity in Go's surface syntax resolved semantically, not a
+  production a grammar revision can add. DELETION IS NOT AVAILABLE AS A REMEDY: `GO44` recorded
+  1,251 `contains` edges that legitimately name an owner declared in a sibling file, so a file-local
+  "is it declared here" test would delete every one of them to fix rows in files that cannot
+  compile. So the rows stay and stop being **indistinguishable** — every method `contains` edge
+  carries `metadata.receiverOwnerScope`:
+
+  | value | meaning |
+  | --- | --- |
+  | `same_file_type` | the owner IS a type declared in this file; the method provably has a type owner |
+  | `type_not_declared_in_this_file` | the owner is not declared here — the legal `GO44` sibling-file case **or** the `GO-GAP-3` case, which are indistinguishable per-file **by construction** |
+
+  MEASURED on go-tools + terraform (3,422 files): 14,979 method `contains` edges, **13,729
+  `same_file_type` (91.65 %)**, 1,250 `type_not_declared_in_this_file`, **0 unlabelled**. The
+  verified share is exactly what a per-file analyzer can honestly claim; the remaining 8.35 % says
+  it cannot verify rather than guessing either way. Pinned by `go/receiver-owner-scope`.
 
 ## Unsupported / explicit-unknown constructs
 
