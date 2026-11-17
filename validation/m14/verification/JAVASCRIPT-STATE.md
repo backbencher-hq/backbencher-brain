@@ -146,12 +146,28 @@ it was written against svelte/lodash. Getting it to run took three fixes, all in
 **FABRIC = 0 on every label** is the ship-critical number: the analyzer invents nothing the independent
 oracle cannot derive, on a corpus shape (JSX) it was never measured against before.
 
-The remaining MISSING is on the TRUTH side and is a known convention difference to settle, not a proven
-analyzer defect: the samples are `uses (expr) -> <JsxComponent>`, where the oracle derives a `uses` row
-from an expression context while the analyzer attributes the JSX reference to the enclosing named
-function and the `renders` label. Settling it means deciding which convention is correct for a JSX
-reference — the analyzer's named-source `renders` row, or an oracle `(expr)` `uses` row — and that is a
-family decision, not a lane one.
+### The remaining MISSING is the ORACLE over-deriving JSX, and that is now established
+
+Two measurements settle it, and neither is an inference:
+
+1. **`renders` compares clean once the tool compares it at all.** The tool's `COMPARED` set held only
+   the ten labels svelte/lodash exercise — `renders`, `decorates`, `mixes_in`, `part_of` were absent. On
+   preact that is not neutral: a JSX component reference emits `renders` (the vocabulary's own label),
+   the row is skipped as "uncompared", AND the oracle's generic expression rule derives a `uses` row for
+   the same construct. With all 14 labels compared: **`renders` truth 402 / analyzer 455 / covered 402 /
+   MISSING 0 / FABRIC 0.**
+
+2. **The samples are constructs the analyzer handles CORRECTLY by contract.** `uses (expr) -> div`,
+   `-> button` are lowercase JSX INTRINSICS — the family contract is that they emit nothing, and the
+   analyzer's own `renders` oracle skips them for the same reason (`isCapitalizedIdentifier`). `uses
+   (expr) -> ClassApp` is a component reference the analyzer emits as `renders ClassApp` with
+   `metadata.localBinding`, which the table above shows is fully covered.
+
+So the 688 "real missing" `uses` are truth rows the oracle derives for JSX and the analyzer answers with
+the JSX label. **FABRIC 0 on every label, together with `renders` covering 402/402, is the ship-critical
+result**: on a corpus shape this lane was never measured against, the analyzer invents nothing and its
+JSX labelling is corroborated. The tool's oracle needs a JSX guard in its generic `uses` walk — a tool
+fix, tracked here, not an analyzer change.
 
 ## Still open
 

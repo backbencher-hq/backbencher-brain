@@ -101,7 +101,19 @@ const {
 // a hardcoded copy of a constant is how an instrument keeps reporting the old
 // number after the constant changes (the note on rel-type-coverage-gate.ts).
 const uncompared = new Map<string, number>()
-const COMPARED: string[] = ["extends", "implements", "instantiates", "overrides", "calls", "uses", "contains", "exports", "references", "imports"]
+// THE WHOLE VOCABULARY, not the ten labels the first two corpora happened to exercise.
+//
+// The set was written against svelte/lodash, which have no JSX, no decorators and no mixins — so
+// `renders`, `decorates`, `mixes_in` and `part_of` were absent. On a JSX corpus that omission is not
+// neutral: a component reference emits `renders` (the vocabulary's own label for it), the row is
+// skipped as "uncompared", AND the oracle's generic expression rule derives a `uses` row for the same
+// construct — which then reads as MISSING. Measured on preact-150: 688 "real missing" `uses`, every
+// sampled one a JSX reference the analyzer had correctly labelled `renders` and this set had excluded.
+// A tool that compares ten of fourteen labels on a corpus exercising the other four measures itself.
+const COMPARED: string[] = [
+  "calls", "uses", "imports", "exports", "contains", "extends", "implements", "references",
+  "overrides", "instantiates", "decorates", "renders", "mixes_in", "part_of",
+]
 
 const tracked: string[] = execFileSync("git", ["-C", CR, "ls-files", "-z"], {
   encoding: "utf8", maxBuffer: 512 * 1024 * 1024,
