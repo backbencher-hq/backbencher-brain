@@ -20,6 +20,7 @@ const files = [
     relative: "alpha/Alpha.java",
     content: `package alpha;
 import java.util.List;
+import beta.Beta;
 public class Alpha {
   public String identity(String x) { return x; }
   public int identity(int x) { return x; }
@@ -30,6 +31,7 @@ public class Alpha {
     relative: "beta/Beta.java",
     content: `package beta;
 import java.util.List;
+import alpha.Alpha;
 public class Beta {
   public String identity(String x) { return x; }
   public void use() { identity("b"); }
@@ -81,6 +83,23 @@ try {
   )
   assertThat(fileRows.every((row) => row.source_symbol_id === null), "file-level import sources must be NULL symbol ids")
   assertThat(new Set(rows.map((row) => row.id)).size === 4, "both import channels in both files must have distinct relationship ids")
+  // Importing a project-owned class is a valid file dependency too.
+  // The graph consumer explicitly requires *both* symbol endpoints NULL,
+  // even if another resolver can identify the type declaration.
+  // Only the declaration-evidence sibling may bind to that symbol.
+  for (const [file, imported] of [
+    ["alpha/Alpha.java", "beta.Beta"],
+    ["beta/Beta.java", "alpha.Alpha"],
+  ]) {
+    const deps: Array<{ id: string; moduleSpecifier: string }> = db.prepare(
+      "SELECT id, target_external AS moduleSpecifier FROM brain_relationship " +
+      "WHERE project_id = ? AND relationship_type = 'imports' " +
+      "AND source_symbol_id IS NULL AND target_symbol_id IS NULL AND source_external = ? " +
+      "AND target_external = ?"
+    ).all(projectId, file, imported)
+    assertThat(deps.length === 1,
+      `bb_graph file dependencies must include local project import ${file} -> ${imported}; rows=${deps.length}`)
+  }
   const symbols: Array<{ qualified_name: string; name: string }> =
     db.prepare(`SELECT qualified_name, name FROM brain_symbol
                 WHERE project_id = ? AND name IN ('Alpha', 'Beta') ORDER BY qualified_name`).all(projectId)
