@@ -55,8 +55,10 @@ try {
     })
   }
   const emitted = results.flatMap((f) => f.relationships).filter((e: any) =>
-    String(e.type ?? e.relationshipType) === "imports" && e.target === "java.util.List")
-  assertThat(emitted.length === 2, `expected exactly two import edges, got ${emitted.length}`)
+    String(e.type ?? e.relationshipType) === "imports" && e.target === "java.util.List" &&
+    e.metadata?.fileLevel === true)
+  assertThat(emitted.length === 2,
+    `expected exactly two file-level Java import edges, got ${emitted.length}`)
   await storeResults(projectId, root, results)
   const db: any = await BrainDatabase.getRawInstance(projectId)
   const rows: Array<{ id: string; source_external: string; target_external: string; source_symbol_id: string | null }> =
