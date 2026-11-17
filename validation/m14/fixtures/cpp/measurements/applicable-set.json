@@ -1,0 +1,1490 @@
+{
+ "schemaVersion": 1,
+ "instrument": "script/m14/cpp-applicable-set.ts",
+ "measuredAt": "2026-11-17T21:47:35.969Z",
+ "language": "cpp",
+ "admissibilityRule": "APPLICABLE iff every construct production the value needs exists in the pinned grammar's own enumeration AND the analyzer has an emission site AND at least one fixture carries a positive expectation row AND that fixture goes RED when the emission is removed. A value failing any conjunct is a finding, not a note.",
+ "canonicalVocabulary": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "part_of",
+  "implements",
+  "overrides",
+  "instantiates",
+  "decorates",
+  "renders",
+  "mixes_in"
+ ],
+ "applicableValues": [
+  "calls",
+  "uses",
+  "contains",
+  "imports",
+  "references",
+  "exports",
+  "extends",
+  "part_of",
+  "implements",
+  "overrides",
+  "instantiates"
+ ],
+ "notApplicableValues": [
+  "decorates",
+  "renders",
+  "mixes_in"
+ ],
+ "grammar": {
+  "wasm": "wasm/tree-sitter-cpp.wasm",
+  "sha256": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b",
+  "slotCount": 548,
+  "namedTypeCount": 208,
+  "anonymousTokenCount": 286,
+  "namedTypes": [
+   "abstract_array_declarator",
+   "abstract_function_declarator",
+   "abstract_parenthesized_declarator",
+   "abstract_pointer_declarator",
+   "abstract_reference_declarator",
+   "access_specifier",
+   "alias_declaration",
+   "alignas_qualifier",
+   "alignof_expression",
+   "argument_list",
+   "array_declarator",
+   "assignment_expression",
+   "attribute",
+   "attribute_declaration",
+   "attribute_specifier",
+   "attributed_declarator",
+   "attributed_statement",
+   "auto",
+   "base_class_clause",
+   "binary_expression",
+   "bitfield_clause",
+   "break_statement",
+   "call_expression",
+   "case_statement",
+   "cast_expression",
+   "catch_clause",
+   "char_literal",
+   "character",
+   "class_specifier",
+   "co_await_expression",
+   "co_return_statement",
+   "co_yield_statement",
+   "comma_expression",
+   "comment",
+   "compound_literal_expression",
+   "compound_requirement",
+   "compound_statement",
+   "concatenated_string",
+   "concept_definition",
+   "condition_clause",
+   "conditional_expression",
+   "constraint_conjunction",
+   "constraint_disjunction",
+   "continue_statement",
+   "declaration",
+   "declaration_list",
+   "default_method_clause",
+   "delete_expression",
+   "delete_method_clause",
+   "dependent_name",
+   "dependent_type",
+   "destructor_name",
+   "do_statement",
+   "else_clause",
+   "enum_specifier",
+   "enumerator",
+   "enumerator_list",
+   "escape_sequence",
+   "explicit_function_specifier",
+   "expression_statement",
+   "extension_expression",
+   "false",
+   "field_declaration",
+   "field_declaration_list",
+   "field_designator",
+   "field_expression",
+   "field_identifier",
+   "field_initializer",
+   "field_initializer_list",
+   "fold_expression",
+   "for_range_loop",
+   "for_statement",
+   "friend_declaration",
+   "function_declarator",
+   "function_definition",
+   "generic_expression",
+   "gnu_asm_clobber_list",
+   "gnu_asm_expression",
+   "gnu_asm_goto_list",
+   "gnu_asm_input_operand",
+   "gnu_asm_input_operand_list",
+   "gnu_asm_output_operand",
+   "gnu_asm_output_operand_list",
+   "gnu_asm_qualifier",
+   "goto_statement",
+   "identifier",
+   "if_statement",
+   "init_declarator",
+   "init_statement",
+   "initializer_list",
+   "initializer_pair",
+   "labeled_statement",
+   "lambda_capture_initializer",
+   "lambda_capture_specifier",
+   "lambda_default_capture",
+   "lambda_expression",
+   "linkage_specification",
+   "literal_suffix",
+   "macro_access_specifier",
+   "macro_prefixed_type_specifier",
+   "macro_specifier",
+   "ms_based_modifier",
+   "ms_call_modifier",
+   "ms_declspec_modifier",
+   "ms_pointer_modifier",
+   "ms_restrict_modifier",
+   "ms_signed_ptr_modifier",
+   "ms_unaligned_ptr_modifier",
+   "ms_unsigned_ptr_modifier",
+   "namespace_alias_definition",
+   "namespace_definition",
+   "namespace_identifier",
+   "nested_namespace_specifier",
+   "new_declarator",
+   "new_expression",
+   "null",
+   "number_literal",
+   "offsetof_expression",
+   "operator_cast",
+   "operator_name",
+   "optional_parameter_declaration",
+   "optional_type_parameter_declaration",
+   "parameter_declaration",
+   "parameter_list",
+   "parameter_pack_expansion",
+   "parenthesized_declarator",
+   "parenthesized_expression",
+   "placeholder_type_specifier",
+   "pointer_declarator",
+   "pointer_expression",
+   "pointer_type_declarator",
+   "preproc_arg",
+   "preproc_call",
+   "preproc_def",
+   "preproc_defined",
+   "preproc_directive",
+   "preproc_elif",
+   "preproc_elifdef",
+   "preproc_else",
+   "preproc_function_def",
+   "preproc_header_name",
+   "preproc_if",
+   "preproc_ifdef",
+   "preproc_include",
+   "preproc_params",
+   "primitive_type",
+   "pure_virtual_clause",
+   "qualified_identifier",
+   "raw_string_content",
+   "raw_string_delimiter",
+   "raw_string_literal",
+   "ref_qualifier",
+   "reference_declarator",
+   "requirement_seq",
+   "requires_clause",
+   "requires_expression",
+   "return_statement",
+   "seh_except_clause",
+   "seh_finally_clause",
+   "seh_leave_statement",
+   "seh_try_statement",
+   "simple_requirement",
+   "sized_type_specifier",
+   "sizeof_expression",
+   "statement_identifier",
+   "static_assert_declaration",
+   "storage_class_specifier",
+   "string_content",
+   "string_literal",
+   "struct_specifier",
+   "structured_binding_declarator",
+   "subscript_argument_list",
+   "subscript_designator",
+   "subscript_expression",
+   "subscript_range_designator",
+   "switch_statement",
+   "system_lib_string",
+   "template_argument_list",
+   "template_declaration",
+   "template_function",
+   "template_instantiation",
+   "template_method",
+   "template_parameter_list",
+   "template_template_parameter_declaration",
+   "template_type",
+   "this",
+   "throw_specifier",
+   "throw_statement",
+   "trailing_return_type",
+   "translation_unit",
+   "true",
+   "try_statement",
+   "type_definition",
+   "type_descriptor",
+   "type_identifier",
+   "type_parameter_declaration",
+   "type_qualifier",
+   "type_requirement",
+   "unary_expression",
+   "union_specifier",
+   "update_expression",
+   "user_defined_literal",
+   "using_declaration",
+   "variadic_declarator",
+   "variadic_parameter_declaration",
+   "variadic_type_parameter_declaration",
+   "virtual_specifier",
+   "while_statement"
+  ],
+  "anonymousTokens": [
+   "\n",
+   "!",
+   "!=",
+   "\"",
+   "\"\"",
+   "#define",
+   "#elif",
+   "#elifdef",
+   "#elifndef",
+   "#else",
+   "#endif",
+   "#if",
+   "#ifdef",
+   "#ifndef",
+   "#include",
+   "%",
+   "%=",
+   "&",
+   "&&",
+   "&=",
+   "'",
+   "(",
+   "()",
+   ")",
+   "*",
+   "*=",
+   "+",
+   "++",
+   "+=",
+   ",",
+   "-",
+   "--",
+   "-=",
+   "->",
+   "->*",
+   ".",
+   ".*",
+   "...",
+   "/",
+   "/=",
+   ":",
+   "::",
+   ";",
+   "<",
+   "<<",
+   "<<=",
+   "<=",
+   "<=>",
+   "=",
+   "==",
+   ">",
+   ">=",
+   ">>",
+   ">>=",
+   "?",
+   "L\"",
+   "L'",
+   "LR\"",
+   "NULL",
+   "R\"",
+   "U\"",
+   "U'",
+   "UR\"",
+   "[",
+   "[[",
+   "[]",
+   "]",
+   "]]",
+   "^",
+   "^=",
+   "_Alignas",
+   "_Alignof",
+   "_Atomic",
+   "_Generic",
+   "_Nonnull",
+   "_Noreturn",
+   "__alignof",
+   "__alignof__",
+   "__asm",
+   "__asm__",
+   "__attribute",
+   "__attribute__",
+   "__based",
+   "__cdecl",
+   "__clrcall",
+   "__declspec",
+   "__except",
+   "__extension__",
+   "__fastcall",
+   "__finally",
+   "__forceinline",
+   "__inline",
+   "__inline__",
+   "__leave",
+   "__restrict__",
+   "__stdcall",
+   "__thiscall",
+   "__thread",
+   "__try",
+   "__unaligned",
+   "__vectorcall",
+   "__volatile__",
+   "_abstract_declarator",
+   "_alignof",
+   "_binary_fold",
+   "_binary_fold_operator",
+   "_block_item",
+   "_class_declaration",
+   "_class_declaration_item",
+   "_class_declaration_repeat1",
+   "_class_name",
+   "_constructor_specifiers",
+   "_declaration_modifiers",
+   "_declaration_specifiers",
+   "_declaration_specifiers_repeat1",
+   "_declarator",
+   "_empty_declaration",
+   "_enum_base_clause",
+   "_field_declaration_list_item",
+   "_field_declarator",
+   "_fold_operator",
+   "_for_range_loop_body",
+   "_for_statement_body",
+   "_function_attributes_end",
+   "_function_attributes_start",
+   "_function_declarator_seq",
+   "_function_exception_specification",
+   "_function_postfix",
+   "_function_postfix_repeat1",
+   "_lambda_capture",
+   "_lambda_capture_identifier",
+   "_macro_decorated_type",
+   "_namespace_specifier",
+   "_preproc_expression",
+   "_requirement",
+   "_requirement_clause_constraint",
+   "_scope_resolution",
+   "_string",
+   "_top_level_item",
+   "_top_level_statement",
+   "_type_declarator",
+   "_type_definition_declarators",
+   "_type_definition_declarators_repeat1",
+   "_type_definition_type",
+   "_type_definition_type_repeat1",
+   "_unaligned",
+   "_unary_left_fold",
+   "_unary_right_fold",
+   "alignas",
+   "alignof",
+   "and",
+   "and_eq",
+   "argument_list_repeat1",
+   "array_declarator_repeat1",
+   "asm",
+   "attribute_declaration_repeat1",
+   "attributed_declarator_repeat1",
+   "base_class_clause_repeat1",
+   "bitand",
+   "bitor",
+   "break",
+   "case",
+   "case_statement_repeat1",
+   "catch",
+   "char_literal_repeat1",
+   "class",
+   "co_await",
+   "co_return",
+   "co_yield",
+   "compl",
+   "concatenated_string_repeat1",
+   "concept",
+   "const",
+   "consteval",
+   "constexpr",
+   "constinit",
+   "constructor_try_statement_repeat1",
+   "continue",
+   "declaration_repeat1",
+   "decltype",
+   "default",
+   "defined",
+   "delete",
+   "do",
+   "else",
+   "end",
+   "enum",
+   "enumerator_list_repeat1",
+   "explicit",
+   "expression",
+   "extern",
+   "field_declaration_repeat1",
+   "field_initializer_list_repeat1",
+   "final",
+   "for",
+   "friend",
+   "generic_expression_repeat1",
+   "gnu_asm_clobber_list_repeat1",
+   "gnu_asm_expression_repeat1",
+   "gnu_asm_goto_list_repeat1",
+   "gnu_asm_input_operand_list_repeat1",
+   "gnu_asm_output_operand_list_repeat1",
+   "goto",
+   "if",
+   "initializer_list_repeat1",
+   "initializer_pair_repeat1",
+   "inline",
+   "lambda_capture_specifier_repeat1",
+   "long",
+   "mutable",
+   "namespace",
+   "new",
+   "noexcept",
+   "noreturn",
+   "not",
+   "not_eq",
+   "nullptr",
+   "offsetof",
+   "operator",
+   "operator_cast_definition_repeat1",
+   "or",
+   "or_eq",
+   "override",
+   "parameter_list_repeat1",
+   "pointer_declarator_repeat1",
+   "preproc_argument_list_repeat1",
+   "preproc_if_in_enumerator_list_no_comma_repeat1",
+   "preproc_if_in_enumerator_list_repeat1",
+   "preproc_if_in_field_declaration_list_repeat1",
+   "preproc_if_repeat1",
+   "preproc_include_token2",
+   "preproc_params_repeat1",
+   "private",
+   "protected",
+   "public",
+   "pure_virtual_clause_token1",
+   "register",
+   "requirement_seq_repeat1",
+   "requires",
+   "requires_parameter_list_repeat1",
+   "restrict",
+   "return",
+   "short",
+   "signed",
+   "sized_type_specifier_repeat1",
+   "sizeof",
+   "statement",
+   "static",
+   "static_assert",
+   "string_literal_repeat1",
+   "struct",
+   "structured_binding_declarator_repeat1",
+   "subscript_argument_list_repeat1",
+   "switch",
+   "template",
+   "template_argument_list_repeat1",
+   "template_parameter_list_repeat1",
+   "thread_local",
+   "throw",
+   "throw_specifier_repeat1",
+   "translation_unit_repeat1",
+   "try",
+   "type_definition_repeat1",
+   "type_specifier",
+   "typedef",
+   "typename",
+   "u\"",
+   "u'",
+   "u8\"",
+   "u8'",
+   "u8R\"",
+   "uR\"",
+   "union",
+   "unsigned",
+   "using",
+   "virtual",
+   "volatile",
+   "while",
+   "xor",
+   "xor_eq",
+   "{",
+   "|",
+   "|=",
+   "||",
+   "}",
+   "~"
+  ]
+ },
+ "constructSurface": {
+  "calls": {
+   "applicable": true,
+   "constructs": [
+    "call_expression",
+    "argument_list"
+   ],
+   "present": [
+    "call_expression",
+    "argument_list"
+   ],
+   "absent": [],
+   "rule": "call_expression whose callee is an identifier / field_expression / qualified_identifier / template_function / function-pointer; a class-type functional construction `T(x)` is a CALL in this family (cpp/call-target-name-surface-924), while `instantiates` is reserved for `new`.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:5433"
+   ],
+   "implementationSymbol": "RelationshipType.Calls"
+  },
+  "uses": {
+   "applicable": true,
+   "constructs": [
+    "field_expression",
+    "identifier",
+    "assignment_expression",
+    "update_expression",
+    "field_initializer"
+   ],
+   "present": [
+    "field_expression",
+    "identifier",
+    "assignment_expression",
+    "update_expression",
+    "field_initializer"
+   ],
+   "absent": [],
+   "rule": "a READ of an in-file declared name: member reads (field_expression, confidence 0.9 — the receiver's type is not resolved, carried in metadata.reasonCode), bare value reads of file-declared values, and lambda-capture reads (a capture of a file-declared name is read in the body). The LHS of an assignment is a WRITE and is GATED OUT (not a read-use) — measured 2026-10-18: `int x; x = n + 1; x += 2;` emits no uses, while a member READ does; this corrects the completeness spec's CPP-D5 note that claimed writes were emitted. Declaration positions and call callees are excluded by their own rules.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:5228",
+    "src/ast/real-cpp-analyzer.ts:5671"
+   ],
+   "implementationSymbol": "RelationshipType.Uses"
+  },
+  "contains": {
+   "applicable": true,
+   "constructs": [
+    "class_specifier",
+    "struct_specifier",
+    "union_specifier",
+    "enum_specifier",
+    "namespace_definition",
+    "field_declaration",
+    "function_definition",
+    "declaration_list",
+    "enumerator"
+   ],
+   "present": [
+    "class_specifier",
+    "struct_specifier",
+    "union_specifier",
+    "enum_specifier",
+    "namespace_definition",
+    "field_declaration",
+    "function_definition",
+    "declaration_list",
+    "enumerator"
+   ],
+   "absent": [],
+   "rule": "container -> member: namespace/class/struct/union -> member, enum -> enumerator, and a function -> its local type. ONE edge per (owner, name) pair; overloads stay as symbols but the duplicated edge is dropped.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:6006"
+   ],
+   "implementationSymbol": "RelationshipType.Contains"
+  },
+  "imports": {
+   "applicable": true,
+   "constructs": [
+    "preproc_include",
+    "system_lib_string",
+    "string_literal"
+   ],
+   "present": [
+    "preproc_include",
+    "system_lib_string",
+    "string_literal"
+   ],
+   "absent": [],
+   "rule": "preproc_include -> the include path as the module target (`<vector>` / `\"Service.h\"`). The target is a module path, not a symbol, by construction of the type — 0% resolution is its shape, not a failure rate. Namespace aliases and `using` are NOT imports (they are references/contains, see the rulings block).",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:3812"
+   ],
+   "implementationSymbol": "RelationshipType.Imports"
+  },
+  "references": {
+   "applicable": true,
+   "constructs": [
+    "type_identifier",
+    "qualified_identifier",
+    "template_type",
+    "cast_expression",
+    "sizeof_expression",
+    "decltype",
+    "using_declaration"
+   ],
+   "present": [
+    "type_identifier",
+    "qualified_identifier",
+    "template_type",
+    "cast_expression",
+    "sizeof_expression",
+    "decltype",
+    "using_declaration"
+   ],
+   "absent": [],
+   "rule": "a TYPE mention in a type position, plus the using-dependency (`using ns::name;`). A value identifier in a value position is `uses`, not `references`.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:3474"
+   ],
+   "implementationSymbol": "RelationshipType.References"
+  },
+  "exports": {
+   "applicable": true,
+   "constructs": [
+    "ms_declspec_modifier",
+    "attribute_specifier",
+    "attribute_declaration",
+    "linkage_specification",
+    "preproc_def",
+    "preproc_function_def"
+   ],
+   "present": [
+    "ms_declspec_modifier",
+    "attribute_specifier",
+    "attribute_declaration",
+    "linkage_specification",
+    "preproc_def",
+    "preproc_function_def"
+   ],
+   "absent": [],
+   "rule": "the author's EXPORT marker on a declaration: `__declspec(dllexport)` (MSVC) and `__attribute__((visibility(\"default\")))` (GCC/Clang). A file-scope surface list is a different question and is not this edge.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:4004",
+    "src/ast/real-cpp-analyzer.ts:4709",
+    "src/ast/real-cpp-analyzer.ts:5945"
+   ],
+   "implementationSymbol": "RelationshipType.Exports"
+  },
+  "extends": {
+   "applicable": true,
+   "constructs": [
+    "class_specifier",
+    "struct_specifier",
+    "base_class_clause"
+   ],
+   "present": [
+    "class_specifier",
+    "struct_specifier",
+    "base_class_clause"
+   ],
+   "absent": [],
+   "rule": "class/struct -> each base in its base_class_clause, one edge per base. MULTIPLE INHERITANCE is a LIST in one clause (base_class_clause_repeat1), so `class D : public B, private C` is two edges, not a special case.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:3986",
+    "src/ast/real-cpp-analyzer.ts:4217"
+   ],
+   "implementationSymbol": "RelationshipType.Extends"
+  },
+  "part_of": {
+   "applicable": true,
+   "constructs": [
+    "preproc_include",
+    "string_literal",
+    "system_lib_string"
+   ],
+   "present": [
+    "preproc_include",
+    "string_literal",
+    "system_lib_string"
+   ],
+   "absent": [],
+   "rule": "FILE INCLUSION, SPLIT BY WRITTEN FORM — the ONTOLOGY'S OWN definition of this value is the directive that NAMES A PART (`part 'x.dart'` / `#include \"x.h\"`, src/ast/types.ts), and C++ writes exactly that construct. A QUOTED include is the unit's own fragment -> `part_of`, with the CONTRACT-MANDATORY metadata.partRole = \"part\" plus partFile / partPath / partSymbol; an ANGLE include names ANOTHER MODULE's header -> `imports`. They are DIFFERENT FACTS that can share a leaf — measured in fmt's ranges-test.cc, `#include \"fmt/ranges.h\"` yields part_of:ranges and `#include <ranges>` yields imports:ranges, both real — so the edge set is one row per (kind, target) and never one per module. TARGET IS THE PART'S MODULE SYMBOL (the file stem), not a path: measured path => 0 resolved of 4,612 vs symbol => 383 resolved of 4,612 on the same population, the target's FORM the only variable, so the stem is the only form the arbiter can bind. Pinned by cpp/imports-include-910 and cpp/part-of-quoted-include; the lane's part_of oracle measures 2,328 rows with 0 disagreements. THIS VALUE WAS WRONGLY RULED NOT APPLICABLE until 2026-11-16: the ruling asked for Dart's `part_directive`/`part_of_directive`/`part_clause` productions, which is a category error (those are the DART grammar's node names), and it ignored that the analyzer emits the edge from `preproc_include`. Corrected here; the committed spec table was corrected by hand with a provenance note because this generator's measurement inputs are not in this checkout.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:3812"
+   ],
+   "implementationSymbol": "RelationshipType.PartOf"
+  },
+  "implements": {
+   "applicable": true,
+   "constructs": [
+    "class_specifier",
+    "struct_specifier",
+    "base_class_clause",
+    "pure_virtual_clause",
+    "virtual_specifier"
+   ],
+   "present": [
+    "class_specifier",
+    "struct_specifier",
+    "base_class_clause",
+    "pure_virtual_clause",
+    "virtual_specifier"
+   ],
+   "absent": [],
+   "rule": "ADAPTED SEMANTICS, declared: C++ has no `implements` clause. The construct the value carries is the CONTRACT BASE — a base whose body declares a pure virtual (`virtual R f() = 0;`). One edge per (derived, base) pair where the base is in-file and declares at least one pure virtual; the edge is NOT a duplicate of `extends` (two readings of the same clause: 'inherits from' and 'implements this contract'), and it carries metadata.reasonCode pure-virtual-base + the pure-virtual member list so a consumer can re-derive it. A base with no in-file declaration, or with no pure virtual, emits NO edge (a guess here is the fabrication the workstream exists to prevent).",
+   "adaptedSemantics": "no implements-clause production exists; the value rides base_class_clause + pure_virtual_clause",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:5915"
+   ],
+   "implementationSymbol": "RelationshipType.Implements"
+  },
+  "overrides": {
+   "applicable": true,
+   "constructs": [
+    "virtual_specifier",
+    "pure_virtual_clause",
+    "override",
+    "class_specifier",
+    "field_declaration",
+    "function_declarator"
+   ],
+   "present": [
+    "virtual_specifier",
+    "pure_virtual_clause",
+    "override",
+    "class_specifier",
+    "field_declaration",
+    "function_declarator"
+   ],
+   "absent": [],
+   "rule": "a derived class's method that overrides a base's virtual method: matched transitively through the in-file base chain by method leaf + normalized parameter-type signature, with the `override`/`final` keyword (when written) carried as an independent evidence class. The target is the DECLARED MEMBER's leaf and the intended base rides metadata.overriddenOwner.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:5858"
+   ],
+   "implementationSymbol": "RelationshipType.Overrides"
+  },
+  "instantiates": {
+   "applicable": true,
+   "constructs": [
+    "new_expression",
+    "new_declarator",
+    "type_identifier"
+   ],
+   "present": [
+    "new_expression",
+    "new_declarator",
+    "type_identifier"
+   ],
+   "absent": [],
+   "rule": "OBJECT CREATION through `new`: the constructed type is the target, template arguments are stripped (`new std::vector<int>` instantiates vector). A primitive (`char`), a non-class standard typedef (`uint8_t`), a keyword spelling and a template-parameter binding emit NO edge. `instantiates` is NOT template instantiation — see the rulings block.",
+   "implementationSites": [
+    "src/ast/real-cpp-analyzer.ts:5589"
+   ],
+   "implementationSymbol": "RelationshipType.Instantiates"
+  }
+ },
+ "notApplicableSurface": {
+  "decorates": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "decorator",
+    "annotation",
+    "annotation_declaration",
+    "marker_annotation",
+    "decorator_expression"
+   ],
+   "productionsFound": [],
+   "reason": "no decorator/annotation production exists in the pinned C++ grammar. It DOES have attribute_specifier / attribute_declaration / __attribute__ (GNU and C++11 attributes), adjudicated here rather than ignored: an attribute names no callable declaration of its own (it is a keyword/macro-written specifier), and the analyzer records export attributes as the `exports` edge + symbol metadata — the same ruling the java lane applied to annotations (references+isAnnotation; decorates reserved for runtime callable decorators). No cpp fixture expects a `decorates` row and the analyzer emits none.",
+   "vocabularyRuling": "extended value, NOT APPLICABLE to C++."
+  },
+  "renders": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "jsx_element",
+    "jsx_self_closing_element",
+    "jsx_opening_element",
+    "jsx_attribute"
+   ],
+   "productionsFound": [],
+   "reason": "no JSX/element-construction production exists in the pinned C++ grammar; C++ never creates a component-element pair.",
+   "vocabularyRuling": "extended value (TSX/JSX), NOT APPLICABLE to C++."
+  },
+  "mixes_in": {
+   "applicable": false,
+   "grammarAbsenceProven": true,
+   "requiredProductions": [
+    "mixin",
+    "mixin_application_class",
+    "with_clause"
+   ],
+   "productionsFound": [],
+   "reason": "no mixin/with production exists in the pinned C++ grammar. Multiple inheritance expresses composition of base classes and is carried by `extends`; there is no separate mixin application construct to publish.",
+   "vocabularyRuling": "extended value (Dart `with`), NOT APPLICABLE to C++."
+  }
+ },
+ "constructTable": {
+  "classes / structs / unions": {
+   "grammarConstructs": [
+    "class_specifier",
+    "struct_specifier",
+    "union_specifier"
+   ],
+   "grammarPresent": [
+    "class_specifier",
+    "struct_specifier",
+    "union_specifier"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "extends",
+    "overrides",
+    "implements",
+    "instantiates",
+    "references"
+   ],
+   "ruling": "a class is a symbol; its members are contains, its bases extends + implements, its virtual overrides are overrides, its constructions instantiates."
+  },
+  "templates (declaration + type arguments)": {
+   "grammarConstructs": [
+    "template_declaration",
+    "template_parameter_list",
+    "template_type",
+    "template_instantiation"
+   ],
+   "grammarPresent": [
+    "template_declaration",
+    "template_parameter_list",
+    "template_type",
+    "template_instantiation"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "references",
+    "instantiates"
+   ],
+   "ruling": "a template ARGUMENT is a type mention (references); `new X<T>` strips the arguments and instantiates X. A template DECLARATION is a declaration form, not a relationship kind: its members are contained by the enclosing class/namespace, and its parameters are not symbols. `template_instantiation` is a compile-time specialization and is NOT the `instantiates` value (see rulings): measured 2026-10-18, `Box<int> b;` with `template <typename T> struct Box` emits the class's contains edges and NO instantiates edge — a template variable is not object creation."
+  },
+  "namespaces": {
+   "grammarConstructs": [
+    "namespace_definition",
+    "nested_namespace_specifier",
+    "namespace_identifier"
+   ],
+   "grammarPresent": [
+    "namespace_definition",
+    "nested_namespace_specifier",
+    "namespace_identifier"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "references"
+   ],
+   "ruling": "namespace -> member is contains; a qualified mention of a namespace-scoped name is references. Namespaces are NOT imports (imports is #include only) and NOT exports (no marker)."
+  },
+  "namespace alias / using-declaration / using-directive": {
+   "grammarConstructs": [
+    "namespace_alias_definition",
+    "using_declaration"
+   ],
+   "grammarPresent": [
+    "namespace_alias_definition",
+    "using_declaration"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "references"
+   ],
+   "ruling": "a using-dependency is published as references (the dependency edge the early residual analysis called the 'using half' of the old single imports bucket). A namespace ALIAS names a namespace, which is not a published declaration, so it emits no edge — measured in the census."
+  },
+  "multiple inheritance": {
+   "grammarConstructs": [
+    "base_class_clause",
+    "base_class_clause_repeat1"
+   ],
+   "grammarPresent": [
+    "base_class_clause",
+    "base_class_clause_repeat1"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "extends",
+    "implements"
+   ],
+   "ruling": "one base_class_clause holds a LIST of bases (base_class_clause_repeat1), so N bases = N extends edges and (for pure-virtual bases) N implements edges. It is not a distinct relationship type."
+  },
+  "virtual / override / pure-virtual methods": {
+   "grammarConstructs": [
+    "virtual_specifier",
+    "pure_virtual_clause",
+    "override",
+    "virtual"
+   ],
+   "grammarPresent": [
+    "virtual_specifier",
+    "pure_virtual_clause",
+    "override",
+    "virtual"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "overrides",
+    "implements"
+   ],
+   "ruling": "a derived method overriding a base virtual is overrides; a base that DECLARES a pure virtual is a contract and implementing it is implements. The `override`/`final` keyword is recorded as an evidence class, never invented when absent."
+  },
+  "operator overloads": {
+   "grammarConstructs": [
+    "operator_name",
+    "operator_cast",
+    "destructor_name"
+   ],
+   "grammarPresent": [
+    "operator_name",
+    "operator_cast",
+    "destructor_name"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "calls",
+    "uses",
+    "references"
+   ],
+   "ruling": "an operator overload is a declared member (symbol) named `operator+` etc.; it is contained by its class (`contains`), and a call-shaped use of it can be a calls/uses edge. Measured 2026-10-18 on the operator-EXPRESSION shape: `a + b` with `V operator+` declared in-file emits NO calls edge (the analyzer's own callee rule excludes operator-spelled targets from `calls`, a documented decision), so the expression form is a measured silence while the symbol and its containment are emitted. There is no `overloads` relationship value: overload relations are not a canonical kind, and the symbol's kind/name carries the fact."
+  },
+  "lambda expressions (captures)": {
+   "grammarConstructs": [
+    "lambda_expression",
+    "lambda_capture_specifier",
+    "lambda_capture_initializer",
+    "lambda_default_capture"
+   ],
+   "grammarPresent": [
+    "lambda_expression",
+    "lambda_capture_specifier",
+    "lambda_capture_initializer",
+    "lambda_default_capture"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "uses",
+    "calls"
+   ],
+   "ruling": "a capture of a FILE-DECLARED name is a READ of that name and is emitted as `uses` from the enclosing function; a call INSIDE the lambda body is a `calls` edge from the enclosing function (measured 2026-10-18: `[g]() { return g; }` → uses work→g; `[](int x){ helper(x); }` → calls work→helper). A capture of a PARAMETER or local whose declaration is not published as a symbol emits no edge (parameters/locals are not symbols in this lane), and a capture with an initializer (`[b=a]`) emits no capture-list edge of its own. A lambda expression publishes no symbol, so no contains edge is fabricated for it."
+  },
+  "structured bindings": {
+   "grammarConstructs": [
+    "structured_binding_declarator"
+   ],
+   "grammarPresent": [
+    "structured_binding_declarator"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "uses",
+    "references"
+   ],
+   "ruling": "a structured binding DECLARES local names (not published symbols) and READS the initializer's object: measured 2026-10-18, `P p; auto [a, b] = p;` emits `uses work→p` (the read) and NO uses edge for a/b (declaration positions). A local/parameter initializer name that is not a published symbol is a measured silence, not a fabricated edge."
+  },
+  "concepts / requires (C++20)": {
+   "grammarConstructs": [
+    "concept_definition",
+    "requires_clause",
+    "requires_expression"
+   ],
+   "grammarPresent": [
+    "concept_definition",
+    "requires_clause",
+    "requires_expression"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [],
+   "ruling": "RULED: grammar-present but carrying NO relationship in this lane's model. A concept is a named constraint entity this analyzer does not publish as a symbol (publishing it would be a new symbol kind, not a relationship), and a requires_clause is a compile-time constraint, not a call/read/inheritance fact. Measured population is carried by the D2 census so this is a count, not a silence; if a future wave publishes concepts, `references` to the concept is the value they would carry."
+  },
+  "friend declarations/definitions": {
+   "grammarConstructs": [
+    "friend_declaration"
+   ],
+   "grammarPresent": [
+    "friend_declaration"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "contains",
+    "uses",
+    "calls",
+    "references"
+   ],
+   "ruling": "a friend DEFINITION is a free function owned by no class (fixtures friend-definition-published / friend-owner-name-recovery pin this); a friend DECLARATION grants access and publishes no edge of its own."
+  },
+  "preprocessor (#include / #define / conditional arms)": {
+   "grammarConstructs": [
+    "preproc_include",
+    "preproc_def",
+    "preproc_function_def",
+    "preproc_if",
+    "preproc_ifdef"
+   ],
+   "grammarPresent": [
+    "preproc_include",
+    "preproc_def",
+    "preproc_function_def",
+    "preproc_if",
+    "preproc_ifdef"
+   ],
+   "grammarAbsent": [],
+   "carriedBy": [
+    "imports",
+    "exports",
+    "overrides"
+   ],
+   "ruling": "includes are imports; an export MARKER macro applied to a declaration is exports (the marker spelling decides); mutually exclusive conditional definitions are the ADAPTED `overrides` semantics used by the C lane as well (shape carried in metadata)."
+  }
+ },
+ "rulings": [
+  {
+   "id": "CPP-R1",
+   "question": "`implements`: is the canonical value applicable to C++?",
+   "measured": "the pinned grammar has NO implements-clause production (implements_clause / class_interface_clause / super_interfaces all ABSENT — section 2 proves it). It DOES have class_specifier + base_class_clause + pure_virtual_clause; the analyzer emits implements at a measured site from (derived, pure-virtual base) pairs and the corpus carries them.",
+   "verdict": "APPLICABLE BY ADAPTED SEMANTICS — a pure-virtual base is a contract. Ruling it non-applicable would contradict the emission and the fixtures; the adapted reading is declared in the value's rule and in script/m14/spec/cpp-completeness.json."
+  },
+  {
+   "id": "CPP-R2",
+   "question": "template_instantiation vs `instantiates`: the same word, the same value?",
+   "measured": "`template_instantiation` (a compile-time type specialization, e.g. `Box<int>`) and `new_expression` (runtime object creation) are DIFFERENT productions. The `instantiates` value is emitted from new_expression only; a new of a template type strips `<>` and instantiates the base type name. No value is named after template instantiation, and no constructor-of-template edge is fabricated.",
+   "verdict": "DISTINCT — a C++ template instantiation carries no relationship; `instantiates` = object creation. Recorded so no future reader derives the value from the wrong node."
+  },
+  {
+   "id": "CPP-R3",
+   "question": "Are `using` / namespace declarations `imports`?",
+   "measured": "`imports` is emitted from preproc_include only (site read from source). using_declaration is emitted as a references dependency (the using-half of the early residual analysis) and namespace containment as contains.",
+   "verdict": "NO — `imports` is a module-path edge (#include); a using-dependency is a symbol/type dependency (references). The census counts both separately so the mapping is a number."
+  },
+  {
+   "id": "CPP-R4",
+   "question": "Does multiple inheritance need its own value?",
+   "measured": "base_class_clause's shape is a repeated list of base_class items; the analyzer iterates it and emits one extends (and, where pure virtual, one implements) per base.",
+   "verdict": "NO — multiple inheritance is N extends edges; the value set already expresses it, and the fixture pins a two-base class."
+  }
+ ],
+ "fixturePins": {
+  "calls": {
+   "positiveFixtures": [
+    "cpp/bare-value-reads",
+    "cpp/call-target-name-surface-924",
+    "cpp/callsite-lines-825",
+    "cpp/class-scope-constructor",
+    "cpp/class-self-call-925",
+    "cpp/ctor-and-overload-regressions",
+    "cpp/declaration-vs-definition-612",
+    "cpp/keyword-names-957",
+    "cpp/local-implicit-owner",
+    "cpp/macro-declared-body-919",
+    "cpp/macro-decorated-specifier",
+    "cpp/macro-function-shapes",
+    "cpp/macro-heading-owner-range",
+    "cpp/metadata-line-base-873",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/no-nested-function-def-961",
+    "cpp/one-edge-per-pair-959",
+    "cpp/preproc-has-include",
+    "cpp/receiver-walker-gaps",
+    "cpp/system-completeness",
+    "cpp/template-declarator-name-612",
+    "cpp/typedef-functional-cast"
+   ],
+   "positiveRows": 70,
+   "forbidRows": 73
+  },
+  "uses": {
+   "positiveFixtures": [
+    "cpp/bare-macro-statements",
+    "cpp/bare-value-reads",
+    "cpp/callsite-lines-825",
+    "cpp/destructor-definition-published",
+    "cpp/friend-definition-body-owner",
+    "cpp/friend-definition-published",
+    "cpp/friend-owner-name-recovery",
+    "cpp/keyword-names-957",
+    "cpp/macro-declared-body-919",
+    "cpp/macro-decorated-specifier",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/no-nested-function-def-961",
+    "cpp/one-edge-per-pair-959",
+    "cpp/reason-code-4",
+    "cpp/recovered-declared-name-960",
+    "cpp/stateless-analyzer",
+    "cpp/template-declarator-name-612",
+    "cpp/wrapped-declarator-names-612"
+   ],
+   "positiveRows": 46,
+   "forbidRows": 59
+  },
+  "contains": {
+   "positiveFixtures": [
+    "cpp/bare-macro-statements",
+    "cpp/callsite-lines-825",
+    "cpp/class-self-call-925",
+    "cpp/contains-name-line-921",
+    "cpp/destructor-definition-published",
+    "cpp/friend-definition-published",
+    "cpp/friend-owner-name-recovery",
+    "cpp/macro-decorated-class",
+    "cpp/macro-decorated-specifier",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/no-nested-function-def-961",
+    "cpp/one-edge-per-pair-959",
+    "cpp/qualified-declarator-name-924",
+    "cpp/reason-code-4",
+    "cpp/receiver-walker-gaps",
+    "cpp/recovered-declared-name-960",
+    "cpp/specifier-qualified-name-962",
+    "cpp/template-declarator-name-612",
+    "cpp/unnamed-scope-919"
+   ],
+   "positiveRows": 74,
+   "forbidRows": 52
+  },
+  "imports": {
+   "positiveFixtures": [
+    "cpp/callsite-lines-825",
+    "cpp/imports-include-910",
+    "cpp/include-kind-imports",
+    "cpp/include-name-924",
+    "cpp/keyword-names-957",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/one-edge-per-pair-959",
+    "cpp/part-of-quoted-include",
+    "cpp/part-of-stem-dedup-965",
+    "cpp/reason-code-4",
+    "cpp/recovered-declared-name-960",
+    "cpp/system-completeness"
+   ],
+   "positiveRows": 18,
+   "forbidRows": 15
+  },
+  "references": {
+   "positiveFixtures": [
+    "cpp/imports-include-910",
+    "cpp/include-kind-imports",
+    "cpp/one-edge-per-pair-959",
+    "cpp/reason-code-4",
+    "cpp/system-completeness"
+   ],
+   "positiveRows": 8,
+   "forbidRows": 16
+  },
+  "exports": {
+   "positiveFixtures": [
+    "cpp/exports-cxx11-attribute",
+    "cpp/exports-marker-910",
+    "cpp/exports-visibility-attribute"
+   ],
+   "positiveRows": 15,
+   "forbidRows": 26
+  },
+  "extends": {
+   "positiveFixtures": [
+    "cpp/cross-file-override",
+    "cpp/ctor-and-overload-regressions",
+    "cpp/decorated-head-return-type",
+    "cpp/exports-marker-910",
+    "cpp/extends-self-base-958",
+    "cpp/implements-pure-virtual-interface",
+    "cpp/override-signature-aware",
+    "cpp/pure-virtual-abstract-919",
+    "cpp/pure-virtual-signature-910",
+    "cpp/reason-code-4",
+    "cpp/virtual-override-resolution"
+   ],
+   "positiveRows": 18,
+   "forbidRows": 8
+  },
+  "part_of": {
+   "positiveFixtures": [
+    "cpp/imports-include-910",
+    "cpp/include-kind-imports",
+    "cpp/include-name-924",
+    "cpp/part-of-quoted-include",
+    "cpp/part-of-stem-dedup-965"
+   ],
+   "positiveRows": 7,
+   "forbidRows": 2
+  },
+  "implements": {
+   "positiveFixtures": [
+    "cpp/implements-pure-virtual-interface",
+    "cpp/reason-code-4"
+   ],
+   "positiveRows": 6,
+   "forbidRows": 7
+  },
+  "overrides": {
+   "positiveFixtures": [
+    "cpp/cross-file-override",
+    "cpp/ctor-and-overload-regressions",
+    "cpp/exports-marker-910",
+    "cpp/extends-self-base-958",
+    "cpp/pure-virtual-abstract-919",
+    "cpp/pure-virtual-signature-910",
+    "cpp/reason-code-4",
+    "cpp/virtual-override-resolution"
+   ],
+   "positiveRows": 24,
+   "forbidRows": 27
+  },
+  "instantiates": {
+   "positiveFixtures": [
+    "cpp/callsite-lines-825",
+    "cpp/friend-owner-name-recovery",
+    "cpp/metadata-line-base-873",
+    "cpp/system-completeness"
+   ],
+   "positiveRows": 5,
+   "forbidRows": 6
+  }
+ },
+ "fixtureBaseline": {
+  "command": "imported runLang('cpp') from script/m14/run-fixtures.ts (the real runner)",
+  "pass": 61,
+  "fail": 0,
+  "failingFixtures": []
+ },
+ "redProof": {
+  "calls": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 35,
+   "mutatedFail": 26,
+   "fixturesThatWentRed": [
+    "cpp/bare-value-reads",
+    "cpp/call-target-name-surface-924",
+    "cpp/callsite-lines-825",
+    "cpp/citation/citation",
+    "cpp/class-scope-constructor",
+    "cpp/class-self-call-925",
+    "cpp/ctor-and-overload-regressions",
+    "cpp/declaration-vs-definition-612",
+    "cpp/keyword-names-957",
+    "cpp/local-implicit-owner",
+    "cpp/macro-declared-body-919",
+    "cpp/macro-decorated-specifier",
+    "cpp/macro-function-shapes",
+    "cpp/macro-heading-owner-range",
+    "cpp/metadata-line-base-873",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/no-nested-function-def-961",
+    "cpp/one-edge-per-pair-959",
+    "cpp/package-scope/package_scope",
+    "cpp/package-scope/package_scope_ambiguous",
+    "cpp/package-scope/package_scope_loose",
+    "cpp/preproc-has-include",
+    "cpp/receiver-walker-gaps",
+    "cpp/system-completeness",
+    "cpp/template-declarator-name-612",
+    "cpp/typedef-functional-cast"
+   ],
+   "redProven": true
+  },
+  "uses": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 43,
+   "mutatedFail": 18,
+   "fixturesThatWentRed": [
+    "cpp/bare-macro-statements",
+    "cpp/bare-value-reads",
+    "cpp/callsite-lines-825",
+    "cpp/destructor-definition-published",
+    "cpp/friend-definition-body-owner",
+    "cpp/friend-definition-published",
+    "cpp/friend-owner-name-recovery",
+    "cpp/keyword-names-957",
+    "cpp/macro-declared-body-919",
+    "cpp/macro-decorated-specifier",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/no-nested-function-def-961",
+    "cpp/one-edge-per-pair-959",
+    "cpp/reason-code-4",
+    "cpp/recovered-declared-name-960",
+    "cpp/stateless-analyzer",
+    "cpp/template-declarator-name-612",
+    "cpp/wrapped-declarator-names-612"
+   ],
+   "redProven": true
+  },
+  "contains": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 41,
+   "mutatedFail": 20,
+   "fixturesThatWentRed": [
+    "cpp/bare-macro-statements",
+    "cpp/callsite-lines-825",
+    "cpp/citation/citation",
+    "cpp/class-self-call-925",
+    "cpp/contains-name-line-921",
+    "cpp/destructor-definition-published",
+    "cpp/friend-definition-published",
+    "cpp/friend-owner-name-recovery",
+    "cpp/macro-decorated-class",
+    "cpp/macro-decorated-specifier",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/no-nested-function-def-961",
+    "cpp/one-edge-per-pair-959",
+    "cpp/qualified-declarator-name-924",
+    "cpp/reason-code-4",
+    "cpp/receiver-walker-gaps",
+    "cpp/recovered-declared-name-960",
+    "cpp/specifier-qualified-name-962",
+    "cpp/template-declarator-name-612",
+    "cpp/unnamed-scope-919"
+   ],
+   "redProven": true
+  },
+  "imports": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 48,
+   "mutatedFail": 13,
+   "fixturesThatWentRed": [
+    "cpp/callsite-lines-825",
+    "cpp/citation/citation",
+    "cpp/imports-include-910",
+    "cpp/include-kind-imports",
+    "cpp/include-name-924",
+    "cpp/keyword-names-957",
+    "cpp/multiline-attribute-line-base-920",
+    "cpp/one-edge-per-pair-959",
+    "cpp/part-of-quoted-include",
+    "cpp/part-of-stem-dedup-965",
+    "cpp/reason-code-4",
+    "cpp/recovered-declared-name-960",
+    "cpp/system-completeness"
+   ],
+   "redProven": true
+  },
+  "references": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 56,
+   "mutatedFail": 5,
+   "fixturesThatWentRed": [
+    "cpp/imports-include-910",
+    "cpp/include-kind-imports",
+    "cpp/one-edge-per-pair-959",
+    "cpp/reason-code-4",
+    "cpp/system-completeness"
+   ],
+   "redProven": true
+  },
+  "exports": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 58,
+   "mutatedFail": 3,
+   "fixturesThatWentRed": [
+    "cpp/exports-cxx11-attribute",
+    "cpp/exports-marker-910",
+    "cpp/exports-visibility-attribute"
+   ],
+   "redProven": true
+  },
+  "extends": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 50,
+   "mutatedFail": 11,
+   "fixturesThatWentRed": [
+    "cpp/cross-file-override",
+    "cpp/ctor-and-overload-regressions",
+    "cpp/decorated-head-return-type",
+    "cpp/exports-marker-910",
+    "cpp/extends-self-base-958",
+    "cpp/implements-pure-virtual-interface",
+    "cpp/override-signature-aware",
+    "cpp/pure-virtual-abstract-919",
+    "cpp/pure-virtual-signature-910",
+    "cpp/reason-code-4",
+    "cpp/virtual-override-resolution"
+   ],
+   "redProven": true
+  },
+  "part_of": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 56,
+   "mutatedFail": 5,
+   "fixturesThatWentRed": [
+    "cpp/imports-include-910",
+    "cpp/include-kind-imports",
+    "cpp/include-name-924",
+    "cpp/part-of-quoted-include",
+    "cpp/part-of-stem-dedup-965"
+   ],
+   "redProven": true
+  },
+  "implements": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 59,
+   "mutatedFail": 2,
+   "fixturesThatWentRed": [
+    "cpp/implements-pure-virtual-interface",
+    "cpp/reason-code-4"
+   ],
+   "redProven": true
+  },
+  "overrides": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 53,
+   "mutatedFail": 8,
+   "fixturesThatWentRed": [
+    "cpp/cross-file-override",
+    "cpp/ctor-and-overload-regressions",
+    "cpp/exports-marker-910",
+    "cpp/extends-self-base-958",
+    "cpp/pure-virtual-abstract-919",
+    "cpp/pure-virtual-signature-910",
+    "cpp/reason-code-4",
+    "cpp/virtual-override-resolution"
+   ],
+   "redProven": true
+  },
+  "instantiates": {
+   "baselinePass": 61,
+   "baselineFail": 0,
+   "mutatedPass": 57,
+   "mutatedFail": 4,
+   "fixturesThatWentRed": [
+    "cpp/callsite-lines-825",
+    "cpp/friend-owner-name-recovery",
+    "cpp/metadata-line-base-873",
+    "cpp/system-completeness"
+   ],
+   "redProven": true
+  }
+ },
+ "redProofMethod": "the REAL RealCppAnalyzer wrapped so exactly one relationship value's edges are removed; the runner's own getParser grammar handoff is reproduced in the wrapper. baseline vs mutated are the same runner, same fixtures, same analyzer except for the removed value.",
+ "findings": [],
+ "ok": true
+}
