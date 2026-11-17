@@ -6499,9 +6499,10 @@ currentPackage,
           source: moduleName,
           target: required,
           type: ASTEngine.RelationshipType.Imports,
-          // 0.9 for `requires static`: the module is OPTIONAL at compile time and
-          // required at run time, so the dependency claim is discounted and the
-          // reason is machine-readable rather than silent (honesty contract §4).
+          // `requires static` is mandatory at compile time but optional at
+          // run time (JLS 7.7.1). The 0.9 tier denotes that weaker runtime
+          // dependency claim; the declaration itself is a structural fact.
+          // Keep the reason machine-readable (honesty contract §4).
           confidence: isStatic ? 0.9 : 1.0,
           line_number: line,
           metadata: {
