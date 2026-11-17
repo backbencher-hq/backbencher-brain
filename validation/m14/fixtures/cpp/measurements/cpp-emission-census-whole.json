@@ -1,0 +1,534 @@
+{
+  "population": {
+    "cap": 0,
+    "sampled": 7778,
+    "parsed": 7778,
+    "failed": 0,
+    "degraded": 0,
+    "admitted": 7778,
+    "repos": 18,
+    "absent": 0,
+    "overCap": 7,
+    "exts": [
+      "cpp",
+      "cc",
+      "cxx",
+      "c++",
+      "hpp",
+      "hxx",
+      "ipp",
+      "inl",
+      "cu"
+    ],
+    "sizeCapBytes": 1048576
+  },
+  "control": {
+    "ok": true,
+    "checked": "none (whole population)",
+    "detail": "whole-population run: no second instrument over this population; the internal control is closure (parsed+failed+degraded = admitted) and per-type sum = TOTAL"
+  },
+  "closure": {
+    "totalEdges": 1061394,
+    "parsedPlusFailed": 7778,
+    "constructWalked": 7778,
+    "constructSkipped": {
+      "overCap": 0,
+      "parseFailed": 0,
+      "noTree": 0
+    }
+  },
+  "perType": {
+    "calls": {
+      "edges": 738609,
+      "files": 6385,
+      "repos": 17
+    },
+    "contains": {
+      "edges": 151481,
+      "files": 6450,
+      "repos": 15
+    },
+    "uses": {
+      "edges": 115385,
+      "files": 4698,
+      "repos": 17
+    },
+    "part_of": {
+      "edges": 35207,
+      "files": 6672,
+      "repos": 17
+    },
+    "imports": {
+      "edges": 10801,
+      "files": 3223,
+      "repos": 17
+    },
+    "extends": {
+      "edges": 3717,
+      "files": 1624,
+      "repos": 13
+    },
+    "instantiates": {
+      "edges": 1695,
+      "files": 456,
+      "repos": 14
+    },
+    "overrides": {
+      "edges": 1692,
+      "files": 120,
+      "repos": 8
+    },
+    "references": {
+      "edges": 1560,
+      "files": 816,
+      "repos": 11
+    },
+    "exports": {
+      "edges": 977,
+      "files": 175,
+      "repos": 4
+    },
+    "implements": {
+      "edges": 270,
+      "files": 74,
+      "repos": 7
+    },
+    "decorates": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "renders": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    }
+  },
+  "perMarker": {
+    "field_access": {
+      "edges": 81589,
+      "files": 3852,
+      "repos": 15
+    },
+    "part_of_directive": {
+      "edges": 35207,
+      "files": 6672,
+      "repos": 17
+    },
+    "identifier_usage": {
+      "edges": 33796,
+      "files": 2559,
+      "repos": 16
+    },
+    "include_dependency": {
+      "edges": 10801,
+      "files": 3223,
+      "repos": 17
+    },
+    "using_dependency": {
+      "edges": 1560,
+      "files": 816,
+      "repos": 11
+    },
+    "module_export": {
+      "edges": 977,
+      "files": 175,
+      "repos": 4
+    }
+  },
+  "markerByType": {
+    "uses\u0000field_access": {
+      "edges": 81589,
+      "files": 3852,
+      "repos": 15
+    },
+    "part_of\u0000part_of_directive": {
+      "edges": 35207,
+      "files": 6672,
+      "repos": 17
+    },
+    "uses\u0000identifier_usage": {
+      "edges": 33796,
+      "files": 2559,
+      "repos": 16
+    },
+    "imports\u0000include_dependency": {
+      "edges": 10801,
+      "files": 3223,
+      "repos": 17
+    },
+    "references\u0000using_dependency": {
+      "edges": 1560,
+      "files": 816,
+      "repos": 11
+    },
+    "exports\u0000module_export": {
+      "edges": 977,
+      "files": 175,
+      "repos": 4
+    }
+  },
+  "callPayload": {
+    "qualifiedPath": {
+      "qualified-path-carried": {
+        "edges": 738609,
+        "files": 6385,
+        "repos": 17
+      }
+    }
+  },
+  "exportPayload": {
+    "macros": {
+      "DUCKDB_API": {
+        "edges": 629,
+        "files": 128,
+        "repos": 1
+      },
+      "SKWASM_EXPORT": {
+        "edges": 214,
+        "files": 26,
+        "repos": 1
+      },
+      "LZ4LIB_API": {
+        "edges": 38,
+        "files": 1,
+        "repos": 1
+      },
+      "G_MODULE_EXPORT": {
+        "edges": 32,
+        "files": 9,
+        "repos": 1
+      },
+      "GTEST_API_": {
+        "edges": 27,
+        "files": 1,
+        "repos": 1
+      },
+      "XXH_PUBLIC_API": {
+        "edges": 14,
+        "files": 2,
+        "repos": 1
+      },
+      "_LIBUNWIND_EXPORT": {
+        "edges": 9,
+        "files": 3,
+        "repos": 1
+      },
+      "UTF8PROC_DLLEXPORT": {
+        "edges": 6,
+        "files": 2,
+        "repos": 1
+      },
+      "ZDICTLIB_STATIC_API": {
+        "edges": 4,
+        "files": 2,
+        "repos": 1
+      },
+      "LZ4LIB_STATIC_API": {
+        "edges": 2,
+        "files": 1,
+        "repos": 1
+      },
+      "FLUTTER_EXPORT": {
+        "edges": 2,
+        "files": 1,
+        "repos": 1
+      }
+    },
+    "spellings": {
+      "(none)": {
+        "edges": 977,
+        "files": 175,
+        "repos": 4
+      }
+    }
+  },
+  "overridePayload": {
+    "reasonCodes": {
+      "override-keyword+signature-match": {
+        "edges": 1396,
+        "files": 102,
+        "repos": 5
+      },
+      "signature-match": {
+        "edges": 296,
+        "files": 47,
+        "repos": 7
+      }
+    }
+  },
+  "implementsPayload": {
+    "pure-virtual-base\u0000pureVirtuals=1": {
+      "edges": 153,
+      "files": 37,
+      "repos": 4
+    },
+    "pure-virtual-base\u0000pureVirtuals=2": {
+      "edges": 50,
+      "files": 18,
+      "repos": 6
+    },
+    "pure-virtual-base\u0000pureVirtuals=3": {
+      "edges": 18,
+      "files": 10,
+      "repos": 2
+    },
+    "pure-virtual-base\u0000pureVirtuals=4": {
+      "edges": 17,
+      "files": 8,
+      "repos": 3
+    },
+    "pure-virtual-base\u0000pureVirtuals=5": {
+      "edges": 5,
+      "files": 3,
+      "repos": 2
+    },
+    "pure-virtual-base\u0000pureVirtuals=6": {
+      "edges": 5,
+      "files": 4,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=22": {
+      "edges": 4,
+      "files": 2,
+      "repos": 2
+    },
+    "pure-virtual-base\u0000pureVirtuals=13": {
+      "edges": 4,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=8": {
+      "edges": 3,
+      "files": 2,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=9": {
+      "edges": 3,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=16": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=26": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=17": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=14": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=11": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=27": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "pure-virtual-base\u0000pureVirtuals=7": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "importsPayload": {
+    "includeSpelling": {
+      "angle": {
+        "edges": 10801,
+        "files": 3223,
+        "repos": 17
+      }
+    }
+  },
+  "instantiatesPayload": {
+    "isNew": {
+      "edges": 1695,
+      "files": 456,
+      "repos": 14
+    }
+  },
+  "usesPayload": {
+    "field_access": {
+      "edges": 81589,
+      "files": 3852,
+      "repos": 15
+    },
+    "identifier_usage": {
+      "edges": 33796,
+      "files": 2559,
+      "repos": 16
+    }
+  },
+  "referencesPayload": {
+    "using_dependency": {
+      "edges": 1560,
+      "files": 816,
+      "repos": 11
+    }
+  },
+  "containsPayload": {
+    "named-owner": {
+      "edges": 146309,
+      "files": 6271,
+      "repos": 15
+    },
+    "global-pseudo-container": {
+      "edges": 5172,
+      "files": 807,
+      "repos": 14
+    }
+  },
+  "constructs": {
+    "template_type": {
+      "edges": 73640,
+      "files": 5081,
+      "repos": 15
+    },
+    "template_declaration": {
+      "edges": 12100,
+      "files": 1134,
+      "repos": 12
+    },
+    "struct_specifier": {
+      "edges": 9947,
+      "files": 2218,
+      "repos": 14
+    },
+    "namespace_definition": {
+      "edges": 8759,
+      "files": 6058,
+      "repos": 14
+    },
+    "lambda_capture_specifier": {
+      "edges": 8659,
+      "files": 1374,
+      "repos": 12
+    },
+    "lambda_expression": {
+      "edges": 8626,
+      "files": 1370,
+      "repos": 12
+    },
+    "virtual_specifier": {
+      "edges": 8085,
+      "files": 1220,
+      "repos": 10
+    },
+    "class_specifier": {
+      "edges": 6623,
+      "files": 2161,
+      "repos": 14
+    },
+    "operator_name": {
+      "edges": 3909,
+      "files": 623,
+      "repos": 12
+    },
+    "base_class_clause": {
+      "edges": 3695,
+      "files": 1633,
+      "repos": 13
+    },
+    "destructor_name": {
+      "edges": 3078,
+      "files": 1755,
+      "repos": 15
+    },
+    "using_declaration": {
+      "edges": 2370,
+      "files": 956,
+      "repos": 12
+    },
+    "new_expression": {
+      "edges": 1996,
+      "files": 547,
+      "repos": 15
+    },
+    "enum_specifier": {
+      "edges": 1473,
+      "files": 605,
+      "repos": 10
+    },
+    "friend_declaration": {
+      "edges": 734,
+      "files": 174,
+      "repos": 5
+    },
+    "structured_binding_declarator": {
+      "edges": 309,
+      "files": 122,
+      "repos": 8
+    },
+    "template_instantiation": {
+      "edges": 263,
+      "files": 24,
+      "repos": 6
+    },
+    "operator_cast": {
+      "edges": 198,
+      "files": 77,
+      "repos": 8
+    },
+    "pure_virtual_clause": {
+      "edges": 74,
+      "files": 23,
+      "repos": 3
+    },
+    "union_specifier": {
+      "edges": 68,
+      "files": 49,
+      "repos": 8
+    },
+    "namespace_alias_definition": {
+      "edges": 17,
+      "files": 12,
+      "repos": 2
+    },
+    "requires_clause": {
+      "edges": 8,
+      "files": 2,
+      "repos": 1
+    },
+    "concept_definition": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "requires_expression": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    }
+  },
+  "multipleInheritance": {
+    "totalBases": {
+      "edges": 3790,
+      "files": 0,
+      "repos": 0
+    },
+    "classesWithMultipleBases": {
+      "edges": 66,
+      "files": 46,
+      "repos": 4
+    }
+  },
+  "parseErrors": []
+}
