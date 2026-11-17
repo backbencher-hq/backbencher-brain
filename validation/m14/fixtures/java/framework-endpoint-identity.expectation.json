@@ -22,8 +22,8 @@
   "forbidRelationships": [
     {
       "type": "exports",
-      "from": "FakeEndpoint.method",
-      "target": "/not-a-route"
+      "target": "/not-a-route",
+      "meta.isApiEndpoint": true
     },
     {
       "type": "calls",
@@ -31,10 +31,10 @@
       "target": "not-an-http-client"
     }
   ],
-  "expectApiContractPaths": [
+  "forbidApiContractPaths": [
     {
       "symbol": "method",
-      "equals": null
+      "ownerName": "FakeEndpoint"
     }
   ]
 }
