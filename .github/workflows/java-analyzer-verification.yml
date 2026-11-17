@@ -69,7 +69,7 @@ jobs:
               "java/spring-repository-redeclaration",
               "java/spring-requestmethod-identity",
           }
-          actual_failures = set(re.findall(r"^FAIL\\s+(java/[^\\s]+)", content, re.MULTILINE))
+          actual_failures = set(re.findall(r"^FAIL\s+(java/[^\s]+)", content, re.MULTILINE))
           assert expected_failures <= actual_failures, f"regression controls not red: {sorted(expected_failures - actual_failures)}"
           assert java["fail"] >= len(expected_failures), f"new regressions did not go red on baseline: {java}"
           print("Regression sensitivity proved on baseline:", java, sorted(actual_failures))
