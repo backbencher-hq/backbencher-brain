@@ -1114,3 +1114,36 @@ rows become NULL here) and is a correctness-over-recall trade the lane should ta
 
 The instrument condition from §14.15 is now CONFIRMED and quantified: an index arm that omits
 `complete` measures a dead channel — §14.15's zero was the instrument, not the channel.
+
+### 14.17 · Receiver-shape census on this corpus — the local size of W1-C, as an upper bound
+
+Committed as `script/cpp-audit/receiver-shape-census.ts` (analyzer output only; it sizes the work and
+makes no resolution claim). Measured over 523 files:
+
+| measure | value |
+|---|---|
+| calls+uses rows | 63,954 |
+| … whose target is a name SOME class declares as a member | **35,605 (55.7%)** |
+| … of those, already carrying `metadata.owner` in the DEFAULT state | **0** |
+| … emitted from a class member (the source symbol has an `ownerName`, so an owner anchor exists) | **20,580** |
+| … emitted from file scope (no anchor) | **15,025** |
+| distinct member leaf names | 4,126 |
+
+**Read it as an UPPER BOUND, not a count of real receivers.** A free call to `size()` matches the
+member-leaf test because `size` is a member *somewhere*; the probe says so in its header. What it
+establishes is the scale of the opportunity and its shape:
+
+- the default (per-file) analyzer emits **zero** owner facts, so every one of the 35,605 rows is
+  currently bound by bare name — which is exactly the wall;
+- **20,580 (58%)** of them are emitted from inside a class member, where the enclosing class is
+  already known from the source symbol. That is the population a receiver-typed shape can address
+  without inventing anything: the anchor is published, and the question is only whether that class
+  declares the leaf;
+- the other **15,025** have no anchor at all and need genuine type inference (parameters, members,
+  returns), i.e. the larger campaign.
+
+**So the next in-lane step is concrete and bounded:** implement one new shape — a call emitted from a
+class member whose enclosing class (or an index ancestor) declares the target leaf — and measure how
+many of the 20,580 it converts. That is a check against published facts (the analyzer's own symbols,
+or the project index), not inference. Everything beyond it is the inference project and stays recorded
+as such.
