@@ -90,7 +90,7 @@ jobs:
           set -e
           cp /tmp/bb-java-fixed-indexer.ts src/ast/parallel-indexer.ts
           test "$old_status" -ne 0
-          grep -q 'JAVA_SQLITE_E2E_FAIL' /tmp/bb-java-sqlite-red.log
+          grep -Eq 'JAVA_SQLITE_E2E_FAIL: (two Java files x two import channels|file-level edges attached)' /tmp/bb-java-sqlite-red.log
           echo "JAVA_SQLITE_RED_CONTROL_PASS: original indexer fails the new database invariants"
       - name: Java M12 differential — enforce recorded baseline without hiding failures
         shell: bash
