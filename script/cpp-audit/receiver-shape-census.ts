@@ -35,12 +35,40 @@
  * a member LEAF somewhere — that is necessary, not sufficient, for owner qualification.
  *
  * Usage: bun run script/cpp-audit/receiver-shape-census.ts [--json]
+ *        [--repos=fmt,nlohmann-json]   named repos under .cpp-corpus/ (the default pair)
+ *        [--root=.cpp-corpus/.corpus]  a whole corpus root; every direct subdirectory is a repo
  */
 import { readFileSync, readdirSync, statSync } from "node:fs"
-import { join, extname } from "node:path"
+import { join, extname, resolve } from "node:path"
 import { ASTEngine } from "../../src/ast/engine"
 
-const CORPUS = ["fmt", "nlohmann-json"]
+const argOf = (f: string): string | null => {
+  const hit = process.argv.find((a) => a.startsWith(`${f}=`))
+  return hit ? hit.slice(f.length + 1) : null
+}
+const DEFAULT_CORPUS_ROOT = join(process.cwd(), ".cpp-corpus")
+const ROOT_ARG = argOf("--root")
+const REPOS_ARG = argOf("--repos")
+/**
+ * THE POPULATION. Default = the two pinned repos the evidence artifact was measured on. `--repos=`
+ * selects other named repos under `.cpp-corpus/`. `--root=` selects a WHOLE corpus root (every
+ * direct subdirectory is a repository) — used for the reconstructed whole-population corpus, whose
+ * repositories live under `.cpp-corpus/.corpus/` so the wall instruments' `repoOf` marker holds.
+ */
+const CORPUS_ROOTS: string[] = (() => {
+  if (ROOT_ARG) {
+    const abs = resolve(ROOT_ARG)
+    let entries: string[] = []
+    try { entries = readdirSync(abs) } catch { return [] }
+    return entries
+      .filter((e) => {
+        try { return statSync(join(abs, e)).isDirectory() } catch { return false }
+      })
+      .map((e) => join(abs, e))
+  }
+  const names = REPOS_ARG ? REPOS_ARG.split(",").map((x) => x.trim()).filter(Boolean) : ["fmt", "nlohmann-json"]
+  return names.map((r) => join(DEFAULT_CORPUS_ROOT, r))
+})()
 const EXTS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h", ".ipp", ".inl", ".cu"])
 
 function walk(dir: string, out: string[]): void {
@@ -74,7 +102,7 @@ interface Row {
 async function main(): Promise<void> {
   const asJson = process.argv.includes("--json")
   const files: string[] = []
-  for (const repo of CORPUS) walk(join(process.cwd(), ".cpp-corpus", repo), files)
+  for (const root of CORPUS_ROOTS) walk(root, files)
 
   const recs: Array<{ symbols: any[]; rels: Row[] }> = []
   for (const f of files.sort()) {
@@ -176,7 +204,7 @@ async function main(): Promise<void> {
   }
 
   const out = {
-    corpus: { roots: CORPUS, files: recs.length },
+    corpus: { roots: CORPUS_ROOTS.map((r) => r.replace(`${process.cwd()}/`, "")), files: recs.length },
     memberLeafNames: memberLeafs.size,
     callUseRows,
     memberLeafRows: memberRows,
