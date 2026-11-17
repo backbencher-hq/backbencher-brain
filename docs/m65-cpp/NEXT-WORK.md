@@ -1074,7 +1074,43 @@ must print whether the analyzer SAW a usable index (`complete === true`), or it 
 "the channel is dead" from "the channel is unused" — the same class as every other proxy this lane has
 caught. Until an instrument prints that, its zero is not evidence.
 
+**SUPERSEDED BY §14.16** — the complete-walk re-measurement was done and the channel is LIVE; the "0 movement" above was the incomplete index, exactly as hypothesised. The next-step paragraph below is kept as the record of the plan that was executed.
+
 **Next step, measured and bounded:** either make the 2-repo arm declare a complete walk and re-measure
 (the cheap confirmation), or ship `BB_CPP_INDEX_CONSUME` by default behind a kill-switch and price it
 with the whole-population number as the expected effect. Both are concrete; the first is the
 prerequisite for trusting the second.
+
+### 14.16 · Index CONSUMPTION measured on a complete walk — the channel is live, and it lowers `resolved` on purpose
+
+The §14.15 hypothesis was right: with the stride cap removed (`maxFiles 0`, so the index can be
+`complete`), the owner channel fires on the 2-repo corpus.
+
+| measure | value |
+|---|---|
+| rows carrying `metadata.owner` | **4,387** |
+| owner channel resolved | **3,320** (direct 2,721 · sameKindDuplicate 599) |
+| owner channel declined | 1,067 (ownerAmbiguous 843 · noMember 224) |
+| rows the NAME model called ambiguous/unresolved and the channel RESOLVES | **151** |
+| rows the channel DECLINED whose name model answer would have resolved — production holds these **NULL** | **858** |
+
+**Why the totals get worse, not better.** Versus the per-file arm: `resolved` 51,743 → **51,036
+(−707)**, `ambiguous` 18,604 → **18,244 (−360)**, `unresolved` 8,002 → **8,287 (+285)**. That is not a
+regression: production's rule is that a row which STATES its receiver and whose owner channel DECLINES
+must not fall back to the bare-name answer, because the bare-name answer is precisely the wrong-owner
+binding the channel exists to catch. The arm trades **707 name-model bindings for 3,320 owner-verified
+ones and 858 withdrawn bindings**. `resolved` is a count of bindings, not a quality score.
+
+**What this means for shipping `BB_CPP_INDEX_CONSUME`.** It is now a decision with exact arithmetic
+rather than a hunch: default-on makes cpp's resolved count FALL by ~1.4% on this corpus while every
+surviving binding at a receiver-bearing row is defensible, and the whole-population arm measured the
+same shape at scale (+17,955 owner-resolved / −22,656 ambiguous / +4,701 honest NULLs). It does **not**
+get the incoming gate closer to passing clause 1 here (18,244 + 8,287 = 26,531 vs 25,824 before), which
+is the honest answer to "does this close the wall": no — it improves the answers, not the count.
+
+**Recorded as a decision for the owner/Lead, with the kill-switch already in place**:
+`BB_CPP_INDEX_CONSUME=1` is the arm; shipping it default-on changes production's stored bindings (858
+rows become NULL here) and is a correctness-over-recall trade the lane should take deliberately.
+
+The instrument condition from §14.15 is now CONFIRMED and quantified: an index arm that omits
+`complete` measures a dead channel — §14.15's zero was the instrument, not the channel.
