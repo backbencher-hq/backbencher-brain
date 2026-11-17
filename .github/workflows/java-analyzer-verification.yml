@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for the pre-fix red-control comparison
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -43,6 +45,23 @@ jobs:
           assert java["fail"] == 0, f"Java fixtures failed: {java}"
           print("Java fixture gate verified:", java)
           PY
+      - name: Prove the new fixtures catch the pre-fix defects
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp src/ast/real-java-analyzer.ts /tmp/bb-fixed-java-analyzer.ts
+          git show 29a579243458490ff23d8de3f7f8f46aad120a43:src/ast/real-java-analyzer.ts > src/ast/real-java-analyzer.ts
+          bun run script/m14/run-fixtures.ts --lang java | tee /tmp/java-prefixed-baseline.log || true
+          python3 - <<'PY'
+          import json, pathlib, re
+          content = pathlib.Path("/tmp/java-prefixed-baseline.log").read_text()
+          summaries = re.findall(r"^summary:\s*(\{.*\})\s*$", content, re.MULTILINE)
+          assert summaries, "pre-fix fixture run did not emit a summary"
+          java = json.loads(summaries[-1])["java"]
+          assert java["fail"] >= 4, f"new regressions did not go red on baseline: {java}"
+          print("Regression sensitivity proved on baseline:", java)
+          PY
+          cp /tmp/bb-fixed-java-analyzer.ts src/ast/real-java-analyzer.ts
       - name: Independently compiled Java oracle facts
         shell: bash
         run: |
