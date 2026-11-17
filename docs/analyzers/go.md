@@ -159,6 +159,33 @@ production `parseFile` on real corpus. The two types absent at handover (`export
 were GAPs and are now EMITTED; both were implemented by `analyzer/GO` and both are re-measured here
 rather than adopted on its word.
 
+> **CORRECTED 2026-11-16 — the paragraph above is the handover reading and has been wrong twice
+> over since it was written.** It is kept verbatim per this document's convention (handover text is
+> compared, not rewritten), but no reader should quote it:
+>
+> - **"All ten types" is a ten-value-era count.** The canonical enum carries **14** values now
+>   (`decorates`, `mixes_in`, `part_of`, `renders` were added).
+> - **"Nothing is RULED" is false.** **Two** types are ruled out, both as *language-level*
+>   absence: `decorates` (Go has no applied callable — an annotation is passive metadata) and
+>   `part_of` (Go has no `part`/`include`/`#load` construct; a package's file set is assembled by
+>   the build system, and `//go:embed` includes data bytes — 47 literal `.go` targets, 0 source
+>   inclusions). **Nothing is ruled because the grammar cannot parse it.** That distinction is the
+>   whole point: a grammar-blocked type is a missing capability to repair, never a ruling. Both
+>   exclusions were re-filed from `grammar-absence` to `ontological` in
+>   `script/m14/spec/go-completeness.json` on 2026-11-16 exactly so a reader cannot mistake
+>   `part_of` for a `grammar-remedy` case.
+> - **The `brain_import` row describes a defect that no longer exists.** `src/ast/types.ts:112`
+>   now declares `Imports = "imports"`, the value analyzers emit and consumers read, so the
+>   "canonical enum value never appears" mismatch is gone. Re-measured over four Go repos
+>   (13,523 files, 1,431,632 relationships): **0 off-enum values emitted**.
+>
+> Current per-type state, measured on that same four-repo population: **12 of 14 fire**
+> (`calls` 477,612 · `contains` 121,334 · `references` 245,238 · `uses` 338,304 · `exports`
+> 130,449 · `imports` 58,990 · `instantiates` 54,646 · `mixes_in` 2,539 · `implements` 1,969 ·
+> `extends` 431 · `overrides` 110 · `renders` 10); the **2 silent** ones are the two language-level
+> exclusions above. `mixes_in` (struct embedding) and `extends` (interface embedding) are the
+> contract's deliberate split, not a missing label — reason codes at `real-go-analyzer.ts:149-150`.
+
 ### The six questions, per emitted type
 
 Question 3 is answered with a second walker, `validation/m14/go/go-oracle.ts`, written from

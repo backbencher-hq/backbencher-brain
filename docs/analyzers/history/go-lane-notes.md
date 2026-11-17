@@ -675,6 +675,93 @@ The lesson is the one this lane keeps relearning: **a lane note is a measurement
 un-remeasured claim becomes a lie by aging.** The corrected paragraph keeps the old figure visible and
 says it was corrected rather than deleting it, so the next reader can see the shape of the error.
 
+## Round 10 (2026-11-16): every relationship type audited, and GO-GAP-1 closed with a grammar pin
+
+This round asked the question the previous rounds had not: **which of the 14 canonical types does
+the lane NOT emit, and is each exclusion legitimate?** The owner's rule is narrow — a type may be
+ruled out only when Go genuinely cannot express it. If Go can express it and only the grammar
+cannot parse it, the ruling is invalid and the grammar gets fixed.
+
+### The audit: 12 fire, 2 ruled, 0 wrongly ruled
+
+Re-measured over four Go repos (13,523 files, 1,431,632 relationships), not quoted:
+
+| type | state | evidence |
+| --- | --- | --- |
+| `calls` | FIRES 477,612 | four push sites, 0.8/0.9 |
+| `references` | FIRES 245,238 | declared-type pass, 0.95 |
+| `uses` | FIRES 338,304 | channel/selector/identifier reads |
+| `contains` | FIRES 121,334 | ownerName pass, 1.0 |
+| `exports` | FIRES 130,449 | exported-identifier convention |
+| `imports` | FIRES 58,990 | module-path targets |
+| `instantiates` | FIRES 54,646 | composite literals + PascalCase ctors |
+| `mixes_in` | FIRES 2,539 | struct embedding (deliberate relabel) |
+| `implements` | FIRES 1,969 | interface satisfaction |
+| `extends` | FIRES 431 | interface embedding (the split's other half) |
+| `overrides` | FIRES 110 | promotion shadowing |
+| `renders` | FIRES 10 | `html/template` execution host |
+| `decorates` | **RULED — ontological** | Go has no applied callable; annotation forms are passive metadata |
+| `part_of` | **RULED — ontological** | Go has no `part`/`include` directive; `//go:embed` includes bytes (0 source inclusions) |
+
+**No type is grammar-blocked, and no type is wrongly ruled.** Both exclusions pass the owner's test.
+
+The one defect the audit found was a **label**, and it mattered because it was the exact label the
+rule forbids: `part_of` was filed under `"evidence": "grammar-absence"` in
+`script/m14/spec/go-completeness.json`, and the closure line read `14 - 1 grammar-absence - 1
+ontological`. `grammar-absence` reads as "we could emit this if the parser were better", which is
+false — there is no Go construct to parse. Both entries are now `ontological` and the closure reads
+`14 - 2 ontological … and 0 grammar-absence`, so no future reader can mistake `part_of` for a
+grammar-remedy case. The ruling's *substance* was already correct; only its classification lied.
+
+Also corrected in `go.md`: the handover claim "Nothing is RULED. All ten types name a construct Go
+expresses" (wrong on both counts — two types are ruled and there are 14 values), and the
+`brain_import` row describing an enum mismatch that `src/ast/types.ts:112` no longer has
+(re-measured: **0 off-enum values emitted**).
+
+### GO-GAP-1: closed by pinning a grammar commit, not by patching a grammar
+
+`GO-GAP-1` was registered as "grammar capability, NOT hidable" — two legal Go constructs with no
+representation, and recovery swallowing the declarations after them. The registered blast radius
+("3 of 1,931 go-tools files, 92 declarations") **understated it by an order of magnitude.** On the
+real corpus file `go-tools/.../testdata/src/slicesbackward/slicesbackward.go`:
+
+| | old wired build | pinned build |
+| --- | --- | --- |
+| symbols | **1** | **40** |
+| parse errors | 195 | **0** |
+| `contains` edges | 0 | 4 |
+
+39 of 40 declarations were being lost. The fix is a **stock build of `tree-sitter-go` @ `e395081`**
+("feat: support type instantiation expressions") — an upstream commit, not a modified grammar.
+Deliberately NOT HEAD: the later `b82ab80` renames `constraint_elem`→`type_elem` and
+`method_spec`→`method_elem`, and building HEAD regresses the lane (`extends` and `implements` to 0,
+symbols 58,489→56,373). `e395081` adds the instantiation production while preserving the node
+contract, and both sides are ABI 14.
+
+**The analyzer half was required, not optional.** The newer grammar types a generic call as
+`type_conversion_expression` over a `generic_type` instead of a `call_expression` with an
+`identifier` function; with no handler, the grammar alone silences 140 corpus calls and 2 fixtures.
+Three call sites plus `resolveGoCallLeaf` learned the shape. The type/call decision stays semantic
+via `isGoPackageCallable`, so a conversion to a generic *type* still publishes no call — verified
+three ways: `identity[int](x)`→`calls`, `int(x)`→nothing, `Vec[int]{v: x}`→`instantiates`.
+
+Cost, measured on go-tools+terraform (3,422 files, `testdata/` excluded): symbols and `calls`
+**identical**, relationships −22, and the 22 are **fabricated** recovery edges removed — the class
+`go/grammar-error-not-a-construction-889` exists to forbid. The census excludes `testdata/`, which
+is where most GO-GAP-1 damage lived, so the flat aggregate is not evidence against the fix.
+
+Pin registered in `PATCHED_GRAMMAR_SHA256` (digest the resolver verifies) and
+`grammars/tree-sitter-go/PIN.md` (revision, provenance, why-not-HEAD, full A/B). Fixture
+`go/generic-instantiation-recovery` pins the recovery boundary.
+
+### Still open, and honestly not a grammar defect
+
+`GO-GAP-3`: `func (T) NoName()` and `func (s) Untyped()` produce identical trees — the lone
+identifier lands in the receiver's TYPE slot either way — so 1,203 `contains` edges rest on a
+reading the grammar cannot settle. Go resolves it semantically, so the remedy is package-scope type
+resolution in the analyzer. Separately, `GO-GAP-2`'s 4 EXTRA `uses` rows are an analyzer superset on
+`testdata/` fixtures, not hidden reads.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/go/`
@@ -685,4 +772,6 @@ says it was corrected rather than deleting it, so the next reader can see the sh
 - GO39 fixture: `validation/m14/fixtures/go/const-inherit-type.go` + `.expectation.json`
 - GO39 corpus counts (per chunk, reproducible): `.tmp-j/chunk_aa` … `.tmp-j/chunk_ah`, 15,914 files
 - GO40 fixture: `validation/m14/fixtures/go/package-var-func-type-source.go` + `.expectation.json`
+- GO-GAP-1 fixture: `validation/m14/fixtures/go/generic-instantiation-recovery.go` + `.expectation.json`
+- Grammar pin: `grammars/tree-sitter-go/PIN.md` + `src/ast/engine.ts` `PATCHED_GRAMMAR_SHA256`
 - Docs: this file + `go.md`
