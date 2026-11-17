@@ -79,3 +79,26 @@ proved the second channel is contractually required.
 This corrects an actual end-to-end defect and extends verification depth,
 but does not replace the missing pinned large-corpus, API-level reference
 attribution, or fully passing M12 differential.
+
+
+## 2026-11-17 — Independently attributed M12 Java compiler proof
+
+[Successful Java CI job 44025860094](https://github.com/backbencher-hq/backbencher-brain/actions/runs/44025860094)
+ran the four actual `validation/m12/fixtures/java` source files through
+Java 21's `JavacTask`, with a minimal isolated Spring stereotype stub.
+`JavaM12CompilerAdjudication.java` verified **24/24 attributed compiler
+facts**: declarations of nested/record/enum/interface types, true generic
+and nested-interface overrides, a false-overload negative control, and
+fully-qualified Spring annotation identity.
+
+The three earlier compiler oracles remain **12/12 + 13/13 + 15/15**,
+for a total **64/64** compiler checks in that CI run. The Java M14
+fixtures remain **104/104**, the original analyzer fails the 10 named
+regression fixtures, and the SQLite file-level dependency test and
+its original-indexer negative control pass.
+
+**Limit:** these 24 independent facts validate specific disputed Java
+semantics but DO NOT cover all 105 false-positive or 21 false-negative M12
+IDs. The differential itself remains `passed:false`; no M12 ground truth
+was rewritten. The pinned Java full corpus and query-level consumer
+acceptance gates also remain outstanding.
