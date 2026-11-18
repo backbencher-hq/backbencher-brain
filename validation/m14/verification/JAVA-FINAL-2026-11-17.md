@@ -407,6 +407,46 @@ every consumer read those rows, and every override fixture pins the leaf form.
 That is the one item left, it is 4 edge identities out of 116 truth facts, no
 information is missing, and it is blocked on a migration rather than on analysis.
 
+## 6c. Addressable-ambiguity disposition — final, per kind
+
+Every kind the baseline listed as addressable, and what this goal did about it.
+"Addressable" means: a project-scoped name rule could settle it without a
+cross-lane migration.
+
+| kind | amb at baseline | amb now | disposition |
+| --- | ---: | ---: | --- |
+| references | 62,861 | **59,180** | **DONE.** Import-evidenced targets re-spelled (`f4a3e93a5`), red-controlled by `java/importdisambig/` (`ee78beb36`). Residual 59,180 are bare names with no import evidence in the file. |
+| instantiates | 11,604 | **11,532** | **DONE.** Same mechanism as heritage (`ad110d697`). |
+| extends | 2,861 | **2,849** | **DONE.** Import-evidenced re-spelled (`9ece20d99`). Residual is external bases with no import to prove them — the external-claim variant was measured and reverted (extFAIL 0→1). |
+| implements | 45 | **14** | **DONE.** Same mechanism. |
+| exports | 12 | 12 | **n/a** — module-level, already qualified. |
+| imports | 1,131 | 1,131 | **n/a** — targets are module paths (`java.util.List`), already fully qualified. |
+| uses | 11,699 | 11,699 | **not addressable by type qualification.** Targets are table names, column names, config keys and FIELD names (`id`, `name`, `ACTIVE`) — none is a type. See §6c.1. |
+| calls | 76,579 | 76,579 | **not addressable by name disambiguation.** 75,001 carry no `owner` key: the receiver type is unknown, so there is no owner to qualify with. The 110,031 calls that DO carry `owner+ownerEvidence` have ZERO ambiguity. See §6c.2. |
+
+**Net: resolved 655,394 → 659,190 (+3,796); amb 166,792 → 162,996 (−3,796);
+clause-1 mass 313,321 → 309,525 (−3,796); extFAIL/bindFAIL/causeFAIL 0
+throughout.** The unresolved count is unchanged at 146,529, which is correct:
+those targets name no declaration in the repository.
+
+### 6c.1 `uses` is not a type target
+
+Emission sites write: a table name (mapped_table), a column name (mapped_column),
+a config key (`@Value`), and `parts[parts.length - 1]` — the FIELD name a read
+touches. The ground truth confirms it: `User -> id`, `User -> name`,
+`Status -> ACTIVE`. Package qualification has no meaning for a field name, so
+this ambiguity is not addressable by the mechanism this goal built. It would
+need member-identity disambiguation (owner-qualified members), which is the same
+cross-lane migration that blocks `calls`.
+
+### 6c.2 `calls` — receiver-type inference, not name disambiguation
+
+See the marker table in §6b's successor section and
+`JAVA-CALLS-AMBIGUITY-2026-11-17.txt`. 75,001 of 76,579 ambiguous calls have no
+`owner` metadata key at all. The mechanism is proven: rows that DO carry an
+owner resolve with zero ambiguity (110,031 of them). Closing the rest requires
+inferring the receiver's type — a distinct capability, not a spelling fix.
+
 ## 7. Status
 
 The Java analyzer is **verified within a declared support boundary**: 110
