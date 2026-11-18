@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "20161f61856d98db0c5dbcbe76cb51f3dfaa7aaf6a1a6678d335c1793d2953a5",
-    "sealedAt": "2026-11-15T04:33:45.000Z"
+    "contentSha256": "327712c7258b6f42dfd8a06cb0bb5a53bbc1cac95b5b0f4d4ba36a5719204037",
+    "sealedAt": "2026-11-18T18:45:12.000Z"
   },
   "checks": [
     {
@@ -31,7 +31,7 @@
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "98/98 fixtures pass",
+      "detail": "99/99 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -49,13 +49,13 @@
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "121/121 fixtures pass",
+      "detail": "124/124 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "80/80 fixtures pass",
+      "detail": "113/113 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -85,7 +85,7 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "58/58 fixtures pass",
+      "detail": "64/64 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -103,7 +103,7 @@
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "40/40 fixtures pass",
+      "detail": "49/49 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "f5325a90939a3d80a3d400b7465e141837fcddda",
-  "committedAt": "2026-11-14T23:33:45-05:00",
+  "commit": "574efbfb8f9300da1fe130eb55904f0a3654567e",
+  "committedAt": "2026-11-18T13:45:12-05:00",
   "data": {
     "details": [
       {
@@ -1098,6 +1098,11 @@
       },
       {
         "fixture": "javascript/field-owner-class-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/flow-implements-clause",
         "ok": true,
         "problems": []
       },
@@ -2132,6 +2137,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/field-named-accessor",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/field-uses",
         "ok": true,
         "problems": []
@@ -2278,6 +2288,11 @@
       },
       {
         "fixture": "typescript/named-class-expression-is-declaration",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/named-function-expression-source",
         "ok": true,
         "problems": []
       },
@@ -2537,6 +2552,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/uses-owner-channel",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/visibility-payload",
         "ok": true,
         "problems": []
@@ -2687,6 +2707,31 @@
         "problems": []
       },
       {
+        "fixture": "java/framework-annotation-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/framework-endpoint-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/framework-import-shadow",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/framework-jpa-bean-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/framework-jpa-positive",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/generic-override-signatures",
         "ok": true,
         "problems": []
@@ -2703,6 +2748,31 @@
       },
       {
         "fixture": "java/generics-bounds",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/heritagedisambig/Child",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/heritagedisambig/Owners",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/heritagedisambig/Widget",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/implicit-object-equals",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/implicit-object-methods",
         "ok": true,
         "problems": []
       },
@@ -2732,6 +2802,36 @@
         "problems": []
       },
       {
+        "fixture": "java/importdisambig/Filter",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/importdisambig/ToolOwners",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/importdisambig/Use",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/inherited-chain/Base",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/inherited-chain/Middle",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/inherited-chain/Use",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/initializer-calls",
         "ok": true,
         "problems": []
@@ -2752,7 +2852,17 @@
         "problems": []
       },
       {
+        "fixture": "java/jaxrs-method-vs-locator",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/jpms-module-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/lexical-builtin-import-precedence",
         "ok": true,
         "problems": []
       },
@@ -2763,6 +2873,21 @@
       },
       {
         "fixture": "java/library-namespace-citations",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/local-builtin-name-shadowing",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/lombok-accessor-restrictions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/lombok-boolean-accessors",
         "ok": true,
         "problems": []
       },
@@ -2822,12 +2947,57 @@
         "problems": []
       },
       {
+        "fixture": "java/override-generic-method-return-consistency",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/override-guess-tier",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "java/override-inherited-member-visibility",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-inherited-qualified-member-chain",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/override-key-parameter-lists",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-lexical-parent-resolution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-private-member-inaccessible-abstain",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-private-member-same-top-level-package",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-qualified-import-head",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-single-type-import-shadow",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-unbounded-method-alpha-equivalence",
         "ok": true,
         "problems": []
       },
@@ -2848,6 +3018,11 @@
       },
       {
         "fixture": "java/phantom-contains-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/project-owned-jakarta-namespace",
         "ok": true,
         "problems": []
       },
@@ -2913,6 +3088,16 @@
       },
       {
         "fixture": "java/singleimportproject/ToolOwners",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/spring-repository-redeclaration",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/spring-requestmethod-identity",
         "ok": true,
         "problems": []
       },
@@ -4527,6 +4712,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/local-implicit-owner",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/m60-annotation-macro",
         "ok": true,
         "problems": []
@@ -4558,6 +4748,11 @@
       },
       {
         "fixture": "cpp/macro-heading-owner-range",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/macro-recovery-in-error-spans",
         "ok": true,
         "problems": []
       },
@@ -4652,6 +4847,21 @@
         "problems": []
       },
       {
+        "fixture": "cpp/ruled-decorates-attribute",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/ruled-mixes-in-crtp",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/ruled-renders-verb-calls",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/specifier-qualified-name-962",
         "ok": true,
         "problems": []
@@ -4668,6 +4878,11 @@
       },
       {
         "fixture": "cpp/template-declarator-name-612",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/typedef-functional-cast",
         "ok": true,
         "problems": []
       },
@@ -5192,6 +5407,11 @@
         "problems": []
       },
       {
+        "fixture": "go/builtin-type-arguments",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/callable-var",
         "ok": true,
         "problems": []
@@ -5217,7 +5437,17 @@
         "problems": []
       },
       {
+        "fixture": "go/composite-literal-wrapper-types",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/const-inherit-type",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/cross-file-call-visibility",
         "ok": true,
         "problems": []
       },
@@ -5238,6 +5468,11 @@
       },
       {
         "fixture": "go/error-region-callee-descend-799",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/explanation-complete",
         "ok": true,
         "problems": []
       },
@@ -5268,6 +5503,11 @@
       },
       {
         "fixture": "go/generic-construction",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/generic-instantiation-recovery",
         "ok": true,
         "problems": []
       },
@@ -5327,6 +5567,11 @@
         "problems": []
       },
       {
+        "fixture": "go/local-type-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/override-promotion",
         "ok": true,
         "problems": []
@@ -5348,6 +5593,11 @@
       },
       {
         "fixture": "go/r7-empty-endpoints",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/receiver-owner-scope",
         "ok": true,
         "problems": []
       },
@@ -5378,6 +5628,16 @@
       },
       {
         "fixture": "go/sub-unit-reason-codes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/type-argument-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/type-parameter-explained",
         "ok": true,
         "problems": []
       },
@@ -9276,7 +9536,7 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 58
+        "pass": 64
       },
       "csharp": {
         "fail": 0,
@@ -9304,7 +9564,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 40
+        "pass": 49
       },
       "graphql": {
         "fail": 0,
@@ -9328,11 +9588,11 @@
       },
       "java": {
         "fail": 0,
-        "pass": 80
+        "pass": 113
       },
       "javascript": {
         "fail": 0,
-        "pass": 98
+        "pass": 99
       },
       "json": {
         "fail": 0,
@@ -9432,7 +9692,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 121
+        "pass": 124
       },
       "vb": {
         "fail": 0,
@@ -9473,8 +9733,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-14T23:33:45-05:00",
-  "regeneratedAtCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
+  "regeneratedAt": "2026-11-18T13:45:12-05:00",
+  "regeneratedAtCommit": "574efbfb8f9300da1fe130eb55904f0a3654567e",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

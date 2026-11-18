@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "c41f3510f0f25817c39bd30e704a7a1966b583d79ebf886987c9c2cd51c1b249",
-    "sealedAt": "2026-11-13T20:34:00.000Z"
+    "contentSha256": "6dc9599a7ec49b2f43cc147f0fec906fe682e514073a02a88039428d53f01f1d",
+    "sealedAt": "2026-11-18T00:47:19.000Z"
   },
   "checks": [
     {
@@ -66,7 +66,7 @@
       "status": "pass"
     },
     {
-      "description": "contract gated by 4 probes (0 violating), NOT by the corpus. 104 symbols outside the containment contract. Of 103 in it: CLASS members 0/11 unplaced (0.0%), OBJECT-LITERAL methods 92/92 unplaced (100.0%). OF WHICH the defect population is 0/0: object-literal members that HAVE a binding and were not placed. The other 92/92 have NO reachable binding (export default, return value, call argument, array element) and are correctly ownerless by the analyzer's own documented contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure counted correctly-ownerless members as a gap",
+      "description": "contract gated by 4 probes (0 violating), NOT by the corpus. 107 symbols outside the containment contract. Of 103 in it: CLASS members 0/11 unplaced (0.0%), OBJECT-LITERAL methods 92/92 unplaced (100.0%). OF WHICH the defect population is 0/0: object-literal members that HAVE a binding and were not placed. The other 92/92 have NO reachable binding (export default, return value, call argument, array element) and are correctly ownerless by the analyzer's own documented contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure counted correctly-ownerless members as a gap",
       "id": "census-js-containment-contract",
       "status": "pass"
     },
@@ -82,8 +82,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "a1639eb695afd379990bd46ea01e3a40d2e9279d",
-  "committedAt": "2026-11-13T15:34:00-05:00",
+  "commit": "2c3a9fd1e4c26097dde24650043439efc9208613",
+  "committedAt": "2026-11-17T19:47:19-05:00",
   "data": {
     "census": "M14.0.JS-CENSUS",
     "confidenceTiers": {
@@ -459,7 +459,7 @@
         "pass": true
       },
       {
-        "detail": "contract gated by 4 probes (0 violating), NOT by the corpus. 104 symbols outside the containment contract. Of 103 in it: CLASS members 0/11 unplaced (0.0%), OBJECT-LITERAL methods 92/92 unplaced (100.0%). OF WHICH the defect population is 0/0: object-literal members that HAVE a binding and were not placed. The other 92/92 have NO reachable binding (export default, return value, call argument, array element) and are correctly ownerless by the analyzer's own documented contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure counted correctly-ownerless members as a gap",
+        "detail": "contract gated by 4 probes (0 violating), NOT by the corpus. 107 symbols outside the containment contract. Of 103 in it: CLASS members 0/11 unplaced (0.0%), OBJECT-LITERAL methods 92/92 unplaced (100.0%). OF WHICH the defect population is 0/0: object-literal members that HAVE a binding and were not placed. The other 92/92 have NO reachable binding (export default, return value, call argument, array element) and are correctly ownerless by the analyzer's own documented contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure counted correctly-ownerless members as a gap",
         "id": "census-js-containment-contract",
         "pass": true
       },
@@ -474,7 +474,7 @@
         "pass": true
       }
     ],
-    "generatedAt": "2026-11-13T21:15:51.050Z",
+    "generatedAt": "2026-11-18T00:51:58.104Z",
     "independence": "Discovery reads the CORPUS and the GRAMMAR only. Neither the analyzer's tables nor the oracle is consulted for discovery, because a construct both of them forgot cannot appear as a disagreement — that is the X1 shape. The analyzer is consulted only for the probes.",
     "lane": "javascript",
     "moduleIdentity": {
@@ -488,9 +488,9 @@
         "total": 11
       },
       "disposition": "DECLARED AND MEASURED — not closed by this gate; closing it is a separate change with its own blast radius",
-      "excludedFromPopulation": 104,
+      "excludedFromPopulation": 107,
       "finding": "JD3 (reviews/javascript/m60-deep-review-2026-09-26.md:209, '10.9% of real symbols are ownerless') is HISTORICAL, not falsified. It diagnosed ownerName coming only from scopeOwnerName, which reported class scopes only; the analyzer now derives the owner from containerOwnerName, which handles class expressions and object literals by their binding. The defect population measured here — object-literal members WITH a reachable binding that were not placed — is 0. Members with no binding (export default, return value, call argument, array element) are correctly ownerless by the analyzer's own documented contract.",
-      "moduleScopeRoots": 104,
+      "moduleScopeRoots": 107,
       "nestedSymbols": 103,
       "objectLiteralMethods": {
         "orphans": 92,
@@ -518,7 +518,7 @@
         "packages/svelte/tests/hydration/samples/top-level-text/_config.js snapshot:method [object-literal-method]",
         "packages/svelte/tests/hydration/samples/top-level-text/_config.js test:method [object-literal-method]"
       ],
-      "symbolsTotal": 207
+      "symbolsTotal": 210
     },
     "probes": [
       {
@@ -1842,8 +1842,8 @@
     "This gate consults NEITHER the analyzer's tables NOR the oracle for discovery — that is the only reason it exists, since the differential compares two readings of the specification by one author and cannot see a construct both forgot (it reported coverage while the receiver of a member call was named by nothing). It answers 'does anybody account for this construct', not 'is this construct handled correctly'; the differential and the hand-audited corpus truth answer the second question.",
     "The declared member-base table behind the reserved-base check is derived from the sample this artifact publishes rather than curated by hand, and gate `census-js-named-bases-verified` probes a leaf of every non-console base, so the table cannot rot into asserting suppression that no longer happens. A base absent from the sample is not asserted about at all."
   ],
-  "regeneratedAt": "2026-11-13T15:34:00-05:00",
-  "regeneratedAtCommit": "a1639eb695afd379990bd46ea01e3a40d2e9279d",
+  "regeneratedAt": "2026-11-17T19:47:19-05:00",
+  "regeneratedAtCommit": "2c3a9fd1e4c26097dde24650043439efc9208613",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "javascript construct census — the check that consults neither the analyzer nor the oracle"
