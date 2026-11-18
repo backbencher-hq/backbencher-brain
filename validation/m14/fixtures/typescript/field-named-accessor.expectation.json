@@ -1,0 +1,21 @@
+{
+  "fixtureId": "typescript/field-named-accessor",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE MISSING-NAME RECOVERY (2026-11-18). `accessor: number` is a valid class field NAMED `accessor`; the pinned tree-sitter grammar mis-reads it as the auto-accessor keyword and emits `public_field_definition name: (MISSING property_identifier)`, whose `.text` is empty. The analyzer used to publish a symbol named \"\" and a `contains Config -> \"\"` edge — the ONE no-target edge the whole-population arm flagged as a LANE DEFECT (992,652 edges, 1 empty target; located by a parallel whole-corpus scan at redwood/packages/jobs/src/adapters/PrismaAdapter/PrismaAdapter.ts:75). The fix recovers the written name from the node's own leading identifier and refuses an empty identity outright. The second field, `other`, is the CONTROL: a name the grammar carries normally must be untouched by the recovery. The count pin makes the recovery's scope checkable: exactly two contains rows for Config, and no empty-named symbol can exist because the analyzer filters any it would otherwise leave.",
+  "expectSymbols": [
+    { "name": "Config", "kind": "class" },
+    { "name": "accessor", "kind": "property" },
+    { "name": "other", "kind": "property" }
+  ],
+  "expectRelationships": [
+    { "type": "contains", "from": "Config", "target": "accessor", "note": "THE GAIN: the recovered name is the member symbol and the containment target — not \"\"" },
+    { "type": "contains", "from": "Config", "target": "other", "note": "CONTROL: the normally-parsed field is untouched" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "contains", "from": "Config", "equals": 2, "note": "exactly the two fields — a recovery that manufactured extra members would fail here" }
+  ],
+  "forbidRelationships": [
+    { "type": "contains", "from": "Config", "target": "", "note": "THE DEFECT: no containment edge may name nothing" }
+  ]
+}

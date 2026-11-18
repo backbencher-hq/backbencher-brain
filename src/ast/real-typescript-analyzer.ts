@@ -517,6 +517,44 @@ function isArrayIndexKey(key: string): boolean {
   return Number(key) < 0xffffffff
 }
 
+/** Does this field declaration WRITE a field NAMED `accessor`? A field named `accessor` is valid
+ *  TypeScript (`accessor: number`), but the pinned grammar reads `accessor` as the auto-accessor
+ *  KEYWORD: the isolated shape becomes `name: (MISSING property_identifier)` and a value-bearing
+ *  shape becomes `(ERROR) name: (property_identifier "number")` — the annotation swallowed as the
+ *  NAME. The written form is distinguishable from a real auto-accessor (`accessor x: T`): the
+ *  keyword is followed IMMEDIATELY by a name-end (`:`, `?`, `!`, `=`), not by an identifier. */
+function fieldDeclaresAccessorName(node: Node): boolean {
+  const text = node.text
+  if (!text.startsWith("accessor")) return false
+  let i = 8
+  while (i < text.length && (text.charCodeAt(i) === 32 || text.charCodeAt(i) === 9)) i++
+  if (i >= text.length) return false
+  const c = text[i]
+  return c === ":" || c === "?" || c === "!" || c === "="
+}
+
+/** The LEADING identifier characters of a node's own text — the WRITTEN NAME when the
+ *  grammar lost it. Sole caller: `extractProperty`'s MISSING-name recovery (2026-11-18).
+ *
+ *  WHY THIS EXISTS: a class field legitimately NAMED `accessor` (`accessor: PrismaClient[...]`,
+ *  redwood/packages/jobs/.../PrismaAdapter.ts:75) is valid TypeScript, but the pinned grammar
+ *  reads `accessor` as the auto-accessor KEYWORD and emits a `public_field_definition` whose
+ *  `name` is a MISSING token. The analyzer then published an EMPTY-named symbol and a
+ *  containment edge with an empty target — the ONE no-target edge the whole-population arm
+ *  flagged as a lane defect (992,652 edges, 1 empty target). The name the source wrote is the
+ *  node's leading identifier, recovered by a character walk (no regex — the lane's rule). */
+function leadingIdentifierOf(text: string): string {
+  let end = 0
+  while (end < text.length) {
+    const c = text[end]
+    const ok = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") ||
+      c === "_" || c === "$"
+    if (!ok) break
+    end++
+  }
+  return text.slice(0, end)
+}
+
 /** The CONTENT of a quoted-string node's own text, when that text is ONE complete
  *  quoted literal. Replaces `/^(['"])([^\\\r\n]*)\1$/` + `slice(1, -1)`.
  *
@@ -2869,6 +2907,13 @@ class TypeScriptAnalysisRunner {
     }
     this._pendingQualifiedCalls = []
 
+    // NO EMPTY-NAME SYMBOL MAY LEAVE THIS ANALYZER (2026-11-18, belt and braces after the
+    // `accessor:` MISSING-token recovery). An empty identity becomes an unbindable edge; this
+    // filter makes that class impossible even if a future extractor forgets its own guard.
+    for (let i = symbols.length - 1; i >= 0; i--) {
+      if (String(symbols[i]?.name ?? "").length === 0) symbols.splice(i, 1)
+    }
+
     // PHASE 3: Extract exports (imports were read before symbol extraction, so
     // the per-file signals were available to the payload rules)
     this._pendingReExportImports = []
@@ -4275,13 +4320,37 @@ class TypeScriptAnalysisRunner {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
-    const name = nameNode.text
+    // THE GRAMMAR LOST A NAME THE SOURCE WROTE (2026-11-18). A field NAMED `accessor` is valid
+    // TypeScript, but the pinned grammar reads the keyword form and produces either a MISSING
+    // name token (the whole-population arm's single NO-TARGET LANE DEFECT:
+    // `contains PrismaAdapter -> ""`, redwood PrismaAdapter.ts:75) or an ERROR node that swallows
+    // the annotation AS the name (`accessor: number` -> name "number"). Both are recovered from
+    // the node's own text; the written form is unambiguous because a real auto-accessor
+    // (`accessor x: T`) has an identifier after the keyword.
+    const accessorNamed = fieldDeclaresAccessorName(node)
+    let name = nameNode.text
+    if (accessorNamed || name === "") {
+      name = accessorNamed ? "accessor" : leadingIdentifierOf(node.text)
+      if (name === "") return
+    }
+    if (name === "") return
     const modifiers = extractModifiersFromNode(node)
     const typeAnnotation = node.childForFieldName("type")
     const valueNode = node.childForFieldName("value")
 
     // Infer type if not explicitly annotated
     let returnType = typeAnnotation ? stripLeadingColon(typeAnnotation.text) : undefined
+    if (accessorNamed && !typeAnnotation) {
+      // The ERROR tree turned the annotation INTO the name; the written annotation is the text
+      // between the first `:` and the initialiser, read by character walk (no regex).
+      const colon = node.text.indexOf(":")
+      if (colon >= 0) {
+        let end = node.text.indexOf("=", colon)
+        if (end < 0) end = node.text.length
+        const written = node.text.slice(colon + 1, end).trim()
+        if (written.length > 0) returnType = written
+      }
+    }
     if (!returnType && valueNode) {
       const typeInfo = this.typeInference.inferFromInitializer(valueNode)
       returnType = typeInfo.type !== "unknown" ? typeInfo.type : undefined
