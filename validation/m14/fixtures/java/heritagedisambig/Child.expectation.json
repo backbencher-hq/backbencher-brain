@@ -1,0 +1,38 @@
+{
+  "fixtureId": "java/heritagedisambig/Child",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "AMBIGUOUS HERITAGE AND INSTANTIATION TARGETS (java lane, 2026-11-17). Sub-directory fixture, so the runner supplies a COMPLETE project index. The project declares the simple name `Widget` THREE times: top-level in Widget.java, nested in Owners, nested in Owners.Other. A bare `extends Widget` and a bare `new Widget()` are therefore genuinely ambiguous and the indexer cannot pick one. JLS 7.5.1 resolves both for this compilation unit: the single-type import binds the simple name to the top-level declaration, so the extends edge and the instantiates edge must each be re-spelled to that qualified path. NEGATIVE CONTROL: without the disambiguation the targets stay the bare leaf `Widget`, which cannot be resolved against three declarations, so this fixture fails without the change and passes with it. The import MENTION edge is deliberately NOT re-spelled - its target is the module path already.",
+  "expectSymbols": [
+    {
+      "name": "Child",
+      "kind": "class"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "source": "Child",
+      "target": "heritagedisambig.Widget",
+      "meta.relationshipType": "extends"
+    },
+    {
+      "type": "instantiates",
+      "source": "run",
+      "target": "heritagedisambig.Widget"
+    },
+    {
+      "type": "imports",
+      "source": "Child",
+      "target": "heritagedisambig.Widget"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "source": "Child",
+      "target": "Widget",
+      "comment": "the bare leaf is ambiguous across three project declarations; the single-type import decides it"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "fixtureId": "java/heritagedisambig/Owners",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The ambiguity SOURCE: declares Widget twice (nested here and inside Other), so the project's simple-name count for Widget exceeds one and the disambiguation rule's precondition holds.",
+  "expectSymbols": [
+    {
+      "name": "Owners",
+      "kind": "class"
+    },
+    {
+      "name": "Widget",
+      "kind": "class"
+    },
+    {
+      "name": "Other",
+      "kind": "class"
+    }
+  ]
+}

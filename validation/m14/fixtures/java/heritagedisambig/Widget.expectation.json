@@ -1,0 +1,12 @@
+{
+  "fixtureId": "java/heritagedisambig/Widget",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The disambiguation TARGET for both heritage and construction: the top-level Widget whose qualified path the single-type import names. Kept as its own fixture so the target declaration is measured rather than assumed.",
+  "expectSymbols": [
+    {
+      "name": "Widget",
+      "kind": "class"
+    }
+  ]
+}
