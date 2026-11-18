@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "675fa48f017a3646bdba71cc6bdc330a3ea6d0a957d902fd0dae9b2413406a92",
-    "sealedAt": "2026-11-06T05:17:39.000Z"
+    "contentSha256": "b52a3490bbe00a9e8658c898275c2feb60de839537471d61235ac108dda3b6b5",
+    "sealedAt": "2026-11-18T06:11:39.000Z"
   },
   "checks": [
     {
@@ -25,8 +25,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
-  "committedAt": "2026-11-06T00:17:39-05:00",
+  "commit": "a98af04a4ef128e63c01dbd9d54b482eb71e4302",
+  "committedAt": "2026-11-18T01:11:39-05:00",
   "data": {
     "adoptionAdopted": 12,
     "adoptionLegacy": [],
@@ -53,9 +53,9 @@
       "description": "adoption counts artifacts that carry schemaVersion 2; it does not assert how many artifacts there should be"
     }
   ],
-  "regeneratedAt": "2026-11-06T00:17:39-05:00",
-  "regeneratedAtCommit": "7ce95431bd2573283fb55cab44de296d4da10bd9",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-11-18T01:11:39-05:00",
+  "regeneratedAtCommit": "a98af04a4ef128e63c01dbd9d54b482eb71e4302",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Evidence harness v2"
 }
