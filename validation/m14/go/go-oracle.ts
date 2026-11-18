@@ -187,7 +187,84 @@ interface FileModel {
   topLevelFuncs: Set<string>
   /** source_file's DIRECT named children that are declarations. */
   packageScopeDeclNodes: Set<any>
+  /**
+   * Every name BOUND inside each function/method body (params, receiver, `:=` targets,
+   * `var`/`const`, range and type-switch bindings), keyed by function name.
+   *
+   * WHY THE ORACLE NEEDS THIS: it derives a `calls` edge for ANY `call_expression`, so a
+   * call to a FUNCTION-TYPED PARAMETER (`filter(obj)` where `filter func(types.Object)
+   * bool` is a parameter) looks like a call to a declared function and lands in the
+   * unexplained bucket — while the analyzer is CORRECTLY silent, because LocalsAreNotSymbols
+   * keeps locals out of the graph. This is the oracle's over-broadness, not an analyzer gap,
+   * and the classifier can only say so if it knows the bindings.
+   */
+  funcBoundNames: Map<string, Set<string>>
   limits: string[]
+}
+
+/**
+ * Names a function BINDS anywhere inside itself: parameters, receiver, generic type
+ * parameters, `:=` targets, `var`/`const` names, range targets and type-switch scrutinee
+ * bindings. Over-approximated for the whole body on purpose — this only ever EXPLAINS a
+ * disagreement, and explaining one that is not real would be the one thing worse than not
+ * explaining it, so every name added here must be genuinely bound somewhere in the function.
+ */
+/**
+ * Is this node in a WRITE position — an assignment LHS or an inc/dec operand?
+ *
+ * A write is not a read, in Go or in any other language, so the lane's selector-pass write
+ * gate (the family's S1 rule, carried by cpp/c/php/ruby/python/groovy/objc/ts as well) skips
+ * these. The oracle published a `uses` row for EVERY selector that was not a callee, so
+ * `flag.Usage = func(){...}` produced `uses main -> Usage` and `b.Measured |= NsPerOp` produced
+ * `uses parseMeasurement -> Measured` — neither is a read. Measured on the 400-file go-tools
+ * draw: this is the dominant cause of the 424 unexplained `uses` rows.
+ *
+ * tree-sitter-go wraps the LHS in the FIRST `expression_list` child of an
+ * `assignment_statement`; the operator (`=`, `+=`, `|=`, ...) is an anonymous token, so a
+ * compound assignment is a write exactly like a plain one. A CHAINED operand
+ * (`r.cfg.V = v`) is a genuine read of the outer selector and keeps its row, which is why the
+ * test is on the node's own position rather than on the statement.
+ */
+function isWritePosition(n: any): boolean {
+  const p = n.parent
+  if (!p) return false
+  if (p.type === "inc_statement" || p.type === "dec_statement") return true
+  if (p.type === "expression_list" && p.parent && p.parent.type === "assignment_statement") {
+    const first = p.namedChildCount > 0 ? p.namedChild(0) : null
+    // Compare by BYTE SPAN, not object identity: web-tree-sitter wraps a tree node per
+    // retrieval, so two wrappers over the same node are never `===`.
+    return !!first && first.startIndex === p.startIndex && first.endIndex === p.endIndex
+  }
+  return false
+}
+
+function boundNamesOf(fnNode: any): Set<string> {
+  const names = new Set<string>()
+  const bindAll = (r: any): void => {
+    const w: any[] = [r]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m.type === "identifier" && m.text !== "_") names.add(m.text)
+      for (const c of m.children) w.push(c)
+    }
+  }
+  const w: any[] = [fnNode]
+  while (w.length > 0) {
+    const n = w.pop()!
+    if (n.type === "parameter_list" || n.type === "type_parameter_list") bindAll(n)
+    else if (n.type === "short_var_declaration") {
+      const left = n.childForFieldName("left") ?? (n.childCount > 0 ? n.namedChild(0) : null)
+      if (left) bindAll(left)
+    } else if (n.type === "var_spec" || n.type === "const_spec") {
+      for (const c of n.namedChildren) if (c.type === "identifier" && c.text !== "_") names.add(c.text)
+    } else if (n.type === "range_clause") {
+      for (let i = 0; i < n.namedChildCount - 1; i++) bindAll(n.namedChild(i))
+    } else if (n.type === "type_switch_statement" && n.namedChildCount > 2) {
+      bindAll(n.namedChild(0))
+    }
+    for (const c of n.children) w.push(c)
+  }
+  return names
 }
 
 function scanModel(root: any): FileModel {
@@ -199,6 +276,7 @@ function scanModel(root: any): FileModel {
     methodsByReceiver: new Map(),
     topLevelFuncs: new Set(),
     packageScopeDeclNodes: new Set(),
+    funcBoundNames: new Map(),
     limits: [],
   }
   // package_clause has NO fields in tree-sitter-go 0.25.0's node-types.json;
@@ -218,6 +296,7 @@ function scanModel(root: any): FileModel {
         if (nm.length > 0) {
           model.decls.push({ name: nm, kind: "func", packageScope: true, exported: isGoExportedIdentifier(nm), line: top.startPosition.row + 1 })
           model.topLevelFuncs.add(nm)
+          model.funcBoundNames.set(nm, boundNamesOf(top))
         }
         break
       }
@@ -234,6 +313,7 @@ function scanModel(root: any): FileModel {
             receiverType: recvType,
             line: top.startPosition.row + 1,
           })
+          model.funcBoundNames.set(nm, boundNamesOf(top))
           let byName = model.methodsByReceiver.get(recvType)
           if (!byName) {
             byName = new Map()
@@ -585,7 +665,7 @@ function buildFacts(root: any, content: string): FileFacts {
           push(facts, "calls", src, leafOf(textOf(fn)))
         }
       }
-    } else if (t === "selector_expression" && n.parent && n.parent.type !== "call_expression") {
+    } else if (t === "selector_expression" && n.parent && n.parent.type !== "call_expression" && !isWritePosition(n)) {
       const fld = textOf(field(n, "field"))
       const src = ctx.typeName.length > 0 ? ctx.typeName : enclosingDeclName(n, root)
       push(facts, "uses", src, fld)
@@ -653,6 +733,10 @@ type ReasonCode =
   | "already-carried-as-an-instantiates-edge"
   | "composite-literal-type-is-an-instantiation-not-a-reference"
   | "struct-embedding-relabelled-to-mixes-in"
+  | "go-conversion-not-a-call"
+  | "call-to-locally-bound-function-value"
+  | "read-of-a-locally-bound-name"
+  | "variable-export-out-of-scope-by-decision"
   | "UNEXPLAINED"
 
 function classifyOracOnly(
@@ -679,8 +763,36 @@ function classifyOracOnly(
   if (type === "extends" && (analyzerByType.get("mixes_in") ?? []).some((m) => m[0] === e[0] && m[1] === e[1])) {
     return "struct-embedding-relabelled-to-mixes-in"
   }
+  // `float64(x)` reaches the grammar as a call_expression but is a CONVERSION. The analyzer
+  // filters predeclared types out of `calls` (and `go/relationship-and-payloads` forbids
+  // `calls -> float64`), so an oracle `calls` row naming a predeclared type is the oracle
+  // being over-broad. Measured on the 400-file go-tools draw: 164 of the 461 unexplained
+  // `calls` rows are exactly this.
+  if (type === "calls" && PREDECLARED_TYPES.has(e[1])) return "go-conversion-not-a-call"
+  // A call to a name the SOURCE FUNCTION BINDS is a call through a function value — a
+  // parameter (`filter(obj)`), a closure variable, or a range target — not a static call to
+  // a declared function. The analyzer is CORRECTLY silent (LocalsAreNotSymbols); the oracle
+  // derives an edge for every call_expression, so this is its over-broadness. Measured:
+  // 297 of the 461 unexplained rows name a parameter of the enclosing function.
+  if (type === "calls" && model.funcBoundNames.get(e[0])?.has(e[1])) return "call-to-locally-bound-function-value"
+  // A `uses` row naming a name the SOURCE FUNCTION binds is a read of a parameter, a local,
+  // a receiver or a loop variable. The analyzer is CORRECTLY silent — LocalsAreNotSymbols
+  // keeps locals out of the graph — while the oracle derives a row for every identifier it
+  // sees. `print -> pkg` (`pkg *types.Package` is a parameter of `print`) is the measured
+  // shape.
+  if (type === "uses" && model.funcBoundNames.get(e[0])?.has(e[1])) return "read-of-a-locally-bound-name"
   if (type === "calls" && GO_BUILTIN_FUNCS.has(e[1])) return "go-builtin-call-not-an-edge"
   if (type === "references" && PREDECLARED_TYPES.has(e[1])) return "predeclared-type-not-an-edge"
+  // AN EXPORTED PACKAGE-SCOPE VARIABLE IS DELIBERATELY OUT OF SCOPE for the `exports` edge,
+  // even though Go really does export it. The M49 JVM-closure F3 invariant requires export
+  // names to be unique and top-level-resolvable, and Go permits `type Foo struct{}` plus
+  // `var Foo = ...` in one package, so a var can collide with a type of the same name.
+  // `go/exports-contract` (forbid `ErrNoWidget`) and `go/exports-package-scope` (forbid
+  // `WidgetRegistry`) pin it and call it a DECISION. The oracle derives an export for every
+  // capitalised package-scope name, so it must say so here or the bucket stays polluted.
+  if (type === "exports" && model.decls.some((d) => d.kind === "var" && d.packageScope && d.name === e[1])) {
+    return "variable-export-out-of-scope-by-decision"
+  }
   if (type === "exports") {
     const isMethod = model.decls.some((d) => d.kind === "method" && d.name === e[1])
     if (isMethod) return "analyzer-scope-excludes-methods-and-vars"
@@ -733,6 +845,8 @@ async function main(): Promise<void> {
   let compared = 0
   const disagreements: Array<{ file: string; type: string; kind: string; edge: Edge; reason: string }> = []
   const unexplainedByType: Record<string, number> = {}
+  // EVERY unexplained row, so a bucket can be triaged against source rather than sampled.
+  const unexplainedRows: Array<{ file: string; type: string; edge: Edge }> = []
   const started = Date.now()
 
   // The oracle gets its tree from the same production parser the analyzer's
@@ -791,7 +905,11 @@ async function main(): Promise<void> {
       for (const e of o) {
         if (aSet.has(key(e))) slot.agree++
         else {
-          if (classifyOracOnly(ty, e, model, instantiatesEdges, analyzerByType) === "UNEXPLAINED") unexplainedByType[ty] = (unexplainedByType[ty] || 0) + 1
+          const why = classifyOracOnly(ty, e, model, instantiatesEdges, analyzerByType)
+          if (why === "UNEXPLAINED") {
+            unexplainedByType[ty] = (unexplainedByType[ty] || 0) + 1
+            unexplainedRows.push({ file: f.rel, type: ty, edge: e })
+          }
           slot.oracleOnly++
           if (slot.oracleOnlyFiles.length < 6) slot.oracleOnlyFiles.push(`${f.rel}: ${e[0]} -> ${e[1]}`)
           if (disagreements.length < 900) disagreements.push({ file: f.rel, type: ty, kind: "oracle-only", edge: e, reason: classifyOracOnly(ty, e, model, instantiatesEdges, analyzerByType) })
@@ -837,7 +955,7 @@ async function main(): Promise<void> {
   const out = process.env.GO_ORACLE_ARTIFACT
   if (out) {
     const { writeFileSync } = await import("node:fs")
-    writeFileSync(out, JSON.stringify({ perType, compared, unexplainedByType, disagreements: disagreements.slice(0, 900) }, null, 2))
+    writeFileSync(out, JSON.stringify({ perType, compared, unexplainedByType, unexplainedRows, disagreements: disagreements.slice(0, 900) }, null, 2))
     L(`artifact: ${out}`)
   }
 }
