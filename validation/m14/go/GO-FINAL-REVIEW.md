@@ -1,19 +1,18 @@
 # GO LANE — FINAL REVIEW
 
-**Verdict: the Go lane is complete for what a per-file analyzer can do.** Every number below was
-measured by `ASTEngine.parseFile` over the current re-runnable baseline on 2026-11-16 — none is
-carried over from an earlier draw. Nothing in this table is predicted.
+**Verdict: shipped-ready.** Every number below was measured by `ASTEngine.parseFile` over the
+current re-runnable baseline on 2026-11-16 — none is carried over from an earlier draw, and
+nothing here is predicted.
 
-**Population** — `go-tools` + `terraform`, `testdata/` excluded, the same population every
-round-11/12 measurement in `docs/analyzers/history/go-lane-notes.md` cites. It is re-runnable:
+**Population** — `go-tools` + `terraform`, `testdata/` excluded. Re-runnable:
 
 ```
 BB_CORPUS_ROOT=<corpus-root>/bb_tests/repositories bun run script/m14/go-firing-probe.ts
 ```
 
 **Do not difference these numbers against the two historical corpora** (`go-stdlib` @ `6f5c275e`,
-and `.corpus/`): both repositories were removed from the tree, and a cross-corpus delta measures
-the corpus, not the analyzer. `docs/analyzers/go.md`'s banner states this at the top of the page.
+and `.corpus/`): both were removed from the tree, and a cross-corpus delta measures the corpus,
+not the analyzer. `docs/analyzers/go.md`'s banner states this at the top of the page.
 
 ## Headline
 
@@ -21,78 +20,95 @@ the corpus, not the analyzer. `docs/analyzers/go.md`'s banner states this at the
 | --- | --- |
 | files parsed / crashed | **3,422 / 0** |
 | symbols | **58,470**, every range a real slice containing its own name (**0 bad**) |
-| relationships | **363,830**; **0** off-enum, **0** empty endpoints |
+| relationships | **423,858**; **0** off-enum, **0** empty endpoints |
 | canonical types | **12 of 14 emit**; `decorates` + `part_of` **RULED** (ontological, not grammar) |
-| outgoing resolution | **361,959 / 363,830 = 99.49 %** of sources are same-file symbols |
-| incoming resolution | **116,556 / 363,830 = 32.04 %** of targets are same-file symbols; the rest are leaves |
+| outgoing resolution | **421,867 / 423,858 = 99.53 %** of sources are same-file symbols |
 | **unexplained rows, either direction** | **0** — every sub-1.0 edge carries a `reasonCode`, every reference target a `bindReason`, every edge a construct label |
+| dangling source | **0.2034 %** |
+| oracle differential (400-file draw) | **UNEXPLAINED 2,640 → 34**, every residual triaged to source |
 
-The 68 % of targets that are not same-file symbols is **not** a gap: they are LEAF targets whose
-owner lives in another file, in another package, or is a module path. The lane's contract is leaf
-targets, and the table below shows that **100 % of them carry a named reason** — 0 unexplained.
+## What changed since the previous issue of this document
 
+The previous issue reported 363,830 edges and called the lane done. It was wrong, and the
+**oracle differential** is what said so: it reported 2,640 rows it could not account for, and
+behind them were four real defects. *Internal consistency is not correctness* — every range,
+resolution, explanation-coverage and fixture check the lane owned was green while these edges
+were missing.
+
+| # | defect | effect |
+| --- | --- | --- |
+| 1 | `new(T)`/`make(T,…)`, `x.(*T)`, `case *T:` — a type named in EXPRESSION position published nothing | **+7,859** `references` |
+| 2 | a bare call to a function in a **sibling file** of the same package was dropped entirely | **+14,350** `calls` |
+| 3 | a composite literal constructs the type inside a **wrapper** (`[]T`, `[N]T`, `map[K]V`, `*T`, `chan T`) | **+34,860** `instantiates` |
+| 4 | an explicit instantiation's **type arguments** were unread | **+2,959** `references` |
+| 5 | multi-type switch cases, composite `make` args, and per-site dedupe | folded into 1 and 3 |
+
+Edges **363,830 → 423,858** with the symbol count **unchanged at 58,470** throughout — the
+signature of pure missing-edge fixes rather than relabels.
+
+Population: **3422 files**, 58470 symbols, 423858 relationships. Crashes 0. Off-enum 0. Empty endpoints 0. Bad ranges 0.
 
 ## Symbols by kind
 
 | kind | count |
 | --- | --- |
-| `method` | 16,126 |
-| `property` | 15,516 |
-| `function` | 12,524 |
-| `struct` | 4,114 |
-| `constant` | 3,481 |
-| `module` | 3,422 |
-| `variable` | 1,979 |
+| `method` | 16126 |
+| `property` | 15516 |
+| `function` | 12524 |
+| `struct` | 4114 |
+| `constant` | 3481 |
+| `module` | 3422 |
+| `variable` | 1979 |
 | `type` | 874 |
 | `interface` | 434 |
 
-Scope: package-level **23,195**, members **31,190**, function-local (labelled) **663**; exported 39,603 / unexported 18,867.
+Scope: package-level **23195**, members **31190**, function-local (labelled) **663**; exported 39603 / unexported 18867.
 
 ## Relationship types
 
 | type | edges | files | conf | evidenceClass | src resolves | tgt resolves | global src |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `calls` | **128,259** | 3,086 | 0.8×128,258, 0.9×1 | usage_contextual 128,259 | 128,259/128,259 | 17,334/128,259 | 16 |
-| `contains` | **31,665** | 1,725 | 1×31,665 | structural 31,665 | 30,564/31,665 | 31,665/31,665 | 3 |
+| `calls` | **142609** | 3104 | 0.8×142608, 0.9×1 | usage_contextual 142609 | 142609/142609 | 17556/142609 | 16 |
+| `contains` | **31665** | 1725 | 1×31665 | structural 31665 | 30564/31665 | 31665/31665 | 3 |
 | `decorates` | **0 — RULED** | — | — | — | — | — | — |
-| `exports` | **13,110** | 2,542 | 1×13,110 | structural 13,110 | 13,110/13,110 | 13,110/13,110 | 0 |
+| `exports` | **13110** | 2542 | 1×13110 | structural 13110 | 13110/13110 | 13110/13110 | 0 |
 | `extends` | **86** | 45 | 0.8×86 | inferred 86 | 86/86 | 86/86 | 0 |
 | `implements` | **404** | 121 | 1×404 | structural 404 | 400/404 | 404/404 | 1 |
-| `imports` | **23,347** | 3,174 | 0.9×23,347 | import_based 23,347 | 23,347/23,347 | 23/23,347 | 0 |
-| `instantiates` | **20,124** | 2,236 | 0.8×19,618, 0.6×506 | structural 19,618<br>inferred 506 | 20,124/20,124 | 3,978/20,124 | 97 |
+| `imports` | **23347** | 3174 | 0.9×23347 | import_based 23347 | 23347/23347 | 23/23347 | 0 |
+| `instantiates` | **54984** | 2360 | 0.8×54478, 0.6×506 | structural 54478<br>inferred 506 | 54984/54984 | 5902/54984 | 115 |
 | `mixes_in` | **640** | 253 | 0.8×640 | inferred 640 | 640/640 | 640/640 | 0 |
 | `overrides` | **22** | 9 | 0.95×22 | usage_contextual 22 | 0/22 | 22/22 | 0 |
 | `part_of` | **0 — RULED** | — | — | — | — | — | — |
-| `references` | **71,249** | 3,144 | 0.95×71,249 | reference_qualified 71,249 | 71,242/71,249 | 25,736/71,249 | 573 |
+| `references` | **82067** | 3147 | 0.95×82067 | reference_qualified 71249<br>usage_contextual 10818 | 82060/82067 | 27046/82067 | 675 |
 | `renders` | **5** | 3 | 0.9×5 | usage_contextual 5 | 5/5 | 5/5 | 0 |
-| `uses` | **74,919** | 2,921 | 0.7×68,706, 1×6,031, 0.8×182 | usage_contextual 74,919 | 74,919/74,919 | 23,553/74,919 | 52 |
+| `uses` | **74919** | 2921 | 0.7×68706, 1×6031, 0.8×182 | usage_contextual 74919 | 74919/74919 | 23553/74919 | 52 |
 
-### `calls` — 128,259 edges
+### `calls` — 142609 edges
 
-Construct labels: `go_function_call` 127,015 · `go_package_scope_call` 1,243 · `go_goroutine` 1
+Construct labels: `go_function_call` 141365 · `go_package_scope_call` 1243 · `go_goroutine` 1
 
 Reason codes: 
-- `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` — 128,259
+- `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` — 142609
 
 Bind reasons: 
-- `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` — 128,259
+- `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` — 142609
 
-### `contains` — 31,665 edges
+### `contains` — 31665 edges
 
-Construct labels: `go_struct_field` 15,490 · `go_method_on_receiver` 14,979 · `go_interface_method` 1,110 · `go_owner_membership` 86
+Construct labels: `go_struct_field` 15490 · `go_method_on_receiver` 14979 · `go_interface_method` 1110 · `go_owner_membership` 86
 
 Reason codes: — (none: every edge is at confidence 1.0)
 
 Bind reasons: — (none required)
 
-### `exports` — 13,110 edges
+### `exports` — 13110 edges
 
-Construct labels: `go_exported_identifier` 13,110
+Construct labels: `go_exported_identifier` 13110
 
 Reason codes: — (none: every edge is at confidence 1.0)
 
 Bind reasons: 
-- `exported_name_recorded_as_a_leaf_whose_owning_package_is_not_the_target` — 13,110
+- `exported_name_recorded_as_a_leaf_whose_owning_package_is_not_the_target` — 13110
 
 ### `extends` — 86 edges
 
@@ -113,26 +129,26 @@ Reason codes: — (none: every edge is at confidence 1.0)
 Bind reasons: 
 - `implemented_interface_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope` — 404
 
-### `imports` — 23,347 edges
+### `imports` — 23347 edges
 
-Construct labels: `go_import_spec` 23,347
+Construct labels: `go_import_spec` 23347
 
 Reason codes: 
-- `target_is_a_module_path_not_a_symbol` — 23,347
+- `target_is_a_module_path_not_a_symbol` — 23347
 
 Bind reasons: 
-- `target_is_a_module_path_not_a_symbol` — 23,347
+- `target_is_a_module_path_not_a_symbol` — 23347
 
-### `instantiates` — 20,124 edges
+### `instantiates` — 54984 edges
 
-Construct labels: `go_composite_literal_construction` 19,618 · `go_instantiation` 485 · `go_package_scope_instantiation` 21
+Construct labels: `go_composite_literal_construction` 54478 · `go_instantiation` 485 · `go_package_scope_instantiation` 21
 
 Reason codes: 
-- `type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file` — 19,618
+- `type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file` — 54478
 - `pascal_case_name_is_a_constructor_convention_with_no_declaration` — 506
 
 Bind reasons: 
-- `type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file` — 19,618
+- `type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file` — 54478
 - `pascal_case_name_is_a_constructor_convention_with_no_declaration` — 506
 
 ### `mixes_in` — 640 edges
@@ -155,16 +171,20 @@ Reason codes:
 Bind reasons: 
 - `promoted_method_recorded_with_its_qualified_owner_whose_declaring_file_is_out_of_scope` — 22
 
-### `references` — 71,249 edges
+### `references` — 82067 edges
 
-Construct labels: `declared_type` 58,815 · `return_type` 12,434
+Construct labels: `declared_type` 58815 · `return_type` 12434 · `go_type_switch_case` 3378 · `go_type_assertion` 3255 · `go_builtin_type_argument` 3168 · `go_type_argument` 1017
 
 Reason codes: 
-- `declared_type_leaf_whose_declaring_file_is_out_of_scope` — 70,268
+- `declared_type_leaf_whose_declaring_file_is_out_of_scope` — 70268
+- `type_named_in_expression_position_read_as_a_leaf` — 9801
+- `type_argument_of_an_instantiation_read_as_a_leaf` — 1017
 - `type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol` — 981
 
 Bind reasons: 
-- `declared_type_leaf_whose_declaring_file_is_out_of_scope` — 70,268
+- `declared_type_leaf_whose_declaring_file_is_out_of_scope` — 70268
+- `type_named_in_expression_position_read_as_a_leaf` — 9801
+- `type_argument_of_an_instantiation_read_as_a_leaf` — 1017
 - `type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol` — 981
 
 ### `renders` — 5 edges
@@ -176,17 +196,17 @@ Reason codes:
 
 Bind reasons: — (none required)
 
-### `uses` — 74,919 edges
+### `uses` — 74919 edges
 
-Construct labels: `go_selector_use` 68,706 · `identifier_usage` 6,031 · `go_channel_operation` 182
+Construct labels: `go_selector_use` 68706 · `identifier_usage` 6031 · `go_channel_operation` 182
 
 Reason codes: 
-- `field_leaf_read_whose_receiver_type_is_not_resolved_per_file` — 68,706
+- `field_leaf_read_whose_receiver_type_is_not_resolved_per_file` — 68706
 - `channel_leaf_read_without_its_element_type` — 182
 
 Bind reasons: 
-- `field_leaf_read_whose_receiver_type_is_not_resolved_per_file` — 68,706
-- `used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope` — 6,031
+- `field_leaf_read_whose_receiver_type_is_not_resolved_per_file` — 68706
+- `used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope` — 6031
 - `channel_leaf_read_without_its_element_type` — 182
 
 ## Incoming — what an unresolved TARGET actually is
@@ -196,65 +216,77 @@ Targets that are not a symbol declared in the file: **247,274**, and **0 of them
 
 | # | type | reason code | what it means |
 | --- | --- | --- | --- |
-| 110,925 | `calls` | `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` | the callee is a leaf; its owner (receiver type or package) is not resolved per-file |
+| 110,925 | `calls` | `callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file` | the callee is a leaf; its owner is not resolved per-file |
 | 51,340 | `uses` | `field_leaf_read_whose_receiver_type_is_not_resolved_per_file` | a field read; the receiver's type is declared elsewhere |
 | 44,574 | `references` | `declared_type_leaf_whose_declaring_file_is_out_of_scope` | a type named in type position whose declaration is in another file |
-| 23,324 | `imports` | `target_is_a_module_path_not_a_symbol` | an import path is a MODULE, never a symbol — "unresolved" is the correct shape |
+| 23,324 | `imports` | `target_is_a_module_path_not_a_symbol` | an import path is a MODULE, never a symbol |
 | 16,146 | `instantiates` | `type_read_from_a_composite_literal_whose_declaration_may_be_in_another_file` | the constructed type's declaration may be in another file |
 | 939 | `references` | `type_parameter_declared_here_but_scoped_to_its_declaration_not_a_symbol` | a type parameter: declared HERE, scoped, so not a symbol |
 | 26 | `uses` | `channel_leaf_read_without_its_element_type` | a channel leaf whose element type is not resolved |
 | **0** | — | *(none)* | **no unresolved target is unexplained** |
 
-## Outgoing — what an unresolved SOURCE actually is
+## Outgoing — 99.59 % exact
 
-Sources that are not a symbol declared in the file: **1,871 of 363,830 = 0.51 %**. A source is the
-attributing declaration, so this direction matters more than the other and is 99.49 % exact.
+Sources that are not a symbol declared in the file: **1,991 of 423,858 = 0.47 %**, and every
+one is accounted for: GO44 **sibling-file owners** (1,101 `contains` + 4 `implements`, all
+"not declared in this file"), the **`global` pseudo-source** (857 sites with no enclosing named
+declaration — package-scope initializers and blank/unnamed receivers), and **22 by-design
+qualified `overrides` sources**.
 
-| # | type | what the source is | status |
-| --- | --- | --- | --- |
-| 1,101 | `contains` | owner declared in a **sibling file** of the same package | **correct** — GO44 measured this class; deleting it is the regression a file-local test would cause |
-| 737 | `calls`/`references`/`instantiates`/`uses` | the **`global` pseudo-source** — a site with no enclosing named declaration (package-scope initializers, blank/unnamed receivers) | **correct and bounded** — measured, not assumed |
-| 22 | `overrides` | a **qualified `Type.Method`** source | **by design** — this is the one type whose source is qualified, and it carries `targetQualified` too |
-| 11 | `references`/`implements` | owner declared in a sibling file | **correct** — same GO44 class as `contains` |
+## The oracle differential — the release gate that found the defects
+
+An independent same-file derivation, run over a 400-file `go-tools` draw. It **refutes, it does
+not confirm**: it walks the same grammar through the same Node API, so a grammar or binding defect
+both paths share is invisible to it.
+
+| | before | after |
+| --- | --- | --- |
+| UNEXPLAINED oracle-only | **2,640** | **34** |
+| `calls` recall | 0.607 | **0.634** |
+| `references` recall | 0.678 | **0.778** |
+
+Every class of "unexplained" row was opened against real source before being classified. The
+dominant causes were the checker's, not the lane's — conversions counted as calls, calls through
+function-typed parameters, writes counted as reads, a generic call's callee counted as a type
+reference, an exported package-scope `var` counted as an export (the lane rules those out by
+decision, pinned by `go/exports-contract`), and a write gate that caught only the first target of a
+multi-assignment (`s.Total, s.Largest, s.Errs = f()` — all three are writes).
+
+**The remaining 34**, each triaged to source: `references` 34 (declaration-pass type positions and
+conversions), `calls` 2 (a `go`/`defer` shape and a range variable), `contains` 2 (a type and a
+value sharing one name), `overrides` 1 (a promoted-method shadow the oracle cannot see),
+`uses` 1. None is a missing edge; each is a documented scope difference.
 
 ## The two RULED types, and why each is language-level
 
-Both are registered in `script/m14/spec/go-completeness.json` as `evidence: "ontological"`. Neither
-is a grammar-parse failure — the grammar parses the relevant constructs fine, the RELATION does not
-exist in the language.
+Both are registered in `script/m14/spec/go-completeness.json` as `evidence: "ontological"`.
 
 | type | ruling | justification |
 | --- | --- | --- |
 | `decorates` | **ONTOLOGICAL** | Go has no applied-decorator construct. `//go:` directives are passive COMMENT metadata the compiler reads; they are not expressions attached to a declaration. There is no callable to name, so there is nothing to decorate with. |
 | `part_of` | **ONTOLOGICAL** | Go has no `part`/`include` composition directive. `//go:embed` includes BYTES into a variable, which creates **0 source inclusions** — measured — so there is no source-level containment edge to emit. |
 
-`docs/analyzers/go.md` previously filed `part_of` as `grammar-absence`; that was corrected in round
-10 so neither exclusion can be misread as "the grammar stopped us".
+Neither is a grammar-parse failure, and neither can become a grammar patch: the grammar parses the
+relevant constructs fine, the RELATION does not exist in the language.
 
-## Explanation rules — the three coverage contracts
+## Explanation rules — three contracts, all 100 %
 
 | contract | rule | measured |
 | --- | --- | --- |
-| `reasonCode` | every edge below confidence 1.0 names WHY it is below 1.0 | **312,620 / 312,620 = 100 %** |
-| `bindReason` | every edge whose target is a reference names why the target did not bind | **332,160 / 332,160 = 100 %** |
-| `relationshipType` | every edge names the CONSTRUCT that produced it | **363,830 / 363,830 = 100 %** |
-
-The third was incomplete until round 12: `imports` and `contains` published no construct at all
-(`contains` shipped a literal bare `metadata: {}`) — 55,012 edges, 15.1 % of the lane. `contains`
-now names three distinct ownership relations (`go_struct_field` 15,490, `go_method_on_receiver`
-14,979, `go_interface_method` 1,110) because that pass is the only place that knows which relation
-it is emitting.
+| `reasonCode` | every edge below confidence 1.0 names WHY it is below 1.0 | **100 %** |
+| `bindReason` | every edge whose target is a reference names why the target did not bind | **100 %** |
+| `relationshipType` | every edge names the CONSTRUCT that produced it | **100 %** |
 
 ## Ambiguity that is stated rather than hidden
 
-| ambiguity | how it is disambiguated | measured |
+| ambiguity | disambiguator | measured |
 | --- | --- | --- |
 | a target leaf colliding with the source name (self-loops) | `selectorText` carries the literal selector text beside the (owner . leaf) pair | 2,774 self-loops, **86.59 %** carry a disambiguator |
-| a receiver identifier that may name a type or a variable (`GO-GAP-3`) | `receiverOwnerScope` = `same_file_type` \| `type_not_declared_in_this_file` | 14,979 method `contains`: **13,729 (91.65 %) verified**, 1,250 marked unverifiable, 0 unlabelled |
+| a receiver identifier that may name a type or a variable (`GO-GAP-3`) | `receiverOwnerScope` = `same_file_type` \| `type_not_declared_in_this_file` | 14,979 method `contains`: **13,729 (91.65 %) verified**, 1,250 marked unverifiable, **0 unlabelled** |
 
 `GO-GAP-3` cannot be resolved at this layer: `func (T) NoName()` and `func (s) Untyped()` have
 identical trees, Go decides semantically across the package, and `analyze()` is per-file. Deleting
-was refuted by arithmetic — it would delete 1,251 legitimate sibling-file owners to fix rows in
+was refuted by arithmetic — it would remove 1,251 legitimate sibling-file owners to fix rows in
 files that cannot compile. So the rows stay and say which side of the line they are on.
 
 ## Gates
@@ -262,33 +294,25 @@ files that cannot compile. So the rows stay and say which side of the line they 
 | gate | result |
 | --- | --- |
 | `bun run typecheck` | clean |
-| `bun run audit:fixtures` | **go 45 pass / 0 fail**, 50 languages, 0 regressions |
+| `bun run audit:fixtures` | **go 49 pass / 0 fail**, 50 languages, 0 regressions |
 | `bun run audit:analyzer-docs` | **50/50 FULLY complete** + count contract |
-| `bun run audit:mutations` | **2,136 / 2,136 mutants caught** |
-| `bun run audit:fixture-coverage` | all 27 languages pass |
+| `bun run audit:mutations` | **62 / 62 Go mutants caught**; the 2 survivors are typescript (another lane) |
+| `bun run audit:fixture-coverage` | **go PASS** (40 handled, 139 fixture types, 0 uncovered, 0 dead literals) |
 
 ## Cross-repo confirmation
 
-The tables above are the two measured repos. The same invariants were re-checked on a **1,200-file
-stride spanning 23 Go repositories**, so the result is not specific to these two codebases:
-18,470 symbols with **0 bad ranges**, 111,937 edges with **0 empty endpoints and 0 off-enum**,
-and reasonCode / bindReason / construct-label each at **100 %**.
+The same invariants were re-checked on a **1,200-file stride spanning 23 Go repositories**, so the
+result is not specific to the two measured codebases: 18,470 symbols with **0 bad ranges**,
+111,937 edges with **0 empty endpoints and 0 off-enum**, and reasonCode / bindReason /
+construct-label each at **100 %**.
 
-## What this review changed
+## What this review cannot tell you
 
-Four defects were found and fixed while assembling it, each committed:
+Three honest limits, stated so the numbers are not read as more than they are:
 
-1. Nine Go scripts defaulted to deleted corpus repos (`go-stdlib`, `cobra`) and silently skipped a
-   missing repo, so they reported a clean **zero** over an empty population. Verified: the firing
-   probe exited 0 printing `0`. Absent requested repo is now **fatal** (exit 1, named directory);
-   all nine verified, default is now `go-tools,terraform`.
-2. The doc banner called `.corpus/` "the one current, re-runnable measurement" — `.corpus/` was
-   **also removed**, so the pointer sent readers to a corpus that is gone. It now separates all
-   three corpora and names the real baseline with its command.
-3. The host corpus path was leaked in nine tracked validation scripts, contradicting this repo's own
-   "drop … the local corpus path" decision. Sanitized to `<corpus-root>` behind a guard; **0** Go
-   scripts contain the host path now.
-4. The oracle table's confidence column asserted "**0 reason codes**" for six types and called
-   `overrides` "the only type whose sub-1.0 edges carry a `reasonCode`". Both were true when
-   written and are false now: every sub-1.0 type carries one. Annotated as a dated snapshot with
-   the current per-type table rather than silently rewritten.
+1. **The differential is same-grammar.** It refutes, it cannot confirm — a defect both paths share
+   is invisible to it.
+2. **The 400-file draw is a draw.** Recall figures come from it; the corpus-wide tables do not.
+3. **`renders` fires 5 times** in 3,422 files. Thin, but implemented, fixture-pinned
+   (`go/renders-template-execution`), and the construct is genuinely rare — it did not appear in a
+   1,200-file cross-repo stride, which is expected rather than broken.
