@@ -1,0 +1,305 @@
+[INFO] [21:38:14] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [21:38:14] [ast-engine] language grammar allocated {"language":"java"}
+[INFO] [21:38:14] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_g933w7g"}
+[INFO] [21:38:35] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_pv4fpv0"}
+[INFO] [21:38:51] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_xky4u35"}
+[INFO] [21:39:02] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_12bv48b2"}
+  … 2000/11152 parsed (0 failed, 0 degraded) 60s — MySQLTableIndexColumn.java
+[INFO] [21:39:13] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_17lrpz00"}
+[INFO] [21:39:30] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_1fhri2kp"}
+[INFO] [21:39:44] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_1lqqj77f"}
+[INFO] [21:40:00] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_1sw8ziqq"}
+  … 4000/11152 parsed (0 failed, 0 degraded) 116s — DBDReferenceUtils.java
+[INFO] [21:40:10] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_1xp01dnt"}
+[INFO] [21:40:20] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_2283dw23"}
+[INFO] [21:40:31] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_278bwngo"}
+[INFO] [21:40:44] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_2dg3gywe"}
+  … 6000/11152 parsed (0 failed, 0 degraded) 174s — NoteDirectEditPolicy.java
+[INFO] [21:41:07] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_2nyabhrk"}
+[INFO] [21:41:30] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_2yctah9k"}
+[INFO] [21:41:44] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_34qee55f"}
+[INFO] [21:42:03] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_3dghjofi"}
+  … 8000/11152 parsed (0 failed, 0 degraded) 244s — PrimaryKeyValueCreator.java
+[INFO] [21:42:18] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_3kg64dji"}
+[INFO] [21:42:36] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_3stfprf4"}
+[INFO] [21:42:47] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_3xxbo6ch"}
+[INFO] [21:43:04] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_45kbuijp"}
+  … 10000/11152 parsed (0 failed, 0 degraded) 306s — IllegalNameError.java
+[INFO] [21:43:20] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_4cwp8w78"}
+[INFO] [21:43:30] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_4hcntu4e"}
+[INFO] [21:43:32] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4_4ijzu399"}
+  owner channel (production rule, modelled): 267810 row(s) carried metadata.owner · resolved 157261 · declined 110549 (direct 133982 · ownerAbsent 90029 · sameKindDuplicate 13575 · inherited 9704 · noMember 7709 · ownerAmbiguous 6469 · chainAmbiguous 5391 · kindAmbiguous 951)
+  owner channel vs name model: 50608 row(s) the name count called ambiguous/unresolved and the channel resolves; 17071 row(s) the channel DECLINED whose name would have resolved — production holds those NULL (withdrawn binding)
+  qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 5 row(s) asked · namespace branch: 0 of 258 row(s) asked
+  case fold (project key space): 0 row(s) moved from unresolved to a declaration whose spelling differs only in case (this language is not opt-in: the fold is inert)
+  module-qualified resolution: 0 row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name
+  module channel: 0 row(s) resolved through it — the claimed module's file declares the name once, so the qualified spelling names that declaration even where the bare name is NOT unique project-wide
+  module channel refusals: 0 row(s) where the module's file declares the name NOWHERE (a re-export, an unpublished record selector, or a class-instance name) and 0 where it declares it more than once
+  implements class-like resolution: 5 row(s) resolved by the class-like rule (the key's CLASS declarations under the bare, then the parenthesised, spelling; a member of the same name is not a rival for an `implements` row)
+incoming gate — java
+corpus root: /home/ishaq2321/bb_tests/repositories (OVERRIDDEN by BB_CORPUS_ROOT — a DIFFERENT population from the default <corpus-root>/bb_tests/repositories; a rate measured here is not comparable with a rate measured there)
+population: 11152 parsed of 11152 sampled (corpus has 11152 .java files across 19 repos; stride sample)
+population: admitted extensions = .java (SOURCE: the CALLER'S ARGUMENT (an explicit set — deliberate, and the table's set is printed beside it)) (the ROUTER'S ONE TABLE says: .java — SAME as this run) (ONE spelling) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 11152 for THIS lane in THIS run — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).
+project index: USED — 19 repo index(es) (19 built, 0 from cache, 0 damaged) over 11152 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one). Passed as { projectIndex } exactly as `pool-worker.ts` parse_batch does. INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, cross-file base resolution and the widened type-visibility gate are measured. THE GATE'S PROJECT-INDEX POPULATION is clojure, cpp, dart, fsharp, java, javascript, protobuf, python, ruby, scss, solidity, typescript (the languages `INDEX_SPECS` can build an index for). For those, this population IS production's; for every other language the analyzer is parsed with NO context and behaves as this run's --index-less arm does, so its counts are not comparable to a --index-less run. Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.
+excluded from that population: 282 tracked-but-absent/unreadable + 0 over the 1 MB cap  — above the cap the engine extracts structurally, not as an analyzer
+parse failures: 0   degraded (regex fallback): 0
+endpoint keys indexed: name + 115618 qualifiedName alias(es). A lane that publishes a file-scoped qualified name and targets that path is measured, not missed.
+empty results: 1 file(s) hold NO CONTENT AT ALL (0 bytes or whitespace). The run missed nothing, the population is COMPLETE, and these are NOT a defect.
+empty results: 19 file(s) hold CONTENT AND RETURNED NOTHING. **THIS COUNTER CANNOT TELL WHICH OF THREE THINGS THEY ARE**: content that cannot declare anything (comments, blank bodies — population COMPLETE), a genuine parse failure or timeout (a HOLE in it), or a file the analyzer declined. Do NOT report them as a hole without reading them.
+    ????? /home/ishaq2321/bb_tests/repositories/grails-core/grails-forge/config/spotless.license.java
+    ????? /home/ishaq2321/bb_tests/repositories/grails-core/grails-shell-cli/src/main/groovy/org/grails/cli/compiler/autoconfigure/package-info.java
+    ????? /home/ishaq2321/bb_tests/repositories/grails-core/grails-shell-cli/src/main/groovy/org/grails/cli/compiler/dependencies/package-info.java
+    ????? /home/ishaq2321/bb_tests/repositories/grails-core/grails-shell-cli/src/main/groovy/org/grails/cli/compiler/grape/package-info.java
+    ????? /home/ishaq2321/bb_tests/repositories/grails-core/grails-shell-cli/src/main/groovy/org/grails/cli/compiler/maven/package-info.java
+ambiguous is counted by DECLARATION here. The kind-count is shown beside it because the fleet's earlier number used it, and the two differ by two orders of magnitude.
+resolution scope: PER PROJECT (the repository a file belongs to) — production's scope. `parallel-indexer.resolveRelationships` fills `target_symbol_id` only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1 (`_res_name.cnt = 1`, `WHERE s.project_id = ?`). A name that collides with a declaration in ANOTHER project is not ambiguous to production and is not counted as ambiguous here.
+
+TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+----------------------------------------------------------------------------------------------------------------------------------------------------
+calls         356653   140943    0         76579      11869      90984       47842   0       0        305      0       0         0        0
+uses          99344    73203     0         11699      5984       4003        10439   0       0        0        0       0         0        0
+contains      160970   160970    108446    0          0          0           0       0       0        0        0       0         0        0
+imports       209100   90709     0         1131       5          5861        111399  0       0        0        0       0         0        0
+references    554563   134877    0         59180      57738      44644       313913  0       0        1949     0       0         0        0
+exports       10762    10745     0         12         12         5           0       0       0        0        0       0         0        0
+extends       6863     2350      0         2849       2781       82          1485    0       0        97       0       0         0        0
+implements    5260     3913      0         14         8          93          1239    0       0        1        0       0         0        0
+overrides     34067    34067     0         0          0          0           0       0       0        0        0       0         0        0
+instantiates  41811    7413      0         11532      11372      857         21607   0       0        402      0       0         0        0
+decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0
+renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0
+part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+---------------------------------------------------------------------------------------------
+TOTAL         1479393  659190    108446    162996     89769      146529      507924  0       0        2754     0       0         0        0
+collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane
+bindOK = a target SPELLED as a binding (`<callable>\u0000<binding>`), which no declaration can answer · bind? = a separator with nothing after it · bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane
+causeOK = bucket 3: the target names nothing here and the edge DECLARED why (a base beyond the run's reach), so it is stated rather than claimed — NEVER folded into resolved · causeFAIL = a declared cause whose own reason does not check out, counted against the lane
+amb(kind) is a SUBSET of amb(decl), printed beside it for comparison: resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = the edge count, exactly.
+separator tripwire: 0 published key(s) contain `\u0000` of 1479393 edges measured (0 required: a declaration name carrying it would make a binding claim unfalsifiable)
+    of those 507924 verified: 507924 by owner lookup in the key space, 0 against the project's own pubspec files + file list
+EDGES A MARKER SET EXPLAINS — NOT-RESOLVED, PLUS BINDINGS (diagnostic, PER PROJECT scope, up to 5 marker sets per type ordered by amb+unresolved, then any binding-bearing set):
+type          metadata KEYS on the edge                           resolved  amb      unres    extClaim  binding  cause
+--------------------------------------------------------------------------------------------------------------------------
+argumentCount+callSiteStartIndex+javaCallExpression+owner+ownerEvidence  110031    0        83915    0         0        0
+argumentCount+callSiteStartIndex+javaCallExpression  27897     68602    0        0         0        0
+callExpression+constructorReceiver+relationshipType  0         0        4941     0         0        0
+callSite+callSiteStartIndex+inInitializer+javaCallExpression  689       4861     0        0         0        0
+argumentCount+callSiteStartIndex+importedFrom+javaCallExpression  600       1538     0        0         0        0
+argumentCount+callSiteStartIndex+externalReason+externalReceiver+externalSpecifier+importedBinding+importedFrom+isExternalTarget+javaCallExpression  0         0        0        0         210      0
+argumentCount+callSiteStartIndex+importedBinding+importedFrom+javaCallExpression  0         0        0        0         46       0
+callSite+callSiteStartIndex+externalReason+externalReceiver+externalSpecifier+importedBinding+importedFrom+inInitializer+isExternalTarget+javaCallExpression  0         0        0        0         32       0
+argumentCount+callSiteStartIndex+externalProof+externalReason+importedBinding+importedFrom+isExternalTarget+javaCallExpression  0         0        0        0         17       0
+  ⋯ OMITTED   9 further marker set(s) NOT printed above           1725      1578     2128     42691     0        0
+                ^ add these to the rows above or the type will not
+isFieldAccess                                       5804      8042     277      0         0        0
+externalProof+externalReason+isExternalTarget+isFieldAccess  17481     3168     0        9460      0        0
+isFieldAccess+owner+ownerEvidence                   7704      0        1967     0         0        0
+externalProof+externalReason+isExternalTarget+isFieldAccess+owner+ownerEvidence  666       0        944      285       0        0
+isBareRead+owner+ownerEvidence                      38312     0        805      0         0        0
+  ⋯ OMITTED   6 further marker set(s) NOT printed above           614       489      10       673       0        0
+                ^ add these to the rows above or the type will not
+isJavaImport+isModuleDependency+isStatic+relationshipType  446       432      1229     13        0        0
+fileLevel+isJavaImport+isStatic+relationshipType    446       432      1229     13        0        0
+isJavaImport+isModuleDependency+isWildcard+relationshipType  8         0        1619     0         0        0
+fileLevel+isJavaImport+isWildcard+relationshipType  8         0        1619     0         0        0
+isJavaImport+isModuleDependency+relationshipType    44769     129      64       34424     0        0
+  ⋯ OMITTED   6 further marker set(s) NOT printed above           45014     138      101      36252     0        0
+                ^ add these to the rows above or the type will not
+isJavaImport+relationshipType                       44885     131      35403    0         0        0
+declaredOn+relationshipType                         38778     26424    1732     0         0        0
+declaredOn+importedFrom+relationshipType            33686     21307    1662     0         0        0
+relationshipType                                    7033      5105     2109     0         0        0
+importedFrom+relationshipType                       3635      5008     628      0         0        0
+declaredOn+importedBinding+importedFrom+relationshipType  0         0        0        0         1567     0
+importedBinding+importedFrom+relationshipType       0         0        0        0         169      0
+annotatedKind+importedBinding+importedFrom+isAnnotation+relationshipType  0         0        0        0         125      0
+declaredOn+importedBinding+importedFrom+languageNamespace+relationshipType  0         0        0        0         29       0
+importedBinding+importedFrom+languageNamespace+relationshipType  0         0        0        0         25       0
+annotatedKind+importedBinding+importedFrom+isAnnotation+languageNamespace+relationshipType  0         0        0        0         22       0
+boundFor+importedBinding+importedFrom+relationshipType  0         0        0        0         7        0
+importedBinding+importedFrom+javaCallExpression+relationshipType  0         0        0        0         5        0
+  ⋯ OMITTED   14 further marker set(s) NOT printed above          6595      1205     3110     19191     0        0
+                ^ add these to the rows above or the type will not
+isJavaModuleDirective+isModuleDirective+moduleName+relationshipType  15        12       0        0         0        0
+httpMethod+isApiEndpoint+relationshipType+route     0         0        5        0         0        0
+importedFrom+relationshipType                       1027      1564     32       0         0        0
+relationshipType                                    1323      1282     50       0         0        0
+externalProof+externalReason+isExternalTarget+relationshipType  0         3        0        210       0        0
+importedBinding+importedFrom+relationshipType       0         0        0        0         97       0
+relationshipType                                    1881      14       52       0         0        0
+importedFrom+relationshipType                       2032      0        41       0         0        0
+importedBinding+importedFrom+relationshipType       0         0        0        0         1        0
+isNew+relationshipType                              6641      6136     523      0         0        0
+importedFrom+isNew+relationshipType                 743       5393     334      0         0        0
+externalProof+externalReason+isExternalTarget+isNew+relationshipType  2         3        0        4694      0        0
+importedBinding+importedFrom+isNew+relationshipType  0         0        0        0         402      0
+--------------------------------------------------------------------------------------------------------------------------
+extClaim = a claim on this marker set the project VERIFIED or that no check can reach · binding = edges on this marker set SPELLED as a binding · cause = edges on this marker set whose analyzer DECLARED why it could not reach the base (bucket 3; never a resolution, and its own column so it cannot be mistaken for one). Grouped by KEY only: a value would split one marker into a signature per symbol it names.
+
+TABLE 2 — PER CORPUS (one pooled key space; NOT the verdict's scope, shown because every earlier dart number in this programme was measured this way):
+type          edges    resolved  amb(decl)  unresolved  extFAIL
+-----------------------------------------------------------------
+calls         356653   127658    97081      100265      0
+uses          99344    67925     18411      4128        0
+contains      160970   160970    0          0           0
+imports       209100   91557     1211       5859        0
+references    554563   111892    163794     44220       295
+exports       10762    4678      6079       5           0
+extends       6863     2090      3167       82          1
+implements    5260     3849      115        93          1
+overrides     34067    1084      32983      0           0
+instantiates  41811    2714      17385      856         1
+decorates     0        0         0          0           0
+renders       0        0         0          0           0
+mixes_in      0        0         0          0           0
+part_of       0        0         0          0           0
+-----------------------------------------------------------------
+TOTAL         1479393  574417    340226     155508      298
+
+BINDING INTENT — the EXACT test beside the count model's upper bound (resolvedAmongCollision):
+  intended = a declaration in the edge's OWN FILE ON the edge's own line answers to the target
+  (exact only where the edge line IS the target symbol's line: contains, exports.)
+  For every other type the edge line is the READ SITE, so a same-file row is sameFileUnproven —
+  not wrong and not right; arbitraryTwin is the file-crossing class in both cases.
+  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget
+  calls         356653   0         70587            249666                   36400            0
+  uses          99344    0         53207            36972                    9165             0
+  contains      160970   160852    118              0                        0                0
+  imports       209100   0         10               92818                    116272           0
+  references    554563   0         26071            348201                   180291           0
+  exports       10762    10757     0                0                        5                0
+  extends       6863     0         439              4934                     1490             0
+  implements    5260     0         289              3678                     1293             0
+  overrides     34067    0         34067            0                        0                0
+  instantiates  41811    0         5681             15040                    21090            0
+  TOTAL         1479393  171609    190469           751309                   366006           0
+  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges.
+  COLUMN NAMES SPELL THE MEANING, because a previous name cost a lane 45,967 edges of
+  false alarm: sameFileUnproven = the OWN FILE declares it (line inconclusive here);
+  arbitraryTwin = the OWN FILE DECLARES NOTHING and another file does — THIS is the
+  own-file-absent class; nothingAnywhere = NO FILE IN THE RUN declares it, which is NOT
+  the same question and is two orders of magnitude smaller on nim's calls row.
+  validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts — its
+  own-file+own-line column is this class read off brain_relationship.target_symbol_id.
+CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying
+share, BY CLAIM KIND: 3895 of this lane's 162996 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 3895 OWN-FILE-SILENT · 0 n/a.
+    owner            VERIFIED 0 · not verified 0 · REFUTED 0 · CONTRADICTED 0 · OWN-FILE-SILENT 3895 · n/a 0
+  ^ 3895 OWN-FILE-SILENT: only ANOTHER file declares the target. **THIS IS NOT A
+    REFUTATION.** css's marker means "THIS FILE declares no --x" (real-css-analyzer.ts:115), and a
+    PER-FILE claim cannot be refuted by another file's declaration — yet the arbiter checked the
+    PROJECT key space and called all 180 of css's ambiguous edges contradicted. Some generic markers
+    are instead about a NAME'S ORIGIN (isStdlib, stdlibModule, nimStdlibModule), which this project
+    declaring a same-named symbol does not falsify either. A per-MARKER scope table would settle it
+    and does not exist, so this class is reported WITH ITS COUNT and NOT as a failure.
+  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH
+  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than
+  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column.
+
+CLAIM-CARRYING RESOLVED EDGES — the tie-break's DISCARDED claims, recorded because they were
+DROPPED. A claim that arrived on a row the OWN FILE already answered is now RECORDED, and it
+moved no count: 0 of this lane's 659190 resolved edge(s) carry a claim the
+tie-break settled — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.
+    (none of this lane's 659190 resolved edge(s) carries a claim the tie-break settled — a
+     MEASURED zero of the class, not an absent block.)
+  A CLAIM IS NOT A RESOLUTION, AND A DISCARDED CLAIM IS NOT A DEFECT: the tie-break IS production's
+  own rule (the own file's declaration is the answer), so the claim is refuted rather than applied.
+  It is counted here so that "how many claim-carrying edges did the name model settle" is READABLE.
+
+AMBIGUOUS / UNRESOLVED TARGETS (worklist; counts sampled per type — don't read a type's absence here as a zero, read TABLE 1):
+  calls
+    amb  put                                        6 declarations  [method]
+    amb  equals                                     19 declarations  [method]
+    amb  getType                                    6 declarations  [method]
+    amb  getMethodType                              2 declarations  [method]
+    unres  this
+    unres  super
+    unres  length
+    unres  replace
+    ^ amb: showing 4 of 25 collected + **73080 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **72898 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  uses
+    amb  index                                      16 declarations  [method|property]
+    amb  length                                     4 declarations  [method|property]
+    amb  data                                       6 declarations  [property]
+    amb  RETURN                                     2 declarations  [constant|enum_member]
+    unres  length
+    unres  tag
+    unres  info
+    unres  index
+    ^ amb: showing 4 of 25 collected + **10597 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **2841 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  imports
+    amb  org.grails.compiler.injection.GrailsASTUti 2 declarations  [method]
+    amb  org.grails.compiler.injection.GrailsASTUti 3 declarations  [method]
+    amb  org.grails.compiler.injection.GrailsASTUti 2 declarations  [method]
+    amb  org.grails.compiler.injection.GrailsASTUti 2 declarations  [method]
+    unres  clojure.asm
+    unres  com.google.dart.server
+    unres  org.dartlang.analysis.server.protocol
+    unres  org.antlr.v4.runtime
+    ^ amb: showing 4 of 25 collected + **935 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **4313 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  references
+    amb  SymbolTable                                3 declarations  [class|constructor]
+    amb  ByteVector                                 4 declarations  [class|constructor]
+    amb  TypePath                                   2 declarations  [class|constructor]
+    amb  Type                                       2 declarations  [class|constructor]
+    unres  boolean
+    unres  int
+    unres  byte
+    unres  short
+    ^ amb: showing 4 of 25 collected + **57899 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **42691 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  exports
+    amb  kotlinx.coroutines.guava                   2 declarations  [module|namespace]
+    amb  kotlinx.coroutines.slf4j                   2 declarations  [module|namespace]
+    amb  kotlinx.coroutines.debug                   2 declarations  [module|namespace]
+    amb  kotlinx.coroutines.test                    2 declarations  [module|namespace]
+    unres  /jsp
+    unres  /gsp
+    unres  /
+    unres  /hello
+    ^ amb: showing 4 of 12 collected · unres: showing 4 of 4 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  extends
+    amb  AnnotationVisitor                          3 declarations  [class|constructor]
+    amb  ClassVisitor                               3 declarations  [class|constructor]
+    amb  Frame                                      4 declarations  [class|constructor]
+    amb  FieldVisitor                               3 declarations  [class|constructor]
+    unres  PostgreSchema.ConstraintCache
+    unres  PostgreDatabase.SchemaCache
+    unres  OracleTablePartition.PartitionInfoBase
+    unres  CommandLine.Help
+    ^ amb: showing 4 of 25 collected + **2648 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **46 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  implements
+    amb  GrailsCache                                2 declarations  [class|interface]
+    amb  ProxyHandler                               2 declarations  [interface]
+    amb  ResourceLocator                            2 declarations  [class|interface]
+    amb  HibernateOperations                        2 declarations  [interface]
+    unres  DelegatingStyledCellLabelProvider.IStyledLabelProvider
+    unres  DBSDataManipulator.ExecuteBatch
+    unres  DBSDataBulkLoader.BulkLoadManager
+    unres  GeneralUtils.IParameterHandler
+    ^ amb: showing 4 of 10 collected · unres: showing 4 of 25 collected + **57 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  instantiates
+    amb  ByteVector                                 4 declarations  [class|constructor]
+    amb  Label                                      2 declarations  [class|constructor]
+    amb  TypePath                                   2 declarations  [class|constructor]
+    amb  Attribute                                  2 declarations  [class|constructor]
+    unres  Attribute.Set
+    unres  APersistentVector.Seq
+    unres  APersistentVector.RSeq
+    unres  DefExpr.Parser
+    ^ amb: showing 4 of 25 collected + **11386 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **820 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+
+VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 309525 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  162996 ambiguous + 146529 unresolved of 1479393 edges, resolved against the file's OWN PROJECT (production's scope)
+  clause 1 FAIL — every edge resolves, or carries a claim the project verifies
+           309525 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)
+  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count
+           no edge carries a declared cause (residual 309525)
+  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER
+           no declared cause carries a count, so there is nothing to rule
+  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0
+           extFAIL 0 · bindFAIL 0 · causeFAIL 0
+  (the same edges under the pooled corpus key space: 340226 ambiguous + 155508 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)
+instrument self-test: PASS (control fired)
+
+Scope of a PASS: this population, this analyzer digest, resolution only. It does NOT
+say the edges point at the RIGHT declaration — that is differential.ts's question.

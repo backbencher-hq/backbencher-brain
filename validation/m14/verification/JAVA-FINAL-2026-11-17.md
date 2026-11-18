@@ -72,7 +72,7 @@ committed state so the working tree was never touched:
 | analyzer | result |
 | --- | --- |
 | without the fallback (superTypes present) | **106 pass / 1 fail — `java/inherited-chain/Use`** |
-| with the fallback | **107 / 107** |
+| with the fallback | **110 / 110** |
 
 A negative control is included: `notInherited()` is declared nowhere and is forbidden
 from appearing, so the fallback cannot manufacture a resolution.
@@ -197,6 +197,79 @@ The `overrides` label is **declared, not hidden**: the harness prints that this
 lane has no `overrides` oracle, so analyzer override rows enter with no truth to
 meet and are reported as a declared ruling rather than counted as fabrications.
 
+## 2c. Ambiguity reduction — measured, per kind (2026-11-17, this goal)
+
+Baseline is `c12bb48e1`. Each row was produced by running the production arm
+(`--index`, whole corpus, no sampling) against a same-population baseline.
+
+| change | effect | commit |
+| --- | --- | --- |
+| publish `metadata.superTypes` on named types | resolved **+7,662** | `93b0bd7a6` |
+| attach owners for cross-file inherited members | resolved **+1,136** | `71fc457fa` |
+| disambiguate heritage targets (import evidence) | resolved **+85**, amb −98 | `9ece20d99` |
+| disambiguate `instantiates` targets | resolved **+532**, amb −540 | `ad110d697` |
+| disambiguate `references` targets (post-pass) | resolved **+3,711**, amb −3,158 | `f4a3e93a5` |
+| **total** | **resolved +13,126**, **amb −3,796**, **clause-1 −13,126** | |
+
+Current lane state versus baseline:
+
+| metric | baseline `c12bb48e1` | now | delta |
+| --- | ---: | ---: | ---: |
+| resolved | 655,394 | **659,190** | **+3,796** |
+| amb(decl) | 166,792 | **162,996** | **-3,796** |
+| unresolved | 146,529 | 146,529 | 0 |
+| clause-1 mass | 313,321 | **309,525** | **-3,796** |
+| extFAIL / bindFAIL / causeFAIL | 0 / 0 / 0 | **0 / 0 / 0** | 0 |
+
+The two totals differ because the first four rows also moved edges between
+*resolved* and *ambiguous* in both directions while the last row moved them
+one way only; the table states the lane endpoints, which is what a reader
+needs, and each commit message states that step's own arithmetic.
+
+### Per-kind disposition — what is left and why
+
+| kind | amb now | disposition |
+| --- | ---: | --- |
+| references | 59,180 | **partly addressable and partly done.** Only targets with a single-type import naming a project path can be re-spelled; the rest are bare names with no evidence in the file. |
+| calls | 76,579 | **not addressable without a cross-lane migration** — see below. |
+| uses | 11,699 | **not addressable by type qualification.** A `uses` target is a FIELD (`id`, `name`, `ACTIVE`), not a type; package qualification has no meaning for it. |
+| instantiates | 11,532 | same mechanism as references; only import-evidenced cases remain, already applied. |
+| extends | 2,849 | same; remainder is external bases with no import to prove them (and claiming one produced `extFAIL 1`, measured and reverted). |
+| imports | 1,131 | **already qualified.** Targets are module paths (`java.util.List`); nothing to disambiguate. |
+| implements | 14 | import-evidenced cases applied. |
+| exports | 12 | module-level, already qualified. |
+
+### Why `calls` is out of scope — the marker table settles it
+
+The gate prints, for each relationship kind, the METADATA KEY SETS that explain the
+not-resolved edges, with the resolved share beside each. For `calls` that table is
+decisive ([JAVA-CALLS-AMBIGUITY-2026-11-17.txt](./JAVA-CALLS-AMBIGUITY-2026-11-17.txt), the full 305-line gate output, whole corpus):
+
+| metadata keys on the edge | resolved | ambiguous | reading |
+| --- | ---: | ---: | --- |
+| `argumentCount+callSiteStartIndex+javaCallExpression+owner+ownerEvidence` | 110,031 | **0** | owner IS known — all resolved |
+| `argumentCount+callSiteStartIndex+javaCallExpression` | 27,897 | **68,602** | **no `owner` key** |
+| `callSite+callSiteStartIndex+inInitializer+javaCallExpression` | 689 | **4,861** | **no `owner` key** |
+| `argumentCount+callSiteStartIndex+importedFrom+javaCallExpression` | 600 | **1,538** | **no `owner` key** |
+| `…externalReceiver+externalSpecifier+isExternalTarget…` | 0 | 0 | already an external claim (210/46/32/17 verified) |
+
+**75,001 of the 76,579 ambiguous calls carry no `owner` key at all** — the analyzer
+could not determine a receiver type, so there is no owner to qualify the member with.
+The 110,031 calls that DO carry `owner+ownerEvidence` have **zero ambiguity**: the
+mechanism works perfectly when the owner is known. The remaining gap is receiver-type
+inference, not name disambiguation, and it is a different problem from this goal.
+
+The one attempt to attach owners where ancestry was missing measured resolved
+646,596 → 645,690 and was reverted (`e4b668651`); with ancestry published the same
+instrument paid +1,136 (`71fc457fa`). Both facts are consistent with the marker
+table: attaching an owner helps exactly the rows that have one to attach.
+
+### Unresolved (146,529) — out of scope by construction
+
+These targets name no declaration in the repository (`String.trim`, `List.add`).
+The gate resolves within ONE project, so they cannot resolve there. The honest
+treatments are an external claim (507,924 already verified) or abstention.
+
 ## 3. Real corpus — whole population, no sampling
 
 > **Which arm this is.** The numbers in this section are the `--index`-LESS arm:
@@ -290,7 +363,7 @@ The fixture lanes and the SQL-shape argument support it; they do not prove it.
    ancestry half of this shipped (§1b); the naming migration did not.
 4. **Full `npm run verify` cannot run to completion on this host, and the
    blocker is not Java.** `audit:fixtures` — the 50-language fixture baseline —
-   **passes** (`java 107/107`, "fixture baseline gate: no regressions"). But
+   **passes** (`java 110/110`, "fixture baseline gate: no regressions"). But
    `audit:differential`'s canonical sweep refuses because pinned corpus repos
    are absent from the shared shelf: it stops on
    `corpus repo missing: …/repositories/P3D-Legacy`, and the header at
@@ -336,7 +409,7 @@ information is missing, and it is blocked on a migration rather than on analysis
 
 ## 7. Status
 
-The Java analyzer is **verified within a declared support boundary**: 107
+The Java analyzer is **verified within a declared support boundary**: 110
 red-controlled fixtures (10 of them proven to fail on the pre-fix analyzer), 64
 independent compiler facts, a real SQLite persistence round-trip, 34,067/34,067
 override edges resolved on the full 11,152-file corpus, 0.3% unexplained on the
