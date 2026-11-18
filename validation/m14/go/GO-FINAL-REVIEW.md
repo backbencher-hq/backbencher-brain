@@ -25,7 +25,7 @@ not the analyzer. `docs/analyzers/go.md`'s banner states this at the top of the 
 | outgoing resolution | **421,867 / 423,858 = 99.53 %** of sources are same-file symbols |
 | **unexplained rows, either direction** | **0** — every sub-1.0 edge carries a `reasonCode`, every reference target a `bindReason`, every edge a construct label |
 | dangling source | **0.2034 %** |
-| oracle differential (400-file draw) | **UNEXPLAINED 2,640 → 34**, every residual triaged to source |
+| oracle differential (400-file draw) | **UNEXPLAINED 2,640 → 17**, every residual triaged to source |
 
 ## What changed since the previous issue of this document
 
@@ -241,7 +241,7 @@ both paths share is invisible to it.
 
 | | before | after |
 | --- | --- | --- |
-| UNEXPLAINED oracle-only | **2,640** | **34** |
+| UNEXPLAINED oracle-only | **2,640** | **17** |
 | `calls` recall | 0.607 | **0.634** |
 | `references` recall | 0.678 | **0.778** |
 
@@ -252,10 +252,22 @@ reference, an exported package-scope `var` counted as an export (the lane rules 
 decision, pinned by `go/exports-contract`), and a write gate that caught only the first target of a
 multi-assignment (`s.Total, s.Largest, s.Errs = f()` — all three are writes).
 
-**The remaining 34**, each triaged to source: `references` 34 (declaration-pass type positions and
-conversions), `calls` 2 (a `go`/`defer` shape and a range variable), `contains` 2 (a type and a
-value sharing one name), `overrides` 1 (a promoted-method shadow the oracle cannot see),
-`uses` 1. None is a missing edge; each is a documented scope difference.
+**The remaining 17**, every one opened against source and none a missing edge:
+
+| # | type | what it actually is |
+| --- | --- | --- |
+| 11 | `references` | a function TYPE ARGUMENT (`flow.Forward[lattice](…)`, `cursorutil.FirstEnclosing[*ast.ReturnStmt](…)`) or a struct FIELD read (`m.scores[i][j]`). The callee is a different name; the argument is not a declaration this graph names. |
+| 2 | `calls` | an INTERFACE METHOD called through a locally-bound parameter (`Preempt(f)`, `g.Nodes()`) — LocalsAreNotSymbols keeps the parameter out of the graph |
+| 2 | `contains` | a type and a value sharing one name, so the leaf owner is ambiguous by construction |
+| 1 | `overrides` | a promoted-method shadow the oracle's same-file model cannot see |
+| 1 | `uses` | a field read on an imported type (`LogMessage -> Message`) |
+
+**Two caveats on the checker itself**, recorded because they cost three attempts to find:
+this grammar/binding does **not** give stable object identity (`field("type") === namedChild(0)`
+is FALSE on nodes with identical spans), so every structural comparison must be by BYTE SPAN; and
+the oracle's model is per-file, so a callee declared in a sibling file is unknown to it — which is
+why `is` (declared in modernize.go, called from maps.go) needed a structural rule rather than a
+name lookup.
 
 ## The two RULED types, and why each is language-level
 
