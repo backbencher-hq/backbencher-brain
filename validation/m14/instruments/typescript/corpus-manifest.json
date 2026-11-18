@@ -19,7 +19,7 @@
     ],
     "sizeCap": 1048576
   },
-  "generatedAt": "2026-11-17T22:08:21.577Z",
+  "generatedAt": "2026-11-18T05:27:04.425Z",
   "totals": {
     "repos": 41,
     "reposSeen": 199,
@@ -287,8 +287,8 @@
   ],
   "selfCorpus": {
     "path": "/home/ishaq2321/mcp/backbencher-brain",
-    "gitHead": "b79dcd2ffd927dd1da957b60dd31a9170399402a",
-    "trackedTsFamily": 6816,
+    "gitHead": "60ce50cf69805137543a04f9677a543e464cd678",
+    "trackedTsFamily": 6824,
     "extensions": [
       ".ts",
       ".tsx",
