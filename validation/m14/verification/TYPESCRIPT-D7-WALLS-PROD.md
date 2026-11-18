@@ -21,7 +21,7 @@ WITHDRAWS the name binding. The wall question is therefore not "why is the graph
 |---|---|---|---|---|---|
 | `ts-receiver-wall-probe.ts --max-files 1500` | 1,500 of 17,350 admitted files, 41 repos, stride 12, 0 parse failures | 40,709 | 19,811 | 1,939 | 9.8% of member calls |
 | `ts-owner-coverage.ts --max-files 1500` | 1,500 of 13,830 `ts`-only admitted files, 39 repos | 47,251 | 23,978 | 3,099 | 12.9% of member calls |
-| whole-population arm (`typescript-arm-final-2026-11-18.log`, owner-channel line) | 17,350 files / 41 repos, 992,652 edges | — | — | 30,298 rows carried `metadata.owner` (16,496 resolved, 13,802 declined) | — |
+| whole-population arm (`typescript-arm-accessorfix-2026-11-18.log`, owner-channel line) | 17,350 files / 41 repos, 992,659 edges | — | — | 30,298 rows carried `metadata.owner` (16,496 resolved, 13,802 declined) | — |
 
 The two 1,500-file runs differ because the wall probe admits the lane's whole extension set
 (`ts,tsx,mts,cts` → 17,350) while owner-coverage's historical CLI admits `ts` only (13,830); both
@@ -87,7 +87,7 @@ rather than rounded away because the D7 bar is about honesty, not about a clean 
 
 - `validation/m14/measurements/typescript-wall-1500-final.log` (partition, causes, falsifier list)
 - `validation/m14/measurements/typescript-owner-coverage-1500-final.log` (evidence-class split)
-- `validation/m14/measurements/typescript-arm-final-2026-11-18.log` (whole-population owner channel:
+- `validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log` (whole-population owner channel:
   30,298 owner rows, 16,496 resolved, 13,802 declined)
 - `script/m14/ts-receiver-wall-probe.ts`, `script/m14/ts-owner-coverage.ts`,
   `script/m14/package-scope-claim.ts`

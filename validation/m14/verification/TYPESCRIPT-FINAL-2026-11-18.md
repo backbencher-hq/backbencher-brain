@@ -12,8 +12,8 @@ row says so.
 | condition | reading at this revision | source |
 |---|---|---|
 | (A) implemented | **14 / 14**, 0 excluded, 0 block problems; four firing-silent types are COUNTED to whole-population measures (`implements` 275, `decorates` 2,119, `mixes_in` 2, `part_of` 49) and none is uncited; `notFired: false` | `bun run script/m14/coverage-block-gate.ts --json` → typescript row (`silenceUncited: []`) |
-| (B) whole-population | **17,350 / 17,350 parsed**, 41 repositories, **992,652 edges**, population digest `4bd7bba5441c5344`; declaration regenerated from an arm log whose sha256 the declaration records | `validation/m14/instruments/typescript/incoming-declaration.json` + `corpus-manifest.json`; arm log `validation/m14/measurements/typescript-arm-final-2026-11-18.log` |
-| (C) resolved closure | **EXACT**: 458,125 resolved + 214,351 external + 83,489 ambiguous + 236,687 otherUnresolved = **992,652**, unclassed 0; six causeRulings each carry population + falsifier{run,wouldFail} | declaration `totals` / `types` / `causeRulings` |
+| (B) whole-population | **17,350 / 17,350 parsed**, 41 repositories, **992,659 edges**, population digest `4bd7bba5441c5344`; declaration regenerated from an arm log whose sha256 the declaration records | `validation/m14/instruments/typescript/incoming-declaration.json` + `corpus-manifest.json`; arm log `validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log` |
+| (C) resolved closure | **EXACT**: 458,133 resolved + 214,351 external + 83,489 ambiguous + 236,686 otherUnresolved = **992,659**, unclassed 0; six causeRulings each carry population + falsifier{run,wouldFail} | declaration `totals` / `types` / `causeRulings` |
 | (D) walls dispositioned | **17,872** unowned member calls on a 1,500-file stride: W0 6,762 · W1 7,183 · W2 **2** · W3 3,925; 11 cause classes; each class RESOLVED / CLAIMED / INSTRUMENT GAP / RULED UNDECIDABLE with a falsifier; the falsifier's 27 candidate rows sampled and diagnosed as probe over-attribution | `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`; `typescript-wall-1500-final.log` |
 | (E) fixtures | **123 pass / 0 fail**; TSX probe fixtures 3 (7/7, 12/12, 3/3 with controls fired); **16/16 compiler-backed gates PASS** on `tsc` 5.9.3; **13/13 mutants caught, 0 survived** | `typescript-fleet-fixtures-final.log`, `typescript-16-gates-final.log`, `typescript-mutants-final.log`, `ts-fixture-probe.ts` |
 | (F) no-regex | **0 regex literals** by the AST census across the analyzer + 11 lane scan targets; the regenerated HEAD census does not list this analyzer among its 8 remaining literals (php 3, ruby 3, powershell 1, swift 1) | `script/m14/ts-no-regex-count.ts`; `validation/m12/results/regex-census.json` |
@@ -38,7 +38,7 @@ the declaration. Log: `validation/m14/measurements/typescript-completion-gate-fi
 | `bun run script/m14/ts-partof-grammar-proof.ts` | **GREEN — 8/8 conditions** (stock `8515404d…` vs served `b75fa34c…`, engine pin table, patched-copy identity) | instrument output |
 | `bun run script/m14/ts-no-regex-count.ts` | **0 patterns / 12 files** | instrument output |
 | `npx tsx script/m12/regex-census.ts --head` + commit | census regenerated; TS lane absent from nonzero rows | `validation/m12/results/regex-census.json` |
-| `bun run script/m14/ts-declaration.ts <arm> --served-digest=b75fa34c…` | **WROTE** — closure 992,652 === 992,652, cause rulings 6, unclassed 0 | `validation/m14/instruments/typescript/incoming-declaration.json` |
+| `bun run script/m14/ts-declaration.ts <arm> --served-digest=b75fa34c…` | **WROTE** — closure 992,659 === 992,659, cause rulings 6, unclassed 0 | `validation/m14/instruments/typescript/incoming-declaration.json` |
 | `bun run script/m14/coverage-block-gate.ts --json` | typescript: implemented 14, applicable 14, problems [], silenceCounted 4, silenceUncited [], notFired false, noCorpus false | inline JSON |
 | `bun run script/m14/firing-check.mjs` (fleet log regenerated) | 49 lane rows; `TYPESCRIPT 10 types fired` on vue-core/120 (calls 13,135 · contains 597 · exports 373 · extends 19 · imports 1,476 · instantiates 81 · overrides 4 · references 2,001 · renders 83 · uses 814) | `validation/m14/results/firing-laptop-b.current.log` |
 | scoped differential: `bun run script/m14/differential.ts --lang typescript --sample 60` | vue-core: truth 4,936 / covered 96.0% / unexplained 221 (5.5%); element-plus: truth 1,566 / covered 96.2% / unexplained 76 (5.1%) — scoped runs do not overwrite the canonical artifact (it refuses) | `typescript-differential-final.log` |
@@ -60,7 +60,7 @@ the declaration. Log: `validation/m14/measurements/typescript-completion-gate-fi
   calls 526,773 · uses 62,729 · contains 91,687 · imports 107,896 · references 122,060 ·
   exports 40,619 · extends 3,327 · implements 275 · overrides 677 · instantiates 16,886 ·
   decorates 2,119 · renders 17,553 · mixes_in 2 · part_of 49.
-- **Resolution classes**: resolved 458,125 · external 214,351 · ambiguous 83,489 ·
+- **Resolution classes**: resolved 458,133 · external 214,351 · ambiguous 83,489 ·
   otherUnresolved 236,687 · unclassed 0. The arm's verdict is FAIL on clause 1 because a per-file
   syntax-only analyzer cannot resolve every edge; the causes are the declaration's six rulings and
   the resolution caveats.
@@ -92,7 +92,7 @@ the declaration. Log: `validation/m14/measurements/typescript-completion-gate-fi
 
 ```
 BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index
-bun run script/m14/ts-declaration.ts validation/m14/measurements/typescript-arm-final-2026-11-18.log \
+bun run script/m14/ts-declaration.ts validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log \
   --served-digest=b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335
 bun run script/m14/coverage-block-gate.ts --json
 bun run script/m14/run-fixtures.ts --lang typescript

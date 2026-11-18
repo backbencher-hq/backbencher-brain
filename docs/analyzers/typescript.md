@@ -23,10 +23,10 @@ The owner's six conditions, each read from an instrument, at this revision (evid
 | condition | reading | evidence |
 |---|---|---|
 | (A) implemented | **14 / 14 implemented**, 0 excluded, 0 block problems; the firing check's 4 SILENT types are COUNTED to whole-population measures (`implements` 275, `decorates` 2,119, `mixes_in` 2, `part_of` 49), not uncited | `coverage-block-gate.ts --json` typescript row: `unexplainedSilence` 4, `silenceCounted` 4, `silenceUncited` [], `notFired` false |
-| (B) whole-population | **17,350 / 17,350 admitted files parsed** over 41 repositories; **992,652 edges**; population digest `4bd7bba5441c5344`; declared in `incoming-declaration.json`, regenerated 2026-11-18 from the arm log whose sha256 is recorded in the declaration | `validation/m14/instruments/typescript/{incoming-declaration,corpus-manifest}.json`, arm log `validation/m14/measurements/typescript-arm-final-2026-11-18.log` |
-| (C) resolved closure | **closure EXACT**: resolved 458,125 + external 214,351 + ambiguous 83,489 + otherUnresolved 236,687 = 992,652, **unclassed 0**; the residual resolution classes are dispositioned by 6 causeRulings, each with a population, a run and a `wouldFail` | declaration `types`/`totals`/`causeRulings`; the arm's own clause-2/3 sections |
+| (B) whole-population | **17,350 / 17,350 admitted files parsed** over 41 repositories; **992,659 edges**; population digest `4bd7bba5441c5344`; declared in `incoming-declaration.json`, regenerated 2026-11-18 from the arm log whose sha256 is recorded in the declaration | `validation/m14/instruments/typescript/{incoming-declaration,corpus-manifest}.json`, arm log `validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log` |
+| (C) resolved closure | **closure EXACT**: resolved 458,133 + external 214,351 + ambiguous 83,489 + otherUnresolved 236,686 = 992,659, **unclassed 0**; the residual resolution classes are dispositioned by 6 causeRulings, each with a population, a run and a `wouldFail` | declaration `types`/`totals`/`causeRulings`; the arm's own clause-2/3 sections |
 | (D) walls dispositioned | **17,872 unowned member calls** on a 1,500-file stride: W0 6,762 (37.8%) · W1 7,183 (40.2%) · W2 **2 (0.0%)** · W3 3,925 (22.0%), plus 1,131 rows in five named sub-classes; each class ends RESOLVED / CLAIMED / INSTRUMENT GAP / RULED UNDECIDABLE with a falsifier (the falsifier's 27 candidate rows are sampled and diagnosed) | `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`; `validation/m14/measurements/typescript-wall-1500-final.log` |
-| (E) fixtures | **123 pass / 0 fail**; TSX probe fixtures 3, controls fired; **16/16** compiler-backed gates pass on `tsc` 5.9.3; **13/13 mutants caught** | `run-fixtures.ts --lang typescript`, `ts-fixture-probe.ts`, `validation/m14/verify-typescript-*.mts`, `ts-mutants-run.ts` |
+| (E) fixtures | **124 pass / 0 fail**; TSX probe fixtures 3, controls fired; **32/32** compiler-backed gates pass on `tsc` 5.9.3; **14/14 mutants caught** | `run-fixtures.ts --lang typescript`, `ts-fixture-probe.ts`, `validation/m14/verify-typescript-*.mts`, `ts-mutants-run.ts` |
 | (F) no-regex | **0 regex literals** by AST census across the analyzer + 11 lane scan targets; the fleet census (regenerated at HEAD) does not list this analyzer among its 8 remaining | `script/m14/ts-no-regex-count.ts` (0), `validation/m12/results/regex-census.json` |
 
 **The completion gate itself cannot print a lane verdict at this revision, and the reason is not this
@@ -163,7 +163,7 @@ measurement and is cited as such.
   function-typed values; a policy class, recorded not hidden).
 - **The receiver channel**, measured: `metadata.owner` now lands on BOTH halves (calls since D7,
   uses since 2026-11-17). Whole-population owner count comes from the regenerated arm
-  (`validation/m14/measurements/typescript-arm-final-2026-11-18.log`); the wall partition (W0 no
+  (`validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log`); the wall partition (W0 no
   nameable root / W1 file binds but no stated type / W2 project declares / W3 declares nowhere) and
   its falsifier are in the D7 ledger page.
 - **Compile-backed verification**: 16 `verify-typescript-*.mts` gates pass (52 sites / 25 runtime
@@ -418,7 +418,7 @@ file. Neither is measured by a gate, because M60 still records this analyzer as
 
 ## Evidence pointers
 
-- Fixtures: `validation/m14/fixtures/typescript/` (123 pass / 0 fail; TSX probe 3 fixtures,
+- Fixtures: `validation/m14/fixtures/typescript/` (124 pass / 0 fail; TSX probe 3 fixtures,
   controls fired)
 - Ground truth / differential: `validation/m12/ground-truth/typescript.json`,
   `validation/m12/results/typescript-differential.json`, adjudication in
@@ -426,9 +426,9 @@ file. Neither is measured by a gate, because M60 still records this analyzer as
   `validation/m14/measurements/typescript-differential-final.log` and
   `...typescript-differential-classify-final.log`
 - Whole-population: `validation/m14/instruments/typescript/incoming-declaration.json` (regenerated
-  2026-11-18 from `validation/m14/measurements/typescript-arm-final-2026-11-18.log`),
+  2026-11-18 from `validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log`),
   corpus identity in `validation/m14/instruments/typescript/corpus-manifest.json`
-  (default root, 17,350 admitted files across 41 repos, digest 4bd7bba5441c5344; self-corpus 6,816
+  (default root, 17,350 admitted files across 41 repos, digest 4bd7bba5441c5344; self-corpus 6,825
   tracked `.ts`-family files)
 - Receiver channel / D7 wall: `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`
 - Claim-pass order ruling: `validation/m14/measurements/typescript-claim-class-probe*.log`
