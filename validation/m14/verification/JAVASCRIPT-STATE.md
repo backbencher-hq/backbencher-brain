@@ -153,6 +153,34 @@ arms, and `refuted` is 0 in both.
 production already stamps the flag on its own path. The java (13 readers) and python (3 readers) lanes
 therefore see byte-identical inputs as before.
 
+## The per-label oracle on a JSX corpus — three tool bugs, then FABRIC 0
+
+`javascript-label-oracle-agreement.ts` had never been pointed at a corpus with JSX; it was written
+against svelte/lodash. Four fixes, all in the TOOL:
+
+1. **EISDIR** — `git ls-files` lists SUBMODULE entries as directories and the walk `readFileSync`'d one.
+   Now requires `isFile()`.
+2. **`undefined.truth`** — it read `labels.get(label)!` and preact's truth contains labels outside its
+   `COMPARED` set. Counted in an `uncompared` bucket now.
+3. **BINDING CLAIMS COMPARED RAW** — the analyzer spells a locally-bound target
+   `<container><BINDING_SEP><name>`; the AUTHORITATIVE differential normalises exactly that
+   (`auditTarget`, differential.ts:1405) and this tool did not, so every binding-claim row read as a
+   fabrication. The tell: this file had ZERO references to `BINDING_SEP` while the differential had four.
+4. **JSX NAMES COUNTED AS READS** — a JSX element's name is an ordinary `identifier` node, so the
+   generic identifier walk pushed a `uses` row IN ADDITION to the `renders` row its own derivation
+   emits. One reference, two labels, and every JSX corpus reported a large phantom MISSING. The guard:
+   a parent of `jsx_opening_element` / `jsx_self_closing_element` / `jsx_closing_element` means the
+   identifier is a JSX NAME. **Measured on preact-150: truth `uses` 3,659 → 3,049 (the 610 drop IS the
+   phantom rows), missing 741 → 79, real missing 688 → 79.** The guard is provably a no-op without
+   JSX: the svelte and lodash differential hashes are byte-identical afterwards.
+
+**Result on preact-150:** **FABRIC 0 on every label.** imports 947/947 · exports 220/220 · contains
+177/177 · extends 135/135 · instantiates 10/10 · references 4/4 · renders 402/402 · calls 1,969/2,081
+(missing 113, all noise-filter, real 0) · uses 2,970/3,049 (missing 79 real).
+
+**FABRIC = 0 on a corpus shape this lane was never measured against** is the ship-critical number: the
+analyzer invents nothing an independent oracle cannot derive.
+
 ## Still open
 
 1. **The store-side questions** — the name-ranking bind and a `mixes_in` resolution rule. Both are
