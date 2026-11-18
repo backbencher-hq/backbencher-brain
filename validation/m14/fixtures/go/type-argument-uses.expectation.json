@@ -1,0 +1,51 @@
+{
+  "fixtureId": "go/type-argument-uses",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THAT AN EXPLICIT INSTANTIATION NAMES ITS TYPE ARGUMENTS — in expression position only. `is[*Named](t)` is a generic function CALL and the lane already published the call (`calls -> is`); what it did not publish is that the expression also NAMES the type `Named`, because the argument lives under `type_arguments` inside a `generic_type` and no pass read it. FOUND BY THE ORACLE DIFFERENTIAL on go-tools/go/analysis/passes/modernize/maps.go:278 (`if is[*types.Named](t)`), where the oracle expected `references -> Named` and the analyzer emitted NOTHING; 22 of the 62 then-unexplained rows were the callee `is` (that half is the oracle's own bug and is fixed there). EXPRESSION POSITION IS THE WHOLE DIFFICULTY, AND THE REASON THIS FIXTURE HAS A CONTROL: a `generic_type` in TYPE position belongs to the declaration pass — `type Box[T any] struct{...}` where `T` is the declared type PARAMETER and uses nothing, `func f(x Box[string])`, a struct field type, a result type. Reading those here published `references Box -> T` for a parameter that names no declaration, which is why the first cut pushed `global` from 761 to 1,063 and the dangling rate from 0.1800 % to 0.2505 % — a silent quality regression that no gate would have caught, only the two health numbers did. The guard now skips any generic_type whose parent is a type_spec, type_parameter_list, parameter_declaration, field_declaration or type_arguments. MEASURED after the guard: `references` 79,108 -> 82,067 (+2,959), `global` 1,063 -> 862, dangling 0.2505 % -> 0.2034 %; on the 400-file oracle draw UNEXPLAINED `references` fell 62 -> 34. THE EXPECTED ROW is the expression-position use. THE CONTROL ROW is `withMutex -> Mutex` (a PARAMETER type: the declaration pass owns it, and this pass must NOT also emit it — a duplicate would mean the guard failed). THE FORBID ROWS pin the two halves of the guard: no `Box -> T` from this pass (T is a type parameter, not a use), and no row naming a PREDECLARED type (`int`, `string`) from `Box[int]{}` or `Box[string]{}`. NOT PINNED: `calls -> is`, which is the call half and is owned by the call pass; line numbers; and the construction rows, which belong to go/composite-literal-wrapper-types.",
+  "expectSymbols": [
+    { "name": "Named", "kind": "struct" },
+    { "name": "Box", "kind": "struct" },
+    { "name": "is", "kind": "function" },
+    { "name": "call", "kind": "function" },
+    { "name": "withMutex", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "THE BUG: `is[*Named](t)` names Named as its type argument. Before the fix this row did not exist at all.",
+      "type": "references",
+      "from": "call",
+      "target": "Named",
+      "meta.relationshipType": "go_type_argument"
+    },
+    {
+      "comment": "CONTROL — a PARAMETER type (`m *sync.Mutex`). The declaration pass owns it and emits `declared_type`; this pass must not also emit it, so exactly one row may exist and it must be the declaration pass's label.",
+      "type": "references",
+      "from": "withMutex",
+      "target": "Mutex",
+      "meta.relationshipType": "declared_type"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "GUARD HALF 1: `Box[T any]` declares the type PARAMETER T. It uses nothing, so no row may come from this pass — and the declaration pass's `Box -> T` must stay the only such row.",
+      "type": "references",
+      "from": "Box",
+      "target": "T",
+      "meta.relationshipType": "go_type_argument"
+    },
+    {
+      "comment": "GUARD HALF 2: a PREDECLARED type argument is a primitive, not a declaration this graph names. `Box[string]{}` must not produce `references -> string`.",
+      "type": "references",
+      "from": "explicit",
+      "target": "string",
+      "meta.relationshipType": "go_type_argument"
+    },
+    {
+      "comment": "The same for the predeclared int in `var Global = Box[int]{}`.",
+      "type": "references",
+      "from": "Global",
+      "target": "int"
+    }
+  ]
+}

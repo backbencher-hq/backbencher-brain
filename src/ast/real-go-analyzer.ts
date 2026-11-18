@@ -3028,6 +3028,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // 180 uses the graph did not record.
     this.analyzeGoBuiltinTypeArguments(rootNode, relationships)
 
+    // 5.7. Type ARGUMENTS of an explicit instantiation in expression position.
+    //
+    // `is[*Named](t)` is a generic function CALL, and the lane already publishes the call
+    // (`calls -> is`). What it did not publish is that the call also USES the type `Named`:
+    // the type argument lives under `type_arguments` inside a `generic_type`, and no pass read
+    // it, so the type was invisible to the graph. Found by the oracle differential on
+    // `go/analysis/passes/modernize/maps.go:278` — the oracle expected `references -> Named`
+    // and the analyzer emitted nothing.
+    //
+    // This is the EXPRESSION-position counterpart of the declaration pass, which already reads
+    // a generic TYPE's arguments in type position. The distinction the grammar forces: in
+    // `var x Box[int]` the `Box[int]` is a type node and the declaration pass owns it, while in
+    // `f[int](x)` / `Box[int]{...}` the instantiation sits in an expression and nothing else
+    // reads it.
+    this.analyzeGoTypeArgumentUses(rootNode, relationships)
+
     // 6. OwnerName contains pass (Rust M12.18 contract): every symbol with an
     // owner gets ONE `contains owner -> member` edge — covers struct fields,
     // interface methods, and methods uniformly. Replaces the old
@@ -4909,6 +4925,91 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return names
+  }
+
+  /**
+   * Type ARGUMENTS of an explicit instantiation written in EXPRESSION position.
+   *
+   * `is[*Named](t)` and `Box[int]{...}` both carry a `type_arguments` child under a
+   * `generic_type`. The lane published the CALL (or the construction) but never the fact that
+   * the expression NAMES those types, so `Named` and `int` were absent from the graph
+   * entirely. Found by the oracle differential; the oracle's "every type_identifier outside a
+   * qualified_type is a reference" rule expects a row for each argument.
+   *
+   * Declaration-position arguments (`var x Box[int]`, `type T = Box[int]`) are NOT this pass's
+   * business — `extractDeclaredTypeRefs` already walks type nodes there. The guard below skips
+   * any `generic_type` with an enclosing `type_spec`, so the two passes cannot double-emit.
+   */
+  private analyzeGoTypeArgumentUses(
+    rootNode: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const seen = new Set<string>()
+    const collect = (n: Node, out: string[]): void => {
+      if (n.type === "type_identifier" || n.type === "qualified_type") {
+        const raw = String(n.text ?? "")
+        const dot = raw.lastIndexOf(".")
+        const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+        if (leaf.length > 0 && leaf !== "_" && !RealGoAnalyzer.GO_PREDECLARED_TYPES.has(leaf) && !out.includes(leaf)) {
+          out.push(leaf)
+        }
+        return
+      }
+      if (n.type === "generic_type") {
+        // A nested instantiation: its base is a type too, so read it as well as its arguments.
+        const base = n.namedChildCount > 0 ? n.namedChild(0) : null
+        if (base) collect(base, out)
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collect(c, out)
+      }
+    }
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      // EXPRESSION POSITION ONLY. A `generic_type` in a TYPE position belongs to the declaration
+      // pass: `type Box[T any] struct{...}` (the `Box[T]` is the declared name, and `T` there is
+      // the type PARAMETER), `func f(x Box[string])` (a parameter type), a struct field type, a
+      // result type. Reading those here published `references Box -> T` for a type parameter that
+      // is not a use of anything — which is also why the `global` count and the dangling rate
+      // jumped when this pass first ran. The enclosing-node test is the cheap, exact discriminator.
+      const t = node.parent?.type
+      const inTypePosition =
+        t === "type_spec" || t === "type_parameter_list" || t === "type_parameter_declaration" ||
+        t === "parameter_declaration" || t === "field_declaration" ||
+        t === "type_arguments" || t === "type_declaration"
+      if (node.type === "generic_type" && !inTypePosition) {
+        const args = node.childForFieldName("type_arguments")
+        if (args) {
+          const names: string[] = []
+          collect(args, names)
+          const src = this.resolveGoWorkSource(node)
+          for (const leaf of names) {
+            const key = `${src}|${leaf}|arg`
+            if (seen.has(key)) continue
+            seen.add(key)
+            const at = this.nodeLine(node)
+            relationships.push({
+              source: src,
+              target: leaf,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              ...(at ? { line_number: at } : {}),
+              metadata: {
+                relationshipType: "go_type_argument",
+                reasonCode: "type_argument_of_an_instantiation_read_as_a_leaf",
+                bindReason: "type_argument_of_an_instantiation_read_as_a_leaf",
+              },
+            })
+          }
+        }
+      }
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const c = node.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
   }
 
   private analyzeGoBareIdentifierUses(

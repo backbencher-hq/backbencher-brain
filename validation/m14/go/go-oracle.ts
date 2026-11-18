@@ -718,7 +718,28 @@ function buildFacts(root: any, content: string): FileFacts {
     } else if (t === "type_identifier" && n.parent && n.parent.type !== "qualified_type") {
       const nm = textOf(n)
       const src = ctx.typeName.length > 0 ? ctx.typeName : enclosingDeclName(n, root)
-      if (!PREDECLARED_TYPES.has(nm)) push(facts, "references", src, nm)
+      // A GENERIC FUNCTION CALL is a CALL, not a type reference. `is[*types.Named](t)` — where
+      // `is` is a package-level generic function (`func is[T any](x any) bool`) — parses with the
+      // callee in a position the grammar types as a type identifier, so this rule read the callee
+      // as a type and published a `references` row the analyzer correctly does not emit: it
+      // publishes `calls -> is` (verified on modernize/maps.go:278). 22 of the 62 remaining
+      // unexplained rows were `is` alone, and every one had a `calls` row beside it.
+      // The callee of a GENERIC call is nested: `is[*Named](t)` parses as
+      // `type_conversion_expression > generic_type > type_identifier "is"`, so the node's parent is
+      // a `generic_type`, not a `call_expression`. Walk up to see whether this identifier is the
+      // BASE of a generic_type that is itself the callee of a call — that makes it a call, not a
+      // type reference. Verified on the pinned grammar for `func is[T any](x any) bool`.
+      let calleeOf = false
+      {
+        let cur: any = n
+        let hops = 0
+        while (cur && cur.parent && hops < 4) {
+          if (cur.parent.type === "call_expression" && field(cur.parent, "function") === cur) { calleeOf = true; break }
+          if (cur.parent.type === "generic_type" && field(cur.parent, "type") === cur) { cur = cur.parent; hops++; continue }
+          break
+        }
+      }
+      if (!PREDECLARED_TYPES.has(nm) && !calleeOf) push(facts, "references", src, nm)
     }
 
     for (const c of named(n)) {
@@ -855,6 +876,7 @@ function classifyOracOnly(
   if (type === "references" && model.decls.some((d) => (d.kind === "func" || d.kind === "method") && d.name === e[1])) {
     return "function-name-is-not-a-type-reference"
   }
+
   // AN EXPORTED PACKAGE-SCOPE VARIABLE IS DELIBERATELY OUT OF SCOPE for the `exports` edge,
   // even though Go really does export it. The M49 JVM-closure F3 invariant requires export
   // names to be unique and top-level-resolvable, and Go permits `type Foo struct{}` plus
