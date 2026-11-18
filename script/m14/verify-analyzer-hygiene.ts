@@ -196,6 +196,65 @@ export function findWriteOnlyFlags(src: string, lang: string, findings: Finding[
   }
 }
 
+// A COMMENT IS NOT CODE (2026-11-18). This gate was accusing
+// `real-javascript-analyzer.ts:540` of a fresh-wrapper identity comparison that lives
+// inside THE COMMENT explaining why that comparison is wrong:
+//   `// `wrapper === wrapper` or `wrapper.parent === p` test is false for the very node it just`
+// The detectors are regexes over source text, so they cannot tell a defect from a
+// sentence that QUOTES the defect — and a gate that convicts prose teaches its readers
+// to ignore it, which is the failure mode this file's own header warns about.
+//
+// The stripper is LENGTH-PRESERVING: every comment byte becomes a space and every
+// newline survives, so the detectors' reported line numbers and snippets still address
+// the real file. String and template literals are tracked so a `//` inside a URL, or a
+// `/*` inside a pattern, is not mistaken for a comment opener.
+export function stripComments(src: string): string {
+  const out = src.split("")
+  let i = 0
+  let quote: string | null = null
+  while (i < src.length) {
+    const c = src[i]
+    if (quote) {
+      if (c === "\\") {
+        i += 2
+        continue
+      }
+      if (c === quote) quote = null
+      i++
+      continue
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      quote = c
+      i++
+      continue
+    }
+    if (c === "/" && src[i + 1] === "/") {
+      while (i < src.length && src[i] !== "\n") {
+        out[i] = " "
+        i++
+      }
+      continue
+    }
+    if (c === "/" && src[i + 1] === "*") {
+      out[i] = " "
+      out[i + 1] = " "
+      i += 2
+      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) {
+        if (src[i] !== "\n") out[i] = " "
+        i++
+      }
+      if (i < src.length) {
+        out[i] = " "
+        out[i + 1] = " "
+        i += 2
+      }
+      continue
+    }
+    i++
+  }
+  return out.join("")
+}
+
 export function findNodeIdentityComparisons(src: string, lang: string, findings: Finding[]) {
   // M37 #596 (TSD2/TSD6 class): web-tree-sitter returns FRESH wrapper objects
   // per node access, so `x.childForFieldName("f") === n` NEVER matches even
@@ -214,6 +273,43 @@ export function findNodeIdentityComparisons(src: string, lang: string, findings:
   const re = new RegExp(String.raw`(${operand})\s*(===|!==)\s*(${operand})`, "g")
   const FRESH = /\.(childForFieldName|namedChild|child)\s*\(|\.(parent|previousSibling|nextSibling|namedChildren)\b/
   const PRIMITIVE_TAIL = /\.(id|type|text|name|startIndex|endIndex|startPosition|endPosition|length|row|column|isNamed|isMissing|hasError)\s*$/
+  // A CALL THAT IS NOT AN ACCESSOR RETURNS A VALUE, NOT A WRAPPER (2026-11-18). The
+  // rule above convicts a comparison when an operand CONTAINS a fresh accessor, and
+  // that is wrong when the accessor sits in an ARGUMENT: `scopeOf(statement.parent)`
+  // compares the function's RESULT. Measured false positive
+  // (real-typescript-analyzer.ts:6591): `scopeOf = (node) => this.scopeIdOf(node)`, and
+  // `scopeIdOf` returns `p.startIndex + 1` or `0` — a NUMBER. The gate reported
+  // "object identity never matches" about a numeric comparison.
+  //
+  // The discriminator is the operand's TOP-LEVEL call, not whether it contains one:
+  // `n.parent.childForFieldName("function") === n` still fires because its outermost
+  // callee IS a fresh accessor, while `scopeOf(n.parent) === scope` does not because
+  // `scopeOf` is somebody's function.
+  const FRESH_CALLEES = new Set([
+    "childForFieldName",
+    "namedChild",
+    "child",
+    "parent",
+    "previousSibling",
+    "nextSibling",
+    "namedChildren",
+  ])
+  const freshAtTopLevel = (op: string): boolean => {
+    const t = op.trim()
+    if (!t.endsWith(")")) return FRESH.test(t)
+    let depth = 0
+    let k = t.length - 1
+    for (; k >= 0; k--) {
+      if (t[k] === ")") depth++
+      else if (t[k] === "(") {
+        depth--
+        if (depth === 0) break
+      }
+    }
+    if (k <= 0) return FRESH.test(t)
+    const callee = (t.slice(0, k).match(/([A-Za-z_$][\w$]*)\s*$/) ?? [])[1] ?? ""
+    return FRESH_CALLEES.has(callee)
+  }
   let m: RegExpExecArray | null
   while ((m = re.exec(src))) {
     const [full, left, , right] = m
@@ -225,8 +321,9 @@ export function findNodeIdentityComparisons(src: string, lang: string, findings:
     // Either side ending in a stable primitive property (id/span/text) is a
     // legitimate identity/value comparison — node.id is stable within a tree.
     if (PRIMITIVE_TAIL.test(left) || PRIMITIVE_TAIL.test(right)) continue
-    // At least one side must be an unmistakable fresh-node expression.
-    if (!FRESH.test(left) && !FRESH.test(right)) continue
+    // At least one side must be an unmistakable fresh-node expression — at its TOP
+    // level, so a non-accessor call's return value is not mistaken for a wrapper.
+    if (!freshAtTopLevel(left) && !freshAtTopLevel(right)) continue
     const line = src.slice(0, m.index).split("\n").length
     // Skip string-literal contexts (quote parity guard, same as ternaries).
     const before = src.slice(0, m.index)
@@ -251,23 +348,34 @@ export function findNodeIdentityComparisons(src: string, lang: string, findings:
 export function findBareNodeIdentityComparisons(src: string, lang: string, findings: Finding[]) {
   const FRESH = /\.(childForFieldName|namedChild|child)\s*\(|\.(parent|previousSibling|nextSibling|namedChildren|parent)\b/
   const PRIMITIVE = /\.(id|text|type|startIndex|endIndex|startPosition|endPosition|length|row|column|isNamed|isMissing|hasError|name|kind|visibility|module)\b/
-  // A bare identifier is node-ish when (a) its nearest initializer uses a
+  // A bare identifier is node-ish when (a) its NEAREST preceding initializer uses a
   // fresh accessor, or (b) it is declared/parameterized as a Node.
-  const declaredNode = new Map<string, boolean>()
-  const initializerHasFresh = (ident: string, uptoIdx: number): boolean => {
-    const re = new RegExp(`\\b(?:const|let|var)\\s+${ident}\\s*=\\s*([^;\\n]+)`, "g")
+  //
+  // NEAREST, NOT ANYWHERE IN THE FILE (2026-11-18). The first version asked "does this
+  // name have a fresh-accessor initializer ANYWHERE before this point", which is not the
+  // declaration in scope at the comparison. Measured false positives, both in
+  // real-typescript-analyzer.ts and both convicted by an unrelated declaration of the
+  // same name further up a 16k-line file:
+  //   :4636  `t !== source`  — at this site `t` is destructured from
+  //          `Array<{ name: string; node: Node }>` and `source = owner.name`: STRINGS.
+  //   :5270  `callee === target` — both are `String(...)` calls: STRINGS.
+  // Resolving to the nearest declaration keeps every shape the rule exists for (their
+  // operands are parameters or `const x = node.child…` in the SAME function) and stops
+  // the file-wide guess — the same class as the elixir same-name false positive that
+  // forced the `left === right` decline above, one shape further out.
+  const nearestBefore = (pattern: string, uptoIdx: number): RegExpExecArray | null => {
+    const re = new RegExp(pattern, "g")
     let m: RegExpExecArray | null
-    let found = false
-    while ((m = re.exec(src)) && m.index < uptoIdx) {
-      if (FRESH.test(m[1])) found = true
-    }
-    return found
+    let last: RegExpExecArray | null = null
+    while ((m = re.exec(src)) && m.index < uptoIdx) last = m
+    return last
+  }
+  const initializerHasFresh = (ident: string, uptoIdx: number): boolean => {
+    const m = nearestBefore(`\\b(?:const|let|var)\\s+${ident}\\s*=\\s*([^;\\n]+)`, uptoIdx)
+    return m ? FRESH.test(m[1]) : false
   }
   const isNodeIsh = (ident: string, lineIdx: number): boolean => {
-    if (!(ident in declaredNode)) {
-      declaredNode.set(ident, new RegExp(`\\b${ident}\\s*\\??\\s*:\\s*Node\\b`).test(src))
-    }
-    if (declaredNode.get(ident)) return true
+    if (nearestBefore(`\\b${ident}\\s*\\??\\s*:\\s*Node\\b`, lineIdx)) return true
     return initializerHasFresh(ident, lineIdx)
   }
   const lines = src.split("\n")
@@ -328,7 +436,10 @@ export function main() {
       console.error(`missing analyzer source: ${p}`)
       process.exit(2)
     }
-    const src = fs.readFileSync(p, "utf8")
+    // Comment bytes are blanked in place (same length, same newlines) so a finding
+    // can never be reported about prose, while every line number still addresses
+    // the real file.
+    const src = stripComments(fs.readFileSync(p, "utf8"))
     findNoopTernaries(src, lang, allFindings)
     findDuplicateIfElse(src, lang, allFindings)
     findWriteOnlyFlags(src, lang, allFindings)
@@ -486,6 +597,67 @@ export function selftest(): number {
       src: ["function g(n: Node, label: string) {", "  if (n === label) return", "  return n", "}", ""].join("\n"),
       expect: 0,
     },
+    {
+      // 2026-11-18: the file-wide resolution convicted real-typescript-analyzer.ts's
+      // `t !== source` because `t` has a fresh-accessor initializer ELSEWHERE. At the
+      // comparison `t` is a destructured STRING. Nearest-declaration resolution must
+      // decline; a rule that still fired here would be the same false positive.
+      name: "a string operand whose NAME has a node initializer elsewhere is not this defect",
+      src: [
+        "function walk(n: Node) {",
+        "  const t = n.childForFieldName(\"type\")",
+        "  return t",
+        "}",
+        "function collect(pairs: Array<{ name: string; node: Node }>, owner: { name: string }) {",
+        "  const source = owner.name",
+        "  for (const { name: t } of pairs) {",
+        "    if (t !== source) continue",
+        "  }",
+        "}",
+        "",
+      ].join("\n"),
+      expect: 0,
+    },
+  ]
+
+  // The accessor rule had NO batch, and that is why three of its false positives lived
+  // in the tree: a rule whose only test is "does it still fire" cannot tell a tightening
+  // from a rule that has stopped matching. Each case below is a shape this gate either
+  // mis-read or must keep catching.
+  const accessorCases: { name: string; src: string; expect: number }[] = [
+    {
+      // The TSD6 shape the rule was written for. MUST still fire.
+      name: "a fresh accessor compared to a node (the TSD6 shape) — must still fire",
+      src: ['function f(n: Node) {', '  if (n.parent.childForFieldName("function") === n) return', "}", ""].join("\n"),
+      expect: 1,
+    },
+    {
+      // 2026-11-18 real false positive: `scopeOf(statement.parent) !== scope`, where
+      // `scopeOf` returns a NUMBER (`scopeIdOf` -> `p.startIndex + 1 | 0`). The accessor
+      // is in the ARGUMENT; the compared value is the call's return.
+      name: "a NON-ACCESSOR call's return compared to a value is not a wrapper comparison",
+      src: [
+        "function f(statement: Node, scope: number) {",
+        "  const scopeOf = (node: Node | null | undefined) => idOf(node)",
+        "  if (scopeOf(statement.parent) !== scope) continue",
+        "}",
+        "",
+      ].join("\n"),
+      expect: 0,
+    },
+    {
+      // 2026-11-18 real false positive: the comparison was quoted INSIDE the comment that
+      // explains why it is wrong (real-javascript-analyzer.ts:540). Comments are blanked.
+      name: "a comparison quoted inside a comment is not code",
+      src: [
+        "function f(n: Node, p: Node) {",
+        "  // `wrapper === wrapper` or `wrapper.parent === p` test is false for a fresh wrapper",
+        "  return p",
+        "}",
+        "",
+      ].join("\n"),
+      expect: 0,
+    },
   ]
 
   let bad = 0
@@ -511,16 +683,30 @@ export function selftest(): number {
         (ok ? "" : ` (${hits.map((f) => f.snippet.replace(/\s+/g, " ")).join(" | ")})`),
     )
   }
+  for (const c of accessorCases) {
+    const found: Finding[] = []
+    findNodeIdentityComparisons(stripComments(c.src), "selftest", found)
+    const hits = found.filter((f) => f.kind === "node-identity-comparison")
+    const ok = hits.length === c.expect
+    if (!ok) bad++
+    console.log(
+      `${ok ? "ok  " : "FAIL"} ${c.name}: expected ${c.expect}, got ${hits.length}` +
+        (ok ? "" : ` (${hits.map((f) => f.snippet.replace(/\s+/g, " ")).join(" | ")})`),
+    )
+  }
   // The negative cases are only meaningful if the detector works at all, so a
   // run that reports nothing anywhere is a failure, not a pass.
-  const positive = cases.filter((c) => c.expect > 0).length + nodeCases.filter((c) => c.expect > 0).length
+  const positive =
+    cases.filter((c) => c.expect > 0).length +
+    nodeCases.filter((c) => c.expect > 0).length +
+    accessorCases.filter((c) => c.expect > 0).length
   if (positive === 0) {
     bad++
     console.log("FAIL self-test is vacuous: no positive case to discriminate against")
   }
   console.log(
     bad === 0
-      ? `\nanalyzer-hygiene selftest: ${cases.length + nodeCases.length} case(s) meet expectation`
+      ? `\nanalyzer-hygiene selftest: ${cases.length + nodeCases.length + accessorCases.length} case(s) meet expectation`
       : `\nanalyzer-hygiene selftest: ${bad} case(s) failed`,
   )
   return bad === 0 ? 0 : 1

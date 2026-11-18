@@ -1,0 +1,379 @@
+[INFO] [00:53:03] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [00:53:03] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [00:53:03] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:54:01] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:54:05] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [00:54:05] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [00:54:35] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:54:57] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  … 2000/17350 parsed (0 failed, 0 degraded) 138s — schema.spec.ts
+[INFO] [00:55:26] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:55:44] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:56:04] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [00:56:22] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  … 4000/17350 parsed (0 failed, 0 degraded) 209s — index.ts
+[INFO] [00:56:42] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:56:55] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:57:25] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:57:48] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  … 6000/17350 parsed (0 failed, 0 degraded) 291s — 487.test.ts
+[INFO] [00:58:04] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:58:31] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:58:47] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:58:55] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+  … 8000/17350 parsed (0 failed, 0 degraded) 365s — warnIfPassingHtmlAttributesToTexts.ts
+[INFO] [00:59:20] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [00:59:21] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:59:53] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [00:59:58] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+  … 10000/17350 parsed (0 failed, 0 degraded) 425s — sql-lint.ts
+[INFO] [01:00:25] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:00:39] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [01:00:58] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:01:08] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  … 12000/17350 parsed (0 failed, 0 degraded) 486s — useRedwoodDirective.test.ts
+[INFO] [01:01:14] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [01:01:25] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:01:33] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:01:36] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  … 14000/17350 parsed (0 failed, 0 degraded) 522s — flow.test.ts
+[INFO] [01:01:50] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:02:18] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:02:58] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:03:18] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  … 16000/17350 parsed (0 failed, 0 degraded) 620s — roles.ts
+[INFO] [01:03:32] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [01:04:02] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  owner channel (production rule, modelled): 30298 row(s) carried metadata.owner · resolved 16496 · declined 13802 (direct 16492 · ownerAbsent 11395 · noMember 1617 · ownerAmbiguous 790 · sameKindDuplicate 4)
+  owner channel vs name model: 5554 row(s) the name count called ambiguous/unresolved and the channel resolves; 4063 row(s) the channel DECLINED whose name would have resolved — production holds those NULL (withdrawn binding)
+  qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 27389 row(s) asked · namespace branch: 0 of 0 row(s) asked (the namespace branch is STRUCTURALLY IMPOSSIBLE in this language: no file publishes a module-kind symbol, so no bare target can be qualified)
+  case fold (project key space): 0 row(s) moved from unresolved to a declaration whose spelling differs only in case (this language is not opt-in: the fold is inert)
+  module-qualified resolution: 0 row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name
+  module channel: 0 row(s) resolved through it — the claimed module's file declares the name once, so the qualified spelling names that declaration even where the bare name is NOT unique project-wide
+  module channel refusals: 0 row(s) where the module's file declares the name NOWHERE (a re-export, an unpublished record selector, or a class-instance name) and 0 where it declares it more than once
+  implements class-like resolution: 4 row(s) resolved by the class-like rule (the key's CLASS declarations under the bare, then the parenthesised, spelling; a member of the same name is not a rival for an `implements` row)
+incoming gate — typescript
+corpus root: /home/ishaq2321/bb_tests/repositories (OVERRIDDEN by BB_CORPUS_ROOT — a DIFFERENT population from the default <corpus-root>/bb_tests/repositories; a rate measured here is not comparable with a rate measured there)
+population: 17350 parsed of 17350 sampled (corpus has 17350 .ts,tsx,mts,cts files across 41 repos; stride sample)
+population: admitted extensions = .ts, .tsx, .mts, .cts (SOURCE: the CALLER'S ARGUMENT (an explicit set — deliberate, and the table's set is printed beside it)) (the ROUTER'S ONE TABLE says: .ts, .tsx, .mts, .cts — SAME as this run) (4 spellings) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 17350 for THIS lane in THIS run — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).
+project index: USED — 41 repo index(es) (41 built, 0 from cache, 0 damaged) over 17350 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one). Passed as { projectIndex } exactly as `pool-worker.ts` parse_batch does. INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, cross-file base resolution and the widened type-visibility gate are measured. THE GATE'S PROJECT-INDEX POPULATION is clojure, cpp, dart, fsharp, java, javascript, protobuf, python, ruby, scss, solidity, typescript (the languages `INDEX_SPECS` can build an index for). For those, this population IS production's; for every other language the analyzer is parsed with NO context and behaves as this run's --index-less arm does, so its counts are not comparable to a --index-less run. Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.
+excluded from that population: 0 tracked-but-absent/unreadable + 1 over the 1 MB cap (largest 2.9 MB) — above the cap the engine extracts structurally, not as an analyzer
+parse failures: 0   degraded (regex fallback): 0
+endpoint keys indexed: name + 234263 qualifiedName alias(es). A lane that publishes a file-scoped qualified name and targets that path is measured, not missed.
+empty results: 20 file(s) hold NO CONTENT AT ALL (0 bytes or whitespace). The run missed nothing, the population is COMPLETE, and these are NOT a defect.
+empty results: 141 file(s) hold CONTENT AND RETURNED NOTHING. **THIS COUNTER CANNOT TELL WHICH OF THREE THINGS THEY ARE**: content that cannot declare anything (comments, blank bodies — population COMPLETE), a genuine parse failure or timeout (a HOLE in it), or a file the analyzer declined. Do NOT report them as a hole without reading them.
+    ????? /home/ishaq2321/bb_tests/repositories/element-plus/docs/stub/types__react/index.d.ts
+    ????? /home/ishaq2321/bb_tests/repositories/element-plus/packages/locale/lang/af.ts
+    ????? /home/ishaq2321/bb_tests/repositories/element-plus/packages/locale/lang/ar-eg.ts
+    ????? /home/ishaq2321/bb_tests/repositories/element-plus/packages/locale/lang/ar.ts
+    ????? /home/ishaq2321/bb_tests/repositories/element-plus/packages/locale/lang/az.ts
+ambiguous is counted by DECLARATION here. The kind-count is shown beside it because the fleet's earlier number used it, and the two differ by two orders of magnitude.
+resolution scope: PER PROJECT (the repository a file belongs to) — production's scope. `parallel-indexer.resolveRelationships` fills `target_symbol_id` only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1 (`_res_name.cnt = 1`, `WHERE s.project_id = ?`). A name that collides with a declaration in ANOTHER project is not ambiguous to production and is not counted as ambiguous here.
+
+TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+----------------------------------------------------------------------------------------------------------------------------------------------------
+calls         526773   140250    0         62835      38629      81624       158363  53      0        83648    0       0         0        0
+uses          62736    56233     0         192        124        1887        0       0       0        4424     0       0         0        0
+contains      91687    91687     72220     0          0          0           0       0       0        0        0       0         0        0
+imports       107896   45336     0         10577      6864       8473        35643   3358    0        4509     0       0         0        0
+references    122060   68291     0         4344       2566       9854        15832   61      0        23678    0       0         0        0
+exports       40619    37986     0         545        281        1152        830     2       0        104      0       0         0        0
+extends       3327     1740      0         66         46         552         193     0       0        776      0       0         0        0
+implements    275      185       0         0          0          13          16      0       0        61       0       0         0        0
+overrides     677      481       0         173        0          23          0       0       0        0        0       0         0        0
+instantiates  16886    10058     0         2783       2624       699         0       0       0        3346     0       0         0        0
+decorates     2119     122       0         0          0          27          0       0       0        1970     0       0         0        0
+renders       17553    5762      0         1962       1225       1849        0       0       0        7980     0       0         0        0
+mixes_in      2        2         0         0          0          0           0       0       0        0        0       0         0        0
+part_of       49       0         0         12         11         37          0       0       0        0        0       0         0        0
+---------------------------------------------------------------------------------------------
+TOTAL         992659   458133    72220     83489      52370      106190      210877  3474    0        130496   0       0         0        0
+collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane
+bindOK = a target SPELLED as a binding (`<callable>\u0000<binding>`), which no declaration can answer · bind? = a separator with nothing after it · bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane
+causeOK = bucket 3: the target names nothing here and the edge DECLARED why (a base beyond the run's reach), so it is stated rather than claimed — NEVER folded into resolved · causeFAIL = a declared cause whose own reason does not check out, counted against the lane
+amb(kind) is a SUBSET of amb(decl), printed beside it for comparison: resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = the edge count, exactly.
+separator tripwire: 0 published key(s) contain `\u0000` of 992659 edges measured (0 required: a declaration name carrying it would make a binding claim unfalsifiable)
+    of those 210877 verified: 175234 by owner lookup in the key space, 35643 against the project's own pubspec files + file list
+EDGES A MARKER SET EXPLAINS — NOT-RESOLVED, PLUS BINDINGS (diagnostic, PER PROJECT scope, up to 5 marker sets per type ordered by amb+unresolved, then any binding-bearing set):
+type          metadata KEYS on the edge                           resolved  amb      unres    extClaim  binding  cause
+--------------------------------------------------------------------------------------------------------------------------
+callSiteStartIndex+calleeExpression+fileLevel+line+scopeName  65904     16625    24411    0         0        0
+callSiteStartIndex+calleeExpression+fileLevel+line+scopeName+typescriptUnresolvedReceiver  6991      10520    16629    0         0        0
+callSiteStartIndex+calleeExpression+line+sourceStartIndex+typescriptUnresolvedReceiver  5418      7387     19130    0         0        0
+callSiteStartIndex+calleeExpression+line+sourceStartIndex  35816     5161     9812     0         0        0
+callSiteStartIndex+calleeExpression+externalReason+externalReceiver+fileLevel+isExternalTarget+line+scopeName  7177      9989     0        48988     0        0
+callSiteStartIndex+calleeExpression+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+line+scopeName  0         0        0        0         44019    0
+callSiteStartIndex+calleeExpression+importedBinding+importedBindingName+importedBindingSpecifier+line+sourceStartIndex  0         0        0        0         24636    0
+bindingKind+callSiteStartIndex+calleeExpression+line+localBinding+sourceStartIndex  0         0        0        0         13544    0
+bindingKind+callSiteStartIndex+calleeExpression+line+localBinding+sourceStartIndex+typescriptUnresolvedReceiver  0         0        0        0         901      0
+bindingKind+callSiteStartIndex+calleeExpression+line+localBinding+owner+ownerEvidence+sourceStartIndex  0         0        0        0         380      0
+callSiteStartIndex+calleeExpression+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+line+scopeName+typescriptUnresolvedReceiver  0         0        0        0         107      0
+callSiteStartIndex+calleeExpression+importedBinding+importedBindingName+importedBindingSpecifier+line+sourceStartIndex+typescriptUnresolvedReceiver  0         0        0        0         55       0
+callSiteStartIndex+calleeExpression+importedBinding+importedBindingName+importedBindingSpecifier+line+owner+ownerEvidence+sourceStartIndex  4         0        0        0         6        0
+  ⋯ OMITTED   10 further marker set(s) NOT printed above          18940     13153    11642    109417    0        0
+                ^ add these to the rows above or the type will not
+isFieldAccess+line+owner+ownerEvidence              1933      0        1769     0         0        0
+isTemplateInterpolation+line                        1167      154      69       0         0        0
+isFieldAccess+line                                  10033     16       48       0         0        0
+isFieldAccess+line+typescriptUnresolvedReceiver     5369      21       1        0         0        0
+externalProof+externalReason+externalSpecifier+isExternalTarget+isTemplateInterpolation+line  2         1        0        0         0        0
+bindingKind+isTemplateInterpolation+line+localBinding  0         0        0        0         4303     0
+importedBinding+importedBindingName+importedBindingSpecifier+isTemplateInterpolation+line  0         0        0        0         67       0
+importedBinding+importedBindingName+importedBindingSpecifier+isFieldAccess+line  0         0        0        0         19       0
+importedBinding+importedBindingName+importedBindingSpecifier+isFieldAccess+line+typescriptUnresolvedReceiver  0         0        0        0         11       0
+importedBinding+importedBindingName+importedBindingSpecifier+isTypeReference+line  0         0        0        0         10       0
+declaredTypeRole+importedBinding+importedBindingName+importedBindingSpecifier  0         0        0        0         8        0
+importedBinding+importedBindingName+importedBindingSpecifier+isFieldAccess+line+owner+ownerEvidence  4         0        0        0         4        0
+bindingKind+isFieldAccess+line+localBinding+typescriptUnresolvedReceiver  0         0        0        0         2        0
+fileLevel+importedBindings+module+scopeName         30413     8772     1652     0         0        0
+fileLevel+importedBindings+module+projectIndexModuleShadowed+scopeName  0         0        3365     0         0        0
+fileLevel+importedBindings+isTypeOnly+module+projectIndexModuleShadowed+scopeName  0         0        1500     0         0        0
+fileLevel+importedBindings+isTypeOnly+module+scopeName  6580      664      158      0         0        0
+fileLevel+importedBindings+module+projectIndexItemNotDeclared+scopeName  0         0        654      0         0        0
+fileLevel+isReExport+localBinding+module+scopeName  0         0        0        0         1487     0
+fileLevel+importedBindings+isSideEffectImport+localBinding+module+scopeName  0         0        0        0         968      0
+fileLevel+importedBindings+isDynamic+localBinding+module+scopeName  0         0        0        0         939      0
+alias+fileLevel+importedBindings+localBinding+module+scopeName  0         0        0        0         902      0
+fileLevel+importedBindings+isDefault+isRequire+localBinding+module+scopeName  0         0        0        0         88       0
+fileLevel+importedBindings+isRequire+localBinding+module+scopeName  0         0        0        0         62       0
+alias+fileLevel+importedBindings+isTypeOnly+localBinding+module+scopeName  0         0        0        0         42       0
+fileLevel+isReExport+isTypeOnly+localBinding+module+scopeName  0         0        0        0         18       0
+alias+fileLevel+isReExport+localBinding+module+scopeName  0         0        0        0         3        0
+  ⋯ OMITTED   21 further marker set(s) NOT printed above          8318      1141     1144     0         0        0
+                ^ add these to the rows above or the type will not
+relationshipType                                    44985     3970     9854     0         0        0
+externalReason+isExternalTarget+relationshipType    406       282      0        15829     0        0
+externalProof+externalReason+externalSpecifier+isExternalTarget+relationshipType  894       92       0        64        0        0
+bindingKind+localBinding+relationshipType           0         0        0        0         5889     0
+importedBinding+importedBindingName+importedBindingSpecifier+relationshipType  0         0        0        0         17717    0
+importedBinding+importedBindingName+importedBindingSpecifier+line  0         0        0        0         72       0
+fileLevel+scopeName                                 4075      513      1146     0         0        0
+externalProof+externalReason+externalSpecifier+fileLevel+isExternalTarget+scopeName  93        27       0        832       0        0
+fileLevel+isDefault+scopeName                       1090      5        6        0         0        0
+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+scopeName  0         0        0        0         98       0
+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+kind+scopeName  0         0        0        0         2        0
+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+isDefault+scopeName  0         0        0        0         4        0
+sourceKind                                          1633      55       552      0         0        0
+externalReason+isExternalTarget+sourceKind          11        9        0        193       0        0
+externalProof+externalReason+externalSpecifier+isExternalTarget+sourceKind  96        2        0        0         0        0
+importedBinding+importedBindingName+importedBindingSpecifier+sourceKind  0         0        0        0         774      0
+bindingKind+localBinding+sourceKind                 0         0        0        0         2        0
+(no marker)                                         183       0        13       0         0        0
+importedBinding+importedBindingName+importedBindingSpecifier  0         0        0        0         61       0
+baseInterface                                       231       173      0        0         0        0
+baseClass                                           40        0        23       0         0        0
+fileLevel+line+scopeName                            6399      2251     107      0         0        0
+line                                                2646      136      592      0         0        0
+externalProof+externalReason+externalSpecifier+isExternalTarget+line  94        295      0        0         0        0
+externalProof+externalReason+externalSpecifier+fileLevel+isExternalTarget+line+scopeName  31        101      0        0         0        0
+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+line+scopeName  0         0        0        0         2258     0
+importedBinding+importedBindingName+importedBindingSpecifier+line  0         0        0        0         1044     0
+bindingKind+line+localBinding                       0         0        0        0         43       0
+importedBinding+importedBindingName+importedBindingSpecifier+isJsxComponent+jsxTag+line  0         0        0        0         1        0
+decoratorLine+isDecorator                           122       0        27       0         0        0
+decoratorLine+importedBinding+importedBindingName+importedBindingSpecifier+isDecorator  0         0        0        0         1970     0
+fileLevel+jsxElement+line+scopeName                 1842      636      1524     0         0        0
+jsxElement+line                                     3917      1326     325      0         0        0
+fileLevel+importedBinding+importedBindingName+importedBindingSpecifier+jsxElement+line+scopeName  0         0        0        0         1628     0
+importedBinding+importedBindingName+importedBindingSpecifier+jsxElement+line  0         0        0        0         6352     0
+fileLevel+partRole+relationshipType+scopeName       0         12       37       0         0        0
+--------------------------------------------------------------------------------------------------------------------------
+extClaim = a claim on this marker set the project VERIFIED or that no check can reach · binding = edges on this marker set SPELLED as a binding · cause = edges on this marker set whose analyzer DECLARED why it could not reach the base (bucket 3; never a resolution, and its own column so it cannot be mistaken for one). Grouped by KEY only: a value would split one marker into a signature per symbol it names.
+
+TABLE 2 — PER CORPUS (one pooled key space; NOT the verdict's scope, shown because every earlier dart number in this programme was measured this way):
+type          edges    resolved  amb(decl)  unresolved  extFAIL
+-----------------------------------------------------------------
+calls         526773   77749     196138     33639       0
+uses          62736    23710     32812      1790        0
+contains      91687    91687     0          0           0
+imports       107896   31730     25050      7606        0
+references    122060   38955     38921      9570        0
+exports       40619    23567     15531      667         0
+extends       3327     706       1266       534         0
+implements    275      33        166        13          0
+overrides     677      271       385        21          0
+instantiates  16886    5458      7654       428         0
+decorates     2119     29        120        0           0
+renders       17553    3863      4552       1158        0
+mixes_in      2        2         0          0           0
+part_of       49       0         15         34          0
+-----------------------------------------------------------------
+TOTAL         992659   297760    322610     55460       0
+
+BINDING INTENT — the EXACT test beside the count model's upper bound (resolvedAmongCollision):
+  intended = a declaration in the edge's OWN FILE ON the edge's own line answers to the target
+  (exact only where the edge line IS the target symbol's line: contains, exports.)
+  For every other type the edge line is the READ SITE, so a same-file row is sameFileUnproven —
+  not wrong and not right; arbitraryTwin is the file-crossing class in both cases.
+  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget
+  calls         526773   0         51360            285284                   190129           0
+  uses          62736    0         57833            572                      4331             0
+  contains      91687    91687     0                0                        0                0
+  imports       107896   0         698              56082                    51116            0
+  references    122060   0         43219            47601                    31240            0
+  exports       40619    32723     1402             5056                     1438             0
+  extends       3327     0         815              1746                     766              0
+  implements    275      0         119              137                      19               0
+  overrides     677      0         621              35                       21               0
+  instantiates  16886    0         1736             13522                    1628             0
+  decorates     2119     0         5                2087                     27               0
+  renders       17553    0         1934             12568                    3051             0
+  mixes_in      2        0         0                2                        0                0
+  part_of       49       0         0                15                       34               0
+  TOTAL         992659   124410    159742           424707                   283800           0
+  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges.
+  COLUMN NAMES SPELL THE MEANING, because a previous name cost a lane 45,967 edges of
+  false alarm: sameFileUnproven = the OWN FILE declares it (line inconclusive here);
+  arbitraryTwin = the OWN FILE DECLARES NOTHING and another file does — THIS is the
+  own-file-absent class; nothingAnywhere = NO FILE IN THE RUN declares it, which is NOT
+  the same question and is two orders of magnitude smaller on nim's calls row.
+  validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts — its
+  own-file+own-line column is this class read off brain_relationship.target_symbol_id.
+CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying
+share, BY CLAIM KIND: 23951 of this lane's 83489 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 23951 OWN-FILE-SILENT · 0 n/a.
+    owner            VERIFIED 0 · not verified 0 · REFUTED 0 · CONTRADICTED 0 · OWN-FILE-SILENT 23951 · n/a 0
+  ^ 23951 OWN-FILE-SILENT: only ANOTHER file declares the target. **THIS IS NOT A
+    REFUTATION.** css's marker means "THIS FILE declares no --x" (real-css-analyzer.ts:115), and a
+    PER-FILE claim cannot be refuted by another file's declaration — yet the arbiter checked the
+    PROJECT key space and called all 180 of css's ambiguous edges contradicted. Some generic markers
+    are instead about a NAME'S ORIGIN (isStdlib, stdlibModule, nimStdlibModule), which this project
+    declaring a same-named symbol does not falsify either. A per-MARKER scope table would settle it
+    and does not exist, so this class is reported WITH ITS COUNT and NOT as a failure.
+  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH
+  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than
+  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column.
+
+CLAIM-CARRYING RESOLVED EDGES — the tie-break's DISCARDED claims, recorded because they were
+DROPPED. A claim that arrived on a row the OWN FILE already answered is now RECORDED, and it
+moved no count: 376 of this lane's 458133 resolved edge(s) carry a claim the
+tie-break settled — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 376 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.
+    owner            VERIFIED 0 · not verified 0 · REFUTED 0 · CONTRADICTED 376 · OWN-FILE-SILENT 0 · n/a 0
+  A CLAIM IS NOT A RESOLUTION, AND A DISCARDED CLAIM IS NOT A DEFECT: the tie-break IS production's
+  own rule (the own file's declaration is the answer), so the claim is refuted rather than applied.
+  It is counted here so that "how many claim-carrying edges did the name model settle" is READABLE.
+
+AMBIGUOUS / UNRESOLVED TARGETS (worklist; counts sampled per type — don't read a type's absence here as a zero, read TABLE 1):
+  calls
+    amb  request                                    3 declarations  [method]
+    amb  value                                      6 declarations  [method|property]
+    amb  text                                       3 declarations  [property]
+    amb  fetch                                      5 declarations  [function|property]
+    unres  get
+    unres  replace
+    unres  map
+    unres  toISOString
+    ^ amb: showing 4 of 25 collected + **53786 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **64617 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  uses
+    amb  CWD                                        3 declarations  [constant]
+    amb  process                                    2 declarations  [method]
+    amb  constructor                                68 declarations  [constructor]
+    amb  CARD_FOCUS_CLASSES                         2 declarations  [constant]
+    unres  hasOwnProperty
+    unres  body
+    unres  headers
+    unres  status
+    ^ amb: showing 4 of 25 collected + **4 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **1786 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  imports
+    amb  GraceError                                 2 declarations  [class|interface]
+    amb  ReferenceType                              3 declarations  [constant|property|type]
+    amb  ApprovalPolicyStatus                       2 declarations  [constant|type]
+    amb  ApprovalTimeoutAction                      2 declarations  [constant|type]
+    unres  graphql:GraphQLCompositeType
+    unres  graphql:GraphQLResolveInfo
+    unres  graphql:DocumentNode
+    unres  graphql:ExecutionResult
+    ^ amb: showing 4 of 25 collected + **10493 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **7289 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  references
+    amb  ReferenceType                              3 declarations  [constant|property|type]
+    amb  ApprovalTimeoutAction                      2 declarations  [constant|type]
+    amb  ApprovalPolicyStatus                       2 declarations  [constant|type]
+    amb  ApprovalRequestStatus                      2 declarations  [constant|type]
+    unres  RequestInit
+    unres  RequestCredentials
+    unres  WindowOrWorkerGlobalScope
+    unres  HeadersInit
+    ^ amb: showing 4 of 25 collected + **4165 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **9376 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  exports
+    amb  GraceError                                 2 declarations  [class|interface]
+    amb  GraphQLRequest                             2 declarations  [interface]
+    amb  GraphQLExperimentalPendingResultAlpha9     2 declarations  [interface]
+    amb  Options                                    4 declarations  [constant|interface]
+    unres  NotFound
+    unres  VPApp
+    unres  CascaderNode
+    unres  ElFocusTrap
+    ^ amb: showing 4 of 25 collected + **507 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **1108 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  extends
+    amb  Error                                      3 declarations  [class|type]
+    amb  TreeNode                                   3 declarations  [interface]
+    amb  Entity                                     2 declarations  [interface|variable]
+    amb  InputField                                 2 declarations  [class|type]
+    unres  vscode.TreeItem
+    unres  ProgressEvent
+    unres  Properties
+    unres  PropertiesHyphen
+    ^ amb: showing 4 of 14 collected · unres: showing 4 of 24 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  implements
+    unres  TextDocumentContentProvider
+    unres  FileSystemProvider
+    unres  FileDecorationProvider
+    unres  TreeDataProvider
+    ^ amb: showing 0 of 0 collected · unres: showing 4 of 7 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  overrides
+    amb  MockingFieldConfig.custom                  2 declarations  [property]
+    amb  BaseNode.type                              3 declarations  [property]
+    amb  BaseElement.name                           3 declarations  [property]
+    amb  BaseAttribute.name                         2 declarations  [property]
+    unres  Map.set
+    unres  Map.get
+    unres  Map.delete
+    unres  Map.has
+    ^ amb: showing 4 of 5 collected · unres: showing 4 of 18 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  instantiates
+    amb  DurationHistogram                          2 declarations  [class|type]
+    amb  Values                                     2 declarations  [class]
+    amb  HTTP                                       4 declarations  [class|namespace]
+    amb  QueryPlanNode                              4 declarations  [class|namespace]
+    unres  Agent
+    unres  EventEmitter
+    unres  Disposable
+    unres  ThemeIcon
+    ^ amb: showing 4 of 25 collected + **2680 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **569 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  decorates
+    unres  memo
+    unres  debounce
+    ^ amb: showing 0 of 0 collected · unres: showing 2 of 2 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  renders
+    amb  ElTooltip                                  2 declarations  [constant|property]
+    amb  ElAvatar                                   2 declarations  [constant|property]
+    amb  ElIcon                                     2 declarations  [constant|property]
+    amb  ElForm                                     2 declarations  [constant|property]
+    unres  Affix
+    unres  Alert
+    unres  Anchor
+    unres  AnchorLink
+    ^ amb: showing 4 of 25 collected + **1727 omitted by the 25-name cap and never collected** · unres: showing 4 of 25 collected + **1336 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  part_of
+    amb  next                                       2 declarations  [function|method]
+    amb  Cypress                                    3 declarations  [namespace]
+    unres  ../.astro/types.d.ts
+    unres  astro/client
+    unres  vite/client
+    unres  vue/macros-global
+    ^ amb: showing 2 of 2 collected · unres: showing 4 of 16 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+
+VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 189679 ambiguous/unresolved + 0 refuted claim(s) + 3474 claim(s) no check can reach (ext? 3474, bind? 0)  --  83489 ambiguous + 106190 unresolved of 992659 edges, resolved against the file's OWN PROJECT (production's scope); 3474 external claim(s) unverifiable (210877 verified + 3474 unverifiable external)
+  clause 1 FAIL — every edge resolves, or carries a claim the project verifies
+           189679 ambiguous/unresolved + 0 refuted claim(s) + 3474 claim(s) no check can reach (ext? 3474, bind? 0)
+  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count
+           no edge carries a declared cause (residual 189679)
+  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER
+           no declared cause carries a count, so there is nothing to rule
+  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0
+           extFAIL 0 · bindFAIL 0 · causeFAIL 0
+  (the same edges under the pooled corpus key space: 322610 ambiguous + 55460 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)
+instrument self-test: PASS (control fired)
+
+Scope of a PASS: this population, this analyzer digest, resolution only. It does NOT
+say the edges point at the RIGHT declaration — that is differential.ts's question.

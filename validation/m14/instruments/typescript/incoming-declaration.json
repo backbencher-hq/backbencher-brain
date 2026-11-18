@@ -10,12 +10,12 @@
     "extensions": ".ts,.tsx,.mts,.cts",
     "populationString": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
     "populationLine": "population: 17350 parsed of 17350 sampled (corpus has 17350 .ts,tsx,mts,cts files across 41 repos; stride sample)",
-    "armLog": "validation/m14/measurements/typescript-arm-final-2026-11-18.log",
-    "armLogSha256": "7e915808a6c84c80577283b055bcd03e031ba7a1901912cba22b3180cd7596a4",
+    "armLog": "validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log",
+    "armLogSha256": "c2294cace8c6597fe04f2b6f486c9b3837592d144daee4dd8d1af3b573adbb73",
     "instrument": "script/m14/incoming-gate.ts (the shared arm) over the population rule in script/m14/ts-corpus.ts",
     "command": "BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/incoming-gate.ts typescript .ts,.tsx,.mts,.cts 0 --index",
     "grammar": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335 — THE SERVED TYPESCRIPT BUILD, measured by calling the resolver and hashing the file it logs as wasmPath (no path is cited here: a path is how this lane got it wrong twice).",
-    "analyzerSha256": "8021dcc8061eadaeb92cb6d3fcee7f39e0d267a46b88e71953bdec6c4268c791",
+    "analyzerSha256": "56e5aaaea7642163cb2df73fcb3bf2b268a0248e8359e706c457b167bd031cd2",
     "arbiterSha256": "c28704de18d215496e095550680caeb99eb91f04c7ac11bdd1a53a8b2d01884c"
   },
   "types": {
@@ -28,8 +28,8 @@
       "unclassed": 0
     },
     "uses": {
-      "edges": 62729,
-      "resolved": 56226,
+      "edges": 62736,
+      "resolved": 56233,
       "external": 0,
       "ambiguous": 192,
       "otherUnresolved": 6311,
@@ -37,10 +37,10 @@
     },
     "contains": {
       "edges": 91687,
-      "resolved": 91686,
+      "resolved": 91687,
       "external": 0,
       "ambiguous": 0,
-      "otherUnresolved": 1,
+      "otherUnresolved": 0,
       "unclassed": 0
     },
     "imports": {
@@ -133,15 +133,15 @@
     }
   },
   "totals": {
-    "edges": 992652,
-    "resolved": 458125,
+    "edges": 992659,
+    "resolved": 458133,
     "external": 214351,
     "ambiguous": 83489,
-    "otherUnresolved": 236687,
-    "collRes": 72219,
+    "otherUnresolved": 236686,
+    "collRes": 72220,
     "ambKind": 52370,
     "unclassed": 0,
-    "perType": "calls 526773/140250 · uses 62729/56226 · contains 91687/91686 · imports 107896/45336 · references 122060/68291 · exports 40619/37986 · extends 3327/1740 · implements 275/185 · overrides 677/481 · instantiates 16886/10058 · decorates 2119/122 · renders 17553/5762 · mixes_in 2/2 · part_of 49/0"
+    "perType": "calls 526773/140250 · uses 62736/56233 · contains 91687/91687 · imports 107896/45336 · references 122060/68291 · exports 40619/37986 · extends 3327/1740 · implements 275/185 · overrides 677/481 · instantiates 16886/10058 · decorates 2119/122 · renders 17553/5762 · mixes_in 2/2 · part_of 49/0"
   },
   "causeRulings": {
     "directory-level-ambiguity": {
@@ -216,9 +216,9 @@
     "`mixes_in` IS IMPLEMENTED AND EXERCISED: 2 edges, both resolved (the vault UI's `class X extends baseResourceFactory<Mount>()`). The lane's first census reported 0 and was WRONG — its pattern required `Name(` and missed a GENERIC callee. The falsifier written into the measurement is what caught it, and the corrected figure is one file of the corpus rather than a pattern."
   ],
   "_derivation": {
-    "from": "the arm's own report, sha256 7e915808a6c84c80577283b055bcd03e031ba7a1901912cba22b3180cd7596a4",
+    "from": "the arm's own report, sha256 c2294cace8c6597fe04f2b6f486c9b3837592d144daee4dd8d1af3b573adbb73",
     "rule": "TABLE 1's per-type row → the five buckets; closure checked per type against that type's edge count; a row that does not close is a REFUSAL",
     "generator": "script/m14/ts-declaration.ts"
   },
-  "_sha256_of_this_file_body": "bf180ee334f6a57e96a717eed61bcb6337f46ccce92dcafeafd123d7607de69d"
+  "_sha256_of_this_file_body": "5fe5e089d04c82db79e1e1a0eeeebda84909aec737808e78f4a5a87e150bb9b6"
 }
