@@ -199,6 +199,8 @@ interface FileModel {
    * and the classifier can only say so if it knows the bindings.
    */
   funcBoundNames: Map<string, Set<string>>
+  /** Every TYPE PARAMETER name declared in the file (from any `type_parameter_list`). */
+  typeParamNames: Set<string>
   limits: string[]
 }
 
@@ -230,10 +232,29 @@ function isWritePosition(n: any): boolean {
   if (!p) return false
   if (p.type === "inc_statement" || p.type === "dec_statement") return true
   if (p.type === "expression_list" && p.parent && p.parent.type === "assignment_statement") {
-    const first = p.namedChildCount > 0 ? p.namedChild(0) : null
+    // Is `n` inside the assignment's TARGET list rather than its VALUE list?
+    //
+    // `s.Total, s.Largest, s.Errs = c.fileStats()` is ONE `assignment_statement` with TWO
+    // `expression_list` children: the targets and the values. ALL THREE selectors on the left are
+    // writes, so the test is "is `n` inside the FIRST expression_list", NOT "is `n` the first
+    // child of it". An earlier version asked the latter and caught only `s.Total` — leaving
+    // `s.Largest` and `s.Errs` to look like reads, which is exactly the shape the oracle reported
+    // as `uses FileStats -> Largest`.
+    //
+    // The comparison is `first` against `n` (the node being classified), NOT against `p`. An
+    // earlier version compared `first` with `p` — comparing the list's first child with the
+    // LIST — which was true only when they coincided, so a single-child assignment slipped
+    // through as a read and `b.Count, end, err = ...` style multi-assign writes were missed.
     // Compare by BYTE SPAN, not object identity: web-tree-sitter wraps a tree node per
     // retrieval, so two wrappers over the same node are never `===`.
-    return !!first && first.startIndex === p.startIndex && first.endIndex === p.endIndex
+    // The TARGET list is the first named child of the assignment statement.
+    const stmt = p.parent
+    const targetList = stmt.namedChildCount > 0 ? stmt.namedChild(0) : null
+    if (!targetList) return false
+    // Containment by byte span: a node inside the target list is a write, whether it is the
+    // only target or one of several. web-tree-sitter wraps nodes per retrieval, so identity
+    // comparison is not available here.
+    return targetList.startIndex <= n.startIndex && n.endIndex <= targetList.endIndex
   }
   return false
 }
@@ -277,6 +298,7 @@ function scanModel(root: any): FileModel {
     topLevelFuncs: new Set(),
     packageScopeDeclNodes: new Set(),
     funcBoundNames: new Map(),
+    typeParamNames: new Set(),
     limits: [],
   }
   // package_clause has NO fields in tree-sitter-go 0.25.0's node-types.json;
@@ -287,6 +309,26 @@ function scanModel(root: any): FileModel {
   if (pkg) {
     const id = named(pkg).find((c) => c.type === "package_identifier")
     model.packageName = textOf(id)
+  }
+  // File-wide type parameters, so a receiver like `func (s *Set[K]) Clone()` can be told from a
+  // declared type owner: the owner there is `Set`, and `K` is the type ARGUMENT.
+  {
+    const w: any[] = [root]
+    while (w.length > 0) {
+      const n = w.pop()!
+      if (n.type === "type_parameter_list") {
+        // The child node is `parameter_declaration`, NOT `type_parameter_declaration` — this
+        // grammar types a type-parameter list with the same node it uses for value parameters
+        // (verified on persistent/set.go: `type_parameter_list` -> `parameter_declaration` ->
+        // identifier "K" + qualified_type "constraints.Ordered"). Reading the wrong name is why
+        // this set was silently empty and the rule below never fired.
+        for (const d of n.namedChildren) {
+          if (d.type !== "parameter_declaration" && d.type !== "type_parameter_declaration") continue
+          for (const c of d.namedChildren) if (c.type === "identifier") model.typeParamNames.add(c.text)
+        }
+      }
+      for (const c of n.children) w.push(c)
+    }
   }
 
   for (const top of named(root)) {
@@ -738,6 +780,8 @@ type ReasonCode =
   | "read-of-a-locally-bound-name"
   | "variable-export-out-of-scope-by-decision"
   | "value-read-mistyped-as-a-type-reference"
+  | "receiver-type-argument-is-not-an-owner"
+  | "function-name-is-not-a-type-reference"
   | "UNEXPLAINED"
 
 function classifyOracOnly(
@@ -798,6 +842,18 @@ function classifyOracOnly(
   // local variables the grammar typed as type identifiers.
   if (type === "references" && model.funcBoundNames.get(e[0])?.has(e[1])) {
     return "value-read-mistyped-as-a-type-reference"
+  }
+  // A `contains` whose source is a TYPE PARAMETER: the oracle reads a generic receiver
+  // `func (s *Set[K]) Clone()` as `K` owning the method, but the owner is `Set` (the receiver
+  // BASE type) and `K` is its type ARGUMENT. 18 rows on the 400-file draw, headed by
+  // gopls/internal/util/persistent/set.go (`K -> Clone`, `K -> Destroy`, `K -> Add`, ...).
+  if (type === "contains" && model.typeParamNames.has(e[0])) return "receiver-type-argument-is-not-an-owner"
+  // A `references` whose target is a FUNCTION declared in this file: a function name is never a
+  // type reference. `is[*types.Named](t)` is a GENERIC FUNCTION CALL that Go's grammar types as
+  // an instantiation, and the oracle's "every type_identifier outside a qualified_type is a
+  // reference" rule reads the callee name as a type. 25 of the 125 remaining rows were `is`.
+  if (type === "references" && model.decls.some((d) => (d.kind === "func" || d.kind === "method") && d.name === e[1])) {
+    return "function-name-is-not-a-type-reference"
   }
   // AN EXPORTED PACKAGE-SCOPE VARIABLE IS DELIBERATELY OUT OF SCOPE for the `exports` edge,
   // even though Go really does export it. The M49 JVM-closure F3 invariant requires export
