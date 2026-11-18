@@ -724,18 +724,35 @@ function buildFacts(root: any, content: string): FileFacts {
       // as a type and published a `references` row the analyzer correctly does not emit: it
       // publishes `calls -> is` (verified on modernize/maps.go:278). 22 of the 62 remaining
       // unexplained rows were `is` alone, and every one had a `calls` row beside it.
-      // The callee of a GENERIC call is nested: `is[*Named](t)` parses as
-      // `type_conversion_expression > generic_type > type_identifier "is"`, so the node's parent is
-      // a `generic_type`, not a `call_expression`. Walk up to see whether this identifier is the
-      // BASE of a generic_type that is itself the callee of a call — that makes it a call, not a
-      // type reference. Verified on the pinned grammar for `func is[T any](x any) bool`.
+      // Is this identifier the CALLEE of a call, possibly reached through a generic_type?
+      //
+      // Two shapes, because the pinned grammar has two:
+      //   plain    `f(x)`          call_expression > function: identifier
+      //   generic  `is[*Named](t)` type_conversion_expression > type: generic_type > type_identifier
+      //
+      // The generic form has NO `function` field at all — the callee is the conversion's `type`
+      // field, and the identifier is the BASE of the inner generic_type. A direct
+      // `parent.type === "call_expression"` test therefore never matched, which is why this rule
+      // appeared not to fire: 22 rows naming `is` survived it. Verified on the pinned grammar.
       let calleeOf = false
       {
         let cur: any = n
         let hops = 0
-        while (cur && cur.parent && hops < 4) {
-          if (cur.parent.type === "call_expression" && field(cur.parent, "function") === cur) { calleeOf = true; break }
-          if (cur.parent.type === "generic_type" && field(cur.parent, "type") === cur) { cur = cur.parent; hops++; continue }
+        while (cur && cur.parent && hops < 5) {
+          const par = cur.parent
+          if (par.type === "call_expression" && same(par.childForFieldName("function"), cur)) { calleeOf = true; break }
+          // generic form: climb generic_type while `cur` is its base, then require the
+          // conversion's `type` field to be that generic_type.
+          // `generic_type` has NO `type` field in this grammar — its base is simply namedChild(0).
+          // Checked directly: childForFieldName("type") returns null on a generic_type node, so the
+          // earlier field-based test was always false and this rule never fired.
+          // IDENTITY IS NOT AVAILABLE: web-tree-sitter returns a fresh wrapper per retrieval, so
+          // `field("type") === namedChild(0)` is FALSE on nodes with identical spans (measured:
+          // span match true, identity match false). Every comparison here is by BYTE SPAN.
+          const same = (a: any, b: any): boolean =>
+            !!a && !!b && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+          if (par.type === "generic_type" && par.namedChildCount > 0 && same(par.namedChild(0), cur)) { cur = par; hops++; continue }
+          if (par.type === "type_conversion_expression" && same(par.childForFieldName("type"), cur)) { calleeOf = true; break }
           break
         }
       }
