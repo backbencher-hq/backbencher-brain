@@ -72,7 +72,12 @@ committed state so the working tree was never touched:
 | analyzer | result |
 | --- | --- |
 | without the fallback (superTypes present) | **106 pass / 1 fail — `java/inherited-chain/Use`** |
-| with the fallback | **110 / 110** |
+| with the fallback | **113 / 113** |
+
+A second fixture, `java/heritagedisambig/`, pins the heritage and
+instantiation half the same way (`300988bab`): three declarations of `Widget`,
+`extends Widget` plus `new Widget()`, red control 112/1 with the four call sites
+reverted and 113/113 with them.
 
 A negative control is included: `notInherited()` is declared nowhere and is forbidden
 from appearing, so the fallback cannot manufacture a resolution.
@@ -363,7 +368,7 @@ The fixture lanes and the SQL-shape argument support it; they do not prove it.
    ancestry half of this shipped (§1b); the naming migration did not.
 4. **Full `npm run verify` cannot run to completion on this host, and the
    blocker is not Java.** `audit:fixtures` — the 50-language fixture baseline —
-   **passes** (`java 110/110`, "fixture baseline gate: no regressions"). But
+   **passes** (`java 113/113`, "fixture baseline gate: no regressions"). But
    `audit:differential`'s canonical sweep refuses because pinned corpus repos
    are absent from the shared shelf: it stops on
    `corpus repo missing: …/repositories/P3D-Legacy`, and the header at
@@ -415,7 +420,7 @@ cross-lane migration.
 
 | kind | amb at baseline | amb now | disposition |
 | --- | ---: | ---: | --- |
-| references | 62,861 | **59,180** | **DONE.** Import-evidenced targets re-spelled (`f4a3e93a5`), red-controlled by `java/importdisambig/` (`ee78beb36`). Residual 59,180 are bare names with no import evidence in the file. |
+| references | 62,861 | **59,180** | **DONE** — see §6c.3. Import-evidenced targets re-spelled (`f4a3e93a5`), red-controlled by `java/importdisambig/` (`ee78beb36`). Residual 59,180 classified by the marker table below. |
 | instantiates | 11,604 | **11,532** | **DONE.** Same mechanism as heritage (`ad110d697`). |
 | extends | 2,861 | **2,849** | **DONE.** Import-evidenced re-spelled (`9ece20d99`). Residual is external bases with no import to prove them — the external-claim variant was measured and reverted (extFAIL 0→1). |
 | implements | 45 | **14** | **DONE.** Same mechanism. |
@@ -428,6 +433,26 @@ cross-lane migration.
 clause-1 mass 313,321 → 309,525 (−3,796); extFAIL/bindFAIL/causeFAIL 0
 throughout.** The unresolved count is unchanged at 146,529, which is correct:
 those targets name no declaration in the repository.
+
+### 6c.3 The `references` residual (59,180), classified from the marker table
+
+The gate's marker table names what each not-resolved edge carries
+(`JAVA-CALLS-AMBIGUITY-2026-11-17.txt`), so the residual is not a bare number:
+
+| metadata keys | resolved | ambiguous | reading |
+| --- | ---: | ---: | --- |
+| `declaredOn+relationshipType` | 38,778 | **26,424** | declared-type mentions — JDK/collection types with no project path to qualify to |
+| `declaredOn+importedFrom+relationshipType` | 33,686 | **21,307** | already carry `importedFrom`; there is no import left for a rule to add |
+| `relationshipType` | 7,033 | 5,105 | bare mentions, no import and no declared-type context |
+| `importedFrom+relationshipType` | 3,635 | 5,008 | already carry import evidence |
+| `isJavaImport+relationshipType` | 44,885 | 131 | import mentions — target is the module path, already qualified |
+
+**47,731 of the 59,180 (81%) already carry import or declared-type evidence**, or
+name a JDK type with no project path. The remaining 5,105 bare mentions have
+neither an import nor a declared type to work from, and the 131 import mentions
+are module paths by construction. That is why the residual is declared
+non-addressable by this mechanism rather than left as an unexplained remainder:
+for each row the file itself supplies no project path to re-spell to.
 
 ### 6c.1 `uses` is not a type target
 
@@ -449,7 +474,7 @@ inferring the receiver's type — a distinct capability, not a spelling fix.
 
 ## 7. Status
 
-The Java analyzer is **verified within a declared support boundary**: 110
+The Java analyzer is **verified within a declared support boundary**: 113
 red-controlled fixtures (10 of them proven to fail on the pre-fix analyzer), 64
 independent compiler facts, a real SQLite persistence round-trip, 34,067/34,067
 override edges resolved on the full 11,152-file corpus, 0.3% unexplained on the
