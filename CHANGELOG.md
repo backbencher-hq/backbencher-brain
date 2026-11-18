@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.1.6 — five analyzers, one graph: the gaps that were invisible are now counted
+
+Owner-facing release. Every number below is one the lanes measured on their own
+corpora and committed with the evidence that produced it; the release itself was
+verified by the gates listed at the end.
+
+This release closes the resolution campaign across five languages at once. Each
+lane worked the same way: measure what the analyzer publishes against an
+independent oracle, name every gap, fix the analyzer, and re-measure on the whole
+population rather than on a sample.
+
+- **Go — the largest recovery of the release.** Three expression-position type uses
+  were invisible to the analyzer, which recovered **7,859 edges**. Unexplained
+  oracle rows fell **2,640 → 282**, and the generic-call callee misclassification
+  closed from **40 → 17**. `GO-GAP-1` is closed: a grammar pin that stopped
+  recovery from swallowing declarations, plus the analyzer half it required.
+- **JavaScript — the `renders` zero was falsified, not defended.** A real JSX corpus
+  produces **15,451 `renders` rows** where the analyzer previously reported none.
+  Flow-clause `implements` is read from the Flow grammar properly, decorator
+  import claims went **0 of 2,570 → 2,554 of 2,570**, and the oracle tool's own
+  two bugs are fixed. Bindings agreement is **FABRIC 0** on that corpus.
+- **Java — inheritance is walkable and ambiguity is declared.** Ancestry resolution
+  recovered **+8,798** rows on the production arm, leaving **0.3% unexplained**.
+  Ambiguous reference targets are disambiguated in a final post-pass, and a
+  reference target that genuinely cannot be resolved is refused by name rather
+  than guessed — each pinned by a red-controlled fixture.
+- **C++ — the ISO standard-library citation claim is now shipped.** Wall B (7,962
+  rows) moved from CLAIMED to SHIPPED, all **14 relationship values** are covered
+  by the spec table, and the three rulings are re-derived on language semantics
+  rather than on grammar idiosyncrasy. The lane also audited its own verifiers and
+  corrected the headline: **1,077 assertions**, not the 873/21 it had published.
+- **TypeScript — HEAD is regex-free.** The four regex literals that 0.1.4
+  reintroduced are now character walks, and the lane's own AST census proves it.
+  A field *named* `accessor` is recovered instead of being refused as an empty
+  identity, pinned by a mutant; the whole-population arm was re-run after the fix.
+- **Engine.** Flow-annotated `.js` files parse with the TypeScript grammar, with a
+  TSX retry after the TS attempt and a kill-switch to measure the difference.
+
+Verified before tagging: `npm test` (46/46, 15/15, 21/21), `verify:fast` (22 gates,
+0 failures), the full fixture corpus (all pass), `tsc --noEmit`, and `npm run build`.
+
 ## 0.1.5 — Java resolves what it inherits; the tools answer from the same evidence
 
 Owner-facing release. Every claim below was verified on a clean tree built from
