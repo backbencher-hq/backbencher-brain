@@ -7108,7 +7108,20 @@ export function deriveJavaScriptEdges(root: any, options: { callSources?: boolea
           (p7?.type === "assignment_pattern" && (p7.childForFieldName("left") ?? p7.namedChild(0))?.id === n.id)
         const isExportSpecifier = p7?.type === "export_specifier"
         const isBindingSite = isImportBinding || isParamBinding || isPatternBinding || isExportSpecifier
-        if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isBindingSite) {
+        // A JSX ELEMENT'S NAME IS NOT A READ — it is the construct the `renders` label exists for, and
+        // it has its own derivation a few arms away (one row per ELEMENT, capitalized identifiers only,
+        // lowercase intrinsics and fragments deliberately silent). Without this guard the generic
+        // identifier walk counted the same node as a `uses`, so the oracle derived BOTH labels for one
+        // reference and every JSX corpus reported a large phantom `uses` MISSING. Measured on
+        // preact-150: 688 "real missing" `uses`, every sampled one a JSX name — `(expr) -> div`,
+        // `(expr) -> button` (lowercase intrinsics the analyzer correctly ignores) and
+        // `(expr) -> ClassApp` (emitted as `renders` with metadata.localBinding, covered 402/402).
+        // NOTHING ELSE CAN BE IN THIS POSITION: `jsx_opening_element`/`jsx_self_closing_element` exist
+        // only in a JSX tree, so this guard is a no-op for every corpus without JSX — which is why the
+        // svelte and lodash differential hashes are unchanged by it.
+        const isJsxName = p7?.type === "jsx_opening_element" || p7?.type === "jsx_self_closing_element" ||
+          p7?.type === "jsx_closing_element"
+        if (!isCallee && !isWrite2 && !isDeclName && !isPropKey && !isMemberPart && !isPropName && !isLabel && !isShorthandProp && !isBindingSite && !isJsxName) {
           push("uses", txt)
         }
       }
