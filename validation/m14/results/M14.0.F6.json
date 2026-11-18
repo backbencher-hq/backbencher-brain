@@ -1,13 +1,13 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "692a74a05ba6a01ffd46105fa3d7b4ca684716f050d1a0bfc798a8bc043a0a04",
-    "sealedAt": "2026-11-13T02:09:25.000Z"
+    "contentSha256": "53063415b3b90bc13ec5a3ff444aae075cfc8d059527b32a30b6dd35293be827",
+    "sealedAt": "2026-11-18T06:06:28.000Z"
   },
   "checks": [
     {
       "deadLiterals": [],
-      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (71 spec types, 199 fixture types)",
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (71 spec types, 201 fixture types)",
       "id": "fixture-coverage-java",
       "status": "pass",
       "uncovered": []
@@ -35,14 +35,14 @@
     },
     {
       "deadLiterals": [],
-      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (109 spec types, 237 fixture types)",
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (109 spec types, 238 fixture types)",
       "id": "fixture-coverage-typescript",
       "status": "pass",
       "uncovered": []
     },
     {
       "deadLiterals": [],
-      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (89 spec types, 175 fixture types)",
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (89 spec types, 176 fixture types)",
       "id": "fixture-coverage-javascript",
       "status": "pass",
       "uncovered": []
@@ -70,7 +70,7 @@
     },
     {
       "deadLiterals": [],
-      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (44 spec types, 219 fixture types)",
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (46 spec types, 223 fixture types)",
       "id": "fixture-coverage-cpp",
       "status": "pass",
       "uncovered": []
@@ -84,7 +84,7 @@
     },
     {
       "deadLiterals": [],
-      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (40 spec types, 133 fixture types)",
+      "description": "every handled_verified type exercised by a fixture; no dead analyzer literals (40 spec types, 139 fixture types)",
       "id": "fixture-coverage-go",
       "status": "pass",
       "uncovered": []
@@ -196,8 +196,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e83c1c5458bfaf4c729c206c973a8c28878fbdd7",
-  "committedAt": "2026-11-12T21:09:25-05:00",
+  "commit": "e5797e90c86eea94ed2331697d24e69076b9fe2a",
+  "committedAt": "2026-11-18T01:06:28-05:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F6",
   "layers": [
@@ -208,8 +208,8 @@
       "description": "Coverage checked against single-file fixtures; per-language multi-file construct families (e.g. cross-file extends) rely on the differential gate instead"
     }
   ],
-  "regeneratedAt": "2026-11-12T21:09:25-05:00",
-  "regeneratedAtCommit": "e83c1c5458bfaf4c729c206c973a8c28878fbdd7",
+  "regeneratedAt": "2026-11-18T01:06:28-05:00",
+  "regeneratedAtCommit": "e5797e90c86eea94ed2331697d24e69076b9fe2a",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Fixture-coverage gate: spec-handled node types must be exercised by fixtures; no dead analyzer literals"

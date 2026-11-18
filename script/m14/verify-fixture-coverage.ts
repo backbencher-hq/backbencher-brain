@@ -193,7 +193,28 @@ const LITERAL_ALLOWLIST: Record<string, Set<string>> = {
     // pass it silently until someone said which of the two it was.
     "default_export_expression",
   ]),
-  javascript: new Set([]),
+  javascript: new Set([
+    // THE FLOW/TYPE-CLAUSE HERITAGE BRANCH (2026-11-18). `implements_clause` and
+    // `generic_type` are REAL tree-sitter-typescript grammar node types, and the
+    // javascript analyzer carries a deliberate branch for them so a file written in
+    // the clause style is not silently read as "implements nothing" (the branch's own
+    // comment records the measurement: before it, a Flow class in clause style
+    // published its symbols and ZERO implements rows).
+    //
+    // They read as dead against the PINNED JAVASCRIPT GRAMMAR, and that is correct
+    // rather than accidental: `class A implements B {}` parses under
+    // tree-sitter-javascript as `class_declaration > ERROR > identifier` — the
+    // grammar has no supertype clause, which is this lane's own RULED finding
+    // (javascript-completeness.json, "THE LANGUAGE HAS NO `implements` CLAUSE",
+    // falsified only by a probe that finds one). So the branch cannot fire on a
+    // `.js` parse, and it is NOT dead code in the sense this gate means: it is a
+    // clause-style path whose node types the LEXICAL grammar cannot produce, kept
+    // because the same analyzer reads JSX/TS-family sources whose grammar does.
+    // Allowlisting declares that; deleting the branch would silently drop the
+    // clause reading its comment says was measured.
+    "implements_clause",
+    "generic_type",
+  ]),
   vue: new Set([]),
   svelte: new Set([]),
 }
