@@ -1,0 +1,194 @@
+[
+  {
+    "src_lang": "go",
+    "tgt_lang": "javascript",
+    "relationship_type": "references",
+    "bridge_mechanism": "name-resolution",
+    "n": 606,
+    "name_res_rows": 606
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "go",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 423,
+    "name_res_rows": 423
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "yaml",
+    "relationship_type": "calls",
+    "bridge_mechanism": "name-resolution",
+    "n": 330,
+    "name_res_rows": 330
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "yaml",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 291,
+    "name_res_rows": 291
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "go",
+    "relationship_type": "calls",
+    "bridge_mechanism": "name-resolution",
+    "n": 202,
+    "name_res_rows": 202
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "make",
+    "relationship_type": "imports",
+    "bridge_mechanism": "name-resolution",
+    "n": 170,
+    "name_res_rows": 170
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "yaml",
+    "relationship_type": "imports",
+    "bridge_mechanism": "name-resolution",
+    "n": 138,
+    "name_res_rows": 138
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "javascript",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 108,
+    "name_res_rows": 108
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "xml",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 58,
+    "name_res_rows": 58
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "javascript",
+    "relationship_type": "imports",
+    "bridge_mechanism": "name-resolution",
+    "n": 26,
+    "name_res_rows": 26
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "html",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 17,
+    "name_res_rows": 17
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "javascript",
+    "relationship_type": "calls",
+    "bridge_mechanism": "name-resolution",
+    "n": 13,
+    "name_res_rows": 13
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "yaml",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 8,
+    "name_res_rows": 8
+  },
+  {
+    "src_lang": "go",
+    "tgt_lang": "javascript",
+    "relationship_type": "instantiates",
+    "bridge_mechanism": "name-resolution",
+    "n": 6,
+    "name_res_rows": 6
+  },
+  {
+    "src_lang": "html",
+    "tgt_lang": "go",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 6,
+    "name_res_rows": 6
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "make",
+    "relationship_type": "calls",
+    "bridge_mechanism": "name-resolution",
+    "n": 6,
+    "name_res_rows": 6
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "go",
+    "relationship_type": "references",
+    "bridge_mechanism": "name-resolution",
+    "n": 5,
+    "name_res_rows": 5
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "go",
+    "relationship_type": "instantiates",
+    "bridge_mechanism": "name-resolution",
+    "n": 2,
+    "name_res_rows": 2
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "make",
+    "relationship_type": "uses",
+    "bridge_mechanism": "name-resolution",
+    "n": 2,
+    "name_res_rows": 2
+  },
+  {
+    "src_lang": "javascript",
+    "tgt_lang": "xml",
+    "relationship_type": "calls",
+    "bridge_mechanism": "name-resolution",
+    "n": 2,
+    "name_res_rows": 2
+  },
+  {
+    "src_lang": "objective-c",
+    "tgt_lang": "go",
+    "relationship_type": "calls",
+    "bridge_mechanism": "name-resolution",
+    "n": 1,
+    "name_res_rows": 1
+  },
+  {
+    "src_lang": "scss",
+    "tgt_lang": "go",
+    "relationship_type": "part_of",
+    "bridge_mechanism": "name-resolution",
+    "n": 1,
+    "name_res_rows": 1
+  },
+  {
+    "src_lang": "scss",
+    "tgt_lang": "javascript",
+    "relationship_type": "part_of",
+    "bridge_mechanism": "name-resolution",
+    "n": 1,
+    "name_res_rows": 1
+  },
+  {
+    "src_lang": "scss",
+    "tgt_lang": "yaml",
+    "relationship_type": "part_of",
+    "bridge_mechanism": "name-resolution",
+    "n": 1,
+    "name_res_rows": 1
+  }
+]

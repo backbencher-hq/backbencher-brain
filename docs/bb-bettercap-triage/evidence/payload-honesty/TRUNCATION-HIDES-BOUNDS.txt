@@ -1,0 +1,31 @@
+=== HOST-TRUNCATION SIMULATION (bb itself has no cap; external hosts do) ===
+--- head -c 100000 of impact-Session-default.json (full=188433 bytes) ---
+  contains '"truncated"': 0
+  contains '"shownCount"': 0
+  contains '"summary"': 0
+  contains '"truncationReason"': 0
+  contains '"totalCountIfKnown"': 0
+--- head -c 150000 of impact-Session-default.json (full=188433 bytes) ---
+  contains '"truncated"': 0
+  contains '"shownCount"': 0
+  contains '"summary"': 0
+  contains '"truncationReason"': 0
+  contains '"totalCountIfKnown"': 0
+--- head -c 500000 of graph-Session-default.json (full=1087986 bytes) ---
+  contains '"truncated"': 0
+  contains '"shownCount"': 0
+  contains '"summary"': 0
+  contains '"truncationReason"': 0
+  contains '"totalCountIfKnown"': 0
+--- head -c 900000 of graph-Session-default.json (full=1087986 bytes) ---
+  contains '"truncated"': 0
+  contains '"shownCount"': 0
+  contains '"summary"': 0
+  contains '"truncationReason"': 0
+  contains '"totalCountIfKnown"': 0
+--- head -c 500000 of graph-New-default.json (full=547273 bytes) ---
+  contains '"truncated"': 0
+  contains '"shownCount"': 0
+  contains '"summary"': 0
+  contains '"truncationReason"': 0
+  contains '"totalCountIfKnown"': 0

@@ -1,0 +1,80 @@
+{
+  "corpusFiles": {
+    "n": 27044
+  },
+  "corpusSyms": {
+    "n": 116191
+  },
+  "corpusRels": {
+    "n": 351414,
+    "xl": 0,
+    "unbound": 120740
+  },
+  "corpusTargetRels": {
+    "n": 517174,
+    "xl": 0
+  },
+  "langs": [
+    {
+      "language": "javascript",
+      "n": 20735
+    },
+    {
+      "language": "markdown",
+      "n": 1277
+    },
+    {
+      "language": "css",
+      "n": 1271
+    },
+    {
+      "language": "typescript",
+      "n": 995
+    },
+    {
+      "language": "html",
+      "n": 989
+    },
+    {
+      "language": "json",
+      "n": 774
+    },
+    {
+      "language": "yaml",
+      "n": 518
+    },
+    {
+      "language": "vue",
+      "n": 113
+    },
+    {
+      "language": "scss",
+      "n": 104
+    },
+    {
+      "language": "xml",
+      "n": 100
+    },
+    {
+      "language": "graphql",
+      "n": 84
+    },
+    {
+      "language": "tsx",
+      "n": 47
+    },
+    {
+      "language": "bash",
+      "n": 18
+    },
+    {
+      "language": "toml",
+      "n": 5
+    },
+    {
+      "language": "objective-c",
+      "n": 4
+    }
+  ],
+  "goMains": []
+}

@@ -1,0 +1,28 @@
+{
+  "matches": [
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72",
+      "fileId": "/home/ishaq2321/bettercap/session/session.go",
+      "name": "Session",
+      "symbolType": "struct",
+      "lineStart": 72,
+      "byteStart": 1719,
+      "byteEnd": 2356,
+      "language": "go",
+      "relativePath": "session/session.go",
+      "stale": false
+    }
+  ],
+  "found": true,
+  "totalMatches": 1,
+  "returned": 1,
+  "truncated": false,
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

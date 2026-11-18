@@ -1,0 +1,106 @@
+{
+  "dependencies": [
+    {
+      "file": "main.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "runtime",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/core",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/modules",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 11,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "dependencies@intelligence",
+    "engineVersion": "m10.04",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship+brain_import",
+    "limitations": [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut."
+    ]
+  },
+  "summary": {
+    "returned": 1,
+    "totalFiles": 1,
+    "scope": "main.go",
+    "truncated": false,
+    "returnedInternalDependencies": 0,
+    "returnedInternalDependents": 0,
+    "pageLimit": 20
+  },
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

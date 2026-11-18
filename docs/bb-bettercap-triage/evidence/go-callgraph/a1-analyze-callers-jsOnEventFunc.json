@@ -1,0 +1,140 @@
+{
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39",
+    "name": "jsOnEventFunc",
+    "symbolType": "function",
+    "file": "session/script_builtin_runtime.go",
+    "line": 39,
+    "lineEnd": 118,
+    "language": "go",
+    "complexity": 17,
+    "isExternal": false
+  },
+  "rootCandidates": 1,
+  "rootMatch": "exact",
+  "callers": [],
+  "callees": [],
+  "nodes": {
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39",
+      "name": "jsOnEventFunc",
+      "symbolType": "function",
+      "file": "session/script_builtin_runtime.go",
+      "line": 39,
+      "lineEnd": 118,
+      "language": "go",
+      "complexity": 17,
+      "isExternal": false,
+      "stale": false
+    }
+  },
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  },
+  "summary": {
+    "totalCallers": 0,
+    "totalCallees": 0,
+    "maxDepthReached": 0,
+    "maxDepth": 3,
+    "timeBudgetMs": 2000,
+    "timeBudgetExhausted": false,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageEdges": 0,
+    "truncated": false,
+    "truncationReasons": [],
+    "filterNarrowed": false,
+    "filterReason": null,
+    "edgeLimit": 200,
+    "maxEdges": 1000,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 0,
+    "exactCallees": 0,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesByType": {},
+    "relationshipTypesUsed": [
+      "calls",
+      "extends",
+      "implements",
+      "uses",
+      "instantiates",
+      "overrides",
+      "contains",
+      "references",
+      "imports",
+      "exports",
+      "decorates",
+      "renders",
+      "mixes_in",
+      "part_of"
+    ],
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "edgesInBothDirections": 0,
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "returnedCallers": 0,
+    "returnedCallees": 0,
+    "pageEdgeLimit": 25,
+    "pageTruncated": false
+  },
+  "mode": "callers",
+  "target": "jsOnEventFunc",
+  "found": true,
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

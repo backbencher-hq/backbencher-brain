@@ -1,0 +1,42 @@
+# 24 style-sheet syntax-error files on bettercap (DB: brain_file.has_syntax_errors=1)
+# 16 css (.less) + 8 scss  — NOT "24 LESS"
+modules/ui/ui/assets/fontawesome/less/_animated.less|css
+modules/ui/ui/assets/fontawesome/less/_bordered-pulled.less|css
+modules/ui/ui/assets/fontawesome/less/_core.less|css
+modules/ui/ui/assets/fontawesome/less/_fixed-width.less|css
+modules/ui/ui/assets/fontawesome/less/_icons.less|css
+modules/ui/ui/assets/fontawesome/less/_larger.less|css
+modules/ui/ui/assets/fontawesome/less/_list.less|css
+modules/ui/ui/assets/fontawesome/less/_mixins.less|css
+modules/ui/ui/assets/fontawesome/less/_rotated-flipped.less|css
+modules/ui/ui/assets/fontawesome/less/_screen-reader.less|css
+modules/ui/ui/assets/fontawesome/less/_shims.less|css
+modules/ui/ui/assets/fontawesome/less/_stacked.less|css
+modules/ui/ui/assets/fontawesome/less/_variables.less|css
+modules/ui/ui/assets/fontawesome/less/brands.less|css
+modules/ui/ui/assets/fontawesome/less/regular.less|css
+modules/ui/ui/assets/fontawesome/less/solid.less|css
+modules/ui/ui/assets/fontawesome/scss/_icons.scss|scss
+modules/ui/ui/assets/fontawesome/scss/_list.scss|scss
+modules/ui/ui/assets/fontawesome/scss/_mixins.scss|scss
+modules/ui/ui/assets/fontawesome/scss/_shims.scss|scss
+modules/ui/ui/assets/fontawesome/scss/_variables.scss|scss
+modules/ui/ui/assets/fontawesome/scss/brands.scss|scss
+modules/ui/ui/assets/fontawesome/scss/regular.scss|scss
+modules/ui/ui/assets/fontawesome/scss/solid.scss|scss
+(16 of the 18 .less files fail; the scss analyzer has its own grammar and still fails 8 files.)
+
+Sample error_report (_animated.less, first records):
+[{"message":"Syntax ERROR: the grammar could not read this token.","range":{"startLine":1,...}},
+ {"message":"Syntax ERROR: the grammar could not read this token.","range":{"startLine":4,"startColumn":2,...,"startIndex":50,"endIndex":51}}, ...]
+_sample file content (valid LESS, unsupported by tree-sitter-css):
+  .@{fa-css-prefix}-spin {
+    animation: fa-spin 2s infinite linear;
+  }
+  @keyframes fa-spin { 0% { transform: rotate(0deg); } ... }
+_variables.less: @fa-font-path: "../webfonts"; @fa-var-500px: "\f26e"; (LESS variable declarations)
+solid.less: rows of @{fa-var-*}: before { content: @fa-var-*; } (LESS interpolation)
+=> genuine grammar gap: .less is routed to tree-sitter-css (language-detection.ts:78) which cannot read
+   LESS `@name: value` declarations or `.@{var}` interpolation. Engine comment (engine.ts:1073-1080) already
+   DECLARES that .less stays on the CSS grammar and that this was unmeasured ("0 files of each in 13 corpora").
+   The 8 .scss failures are a second, separate grammar-coverage gap (SCSS has its own wasm lane).

@@ -1,0 +1,1 @@
+error: bb_impact: unknown or irrelevant options: maxNodes — accepted options: symbol, relationshipTypes, file, refresh (aliases accepted: target, symbolName, query)

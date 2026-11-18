@@ -1,0 +1,1916 @@
+{
+  "symbol": "makeIconMasking",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+    "name": "makeIconMasking",
+    "symbolType": "function",
+    "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+    "line": 742,
+    "filePath": "/home/ishaq2321/bettercap/modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+    "candidates": 1,
+    "match": "exact"
+  },
+  "callers": [],
+  "callees": [
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:children",
+        "name": "children",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 743
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:children:uses:743"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000_ref",
+        "name": "makeIconMasking\u0000_ref",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 743
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000_ref:uses:743"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:attributes",
+        "name": "attributes",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 744
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:attributes:uses:744"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000main",
+        "name": "makeIconMasking\u0000main",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 748
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000main:uses:748"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:width",
+        "name": "width",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 748
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:width:uses:748"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000mask",
+        "name": "makeIconMasking\u0000mask",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 750
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000mask:uses:750"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000transform",
+        "name": "makeIconMasking\u0000transform",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 753
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000transform:uses:753"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskWidth",
+        "name": "makeIconMasking\u0000maskWidth",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 754
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskWidth:uses:754"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000mainWidth",
+        "name": "makeIconMasking\u0000mainWidth",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 755
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000mainWidth:uses:755"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000ALL_SPACE",
+        "name": "makeIconMasking\u0000ALL_SPACE",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 759
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000ALL_SPACE:uses:759"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:inner",
+        "name": "inner",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 765
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:inner:uses:765"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000trans",
+        "name": "makeIconMasking\u0000trans",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 765
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000trans:uses:765"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000mainPath",
+        "name": "makeIconMasking\u0000mainPath",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 768
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000mainPath:uses:768"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:outer",
+        "name": "outer",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 775
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:outer:uses:775"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskInnerGroup",
+        "name": "makeIconMasking\u0000maskInnerGroup",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 776
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskInnerGroup:uses:776"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskId",
+        "name": "makeIconMasking\u0000maskId",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 783
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskId:uses:783"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskOuterGroup",
+        "name": "makeIconMasking\u0000maskOuterGroup",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 787
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskOuterGroup:uses:787"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskRect",
+        "name": "makeIconMasking\u0000maskRect",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 787
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskRect:uses:787"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000clipId",
+        "name": "makeIconMasking\u0000clipId",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 794
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000clipId:uses:794"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskPath",
+        "name": "makeIconMasking\u0000maskPath",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 796
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskPath:uses:796"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000maskTag",
+        "name": "makeIconMasking\u0000maskTag",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 797
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000maskTag:uses:797"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000children",
+        "name": "makeIconMasking\u0000children",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 799
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000children:uses:799"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000defs",
+        "name": "makeIconMasking\u0000defs",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 799
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000defs:uses:799"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:makeIconMasking\u0000attributes",
+        "name": "makeIconMasking\u0000attributes",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 809
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:makeIconMasking\u0000attributes:uses:809"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": ".github/workflows/release.yaml:path:109",
+        "name": "path",
+        "symbolType": "property",
+        "file": ".github/workflows/release.yaml",
+        "line": 109,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→core",
+        "criticality": "medium",
+        "frequency": "one_of_10"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 768
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:path:uses:768"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 745
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:main:uses:745"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ui/ui/assets/fontawesome/js/all.js:icon:91",
+        "name": "icon",
+        "symbolType": "variable",
+        "file": "modules/ui/ui/assets/fontawesome/js/all.js",
+        "line": 91,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→ui",
+        "criticality": "low",
+        "frequency": "one_of_9"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 749
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:icon:uses:749"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ui/ui/assets/fontawesome/metadata/icons.yml:mask:11391",
+        "name": "mask",
+        "symbolType": "class",
+        "file": "modules/ui/ui/assets/fontawesome/metadata/icons.yml",
+        "line": 11391,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→ui",
+        "criticality": "low",
+        "frequency": "one_of_8"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 746
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:mask:uses:746"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ui/ui/main.js:transform:1805",
+        "name": "transform",
+        "symbolType": "method",
+        "file": "modules/ui/ui/main.js",
+        "line": 1805,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→ui",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 747
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:transform:uses:747"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:GOARCH",
+        "name": "GOARCH",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 37
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:GOARCH:uses:37"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:GOOS",
+        "name": "GOOS",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 37
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:GOOS:uses:37"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:EOF",
+        "name": "EOF",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 82
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:EOF:uses:82"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Name:27",
+        "name": "Name",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 27,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_140"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 37
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:Name:uses:37"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Caplet:25",
+        "name": "Caplet",
+        "symbolType": "struct",
+        "file": "caplets/caplet.go",
+        "line": 25,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_23"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 72
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:Caplet:uses:72"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "core/banner.go:Version:5",
+        "name": "Version",
+        "symbolType": "constant",
+        "file": "core/banner.go",
+        "line": 5,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_9"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 37
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:Version:uses:37"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "core/options.go:NoColors:14",
+        "name": "NoColors",
+        "symbolType": "property",
+        "file": "core/options.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 29
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:NoColors:uses:29"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "core/options.go:Options:7",
+        "name": "Options",
+        "symbolType": "struct",
+        "file": "core/options.go",
+        "line": 7,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_20"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 29
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:Options:uses:29"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "core/options.go:PrintVersion:16",
+        "name": "PrintVersion",
+        "symbolType": "property",
+        "file": "core/options.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 36
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:PrintVersion:uses:36"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "core/options.go:AutoStart:11",
+        "name": "AutoStart",
+        "symbolType": "property",
+        "file": "core/options.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 55
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:AutoStart:uses:55"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "core/options.go:Commands:18",
+        "name": "Commands",
+        "symbolType": "property",
+        "file": "core/options.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 65
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:Commands:uses:65"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Active:84",
+        "name": "Active",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 84,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 79
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:Active:uses:79"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/caplet.go:Caplet:25",
+        "name": "Caplet",
+        "symbolType": "struct",
+        "file": "caplets/caplet.go",
+        "line": 25,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Path:12",
+        "name": "Path",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 12,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_16"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/caplet.go",
+        "line": 45
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Eval",
+        "file": "caplets/caplet.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet.go:Eval:39:Path:uses:45"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/caplet.go:Caplet:25",
+        "name": "Caplet",
+        "symbolType": "struct",
+        "file": "caplets/caplet.go",
+        "line": 25,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Code:14",
+        "name": "Code",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_13"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/caplet.go",
+        "line": 46
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Eval",
+        "file": "caplets/caplet.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet.go:Eval:39:Code:uses:46"
+    }
+  ],
+  "summary": {
+    "totalCallers": 0,
+    "totalCallees": 43,
+    "maxDepthReached": 2,
+    "maxDepth": 5,
+    "crossLanguageEdges": 3,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "filterNarrowed": true,
+    "filterReason": "relationshipTypes:uses",
+    "edgeLimit": 800,
+    "maxEdges": 800,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 0,
+    "exactCallees": 29,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 14,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 0,
+    "edgesByType": {
+      "uses": 43
+    },
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "callees",
+      "relationshipTypes": [
+        "uses"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}

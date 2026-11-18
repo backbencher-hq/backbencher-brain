@@ -1,0 +1,15 @@
+graph: 200 nodes, 621 links
+scope: project
+view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity
+layout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)
+available: 55785 symbol(s) match, 390 reached the projection, 200 returned — limits 200 nodes / 5000 links
+page: symbols 1-200 (offset 0, limit 200, page 1; 55785 symbol(s) match this scope) — next page: offset=200
+edges: 967 relationship(s) connect the selected symbols — complete for this node set; 933 more attached only to nodes the node cut removed
+node selection: the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample
+returned kinds: method 60, property 54, function 40, struct 37, constant 5, class 3, module 1 — no kind filter was passed, so this is the composition the index's own ranking produced
+returned languages: go 147, javascript 45, yaml 6, make 1, xml 1
+annotations: none on the returned symbols — the index's agent notes were read, and none matches this page
+owner cascade: 1543 relationship(s) stored on members of selected classes are attributed to the class (marked ownerCascade, capped)
+excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are included)
+truncated: yes — 390 nodes and 1554 links reached the projection, the limits kept fewer
+provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=933 links-omitted-by-budget=0

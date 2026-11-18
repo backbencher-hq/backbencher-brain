@@ -1,0 +1,3 @@
+index stats for /home/ishaq2321/mcp/backbencher-brain:
+  files 34385 | symbols 506841 | relationships 1707606 | embeddings 647059
+  db: /home/ishaq2321/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db

@@ -1,0 +1,133 @@
+{
+  "symbol": "LoadModules",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42",
+    "name": "LoadModules",
+    "file": "modules/modules.go",
+    "filePath": "/home/ishaq2321/bettercap/modules/modules.go",
+    "line": 42,
+    "symbolType": "function",
+    "language": "go"
+  },
+  "rootStale": false,
+  "rootMatch": {
+    "requested": "LoadModules",
+    "via": "exact",
+    "nameMatches": 1
+  },
+  "resolution": {
+    "through": "direct"
+  },
+  "rule": {
+    "relationshipTypes": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements"
+    ],
+    "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+    "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+    "maxDepth": 5
+  },
+  "budget": {
+    "maxNodes": 200,
+    "maxDepth": 5,
+    "totalScanCeiling": 50000,
+    "totalExpansionCeiling": 2000,
+    "totalTimeCeilingMs": 2985,
+    "walkTimeCeilingMs": 1500,
+    "callDeadlineMs": 3000
+  },
+  "traversal": {
+    "depthReached": 0,
+    "engineTruncated": false,
+    "engineTruncationReason": null,
+    "edgeLimit": 200,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "returnedCallers": 2,
+    "walkTimeBudgetMs": 1500,
+    "walkTimeExhausted": false,
+    "totalsAreLowerBounds": false,
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    }
+  },
+  "cascade": {
+    "exact": 2,
+    "member": 0,
+    "rangeFolded": 0
+  },
+  "countVerification": {
+    "ran": false,
+    "skipped": false,
+    "timedOut": false,
+    "boundarySuspect": false,
+    "complete": null
+  },
+  "reproducible": true,
+  "impact": [
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "name": "main",
+      "file": "main.go",
+      "filePath": "/home/ishaq2321/bettercap/main.go",
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 47
+      },
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:LoadModules:calls:47",
+      "declarationLine": 1,
+      "symbolType": "module",
+      "language": "go",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7",
+      "name": "TestLoadModulesWithNilSession",
+      "file": "modules/modules_test.go",
+      "filePath": "/home/ishaq2321/bettercap/modules/modules_test.go",
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/modules_test.go",
+        "line": 16
+      },
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7:LoadModules:calls:16",
+      "declarationLine": 7,
+      "symbolType": "function",
+      "language": "go",
+      "depth": 0,
+      "evidenceAtDepth": 0,
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "via": "exact",
+      "stale": false
+    }
+  ],
+  "shownCount": 2,
+  "directCount": 2,
+  "totalCountIfKnown": 2,
+  "truncated": false,
+  "truncationReason": null,
+  "freshness": {
+    "fresh": 3,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

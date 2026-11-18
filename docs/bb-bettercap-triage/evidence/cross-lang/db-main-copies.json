@@ -1,0 +1,42 @@
+[
+  {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+    "name": "main",
+    "symbol_type": "module",
+    "line_start": 1,
+    "line_end": 1,
+    "is_declaration": null,
+    "relative_path": "main.go",
+    "language": "go"
+  },
+  {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:20",
+    "name": "main",
+    "symbol_type": "function",
+    "line_start": 20,
+    "line_end": 99,
+    "is_declaration": null,
+    "relative_path": "main.go",
+    "language": "go"
+  },
+  {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main_test.go:main:1",
+    "name": "main",
+    "symbol_type": "module",
+    "line_start": 1,
+    "line_end": 1,
+    "is_declaration": null,
+    "relative_path": "main_test.go",
+    "language": "go"
+  },
+  {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker.go:main:20",
+    "name": "main",
+    "symbol_type": "property",
+    "line_start": 20,
+    "line_end": 20,
+    "is_declaration": null,
+    "relative_path": "modules/ticker/ticker.go",
+    "language": "go"
+  }
+]

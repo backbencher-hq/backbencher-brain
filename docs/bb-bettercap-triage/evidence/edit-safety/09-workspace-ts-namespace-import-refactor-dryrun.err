@@ -1,0 +1,3 @@
+[INFO] [18:05:47] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [18:05:47] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [18:05:47] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm"}

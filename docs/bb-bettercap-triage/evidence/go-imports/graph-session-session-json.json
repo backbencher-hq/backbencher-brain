@@ -1,0 +1,3168 @@
+{
+  "symbol": "Session",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72",
+    "name": "Session",
+    "symbolType": "struct",
+    "file": "session/session.go",
+    "line": 72,
+    "filePath": "/home/ishaq2321/bettercap/session/session.go",
+    "candidates": 1,
+    "match": "exact"
+  },
+  "callers": [
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 73
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Options",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Options:contains:73"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 74
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Interface",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Interface:contains:74"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 75
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Gateway",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Gateway:contains:75"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_68"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 76
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Env",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Env:contains:76"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_46"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 77
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Lan",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Lan:contains:77"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 78
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "WiFi",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:WiFi:contains:78"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 79
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "BLE",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:BLE:contains:79"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 80
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "HID",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:HID:contains:80"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 81
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "CAN",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:CAN:contains:81"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 82
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Queue",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Queue:contains:82"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 83
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "StartedAt",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:StartedAt:contains:83"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 84
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Active",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Active:contains:84"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 85
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "GPS",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:GPS:contains:85"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 86
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Modules",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Modules:contains:86"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 87
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Aliases",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Aliases:contains:87"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 89
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Input",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Input:contains:89"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 90
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Prompt",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Prompt:contains:90"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 91
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "CoreHandlers",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:CoreHandlers:contains:91"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_83"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 92
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Events",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Events:contains:92"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 93
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "EventsIgnoreList",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:EventsIgnoreList:contains:93"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 94
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "UnkCmdCallback",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:UnkCmdCallback:contains:94"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 95
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Firewall",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Firewall:contains:95"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 97
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "script",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:script:contains:97"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 164
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Lock",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Lock:contains:164"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 169
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Unlock",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Unlock:contains:169"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 174
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Module",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Module:contains:174"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 183
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Close",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Close:contains:183"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 228
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Register",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Register:contains:228"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 233
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Start",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Start:contains:233"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 351
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Skip",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Skip:contains:351"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 362
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "FindMAC",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:FindMAC:contains:362"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 399
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "IsOn",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:IsOn:contains:399"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_21"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 408
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Refresh",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Refresh:contains:408"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 414
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "ReadLine",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:ReadLine:contains:414"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 419
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "RunCaplet",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:RunCaplet:contains:419"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 448
+      },
+      "match": "owner-cascade",
+      "matchedMember": {
+        "name": "Run",
+        "file": "session/session.go"
+      },
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Run:contains:448"
+    }
+  ],
+  "callees": [
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Options:73",
+        "name": "Options",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 73,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 73
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Options:contains:73"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Interface:74",
+        "name": "Interface",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 74,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 74
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Interface:contains:74"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Gateway:75",
+        "name": "Gateway",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 75,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 75
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Gateway:contains:75"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Env:76",
+        "name": "Env",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 76,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_68"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 76
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Env:contains:76"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lan:77",
+        "name": "Lan",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 77,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_46"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 77
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Lan:contains:77"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:WiFi:78",
+        "name": "WiFi",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 78,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 78
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:WiFi:contains:78"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:BLE:79",
+        "name": "BLE",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 79,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 79
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:BLE:contains:79"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:HID:80",
+        "name": "HID",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 80,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 80
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:HID:contains:80"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:CAN:81",
+        "name": "CAN",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 81,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 81
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:CAN:contains:81"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Queue:82",
+        "name": "Queue",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 82,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 82
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Queue:contains:82"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:StartedAt:83",
+        "name": "StartedAt",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 83,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 83
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:StartedAt:contains:83"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Active:84",
+        "name": "Active",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 84,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 84
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Active:contains:84"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:GPS:85",
+        "name": "GPS",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 85,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 85
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:GPS:contains:85"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Modules:86",
+        "name": "Modules",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 86,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 86
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Modules:contains:86"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Aliases:87",
+        "name": "Aliases",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 87,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 87
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Aliases:contains:87"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Input:89",
+        "name": "Input",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 89,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 89
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Input:contains:89"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Prompt:90",
+        "name": "Prompt",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 90,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 90
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Prompt:contains:90"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:CoreHandlers:91",
+        "name": "CoreHandlers",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 91,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 91
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:CoreHandlers:contains:91"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Events:92",
+        "name": "Events",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 92,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_83"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 92
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Events:contains:92"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:EventsIgnoreList:93",
+        "name": "EventsIgnoreList",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 93,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 93
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:EventsIgnoreList:contains:93"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:UnkCmdCallback:94",
+        "name": "UnkCmdCallback",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 94,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 94
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:UnkCmdCallback:contains:94"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Firewall:95",
+        "name": "Firewall",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 95,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 95
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Firewall:contains:95"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:script:97",
+        "name": "script",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 97,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 97
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:script:contains:97"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 164
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Lock:contains:164"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 169
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Unlock:contains:169"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Module:174",
+        "name": "Module",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 174,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 174
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Module:contains:174"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Close:183",
+        "name": "Close",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 183,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 183
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Close:contains:183"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Register:228",
+        "name": "Register",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 228,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 228
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Register:contains:228"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Start:233",
+        "name": "Start",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 233,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 233
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Start:contains:233"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Skip:351",
+        "name": "Skip",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 351,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 351
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Skip:contains:351"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:FindMAC:362",
+        "name": "FindMAC",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 362,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 362
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:FindMAC:contains:362"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:IsOn:399",
+        "name": "IsOn",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 399,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 399
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:IsOn:contains:399"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Refresh:408",
+        "name": "Refresh",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 408,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_21"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 408
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Refresh:contains:408"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:ReadLine:414",
+        "name": "ReadLine",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 414,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 414
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:ReadLine:contains:414"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:RunCaplet:419",
+        "name": "RunCaplet",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 419,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 419
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:RunCaplet:contains:419"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Run:448",
+        "name": "Run",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 448,
+        "isExternal": false
+      },
+      "relationshipType": "contains",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 448
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72:Run:contains:448"
+    }
+  ],
+  "summary": {
+    "totalCallers": 36,
+    "totalCallees": 36,
+    "maxDepthReached": 0,
+    "maxDepth": 1,
+    "crossLanguageEdges": 0,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": true,
+    "truncationReason": "callee-depth-cap-reached",
+    "truncationReasons": [
+      "callee-depth-cap-reached"
+    ],
+    "filterNarrowed": true,
+    "filterReason": "relationshipTypes:contains|imports",
+    "edgeLimit": 50,
+    "maxEdges": 1000,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 36,
+    "exactCallees": 36,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 36,
+    "edgesByType": {
+      "contains": 72
+    },
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "both",
+      "relationshipTypes": [
+        "imports",
+        "contains"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}

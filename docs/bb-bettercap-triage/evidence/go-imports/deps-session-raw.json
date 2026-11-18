@@ -1,0 +1,893 @@
+{
+  "dependencies": [
+    {
+      "file": "session/command_handler_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/command_handler_test.go",
+      "dependencies": [
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/command_handler.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/command_handler.go",
+      "dependencies": [
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/readline",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/doc.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/doc.go",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/environment_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "reflect",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/environment.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/events_ignore_list.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_ignore_list.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/events_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go",
+      "dependencies": [
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/events.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/module_handler_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go",
+      "dependencies": [
+        {
+          "path": "reflect",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/module_handler.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/readline",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/module_param_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go",
+      "dependencies": [
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/module_param.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go",
+      "dependencies": [
+        {
+          "path": "crypto/rand",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/module.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 9,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/prompt.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/prompt.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/dustin/go-humanize",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/script_builtin_runtime.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/js",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/robertkrimen/otto",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 9,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/script_builtin.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/bettercap/v2/js",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/robertkrimen/otto",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 2,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/script.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/caplets",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/js",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/plugin",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 10,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/session_completers.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_completers.go",
+      "dependencies": [
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 2,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/session_core_handlers.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_core_handlers.go",
+      "dependencies": [
+        {
+          "path": "bufio",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os/exec",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "runtime",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/core",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/readline",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/robertkrimen/otto",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 17,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "session/session_json.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_json.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "runtime",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/caplets",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/core",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/packets",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "file-page: showing 20 of 26 files — raise limit for the rest"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "dependencies@intelligence",
+    "engineVersion": "m10.04",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship+brain_import",
+    "limitations": [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut."
+    ]
+  },
+  "summary": {
+    "returned": 20,
+    "totalFiles": 26,
+    "scope": "session",
+    "truncated": true,
+    "returnedInternalDependencies": 0,
+    "returnedInternalDependents": 0,
+    "pageLimit": 20
+  },
+  "freshness": {
+    "fresh": 20,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

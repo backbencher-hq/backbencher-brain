@@ -1,0 +1,15 @@
+bb doctor — diagnostics
+
+✓ pool workers: Pool workers start normally (compiled-dist); engine and grammars loaded in 746ms.
+  runtime: /home/ishaq2321/.nvm/versions/node/v22.22.1/bin/node (v22.22.1)
+  worker: compiled dist/pool-worker.js
+  root: /home/ishaq2321/mcp/backbencher-brain
+  self-test: 746ms (pid 19, node v22.22.1)
+
+embedding layers, in the order bb resolves them:
+  → 0. primary provider (global) — nvidia/nemotron-3.5-embed-8b @ https://integrate.api.nvidia.com/v1 (key present, from url file:global · model file:global · key file:global)
+  → 1. local word vectors — local-word-vectors-v3 @ offline (key not-required, from built in)
+
+! The index contains foreign-model vectors: local-word-vectors-v3 (326482 rows), nvidia/nemotron-3-embed-1b (315514 rows), tfidf-v1 (2643 rows). They are never compared with nvidia/nemotron-3.5-embed-8b queries.
+  Fix: bb index --force
+

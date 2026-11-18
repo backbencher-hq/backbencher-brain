@@ -1,0 +1,107 @@
+# Root-cause source quotes (read-only reads at HEAD be4c0ef25, bb 0.1.6)
+
+## A. Query-time: provider first, local only on provider failure/timeout
+src/intelligence/search/semantic-search.ts:259-263
+  const waitCeilingMs = (() => {
+    const fromEnv = Number(process.env.BB_EMBEDDING_TIMEOUT_MS)
+    const providerBound = Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : 30_000
+    return Math.min(providerBound, EMBEDDING_WAIT_CEILING_MS)   // EMBEDDING_WAIT_CEILING_MS = 2000
+  })()
+src/intelligence/search/semantic-search.ts:268-280
+  const raced = await boundedWait(SemanticEngine.embed(query, projectId as any), waitCeilingMs)
+  if (raced.timedOut) {
+    // The provider did not answer inside the tool's ceiling. Compute the local
+    // vector directly ... the answer then compares in the 50-dimension space and says so.
+    queryVector = localQueryVector(raw, projectId, query)
+    queryModel = SemanticEngine.LOCAL_MODEL_LABEL
+    ...
+  } else {
+    queryVector = raced.value
+    queryModel = SemanticEngine.getLastEmbeddingModel()
+  }
+
+## B. Strict same-space comparison — no populated-space fallback at query time
+src/intelligence/search/semantic-search.ts:317-321 (coverage measured for the model that WILL be compared)
+src/intelligence/search/semantic-search.ts:329-333
+  const fromWhere =
+    "FROM brain_semantic_embedding " +
+    "WHERE project_id = ? AND embedding_model = ? AND vector_dimension = ? " +
+    "ORDER BY entity_id LIMIT ?"
+  const args = [projectId, queryModel, dimension, VECTOR_SCAN_CAP] as const
+src/intelligence/search/semantic-search.ts:382-388
+  if (ranked.length === 0) {
+    return await keywordFallback(projectId, query, options, maxResults, "no-vector-above-threshold", {...})
+  }
+
+## C. Keyword fallback HIDES which model space was compared (hardcoded "none")
+src/intelligence/search/semantic-search.ts:583-598
+    metadata: {
+      queryModel: "none",
+      indexModel: "none",
+      method: "keyword-fallback",
+      dimension: 0,
+      scannedRows: facts.scan.scannedRows,
+      filteredRows: facts.scan.filteredRows,
+      fallbackReason: reason,
+      ...
+      embeddingCoverage: facts.comparison.libraryCoverage,
+    },
+
+## D. Index-time: per-batch local downgrade when provider fails
+src/brain/semantic/engine.ts:369-410 (Layer 1 provider in embedMany; catch records _lastEmbeddingError; 429 backoff)
+src/brain/semantic/engine.ts:412-431
+    // A caller repairing an existing index must not replace a good provider vector
+    // with a local fallback just because the provider was rate-limited: the local
+    // vector is a DIFFERENT space, so writing it under the old row would lose the
+    // old model's vector and still not produce the new one. Such callers pass
+    // allowLocalFallback:false and keep the old row until the provider succeeds.
+    if (opts.allowLocalFallback === false) return []
+    // Layer 2: Word vectors (always available, offline)
+    ... const localResult = await embedLocal(texts, vocabulary) ... return localResult
+
+## E. The reconcile/backfill pass EXISTS, but runs only inside `bb index`, after the drain
+src/cli/index.ts:427-433
+  // VECTORS ARE DERIVED DATA THAT A MODEL CHANGE INVALIDATES. The incremental path
+  // only queues symbols from files it parsed; an unchanged index parsed nothing, so
+  // changing the provider left every old vector in place (measured on bettercap:
+  // new model saved, `bb index` said "nothing to index", DB still held the old
+  // model's vectors). This runs AFTER the ordinary drain, so a run that parsed files
+  // has already embedded them; the pass then compares the stored models against the
+  // configured one and re-embeds the whole symbol set only when they disagree.
+src/ast/parallel-indexer.ts:2966-2990 reconcileEmbeddingModel doc: INCREMENTAL and PROVIDER-ONLY; local fallback disabled; superseded rows deleted only for converted symbols.
+src/ast/parallel-indexer.ts:3016-3021 mismatch test; 3085-3090 batchSize = 250; 3091-3109 allowFallback:false + 120s timeout; 3116-3121 "stop after two consecutive empty batches".
+src/cli/index.ts:445 call site; src/cli/index.ts:481-489 result message "stopped early after repeated provider failures ... existing vectors kept; rerun bb index".
+
+## F. Which code prints status=complete beside INCOMPLETE
+src/ast/parallel-indexer.ts:7989-8005 (main status write)
+      filesIndexed: Math.max(stats.totalFiles, coveredFiles),
+      filesParsed: coveredFiles,
+      ...
+      status:
+        stats.errorFiles > 0 || (stats.summary?.missingAfterRecovery ?? 0) > 0 ? "partial" : "complete",
+  -> skippedFiles (size-tier/unchanged) is NOT part of the status decision.
+src/brain/database.ts:446-448
+    const filesTotal = data.filesIndexed ?? data.files ?? 0   // -> total_files column
+    const symbolsTotal = data.symbolsIndexed ?? data.symbols ?? 0
+    const filesParsed = data.filesParsed ?? filesTotal          // -> indexed_files column
+src/intelligence/health/health-provider.ts:1170-1171 INCOMPLETE_INDEX error (names the contradiction)
+src/intelligence/health/health-provider.ts:1434 the `index:` line printing indexedFiles + INCOMPLETE + status together
+src/brain/brain-index-health.ts:347-359 second layer that says: status "complete" while counts say otherwise.
+
+## G. LESS routing / style-sheet grammar
+src/ast/language-detection.ts:78
+  scss: "scss", sass: "sass", less: "css",
+src/ast/engine.ts:1073-1080
+        // scss is its OWN grammar and its own lane, not a dialect flag on the CSS one.
+        // ... 254 `.scss` files were routed to a grammar with no `$variables`, ...
+        // `.sass` (indented syntax, a genuinely different grammar) and `.less` stay on the CSS wasm and stay DECLARED — measured 0 files of each in
+        // 13 corpora, so neither is a claim this repo can support or refute.
+src/ast/parallel-indexer.ts:1005-1013 SIZE TIER 3: skip files over 5MB entirely -> stats.skippedFiles++ (deliberate skip, not failure)
+src/ast/parallel-indexer.ts:1023-1031 skippedFiles++ also for unchanged files.
+src/ast/parallel-indexer.ts:7105 stats.totalFiles = files.length + stats.skippedFiles
+
+## H. Embedding queue cap / drain bound (coverage cause)
+src/ast/parallel-indexer.ts:2582 const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
+src/ast/parallel-indexer.ts:3176-3191 overflow: batch dropped, log.debug only, backgroundEmbedMetrics.dropped += items.length
+src/ast/parallel-indexer.ts:2593 EMBED_CALL_TIMEOUT_MS = 60_000
+src/cli/index.ts:390 waitMs = BB_EMBEDDING_DRAIN_WAIT_MS || 300000

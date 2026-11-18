@@ -1,0 +1,946 @@
+{
+  "totals": {
+    "n": 15836,
+    "ext": 15836
+  },
+  "byPairType": [
+    {
+      "src_lang": "graphql",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 4034,
+      "external_declared": 4034
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "json",
+      "rt": "calls",
+      "n": 3209,
+      "external_declared": 3209
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 2340,
+      "external_declared": 2340
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "graphql",
+      "rt": "references",
+      "n": 2326,
+      "external_declared": 2326
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 1569,
+      "external_declared": 1569
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 345,
+      "external_declared": 345
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 204,
+      "external_declared": 204
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 190,
+      "external_declared": 190
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 155,
+      "external_declared": 155
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 138,
+      "external_declared": 138
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "json",
+      "rt": "calls",
+      "n": 114,
+      "external_declared": 114
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 103,
+      "external_declared": 103
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 98,
+      "external_declared": 98
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 83,
+      "external_declared": 83
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 73,
+      "external_declared": 73
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "javascript",
+      "rt": "calls",
+      "n": 63,
+      "external_declared": 63
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 60,
+      "external_declared": 60
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "javascript",
+      "rt": "uses",
+      "n": 58,
+      "external_declared": 58
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 48,
+      "external_declared": 48
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "markdown",
+      "rt": "references",
+      "n": 38,
+      "external_declared": 38
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "json",
+      "rt": "calls",
+      "n": 35,
+      "external_declared": 35
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 34,
+      "external_declared": 34
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 25,
+      "external_declared": 25
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "json",
+      "rt": "extends",
+      "n": 25,
+      "external_declared": 25
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 24,
+      "external_declared": 24
+    },
+    {
+      "src_lang": "graphql",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 23,
+      "external_declared": 23
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 23,
+      "external_declared": 23
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 22,
+      "external_declared": 22
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 21,
+      "external_declared": 21
+    },
+    {
+      "src_lang": "graphql",
+      "tgt_lang": "markdown",
+      "rt": "references",
+      "n": 20,
+      "external_declared": 20
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "bash",
+      "rt": "calls",
+      "n": 16,
+      "external_declared": 16
+    },
+    {
+      "src_lang": "scala",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 13,
+      "external_declared": 13
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "markdown",
+      "rt": "contains",
+      "n": 13,
+      "external_declared": 13
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "haskell",
+      "rt": "uses",
+      "n": 12,
+      "external_declared": 12
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 12,
+      "external_declared": 12
+    },
+    {
+      "src_lang": "scala",
+      "tgt_lang": "java",
+      "rt": "calls",
+      "n": 12,
+      "external_declared": 12
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 11,
+      "external_declared": 11
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 10,
+      "external_declared": 10
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "json",
+      "rt": "calls",
+      "n": 10,
+      "external_declared": 10
+    },
+    {
+      "src_lang": "python",
+      "tgt_lang": "markdown",
+      "rt": "references",
+      "n": 10,
+      "external_declared": 10
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "javascript",
+      "rt": "calls",
+      "n": 10,
+      "external_declared": 10
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "python",
+      "rt": "calls",
+      "n": 8,
+      "external_declared": 8
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 8,
+      "external_declared": 8
+    },
+    {
+      "src_lang": "java",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 7,
+      "external_declared": 7
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 7,
+      "external_declared": 7
+    },
+    {
+      "src_lang": "c",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "r",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "scala",
+      "tgt_lang": "typescript",
+      "rt": "instantiates",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "json",
+      "rt": "contains",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "csharp",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 5,
+      "external_declared": 5
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "java",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "lua",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "markdown",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "scala",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "go",
+      "rt": "references",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "typescript",
+      "rt": "instantiates",
+      "n": 4,
+      "external_declared": 4
+    },
+    {
+      "src_lang": "clean",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "bash",
+      "rt": "uses",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "lua",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "lua",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "matlab",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "markdown",
+      "rt": "instantiates",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "markdown",
+      "rt": "instantiates",
+      "n": 3,
+      "external_declared": 3
+    },
+    {
+      "src_lang": "erlang",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "typescript",
+      "rt": "imports",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "groovy",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "groovy",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "json",
+      "tgt_lang": "toml",
+      "rt": "contains",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "julia",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "kotlin",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "kotlin",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "lua",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "lua",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "lua",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "r",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "ruby",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "ruby",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "markdown",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "javascript",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "vb",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "xml",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "bash",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "bash",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "clean",
+      "tgt_lang": "markdown",
+      "rt": "references",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "csharp",
+      "tgt_lang": "json",
+      "rt": "instantiates",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "csharp",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "csharp",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "fsharp",
+      "tgt_lang": "json",
+      "rt": "imports",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "fsharp",
+      "tgt_lang": "json",
+      "rt": "references",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "graphql",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "graphql",
+      "tgt_lang": "typescript",
+      "rt": "implements",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "graphql",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "haskell",
+      "tgt_lang": "csharp",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "java",
+      "tgt_lang": "json",
+      "rt": "imports",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "java",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "java",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "java",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "python",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "julia",
+      "tgt_lang": "json",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "markdown",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "powershell",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "powershell",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "r",
+      "tgt_lang": "json",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "r",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "ruby",
+      "tgt_lang": "json",
+      "rt": "extends",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "bash",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "json",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "typescript",
+      "rt": "implements",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "rust",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "scala",
+      "tgt_lang": "json",
+      "rt": "instantiates",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "sql",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "svelte",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "tsx",
+      "tgt_lang": "markdown",
+      "rt": "extends",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "powershell",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "python",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "typescript",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vb",
+      "tgt_lang": "json",
+      "rt": "instantiates",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vb",
+      "tgt_lang": "markdown",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vb",
+      "tgt_lang": "typescript",
+      "rt": "references",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vba",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vba",
+      "tgt_lang": "typescript",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "markdown",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "typescript",
+      "rt": "imports",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "vue",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "zig",
+      "tgt_lang": "typescript",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    }
+  ]
+}

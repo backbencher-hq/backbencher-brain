@@ -1,0 +1,6337 @@
+{
+  "symbol": "New",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:New:155",
+    "name": "New",
+    "symbolType": "function",
+    "file": "session/session.go",
+    "line": 155,
+    "filePath": "/home/ishaq2321/bettercap/session/session.go",
+    "candidates": 1,
+    "match": "exact"
+  },
+  "callers": [
+    {
+      "direction": "caller",
+      "from": {
+        "id": "caplets/caplet_test.go:TestCapletEvalError:142",
+        "name": "TestCapletEvalError",
+        "symbolType": "function",
+        "file": "caplets/caplet_test.go",
+        "line": 142,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/caplet_test.go",
+        "line": 157
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet_test.go:TestCapletEvalError:142:New:calls:157"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/crypto.go:cryptoSha1:9",
+        "name": "cryptoSha1",
+        "symbolType": "function",
+        "file": "js/crypto.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/crypto.go",
+        "line": 21
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/crypto.go:cryptoSha1:9:New:calls:21"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data.go:textEncode:11",
+        "name": "textEncode",
+        "symbolType": "function",
+        "file": "js/data.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data.go",
+        "line": 24
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data.go:textEncode:11:New:calls:24"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestBtoa:11",
+        "name": "TestBtoa",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 12
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestBtoa:11:New:calls:12"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestAtob:79",
+        "name": "TestAtob",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 79,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 80
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestAtob:79:New:calls:80"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestGzipCompress:155",
+        "name": "TestGzipCompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 156
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipCompress:155:New:calls:156"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestGzipCompressInvalidArgs:235",
+        "name": "TestGzipCompressInvalidArgs",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 235,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 236
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipCompressInvalidArgs:235:New:calls:236"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestGzipDecompress:273",
+        "name": "TestGzipDecompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 273,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 274
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipDecompress:273:New:calls:274"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestGzipDecompressInvalidArgs:336",
+        "name": "TestGzipDecompressInvalidArgs",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 336,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 337
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipDecompressInvalidArgs:336:New:calls:337"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestBtoaAtobRoundTrip:374",
+        "name": "TestBtoaAtobRoundTrip",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 374,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 375
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestBtoaAtobRoundTrip:374:New:calls:375"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:TestGzipCompressDecompressRoundTrip:413",
+        "name": "TestGzipCompressDecompressRoundTrip",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 413,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 414
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipCompressDecompressRoundTrip:413:New:calls:414"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:BenchmarkBtoa:451",
+        "name": "BenchmarkBtoa",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 451,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 452
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkBtoa:451:New:calls:452"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:BenchmarkAtob:464",
+        "name": "BenchmarkAtob",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 464,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 465
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkAtob:464:New:calls:465"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:BenchmarkGzipCompress:478",
+        "name": "BenchmarkGzipCompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 478,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 479
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkGzipCompress:478:New:calls:479"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:BenchmarkGzipDecompress:492",
+        "name": "BenchmarkGzipDecompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 492,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 493
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkGzipDecompress:492:New:calls:493"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:TestReadDir:14",
+        "name": "TestReadDir",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 15
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestReadDir:14:New:calls:15"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:TestReadFile:181",
+        "name": "TestReadFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 181,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 182
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestReadFile:181:New:calls:182"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:TestWriteFile:347",
+        "name": "TestWriteFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 347,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 348
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestWriteFile:347:New:calls:348"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:TestAppendFile:533",
+        "name": "TestAppendFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 533,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 534
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestAppendFile:533:New:calls:534"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:TestMkdirAll:783",
+        "name": "TestMkdirAll",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 783,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 784
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestMkdirAll:783:New:calls:784"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:TestFileSystemIntegration:987",
+        "name": "TestFileSystemIntegration",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 987,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 988
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestFileSystemIntegration:987:New:calls:988"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:BenchmarkReadFile:1098",
+        "name": "BenchmarkReadFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1098,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1099
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkReadFile:1098:New:calls:1099"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:BenchmarkWriteFile:1119",
+        "name": "BenchmarkWriteFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1119,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1120
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkWriteFile:1119:New:calls:1120"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:BenchmarkAppendFile:1139",
+        "name": "BenchmarkAppendFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1139,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1140
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkAppendFile:1139:New:calls:1140"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:BenchmarkMkdirAll:1164",
+        "name": "BenchmarkMkdirAll",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1164,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1165
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkMkdirAll:1164:New:calls:1165"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:BenchmarkReadDir:1181",
+        "name": "BenchmarkReadDir",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1181,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1182
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkReadDir:1181:New:calls:1182"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/http.go:httpRequest:96",
+        "name": "httpRequest",
+        "symbolType": "function",
+        "file": "js/http.go",
+        "line": 96,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/http.go",
+        "line": 140
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/http.go:httpRequest:96:New:calls:140"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 21
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:New:calls:21"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 21
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go:createMockSession:18:New:calls:21"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_record.go:errNotRecording:16",
+        "name": "errNotRecording",
+        "symbolType": "variable",
+        "file": "modules/api_rest/api_rest_record.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_record.go",
+        "line": 16
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_record.go:errNotRecording:16:New:calls:16"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_record.go:recorder:44",
+        "name": "recorder",
+        "symbolType": "method",
+        "file": "modules/api_rest/api_rest_record.go",
+        "line": 44,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_record.go",
+        "line": 50
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_record.go:recorder:44:New:calls:50"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_replay.go:errNotReplaying:14",
+        "name": "errNotReplaying",
+        "symbolType": "variable",
+        "file": "modules/api_rest/api_rest_replay.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_replay.go",
+        "line": 14
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_replay.go:errNotReplaying:14:New:calls:14"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_test.go:createMockSession:23",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 23,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 26
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:createMockSession:23:New:calls:26"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593",
+        "name": "BenchmarkNewRestAPI",
+        "symbolType": "function",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 593,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 594
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593:New:calls:594"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602",
+        "name": "BenchmarkIsTLS",
+        "symbolType": "function",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 602,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 603
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602:New:calls:603"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/api_rest/api_rest_test.go:BenchmarkConfigure:614",
+        "name": "BenchmarkConfigure",
+        "symbolType": "function",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 614,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/api_rest/api_rest_test.go",
+        "line": 615
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614:New:calls:615"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ble/ble_recon_test.go:createMockSession:19",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/ble/ble_recon_test.go",
+        "line": 19,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ble/ble_recon_test.go",
+        "line": 22
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_recon_test.go:createMockSession:19:New:calls:22"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/c2/c2.go:NewC2:50",
+        "name": "NewC2",
+        "symbolType": "function",
+        "file": "modules/c2/c2.go",
+        "line": 50,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/c2/c2.go",
+        "line": 174
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go:NewC2:50:New:calls:174"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/c2/c2_test.go:createMockSession:16",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/c2/c2_test.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/c2/c2_test.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:createMockSession:16:New:calls:19"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/c2/c2_test.go:TestTemplateExecution:300",
+        "name": "TestTemplateExecution",
+        "symbolType": "function",
+        "file": "modules/c2/c2_test.go",
+        "line": 300,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/c2/c2_test.go",
+        "line": 302
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:TestTemplateExecution:300:New:calls:302"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/c2/c2_test.go:BenchmarkNewC2:313",
+        "name": "BenchmarkNewC2",
+        "symbolType": "function",
+        "file": "modules/c2/c2_test.go",
+        "line": 313,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/c2/c2_test.go",
+        "line": 314
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkNewC2:313:New:calls:314"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/c2/c2_test.go:BenchmarkChannelSet:322",
+        "name": "BenchmarkChannelSet",
+        "symbolType": "function",
+        "file": "modules/c2/c2_test.go",
+        "line": 322,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/c2/c2_test.go",
+        "line": 323
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkChannelSet:322:New:calls:323"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/c2/c2_test.go:BenchmarkTemplateSet:340",
+        "name": "BenchmarkTemplateSet",
+        "symbolType": "function",
+        "file": "modules/c2/c2_test.go",
+        "line": 340,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/c2/c2_test.go",
+        "line": 341
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkTemplateSet:340:New:calls:341"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/can/can.go:NewCanModule:29",
+        "name": "NewCanModule",
+        "symbolType": "function",
+        "file": "modules/can/can.go",
+        "line": 29,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/can/can.go",
+        "line": 105
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can.go:NewCanModule:29:New:calls:105"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/can/can_fuzz.go:Fuzz:81",
+        "name": "Fuzz",
+        "symbolType": "method",
+        "file": "modules/can/can_fuzz.go",
+        "line": 81,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/can/can_fuzz.go",
+        "line": 83
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_fuzz.go:Fuzz:81:New:calls:83"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/can/can_recon.go:Configure:13",
+        "name": "Configure",
+        "symbolType": "method",
+        "file": "modules/can/can_recon.go",
+        "line": 13,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/can/can_recon.go",
+        "line": 30
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_recon.go:Configure:13:New:calls:30"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/can/can_test.go:createMockSession:16",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/can/can_test.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/can/can_test.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:createMockSession:16:New:calls:19"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/can/can_test.go:BenchmarkNewCanModule:376",
+        "name": "BenchmarkNewCanModule",
+        "symbolType": "function",
+        "file": "modules/can/can_test.go",
+        "line": 376,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/can/can_test.go",
+        "line": 377
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:BenchmarkNewCanModule:376:New:calls:377"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/can/can_test.go:BenchmarkInjectHandler:390",
+        "name": "BenchmarkInjectHandler",
+        "symbolType": "function",
+        "file": "modules/can/can_test.go",
+        "line": 390,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/can/can_test.go",
+        "line": 391
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:BenchmarkInjectHandler:390:New:calls:391"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker.go:createNamed:159",
+        "name": "createNamed",
+        "symbolType": "method",
+        "file": "modules/ticker/ticker.go",
+        "line": 159,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker.go",
+        "line": 161
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker.go:createNamed:159:New:calls:161"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker.go:destroyNamed:177",
+        "name": "destroyNamed",
+        "symbolType": "method",
+        "file": "modules/ticker/ticker.go",
+        "line": 177,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker.go",
+        "line": 179
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker.go:destroyNamed:177:New:calls:179"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:createMockSession:16",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:createMockSession:16:New:calls:19"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:BenchmarkTickerCreate:374",
+        "name": "BenchmarkTickerCreate",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 374,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 379
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374:New:calls:379"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393",
+        "name": "BenchmarkTickerStartStop",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 393,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 398
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393:New:calls:398"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/update/update_test.go:createMockSession:15",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/update/update_test.go",
+        "line": 15,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/update/update_test.go",
+        "line": 18
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/update/update_test.go:createMockSession:15:New:calls:18"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/update/update_test.go:BenchmarkVersionToNum:319",
+        "name": "BenchmarkVersionToNum",
+        "symbolType": "function",
+        "file": "modules/update/update_test.go",
+        "line": 319,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/update/update_test.go",
+        "line": 320
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/update/update_test.go:BenchmarkVersionToNum:319:New:calls:320"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/update/update_test.go:BenchmarkVersionComparison:338",
+        "name": "BenchmarkVersionComparison",
+        "symbolType": "function",
+        "file": "modules/update/update_test.go",
+        "line": 338,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/update/update_test.go",
+        "line": 339
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/update/update_test.go:BenchmarkVersionComparison:338:New:calls:339"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/utils/view_selector_test.go:createMockSession:16",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:createMockSession:16:New:calls:19"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/utils/view_selector_test.go:BenchmarkParseFilter:416",
+        "name": "BenchmarkParseFilter",
+        "symbolType": "function",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 416,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 417
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:BenchmarkParseFilter:416:New:calls:417"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/utils/view_selector_test.go:BenchmarkParseSorting:429",
+        "name": "BenchmarkParseSorting",
+        "symbolType": "function",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 429,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 430
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:BenchmarkParseSorting:429:New:calls:430"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/utils/view_selector_test.go:BenchmarkUpdate:442",
+        "name": "BenchmarkUpdate",
+        "symbolType": "function",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 442,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/utils/view_selector_test.go",
+        "line": 443
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:BenchmarkUpdate:442:New:calls:443"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi.go:Start:758",
+        "name": "Start",
+        "symbolType": "method",
+        "file": "modules/wifi/wifi.go",
+        "line": 758,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi.go",
+        "line": 760
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi.go:Start:758:New:calls:760"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_ap.go:errNoRecon:15",
+        "name": "errNoRecon",
+        "symbolType": "variable",
+        "file": "modules/wifi/wifi_ap.go",
+        "line": 15,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_ap.go",
+        "line": 15
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_ap.go:errNoRecon:15:New:calls:15"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_bruteforce.go:errRecon:18",
+        "name": "errRecon",
+        "symbolType": "variable",
+        "file": "modules/wifi/wifi_bruteforce.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_bruteforce.go",
+        "line": 18
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_bruteforce.go:errRecon:18:New:calls:18"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_bruteforce.go:errAlreadyRunning:19",
+        "name": "errAlreadyRunning",
+        "symbolType": "variable",
+        "file": "modules/wifi/wifi_bruteforce.go",
+        "line": 19,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_bruteforce.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_bruteforce.go:errAlreadyRunning:19:New:calls:19"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_bruteforce.go:errNotRunning:20",
+        "name": "errNotRunning",
+        "symbolType": "variable",
+        "file": "modules/wifi/wifi_bruteforce.go",
+        "line": 20,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_bruteforce.go",
+        "line": 20
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_bruteforce.go:errNotRunning:20:New:calls:20"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_bruteforce_darwin.go:wifiBruteforce:12",
+        "name": "wifiBruteforce",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_bruteforce_darwin.go",
+        "line": 12,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_bruteforce_darwin.go",
+        "line": 15
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_bruteforce_darwin.go:wifiBruteforce:12:New:calls:15"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_bruteforce_linux.go:wifiBruteforce:17",
+        "name": "wifiBruteforce",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_bruteforce_linux.go",
+        "line": 17,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_bruteforce_linux.go",
+        "line": 20
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_bruteforce_linux.go:wifiBruteforce:17:New:calls:20"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_bruteforce_unsupported.go:wifiBruteforce:8",
+        "name": "wifiBruteforce",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_bruteforce_unsupported.go",
+        "line": 8,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_bruteforce_unsupported.go",
+        "line": 9
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_bruteforce_unsupported.go:wifiBruteforce:8:New:calls:9"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wol/wol_test.go:createMockSession:17",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/wol/wol_test.go",
+        "line": 17,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wol/wol_test.go",
+        "line": 20
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wol/wol_test.go:createMockSession:17:New:calls:20"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/zerogod/zeroconf/server.go:shutdown:213",
+        "name": "shutdown",
+        "symbolType": "method",
+        "file": "modules/zerogod/zeroconf/server.go",
+        "line": 213,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/zerogod/zeroconf/server.go",
+        "line": 217
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zeroconf/server.go:shutdown:213:New:calls:217"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/zerogod/zeroconf/server.go:probe:531",
+        "name": "probe",
+        "symbolType": "method",
+        "file": "modules/zerogod/zeroconf/server.go",
+        "line": 531,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/zerogod/zeroconf/server.go",
+        "line": 559
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zeroconf/server.go:probe:531:New:calls:559"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/zerogod/zerogod_advertise.go:stopAdvertiser:190",
+        "name": "stopAdvertiser",
+        "symbolType": "method",
+        "file": "modules/zerogod/zerogod_advertise.go",
+        "line": 190,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/zerogod/zerogod_advertise.go",
+        "line": 192
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_advertise.go:stopAdvertiser:190:New:calls:192"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/zerogod/zerogod_save.go:save:35",
+        "name": "save",
+        "symbolType": "method",
+        "file": "modules/zerogod/zerogod_save.go",
+        "line": 35,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/zerogod/zerogod_save.go",
+        "line": 37
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_save.go:save:35:New:calls:37"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/zerogod/zerogod_show.go:show:13",
+        "name": "show",
+        "symbolType": "method",
+        "file": "modules/zerogod/zerogod_show.go",
+        "line": 13,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/zerogod/zerogod_show.go",
+        "line": 15
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_show.go:show:13:New:calls:15"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "network/net.go:ErrNoIfaces:19",
+        "name": "ErrNoIfaces",
+        "symbolType": "variable",
+        "file": "network/net.go",
+        "line": 19,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "network/net.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:network/net.go:ErrNoIfaces:19:New:calls:19"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "network/net.go:ErrNoGateway:20",
+        "name": "ErrNoGateway",
+        "symbolType": "variable",
+        "file": "network/net.go",
+        "line": 20,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "network/net.go",
+        "line": 20
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:network/net.go:ErrNoGateway:20:New:calls:20"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "network/net_darwin.go:SetInterfaceChannel:28",
+        "name": "SetInterfaceChannel",
+        "symbolType": "function",
+        "file": "network/net_darwin.go",
+        "line": 28,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "network/net_darwin.go",
+        "line": 34
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:network/net_darwin.go:SetInterfaceChannel:28:New:calls:34"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "network/net_darwin.go:GetSupportedFrequencies:41",
+        "name": "GetSupportedFrequencies",
+        "symbolType": "function",
+        "file": "network/net_darwin.go",
+        "line": 41,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "network/net_darwin.go",
+        "line": 47
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:network/net_darwin.go:GetSupportedFrequencies:41:New:calls:47"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/dhcp6.go:ErrNoCID:18",
+        "name": "ErrNoCID",
+        "symbolType": "variable",
+        "file": "packets/dhcp6.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/dhcp6.go",
+        "line": 18
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/dhcp6.go:ErrNoCID:18:New:calls:18"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/krb5.go:ErrNoCrypt:22",
+        "name": "ErrNoCrypt",
+        "symbolType": "variable",
+        "file": "packets/krb5.go",
+        "line": 22,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/krb5.go",
+        "line": 22
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/krb5.go:ErrNoCrypt:22:New:calls:22"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/krb5.go:ErrReqData:23",
+        "name": "ErrReqData",
+        "symbolType": "variable",
+        "file": "packets/krb5.go",
+        "line": 23,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/krb5.go",
+        "line": 23
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/krb5.go:ErrReqData:23:New:calls:23"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/krb5.go:ErrNoCipher:24",
+        "name": "ErrNoCipher",
+        "symbolType": "variable",
+        "file": "packets/krb5.go",
+        "line": 24,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/krb5.go",
+        "line": 24
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/krb5.go:ErrNoCipher:24:New:calls:24"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/krb5_test.go:TestKrb5Vars:29",
+        "name": "TestKrb5Vars",
+        "symbolType": "function",
+        "file": "packets/krb5_test.go",
+        "line": 29,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→core",
+        "criticality": "high",
+        "frequency": "one_of_91",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/krb5_test.go",
+        "line": 34
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/krb5_test.go:TestKrb5Vars:29:New:calls:34"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/ntlm.go:ParsedNtLMv2:146",
+        "name": "ParsedNtLMv2",
+        "symbolType": "method",
+        "file": "packets/ntlm.go",
+        "line": 146,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/ntlm.go",
+        "line": 149
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/ntlm.go:ParsedNtLMv2:146:New:calls:149"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "packets/ntlm.go:ParsedNtLMv1:176",
+        "name": "ParsedNtLMv1",
+        "symbolType": "method",
+        "file": "packets/ntlm.go",
+        "line": 176,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "packets/ntlm.go",
+        "line": 179
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:packets/ntlm.go:ParsedNtLMv1:176:New:calls:179"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/events_ignore_list.go:ErrEmptyExpression:14",
+        "name": "ErrEmptyExpression",
+        "symbolType": "variable",
+        "file": "session/events_ignore_list.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events_ignore_list.go",
+        "line": 14
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_ignore_list.go:ErrEmptyExpression:14:New:calls:14"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsRuntime:17",
+        "name": "jsRuntime",
+        "symbolType": "variable",
+        "file": "session/script_builtin_runtime.go",
+        "line": 17,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 17
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsRuntime:17:New:calls:17"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:ErrNotSupported:41",
+        "name": "ErrNotSupported",
+        "symbolType": "variable",
+        "file": "session/session.go",
+        "line": 41,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 41
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:ErrNotSupported:41:New:calls:41"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/events_stream/events_view_gateway.go:viewGatewayEvent:12",
+        "name": "viewGatewayEvent",
+        "symbolType": "method",
+        "file": "modules/events_stream/events_view_gateway.go",
+        "line": 12,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/events_stream/events_view_gateway.go",
+        "line": 21
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/events_stream/events_view_gateway.go:viewGatewayEvent:12:New:uses:21"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:New:155",
+        "name": "New",
+        "symbolType": "function",
+        "file": "session/session.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_91"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 155
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:New:exports:155"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "caplets/caplet_test.go:caplets:1",
+        "name": "caplets",
+        "symbolType": "module",
+        "file": "caplets/caplet_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet_test.go:TestCapletEvalError:142",
+        "name": "TestCapletEvalError",
+        "symbolType": "function",
+        "file": "caplets/caplet_test.go",
+        "line": 142,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/caplet_test.go",
+        "line": 142
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet_test.go:caplets:1:TestCapletEvalError:exports:142"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestBtoa:11",
+        "name": "TestBtoa",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 11
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestBtoa:exports:11"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestAtob:79",
+        "name": "TestAtob",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 79,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 79
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestAtob:exports:79"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestGzipCompress:155",
+        "name": "TestGzipCompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 155,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 155
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestGzipCompress:exports:155"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestGzipCompressInvalidArgs:235",
+        "name": "TestGzipCompressInvalidArgs",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 235,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 235
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestGzipCompressInvalidArgs:exports:235"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestGzipDecompress:273",
+        "name": "TestGzipDecompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 273,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 273
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestGzipDecompress:exports:273"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestGzipDecompressInvalidArgs:336",
+        "name": "TestGzipDecompressInvalidArgs",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 336,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 336
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestGzipDecompressInvalidArgs:exports:336"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestBtoaAtobRoundTrip:374",
+        "name": "TestBtoaAtobRoundTrip",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 374,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 374
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestBtoaAtobRoundTrip:exports:374"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:TestGzipCompressDecompressRoundTrip:413",
+        "name": "TestGzipCompressDecompressRoundTrip",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 413,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 413
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:TestGzipCompressDecompressRoundTrip:exports:413"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:BenchmarkBtoa:451",
+        "name": "BenchmarkBtoa",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 451,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 451
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:BenchmarkBtoa:exports:451"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:BenchmarkAtob:464",
+        "name": "BenchmarkAtob",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 464,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 464
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:BenchmarkAtob:exports:464"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:BenchmarkGzipCompress:478",
+        "name": "BenchmarkGzipCompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 478,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 478
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:BenchmarkGzipCompress:exports:478"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/data_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/data_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/data_test.go:BenchmarkGzipDecompress:492",
+        "name": "BenchmarkGzipDecompress",
+        "symbolType": "function",
+        "file": "js/data_test.go",
+        "line": 492,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/data_test.go",
+        "line": 492
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:js:1:BenchmarkGzipDecompress:exports:492"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:TestReadDir:14",
+        "name": "TestReadDir",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 14
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:TestReadDir:exports:14"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:TestReadFile:181",
+        "name": "TestReadFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 181,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 181
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:TestReadFile:exports:181"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:TestWriteFile:347",
+        "name": "TestWriteFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 347,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 347
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:TestWriteFile:exports:347"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:TestAppendFile:533",
+        "name": "TestAppendFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 533,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 533
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:TestAppendFile:exports:533"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:TestMkdirAll:783",
+        "name": "TestMkdirAll",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 783,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 783
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:TestMkdirAll:exports:783"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:TestFileSystemIntegration:987",
+        "name": "TestFileSystemIntegration",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 987,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 987
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:TestFileSystemIntegration:exports:987"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:BenchmarkReadFile:1098",
+        "name": "BenchmarkReadFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1098,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1098
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:BenchmarkReadFile:exports:1098"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:BenchmarkWriteFile:1119",
+        "name": "BenchmarkWriteFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1119,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1119
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:BenchmarkWriteFile:exports:1119"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:BenchmarkAppendFile:1139",
+        "name": "BenchmarkAppendFile",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1139,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1139
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:BenchmarkAppendFile:exports:1139"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:BenchmarkMkdirAll:1164",
+        "name": "BenchmarkMkdirAll",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1164,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1164
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:BenchmarkMkdirAll:exports:1164"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "js/fs_test.go:js:1",
+        "name": "js",
+        "symbolType": "module",
+        "file": "js/fs_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/fs_test.go:BenchmarkReadDir:1181",
+        "name": "BenchmarkReadDir",
+        "symbolType": "function",
+        "file": "js/fs_test.go",
+        "line": 1181,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/fs_test.go",
+        "line": 1181
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:js:1:BenchmarkReadDir:exports:1181"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:TestTickerConfigure:89",
+        "name": "TestTickerConfigure",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 89,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "test→core",
+        "criticality": "low",
+        "frequency": "one_of_6",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 99
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerConfigure:89:main:uses:99"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:TestTickerStartStop:112",
+        "name": "TestTickerStartStop",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 112,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "test→core",
+        "criticality": "low",
+        "frequency": "one_of_6",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 141
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerStartStop:112:main:uses:141"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+        "name": "makeIconMasking",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 742,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 745
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:main:uses:745"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813",
+        "name": "makeIconStandard",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 813,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 816
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813:main:uses:816"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854",
+        "name": "asIcon",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 854,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 856
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854:main:uses:856"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903",
+        "name": "makeInlineSvgAbstract",
+        "symbolType": "function",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 903,
+        "isExternal": false
+      },
+      "to": {
+        "id": "main.go:main:1",
+        "name": "main",
+        "symbolType": "module",
+        "file": "main.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "ui→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 905
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903:main:uses:905"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:ticker:1",
+        "name": "ticker",
+        "symbolType": "module",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ticker/ticker_test.go:TestTickerConfigure:89",
+        "name": "TestTickerConfigure",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 89,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 89
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1:TestTickerConfigure:exports:89"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/ticker/ticker_test.go:ticker:1",
+        "name": "ticker",
+        "symbolType": "module",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ticker/ticker_test.go:TestTickerStartStop:112",
+        "name": "TestTickerStartStop",
+        "symbolType": "function",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 112,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 112
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1:TestTickerStartStop:exports:112"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29",
+        "name": "TestNewAnyProxy",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 29,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 30
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29:createMockSession:calls:30"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/any_proxy/any_proxy_test.go:TestStartStop:175",
+        "name": "TestStartStop",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 175,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 176
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go:TestStartStop:175:createMockSession:calls:176"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89",
+        "name": "TestAssocHandlerAcceptsESSIDsAndWildcards",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 89,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 90
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89:createMockSession:calls:90"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125",
+        "name": "TestAssocTargetDescriptionIncludesESSIDSupport",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 125,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 126
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125:createMockSession:calls:126"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102",
+        "name": "TestDeauthHandlerAcceptsESSIDsAndWildcards",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_deauth_test.go",
+        "line": 102,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_deauth_test.go",
+        "line": 103
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102:createMockSession:calls:103"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9",
+        "name": "TestWiFiShowRowContract",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 10
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9:createMockSession:calls:10"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45",
+        "name": "TestWiFiSelectionFilterAndSortContract",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 45,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 46
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45:createMockSession:calls:46"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74",
+        "name": "TestWiFiRSSISortContract",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 74,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 75
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74:createMockSession:calls:75"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28",
+        "name": "newWiFiTargetTestModule",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 28,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 30
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28:createMockSession:calls:30"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39",
+        "name": "newWiFiExpressionTestModule",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 41
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39:createMockSession:calls:41"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61",
+        "name": "TestWiFiSelectorKeepsLegacyMACPrecedence",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 61,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 62
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61:createMockSession:calls:62"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165",
+        "name": "TestWiFiTargetHandlersRejectInvalidExpressions",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 165,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 166
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165:createMockSession:calls:166"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
+        "name": "TestWiFiTargetCommandResultsForEmptySelections",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 178,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 198
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178:createMockSession:calls:198"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210",
+        "name": "TestLegacyWiFiTargetCommandSyntaxStillParses",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 210,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "name": "createMockSession",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "test→test",
+        "criticality": "medium",
+        "frequency": "one_of_14",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_targets_test.go",
+        "line": 211
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210:createMockSession:calls:211"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/any_proxy/any_proxy_test.go:any_proxy:1",
+        "name": "any_proxy",
+        "symbolType": "module",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29",
+        "name": "TestNewAnyProxy",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 29,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 29
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go:any_proxy:1:TestNewAnyProxy:exports:29"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/any_proxy/any_proxy_test.go:any_proxy:1",
+        "name": "any_proxy",
+        "symbolType": "module",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/any_proxy/any_proxy_test.go:TestStartStop:175",
+        "name": "TestStartStop",
+        "symbolType": "function",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 175,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/any_proxy/any_proxy_test.go",
+        "line": 175
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go:any_proxy:1:TestStartStop:exports:175"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_assoc_test.go:wifi:1",
+        "name": "wifi",
+        "symbolType": "module",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89",
+        "name": "TestAssocHandlerAcceptsESSIDsAndWildcards",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 89,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 89
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocHandlerAcceptsESSIDsAndWildcards:exports:89"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_assoc_test.go:wifi:1",
+        "name": "wifi",
+        "symbolType": "module",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125",
+        "name": "TestAssocTargetDescriptionIncludesESSIDSupport",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 125,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_assoc_test.go",
+        "line": 125
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocTargetDescriptionIncludesESSIDSupport:exports:125"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_deauth_test.go:wifi:1",
+        "name": "wifi",
+        "symbolType": "module",
+        "file": "modules/wifi/wifi_deauth_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102",
+        "name": "TestDeauthHandlerAcceptsESSIDsAndWildcards",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_deauth_test.go",
+        "line": 102,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_deauth_test.go",
+        "line": 102
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_deauth_test.go:wifi:1:TestDeauthHandlerAcceptsESSIDsAndWildcards:exports:102"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_show_contract_test.go:wifi:1",
+        "name": "wifi",
+        "symbolType": "module",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9",
+        "name": "TestWiFiShowRowContract",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 9
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiShowRowContract:exports:9"
+    },
+    {
+      "direction": "caller",
+      "from": {
+        "id": "modules/wifi/wifi_show_contract_test.go:wifi:1",
+        "name": "wifi",
+        "symbolType": "module",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45",
+        "name": "TestWiFiSelectionFilterAndSortContract",
+        "symbolType": "function",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 45,
+        "isExternal": false
+      },
+      "relationshipType": "exports",
+      "confidence": 1,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "layerFlow": "test→test",
+        "criticality": "low",
+        "frequency": "one_of_1",
+        "isTestCode": true
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 2,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/wifi/wifi_show_contract_test.go",
+        "line": 45
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiSelectionFilterAndSortContract:exports:45"
+    }
+  ],
+  "callees": [],
+  "summary": {
+    "totalCallers": 144,
+    "totalCallees": 0,
+    "maxDepthReached": 2,
+    "maxDepth": 5,
+    "crossLanguageEdges": 4,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": true,
+    "truncationReason": "caller-budget-exhausted",
+    "truncationReasons": [
+      "caller-budget-exhausted"
+    ],
+    "filterNarrowed": false,
+    "filterReason": null,
+    "edgeLimit": 200,
+    "maxEdges": 1000,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 91,
+    "cascadedCallers": 0,
+    "exactCallees": 0,
+    "cascadedCallees": 0,
+    "deeperCallers": 53,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": true,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 0,
+    "edgesByType": {
+      "calls": 103,
+      "uses": 7,
+      "exports": 34
+    },
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "callers",
+      "relationshipTypes": [
+        "calls",
+        "extends",
+        "implements",
+        "uses",
+        "instantiates",
+        "overrides",
+        "contains",
+        "references",
+        "imports",
+        "exports",
+        "decorates",
+        "renders",
+        "mixes_in",
+        "part_of"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}

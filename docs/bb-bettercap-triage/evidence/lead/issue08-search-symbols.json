@@ -1,0 +1,19 @@
+LoadModules [function] modules/modules.go:42 (go)
+    func LoadModules(sess *session.Session) {
+    	sess.Register(any_proxy.NewAnyProxy(sess))
+    	sess.Register(arp_spoof.NewArpSpoofer(sess))
+    	sess.Register(api_rest.NewRestAPI(sess))
+    	sess.Register(ble.NewBLERecon(sess))
+    	sess.Register(can.NewCanModule(sess))
+    	sess.Register(dhcp6_spoof.NewDHCP6Spoofer(sess))
+    	sess.Register(net_recon.NewDiscovery(sess))
+TestLoadModulesWithNilSession [function] modules/modules_test.go:7 (go)
+    func TestLoadModulesWithNilSession(t *testing.T) {
+    	// This test verifies that LoadModules handles nil session gracefully
+    	// In the actual implementation, this would panic, which is expected behavior
+    	defer func() {
+    		if r := recover(); r == nil {
+    			t.Error("expected panic when loading modules with nil session, but didn't get one")
+    		}
+    	}()
+[match-set] searchMode=symbols totalMatches=2 returned=2 truncated=false staleCount=0

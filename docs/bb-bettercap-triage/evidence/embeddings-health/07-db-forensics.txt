@@ -1,0 +1,24 @@
+# DB forensics (read-only) 2026-11-18T23:06:42Z
+## embedding rows per model
+embedding_model|vector_dimension|rows|min_tc|max_tc
+local-word-vectors-v3|50|23924|1795039247364|1795039634642
+nvidia/nemotron-3.5-embed-8b|4096|1|1795039249969|1795039249969
+
+## the single remote row
+entity_id|vector_dimension|blob_bytes|time_created
+4c7590f1cba319aac298a50453c0ec440f2dc857:core/options.go:ParseOptions:26|4096|16384|1795039249969
+
+## index status
+status|total_files|indexed_files|total_symbols|indexing_errors
+complete|1973|1972|55785|[]
+
+## perf stats
+{"schemaVersion":1,"runs":[{"generatedAt":1795039313459,"mode":"worker-pool","noop":false,"phases":{"discoveryMs":250,"workerStartupMs":370,"parseMs":70316,"dbFlushMs":71028,"finalAccountingMs":248},"counts":{"totalFiles":1973,"processedFiles":1973,"successFiles":1972,"timeoutFiles":0,"errorFiles":0,"skippedFiles":1,"workerCount":7,"parsedFiles":1972,"retries":0,"workerStartupFailures":0,"poisonFiles":0}},{"generatedAt":1795039313459,"mode":"worker-pool","noop":false,"phases":{"discoveryMs":250,"workerStartupMs":370,"parseMs":70316,"dbFlushMs":71028,"finalAccountingMs":248,"postProcessingMs":191332,"totalWallMs":262910},"counts":{"totalFiles":1973,"processedFiles":1973,"successFiles":1972,"timeoutFiles":0,"errorFiles":0,"skippedFiles":1,"workerCount":7,"parsedFiles":1972,"retries":0,"workerStartupFailures":0,"poisonFiles":0},"poolTelemetry":{"dbFlushMs":71028,"retries":0,"workerCount":7,"workerStartupFailures":0,"poisonFiles":0}}]}
+
+
+## syntax-error files by language
+language|COUNT(*)
+css|16
+scss|8
+
+## >5MB candidates in brain_file?

@@ -1,0 +1,60 @@
+# Generality matrix — is each report defect Go-only, tool-wide, or universal?
+
+Lead synthesis of the 12 lane findings, 2026-11-18, HEAD `be4c0ef25` / bb 0.1.6.
+Per-issue evidence and full tables: `findings/ISSUE-NN-*.md`; raw captures: `evidence/<lane>/`.
+Verdict vocabulary: `CHARTER.md` §2. Nothing here is claimed beyond its evidence; cells that could
+not be measured under the sandbox (no fresh `bb index`; `/tmp` per-call ephemeral) are marked
+CANNOT-VERIFY with the analyzer/source evidence that predicts them.
+
+## 1. One-line answer
+
+**No report item is bettercap-specific.** Three are Go-analyzer class bugs reproducible on every Go
+repo measured (3); one is a Go-analyzer edge gap by construction (2); two are indexer-wide
+resolution defects proven on Go **and** TS/JS (2); the remaining six are tool-level
+paths independent of analyzer (refactor engine, test-intel model, doc/search projection, embedding
+lifecycle, health reporting, payload/claim emitters) and were reproduced on at least one non-Go
+project or proven language-agnostic in code.
+
+## 2. Matrix
+
+| # | Report item | Mechanism scope (measured) | Proven beyond bettercap | Predicted but unverified | Evidence |
+|---|---|---|---|---|---|
+| 01 | refactor misses package-qualified caller | **engine + Go span attribution** — 3 stacked causes: caller source-span mis-attribution for `package main` (Go analyzer/graph), member-name classifier for dotted refs (language-general), silent zero-site file drop (engine) | Go: bettercap `NewSessionModule` (46 qualified callers, plan 1 file/1 site); TS/JS: workspace `import * as Log` → `Log.create` (36 sites, plan 1/1) | Python `mod.f()` / Java `Type.staticMethod()` (code path predicts same; no index available); Rust scoped paths OPEN | ISSUE-01 §5, evidence/edit-safety/ |
+| 02 | false cross-language edges (yaml/make/js→go) | **indexer-wide name binding** — bare targets rebound project-wide across files, packages AND languages; cross-language marker then certifies the coincidence | bettercap Go→YAML/Make/JS (all 7 rows exact); workspace TS→JSON (3,209 calls) and TS→Markdown (1,569 calls) incl. confidence 1.0/`structural`; 100% of bettercap cross rows (2,423) and 15,836 workspace cross rows are `name-resolution`; ≥43% structurally impossible pairs | `.corpus` Go/JS corpora (stale index, 0 marked rows) CANNOT-VERIFY; graphql→ts remains a possible genuine bridge — must survive any filter (positive control required) | ISSUE-02 §7-8, evidence/cross-lang/ |
+| 03 | Go dependency graph all-external, no dependents | **Go-analyzer class** (classification) + **shared resolver** (no go.mod awareness) | bettercap (1,880 import rows all external, 0 internal); gh-cli/internal (122/122); gqlgen/graphql (67/67) | Python/Java (no same-project imports in any available index to exercise it) CANNOT-VERIFY; JS/TS **already correct** (axios 42 internal deps/120 dependents; workspace TS 24/40) → the bug is the missing Go classification, not the engine alone | ISSUE-03 generality table |
+| 04 | orphan false positive / callers=0 for referenced callback | **Go-analyzer edge gap** (GO1 uses pass same-file gate); orphan engine itself is correct and kind-aware | bettercap (0 incoming rows for `jsOnEventFunc` and 7 sibling callbacks; same-file control passes); totals exact (4,385 / 2,739 / 1,644 / 4,697) | JS/Python/Rust analyzers already emit Uses/References with resolver anchoring (source inspection) → same class not expected; unmeasured. Workspace `.corpus` index predates the GO1 pass (11 identifier_usage rows) CANNOT-VERIFY | ISSUE-04 generality table |
+| 05 | test mapping to unrelated tests at 0.85 | **three layers**: (i) Go analyzer emits qualified calls as bare LEAF (`real-go-analyzer.ts:6581-6588`); (ii) unscoped resolver binds the leaf to the project-wide lowest-id symbol, ignoring the row's own `isStdlib/isPackageQualified` metadata (`parallel-indexer.ts:3863-3872`, I13 `:6656-6696`); (iii) `test-intel.ts:229-236/275-287` publishes the stored calls as `direct_call` 0.85 without package/import validation (language-agnostic layer) | bettercap: 91/91 incoming `session.New` calls are bare "New" (50 from 13 test files; 457 of 3,245 project test-file calls rows = 14.1% stdlib-leaf shape; `Lock/Unlock` 152 rows each map embedded `sync.Mutex` calls); gqlgen/graphql reproduces (`executor.New` 155 leaf rows over 5 symbols); mapping returns 0 links for the correct answer (`session.New` untested) | other languages emit fewer leaf-only calls; unmeasured. Fixing test-intel alone hides the graph defect — layer (i)/(ii) is P0-2 | ISSUE-05, evidence/go-testintel/05-*, evidence/lead issue05-* |
+| 06 | test quality: assertions 0, JS-only parameterization | **tool-wide heuristic model, JS-shaped, language selected then ignored** (`quality.ts:108-130` one table; `language` read at `:159`, never used) | bettercap: aggregate 0.322 exact; 7/7 files assertions 0 vs 114 real Go assertion sites; `error_handling` 0 too (report omitted); "parameterization" actually fires via the **`%s` printf-verb** alternative, with the hard-coded anchor string `it.each/test.each template` (0 it.each tokens present); fixtures anchor resolves to the `testing` import | shipped-classifier probe across languages: Go `t.Fatalf` 0; Go table+t.Run 0 asserts / param 0.333; testify 2/4 (`require.*` invisible); JS vitest 1.0/0.667; Python pytest 0/0; TS node:test 0.167 → JS-shaped globally. gqlgen 0.5297 (only `assert.` credit) | ISSUE-06, evidence/go-testintel/06-classifier-crosslang.json |
+| 07 | bb_doc documents a union as one symbol | **tool-wide projection/SQL** — exact-name resolution across whole project, ordering by line_start, no kind/declaration preference, no scope declaration; `quality.passed` has no scope term | bettercap Go (`Session`: 5 copies, field first; `limit:1` yields a field-only doc at passed:true); gh-cli/internal Go (`config.Options` → struct+property+variable, leads with unrelated struct); workspace TS/JSON (`Session` unions TS type + JSON data-file key) | any language / any ambiguous name by construction | ISSUE-07, evidence/retrieval/ |
+| 08 | bb_search symbol mode metadata-only, fileId shape | **tool-wide projection + docs** — mode contract and id namespaces are language-agnostic | bettercap Go, workspace JS (same shapes); `fileId` absolute in symbol mode vs `<projectId>:path` in content/file modes on both projects | all languages by construction | ISSUE-08, evidence/retrieval/ |
+| 09 | bb_ask 0% semantic coverage on configured provider | **project/infra lifecycle** — query model is authoritative and the scan hard-filters that one space (`semantic-search.ts:329-333`) with no populated-space preference; index-time `embedMany` silently degrades provider-failing batches to local vectors (`engine.ts:412-431`); a `reconcileEmbeddingModel` backfill exists (`parallel-indexer.ts:2966+`) but only runs inside `bb index`, stops after 2 stalled batches, persists no pending state | bettercap: configured remote space 1/55,785 (the one vector DB-verified as `core/options.go:ParseOptions:26`, the report's only hit), 23,924 local fallback; workspace mixed-model index same class (2,420 in configured space vs 315,514/326,482 in older) | general by construction (same code path for any project/provider switch) | ISSUE-09, evidence/embeddings-health/ |
+| 10 | impact/graph payload bloat + bounds after data | **tool-family payload envelope** — four hand-ordered envelopes in four tools; no shared serializer; no byte budget | bettercap Go (impact 107–188 KB, graph 547 KB–1.09 MB, bounds at 99.5–99.9%); workspace JS/axios (impact same order at ~89–92%, graph 486 KB / summary 99.17%); visualize + analyze=impact same class; old-index cell CANNOT-VERIFY (schema drift) | any project/language by construction | ISSUE-10, evidence/payload-honesty/ |
+| 11 | index caveats: 1972/1973 + status=complete, 24 "LESS", 42.9% | **index reporting/routing** — `status` is derived only from errorFiles/missingAfterRecovery, so deliberate `skippedFiles` can never make it partial (`parallel-indexer.ts:7989-8005`); the 1 missing file is a >5 MB size-tier skip (`vendor.js`), so the printed `force=true` remedy cannot ever work; `.less` routes to the CSS grammar (16 files) and 8 are `.scss` (separate lane); coverage arithmetic 23,925/55,785 = 42.887% exact but `embedOutcome` is not persisted | bettercap (1972/1973, `[INCOMPLETE_INDEX]` error + `status=complete` on one line, 16 `.less` + 8 `.scss`, 42.9%); workspace mixed-model index shows same class | other projects (any run with skipped files prints the same combination); not re-measured | ISSUE-11, evidence/embeddings-health/ |
+| 12 | security "39 leads vs 0"; visualize "whole project" | **tool-level text emitters** — static registry census labeled as leads; unconditional claim string regardless of scope/truncation | security: identical 39 on bettercap, workspace, gql-gqlgen index (project-independent by design); visualize: reproduced on all 4 scopes, 3 projects incl. empty-page answer and JS file scope | general by construction | ISSUE-12, evidence/payload-honesty/ |
+
+## 3. Root-cause families (what a fix campaign should actually fix)
+
+| family | items | where it lives | one fix removes |
+|---|---|---|---|
+| **F1 Unscoped name binding** (P0) | 02, 05(index layer), contributes to cross-tool false edges/hover/impact | `src/ast/parallel-indexer.ts` eager `resolveTargetStmt` + deferred `_i13_*` passes; Go leaf-name call emission | the entire name-collision class, incl. 100% of cross-language rows this project mints |
+| **F2 Refactor safety** (P0) | 01 | `src/intelligence/edit/edit-engine.ts` caller-span use + reference classifier + silent drop; `src/ast/safety-primitives.ts` member-name rule; Go `package main` source attribution in the index | unsafe renames (data-loss class) |
+| **F3 Go import identity** (P1) | 03, feeds 01's import route and 04's cross-file reach | Go analyzer import classification; `dependencies.ts`; no go.mod storage | Go dependency graph; unlocks internal import edges, dependents, import-based refactor reach |
+| **F4 Go cross-file value reads** (P1) | 04 | `src/ast/real-go-analyzer.ts` GO1 same-file gate | orphan false positives for registered callbacks; graph-wide missing `uses` |
+| **F5 Test intelligence model** (P1) | 05(mapping layer), 06 | `src/intelligence/testing/*` | Go/unmeasured-language test mapping and quality scores |
+| **F6 Response envelope** (P1) | 10 | `src/mcp/tools/*` handlers + `src/intelligence/*` serializers | bounds-after-data truncation blindness in 4 tools |
+| **F7 Documentation/search scope contracts** (P2) | 07, 08 | `src/intelligence/documentation/*`, `src/intelligence/search/*`, docs/descriptors | ambiguous-subject docs; mode/id inconsistency |
+| **F8 Embedding lifecycle** (P2) | 09, 11 | provider change handling, query model selection, health reporting | semantic search unusable after provider switch; dishonest completeness label |
+| **F9 Claim honesty in emitters** (P2) | 12 | `src/intelligence/security/rebuild/registry.ts`, `src/intelligence/visualization/visualization-engine.ts` | mislabeled units; false completeness claims |
+| **F10 Old-index compat** (P2) | L-4 unlocked | read path schema handling | raw SQLite errors on read-only tools |
+
+## 4. What was NOT established (honesty block)
+
+- No fresh index could be created in this environment (`bb index <new dir>` fails with ENOENT under
+  `~/.bb/projects`), and `/tmp` is per-call ephemeral, so all fixtures that need a fresh index are
+  CANNOT-VERIFY rather than claimed. The workspace index is a partial 2026-11-17 build; the
+  `.corpus/` subtree predates the GO1 analyzer pass and has 0 marked cross-language rows, so it is
+  not usable as a generality oracle for issues 02/04.
+- Python and Java appear only as source-proven prediction (single language-agnostic code path), never
+  as measurement.
+- The 8 workspace MCP server was serving a stale dist (missing rebuilt chunk) during the campaign;
+  lanes fell back to the CLI. This is an operational restart issue, not a product finding.

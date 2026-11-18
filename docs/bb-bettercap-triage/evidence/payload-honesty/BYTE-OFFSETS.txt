@@ -1,0 +1,56 @@
+FILE impact-New-default.json  BYTES=107538
+   "budget"                 byte_offset=    1009  ( 0.94% of payload)
+   "traversal"              byte_offset=    1224  ( 1.14% of payload)
+   "impact"                 byte_offset=    1908  ( 1.77% of payload)
+   "shownCount"             byte_offset=  107248  (99.73% of payload)
+   "directCount"            byte_offset=  107269  (99.75% of payload)
+   "totalCountIfKnown"      byte_offset=  107290  (99.77% of payload)
+   "truncated"              byte_offset=  107318  (99.80% of payload)
+   "truncationReason"       byte_offset=  107339  (99.81% of payload)
+   "freshness"              byte_offset=  107399  (99.87% of payload)
+
+FILE impact-Session-default.json  BYTES=188433
+   "budget"                 byte_offset=    1021  ( 0.54% of payload)
+   "traversal"              byte_offset=    1236  ( 0.66% of payload)
+   "impact"                 byte_offset=    1962  ( 1.04% of payload)
+   "shownCount"             byte_offset=  188147  (99.85% of payload)
+   "totalCountIfKnown"      byte_offset=  188190  (99.87% of payload)
+   "truncated"              byte_offset=  188219  (99.89% of payload)
+   "truncationReason"       byte_offset=  188240  (99.90% of payload)
+
+FILE graph-New-default.json  BYTES=547273
+   "callers"                byte_offset=     327  ( 0.06% of payload)
+   "callees"                byte_offset=  185960  (33.98% of payload)
+   "summary"                byte_offset=  544319  (99.46% of payload)
+   "truncated"              byte_offset=  544674  (99.53% of payload)
+   "truncationReason"       byte_offset=  544697  (99.53% of payload)
+
+FILE graph-Session-default.json  BYTES=1087986
+   "callers"                byte_offset=     335  ( 0.03% of payload)
+   "callees"                byte_offset=  613496  (56.39% of payload)
+   "summary"                byte_offset= 1084878  (99.71% of payload)
+   "truncated"              byte_offset= 1085234  (99.75% of payload)
+
+FILE graph-axios-dispatchRequest.out  BYTES=486771
+   "callers"                byte_offset=     442  ( 0.09% of payload)
+   "callees"                byte_offset=  193447  (39.74% of payload)
+   "summary"                byte_offset=  482723  (99.17% of payload)
+   "truncated"              byte_offset=  483079  (99.24% of payload)
+
+FILE impact-axios-dispatchRequest.out  BYTES=2288
+   "budget"                 byte_offset=    1144  (50.00% of payload)
+   "impact"                 byte_offset=    2019  (88.24% of payload)
+   "shownCount"             byte_offset=    2035  (88.94% of payload)
+   "truncated"              byte_offset=    2100  (91.78% of payload)
+
+FILE viz-module-session-json.out  BYTES=479011
+   "nodes"                  byte_offset=     110  ( 0.02% of payload)
+   "links"                  byte_offset=   71263  (14.88% of payload)
+   "truncation"             byte_offset=  478629  (99.92% of payload)
+   "truncated"              byte_offset=  478649  (99.92% of payload)
+
+FILE analyze-impact-axios.out  BYTES=1444
+   "affectedFiles"          byte_offset=     292  (20.22% of payload)
+   "truncated"              byte_offset=     412  (28.53% of payload)
+   "nodeBudget"             byte_offset=     479  (33.17% of payload)
+

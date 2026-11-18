@@ -1,0 +1,4 @@
+=== workspace: identifier_usage rows for Go corpus repos (cross-file?)
+repo              n  cross_file  anchored
+----------------  -  ----------  --------
+.corpus/webpack/  1  0           1       

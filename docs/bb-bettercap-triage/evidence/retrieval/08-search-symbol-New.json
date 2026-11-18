@@ -1,0 +1,40 @@
+{
+  "matches": [
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:New:155",
+      "fileId": "/home/ishaq2321/bettercap/session/session.go",
+      "name": "New",
+      "symbolType": "function",
+      "lineStart": 155,
+      "byteStart": 3470,
+      "byteEnd": 3601,
+      "language": "go",
+      "relativePath": "session/session.go",
+      "stale": false
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_routing.go:New:20",
+      "fileId": "/home/ishaq2321/bettercap/session/session_routing.go",
+      "name": "New",
+      "symbolType": "property",
+      "lineStart": 20,
+      "byteStart": 359,
+      "byteEnd": 362,
+      "language": "go",
+      "relativePath": "session/session_routing.go",
+      "stale": false
+    }
+  ],
+  "found": true,
+  "totalMatches": 2,
+  "returned": 2,
+  "truncated": false,
+  "freshness": {
+    "fresh": 2,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

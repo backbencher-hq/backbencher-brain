@@ -1,0 +1,11 @@
+graph: 0 nodes, 0 links
+scope: module (graphql)
+view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity
+layout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)
+absent: no indexed symbol matches scope=module target="graphql" — absence declared, never guessed
+page: offset 0 holds no drawable symbol — 0 symbol(s) match this scope, so this is an empty PAGE, not an empty project
+edges: 0 relationship(s) connect the selected symbols — complete for this node set
+node selection: every symbol under the module directory, in source order
+annotations: none on the returned symbols — the index's agent notes were read, and none matches this page
+excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are included)
+provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=0 links-omitted-by-budget=0

@@ -1,0 +1,193 @@
+####################################################################################################
+FILE impact-New-default.json BYTES 107538
+TOP-LEVEL ORDER: ['symbol', 'root', 'rootStale', 'rootMatch', 'resolution', 'rule', 'budget', 'traversal', 'cascade', 'countVerification', 'reproducible', 'impact', 'shownCount', 'directCount', 'totalCountIfKnown', 'truncated', 'truncationReason', 'freshness']
+  symbol                 str                     key_offset=4
+  root                   dict     len=7          key_offset=23
+  rootStale              bool                    key_offset=306
+  rootMatch              dict     len=3          key_offset=328
+  resolution             dict     len=1          key_offset=415
+  rule                   dict     len=4          key_offset=462
+  budget                 dict     len=7          key_offset=1009
+  traversal              dict     len=11         key_offset=1224
+  cascade                dict     len=3          key_offset=583
+  countVerification      dict     len=5          key_offset=1740
+  reproducible           bool                    key_offset=1884
+  impact                 list     len=117        key_offset=1908
+  shownCount             int                     key_offset=107248
+  directCount            int                     key_offset=107269
+  totalCountIfKnown      int                     key_offset=107290
+  truncated              bool                    key_offset=107318
+  truncationReason       str                     key_offset=107339
+  freshness              dict     len=6          key_offset=107399
+  DATA impact: items=117 json_bytes=87772
+BOUND FIELDS: {"rule.maxDepth": 5, "budget.maxNodes": 200, "budget.maxDepth": 5, "traversal.engineTruncated": true, "traversal.edgeLimit": 200, "traversal.returnedCallers": 117, "shownCount": 117, "directCount": 89, "totalCountIfKnown": 337, "truncated": true, "truncationReason": "traversal: caller-budget-exhausted"}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   shownCount           offset= 107248  ( 99.7% of payload)
+   directCount          offset= 107269  ( 99.7% of payload)
+   totalCountIfKnown    offset= 107290  ( 99.8% of payload)
+   truncated            offset= 107318  ( 99.8% of payload)
+   truncationReason     offset= 107339  ( 99.8% of payload)
+   budget               offset=   1009  (  0.9% of payload)
+   traversal            offset=   1224  (  1.1% of payload)
+####################################################################################################
+FILE impact-Session-default.json BYTES 188433
+TOP-LEVEL ORDER: ['symbol', 'root', 'rootStale', 'rootMatch', 'resolution', 'rule', 'budget', 'traversal', 'cascade', 'countVerification', 'reproducible', 'impact', 'shownCount', 'directCount', 'totalCountIfKnown', 'truncated', 'truncationReason', 'freshness']
+  symbol                 str                     key_offset=4
+  root                   dict     len=7          key_offset=27
+  rootStale              bool                    key_offset=314
+  rootMatch              dict     len=3          key_offset=336
+  resolution             dict     len=1          key_offset=427
+  rule                   dict     len=4          key_offset=474
+  budget                 dict     len=7          key_offset=1021
+  traversal              dict     len=11         key_offset=1236
+  cascade                dict     len=3          key_offset=595
+  countVerification      dict     len=5          key_offset=1795
+  reproducible           bool                    key_offset=1938
+  impact                 list     len=200        key_offset=1962
+  shownCount             int                     key_offset=188147
+  directCount            int                     key_offset=188168
+  totalCountIfKnown      int                     key_offset=188190
+  truncated              bool                    key_offset=188219
+  truncationReason       str                     key_offset=188240
+  freshness              dict     len=6          key_offset=188294
+  DATA impact: items=200 json_bytes=152927
+BOUND FIELDS: {"rule.maxDepth": 5, "budget.maxNodes": 200, "budget.maxDepth": 5, "traversal.engineTruncated": true, "traversal.edgeLimit": 200, "traversal.returnedCallers": 345, "shownCount": 200, "directCount": 177, "totalCountIfKnown": 1046, "truncated": true, "truncationReason": "impact-node-budget-exhausted"}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   shownCount           offset= 188147  ( 99.8% of payload)
+   directCount          offset= 188168  ( 99.9% of payload)
+   totalCountIfKnown    offset= 188190  ( 99.9% of payload)
+   truncated            offset= 188219  ( 99.9% of payload)
+   truncationReason     offset= 188240  ( 99.9% of payload)
+   budget               offset=   1021  (  0.5% of payload)
+   traversal            offset=   1236  (  0.7% of payload)
+####################################################################################################
+FILE graph-New-default.json BYTES 546415
+TOP-LEVEL ORDER: ['symbol', 'root', 'callers', 'callees', 'summary', 'provenance']
+  symbol                 str                     key_offset=4
+  root                   dict     len=8          key_offset=23
+  callers                list     len=144        key_offset=327
+  callees                list     len=285        key_offset=185672
+  summary                dict     len=37         key_offset=543461
+  provenance             dict     len=9          key_offset=545655
+  DATA callers: items=144 json_bytes=141790
+  DATA callees: items=285 json_bytes=270985
+BOUND FIELDS: {"summary.totalCallers": 144, "summary.totalCallees": 285, "summary.maxDepth": 5, "summary.truncated": true, "summary.truncationReason": "caller-budget-exhausted+callee-depth-cap-reached+callee-budget-exhausted", "summary.truncationReasons": ["caller-budget-exhausted", "callee-depth-cap-reached", "callee-budget-exhausted"], "summary.edgeLimit": 200, "summary.maxEdges": 1000, "summary.callerBudget": 50, "provenance.truncated": true}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   summary              offset= 543461  ( 99.5% of payload)
+   truncated            offset= 543816  ( 99.5% of payload)
+   truncationReason     offset= 543839  ( 99.5% of payload)
+####################################################################################################
+FILE graph-Session-default.json BYTES 1086300
+TOP-LEVEL ORDER: ['symbol', 'root', 'callers', 'callees', 'summary', 'provenance']
+  symbol                 str                     key_offset=4
+  root                   dict     len=8          key_offset=27
+  callers                list     len=466        key_offset=335
+  callees                list     len=377        key_offset=612564
+  summary                dict     len=37         key_offset=1083192
+  provenance             dict     len=9          key_offset=1085540
+  DATA callers: items=466 json_bytes=467576
+  DATA callees: items=377 json_bytes=355340
+BOUND FIELDS: {"summary.totalCallers": 466, "summary.totalCallees": 377, "summary.maxDepth": 5, "summary.truncated": true, "summary.truncationReason": "caller-site-limit+caller-depth-cap-reached+caller-budget-exhausted+callee-site-limit+callee-depth-cap-reached+callee-budget-exhausted", "summary.truncationReasons": ["caller-site-limit", "caller-depth-cap-reached", "caller-budget-exhausted", "callee-site-limit", "callee-depth-cap-reached", "callee-budget-exhausted"], "summary.edgeLimit": 200, "summary.maxEdges": 1000, "summary.callerBudget": 50, "provenance.truncated": true}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   summary              offset=1083192  ( 99.7% of payload)
+   truncated            offset=1083548  ( 99.7% of payload)
+   truncationReason     offset=1083571  ( 99.7% of payload)
+####################################################################################################
+FILE impact-axios-dispatchRequest.out BYTES 2288
+TOP-LEVEL ORDER: ['symbol', 'root', 'rootStale', 'rootMatch', 'resolution', 'rule', 'budget', 'traversal', 'cascade', 'countVerification', 'reproducible', 'impact', 'shownCount', 'directCount', 'totalCountIfKnown', 'truncated', 'truncationReason', 'freshness']
+  symbol                 str                     key_offset=4
+  root                   dict     len=7          key_offset=35
+  rootStale              bool                    key_offset=429
+  rootMatch              dict     len=3          key_offset=451
+  resolution             dict     len=1          key_offset=550
+  rule                   dict     len=4          key_offset=597
+  budget                 dict     len=7          key_offset=1144
+  traversal              dict     len=11         key_offset=1359
+  cascade                dict     len=3          key_offset=718
+  countVerification      dict     len=5          key_offset=1851
+  reproducible           bool                    key_offset=1995
+  impact                 list     len=0          key_offset=2019
+  shownCount             int                     key_offset=2035
+  directCount            int                     key_offset=2054
+  totalCountIfKnown      int                     key_offset=2074
+  truncated              bool                    key_offset=2100
+  truncationReason       NoneType                key_offset=2122
+  freshness              dict     len=6          key_offset=2150
+  DATA impact: items=0 json_bytes=2
+BOUND FIELDS: {"rule.maxDepth": 5, "budget.maxNodes": 200, "budget.maxDepth": 5, "traversal.engineTruncated": false, "traversal.edgeLimit": 200, "traversal.returnedCallers": 0, "shownCount": 0, "directCount": 0, "totalCountIfKnown": 0, "truncated": false, "truncationReason": null}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   shownCount           offset=   2035  ( 88.9% of payload)
+   directCount          offset=   2054  ( 89.8% of payload)
+   totalCountIfKnown    offset=   2074  ( 90.6% of payload)
+   truncated            offset=   2100  ( 91.8% of payload)
+   truncationReason     offset=   2122  ( 92.7% of payload)
+   budget               offset=   1144  ( 50.0% of payload)
+   traversal            offset=   1359  ( 59.4% of payload)
+####################################################################################################
+FILE graph-axios-dispatchRequest.out BYTES 486083
+TOP-LEVEL ORDER: ['symbol', 'root', 'callers', 'callees', 'summary', 'provenance']
+  symbol                 str                     key_offset=4
+  root                   dict     len=8          key_offset=35
+  callers                list     len=127        key_offset=442
+  callees                list     len=215        key_offset=193193
+  summary                dict     len=37         key_offset=482039
+  provenance             dict     len=9          key_offset=484238
+  DATA callers: items=127 json_bytes=153257
+  DATA callees: items=215 json_bytes=224862
+BOUND FIELDS: {"summary.totalCallers": 127, "summary.totalCallees": 215, "summary.maxDepth": 5, "summary.truncated": true, "summary.truncationReason": "caller-depth-cap-reached+callee-depth-cap-reached+callee-budget-exhausted", "summary.truncationReasons": ["caller-depth-cap-reached", "callee-depth-cap-reached", "callee-budget-exhausted"], "summary.edgeLimit": 200, "summary.maxEdges": 1000, "summary.callerBudget": 50, "provenance.truncated": true}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   summary              offset= 482039  ( 99.2% of payload)
+   truncated            offset= 482395  ( 99.2% of payload)
+   truncationReason     offset= 482418  ( 99.2% of payload)
+####################################################################################################
+FILE viz-module-session-json.out BYTES 479005
+TOP-LEVEL ORDER: ['scope', 'target', 'format', 'view', 'layout', 'nodes', 'links', 'excluded', 'declaredAbsent', 'absenceNote', 'totalNodesAvailable', 'provenance', 'considered', 'truncation', 'freshness']
+  scope                  str                     key_offset=4
+  target                 str                     key_offset=25
+  format                 str                     key_offset=48
+  view                   str                     key_offset=68
+  layout                 str                     key_offset=87
+  nodes                  list     len=200        key_offset=110
+  links                  list     len=513        key_offset=71263
+  excluded               dict     len=6          key_offset=475660
+  declaredAbsent         bool                    key_offset=476058
+  absenceNote            NoneType                key_offset=476085
+  totalNodesAvailable    int                     key_offset=476108
+  provenance             dict     len=4          key_offset=476138
+  considered             dict     len=12         key_offset=476346
+  truncation             dict     len=9          key_offset=478623
+  freshness              dict     len=6          key_offset=478867
+  DATA nodes: items=200 json_bytes=55936
+  DATA links: items=513 json_bytes=350724
+BOUND FIELDS: {"totalNodesAvailable": 495, "considered.page.nextOffset": 200, "truncation.truncated": true, "truncation.originalNodes": 399, "truncation.maxNodes": 200, "truncation.totalNodesAvailable": 495, "truncation.nextOffset": 200}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   truncation           offset= 478623  ( 99.9% of payload)
+   truncated            offset= 478643  ( 99.9% of payload)
+####################################################################################################
+FILE analyze-impact-axios.out BYTES 1444
+TOP-LEVEL ORDER: ['target', 'found', 'root', 'scope', 'directSymbols', 'affectedFiles', 'transitiveFiles', 'crossLanguageFiles', 'unresolvedEdges', 'riskLevel', 'truncated', 'truncationReason', 'depthCap', 'nodeBudget', 'depthReached', 'totalSymbols', 'totalSymbolsIfKnown', 'source', 'provenance', 'freshness']
+  target                 str                     key_offset=4
+  found                  bool                    key_offset=35
+  root                   dict     len=6          key_offset=52
+  scope                  str                     key_offset=245
+  directSymbols          int                     key_offset=270
+  affectedFiles          list     len=0          key_offset=292
+  transitiveFiles        int                     key_offset=315
+  crossLanguageFiles     int                     key_offset=339
+  unresolvedEdges        int                     key_offset=366
+  riskLevel              str                     key_offset=390
+  truncated              bool                    key_offset=412
+  truncationReason       NoneType                key_offset=434
+  depthCap               int                     key_offset=462
+  nodeBudget             int                     key_offset=479
+  depthReached           int                     key_offset=500
+  totalSymbols           int                     key_offset=521
+  totalSymbolsIfKnown    int                     key_offset=542
+  source                 str                     key_offset=570
+  provenance             dict     len=9          key_offset=622
+  freshness              dict     len=6          key_offset=1306
+  DATA affectedFiles: items=0 json_bytes=2
+BOUND FIELDS: {"truncated": false, "truncationReason": null, "depthCap": 5, "nodeBudget": 200, "provenance.truncated": false}
+BOUND-NAMING TOP-LEVEL KEYS (offset fractional):
+   truncated            offset=    412  ( 28.5% of payload)
+   truncationReason     offset=    434  ( 30.1% of payload)

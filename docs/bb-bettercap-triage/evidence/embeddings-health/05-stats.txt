@@ -1,0 +1,3 @@
+index stats for /home/ishaq2321/bettercap:
+  files 1972 | symbols 55785 | relationships 111408 | embeddings 23925
+  db: /home/ishaq2321/.bb/projects/4c7590f1cba319aac298a50453c0ec440f2dc857/brain.db

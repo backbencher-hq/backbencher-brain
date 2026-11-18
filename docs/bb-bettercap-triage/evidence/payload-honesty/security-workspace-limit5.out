@@ -1,0 +1,14 @@
+⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING
+tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+not scanned by bb_security (no executable source model): css, graphql, hcl, html, json, markdown, protobuf, sass, scss, sql, terraform, toml, xml, yaml — stylesheet text; no executable source/sink surface
+leads tier: 39 language(s) present; lexical output only
+security leads: 3 stored lead(s)
+  [high] lead: xss @ .corpus/axios/sandbox/server.js:62 <- source:49; rule=javascript.sink.html-output; symbol=handleApiRequest [reach: javascript.source.express-request -> result = {
+        url: req.url,
+        data: data ? JSON.parse(data) : undefined,
+        method: req.method,
+        headers: req.headers,
+      }]
+  [high] lead: xss @ .corpus/express/examples/resource/index.js:46 <- source:46; rule=javascript.sink.html-output; symbol=User [reach: javascript.source.express-request]
+  [high] lead: code injection @ .corpus/moment/scripts/check-package.js:11 <- source:12; rule=javascript.sink.dynamic-code; symbol=runBrowserFile [reach: javascript.source.file-read]
+[leads: showing 3 of 3; offset 0; page size 5; tier=leads]

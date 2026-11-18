@@ -1,0 +1,68 @@
+{
+  "searchMode": "content",
+  "query": "Session",
+  "total": 88,
+  "returned": 3,
+  "staleCount": 0,
+  "freshCount": 3,
+  "pageStaleCount": 0,
+  "truncated": false,
+  "matchMode": "phrase",
+  "bodyCoverage": {
+    "withBody": 23925,
+    "symbols": 55785,
+    "ratio": 0.4288787308416241
+  },
+  "freshness": {
+    "fresh": 3,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  },
+  "results": [
+    {
+      "file": "modules/arp_spoof/arp_spoof_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go",
+      "line": 110,
+      "column": 0,
+      "context": "property: Session",
+      "symbolName": "Session",
+      "symbolType": "property",
+      "language": "go",
+      "matchType": "content",
+      "snippet": "Session",
+      "complexity": 1,
+      "_relevance": 1
+    },
+    {
+      "file": "modules/c2/c2.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go",
+      "line": 46,
+      "column": 0,
+      "context": "property: Session",
+      "symbolName": "Session",
+      "symbolType": "property",
+      "language": "go",
+      "matchType": "content",
+      "snippet": "Session",
+      "complexity": 1,
+      "_relevance": 1
+    },
+    {
+      "file": "modules/http_proxy/http_proxy_base_sslstriper.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/http_proxy/http_proxy_base_sslstriper.go",
+      "line": 34,
+      "column": 0,
+      "context": "property: session",
+      "symbolName": "session",
+      "symbolType": "property",
+      "language": "go",
+      "matchType": "content",
+      "snippet": "session",
+      "complexity": 1,
+      "_relevance": 1
+    }
+  ]
+}

@@ -1,0 +1,993 @@
+{
+  "dependencies": [
+    {
+      "file": "prompter/huh_prompter_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:prompter/huh_prompter_test.go",
+      "dependencies": [
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "charm.land/huh/v2",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/AlecAivazis/survey/v2/terminal",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "authflow/flow_test.go",
+          "stale": false
+        },
+        {
+          "path": "barista/observability/telemetry.twirp.go",
+          "stale": false
+        },
+        {
+          "path": "codespaces/api/api.go",
+          "stale": false
+        },
+        {
+          "path": "codespaces/states.go",
+          "stale": false
+        },
+        {
+          "path": "config/migrate_test.go",
+          "stale": false
+        },
+        {
+          "path": "docs/man_test.go",
+          "stale": false
+        },
+        {
+          "path": "docs/man.go",
+          "stale": false
+        },
+        {
+          "path": "docs/markdown_test.go",
+          "stale": false
+        },
+        {
+          "path": "ghcmd/cmd_test.go",
+          "stale": false
+        },
+        {
+          "path": "run/run.go",
+          "stale": false
+        },
+        {
+          "path": "skills/frontmatter/frontmatter.go",
+          "stale": false
+        },
+        {
+          "path": "telemetry/telemetry_test.go",
+          "stale": false
+        },
+        {
+          "path": "telemetry/telemetry.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 13,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 13,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/userasset.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/userasset.go",
+      "dependencies": [
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/text",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "barista/observability/telemetry.twirp.go",
+          "stale": false
+        },
+        {
+          "path": "skills/discovery/discovery.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 2,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 2,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/flags.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/flags.go",
+      "dependencies": [
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/spf13/cobra",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/spf13/pflag",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "attachments/references_fixture_test.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 1,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 1,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "agents/detect_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:agents/detect_test.go",
+      "dependencies": [
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "agents/detect.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:agents/detect.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/attach_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/attach_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/api",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/pkg/httpmock",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 9,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/attach.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/attach.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/client_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/client_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing/fstest",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/api",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/gh",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/pkg/httpmock",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 14,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/client.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/client.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "slices",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/api",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/gh",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/ghinstance",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/safeurl",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/go-gh/v2/pkg/auth",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 16,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/doc.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/doc.go",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/flags_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/flags_test.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/gh/ghtelemetry",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/telemetry",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/google/shlex",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/spf13/cobra",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 11,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/references_fixture_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/references_fixture_test.go",
+      "dependencies": [
+        {
+          "path": "flag",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/references_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/references_test.go",
+      "dependencies": [
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/references.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/references.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/url",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "slices",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/yuin/goldmark",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/yuin/goldmark/ast",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/yuin/goldmark/text",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 9,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/telemetry.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/telemetry.go",
+      "dependencies": [
+        {
+          "path": "github.com/cli/cli/v2/internal/gh/ghtelemetry",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/test.go",
+      "dependencies": [
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/url",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/internal/gh/ghtelemetry",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/cli/cli/v2/pkg/httpmock",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/spf13/cobra",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 10,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/testdata/references_expected.md",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/testdata/references_expected.md",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/testdata/references_input.md",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/testdata/references_input.md",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "attachments/userasset_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:attachments/userasset_test.go",
+      "dependencies": [
+        {
+          "path": "io/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "runtime",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "authflow/flow_test.go",
+      "fileId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd:authflow/flow_test.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "file-page: showing 20 of 145 files — raise limit for the rest"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "dependencies@intelligence",
+    "engineVersion": "m10.04",
+    "projectId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd",
+    "source": "brain_relationship+brain_import",
+    "limitations": [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut."
+    ]
+  },
+  "summary": {
+    "returned": 20,
+    "totalFiles": 145,
+    "scope": null,
+    "truncated": true,
+    "returnedInternalDependencies": 0,
+    "returnedInternalDependents": 16,
+    "pageLimit": 20
+  },
+  "freshness": {
+    "fresh": 33,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

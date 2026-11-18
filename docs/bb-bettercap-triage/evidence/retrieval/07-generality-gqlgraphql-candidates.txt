@@ -1,0 +1,4 @@
+Config => found true total 1 kinds struct@config.go:7
+Options => found true total 1 kinds struct@handler/transport/options.go:11
+Client => found false total 0 kinds 
+New => found true total 5 kinds function@handler/server.go:33, function@executor/executor.go:37, function@executor/testexecutor/testexecutor.go:42, function@handler/testserver/testserver.go:20, function@handler/lru/lru.go:17

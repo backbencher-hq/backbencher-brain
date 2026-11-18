@@ -1,0 +1,50 @@
+{
+  "target": "dispatchRequest",
+  "found": true,
+  "root": {
+    "name": "dispatchRequest",
+    "symbolType": "function",
+    "file": ".corpus/axios/lib/core/dispatchRequest.js",
+    "line": 67,
+    "candidates": 1,
+    "match": "exact"
+  },
+  "scope": "transitive",
+  "directSymbols": 0,
+  "affectedFiles": [],
+  "transitiveFiles": 0,
+  "crossLanguageFiles": 0,
+  "unresolvedEdges": 0,
+  "riskLevel": "low",
+  "truncated": false,
+  "truncationReason": null,
+  "depthCap": 5,
+  "nodeBudget": 200,
+  "depthReached": 0,
+  "totalSymbols": 0,
+  "totalSymbolsIfKnown": 0,
+  "source": "impact@lsp-canonical (computeImpact)",
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "impact@lsp-canonical",
+    "engineVersion": "m48.01",
+    "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+    "source": "brain_relationship+brain_symbol+brain_file via computeImpact",
+    "limitations": [
+      "Impact set, truncation, and totals come from the editor-canonical calculator (src/lsp/impact.ts).",
+      "Depth cap 5 and node budget 200 are declared; depthReached states how far the walk actually went.",
+      "Static impact cannot establish runtime behavior; unresolved external edges are counted but not followed."
+    ]
+  },
+  "freshness": {
+    "fresh": 0,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

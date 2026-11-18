@@ -1,0 +1,1114 @@
+{
+  "symbol": "session",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1",
+    "name": "session",
+    "symbolType": "module",
+    "file": "session/session.go",
+    "line": 1,
+    "filePath": "/home/ishaq2321/bettercap/session/session.go",
+    "candidates": 1,
+    "match": "exact-any-kind"
+  },
+  "callers": [],
+  "callees": [
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:errors",
+        "name": "errors",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 4
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:errors:imports:4"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:net",
+        "name": "net",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 6
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:net:imports:6"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:regexp",
+        "name": "regexp",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 8
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:regexp:imports:8"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:runtime",
+        "name": "runtime",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 9
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:runtime:imports:9"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:runtime/pprof",
+        "name": "runtime/pprof",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 10
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:runtime/pprof:imports:10"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:strings",
+        "name": "strings",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 12
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:strings:imports:12"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:time",
+        "name": "time",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 13
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:time:imports:13"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/readline",
+        "name": "github.com/bettercap/readline",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 15
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/readline:imports:15"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/bettercap/v2/caplets",
+        "name": "github.com/bettercap/bettercap/v2/caplets",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 17
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/bettercap/v2/caplets:imports:17"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/bettercap/v2/core",
+        "name": "github.com/bettercap/bettercap/v2/core",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 18
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/bettercap/v2/core:imports:18"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/bettercap/v2/firewall",
+        "name": "github.com/bettercap/bettercap/v2/firewall",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/bettercap/v2/firewall:imports:19"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/bettercap/v2/log",
+        "name": "github.com/bettercap/bettercap/v2/log",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 20
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/bettercap/v2/log:imports:20"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/bettercap/v2/network",
+        "name": "github.com/bettercap/bettercap/v2/network",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 21
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/bettercap/v2/network:imports:21"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/bettercap/bettercap/v2/packets",
+        "name": "github.com/bettercap/bettercap/v2/packets",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 22
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/bettercap/bettercap/v2/packets:imports:22"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/data",
+        "name": "github.com/evilsocket/islazy/data",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 24
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/data:imports:24"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/fs",
+        "name": "github.com/evilsocket/islazy/fs",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 25
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/fs:imports:25"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/log",
+        "name": "github.com/evilsocket/islazy/log",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 26
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/log:imports:26"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/ops",
+        "name": "github.com/evilsocket/islazy/ops",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/ops:imports:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/plugin",
+        "name": "github.com/evilsocket/islazy/plugin",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 28
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/plugin:imports:28"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/str",
+        "name": "github.com/evilsocket/islazy/str",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 29
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/str:imports:29"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:github.com/evilsocket/islazy/tui",
+        "name": "github.com/evilsocket/islazy/tui",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 30
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:github.com/evilsocket/islazy/tui:imports:30"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": ".github/workflows/release.yaml:os:15",
+        "name": "os",
+        "symbolType": "variable",
+        "file": ".github/workflows/release.yaml",
+        "line": 15,
+        "isExternal": false
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_46"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 7
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:os:imports:7"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "Makefile:fmt:36",
+        "name": "fmt",
+        "symbolType": "function",
+        "file": "Makefile",
+        "line": 36,
+        "isExternal": false
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_173"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 5
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:fmt:imports:5"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:session:1",
+        "name": "session",
+        "symbolType": "module",
+        "file": "session/session.go",
+        "line": 1,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ui/ui/assets/fontawesome/metadata/icons.yml:sort:15814",
+        "name": "sort",
+        "symbolType": "class",
+        "file": "modules/ui/ui/assets/fontawesome/metadata/icons.yml",
+        "line": 15814,
+        "isExternal": false
+      },
+      "relationshipType": "imports",
+      "confidence": 0.9,
+      "tier": "import_based",
+      "evidenceClass": "import_based",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→ui",
+        "criticality": "medium",
+        "frequency": "one_of_46"
+      },
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 11
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:session:1:sort:imports:11"
+    }
+  ],
+  "summary": {
+    "totalCallers": 0,
+    "totalCallees": 24,
+    "maxDepthReached": 0,
+    "maxDepth": 1,
+    "crossLanguageEdges": 3,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": true,
+    "truncationReason": "callee-depth-cap-reached",
+    "truncationReasons": [
+      "callee-depth-cap-reached"
+    ],
+    "filterNarrowed": true,
+    "filterReason": "relationshipTypes:imports",
+    "edgeLimit": 50,
+    "maxEdges": 1000,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 0,
+    "exactCallees": 24,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 0,
+    "edgesByType": {
+      "imports": 24
+    },
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "callees",
+      "relationshipTypes": [
+        "imports"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}

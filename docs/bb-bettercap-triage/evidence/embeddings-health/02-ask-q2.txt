@@ -1,0 +1,89 @@
+answer: Note: the embedding provider did not answer within 2000 ms, so this question was embedded with the local word-vector model (local-word-vectors-v3). Only 23,924 of 55,785 indexed symbols exist in that space, so the ranking below is limited to them.
+Note: this ranking does not distinguish its top results — 6 other symbol(s) scored within the same margin of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best. The confidence figure is capped for the same reason.
+
+Closest matches from the AST index for your query (search results, not a verified answer):
+
+--- File: modules/packet_proxy/packet_proxy_darwin.go (Line 11) ---
+[function] NewPacketProxy — similarity 0.665
+```
+func NewPacketProxy(s *session.Session) *PacketProxy {
+	return &PacketProxy{
+		SessionModule: session.NewSessionModule("packet.proxy", s),
+	}
+}
+```
+
+--- File: modules/packet_proxy/packet_proxy_freebsd.go (Line 11) ---
+[function] NewPacketProxy — similarity 0.665
+```
+func NewPacketProxy(s *session.Session) *PacketProxy {
+	return &PacketProxy{
+		SessionModule: session.NewSessionModule("packet.proxy", s),
+	}
+}
+```
+
+--- File: modules/packet_proxy/packet_proxy_windows.go (Line 11) ---
+[function] NewPacketProxy — similarity 0.665
+```
+func NewPacketProxy(s *session.Session) *PacketProxy {
+	return &PacketProxy{
+		SessionModule: session.NewSessionModule("packet.proxy", s),
+	}
+}
+```
+
+--- File: modules/graph/module.go (Line 44) ---
+[struct] Module — similarity 0.640
+```
+type Module struct {
+	session.SessionModule
+
+	settings settings
+	db       *Graph
+	gw       *Node
+	iface    *Node
+	eventBus session.EventBus
+	wLock    sync.Mutex
+}
+```
+
+--- File: modules/gps/gps.go (Line 143) ---
+[method] Show — similarity 0.629
+```
+func (mod *GPS) Show() error {
+	mod.Printf("latitude:%f longitude:%f quality:%s satellites:%d altitude:%f\n",
+		mod.Session.GPS.Latitude,
+		mod.Session.GPS.Longitude,
+		mod.Session.GPS.FixQuality,
+		mod.Session.GPS.NumSatellites,
+		mod.Session.GPS.Altitude)
+
+	mod.Session.Refresh()
+
+	return nil
+}
+```
+
+
+— Use bb_search for precise symbol lookup: "bb_search(query='LoadModules session module startup wiring')".
+— Use bb_search with mode="file" to read any indexed file.
+
+confidence: not a measurement (capped, because the ranking cannot separate its top results)
+
+1. modules/packet_proxy/packet_proxy_darwin.go:11
+   NewPacketProxy
+2. modules/packet_proxy/packet_proxy_freebsd.go:11
+   NewPacketProxy
+3. modules/packet_proxy/packet_proxy_windows.go:11
+   NewPacketProxy
+4. modules/graph/module.go:44
+   Module
+5. modules/gps/gps.go:143
+   Show
+
+[retrieval: method=vector, queryModel=local-word-vectors-v3, indexModel=local-word-vectors-v3, dimension=50, embeddingCoverage=43% (23924/55785 symbols embedded in this model space), libraryCoverage=43% (23925/55785 across all models), scanned=20000/20000 (cap reached), filtered=20000, candidates=44, embeddingTimeout=2000ms (fell back to local-word-vectors-v3), ranking=non-discriminative (6 within the margin of the best)]
+
+[bounds: returned=5, totalMatches=44, truncated=true, truncationReason=scan cap 20000 reached; candidates are a deterministic prefix of the embedding table (ordered by entity_id)]
+
+[provenance: semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The embedding provider did not answer within 2000 ms; the question was embedded with the local word-vector model (local-word-vectors-v3).]

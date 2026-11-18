@@ -1,0 +1,4209 @@
+{
+  "symbol": "jsOnEventFunc",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39",
+    "name": "jsOnEventFunc",
+    "symbolType": "function",
+    "file": "session/script_builtin_runtime.go",
+    "line": 39,
+    "filePath": "/home/ishaq2321/bettercap/session/script_builtin_runtime.go",
+    "candidates": 1,
+    "match": "exact"
+  },
+  "callers": [],
+  "callees": [
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:IsFunction",
+        "name": "IsFunction",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 47
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:IsFunction:calls:47"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:IsString",
+        "name": "IsString",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 54
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:IsString:calls:54"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:IsFunction",
+        "name": "IsFunction",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 56
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:IsFunction:calls:56"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Sprintf",
+        "name": "Sprintf",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 64
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Sprintf:calls:64"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Store",
+        "name": "Store",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 72
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Store:calls:72"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Marshal",
+        "name": "Marshal",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 87
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Marshal:calls:87"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Unmarshal",
+        "name": "Unmarshal",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 89
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Unmarshal:calls:89"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Call",
+        "name": "Call",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 100
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Call:calls:100"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_34"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 66
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Load:calls:66"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_285"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 60
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:String:calls:60"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_285"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 64
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:String:calls:64"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/init.go:NullValue:9",
+        "name": "NullValue",
+        "symbolType": "variable",
+        "file": "js/init.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_12"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 42
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:NullValue:calls:42"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/init.go:ReportError:11",
+        "name": "ReportError",
+        "symbolType": "function",
+        "file": "js/init.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_22"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 48
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:ReportError:calls:48"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_26"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 88
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Log:calls:88"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "observer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_9"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 76
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Listen:calls:76"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:Unlisten:108",
+        "name": "Unlisten",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 108,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 77
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Unlisten:calls:77"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 96
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Lock:calls:96"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "event_handler",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 106
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Unlock:calls:106"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:ArgumentList",
+        "name": "ArgumentList",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 40
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:ArgumentList:uses:40"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:ERROR",
+        "name": "ERROR",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 88
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:ERROR:uses:88"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/init.go:NullValue:9",
+        "name": "NullValue",
+        "symbolType": "variable",
+        "file": "js/init.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_12"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 117
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:NullValue:uses:117"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/ssh_proxy/ssh_proxy.go:script:23",
+        "name": "script",
+        "symbolType": "property",
+        "file": "modules/ssh_proxy/ssh_proxy.go",
+        "line": 23,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_4"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 95
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:script:uses:95"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:Tag:15",
+        "name": "Tag",
+        "symbolType": "property",
+        "file": "session/events.go",
+        "line": 15,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_39"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 83
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Tag:uses:83"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/script_builtin_runtime.go:jsListeners:19",
+        "name": "jsListeners",
+        "symbolType": "variable",
+        "file": "session/script_builtin_runtime.go",
+        "line": 19,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 1,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_2"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 66
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:jsListeners:uses:66"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Events:92",
+        "name": "Events",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 92,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_83"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 76
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Events:uses:76"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:FunctionCall",
+        "name": "FunctionCall",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:FunctionCall:references:39"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/module_param.go:Value:189",
+        "name": "Value",
+        "symbolType": "property",
+        "file": "session/module_param.go",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_138"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Value:references:39"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsOnEventFunc:39",
+        "name": "jsOnEventFunc",
+        "symbolType": "function",
+        "file": "session/script_builtin_runtime.go",
+        "line": 39,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/module_param.go:Value:189",
+        "name": "Value",
+        "symbolType": "property",
+        "file": "session/module_param.go",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_138"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 0,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 75
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39:Value:references:75"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:HasSuffix",
+        "name": "HasSuffix",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 57
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:HasSuffix:calls:57"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:IsAbs",
+        "name": "IsAbs",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 61
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:IsAbs:calls:61"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Join",
+        "name": "Join",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 63
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Join:calls:63"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Stat",
+        "name": "Stat",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 70
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Stat:calls:70"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:LineReader",
+        "name": "LineReader",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 78
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:LineReader:calls:78"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Errorf",
+        "name": "Errorf",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 79
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Errorf:calls:79"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Contains",
+        "name": "Contains",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 86
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Contains:calls:86"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Dir",
+        "name": "Dir",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 87
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Dir:calls:87"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:ReadDir",
+        "name": "ReadDir",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 89
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:ReadDir:calls:89"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Size:13",
+        "name": "Size",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 13,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_11"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 72
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Size:calls:72"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:newScript:17",
+        "name": "newScript",
+        "symbolType": "function",
+        "file": "caplets/caplet.go",
+        "line": 17,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "pattern": "factory_consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 72
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:newScript:calls:72"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Name:27",
+        "name": "Name",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 27,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_140"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 91
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Name:calls:91"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Size:13",
+        "name": "Size",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 13,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_11"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 94
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Size:calls:94"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 48
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Lock:calls:48"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 49
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Unlock:calls:49"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Caplet:25",
+        "name": "Caplet",
+        "symbolType": "struct",
+        "file": "caplets/caplet.go",
+        "line": 25,
+        "isExternal": false
+      },
+      "relationshipType": "instantiates",
+      "confidence": 0.8,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "producer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_23"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 71
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Caplet:instantiates:71"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Code:14",
+        "name": "Code",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_13"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 82
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Code:uses:82"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Scripts:28",
+        "name": "Scripts",
+        "symbolType": "property",
+        "file": "caplets/caplet.go",
+        "line": 28,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 98
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Scripts:uses:98"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/manager.go:cacheLock:17",
+        "name": "cacheLock",
+        "symbolType": "variable",
+        "file": "caplets/manager.go",
+        "line": 17,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 1,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_1"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 48
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:cacheLock:uses:48"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/manager.go:cache:16",
+        "name": "cache",
+        "symbolType": "variable",
+        "file": "caplets/manager.go",
+        "line": 16,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 1,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 51
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:cache:uses:51"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Caplet:25",
+        "name": "Caplet",
+        "symbolType": "struct",
+        "file": "caplets/caplet.go",
+        "line": 25,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_23"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 47
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Caplet:references:47"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "caplets/manager.go:Load:47",
+        "name": "Load",
+        "symbolType": "function",
+        "file": "caplets/manager.go",
+        "line": 47,
+        "isExternal": false
+      },
+      "to": {
+        "id": "caplets/caplet.go:Script:11",
+        "name": "Script",
+        "symbolType": "struct",
+        "file": "caplets/caplet.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_13"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "caplets/manager.go",
+        "line": 74
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go:Load:47:Script:references:74"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Sprintf",
+        "name": "Sprintf",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:Sprintf:calls:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:DstAddress:10",
+        "name": "DstAddress",
+        "symbolType": "property",
+        "file": "firewall/redirection.go",
+        "line": 10,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_8"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:DstAddress:uses:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:DstPort:11",
+        "name": "DstPort",
+        "symbolType": "property",
+        "file": "firewall/redirection.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_22"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:DstPort:uses:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:Interface:6",
+        "name": "Interface",
+        "symbolType": "property",
+        "file": "firewall/redirection.go",
+        "line": 6,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_79"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:Interface:uses:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:Protocol:7",
+        "name": "Protocol",
+        "symbolType": "property",
+        "file": "firewall/redirection.go",
+        "line": 7,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_12"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:Protocol:uses:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:SrcAddress:8",
+        "name": "SrcAddress",
+        "symbolType": "property",
+        "file": "firewall/redirection.go",
+        "line": 8,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:SrcAddress:uses:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:SrcPort:9",
+        "name": "SrcPort",
+        "symbolType": "property",
+        "file": "firewall/redirection.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_22"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 27
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:SrcPort:uses:27"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "firewall/redirection.go:String:26",
+        "name": "String",
+        "symbolType": "method",
+        "file": "firewall/redirection.go",
+        "line": 26,
+        "isExternal": false
+      },
+      "to": {
+        "id": "firewall/redirection.go:Redirection:5",
+        "name": "Redirection",
+        "symbolType": "struct",
+        "file": "firewall/redirection.go",
+        "line": 5,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_38"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "firewall/redirection.go",
+        "line": 26
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:firewall/redirection.go:String:26:Redirection:references:26"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "js/init.go:NullValue:9",
+        "name": "NullValue",
+        "symbolType": "variable",
+        "file": "js/init.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/module_param.go:Value:189",
+        "name": "Value",
+        "symbolType": "property",
+        "file": "session/module_param.go",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "instantiates",
+      "confidence": 0.8,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "producer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_138"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/init.go",
+        "line": 9
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/init.go:NullValue:9:Value:instantiates:9"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "js/init.go:ReportError:11",
+        "name": "ReportError",
+        "symbolType": "function",
+        "file": "js/init.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/http.go:Error:18",
+        "name": "Error",
+        "symbolType": "property",
+        "file": "js/http.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_377"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/init.go",
+        "line": 12
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/init.go:ReportError:11:Error:calls:12"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "js/init.go:ReportError:11",
+        "name": "ReportError",
+        "symbolType": "function",
+        "file": "js/init.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "to": {
+        "id": "js/init.go:NullValue:9",
+        "name": "NullValue",
+        "symbolType": "variable",
+        "file": "js/init.go",
+        "line": 9,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 1,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_12"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/init.go",
+        "line": 13
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/init.go:ReportError:11:NullValue:uses:13"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "js/init.go:ReportError:11",
+        "name": "ReportError",
+        "symbolType": "function",
+        "file": "js/init.go",
+        "line": 11,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/module_param.go:Value:189",
+        "name": "Value",
+        "symbolType": "property",
+        "file": "session/module_param.go",
+        "line": 189,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_138"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "js/init.go",
+        "line": 11
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/init.go:ReportError:11:Value:references:11"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Bold",
+        "name": "Bold",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 132
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Bold:calls:132"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Yellow",
+        "name": "Yellow",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 135
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Yellow:calls:135"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "log/log.go:Info:17",
+        "name": "Info",
+        "symbolType": "function",
+        "file": "log/log.go",
+        "line": 17,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_125"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 132
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Info:calls:132"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:Interface:20",
+        "name": "Interface",
+        "symbolType": "property",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 20,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 132
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Interface:uses:132"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:DumpLocal:22",
+        "name": "DumpLocal",
+        "symbolType": "property",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 22,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 133
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:DumpLocal:uses:133"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:yn:125",
+        "name": "yn",
+        "symbolType": "variable",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 125,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 1,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 133
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:yn:uses:133"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:Verbose:23",
+        "name": "Verbose",
+        "symbolType": "property",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 23,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 134
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Verbose:uses:134"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:Filter:24",
+        "name": "Filter",
+        "symbolType": "property",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 24,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_6"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 135
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Filter:uses:135"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:Expression:25",
+        "name": "Expression",
+        "symbolType": "property",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 25,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_10"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 136
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Expression:uses:136"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:Output:27",
+        "name": "Output",
+        "symbolType": "property",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 27,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_3"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 137
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Output:uses:137"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/arp_spoof/arp_spoof_test.go:Session:110",
+        "name": "Session",
+        "symbolType": "property",
+        "file": "modules/arp_spoof/arp_spoof_test.go",
+        "line": 110,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→test",
+        "criticality": "high",
+        "frequency": "one_of_295"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:Session:references:131"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "modules/net_sniff/net_sniff_context.go:Log:131",
+        "name": "Log",
+        "symbolType": "method",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131,
+        "isExternal": false
+      },
+      "to": {
+        "id": "modules/net_sniff/net_sniff_context.go:SnifferContext:18",
+        "name": "SnifferContext",
+        "symbolType": "struct",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 18,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_7"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/net_sniff/net_sniff_context.go",
+        "line": 131
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_sniff/net_sniff_context.go:Log:131:SnifferContext:references:131"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 89
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:Lock:calls:89"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 90
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:Unlock:calls:90"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:events:58",
+        "name": "events",
+        "symbolType": "property",
+        "file": "session/events.go",
+        "line": 58,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_15"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 96
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:events:uses:96"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:listeners:59",
+        "name": "listeners",
+        "symbolType": "property",
+        "file": "session/events.go",
+        "line": 59,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 104
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:listeners:uses:104"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:EventBus:40",
+        "name": "EventBus",
+        "symbolType": "type",
+        "file": "session/events.go",
+        "line": 40,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 88
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:EventBus:references:88"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:EventPool:53",
+        "name": "EventPool",
+        "symbolType": "struct",
+        "file": "session/events.go",
+        "line": 53,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_22"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 88
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:EventPool:references:88"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Listen:88",
+        "name": "Listen",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 88,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:Event:14",
+        "name": "Event",
+        "symbolType": "struct",
+        "file": "session/events.go",
+        "line": 14,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_11"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 91
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Listen:88:Event:references:91"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Unlisten:108",
+        "name": "Unlisten",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 108,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 109
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Unlisten:108:Lock:calls:109"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Unlisten:108",
+        "name": "Unlisten",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 108,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 110
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Unlisten:108:Unlock:calls:110"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Unlisten:108",
+        "name": "Unlisten",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 108,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:listeners:59",
+        "name": "listeners",
+        "symbolType": "property",
+        "file": "session/events.go",
+        "line": 59,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 112
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Unlisten:108:listeners:uses:112"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Unlisten:108",
+        "name": "Unlisten",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 108,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:EventBus:40",
+        "name": "EventBus",
+        "symbolType": "type",
+        "file": "session/events.go",
+        "line": 40,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "low",
+        "frequency": "one_of_5"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 108
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Unlisten:108:EventBus:references:108"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/events.go:Unlisten:108",
+        "name": "Unlisten",
+        "symbolType": "method",
+        "file": "session/events.go",
+        "line": 108,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/events.go:EventPool:53",
+        "name": "EventPool",
+        "symbolType": "struct",
+        "file": "session/events.go",
+        "line": 53,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_22"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/events.go",
+        "line": 108
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:Unlisten:108:EventPool:references:108"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 165
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Lock:164:Lock:calls:165"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 166
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Lock:164:Lock:calls:166"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Env:76",
+        "name": "Env",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 76,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_68"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 165
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Lock:164:Env:uses:165"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lan:77",
+        "name": "Lan",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 77,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_46"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 166
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Lock:164:Lan:uses:166"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Lock:164",
+        "name": "Lock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 164,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 164
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Lock:164:Session:references:164"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 170
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Unlock:169:Unlock:calls:170"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_152"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 171
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Unlock:169:Unlock:calls:171"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Env:76",
+        "name": "Env",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 76,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "high",
+        "frequency": "one_of_68"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 170
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Unlock:169:Env:uses:170"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Lan:77",
+        "name": "Lan",
+        "symbolType": "property",
+        "file": "session/session.go",
+        "line": 77,
+        "isExternal": false
+      },
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "tier": "usage_contextual",
+      "evidenceClass": "usage_contextual",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_46"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 171
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Unlock:169:Lan:uses:171"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/session.go:Unlock:169",
+        "name": "Unlock",
+        "symbolType": "method",
+        "file": "session/session.go",
+        "line": 169,
+        "isExternal": false
+      },
+      "to": {
+        "id": "session/session.go:Session:72",
+        "name": "Session",
+        "symbolType": "struct",
+        "file": "session/session.go",
+        "line": 72,
+        "isExternal": false
+      },
+      "relationshipType": "references",
+      "confidence": 0.95,
+      "tier": "reference_qualified",
+      "evidenceClass": "reference_qualified",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "consumer",
+        "layerFlow": "core→core",
+        "criticality": "medium",
+        "frequency": "one_of_17"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/session.go",
+        "line": 169
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "symbol",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Unlock:169:Session:references:169"
+    },
+    {
+      "direction": "callee",
+      "from": {
+        "id": "session/script_builtin_runtime.go:jsListeners:19",
+        "name": "jsListeners",
+        "symbolType": "variable",
+        "file": "session/script_builtin_runtime.go",
+        "line": 19,
+        "isExternal": false
+      },
+      "to": {
+        "id": "ext:Map",
+        "name": "Map",
+        "symbolType": "external",
+        "file": "",
+        "line": 0,
+        "isExternal": true
+      },
+      "relationshipType": "instantiates",
+      "confidence": 0.8,
+      "tier": "structural",
+      "evidenceClass": "structural",
+      "enrichment": {
+        "inferredAt": 1795039494302,
+        "role": "producer",
+        "layerFlow": "core→unresolved",
+        "criticality": "low",
+        "frequency": "one_of_0"
+      },
+      "isCrossLanguage": false,
+      "bridgeMechanism": null,
+      "depth": 1,
+      "callSite": {
+        "kind": "call-site",
+        "file": "session/script_builtin_runtime.go",
+        "line": 19
+      },
+      "match": "exact",
+      "matchedMember": null,
+      "targetBasis": "unresolved",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsListeners:19:Map:instantiates:19"
+    }
+  ],
+  "summary": {
+    "totalCallers": 0,
+    "totalCallees": 97,
+    "maxDepthReached": 1,
+    "maxDepth": 2,
+    "crossLanguageEdges": 0,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": true,
+    "truncationReason": "callee-depth-cap-reached",
+    "truncationReasons": [
+      "callee-depth-cap-reached"
+    ],
+    "filterNarrowed": true,
+    "filterReason": "relationshipTypes:calls|extends|implements|imports|instantiates|overrides|references|uses",
+    "edgeLimit": 200,
+    "maxEdges": 1000,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 0,
+    "exactCallees": 28,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 69,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 0,
+    "edgesByType": {
+      "calls": 46,
+      "uses": 32,
+      "references": 16,
+      "instantiates": 3
+    },
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "both",
+      "relationshipTypes": [
+        "calls",
+        "uses",
+        "references",
+        "imports",
+        "instantiates",
+        "overrides",
+        "extends",
+        "implements"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}

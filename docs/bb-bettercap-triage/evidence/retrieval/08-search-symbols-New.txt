@@ -1,0 +1,17 @@
+NewJSResourceRecord [function] modules/dns_proxy/dns_proxy_js_record.go:11 (go)
+NewWiFiModule [function] modules/wifi/wifi.go:74 (go)
+NewJSEDNS0 [function] modules/dns_proxy/dns_proxy_js_record_edns0.go:11 (go)
+NewJSSVCBKeyValue [function] modules/dns_proxy/dns_proxy_js_record_svcb.go:11 (go)
+NewJSQuery [function] modules/dns_proxy/dns_proxy_js_query.go:220 (go)
+AddIfNew [method] network/lan.go:188 (go)
+NewEventsStream [function] modules/events_stream/events_stream.go:43 (go)
+NewSynScanner [function] modules/syn_scan/syn_scan.go:45 (go)
+sessionNew [method] modules/ui/ui/main.js:3082 (javascript)
+hacker-news [class] modules/ui/ui/assets/fontawesome/metadata/icons.yml:8680 (yaml)
+hacker-news-square [class] modules/ui/ui/assets/fontawesome/metadata/icons.yml:8691 (yaml)
+newspaper [class] modules/ui/ui/assets/fontawesome/metadata/icons.yml:12213 (yaml)
+newClient [function] modules/zerogod/zeroconf/client.go:152 (go)
+NewZeroGod [function] modules/zerogod/zerogod.go:24 (go)
+NewModule [function] modules/graph/module.go:59 (go)
+showing 15 of 241 matches
+[match-set] searchMode=symbols totalMatches=241 returned=15 truncated=false staleCount=0

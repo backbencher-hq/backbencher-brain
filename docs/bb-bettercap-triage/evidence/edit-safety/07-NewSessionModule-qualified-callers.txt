@@ -1,0 +1,21 @@
+# Layer-2 proof: 46 package-qualified caller FUNCTIONS have spans containing the call line, yet the plan renames 1 file/1 site.
+## callers of NewSessionModule with correctly-spanned source symbols (first 10)
+source                                                                                              byte_start  byte_end  line_number
+--------------------------------------------------------------------------------------------------  ----------  --------  -----------
+4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigToModule:14                  149         605       23         
+4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigFromModule:33                607         1850      39         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy.go:NewAnyProxy:20              357         1667      22         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof.go:NewArpSpoofer:35            721         3727      37         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_unsupported.go:NewBLERecon:14              212         722       16         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go:NewC2:50                                  953         5148      52         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest.go:NewRestAPI:45                 795         4319      47         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can.go:NewCanModule:29                         461         3223      31         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dhcp6_spoof/dhcp6_spoof.go:NewDHCP6Spoofer:39      820         1614      41         
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/events_stream/events_stream.go:NewEventsStream:43  707         6326      45         
+
+## the call site text in one such caller (span 357..1667 covers line 22)
+func NewAnyProxy(s *session.Session) *AnyProxy {
+	mod := &AnyProxy{
+		SessionModule: session.NewSessionModule("any.proxy", s),
+	}
+

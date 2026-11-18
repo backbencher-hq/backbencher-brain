@@ -1,0 +1,764 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: Options",
+  "summary": "3 file(s) and 3 symbol(s) in scope, 38 cited claim(s) across 5 section(s) from 97 source(s).",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "6 claims, 6 read directly from the index, resting on 3 sources (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "struct Options is defined in skills/installer/installer.go at lines 26-41.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "property Options: *tunnels.TunnelRequestOptions is defined in codespaces/connection/connection.go at lines 30-30.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:codespaces/connection/connection.go:Options:30-30"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:codespaces/connection/connection.go:Options:30-30"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "variable Options is defined in config/config.go at lines 674-674.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:config/config.go:Options:674-674"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:config/config.go:Options:674-674"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:skills/installer/installer.go:Options:26-41",
+        "symbol:codespaces/connection/connection.go:Options:30-30",
+        "symbol:config/config.go:Options:674-674"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "7 claims, 7 read directly from the index, resting on 3 sources (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Options is defined in skills/installer/installer.go at line 26.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Its documentation (the source file on disk) says: Options configures an installation.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options is defined in codespaces/connection/connection.go at line 30 and returns *tunnels.TunnelRequestOptions.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:codespaces/connection/connection.go:Options:30-30"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:codespaces/connection/connection.go:Options:30-30"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options is defined in config/config.go at line 674.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:config/config.go:Options:674-674"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:config/config.go:Options:674-674"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:skills/installer/installer.go:Options:26-41",
+        "symbol:codespaces/connection/connection.go:Options:30-30",
+        "symbol:config/config.go:Options:674-674"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "20 claims, 20 read directly from the index, resting on 20 sources (1 relationship). Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "installer exports Options.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:exports:26:installer:Options"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Host.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:27:Options:Host"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Owner.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:28:Options:Owner"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Repo.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:29:Options:Repo"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Ref.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:30:Options:Ref"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "CodespaceConnection contains Options.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:codespaces/connection/connection.go:contains:30:CodespaceConnection:Options"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains SHA.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:31:Options:SHA"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains PinnedRef.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:32:Options:PinnedRef"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Skills.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:33:Options:Skills"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options references Skill.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:references:33:Options:Skill"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains AgentHost.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:34:Options:AgentHost"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options references AgentHost.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:references:34:Options:AgentHost"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Scope.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:35:Options:Scope"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options references Scope.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:references:35:Options:Scope"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Dir.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:36:Options:Dir"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains GitRoot.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:37:Options:GitRoot"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains HomeDir.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:38:Options:HomeDir"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains Client.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:39:Options:Client"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options references Client.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:references:39:Options:Client"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options contains OnProgress.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:contains:40:Options:OnProgress"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:skills/installer/installer.go:exports:26:installer:Options",
+        "relationship:skills/installer/installer.go:contains:27:Options:Host",
+        "relationship:skills/installer/installer.go:contains:28:Options:Owner",
+        "relationship:skills/installer/installer.go:contains:29:Options:Repo",
+        "relationship:skills/installer/installer.go:contains:30:Options:Ref",
+        "relationship:codespaces/connection/connection.go:contains:30:CodespaceConnection:Options",
+        "relationship:skills/installer/installer.go:contains:31:Options:SHA",
+        "relationship:skills/installer/installer.go:contains:32:Options:PinnedRef",
+        "relationship:skills/installer/installer.go:contains:33:Options:Skills",
+        "relationship:skills/installer/installer.go:references:33:Options:Skill",
+        "relationship:skills/installer/installer.go:contains:34:Options:AgentHost",
+        "relationship:skills/installer/installer.go:references:34:Options:AgentHost",
+        "relationship:skills/installer/installer.go:contains:35:Options:Scope",
+        "relationship:skills/installer/installer.go:references:35:Options:Scope",
+        "relationship:skills/installer/installer.go:contains:36:Options:Dir",
+        "relationship:skills/installer/installer.go:contains:37:Options:GitRoot",
+        "relationship:skills/installer/installer.go:contains:38:Options:HomeDir",
+        "relationship:skills/installer/installer.go:contains:39:Options:Client",
+        "relationship:skills/installer/installer.go:references:39:Options:Client",
+        "relationship:skills/installer/installer.go:contains:40:Options:OnProgress"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "3 claims, 1 read directly from the index; 2 inferred because the index did not resolve the target, resting on 3 sources (1 test).",
+      "facts": [
+        {
+          "classification": "inferred",
+          "statement": "Options is named in the test source codespaces/api/api_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:codespaces/api/api_test.go"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options has indexed test evidence in skills/installer/installer_test.go, codespaces/connection/connection_test.go.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:skills/installer/installer_test.go"
+          ]
+        },
+        {
+          "classification": "inferred",
+          "statement": "Options is named in the test source codespaces/api/api_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:codespaces/api/api_test.go#2"
+          ]
+        }
+      ],
+      "citations": [
+        "test:codespaces/api/api_test.go",
+        "test:skills/installer/installer_test.go",
+        "test:codespaces/api/api_test.go#2"
+      ]
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "2 claims, 2 read directly from the index, resting on 2 sources (1 symbol). What this document cannot say is stated here rather than filled in.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Options has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:codespaces/connection/connection.go:Options:30-30"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Options has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:config/config.go:Options:674-674"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:codespaces/connection/connection.go:Options:30-30",
+        "symbol:config/config.go:Options:674-674"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:skills/installer/installer.go:Options:26-41",
+      "kind": "symbol",
+      "path": "skills/installer/installer.go",
+      "symbol": "Options",
+      "lineStart": 26,
+      "lineEnd": 41,
+      "evidence": "Indexed struct Options",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:codespaces/api/api_test.go",
+      "kind": "test",
+      "path": "codespaces/api/api_test.go",
+      "evidence": "Test source references Options",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "symbol:codespaces/connection/connection.go:Options:30-30",
+      "kind": "symbol",
+      "path": "codespaces/connection/connection.go",
+      "symbol": "Options",
+      "lineStart": 30,
+      "lineEnd": 30,
+      "evidence": "Indexed property Options",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:skills/installer/installer_test.go",
+      "kind": "test",
+      "path": "skills/installer/installer_test.go",
+      "evidence": "Test file references Options",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "symbol:config/config.go:Options:674-674",
+      "kind": "symbol",
+      "path": "config/config.go",
+      "symbol": "Options",
+      "lineStart": 674,
+      "lineEnd": 674,
+      "evidence": "Indexed variable Options",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:codespaces/api/api_test.go#2",
+      "kind": "test",
+      "path": "codespaces/api/api_test.go",
+      "evidence": "Test source references Options",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:exports:26:installer:Options",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 26,
+      "relationshipType": "exports",
+      "evidence": "exports edge between installer and Options",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:27:Options:Host",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 27,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Host",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:28:Options:Owner",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 28,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Owner",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:29:Options:Repo",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 29,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Repo",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:30:Options:Ref",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 30,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Ref",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:codespaces/connection/connection.go:contains:30:CodespaceConnection:Options",
+      "kind": "relationship",
+      "path": "codespaces/connection/connection.go",
+      "lineStart": 30,
+      "relationshipType": "contains",
+      "evidence": "contains edge between CodespaceConnection and Options",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:31:Options:SHA",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 31,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and SHA",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:32:Options:PinnedRef",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 32,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and PinnedRef",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:33:Options:Skills",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 33,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Skills",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:references:33:Options:Skill",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 33,
+      "relationshipType": "references",
+      "evidence": "references edge between Options and Skill",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:34:Options:AgentHost",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 34,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and AgentHost",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:references:34:Options:AgentHost",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 34,
+      "relationshipType": "references",
+      "evidence": "references edge between Options and AgentHost",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:35:Options:Scope",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 35,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Scope",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:references:35:Options:Scope",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 35,
+      "relationshipType": "references",
+      "evidence": "references edge between Options and Scope",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:36:Options:Dir",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 36,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Dir",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:37:Options:GitRoot",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 37,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and GitRoot",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:38:Options:HomeDir",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 38,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and HomeDir",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:39:Options:Client",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 39,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and Client",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:references:39:Options:Client",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 39,
+      "relationshipType": "references",
+      "evidence": "references edge between Options and Client",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:contains:40:Options:OnProgress",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 40,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Options and OnProgress",
+      "freshness": "fresh",
+      "confidence": 1
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "No docstring was indexed for Options and none is present in the comment style this tool reads.",
+      "reason": "not-observed",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 20 at detail \"standard\", so 68 of 88 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 2
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "2b7ee3a319a5a338beb322b58a3a9379",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 6501,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 20,
+      "sections": [
+        {
+          "id": "api",
+          "available": 6,
+          "capped": 6,
+          "droppedForBudget": 0,
+          "emitted": 6
+        },
+        {
+          "id": "behavior",
+          "available": 7,
+          "capped": 7,
+          "droppedForBudget": 0,
+          "emitted": 7
+        },
+        {
+          "id": "dependencies",
+          "available": 88,
+          "capped": 20,
+          "droppedForBudget": 0,
+          "emitted": 20
+        },
+        {
+          "id": "tests",
+          "available": 3,
+          "capped": 3,
+          "droppedForBudget": 0,
+          "emitted": 3
+        },
+        {
+          "id": "limitations",
+          "available": 2,
+          "capped": 2,
+          "droppedForBudget": 0,
+          "emitted": 2
+        }
+      ]
+    },
+    "warnings": [
+      "71 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd",
+    "projectPath": "/home/ishaq2321/bb_tests/repositories/gh-cli/internal",
+    "snapshotId": "2b7ee3a319a5a338beb322b58a3a9379",
+    "generatedAt": "2026-11-18T22:37:36.297Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "go",
+    "canonicalPath": "Options",
+    "slugs": [
+      "symbol",
+      "Options"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 5,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

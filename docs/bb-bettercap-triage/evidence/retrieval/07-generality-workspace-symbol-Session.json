@@ -1,0 +1,52 @@
+{
+  "matches": [
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:script/m13/verify-visualize-browser.ts:Session:178",
+      "fileId": "/home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-browser.ts",
+      "name": "Session",
+      "symbolType": "interface",
+      "lineStart": 178,
+      "byteStart": 10692,
+      "byteEnd": 11299,
+      "language": "typescript",
+      "relativePath": "script/m13/verify-visualize-browser.ts",
+      "stale": false
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44",
+      "fileId": "/home/ishaq2321/mcp/backbencher-brain/.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "name": "Session",
+      "symbolType": "type",
+      "lineStart": 44,
+      "byteStart": 1128,
+      "byteEnd": 1200,
+      "language": "typescript",
+      "relativePath": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "stale": false
+    },
+    {
+      "id": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467",
+      "fileId": "/home/ishaq2321/mcp/backbencher-brain/.corpus/webpack/test/cases/json/weird-properties/globals.json",
+      "name": "Session",
+      "symbolType": "property",
+      "lineStart": 1467,
+      "byteStart": 34566,
+      "byteEnd": 34582,
+      "language": "json",
+      "relativePath": ".corpus/webpack/test/cases/json/weird-properties/globals.json",
+      "stale": false
+    }
+  ],
+  "found": true,
+  "totalMatches": 3,
+  "returned": 3,
+  "truncated": false,
+  "freshness": {
+    "fresh": 3,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

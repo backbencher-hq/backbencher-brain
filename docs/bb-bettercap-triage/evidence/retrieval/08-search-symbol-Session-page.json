@@ -1,0 +1,30 @@
+{
+  "matches": [
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Session:67",
+      "fileId": "/home/ishaq2321/bettercap/modules/net_probe/net_probe_test.go",
+      "name": "Session",
+      "symbolType": "property",
+      "lineStart": 67,
+      "byteStart": 1136,
+      "byteEnd": 1151,
+      "language": "go",
+      "relativePath": "modules/net_probe/net_probe_test.go",
+      "stale": false
+    }
+  ],
+  "found": true,
+  "totalMatches": 5,
+  "returned": 1,
+  "truncated": true,
+  "truncationReason": "page-limit",
+  "nextOffset": 4,
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

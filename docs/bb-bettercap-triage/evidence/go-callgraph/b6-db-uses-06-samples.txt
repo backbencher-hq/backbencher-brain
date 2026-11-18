@@ -1,0 +1,31 @@
+=== sample uses @0.6 rows (metadata full)
+src                    tgt       ttype     src_file                                            tgt_file                                             is_cross_file  meta                                                                                                                                                                                                                                                                                                        
+---------------------  --------  --------  --------------------------------------------------  ---------------------------------------------------  -------------  ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+defineIcons            icon      variable  modules/ui/ui/assets/fontawesome/js/brands.js       modules/ui/ui/assets/fontawesome/js/all.js           1              {"isFieldAccess":true,"receiverRoot":"icon","evidenceClass":"usage_contextual","layerFlow":"ui→ui","criticality":"low","frequency":"one_of_9","role":"consumer","inferredAt":1795039494302}                                                                                                                 
+defineIcons            styles    variable  modules/ui/ui/assets/fontawesome/js/brands.js       modules/ui/ui/assets/fontawesome/metadata/icons.yml  1              {"isFieldAccess":true,"receiverRoot":"namespace","evidenceClass":"usage_contextual","layerFlow":"ui→ui","criticality":"medium","frequency":"one_of_21","role":"consumer","inferredAt":1795039494302}                                                                                                        
+_defineProperties      key       class     modules/ui/ui/assets/fontawesome/js/fontawesome.js  modules/ui/ui/assets/fontawesome/metadata/icons.yml  1              {"isFieldAccess":true,"receiverRoot":"descriptor","evidenceClass":"usage_contextual","layerFlow":"ui→ui","criticality":"medium","frequency":"one_of_18","role":"consumer","inferredAt":1795039494302}                                                                                                       
+_iterableToArray       toString  method    modules/ui/ui/assets/fontawesome/js/fontawesome.js  modules/ui/ui/polyfills.js                           1              {"isFieldAccess":true,"receiverRoot":"Object","isExternalTarget":true,"externalReason":"host-global-member","externalClaimReason":"ECMA-262 §20.1 Object (member of a host global; receiver root `Object`)","externalReceiver":"Object","evidenceClass":"usage_contextual","layerFlow":"ui→ui","criticality"
+_iterableToArrayLimit  done      property  modules/ui/ui/assets/fontawesome/js/fontawesome.js  modules/ble/ble_recon.go                             1              {"isFieldAccess":true,"evidenceClass":"usage_contextual","layerFlow":"ui→core","criticality":"medium","frequency":"one_of_11","role":"consumer","inferredAt":1795039494302}                                                                                                                                 
+invokeCallback         owner     property  modules/ui/ui/assets/fontawesome/js/fontawesome.js  modules/utils/view_selector.go                       1              {"isFieldAccess":true,"receiverRoot":"subscriber","evidenceClass":"usage_contextual","layerFlow":"ui→core","criticality":"low","frequency":"one_of_6","role":"consumer","inferredAt":1795039494302}                                                                                                         
+
+=== uses @0.6 aggregate: cross-file, target types, files
+ttype      n     cross_file
+---------  ----  ----------
+function   2542  48        
+method     1240  49        
+property   532   516       
+class      220   206       
+struct     135   135       
+variable   79    70        
+module     44    44        
+namespace  2     0         
+
+=== uses @0.6 distinct source files
+src_files  tgt_files
+---------  ---------
+9          65       
+
+=== distinct metadata keys on uses@0.6
+n      nullmeta  hasev
+-----  --------  -----
+32123  0         32123

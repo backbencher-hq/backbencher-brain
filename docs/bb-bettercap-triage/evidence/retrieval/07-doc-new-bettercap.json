@@ -1,0 +1,694 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: New",
+  "summary": "2 file(s) and 2 symbol(s) in scope, 32 cited claim(s) across 5 section(s) from 108 source(s).",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "4 claims, 4 read directly from the index, resting on 2 sources (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "property New: gateway is defined in session/session_routing.go at lines 20-20.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session_routing.go:New:20-20"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session_routing.go:New:20-20"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "function New(): (*Session, error) is defined in session/session.go at lines 155-162; the index records no parameter list for it, so its arguments are not described here.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:New:155-162"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:New:155-162"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/session_routing.go:New:20-20",
+        "symbol:session/session.go:New:155-162"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "4 claims, 4 read directly from the index, resting on 2 sources (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "New is defined in session/session_routing.go at line 20 and returns gateway.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session_routing.go:New:20-20"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session_routing.go:New:20-20"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New is defined in session/session.go at line 155 and returns (*Session, error).",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:New:155-162"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New has a measured complexity of 2.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:New:155-162"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/session_routing.go:New:20-20",
+        "symbol:session/session.go:New:155-162"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "20 claims, 20 read directly from the index, resting on 20 sources (1 relationship). Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "TestBtoa calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:js/data_test.go:calls:12:TestBtoa:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "ErrEmptyExpression calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:session/events_ignore_list.go:calls:14:ErrEmptyExpression:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "errNotReplaying calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/api_rest/api_rest_replay.go:calls:14:errNotReplaying:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "TestReadDir calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:js/fs_test.go:calls:15:TestReadDir:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "errNoRecon calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/wifi/wifi_ap.go:calls:15:errNoRecon:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "wifiBruteforce calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/wifi/wifi_bruteforce_darwin.go:calls:15:wifiBruteforce:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "errNotRecording calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/api_rest/api_rest_record.go:calls:16:errNotRecording:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "jsRuntime calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:session/script_builtin_runtime.go:calls:17:jsRuntime:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "ErrNoCID calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:packets/dhcp6.go:calls:18:ErrNoCID:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "createMockSession calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/update/update_test.go:calls:18:createMockSession:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "errRecon calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/wifi/wifi_bruteforce.go:calls:18:errRecon:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "ErrNoIfaces calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:network/net.go:calls:19:ErrNoIfaces:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "errAlreadyRunning calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/wifi/wifi_bruteforce.go:calls:19:errAlreadyRunning:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "ErrNoGateway calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:network/net.go:calls:20:ErrNoGateway:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "errNotRunning calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/wifi/wifi_bruteforce.go:calls:20:errNotRunning:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "main calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:main.go:calls:21:main:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "cryptoSha1 calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:js/crypto.go:calls:21:cryptoSha1:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "viewGatewayEvent uses New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/events_stream/events_view_gateway.go:uses:21:viewGatewayEvent:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "ErrNoCrypt calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:packets/krb5.go:calls:22:ErrNoCrypt:New"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "ErrReqData calls New.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:packets/krb5.go:calls:23:ErrReqData:New"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:js/data_test.go:calls:12:TestBtoa:New",
+        "relationship:session/events_ignore_list.go:calls:14:ErrEmptyExpression:New",
+        "relationship:modules/api_rest/api_rest_replay.go:calls:14:errNotReplaying:New",
+        "relationship:js/fs_test.go:calls:15:TestReadDir:New",
+        "relationship:modules/wifi/wifi_ap.go:calls:15:errNoRecon:New",
+        "relationship:modules/wifi/wifi_bruteforce_darwin.go:calls:15:wifiBruteforce:New",
+        "relationship:modules/api_rest/api_rest_record.go:calls:16:errNotRecording:New",
+        "relationship:session/script_builtin_runtime.go:calls:17:jsRuntime:New",
+        "relationship:packets/dhcp6.go:calls:18:ErrNoCID:New",
+        "relationship:modules/update/update_test.go:calls:18:createMockSession:New",
+        "relationship:modules/wifi/wifi_bruteforce.go:calls:18:errRecon:New",
+        "relationship:network/net.go:calls:19:ErrNoIfaces:New",
+        "relationship:modules/wifi/wifi_bruteforce.go:calls:19:errAlreadyRunning:New",
+        "relationship:network/net.go:calls:20:ErrNoGateway:New",
+        "relationship:modules/wifi/wifi_bruteforce.go:calls:20:errNotRunning:New",
+        "relationship:main.go:calls:21:main:New",
+        "relationship:js/crypto.go:calls:21:cryptoSha1:New",
+        "relationship:modules/events_stream/events_view_gateway.go:uses:21:viewGatewayEvent:New",
+        "relationship:packets/krb5.go:calls:22:ErrNoCrypt:New",
+        "relationship:packets/krb5.go:calls:23:ErrReqData:New"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "2 claims, 1 read directly from the index; 1 inferred because the index did not resolve the target, resting on 2 sources (1 test).",
+      "facts": [
+        {
+          "classification": "inferred",
+          "statement": "New is named in the test source caplets/caplet_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:caplets/caplet_test.go"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New has indexed test evidence in caplets/caplet_test.go, js/fs_test.go, js/data_test.go, modules/any_proxy/any_proxy_test.go, packets/krb5_test.go, modules/c2/c2_test.go, modules/api_rest/api_rest_test.go, modules/can/can_test.go, modules/ble/ble_recon_test.go, modules/ticker/ticker_test.go.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:caplets/caplet_test.go#2"
+          ]
+        }
+      ],
+      "citations": [
+        "test:caplets/caplet_test.go",
+        "test:caplets/caplet_test.go#2"
+      ]
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "2 claims, 2 read directly from the index, resting on 2 sources (1 symbol). What this document cannot say is stated here rather than filled in.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "New has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session_routing.go:New:20-20"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "New has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:New:155-162"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/session_routing.go:New:20-20",
+        "symbol:session/session.go:New:155-162"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:session/session_routing.go:New:20-20",
+      "kind": "symbol",
+      "path": "session/session_routing.go",
+      "symbol": "New",
+      "lineStart": 20,
+      "lineEnd": 20,
+      "evidence": "Indexed property New",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:caplets/caplet_test.go",
+      "kind": "test",
+      "path": "caplets/caplet_test.go",
+      "evidence": "Test source references New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "symbol:session/session.go:New:155-162",
+      "kind": "symbol",
+      "path": "session/session.go",
+      "symbol": "New",
+      "lineStart": 155,
+      "lineEnd": 162,
+      "evidence": "Indexed function New",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:caplets/caplet_test.go#2",
+      "kind": "test",
+      "path": "caplets/caplet_test.go",
+      "evidence": "Test file references New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:js/data_test.go:calls:12:TestBtoa:New",
+      "kind": "relationship",
+      "path": "js/data_test.go",
+      "lineStart": 12,
+      "relationshipType": "calls",
+      "evidence": "calls edge between TestBtoa and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:session/events_ignore_list.go:calls:14:ErrEmptyExpression:New",
+      "kind": "relationship",
+      "path": "session/events_ignore_list.go",
+      "lineStart": 14,
+      "relationshipType": "calls",
+      "evidence": "calls edge between ErrEmptyExpression and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/api_rest/api_rest_replay.go:calls:14:errNotReplaying:New",
+      "kind": "relationship",
+      "path": "modules/api_rest/api_rest_replay.go",
+      "lineStart": 14,
+      "relationshipType": "calls",
+      "evidence": "calls edge between errNotReplaying and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:js/fs_test.go:calls:15:TestReadDir:New",
+      "kind": "relationship",
+      "path": "js/fs_test.go",
+      "lineStart": 15,
+      "relationshipType": "calls",
+      "evidence": "calls edge between TestReadDir and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/wifi/wifi_ap.go:calls:15:errNoRecon:New",
+      "kind": "relationship",
+      "path": "modules/wifi/wifi_ap.go",
+      "lineStart": 15,
+      "relationshipType": "calls",
+      "evidence": "calls edge between errNoRecon and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/wifi/wifi_bruteforce_darwin.go:calls:15:wifiBruteforce:New",
+      "kind": "relationship",
+      "path": "modules/wifi/wifi_bruteforce_darwin.go",
+      "lineStart": 15,
+      "relationshipType": "calls",
+      "evidence": "calls edge between wifiBruteforce and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/api_rest/api_rest_record.go:calls:16:errNotRecording:New",
+      "kind": "relationship",
+      "path": "modules/api_rest/api_rest_record.go",
+      "lineStart": 16,
+      "relationshipType": "calls",
+      "evidence": "calls edge between errNotRecording and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:session/script_builtin_runtime.go:calls:17:jsRuntime:New",
+      "kind": "relationship",
+      "path": "session/script_builtin_runtime.go",
+      "lineStart": 17,
+      "relationshipType": "calls",
+      "evidence": "calls edge between jsRuntime and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:packets/dhcp6.go:calls:18:ErrNoCID:New",
+      "kind": "relationship",
+      "path": "packets/dhcp6.go",
+      "lineStart": 18,
+      "relationshipType": "calls",
+      "evidence": "calls edge between ErrNoCID and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/update/update_test.go:calls:18:createMockSession:New",
+      "kind": "relationship",
+      "path": "modules/update/update_test.go",
+      "lineStart": 18,
+      "relationshipType": "calls",
+      "evidence": "calls edge between createMockSession and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/wifi/wifi_bruteforce.go:calls:18:errRecon:New",
+      "kind": "relationship",
+      "path": "modules/wifi/wifi_bruteforce.go",
+      "lineStart": 18,
+      "relationshipType": "calls",
+      "evidence": "calls edge between errRecon and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:network/net.go:calls:19:ErrNoIfaces:New",
+      "kind": "relationship",
+      "path": "network/net.go",
+      "lineStart": 19,
+      "relationshipType": "calls",
+      "evidence": "calls edge between ErrNoIfaces and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/wifi/wifi_bruteforce.go:calls:19:errAlreadyRunning:New",
+      "kind": "relationship",
+      "path": "modules/wifi/wifi_bruteforce.go",
+      "lineStart": 19,
+      "relationshipType": "calls",
+      "evidence": "calls edge between errAlreadyRunning and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:network/net.go:calls:20:ErrNoGateway:New",
+      "kind": "relationship",
+      "path": "network/net.go",
+      "lineStart": 20,
+      "relationshipType": "calls",
+      "evidence": "calls edge between ErrNoGateway and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/wifi/wifi_bruteforce.go:calls:20:errNotRunning:New",
+      "kind": "relationship",
+      "path": "modules/wifi/wifi_bruteforce.go",
+      "lineStart": 20,
+      "relationshipType": "calls",
+      "evidence": "calls edge between errNotRunning and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:main.go:calls:21:main:New",
+      "kind": "relationship",
+      "path": "main.go",
+      "lineStart": 21,
+      "relationshipType": "calls",
+      "evidence": "calls edge between main and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:js/crypto.go:calls:21:cryptoSha1:New",
+      "kind": "relationship",
+      "path": "js/crypto.go",
+      "lineStart": 21,
+      "relationshipType": "calls",
+      "evidence": "calls edge between cryptoSha1 and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/events_stream/events_view_gateway.go:uses:21:viewGatewayEvent:New",
+      "kind": "relationship",
+      "path": "modules/events_stream/events_view_gateway.go",
+      "lineStart": 21,
+      "relationshipType": "uses",
+      "evidence": "uses edge between viewGatewayEvent and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:packets/krb5.go:calls:22:ErrNoCrypt:New",
+      "kind": "relationship",
+      "path": "packets/krb5.go",
+      "lineStart": 22,
+      "relationshipType": "calls",
+      "evidence": "calls edge between ErrNoCrypt and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:packets/krb5.go:calls:23:ErrReqData:New",
+      "kind": "relationship",
+      "path": "packets/krb5.go",
+      "lineStart": 23,
+      "relationshipType": "calls",
+      "evidence": "calls edge between ErrReqData and New",
+      "freshness": "unknown",
+      "confidence": 0.7
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "No docstring was indexed for New and none is present in the comment style this tool reads.",
+      "reason": "not-observed",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 20 at detail \"standard\", so 82 of 102 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 2
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "19c43df39d20653a26b9e9dccefd1838",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 5732,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 20,
+      "sections": [
+        {
+          "id": "api",
+          "available": 4,
+          "capped": 4,
+          "droppedForBudget": 0,
+          "emitted": 4
+        },
+        {
+          "id": "behavior",
+          "available": 4,
+          "capped": 4,
+          "droppedForBudget": 0,
+          "emitted": 4
+        },
+        {
+          "id": "dependencies",
+          "available": 102,
+          "capped": 20,
+          "droppedForBudget": 0,
+          "emitted": 20
+        },
+        {
+          "id": "tests",
+          "available": 2,
+          "capped": 2,
+          "droppedForBudget": 0,
+          "emitted": 2
+        },
+        {
+          "id": "limitations",
+          "available": 2,
+          "capped": 2,
+          "droppedForBudget": 0,
+          "emitted": 2
+        }
+      ]
+    },
+    "warnings": [
+      "84 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "projectPath": "/home/ishaq2321/bettercap",
+    "snapshotId": "19c43df39d20653a26b9e9dccefd1838",
+    "generatedAt": "2026-11-18T22:35:28.051Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "go",
+    "canonicalPath": "New",
+    "slugs": [
+      "symbol",
+      "New"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 19,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "searchMode": "file",
+  "file": ".corpus/axios/index.js",
+  "fileId": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.corpus/axios/index.js",
+  "language": "javascript",
+  "content": "import axios from './lib/axios.js';\n\n// This module is intended to unwrap Axios default export as named.\n// Keep top-level export same with static properties\n// so that it can keep same with es module or cjs\nconst {\n  Axios,\n  AxiosError,\n  CanceledError,\n  isCancel,\n  CancelToken,\n  VERSION,\n  all,\n  Cancel,\n  isAxiosError,\n  spread,\n  toFormData,\n  AxiosHeaders,\n  HttpStatusCode,\n  formToJSON,\n  getAdapter,\n  mergeConfig,\n  create,\n} = axios;\n\nexport {\n  axios as default,\n  create,\n  Axios,\n  AxiosError,\n  CanceledError,\n  isCancel,\n  CancelToken,\n  VERSION,\n  all,\n  Cancel,\n  isAxiosError,\n  spread,\n  toFormData,\n  AxiosHeaders,\n  HttpStatusCode,\n  formToJSON,\n  getAdapter,\n  mergeConfig,\n};\n",
+  "contentLength": 704,
+  "truncated": false,
+  "totalMatches": 1,
+  "stale": false,
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

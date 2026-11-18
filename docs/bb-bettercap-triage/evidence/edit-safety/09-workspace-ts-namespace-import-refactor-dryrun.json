@@ -1,0 +1,39 @@
+{
+  "mode": "refactor",
+  "dryRun": true,
+  "changes": [
+    {
+      "path": "/home/ishaq2321/mcp/backbencher-brain/src/tool/brain-log.ts",
+      "before": "// Brain log shim — wraps our util/log\nimport { createLogger } from \"../util/log.js\"\n\nconst logger = createLogger(\"brain\")\n\nexport function create(tags?: Record<string, any>) {\n  const service = tags?.service ?? \"brain\"\n  return createLogger(service)\n}\n\n// M40.A9 purge: setQuiet() removed — zero callers; BB_QUIET was written here\n// but never read anywhere (a phantom env var). Quiet is BB_LOG_LEVEL=warn\n// via the CLI --quiet flag (M22.W1), which workers inherit.\n\nexport function setTuiActive(_active: boolean) {}\n\nexport default { create, setTuiActive }\n",
+      "after": "// Brain log shim — wraps our util/log\nimport { createLogger } from \"../util/log.js\"\n\nconst logger = createLogger(\"brain\")\n\nexport function createLog(tags?: Record<string, any>) {\n  const service = tags?.service ?? \"brain\"\n  return createLogger(service)\n}\n\n// M40.A9 purge: setQuiet() removed — zero callers; BB_QUIET was written here\n// but never read anywhere (a phantom env var). Quiet is BB_LOG_LEVEL=warn\n// via the CLI --quiet flag (M22.W1), which workers inherit.\n\nexport function setTuiActive(_active: boolean) {}\n\nexport default { create, setTuiActive }\n"
+    }
+  ],
+  "formatted": false,
+  "validated": false,
+  "reindexed": false,
+  "warnings": [
+    "refactor create → createLog: 1 site(s) across 1 file(s)"
+  ],
+  "summary": {
+    "renamedFiles": 1,
+    "renamedSites": 1
+  },
+  "envelope": {
+    "atomic": true,
+    "entries": [
+      {
+        "path": "src/tool/brain-log.ts",
+        "entry": 0,
+        "mode": "refactor",
+        "planned": true,
+        "committed": false,
+        "restored": false,
+        "bytesBefore": 564,
+        "bytesAfter": null
+      }
+    ],
+    "committed": 0,
+    "restored": 0,
+    "failed": []
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "symbol": "makeIconMasking",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+    "name": "makeIconMasking",
+    "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+    "filePath": "/home/ishaq2321/bettercap/modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+    "line": 742,
+    "symbolType": "function",
+    "language": "javascript"
+  },
+  "rootStale": false,
+  "rootMatch": {
+    "requested": "makeIconMasking",
+    "via": "exact",
+    "nameMatches": 1
+  },
+  "resolution": {
+    "through": "direct"
+  },
+  "rule": {
+    "relationshipTypes": [
+      "uses",
+      "calls",
+      "imports"
+    ],
+    "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+    "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+    "maxDepth": 5
+  },
+  "budget": {
+    "maxNodes": 200,
+    "maxDepth": 5,
+    "totalScanCeiling": 50000,
+    "totalExpansionCeiling": 2000,
+    "totalTimeCeilingMs": 2991,
+    "walkTimeCeilingMs": 1500,
+    "callDeadlineMs": 3000
+  },
+  "traversal": {
+    "depthReached": 0,
+    "engineTruncated": false,
+    "engineTruncationReason": null,
+    "edgeLimit": 200,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "returnedCallers": 0,
+    "walkTimeBudgetMs": 1500,
+    "walkTimeExhausted": false,
+    "totalsAreLowerBounds": false,
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    }
+  },
+  "cascade": {
+    "exact": 0,
+    "member": 0,
+    "rangeFolded": 0
+  },
+  "countVerification": {
+    "ran": false,
+    "skipped": false,
+    "timedOut": false,
+    "boundarySuspect": false,
+    "complete": null
+  },
+  "reproducible": true,
+  "impact": [],
+  "shownCount": 0,
+  "directCount": 0,
+  "totalCountIfKnown": 0,
+  "truncated": false,
+  "truncationReason": null,
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

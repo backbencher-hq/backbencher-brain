@@ -1,0 +1,39 @@
+# bettercap DB, READ-ONLY. HEAD be4c0ef25, bb 0.1.6, 2026-11-18
+## 1) symbol rows: module main vs function main vs LoadModules
+id                                                                          name         symbol_type  line_start  line_end  byte_start  byte_end
+--------------------------------------------------------------------------  -----------  -----------  ----------  --------  ----------  --------
+4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1                     main         module       1           1         0           12      
+4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:20                    main         function     20          99        315         2610    
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42  LoadModules  function     42          78        1902        3419    
+
+## 2) relationships targeting LoadModules (source_symbol_id + metadata)
+source_symbol_id                                                                                  relationship_type  confidence  line_number  metadata                                                                                                                                                                                                                                                                                                                                                                                                                                    
+------------------------------------------------------------------------------------------------  -----------------  ----------  -----------  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1                                           calls              0.8         47           {"relationshipType":"go_function_call","callExpression":"modules.LoadModules","isPackageQualified":true,"evidenceClass":"usage_contextual","reasonCode":"callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file","bindReason":"callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file","layerFlow":"core→core","criticality":"low","frequency":"one_of_3","role":"consumer","inferredAt":1795039494302}           
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:modules:1                             exports            1.0         42           {"relationshipType":"go_exported_identifier","exportForm":"capitalized_package_scope_name","symbolKind":"function","evidenceClass":"structural","bindReason":"exported_name_recorded_as_a_leaf_whose_owning_package_is_not_the_target","layerFlow":"core→core","criticality":"low","frequency":"one_of_3","inferredAt":1795039494302}                                                                                                       
+4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7  calls              0.8         16           {"relationshipType":"go_function_call","callExpression":"LoadModules","isPackageQualified":false,"evidenceClass":"usage_contextual","reasonCode":"callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file","bindReason":"callee_recorded_as_a_leaf_name_whose_owner_is_not_resolved_per_file","layerFlow":"test→core","criticality":"low","frequency":"one_of_3","isTestCode":true,"role":"consumer","inferredAt":1795039494302}
+
+## 3) brain_import rows for main.go (is_external for every Go import)
+imported_name  imported_as  import_path                                is_external  line_number
+-------------  -----------  -----------------------------------------  -----------  -----------
+fmt                         fmt                                        1            4          
+io                          io                                         1            5          
+os                          os                                         1            6          
+strings                     strings                                    1            7          
+runtime                     runtime                                    1            9          
+core                        github.com/bettercap/bettercap/v2/core     1            11         
+log                         github.com/bettercap/bettercap/v2/log      1            12         
+modules                     github.com/bettercap/bettercap/v2/modules  1            13         
+session                     github.com/bettercap/bettercap/v2/session  1            14         
+str                         github.com/evilsocket/islazy/str           1            16         
+tui                         github.com/evilsocket/islazy/tui           1            17         
+
+## 4) package-qualified call rows whose SOURCE symbol is a module: all in main.go
+relative_path  name  line_start  byte_start  byte_end  c 
+-------------  ----  ----------  ----------  --------  --
+main.go        main  1           0           12        20
+
+## 5) relationships by source symbol: function main has ZERO
+source_symbol_id                                         c 
+-------------------------------------------------------  --
+4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1  44

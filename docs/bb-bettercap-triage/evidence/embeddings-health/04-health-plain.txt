@@ -1,0 +1,14 @@
+project: /home/ishaq2321/bettercap
+projectId: 4c7590f1cba319aac298a50453c0ec440f2dc857
+files=1972 symbols=55785 relationships=111408 imports=1948 syntaxErrors=24
+freshness: 200 fresh / 0 of 200 sampled stale (~0 of 1972 estimated) / 0 missing (200/1972 checked, sampled — SAMPLE, not a census)
+freshness why: 200 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh) — over the 200-file SAMPLE, not the project
+embeddings: 23925 rows / 23925 entities / 42.9% of symbols
+models: local-word-vectors-v3:23924[50] nvidia/nemotron-3.5-embed-8b:1[4096]
+schema: 1 (m13-universal-brain), 15 tables
+index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written status=complete errors=0
+index run: schemaVersion=1 runs=2 latestWallMs=262910 (the last INDEX RUN, not this call)
+this call: total=201ms (freshness=20ms aggregates=51ms)
+runtime: node v22.22.1 / sqlite
+warning: [SYNTAX_ERRORS] 24 indexed files have syntax errors: modules/ui/ui/assets/fontawesome/less/_animated.less, modules/ui/ui/assets/fontawesome/less/_bordered-pulled.less, modules/ui/ui/assets/fontawesome/less/_core.less, modules/ui/ui/assets/fontawesome/less/_fixed-width.less, modules/ui/ui/assets/fontawesome/less/_icons.less, modules/ui/ui/assets/fontawesome/less/_larger.less, modules/ui/ui/assets/fontawesome/less/_list.less, modules/ui/ui/assets/fontawesome/less/_mixins.less…
+error: [INCOMPLETE_INDEX] the last index run recorded 1972 of 1973 files as indexed — 1 file(s) were found by the walk but never written, so the index is INCOMPLETE even though the status field says "complete". counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.

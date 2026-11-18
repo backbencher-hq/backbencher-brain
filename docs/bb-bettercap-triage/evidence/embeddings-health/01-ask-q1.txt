@@ -1,0 +1,57 @@
+answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from embeddings.
+Note: these came from a KEYWORD match on every word you used (bettercap, discover) of your query, not from understanding it. Treat the list below as places that happen to contain those words, not as an answer.
+
+Closest matches from the AST index for your query (search results, not a verified answer):
+
+--- File: modules/wifi/wifi_recon_handshakes.go (Line 41) ---
+[method] discoverHandshakes
+```
+func (mod *WiFiModule) discoverHandshakes(radiotap *layers.RadioTap, dot11 *layers.Dot11, packet gop
+```
+
+--- File: modules/wifi/wifi_recon.go (Line 125) ---
+[method] discoverProbes
+```
+func (mod *WiFiModule) discoverProbes(radiotap *layers.RadioTap, dot11 *layers.Dot11, packet gopacke
+```
+
+--- File: modules/zerogod/zerogod_discovery.go (Line 34) ---
+[method] onServiceDiscovered
+```
+func (mod *ZeroGod) onServiceDiscovered(svc *zeroconf.ServiceEntry) {
+```
+
+--- File: modules/wifi/wifi_recon.go (Line 63) ---
+[method] discoverAccessPoints
+```
+func (mod *WiFiModule) discoverAccessPoints(radiotap *layers.RadioTap, dot11 *layers.Dot11, packet g
+```
+
+--- File: modules/zerogod/zerogod_discovery.go (Line 298) ---
+[method] startDiscovery
+```
+func (mod *ZeroGod) startDiscovery(service string) (err error) {
+```
+
+
+— Use bb_search for precise symbol lookup: "bb_search(query='how does bettercap discover and load modules at startup')".
+— Use bb_search with mode="file" to read any indexed file.
+
+confidence: 0.2 (declared floor; no score was computed on that path)
+
+1. modules/wifi/wifi_recon_handshakes.go:41
+   discoverHandshakes
+2. modules/wifi/wifi_recon.go:125
+   discoverProbes
+3. modules/zerogod/zerogod_discovery.go:34
+   onServiceDiscovered
+4. modules/wifi/wifi_recon.go:63
+   discoverAccessPoints
+5. modules/zerogod/zerogod_discovery.go:298
+   startDiscovery
+
+[retrieval: method=keyword-fallback, queryModel=none, indexModel=none, embeddingCoverage=0% (1/55785 symbols embedded in this model space), libraryCoverage=43% (23925/55785 across all models), reason=no-vector-above-threshold, scanned=1/20000, filtered=1, candidates=0]
+
+[bounds: returned=5, totalMatches=0, truncated=false]
+
+[provenance: semantic_candidate via quick-answer@intelligence (retrieval); unknowns: no-vector-above-threshold]

@@ -1,0 +1,7 @@
+⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING
+tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+not scanned by bb_security (no executable source model): css, html, json, markdown, scss, xml, yaml — stylesheet text; no executable source/sink surface
+leads tier: 5 language(s) present; lexical output only
+security leads: 0 stored lead(s) (none stored for this project — declared empty, not a clean result)
+  no stored leads on this page
+[leads: showing 0 of 0; offset 0; page size 5; tier=leads]

@@ -1,0 +1,5 @@
+Client => found true total 2 kinds property@skills/installer/installer.go:39, property@codespaces/connection/connection.go:21
+Config => found true total 1 kinds interface@gh/gh.go:32
+Options => found true total 3 kinds variable@config/config.go:674, struct@skills/installer/installer.go:26, property@codespaces/connection/connection.go:30
+Run => found true total 4 kinds method@run/run.go:19, method@run/run.go:51, method@run/stub.go:123, method@prompter/multi_select_with_search.go:400
+New => found true total 5 kinds function@browser/browser.go:13, function@tableprinter/table_printer.go:47, function@ghrepo/repo.go:21, function@prompter/prompter.go:55, function@codespaces/api/api.go:72

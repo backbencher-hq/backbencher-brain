@@ -1,0 +1,31 @@
+# read-only sqlite3 queries on bettercap index (DB path: /home/ishaq2321/.bb/projects/4c7590f1cba319aac298a50453c0ec440f2dc857/brain.db)
+# date 2026-11-18T23:05:03Z; HEAD be4c0ef25; bb 0.1.6
+
+## files / go files
+1972|369
+## brain_import total / ext1 / ext0 / resolved_symbol_id nonnull
+1948|1947|1|0
+## go import rows / all ext1 / files covered / total go files
+1880|1880|346|369
+## go import specifier classification (same-module / stdlib / third-party)
+326|1105|449
+## imports relationships total / target_symbol nonnull / source_symbol null / target null
+1908|358|8|1550
+## imports rel by source language (rels / both nonnull)
+(null)|8|0
+go|1880|358
+xml|6|0
+yaml|14|0
+## deps-engine-usable edges (both symbols, diff file) and target breakdown
+354
+Makefile|170
+modules/ui/ui/assets/fontawesome/metadata/icons.yml|94
+.github/workflows/release.yaml|44
+modules/ui/ui/assets/openlayers/ol.js|26
+modules/zerogod/zerogod_acceptor.go|12
+log/doc.go|5
+modules/can/can_dbc.go|3
+## same-module import edges resolved at index time (should be >0 if correct)
+0
+## imports edges with target file under session/ (should be >0 if correct)
+0

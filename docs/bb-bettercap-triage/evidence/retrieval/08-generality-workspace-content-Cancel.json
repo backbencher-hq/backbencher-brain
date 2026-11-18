@@ -1,0 +1,54 @@
+{
+  "searchMode": "content",
+  "query": "Cancel",
+  "total": 80,
+  "returned": 2,
+  "staleCount": 0,
+  "freshCount": 2,
+  "pageStaleCount": 0,
+  "truncated": false,
+  "matchMode": "phrase",
+  "bodyCoverage": {
+    "withBody": 124140,
+    "symbols": 506841,
+    "ratio": 0.24492888302248633
+  },
+  "freshness": {
+    "fresh": 2,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  },
+  "results": [
+    {
+      "file": ".corpus/axios/tests/browser/cancel.browser.test.js",
+      "fileId": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.corpus/axios/tests/browser/cancel.browser.test.js",
+      "line": 230,
+      "column": 0,
+      "context": "method: cancel",
+      "symbolName": "cancel",
+      "symbolType": "method",
+      "language": "javascript",
+      "matchType": "content",
+      "snippet": "cancel() {",
+      "complexity": 3,
+      "_relevance": 1
+    },
+    {
+      "file": ".corpus/chartjs/src/core/core.animation.js",
+      "fileId": "1d3d57103be91b8f9716d70199fe28a3f39245d9:.corpus/chartjs/src/core/core.animation.js",
+      "line": 67,
+      "column": 0,
+      "context": "method: cancel",
+      "symbolName": "cancel",
+      "symbolType": "method",
+      "language": "javascript",
+      "matchType": "content",
+      "snippet": "cancel() {",
+      "complexity": 2,
+      "_relevance": 1
+    }
+  ]
+}

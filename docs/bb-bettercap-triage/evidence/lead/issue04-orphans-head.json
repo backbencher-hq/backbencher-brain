@@ -1,0 +1,25 @@
+orphaned code (4385 found):
+  orphaned_function jsOnEventFunc — session/script_builtin_runtime.go:39 (70%)
+  orphaned_function httpGrabber — modules/syn_scan/http_grabber.go:30 (70%)
+  orphaned_function mdnsParser — modules/net_sniff/net_sniff_mdns.go:16 (70%)
+  orphaned_function dnsParser — modules/net_sniff/net_sniff_dns.go:12 (70%)
+  orphaned_function jsRemoveEventListenerFunc — session/script_builtin_runtime.go:120 (70%)
+  orphaned_function ntlmParser — modules/net_sniff/net_sniff_ntlm.go:35 (70%)
+  orphaned_function sniParser — modules/net_sniff/net_sniff_sni.go:18 (70%)
+  orphaned_function webpackJsonpCallback — modules/ui/ui/runtime.js:3 (70%)
+  orphaned_function krb5Parser — modules/net_sniff/net_sniff_krb5.go:15 (70%)
+  orphaned_function ftpParser — modules/net_sniff/net_sniff_ftp.go:18 (70%)
+  orphaned_function upnpParser — modules/net_sniff/net_sniff_upnp.go:16 (70%)
+  orphaned_function jsEnvFunc — session/script_builtin.go:8 (70%)
+  orphaned_function jsSaveJSONFunc — session/script_builtin_runtime.go:177 (70%)
+  orphaned_function jsLoadJSONFunc — session/script_builtin_runtime.go:202 (70%)
+  orphaned_function __webpack_require__ — modules/ui/ui/runtime.js:65 (70%)
+  orphaned_function teamViewerParser — modules/net_sniff/net_sniff_teamviewer.go:14 (70%)
+  orphaned_function jsSaveToFileFunc — session/script_builtin_runtime.go:156 (70%)
+  orphaned_function jsRunFunc — session/script_builtin_runtime.go:21 (70%)
+  orphaned_function checkDeferredModules — modules/ui/ui/runtime.js:35 (70%)
+  orphaned_function jsFileExistsFunc — session/script_builtin_runtime.go:226 (70%)
+[scan: 4385 orphan candidate(s) (orphaned_function=2739 orphaned_file=1644 orphaned_class=2); showing 20 — raise `limit` to see more (maximum 500)]
+[suppressed: testPath=731 entryPointName=42 nonCodeFile=18564 manifestFile=1]
+[usage-evidence: refused 32353 row(s) (selfLoop=106, inferred=138, lowConfidence=32109); imports: 1908 row(s), 1900 attributed to a file, 0 resolved, 0 file(s) cleared]
+[provenance: static_finding via orphans@intelligence; scanned 23929 symbol(s) in 1902 file(s); limitations: 4]

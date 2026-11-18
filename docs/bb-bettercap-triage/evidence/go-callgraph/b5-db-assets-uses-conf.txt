@@ -1,0 +1,47 @@
+=== bettercap brain_file total + ui asset counts
+total_files  ui_assets  fontawesome  ui_all
+-----------  ---------  -----------  ------
+1972         1581       1577         1590  
+
+=== languages of ui asset files
+language    n   
+----------  ----
+css         26  
+javascript  7   
+json        2   
+scss        18  
+xml         1524
+yaml        4   
+
+=== uses rows confidence distribution by relationshipType label
+rt          why                       conf  n    
+----------  ------------------------  ----  -----
+references  declared_type             0.95  3296 
+references  return_type               0.95  392  
+references  go_builtin_type_argument  0.95  164  
+references  go_type_assertion         0.95  137  
+references  go_type_switch_case       0.95  113  
+references  instanceof_check          0.95  87   
+references                            1.0   29   
+references                            0.9   2    
+references  go_type_argument          0.95  1    
+references  yaml_depends_on           1.0   1    
+uses                                  0.6   32123
+uses        go_selector_use           0.7   5930 
+uses        identifier_usage          1.0   366  
+uses                                  1.0   47   
+uses        go_channel_operation      0.8   38   
+uses                                  0.9   15   
+uses        field_access              0.9   1    
+
+=== gate-refused rows by type+reason (orphan engine replication)
+rt            reason         n    
+------------  -------------  -----
+uses          lowConfidence  32107
+mixes_in      inferred       83   
+calls         selfLoop       81   
+instantiates  inferred       51   
+uses          selfLoop       17   
+references    selfLoop       8    
+calls         inferred       4    
+imports       lowConfidence  2    

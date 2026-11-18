@@ -1,0 +1,570 @@
+{
+  "files": [
+    {
+      "relativePath": "session/command_handler_test.go",
+      "overall": 0.15555555555555556,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 0.25,
+          "penaltyPotential": null,
+          "observedAnchor": "testing",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 0.6666666666666666,
+          "penaltyPotential": 0,
+          "observedAnchor": "it.each/test.each template",
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [
+        "parameterized cases detected"
+      ],
+      "stale": false
+    },
+    {
+      "relativePath": "session/environment_test.go",
+      "overall": 0.34444444444444444,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": null,
+          "observedAnchor": "encoding/json",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "it.each/test.each template",
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [
+        "rich import surface (indicates composed fixtures)",
+        "parameterized cases detected"
+      ],
+      "stale": false
+    },
+    {
+      "relativePath": "session/events_test.go",
+      "overall": 0.4,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "comments/descriptive names",
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 0.75,
+          "penaltyPotential": null,
+          "observedAnchor": "sync",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 0.6666666666666666,
+          "penaltyPotential": 0,
+          "observedAnchor": "it.each/test.each template",
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [
+        "rich import surface (indicates composed fixtures)",
+        "parameterized cases detected"
+      ],
+      "stale": false
+    },
+    {
+      "relativePath": "session/module_handler_test.go",
+      "overall": 0.2888888888888889,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "comments/descriptive names",
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 0.75,
+          "penaltyPotential": null,
+          "observedAnchor": "reflect",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [
+        "rich import surface (indicates composed fixtures)"
+      ],
+      "stale": false
+    },
+    {
+      "relativePath": "session/module_param_test.go",
+      "overall": 0.4555555555555555,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "comments/descriptive names",
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 0.75,
+          "penaltyPotential": null,
+          "observedAnchor": "regexp",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "it.each/test.each template",
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [
+        "rich import surface (indicates composed fixtures)",
+        "parameterized cases detected"
+      ],
+      "stale": false
+    },
+    {
+      "relativePath": "session/session_setup_test.go",
+      "overall": 0.19999999999999998,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "comments/descriptive names",
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 0.25,
+          "penaltyPotential": null,
+          "observedAnchor": "testing",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [],
+      "stale": false
+    },
+    {
+      "relativePath": "session/session_test.go",
+      "overall": 0.41111111111111115,
+      "dimensions": [
+        {
+          "id": "assertions",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.85,
+          "supported": true
+        },
+        {
+          "id": "docs",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "comments/descriptive names",
+          "confidence": 0.7,
+          "supported": true
+        },
+        {
+          "id": "error_handling",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 1,
+          "observedAnchor": null,
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "fixtures",
+          "relevance": null,
+          "evidenceStrength": 0.5,
+          "penaltyPotential": null,
+          "observedAnchor": "fmt",
+          "confidence": 0.8,
+          "supported": true
+        },
+        {
+          "id": "mocking",
+          "relevance": null,
+          "evidenceStrength": 0,
+          "penaltyPotential": 0,
+          "observedAnchor": null,
+          "confidence": 0.6,
+          "supported": true
+        },
+        {
+          "id": "parameterization",
+          "relevance": null,
+          "evidenceStrength": 1,
+          "penaltyPotential": 0,
+          "observedAnchor": "it.each/test.each template",
+          "confidence": 0.75,
+          "supported": true
+        }
+      ],
+      "unsupported": [],
+      "issues": [
+        {
+          "category": "no_assertion_evidence",
+          "description": "no assert/expect statements observed"
+        },
+        {
+          "category": "no_error_path_evidence",
+          "description": "no error-path assertion observed"
+        }
+      ],
+      "strengths": [
+        "parameterized cases detected"
+      ],
+      "stale": false
+    }
+  ],
+  "aggregate": {
+    "mean": 0.32222222222222224,
+    "perDimension": {
+      "assertions": 0,
+      "mocking": 0,
+      "error_handling": 0,
+      "parameterization": 0.619047619047619,
+      "docs": 0.7142857142857143,
+      "fixtures": 0.6071428571428571
+    }
+  },
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "static_finding",
+    "engine": "test-quality@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_file+brain_import+bounded-source-content",
+    "limitations": [
+      "Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."
+    ]
+  },
+  "summary": {
+    "filesWithContent": 7,
+    "filesUnknown": 0,
+    "unsupportedDimensionCount": 0,
+    "returned": 7,
+    "totalFiles": 7,
+    "truncated": false
+  },
+  "freshness": {
+    "fresh": 7,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

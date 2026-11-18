@@ -1,0 +1,245 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: Options",
+  "summary": "1 file(s) and 1 symbol(s) in scope, 4 cited claim(s) across 5 section(s) from 39 source(s). No indexed evidence was found for: Limitations.",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "struct Options is defined in skills/installer/installer.go at lines 26-41.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:skills/installer/installer.go:Options:26-41"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Options is defined in skills/installer/installer.go at line 26.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:skills/installer/installer.go:Options:26-41"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:skills/installer/installer.go:Options:26-41"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 relationship). Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "installer exports Options.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:skills/installer/installer.go:exports:26:installer:Options"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:skills/installer/installer.go:exports:26:installer:Options"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "1 claim, 1 inferred because the index did not resolve the target, resting on 1 source (1 test).",
+      "facts": [
+        {
+          "classification": "inferred",
+          "statement": "Options is named in the test source codespaces/api/api_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:codespaces/api/api_test.go"
+          ]
+        }
+      ],
+      "citations": [
+        "test:codespaces/api/api_test.go"
+      ]
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "None of the measured limits applies to this symbol: its docstring, test, relationship and source-freshness checks all returned a result. What this document cannot say is stated here rather than filled in.",
+      "facts": [],
+      "citations": []
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:skills/installer/installer.go:Options:26-41",
+      "kind": "symbol",
+      "path": "skills/installer/installer.go",
+      "symbol": "Options",
+      "lineStart": 26,
+      "lineEnd": 41,
+      "evidence": "Indexed struct Options",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:codespaces/api/api_test.go",
+      "kind": "test",
+      "path": "codespaces/api/api_test.go",
+      "evidence": "Test source references Options",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:skills/installer/installer.go:exports:26:installer:Options",
+      "kind": "relationship",
+      "path": "skills/installer/installer.go",
+      "lineStart": 26,
+      "relationshipType": "exports",
+      "evidence": "exports edge between installer and Options",
+      "freshness": "fresh",
+      "confidence": 1
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "The per-section evidence cap is 1 at detail \"standard\", so 1 of 2 api items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "api"
+    },
+    {
+      "statement": "The per-section evidence cap is 1 at detail \"standard\", so 2 of 3 behavior items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 1 at detail \"standard\", so 35 of 36 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    },
+    {
+      "statement": "None of the measured limits applies to this symbol: its docstring, test, relationship and source-freshness checks all returned a result.",
+      "reason": "not-indexed",
+      "affectedSection": "limitations"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 4
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "2b7ee3a319a5a338beb322b58a3a9379",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 1846,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 1,
+      "sections": [
+        {
+          "id": "api",
+          "available": 2,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "behavior",
+          "available": 3,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "dependencies",
+          "available": 36,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "tests",
+          "available": 1,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "limitations",
+          "available": 0,
+          "capped": 0,
+          "droppedForBudget": 0,
+          "emitted": 0
+        }
+      ]
+    },
+    "warnings": [
+      "36 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "572ba87116ee20d7b4e5e9b529675e01d9b287bd",
+    "projectPath": "/home/ishaq2321/bb_tests/repositories/gh-cli/internal",
+    "snapshotId": "2b7ee3a319a5a338beb322b58a3a9379",
+    "generatedAt": "2026-11-18T22:37:41.862Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "go",
+    "canonicalPath": "Options",
+    "slugs": [
+      "symbol",
+      "Options"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 2,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

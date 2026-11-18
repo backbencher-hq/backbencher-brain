@@ -1,0 +1,14 @@
+{
+  "ok": false,
+  "mode": "refactor",
+  "error": "symbol Fatal is ambiguous; provide filePath and lineStart",
+  "rolledBack": true,
+  "envelope": {
+    "atomic": true,
+    "entries": [],
+    "committed": 0,
+    "restored": 0,
+    "failed": []
+  },
+  "refusedBeforeWriting": true
+}

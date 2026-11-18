@@ -1,0 +1,58 @@
+answer: Note: the embedding provider did not answer within 2000 ms, so this question was embedded with the local word-vector model (local-word-vectors-v3). Only 23,924 of 55,785 indexed symbols exist in that space, so the ranking below is limited to them.
+Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from embeddings.
+Note: these came from a KEYWORD match on every word you used (arp, spoofing) of your query, not from understanding it. Treat the list below as places that happen to contain those words, not as an answer.
+
+Closest matches from the AST index for your query (search results, not a verified answer):
+
+--- File: modules/arp_spoof/arp_spoof.go (Line 330) ---
+[method] arpSpoofTargets
+```
+func (mod *ArpSpoofer) arpSpoofTargets(saddr net.IP, smac net.HardwareAddr, check_running bool, prob
+```
+
+--- File: modules/arp_spoof/arp_spoof.go (Line 35) ---
+[function] NewArpSpoofer
+```
+func NewArpSpoofer(s *session.Session) *ArpSpoofer {
+```
+
+--- File: modules/arp_spoof/arp_spoof_test.go (Line 304) ---
+[function] TestArpSpooferConfigure
+```
+func TestArpSpooferConfigure(t *testing.T) {
+```
+
+--- File: modules/arp_spoof/arp_spoof_test.go (Line 727) ---
+[function] TestArpSpooferRestoresForwarding
+```
+func TestArpSpooferRestoresForwarding(t *testing.T) {
+```
+
+--- File: modules/arp_spoof/arp_spoof_test.go (Line 488) ---
+[function] TestArpSpooferBanMode
+```
+func TestArpSpooferBanMode(t *testing.T) {
+```
+
+
+— Use bb_search for precise symbol lookup: "bb_search(query='ARP spoofing and packet sniffing attack implementation')".
+— Use bb_search with mode="file" to read any indexed file.
+
+confidence: 0.2 (declared floor; no score was computed on that path)
+
+1. modules/arp_spoof/arp_spoof.go:330
+   arpSpoofTargets
+2. modules/arp_spoof/arp_spoof.go:35
+   NewArpSpoofer
+3. modules/arp_spoof/arp_spoof_test.go:304
+   TestArpSpooferConfigure
+4. modules/arp_spoof/arp_spoof_test.go:727
+   TestArpSpooferRestoresForwarding
+5. modules/arp_spoof/arp_spoof_test.go:488
+   TestArpSpooferBanMode
+
+[retrieval: method=keyword-fallback, queryModel=none, indexModel=none, embeddingCoverage=43% (23924/55785 symbols embedded in this model space), libraryCoverage=43% (23925/55785 across all models), reason=no-vector-above-threshold, scanned=20000/20000 (cap reached), filtered=20000, candidates=0, embeddingTimeout=2000ms (fell back to local-word-vectors-v3)]
+
+[bounds: returned=5, totalMatches=0, truncated=true, truncationReason=scan cap 20000 reached; candidates are a deterministic prefix of the embedding table (ordered by entity_id)]
+
+[provenance: semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: no-vector-above-threshold]

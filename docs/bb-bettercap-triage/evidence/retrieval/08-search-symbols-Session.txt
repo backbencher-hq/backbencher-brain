@@ -1,0 +1,17 @@
+sessionRoute [method] modules/api_rest/api_rest_controller.go:320 (go)
+updateSession [method] modules/ui/ui/main.js:1671 (javascript)
+sessionNew [method] modules/ui/ui/main.js:3082 (javascript)
+showSession [method] modules/api_rest/api_rest_controller.go:100 (go)
+runSessionCommand [method] modules/api_rest/api_rest_controller.go:218 (go)
+getSession [method] modules/ui/ui/main.js:3132 (javascript)
+sessionError [method] modules/ui/ui/main.js:3065 (javascript)
+SessionModule [property] modules/any_proxy/any_proxy.go:14 (go)
+JSSessionRequest [struct] modules/api_rest/api_rest.go:161 (go)
+JSSessionResponse [struct] modules/api_rest/api_rest.go:165 (go)
+SessionModule [property] modules/api_rest/api_rest.go:22 (go)
+SessionModule [property] modules/arp_spoof/arp_spoof.go:18 (go)
+SessionModule [property] modules/ble/ble_recon.go:22 (go)
+SessionModule [property] modules/ble/ble_unsupported.go:11 (go)
+Session [property] modules/c2/c2.go:46 (go)
+showing 15 of 139 matches
+[match-set] searchMode=symbols totalMatches=139 returned=15 truncated=false staleCount=0

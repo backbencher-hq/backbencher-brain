@@ -1,0 +1,60 @@
+002b3c37 | 1 files 2 syms | 0.0MB | idx 2026-10-13 | complete | /tmp/bb-viz-e2e-FXiUKB/src/app.ts | db: /home/ishaq2321/.bb/projects/002b3c37409e20f1bb0432c798ebf80972a12a46/brain.db
+00370f7d | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/00370f7d18b5eb241b26ddb100d90005a89fa1d3/brain.db
+00af7425 | 5 files 5 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/bb-viz-v6-1aVhId/src | db: /home/ishaq2321/.bb/projects/00af74254c9e3067b522f716b8789334936f74f2/brain.db
+00d946d7 | 1 files 2 syms | 0.0MB | idx 2026-10-13 | complete | /tmp/bb-viz-e2e-7F6QM2/src/app.ts | db: /home/ishaq2321/.bb/projects/00d946d710760d23f71a8ba3d1631a712e6feb38/brain.db
+01020bd4 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/01020bd4e51d5f427a77264a3787eb0f08e6bf28/brain.db
+01146271 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/011462713bc93977d6aa4a8b161a0f53a999566f/brain.db
+017a2b64 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/017a2b643c850bdf28d8b4d4f97f8967ba71b2e3/brain.db
+01bd7048 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/01bd70488adb119dba4b2a6fa85d57bc1947297f/brain.db
+01d56498 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/01d5649802a323ff6b065287bbb99f55732dd4fb/brain.db
+01d7d49f | 1 files 7 syms | 0.5MB | idx 2026-10-15 | complete | /tmp/bb-m35-s2-Lfon4C/src | db: /home/ishaq2321/.bb/projects/01d7d49fb98da9aec547ae5a5980e526fc16c9ec/brain.db
+01ef699c | 4 files 5 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-viz-v9-EtmQzK | db: /home/ishaq2321/.bb/projects/01ef699c65e097cf398c0216868988fead3b901c/brain.db
+01f1e903 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/01f1e903a296fd6d6a6548618fe131fa0726db46/brain.db
+020c61f0 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/020c61f092644ece2991aa0ccd41a655912fadc7/brain.db
+027e4740 | 1 files 3 syms | 0.5MB | idx 2026-10-17 | complete | /home/ishaq2321/mcp/backbencher-brain/.tools/m42-h1-fixture/src/main/java/com/demo/Highlight.java | db: /home/ishaq2321/.bb/projects/027e474080810f35c7f818785736c81da049c4bf/brain.db
+028a35b8 | 375 files 8049 syms | 143.5MB | idx 2026-10-17 | complete | /tmp/gql-ab/src | db: /home/ishaq2321/.bb/projects/028a35b850377227b7929e6928718546957bcaaf/brain.db
+028e70d8 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/028e70d8e0eb9b2ba3aea7b989014e6548a6f6c2/brain.db
+02f58b3c | 1 files 2 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/bb-viz-v7-ttkMP0/src/app.ts | db: /home/ishaq2321/.bb/projects/02f58b3c4a34fcef038b927da2c6fa5e01afe1a8/brain.db
+0379fcdf | 1 files 2 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-viz-v7-QUDyM8/src/app.ts | db: /home/ishaq2321/.bb/projects/0379fcdf39d88c39b1a6bf52bf2f2b8cfe2ce4b7/brain.db
+041e093b | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/041e093ba85b2f78ced49bd97c302af6ee74de7b/brain.db
+0576b2ca | 7 files 8 syms | 0.4MB | idx 2026-10-14 | complete | /tmp/bb-viz-v5-g5eUnx | db: /home/ishaq2321/.bb/projects/0576b2ca507b16652d61753ee59fd10c39284d73/brain.db
+05c3de5d | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/05c3de5db0304f6834b53683d2ad818268975639/brain.db
+0659b164 | 4 files 5 syms | 0.0MB | idx 2026-10-14 | complete | /tmp/bb-viz-v9-UASVhO | db: /home/ishaq2321/.bb/projects/0659b1649f084185d10b0da610bb2aa2fd0e01f5/brain.db
+06f0c5e2 | 10 files 10 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/bb-viz-v10-CPrpeJ | db: /home/ishaq2321/.bb/projects/06f0c5e2d5bb11648e8afc647bcb518b90994da9/brain.db
+071a6f09 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/071a6f09163641f345221c524e66baa04f257faa/brain.db
+071fd368 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/071fd368871b741ac943128d78d112c69358a2be/brain.db
+07269e4a | 1 files 2 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/bb-viz-e2e-KhqVrE/src/app.ts | db: /home/ishaq2321/.bb/projects/07269e4a78e45dfeed0de947eb97d2288732f72b/brain.db
+0730f82e | 1 files 2 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-sec-py-eXqWwm/src/app.py | db: /home/ishaq2321/.bb/projects/0730f82e8cb848e9fa730ba2fbf44a1db83c351e/brain.db
+073a519a | 6 files 20 syms | 1.0MB | idx 2026-10-14 | complete | /tmp/bb-m31-corpus-W9wjP6 | db: /home/ishaq2321/.bb/projects/073a519a9794ecb7cf33328fa67bb58b2cf4a090/brain.db
+073c944f | 1 files 1 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-mig-mcp-Pzz7zT/src/app.ts | db: /home/ishaq2321/.bb/projects/073c944f4e8c4c84d0f1818a7b4c6493a2719a6f/brain.db
+076382d7 | 3 files 5 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/m40-a1-LlM9Vx/proj/src | db: /home/ishaq2321/.bb/projects/076382d785947ee0f48208996b1ac3b4ecbd22f0/brain.db
+0897d291 | 4 files 9 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/bb-viz-v11-L4RxtW | db: /home/ishaq2321/.bb/projects/0897d291d12eae0a7fc6303dd62bd7770a739217/brain.db
+08d6b4b0 | 5 files 10 syms | 0.5MB | idx 2026-10-15 | complete | /tmp/bb-m35-corpus-BwaOGY/src | db: /home/ishaq2321/.bb/projects/08d6b4b078910a10c5888797800825393892a213/brain.db
+09b6ab77 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/09b6ab77e043cb78f95ea1499da57adf24348ce8/brain.db
+09f56d73 | 1 files 1 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-health-refresh-fail-P8A7F4/src/a.ts | db: /home/ishaq2321/.bb/projects/09f56d7365c92db45d56cdc2061e30ab13f6b1a1/brain.db
+0a4dc2c2 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0a4dc2c226a3fecd0def1099ac5b782d51e3911a/brain.db
+0b092307 | 67 files 3325 syms | 110.0MB | idx 2026-10-15 | complete | /tmp/bb-m35-s1corpus-bezcna | db: /home/ishaq2321/.bb/projects/0b092307b31cc9622cb5986071284b0868c91d8c/brain.db
+0b3814d3 | 1 files 2 syms | 0.0MB | idx 2026-10-15 | complete | /tmp/bb-viz-v7-a13kh1/src/app.ts | db: /home/ishaq2321/.bb/projects/0b3814d32128b98df282f47763d3e88a130973d3/brain.db
+0b649f72 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0b649f7201b1054460c9473c018bdeca32760bc0/brain.db
+0bc77cfd | 1 files 2 syms | 0.0MB | idx 2026-10-16 | complete | /tmp/bb-viz-v7-O2TmsV/src/app.ts | db: /home/ishaq2321/.bb/projects/0bc77cfdf3a28228e13c1e4fdd5a7a49ef1d1e60/brain.db
+0c3dfd44 | 1 files 1 syms | 0.0MB | idx 2026-10-18 | complete | /tmp/bb-mig-e2e-F3qaYF/src/app.ts | db: /home/ishaq2321/.bb/projects/0c3dfd44983219baa00e72953838dc8fcb3ab593/brain.db
+0c5546cb | 1 files 3 syms | 0.5MB | idx 2026-10-16 | complete | /tmp/m40-a3-AKDf4g/proj/src/lib.ts | db: /home/ishaq2321/.bb/projects/0c5546cb85737cbd1bba4b54b97c2d3d49ae2699/brain.db
+0d0ffae3 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0d0ffae31b5d8b6e7f3ac97b48c33268edb4d8ff/brain.db
+0d3460b9 | 2 files 6 syms | 0.0MB | idx 2026-10-15 | complete | /tmp/bb-viz-v2-OICJp5/src | db: /home/ishaq2321/.bb/projects/0d3460b98f6dc70923a726331bbe74cadac9659c/brain.db
+0d59b278 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0d59b2783fd74c2899f9c79723637bb0184153eb/brain.db
+0d973821 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0d9738211db98698cf102fddc506e00f4bb1801b/brain.db
+0e2ae646 | 7 files 8 syms | 0.7MB | idx 2026-10-15 | complete | /tmp/bb-viz-v5-PXoh2l | db: /home/ishaq2321/.bb/projects/0e2ae646d4e1f84e0d74c310b8ca6513888892a9/brain.db
+0e54d960 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0e54d960383651826a6c74c04c372cc50295e04d/brain.db
+0e54f214 | 6 files 20 syms | 0.5MB | idx 2026-10-16 | complete | /tmp/bb-m31-corpus-WQtY2k | db: /home/ishaq2321/.bb/projects/0e54f214bbd0a9840f082fe72066a61e05226873/brain.db
+0f6177aa | 1 files 1 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-mig-e2e-8LdSXq/src/app.ts | db: /home/ishaq2321/.bb/projects/0f6177aac54a896e7b48a81c3c20b0a56f353d31/brain.db
+0fda2782 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/0fda2782e829cfcd759e46e8483984bda4942ad9/brain.db
+10229904 | 1 files 2 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-analyze-e2e-FznWmE/src/app.ts | db: /home/ishaq2321/.bb/projects/10229904e0d08c97b2f7dbb0d31f0b7fbb7d8355/brain.db
+102e7eb9 | 4 files 9 syms | 0.0MB | idx 2026-10-15 | complete | /tmp/bb-viz-v11-e9sLb8 | db: /home/ishaq2321/.bb/projects/102e7eb9d5876610dd4099257e324ae2bffaf90b/brain.db
+10a06883 | 1 files 2 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-viz-v7-IXvsd4/src/app.ts | db: /home/ishaq2321/.bb/projects/10a06883314a5abdf3a8c0c694970cea4043b468/brain.db
+111aba16 | 5 files 5 syms | 0.0MB | idx 2026-10-14 | complete | /tmp/bb-viz-v6-bgppqZ/src | db: /home/ishaq2321/.bb/projects/111aba1655886e3eb9f82eb992a191bba7ca7a42/brain.db
+111c1e55 | 10 files 10 syms | 0.0MB | idx 2026-10-17 | complete | /tmp/bb-viz-v10-g02Dpn | db: /home/ishaq2321/.bb/projects/111c1e5539bc1b459bae31ca316335b17fab9c35/brain.db
+1146646c | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/1146646c0d9b171b69dc8238a9e8932763e85918/brain.db
+115cb0f2 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/115cb0f2269bf73b3bce54f517566c9d327a586d/brain.db
+116cf439 | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/116cf4393e28200124a9b4ed46e19f8fc9a3cb63/brain.db
+11d7f665 | 3 files 5 syms | 0.0MB | idx 2026-10-15 | complete | /tmp/bb-objc-probe-qT2BSw | db: /home/ishaq2321/.bb/projects/11d7f665c369699897f290dfde38fd3cdb02cf7c/brain.db
+12b66d8b | 0 files 0 syms | 0.4MB | idx n/a |  | (no path recorded) | db: /home/ishaq2321/.bb/projects/12b66d8ba45b2b1cc065320c77a986040a403808/brain.db

@@ -1,0 +1,13 @@
+graph: 2 nodes, 0 links
+scope: symbol (New)
+view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity
+layout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)
+available: 2 symbol(s) match, 2 reached the projection, 2 returned — limits 200 nodes / 5000 links
+page: symbols 1-2 (offset 0, limit 200, page 1; 2 symbol(s) match this scope) — this is the LAST page
+edges: 0 relationship(s) connect the selected symbols — complete for this node set
+node selection: every symbol named New, in source order
+returned kinds: property 1, function 1 — no kind filter was passed, so this is the composition the index's own ranking produced
+returned languages: go 2
+annotations: none on the returned symbols — the index's agent notes were read, and none matches this page
+excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are included)
+provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=0 links-omitted-by-budget=0

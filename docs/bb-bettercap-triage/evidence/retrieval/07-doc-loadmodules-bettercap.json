@@ -1,0 +1,623 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: LoadModules",
+  "summary": "1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 77 source(s).",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "2 claims, 2 read directly from the index, resting on 1 source (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "function LoadModules(sess: *session.Session) is defined in modules/modules.go at lines 42-78.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/modules.go:LoadModules:42-78"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/modules.go:LoadModules:42-78"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:modules/modules.go:LoadModules:42-78"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "2 claims, 2 read directly from the index, resting on 1 source (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "LoadModules is defined in modules/modules.go at line 42, takes sess: *session.Session.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/modules.go:LoadModules:42-78"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/modules.go:LoadModules:42-78"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:modules/modules.go:LoadModules:42-78"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "20 claims, 20 read directly from the index, resting on 20 sources (1 relationship). Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "TestLoadModulesWithNilSession calls LoadModules.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/modules_test.go:calls:16:TestLoadModulesWithNilSession:LoadModules"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules references Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:references:42:LoadModules:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "modules exports LoadModules.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:exports:42:modules:LoadModules"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls Register.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:43:LoadModules:Register"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewAnyProxy.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:43:LoadModules:NewAnyProxy"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewArpSpoofer.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:44:LoadModules:NewArpSpoofer"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewRestAPI.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:45:LoadModules:NewRestAPI"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewBLERecon.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:46:LoadModules:NewBLERecon"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewCanModule.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:47:LoadModules:NewCanModule"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "main calls LoadModules.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:main.go:calls:47:main:LoadModules"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewDHCP6Spoofer.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:48:LoadModules:NewDHCP6Spoofer"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewDiscovery.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:49:LoadModules:NewDiscovery"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewDnsProxy.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:50:LoadModules:NewDnsProxy"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewDNSSpoofer.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:51:LoadModules:NewDNSSpoofer"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewEventsStream.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:52:LoadModules:NewEventsStream"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewGPS.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:53:LoadModules:NewGPS"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewModule.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:54:LoadModules:NewModule"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewHttpProxy.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:55:LoadModules:NewHttpProxy"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewHttpServer.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:56:LoadModules:NewHttpServer"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LoadModules calls NewHttpsProxy.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:modules/modules.go:calls:57:LoadModules:NewHttpsProxy"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:modules/modules_test.go:calls:16:TestLoadModulesWithNilSession:LoadModules",
+        "relationship:modules/modules.go:references:42:LoadModules:Session",
+        "relationship:modules/modules.go:exports:42:modules:LoadModules",
+        "relationship:modules/modules.go:calls:43:LoadModules:Register",
+        "relationship:modules/modules.go:calls:43:LoadModules:NewAnyProxy",
+        "relationship:modules/modules.go:calls:44:LoadModules:NewArpSpoofer",
+        "relationship:modules/modules.go:calls:45:LoadModules:NewRestAPI",
+        "relationship:modules/modules.go:calls:46:LoadModules:NewBLERecon",
+        "relationship:modules/modules.go:calls:47:LoadModules:NewCanModule",
+        "relationship:main.go:calls:47:main:LoadModules",
+        "relationship:modules/modules.go:calls:48:LoadModules:NewDHCP6Spoofer",
+        "relationship:modules/modules.go:calls:49:LoadModules:NewDiscovery",
+        "relationship:modules/modules.go:calls:50:LoadModules:NewDnsProxy",
+        "relationship:modules/modules.go:calls:51:LoadModules:NewDNSSpoofer",
+        "relationship:modules/modules.go:calls:52:LoadModules:NewEventsStream",
+        "relationship:modules/modules.go:calls:53:LoadModules:NewGPS",
+        "relationship:modules/modules.go:calls:54:LoadModules:NewModule",
+        "relationship:modules/modules.go:calls:55:LoadModules:NewHttpProxy",
+        "relationship:modules/modules.go:calls:56:LoadModules:NewHttpServer",
+        "relationship:modules/modules.go:calls:57:LoadModules:NewHttpsProxy"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 test).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "LoadModules has indexed test evidence in modules/modules_test.go.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:modules/modules_test.go"
+          ]
+        }
+      ],
+      "citations": [
+        "test:modules/modules_test.go"
+      ]
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 symbol). What this document cannot say is stated here rather than filled in.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "LoadModules has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/modules.go:LoadModules:42-78"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:modules/modules.go:LoadModules:42-78"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:modules/modules.go:LoadModules:42-78",
+      "kind": "symbol",
+      "path": "modules/modules.go",
+      "symbol": "LoadModules",
+      "lineStart": 42,
+      "lineEnd": 78,
+      "evidence": "Indexed function LoadModules",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:modules/modules_test.go",
+      "kind": "test",
+      "path": "modules/modules_test.go",
+      "evidence": "Test file references LoadModules",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/modules_test.go:calls:16:TestLoadModulesWithNilSession:LoadModules",
+      "kind": "relationship",
+      "path": "modules/modules_test.go",
+      "lineStart": 16,
+      "relationshipType": "calls",
+      "evidence": "calls edge between TestLoadModulesWithNilSession and LoadModules",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/modules.go:references:42:LoadModules:Session",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 42,
+      "relationshipType": "references",
+      "evidence": "references edge between LoadModules and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:exports:42:modules:LoadModules",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 42,
+      "relationshipType": "exports",
+      "evidence": "exports edge between modules and LoadModules",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:43:LoadModules:Register",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 43,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and Register",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:43:LoadModules:NewAnyProxy",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 43,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewAnyProxy",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:44:LoadModules:NewArpSpoofer",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 44,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewArpSpoofer",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:45:LoadModules:NewRestAPI",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 45,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewRestAPI",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:46:LoadModules:NewBLERecon",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 46,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewBLERecon",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:47:LoadModules:NewCanModule",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 47,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewCanModule",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:main.go:calls:47:main:LoadModules",
+      "kind": "relationship",
+      "path": "main.go",
+      "lineStart": 47,
+      "relationshipType": "calls",
+      "evidence": "calls edge between main and LoadModules",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:48:LoadModules:NewDHCP6Spoofer",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 48,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewDHCP6Spoofer",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:49:LoadModules:NewDiscovery",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 49,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewDiscovery",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:50:LoadModules:NewDnsProxy",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 50,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewDnsProxy",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:51:LoadModules:NewDNSSpoofer",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 51,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewDNSSpoofer",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:52:LoadModules:NewEventsStream",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 52,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewEventsStream",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:53:LoadModules:NewGPS",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 53,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewGPS",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:54:LoadModules:NewModule",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 54,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewModule",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:55:LoadModules:NewHttpProxy",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 55,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewHttpProxy",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:56:LoadModules:NewHttpServer",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 56,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewHttpServer",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:modules/modules.go:calls:57:LoadModules:NewHttpsProxy",
+      "kind": "relationship",
+      "path": "modules/modules.go",
+      "lineStart": 57,
+      "relationshipType": "calls",
+      "evidence": "calls edge between LoadModules and NewHttpsProxy",
+      "freshness": "fresh",
+      "confidence": 1
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "No docstring was indexed for LoadModules and none is present in the comment style this tool reads.",
+      "reason": "not-observed",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 20 at detail \"standard\", so 54 of 74 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 2
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "19c43df39d20653a26b9e9dccefd1838",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 5111,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 20,
+      "sections": [
+        {
+          "id": "api",
+          "available": 2,
+          "capped": 2,
+          "droppedForBudget": 0,
+          "emitted": 2
+        },
+        {
+          "id": "behavior",
+          "available": 2,
+          "capped": 2,
+          "droppedForBudget": 0,
+          "emitted": 2
+        },
+        {
+          "id": "dependencies",
+          "available": 74,
+          "capped": 20,
+          "droppedForBudget": 0,
+          "emitted": 20
+        },
+        {
+          "id": "tests",
+          "available": 1,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "limitations",
+          "available": 1,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        }
+      ]
+    },
+    "warnings": [
+      "55 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "projectPath": "/home/ishaq2321/bettercap",
+    "snapshotId": "19c43df39d20653a26b9e9dccefd1838",
+    "generatedAt": "2026-11-18T22:35:25.844Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "go",
+    "canonicalPath": "LoadModules",
+    "slugs": [
+      "symbol",
+      "LoadModules"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 3,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "source": "06-quality-session-fp.json + grep ground truth",
+  "observed_aggregate": 0.322222,
+  "projected_aggregate_language_aware": 0.502778,
+  "projected_aggregate_assertions_only": 0.477381,
+  "files": [
+    {
+      "file": "session/command_handler_test.go",
+      "ground_truth": {
+        "assertion_sites": 5,
+        "if_err_nil": 0,
+        "t_Run": 0
+      },
+      "observed_overall": 0.15555555555555556,
+      "projected_overall": 0.1861
+    },
+    {
+      "file": "session/environment_test.go",
+      "ground_truth": {
+        "assertion_sites": 56,
+        "if_err_nil": 13,
+        "t_Run": 0
+      },
+      "observed_overall": 0.34444444444444444,
+      "projected_overall": 0.5444
+    },
+    {
+      "file": "session/events_test.go",
+      "ground_truth": {
+        "assertion_sites": 8,
+        "if_err_nil": 0,
+        "t_Run": 6
+      },
+      "observed_overall": 0.4,
+      "projected_overall": 0.6444
+    },
+    {
+      "file": "session/module_handler_test.go",
+      "ground_truth": {
+        "assertion_sites": 7,
+        "if_err_nil": 0,
+        "t_Run": 4
+      },
+      "observed_overall": 0.2888888888888889,
+      "projected_overall": 0.6444
+    },
+    {
+      "file": "session/module_param_test.go",
+      "ground_truth": {
+        "assertion_sites": 24,
+        "if_err_nil": 1,
+        "t_Run": 4
+      },
+      "observed_overall": 0.4555555555555555,
+      "projected_overall": 0.6444
+    },
+    {
+      "file": "session/session_setup_test.go",
+      "ground_truth": {
+        "assertion_sites": 1,
+        "if_err_nil": 0,
+        "t_Run": 1
+      },
+      "observed_overall": 0.19999999999999998,
+      "projected_overall": 0.2556
+    },
+    {
+      "file": "session/session_test.go",
+      "ground_truth": {
+        "assertion_sites": 13,
+        "if_err_nil": 0,
+        "t_Run": 6
+      },
+      "observed_overall": 0.41111111111111115,
+      "projected_overall": 0.6
+    }
+  ]
+}

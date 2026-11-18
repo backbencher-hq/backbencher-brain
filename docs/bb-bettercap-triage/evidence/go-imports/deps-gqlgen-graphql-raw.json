@@ -1,0 +1,943 @@
+{
+  "dependencies": [
+    {
+      "file": ".mockery.yaml",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:.mockery.yaml",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "executor/event_context_test.go",
+          "stale": false
+        },
+        {
+          "path": "executor/executor_bench_test.go",
+          "stale": false
+        },
+        {
+          "path": "executor/executor_test.go",
+          "stale": false
+        },
+        {
+          "path": "executor/executor.go",
+          "stale": false
+        },
+        {
+          "path": "executor/extensions.go",
+          "stale": false
+        },
+        {
+          "path": "executor/operation_context_test.go",
+          "stale": false
+        },
+        {
+          "path": "executor/stats_test.go",
+          "stale": false
+        },
+        {
+          "path": "executor/testexecutor/testexecutor.go",
+          "stale": false
+        },
+        {
+          "path": "handler/apollofederatedtracingv1/tracing_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/apollofederatedtracingv1/tracing.go",
+          "stale": false
+        },
+        {
+          "path": "handler/apollofederatedtracingv1/tree_builder.go",
+          "stale": false
+        },
+        {
+          "path": "handler/apollotracing/tracer_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/apollotracing/tracer.go",
+          "stale": false
+        },
+        {
+          "path": "handler/debug/tracer.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/apq_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/apq.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/complexity_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/complexity.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/introspection_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/introspection.go",
+          "stale": false
+        },
+        {
+          "path": "handler/lru/lru.go",
+          "stale": false
+        },
+        {
+          "path": "handler/server_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/server.go",
+          "stale": false
+        },
+        {
+          "path": "handler/testserver/testserver.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/error.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/headers_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_form_multipart_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_form_multipart.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_form_urlencoded.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_get.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_graphql.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_multipart_mixed.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/http_post.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/json_decode_fuzz_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/options.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/sse_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/sse.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/util.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/websocket_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/websocket.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 40,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 40,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "context_response.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:context_response.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/gqlerror",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "args_test.go",
+          "stale": false
+        },
+        {
+          "path": "batch_federation.go",
+          "stale": false
+        },
+        {
+          "path": "batch_test.go",
+          "stale": false
+        },
+        {
+          "path": "batch.go",
+          "stale": false
+        },
+        {
+          "path": "context_field.go",
+          "stale": false
+        },
+        {
+          "path": "context_operation.go",
+          "stale": false
+        },
+        {
+          "path": "context_response_test.go",
+          "stale": false
+        },
+        {
+          "path": "duration.go",
+          "stale": false
+        },
+        {
+          "path": "error_test.go",
+          "stale": false
+        },
+        {
+          "path": "error.go",
+          "stale": false
+        },
+        {
+          "path": "execution_context_state_test.go",
+          "stale": false
+        },
+        {
+          "path": "execution_context_state.go",
+          "stale": false
+        },
+        {
+          "path": "executor/extensions.go",
+          "stale": false
+        },
+        {
+          "path": "executor/testexecutor/testexecutor.go",
+          "stale": false
+        },
+        {
+          "path": "float.go",
+          "stale": false
+        },
+        {
+          "path": "handler/apollofederatedtracingv1/tree_builder.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/apq.go",
+          "stale": false
+        },
+        {
+          "path": "handler/extension/complexity.go",
+          "stale": false
+        },
+        {
+          "path": "handler/server_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/server.go",
+          "stale": false
+        },
+        {
+          "path": "handler/testserver/testserver.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/reader.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/websocket_subprotocol.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/websocket_test.go",
+          "stale": false
+        },
+        {
+          "path": "handler/transport/websocket.go",
+          "stale": false
+        },
+        {
+          "path": "input_deprecated.go",
+          "stale": false
+        },
+        {
+          "path": "input_test.go",
+          "stale": false
+        },
+        {
+          "path": "input.go",
+          "stale": false
+        },
+        {
+          "path": "resolve_field_test.go",
+          "stale": false
+        },
+        {
+          "path": "time.go",
+          "stale": false
+        },
+        {
+          "path": "uint_test.go",
+          "stale": false
+        },
+        {
+          "path": "uint.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 32,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 32,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "any.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:any.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 2,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "args_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:args_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "args.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:args.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "batch_federation_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:batch_federation_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "batch_federation.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:batch_federation.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "batch_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:batch_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "batch.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:batch.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "maps",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/gqlerror",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "bool_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:bool_test.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "bool.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:bool.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "cache_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:cache_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "cache.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:cache.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "coercion_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:coercion_test.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/assert",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "coercion.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:coercion.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "collect_fields_bench_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:collect_fields_bench_test.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/parser",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "collect_fields_cache_integration_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:collect_fields_cache_integration_test.go",
+      "dependencies": [
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/validator/rules",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "collect_fields_cache_store.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:collect_fields_cache_store.go",
+      "dependencies": [
+        {
+          "path": "hash/fnv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "reflect",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "config.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:config.go",
+      "dependencies": [
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "context_field_test.go",
+      "fileId": "3cc416747a0082a80b42b89928cb8c909e09e371:context_field_test.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/stretchr/testify/require",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/vektah/gqlparser/v2/ast",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "file-page: showing 20 of 161 files — raise limit for the rest"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "dependencies@intelligence",
+    "engineVersion": "m10.04",
+    "projectId": "3cc416747a0082a80b42b89928cb8c909e09e371",
+    "source": "brain_relationship+brain_import",
+    "limitations": [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut."
+    ]
+  },
+  "summary": {
+    "returned": 20,
+    "totalFiles": 161,
+    "scope": null,
+    "truncated": true,
+    "returnedInternalDependencies": 0,
+    "returnedInternalDependents": 72,
+    "pageLimit": 20
+  },
+  "freshness": {
+    "fresh": 78,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

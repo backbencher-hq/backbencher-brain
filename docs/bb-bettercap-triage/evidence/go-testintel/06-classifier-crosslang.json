@@ -1,0 +1,140 @@
+[
+  {
+    "label": "go/plain-t.Fatalf",
+    "asserts": 0,
+    "assertionsStrength": 0,
+    "err": 0,
+    "errStrength": 0,
+    "paramMatches": 0,
+    "paramStrength": 0,
+    "counts": {
+      "assertCall": 0,
+      "expectCall": 0,
+      "shouldMember": 0,
+      "chainedMatcher": 0,
+      "rejectsResolves": 0,
+      "tryBlock": 0,
+      "throwMatcher": 0,
+      "catchClause": 0,
+      "parameterized": 0,
+      "commentLine": 0,
+      "longTestName": 0,
+      "spyMockCall": 0
+    }
+  },
+  {
+    "label": "go/table-driven-t.Run",
+    "asserts": 0,
+    "assertionsStrength": 0,
+    "err": 0,
+    "errStrength": 0,
+    "paramMatches": 1,
+    "paramStrength": 0.3333333333333333,
+    "counts": {
+      "assertCall": 0,
+      "expectCall": 0,
+      "shouldMember": 0,
+      "chainedMatcher": 0,
+      "rejectsResolves": 0,
+      "tryBlock": 0,
+      "throwMatcher": 0,
+      "catchClause": 0,
+      "parameterized": 1,
+      "commentLine": 0,
+      "longTestName": 0,
+      "spyMockCall": 0
+    }
+  },
+  {
+    "label": "go/testify-assert+require",
+    "asserts": 2,
+    "assertionsStrength": 0.3333333333333333,
+    "err": 0,
+    "errStrength": 0,
+    "paramMatches": 0,
+    "paramStrength": 0,
+    "counts": {
+      "assertCall": 2,
+      "expectCall": 0,
+      "shouldMember": 0,
+      "chainedMatcher": 0,
+      "rejectsResolves": 0,
+      "tryBlock": 0,
+      "throwMatcher": 0,
+      "catchClause": 0,
+      "parameterized": 0,
+      "commentLine": 0,
+      "longTestName": 0,
+      "spyMockCall": 0
+    }
+  },
+  {
+    "label": "js/vitest-it.each",
+    "asserts": 6,
+    "assertionsStrength": 1,
+    "err": 2,
+    "errStrength": 0.6666666666666666,
+    "paramMatches": 2,
+    "paramStrength": 0.6666666666666666,
+    "counts": {
+      "assertCall": 0,
+      "expectCall": 3,
+      "shouldMember": 0,
+      "chainedMatcher": 3,
+      "rejectsResolves": 0,
+      "tryBlock": 0,
+      "throwMatcher": 2,
+      "catchClause": 0,
+      "parameterized": 2,
+      "commentLine": 0,
+      "longTestName": 0,
+      "spyMockCall": 0
+    }
+  },
+  {
+    "label": "py/pytest.parametrize+assert",
+    "asserts": 0,
+    "assertionsStrength": 0,
+    "err": 0,
+    "errStrength": 0,
+    "paramMatches": 0,
+    "paramStrength": 0,
+    "counts": {
+      "assertCall": 0,
+      "expectCall": 0,
+      "shouldMember": 0,
+      "chainedMatcher": 0,
+      "rejectsResolves": 0,
+      "tryBlock": 0,
+      "throwMatcher": 0,
+      "catchClause": 0,
+      "parameterized": 0,
+      "commentLine": 0,
+      "longTestName": 0,
+      "spyMockCall": 0
+    }
+  },
+  {
+    "label": "ts/node:test-assert.strictEqual",
+    "asserts": 1,
+    "assertionsStrength": 0.16666666666666666,
+    "err": 0,
+    "errStrength": 0,
+    "paramMatches": 0,
+    "paramStrength": 0,
+    "counts": {
+      "assertCall": 1,
+      "expectCall": 0,
+      "shouldMember": 0,
+      "chainedMatcher": 0,
+      "rejectsResolves": 0,
+      "tryBlock": 0,
+      "throwMatcher": 0,
+      "catchClause": 0,
+      "parameterized": 0,
+      "commentLine": 0,
+      "longTestName": 0,
+      "spyMockCall": 0
+    }
+  }
+]

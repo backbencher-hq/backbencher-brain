@@ -1,0 +1,741 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: Session",
+  "summary": "3 file(s) and 3 symbol(s) in scope, 38 cited claim(s) across 5 section(s) from 45 source(s). No indexed evidence was found for: Tests.",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "6 claims, 6 read directly from the index, resting on 3 sources (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "type Session: SessionToPersist & { missedPackets: unknown[][] } is defined in .corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts at lines 44-44.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "interface Session is defined in script/m13/verify-visualize-browser.ts at lines 178-189.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:script/m13/verify-visualize-browser.ts:Session:178-189"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared private.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:script/m13/verify-visualize-browser.ts:Session:178-189"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "property Session: boolean is defined in .corpus/webpack/test/cases/json/weird-properties/globals.json at lines 1467-1467; the index records no parameter list for it, so its arguments are not described here.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44",
+        "symbol:script/m13/verify-visualize-browser.ts:Session:178-189",
+        "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "7 claims, 7 read directly from the index, resting on 3 sources (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in .corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts at line 44 and returns SessionToPersist & { missedPackets: unknown[][] }.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in script/m13/verify-visualize-browser.ts at line 178.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:script/m13/verify-visualize-browser.ts:Session:178-189"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Its documentation (the source file on disk) says: ── the driver ─────────────────────────────────────────────────────────────────",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:script/m13/verify-visualize-browser.ts:Session:178-189"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:script/m13/verify-visualize-browser.ts:Session:178-189"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in .corpus/webpack/test/cases/json/weird-properties/globals.json at line 1467 and returns boolean.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44",
+        "symbol:script/m13/verify-visualize-browser.ts:Session:178-189",
+        "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "20 claims, 20 read directly from the index, resting on 20 sources (1 relationship). Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "index imports Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:imports:7:index:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "index exports Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:exports:7:index:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session references SessionToPersist.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:references:44:Session:SessionToPersist"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session uses SessionToPersist.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:44:Session:SessionToPersist"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "in-memory-adapter exports Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:exports:44:in-memory-adapter:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "startProfiling instantiates Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:.corpus/webpack/lib/debug/ProfilingPlugin.js:instantiates:84:startProfiling:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "startProfiling uses Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:.corpus/webpack/lib/debug/ProfilingPlugin.js:uses:84:startProfiling:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "constructor references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io/lib/socket.ts:references:162:constructor:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains send.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:182:Session:send"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session references Record.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:references:182:Session:Record"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains evaluate.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:183:Session:evaluate"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains mouse.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:184:Session:mouse"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains click.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:185:Session:click"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains navigate.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:186:Session:navigate"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains pageErrors.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:187:Session:pageErrors"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session contains close.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:contains:188:Session:close"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "openBrowser uses Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:uses:191:openBrowser:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "require uses Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:201:require:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "import uses Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:233:import:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "session references Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:script/m13/verify-visualize-browser.ts:references:263:session:Session"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:imports:7:index:Session",
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:exports:7:index:Session",
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:references:44:Session:SessionToPersist",
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:44:Session:SessionToPersist",
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:exports:44:in-memory-adapter:Session",
+        "relationship:.corpus/webpack/lib/debug/ProfilingPlugin.js:instantiates:84:startProfiling:Session",
+        "relationship:.corpus/webpack/lib/debug/ProfilingPlugin.js:uses:84:startProfiling:Session",
+        "relationship:.corpus/socket.io/packages/socket.io/lib/socket.ts:references:162:constructor:Session",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:182:Session:send",
+        "relationship:script/m13/verify-visualize-browser.ts:references:182:Session:Record",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:183:Session:evaluate",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:184:Session:mouse",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:185:Session:click",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:186:Session:navigate",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:187:Session:pageErrors",
+        "relationship:script/m13/verify-visualize-browser.ts:contains:188:Session:close",
+        "relationship:script/m13/verify-visualize-browser.ts:uses:191:openBrowser:Session",
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:201:require:Session",
+        "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:233:import:Session",
+        "relationship:script/m13/verify-visualize-browser.ts:references:263:session:Session"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "No indexed test relationship for Session, and no indexed test file names it.",
+      "facts": [],
+      "citations": []
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "5 claims, 5 read directly from the index, resting on 3 sources (1 symbol). What this document cannot say is stated here rather than filled in.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "50 test file(s) are indexed in this project and none names Session, so its test coverage is unestablished rather than absent.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "50 test file(s) are indexed in this project and none names Session, so its test coverage is unestablished rather than absent.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:script/m13/verify-visualize-browser.ts:Session:178-189"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "50 test file(s) are indexed in this project and none names Session, so its test coverage is unestablished rather than absent.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44",
+        "symbol:script/m13/verify-visualize-browser.ts:Session:178-189",
+        "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:Session:44-44",
+      "kind": "symbol",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "symbol": "Session",
+      "lineStart": 44,
+      "lineEnd": 44,
+      "evidence": "Indexed type Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "symbol:script/m13/verify-visualize-browser.ts:Session:178-189",
+      "kind": "symbol",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "symbol": "Session",
+      "lineStart": 178,
+      "lineEnd": 189,
+      "evidence": "Indexed interface Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "symbol:.corpus/webpack/test/cases/json/weird-properties/globals.json:Session:1467-1467",
+      "kind": "symbol",
+      "path": ".corpus/webpack/test/cases/json/weird-properties/globals.json",
+      "symbol": "Session",
+      "lineStart": 1467,
+      "lineEnd": 1467,
+      "evidence": "Indexed property Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:imports:7:index:Session",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 7,
+      "relationshipType": "imports",
+      "evidence": "imports edge between index and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:exports:7:index:Session",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 7,
+      "relationshipType": "exports",
+      "evidence": "exports edge between index and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:references:44:Session:SessionToPersist",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 44,
+      "relationshipType": "references",
+      "evidence": "references edge between Session and SessionToPersist",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:44:Session:SessionToPersist",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 44,
+      "relationshipType": "uses",
+      "evidence": "uses edge between Session and SessionToPersist",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:exports:44:in-memory-adapter:Session",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 44,
+      "relationshipType": "exports",
+      "evidence": "exports edge between in-memory-adapter and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/webpack/lib/debug/ProfilingPlugin.js:instantiates:84:startProfiling:Session",
+      "kind": "relationship",
+      "path": ".corpus/webpack/lib/debug/ProfilingPlugin.js",
+      "lineStart": 84,
+      "relationshipType": "instantiates",
+      "evidence": "instantiates edge between startProfiling and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:.corpus/webpack/lib/debug/ProfilingPlugin.js:uses:84:startProfiling:Session",
+      "kind": "relationship",
+      "path": ".corpus/webpack/lib/debug/ProfilingPlugin.js",
+      "lineStart": 84,
+      "relationshipType": "uses",
+      "evidence": "uses edge between startProfiling and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io/lib/socket.ts:references:162:constructor:Session",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io/lib/socket.ts",
+      "lineStart": 162,
+      "relationshipType": "references",
+      "evidence": "references edge between constructor and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:182:Session:send",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 182,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and send",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:references:182:Session:Record",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 182,
+      "relationshipType": "references",
+      "evidence": "references edge between Session and Record",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:183:Session:evaluate",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 183,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and evaluate",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:184:Session:mouse",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 184,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and mouse",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:185:Session:click",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 185,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and click",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:186:Session:navigate",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 186,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and navigate",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:187:Session:pageErrors",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 187,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and pageErrors",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:contains:188:Session:close",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 188,
+      "relationshipType": "contains",
+      "evidence": "contains edge between Session and close",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:uses:191:openBrowser:Session",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 191,
+      "relationshipType": "uses",
+      "evidence": "uses edge between openBrowser and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:201:require:Session",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 201,
+      "relationshipType": "uses",
+      "evidence": "uses edge between require and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:.corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts:uses:233:import:Session",
+      "kind": "relationship",
+      "path": ".corpus/socket.io/packages/socket.io-adapter/lib/in-memory-adapter.ts",
+      "lineStart": 233,
+      "relationshipType": "uses",
+      "evidence": "uses edge between import and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "relationship:script/m13/verify-visualize-browser.ts:references:263:session:Session",
+      "kind": "relationship",
+      "path": "script/m13/verify-visualize-browser.ts",
+      "lineStart": 263,
+      "relationshipType": "references",
+      "evidence": "references edge between session and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "No docstring was indexed for Session and none is present in the comment style this tool reads.",
+      "reason": "not-observed",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "No indexed test relationship for Session, and no indexed test file names it.",
+      "reason": "not-observed",
+      "affectedSection": "tests"
+    },
+    {
+      "statement": "The per-section evidence cap is 20 at detail \"standard\", so 13 of 33 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 3
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "5a0bac032bdcd63378e123e482350f3d",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 7170,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 20,
+      "sections": [
+        {
+          "id": "api",
+          "available": 6,
+          "capped": 6,
+          "droppedForBudget": 0,
+          "emitted": 6
+        },
+        {
+          "id": "behavior",
+          "available": 7,
+          "capped": 7,
+          "droppedForBudget": 0,
+          "emitted": 7
+        },
+        {
+          "id": "dependencies",
+          "available": 33,
+          "capped": 20,
+          "droppedForBudget": 0,
+          "emitted": 20
+        },
+        {
+          "id": "tests",
+          "available": 0,
+          "capped": 0,
+          "droppedForBudget": 0,
+          "emitted": 0
+        },
+        {
+          "id": "limitations",
+          "available": 5,
+          "capped": 5,
+          "droppedForBudget": 0,
+          "emitted": 5
+        }
+      ]
+    },
+    "warnings": [
+      "22 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+    "projectPath": "/home/ishaq2321/mcp/backbencher-brain",
+    "snapshotId": "5a0bac032bdcd63378e123e482350f3d",
+    "generatedAt": "2026-11-18T22:39:25.711Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "typescript",
+    "canonicalPath": "Session",
+    "slugs": [
+      "symbol",
+      "Session"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 5,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

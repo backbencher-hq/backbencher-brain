@@ -1,0 +1,29 @@
+# Workspace-project generality probes (MCP bb_health verbose=true freshness=complete; bb doctor)
+# Captured 2026-11-18T22:5x UTC (raw output in this session; key lines verbatim below)
+
+project: /home/ishaq2321/mcp/backbencher-brain  projectId 1d3d57103be91b8f9716d70199fe28a3f39245d9
+files=34385 symbols=506841 relationships=1707606 imports=64317 syntaxErrors=2362
+embeddings: 647059 rows / 647059 entities / 127.7% of symbols
+models: local-word-vectors-v3:326482[50] nvidia/nemotron-3-embed-1b:315514[2048] tfidf-v1:2643[...] nvidia/nemotron-3.5-embed-8b:2420[4096]
+index: version=v1.0.0 indexedFiles=34385/34385 status=partial errors=1000
+embedding config: remote provider — base-url=https://integrate.api.nvidia.com/v1 (source: file:embedding_base_url),
+  model=nvidia/nemotron-3.5-embed-8b (source: file:embedding_model), api-key source: file:embedding_api_key
+embedding chain: remote ready
+  → 1. primary provider (global): integrate.api.nvidia.com · nvidia/nemotron-3.5-embed-8b · key present
+  → 2. local word vectors: offline · 50-dim [built in]
+unsearchable languages: objective-c, clean, dart, fsharp, make, matlab, nim, perl, swift, vba
+unembedded kinds: property=171754 class=35947 constant=22672 type=12387 function=10490 variable=8133 module=6076 method=5569 constructor=1362 namespace=628 interface=443 enum_member=253 enum=52 macro=41 struct=1 — "these symbols are NOT semantically searchable (never attempted, not partially covered)"
+
+bb doctor (workspace, grep of ~/.bb/config.json implicit; NO key printed):
+  → 0. primary provider (global) — nvidia/nemotron-3.5-embed-8b @ https://integrate.api.nvidia.com/v1 (key present, from url file:global · model file:global · key file:global)
+  → 1. local word vectors — local-word-vectors-v3 @ offline (key not-required, from built in)
+  ! The index contains foreign-model vectors: local-word-vectors-v3 (326482 rows), nvidia/nemotron-3-embed-1b (315514 rows), tfidf-v1 (2643 rows). They are never compared with nvidia/nemotron-3.5-embed-8b queries.
+    Fix: bb index --force
+
+Observations:
+  * Same mixed-model state class as bettercap (old space + local space + a small sliver of the newly configured model: 2420 rows).
+  * The product DETECTS and NAMES the condition (doctor foreign-model warning) and its remedy is `bb index --force` — it does not backfill at query time, and health does not expose a "backfill pending" state.
+  * MCP bb_ask on the workspace failed at capture time with:
+      Error: error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/dist/content-search-ZPL5L7JT.js'
+             imported from .../dist/chunk-PZ3XJRPH.js
+    (dist chunk churn during the triage window; workspace bb_ask generality could not be measured — marked CANNOT-VERIFY).

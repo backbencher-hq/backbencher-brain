@@ -1,0 +1,512 @@
+{
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42",
+    "name": "LoadModules",
+    "symbolType": "function",
+    "file": "modules/modules.go",
+    "line": 42,
+    "lineEnd": 78,
+    "language": "go",
+    "complexity": 1,
+    "isExternal": false
+  },
+  "rootCandidates": 1,
+  "rootMatch": "exact",
+  "callers": [
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42",
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "main.go",
+        "line": 47
+      },
+      "depth": 0,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:LoadModules:calls:47",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42",
+      "relationshipType": "calls",
+      "confidence": 0.8,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/modules_test.go",
+        "line": 16
+      },
+      "depth": 0,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7:LoadModules:calls:16",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:modules:1",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42",
+      "relationshipType": "exports",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/modules.go",
+        "line": 42
+      },
+      "depth": 0,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:modules:1:LoadModules:exports:42",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "structural"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerConfigure:89",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 99
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerConfigure:89:main:uses:99",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerStartStop:112",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "relationshipType": "uses",
+      "confidence": 0.7,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 141
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerStartStop:112:main:uses:141",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 745
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:main:uses:745",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 816
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813:main:uses:816",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 856
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854:main:uses:856",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "relationshipType": "uses",
+      "confidence": 0.6,
+      "isCrossLanguage": true,
+      "bridgeMechanism": "name-resolution",
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "line": 905
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903:main:uses:905",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "usage_contextual"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerConfigure:89",
+      "relationshipType": "exports",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 89
+      },
+      "depth": 2,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1:TestTickerConfigure:exports:89",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "structural"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerStartStop:112",
+      "relationshipType": "exports",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/ticker/ticker_test.go",
+        "line": 112
+      },
+      "depth": 2,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1:TestTickerStartStop:exports:112",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "structural"
+      }
+    },
+    {
+      "from": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:modules:1",
+      "to": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7",
+      "relationshipType": "exports",
+      "confidence": 1,
+      "isCrossLanguage": false,
+      "callSite": {
+        "kind": "call-site",
+        "file": "modules/modules_test.go",
+        "line": 7
+      },
+      "depth": 1,
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:modules:1:TestLoadModulesWithNilSession:exports:7",
+      "targetMatch": "exact",
+      "targetBasis": "symbol",
+      "metadata": {
+        "evidenceClass": "structural"
+      }
+    }
+  ],
+  "callees": [],
+  "nodes": {
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:LoadModules:42",
+      "name": "LoadModules",
+      "symbolType": "function",
+      "file": "modules/modules.go",
+      "line": 42,
+      "lineEnd": 78,
+      "language": "go",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "name": "main",
+      "symbolType": "module",
+      "file": "main.go",
+      "line": 1,
+      "lineEnd": 1,
+      "language": "go",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:TestLoadModulesWithNilSession:7",
+      "name": "TestLoadModulesWithNilSession",
+      "symbolType": "function",
+      "file": "modules/modules_test.go",
+      "line": 7,
+      "lineEnd": 17,
+      "language": "go",
+      "complexity": 2,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:modules:1": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules.go:modules:1",
+      "name": "modules",
+      "symbolType": "module",
+      "file": "modules/modules.go",
+      "line": 1,
+      "lineEnd": 1,
+      "language": "go",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerConfigure:89": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerConfigure:89",
+      "name": "TestTickerConfigure",
+      "symbolType": "function",
+      "file": "modules/ticker/ticker_test.go",
+      "line": 89,
+      "lineEnd": 110,
+      "language": "go",
+      "complexity": 5,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerStartStop:112": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerStartStop:112",
+      "name": "TestTickerStartStop",
+      "symbolType": "function",
+      "file": "modules/ticker/ticker_test.go",
+      "line": 112,
+      "lineEnd": 144,
+      "language": "go",
+      "complexity": 6,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742",
+      "name": "makeIconMasking",
+      "symbolType": "function",
+      "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+      "line": 742,
+      "lineEnd": 811,
+      "language": "javascript",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813",
+      "name": "makeIconStandard",
+      "symbolType": "function",
+      "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+      "line": 813,
+      "lineEnd": 852,
+      "language": "javascript",
+      "complexity": 3,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854",
+      "name": "asIcon",
+      "symbolType": "function",
+      "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+      "line": 854,
+      "lineEnd": 879,
+      "language": "javascript",
+      "complexity": 4,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903",
+      "name": "makeInlineSvgAbstract",
+      "symbolType": "function",
+      "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+      "line": 903,
+      "lineEnd": 970,
+      "language": "javascript",
+      "complexity": 10,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:ticker:1",
+      "name": "ticker",
+      "symbolType": "module",
+      "file": "modules/ticker/ticker_test.go",
+      "line": 1,
+      "lineEnd": 1,
+      "language": "go",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    },
+    "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:modules:1": {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/modules_test.go:modules:1",
+      "name": "modules",
+      "symbolType": "module",
+      "file": "modules/modules_test.go",
+      "line": 1,
+      "lineEnd": 1,
+      "language": "go",
+      "complexity": 1,
+      "isExternal": false,
+      "stale": false
+    }
+  },
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  },
+  "summary": {
+    "totalCallers": 12,
+    "totalCallees": 0,
+    "maxDepthReached": 2,
+    "maxDepth": 3,
+    "timeBudgetMs": 2000,
+    "timeBudgetExhausted": false,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageEdges": 4,
+    "truncated": true,
+    "truncationReason": "caller-depth-cap-reached",
+    "truncationReasons": [
+      "caller-depth-cap-reached"
+    ],
+    "filterNarrowed": false,
+    "filterReason": null,
+    "edgeLimit": 200,
+    "maxEdges": 1000,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 3,
+    "cascadedCallers": 0,
+    "exactCallees": 0,
+    "cascadedCallees": 0,
+    "deeperCallers": 9,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesByType": {
+      "calls": 2,
+      "exports": 4,
+      "uses": 6
+    },
+    "relationshipTypesUsed": [
+      "calls",
+      "extends",
+      "implements",
+      "uses",
+      "instantiates",
+      "overrides",
+      "contains",
+      "references",
+      "imports",
+      "exports",
+      "decorates",
+      "renders",
+      "mixes_in",
+      "part_of"
+    ],
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "edgesInBothDirections": 0,
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "returnedCallers": 12,
+    "returnedCallees": 0,
+    "pageEdgeLimit": 25,
+    "pageTruncated": false
+  },
+  "mode": "callers",
+  "target": "LoadModules",
+  "found": true,
+  "freshness": {
+    "fresh": 5,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

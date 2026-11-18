@@ -1,0 +1,2614 @@
+{
+  "dependencies": [
+    {
+      "file": "modules/ui/ui/assets/fontawesome/metadata/icons.yml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/metadata/icons.yml",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "caplets/manager_test.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/manager.go",
+          "stale": false
+        },
+        {
+          "path": "core/core.go",
+          "stale": false
+        },
+        {
+          "path": "core/options.go",
+          "stale": false
+        },
+        {
+          "path": "modules/any_proxy/any_proxy_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest.go",
+          "stale": false
+        },
+        {
+          "path": "modules/arp_spoof/arp_spoof_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/arp_spoof/arp_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_recon_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/c2/c2_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc_compile.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_obd2.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dhcp6_spoof/dhcp6_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_spoof/dns_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_stream.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/trigger_list.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/edges.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/graph.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/module.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/node.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/stack.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/keymaps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_cookietracker.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_hosttracker.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_cert_cache.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ndp_spoof/ndp_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_recon/net_recon_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_recon/net_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_connection.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_logger.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/syn_scan.go",
+          "stale": false
+        },
+        {
+          "path": "modules/tcp_proxy/tcp_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ticker/ticker_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/update/update_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/utils/view_selector_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_assoc_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_assoc.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_deauth_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_deauth.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_targets_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wol/wol_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/service.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_browser.go",
+          "stale": false
+        },
+        {
+          "path": "network/arp.go",
+          "stale": false
+        },
+        {
+          "path": "network/ble.go",
+          "stale": false
+        },
+        {
+          "path": "network/can_device.go",
+          "stale": false
+        },
+        {
+          "path": "network/can.go",
+          "stale": false
+        },
+        {
+          "path": "network/hid_device.go",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
+          "stale": false
+        },
+        {
+          "path": "network/lan_test.go",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
+          "stale": false
+        },
+        {
+          "path": "network/meta.go",
+          "stale": false
+        },
+        {
+          "path": "network/net_netlink_linux.go",
+          "stale": false
+        },
+        {
+          "path": "network/net_wifi.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_concurrency_test.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_handshake.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_station.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi.go",
+          "stale": false
+        },
+        {
+          "path": "packets/ntlm.go",
+          "stale": false
+        },
+        {
+          "path": "packets/queue.go",
+          "stale": false
+        },
+        {
+          "path": "routing/tables_test.go",
+          "stale": false
+        },
+        {
+          "path": "routing/tables.go",
+          "stale": false
+        },
+        {
+          "path": "session/command_handler.go",
+          "stale": false
+        },
+        {
+          "path": "session/environment.go",
+          "stale": false
+        },
+        {
+          "path": "session/events_ignore_list.go",
+          "stale": false
+        },
+        {
+          "path": "session/events_test.go",
+          "stale": false
+        },
+        {
+          "path": "session/events.go",
+          "stale": false
+        },
+        {
+          "path": "session/module_handler.go",
+          "stale": false
+        },
+        {
+          "path": "session/module.go",
+          "stale": false
+        },
+        {
+          "path": "session/script_builtin_runtime.go",
+          "stale": false
+        },
+        {
+          "path": "session/session_core_handlers.go",
+          "stale": false
+        },
+        {
+          "path": "session/session.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 85,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 85,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ui/ui/assets/openlayers/ol.js",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/openlayers/ol.js",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "js/http.go",
+          "stale": false
+        },
+        {
+          "path": "main.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_controller.go",
+          "stale": false
+        },
+        {
+          "path": "modules/caplets/caplets.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_stream.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_ble_unsupported.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_ble.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_can.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_gateway.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_gps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_http.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_wifi.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_zeroconf.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view.go",
+          "stale": false
+        },
+        {
+          "path": "modules/gps/gps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_filters.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_sslstriper.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_js_request.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_js_response.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_http.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_connection.go",
+          "stale": false
+        },
+        {
+          "path": "modules/tcp_proxy/tcp_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_http_handler.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_ipp_primitives.go",
+          "stale": false
+        },
+        {
+          "path": "network/net_darwin.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 26,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 26,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/zerogod/zerogod_acceptor.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_acceptor.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "crypto/tls",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/ops",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "modules/api_rest/api_rest.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dump_reader.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_fuzz.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_inject.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_base.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_server/http_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/https_server/https_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/packet_proxy/packet_proxy_linux.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ui/ui.go",
+          "stale": false
+        },
+        {
+          "path": "modules/update/update.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/client.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 12,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 12,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_dbc.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_dbc.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can/pkg/descriptor",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "modules/graph/edges.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_recon_handshakes.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_ipp_print_job.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 3,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 3,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/any_proxy/any_proxy_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/any_proxy/any_proxy.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/firewall",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/api_rest/api_rest_controller.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_controller.go",
+      "dependencies": [
+        {
+          "path": "crypto/subtle",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gorilla/mux",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 12,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/api_rest/api_rest_record.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_record.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/recording",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/api_rest/api_rest_replay.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_replay.go",
+      "dependencies": [
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/recording",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/api_rest/api_rest_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http/httptest",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/data",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gorilla/mux",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 11,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/api_rest/api_rest_ws.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_ws.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gorilla/websocket",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/api_rest/api_rest.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/tls",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/recording",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gorilla/mux",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gorilla/websocket",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 11,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/arp_spoof/arp_spoof_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/firewall",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/packets",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/data",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 11,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/arp_spoof/arp_spoof.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/packets",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/malfunkt/iprange",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 9,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_options_darwin.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_options_darwin.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/gatt",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_options_linux.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_options_linux.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/gatt",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_recon_events.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_recon_events.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/gatt",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_recon_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_recon_test.go",
+      "dependencies": [
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_recon.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_recon.go",
+      "dependencies": [
+        {
+          "path": "encoding/hex",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/modules/utils",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/gatt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 9,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_show_services.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_show_services.go",
+      "dependencies": [
+        {
+          "path": "encoding/binary",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/gatt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_show_sort.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_show_sort.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_show.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_show.go",
+      "dependencies": [
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/ops",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ble/ble_unsupported.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_unsupported.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/c2/c2_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go",
+      "dependencies": [
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "text/template",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/c2/c2.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "crypto/tls",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "text/template",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/acarl005/stripansi",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/modules/events_stream",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/thoj/go-ircevent",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 11,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_dbc_compile.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_dbc_compile.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can/pkg/dbc",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can/pkg/descriptor",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_dbc_load.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_dbc_load.go",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_dump_reader.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_dump_reader.go",
+      "dependencies": [
+        {
+          "path": "bufio",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 10,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_fuzz.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_fuzz.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "math/rand",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strconv",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/dustin/go-humanize",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_inject.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_inject.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/dustin/go-humanize",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_message.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_message.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 2,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_obd2_message.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_obd2_message.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_obd2_pid_request.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_obd2_pid_request.go",
+      "dependencies": [
+        {
+          "path": "encoding/binary",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_obd2_pid_response.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_obd2_pid_response.go",
+      "dependencies": [
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 1,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_obd2.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_obd2.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 2,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_recon.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_recon.go",
+      "dependencies": [
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/hashicorp/go-bexpr",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can/pkg/socketcan",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_show.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_show.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/dustin/go-humanize",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go",
+      "dependencies": [
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can.go",
+      "dependencies": [
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/hashicorp/go-bexpr",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can/pkg/socketcan",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/caplets/caplets.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/caplets/caplets.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net/http",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/caplets",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/dustin/go-humanize",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/zip",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 10,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dhcp6_spoof/dhcp6_spoof.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dhcp6_spoof/dhcp6_spoof.go",
+      "dependencies": [
+        {
+          "path": "bytes",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "crypto/rand",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/network",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/packets",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gopacket/gopacket",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gopacket/gopacket/layers",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gopacket/gopacket/pcap",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/mdlayher/dhcp6",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/mdlayher/dhcp6/dhcp6opts",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 16,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_base_filters.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_base_filters.go",
+      "dependencies": [
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 2,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_base.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_base.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "crypto/tls",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "crypto/x509",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "time",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/firewall",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/robertkrimen/otto",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 12,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_js_query.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_js_query.go",
+      "dependencies": [
+        {
+          "path": "encoding/json",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "math",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "math/big",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "reflect",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_js_record_edns0.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_js_record_edns0.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_js_record_svcb.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_js_record_svcb.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_js_record.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_js_record.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy_script.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy_script.go",
+      "dependencies": [
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/log",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/plugin",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/miekg/dns",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/robertkrimen/otto",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 6,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_proxy/dns_proxy.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_proxy/dns_proxy.go",
+      "dependencies": [
+        {
+          "path": "github.com/bettercap/bettercap/v2/session",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/bettercap/bettercap/v2/tls",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/dns_spoof/dns_spoof_hosts.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/dns_spoof/dns_spoof_hosts.go",
+      "dependencies": [
+        {
+          "path": "bufio",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "regexp",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/gobwas/glob",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "file-page: showing 50 of 1812 files — raise limit for the rest"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "dependencies@intelligence",
+    "engineVersion": "m10.04",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship+brain_import",
+    "limitations": [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut."
+    ]
+  },
+  "summary": {
+    "returned": 50,
+    "totalFiles": 1812,
+    "scope": "modules",
+    "truncated": true,
+    "returnedInternalDependencies": 0,
+    "returnedInternalDependents": 126,
+    "pageLimit": 50
+  },
+  "freshness": {
+    "fresh": 152,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

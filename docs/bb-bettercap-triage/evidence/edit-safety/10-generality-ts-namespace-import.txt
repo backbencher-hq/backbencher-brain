@@ -1,0 +1,54 @@
+# TS/JS namespace-import generality probe (workspace project, READ-ONLY dry-run)
+## plan: 1 file / 1 site while 10+ cross-file 'Log.create(...)' qualified usages exist
+## command: node bin/bb tool bb_edit --dir <workspace> --args '{"mode":"refactor","symbolName":"create","filePath":"src/tool/brain-log.ts","newName":"createLog","dryRun":true}'
+## qualified usage sites:
+  src/brain/service.ts:7:const log = Log.create({ service: "brain-service" })
+  src/brain/semantic/local-embed.ts:4:const log = Log.create({ service: "local-embed" })
+  src/brain/semantic/engine.ts:13:const log = Log.create({ service: "brain-semantic-engine" })
+  src/brain/semantic/openai-embed.ts:30:const log = Log.create({ service: "openai-embed" })
+  src/brain/brain-relationship-enrichment.ts:78:const log = Log.create({ service: "relationship-enrichment" })
+  src/ast/patterns.ts:13:const log = Log.create({ service: "pattern-recognition" })
+  src/ast/api-coverage-analyzer.ts:13:const log = Log.create({ service: "api-coverage-analyzer" })
+  src/ast/cross-language-migration-assistant.ts:3:const log = Log.create({ service: "cross-language-migration" })
+  src/ast/cross-language-symbol-discovery.ts:10:const log = Log.create({ service: "symbol-discovery" })
+  src/ast/engine.ts:29:const log = Log.create({ service: "ast-engine" })
+  src/ast/cross-language-relationship-mapper.ts:10:const log = Log.create({ service: "relationship-mapper" })
+  src/ast/cross-language-intelligence-persister.ts:12:const log = Log.create({ service: "cross-language-persister" })
+  src/ast/project-health.ts:9:const log = Log.create({ service: "project-health" })
+  src/ast/dependency-graph-visualizer.ts:5:const log = Log.create({ service: "dependency-graph-visualizer" })
+  src/ast/graph.ts:9:const log = Log.create({ service: "graph-intelligence" })
+  src/ast/cross-language-intelligence.ts:16:const log = Log.create({ service: "cross-language-intelligence" })
+  src/ast/data-flow-analyzer.ts:9:const log = Log.create({ service: "data-flow-analyzer" })
+  src/ast/service-topology-builder.ts:10:const log = Log.create({ service: "service-topology" })
+  src/ast/parallel-indexer.ts:58:const log = Log.create({ service: "parallel-indexer" })
+  src/ast/api-contract-validator.ts:4:const log = Log.create({ service: "api-contract-validator" })
+
+## namespace import lines:
+  src/brain/service.ts:3:import * as Log from "../tool/brain-log"
+  src/brain/semantic/local-embed.ts:2:import * as Log from "../../tool/brain-log"
+  src/brain/semantic/engine.ts:2:import * as Log from "../../tool/brain-log"
+  src/brain/semantic/openai-embed.ts:19:import * as Log from "../../tool/brain-log"
+  src/brain/brain-relationship-enrichment.ts:76:import * as Log from "../tool/brain-log"
+  src/ast/patterns.ts:3:import * as Log from "../tool/brain-log"
+  src/ast/api-coverage-analyzer.ts:11:import * as Log from "../tool/brain-log"
+  src/ast/cross-language-migration-assistant.ts:1:import * as Log from "../tool/brain-log"
+  src/ast/cross-language-symbol-discovery.ts:8:import * as Log from "../tool/brain-log"
+  src/ast/engine.ts:2:import * as Log from "../tool/brain-log"
+  src/ast/cross-language-relationship-mapper.ts:8:import * as Log from "../tool/brain-log"
+  src/ast/cross-language-intelligence-persister.ts:5:import * as Log from "../tool/brain-log"
+  src/ast/project-health.ts:7:import * as Log from "../tool/brain-log"
+  src/ast/dependency-graph-visualizer.ts:2:import * as Log from "../tool/brain-log"
+  src/ast/graph.ts:4:import * as Log from "../tool/brain-log"
+  src/ast/cross-language-intelligence.ts:14:import * as Log from "../tool/brain-log"
+  src/ast/data-flow-analyzer.ts:7:import * as Log from "../tool/brain-log"
+  src/ast/service-topology-builder.ts:8:import * as Log from "../tool/brain-log"
+  src/ast/parallel-indexer.ts:11:import * as Log from "../tool/brain-log"
+  src/ast/api-contract-validator.ts:2:import * as Log from "../tool/brain-log"
+
+## plan JSON: 09-workspace-ts-namespace-import-refactor-dryrun.json
+## plan summary: renamedFiles=1 renamedSites=1 warnings=["refactor create → createLog: 1 site(s) across 1 file(s)"]
+
+## MCP bb_edit failure on same project (adjacent defect, captured verbatim):
+  Error: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/dist/database-HE6EE3VA.js' imported from dist/chunk-PHPRG35J.js
+  on-disk database chunks: database-35MKQZKM.js
+  chunk-PHPRG35J.js references database-HE6EE3VA:  occurrence(s)

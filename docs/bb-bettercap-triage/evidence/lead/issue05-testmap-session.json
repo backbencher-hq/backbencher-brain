@@ -1,0 +1,2380 @@
+{
+  "entries": [
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:New:155",
+      "name": "New",
+      "symbolType": "function",
+      "file": "session/session.go",
+      "line": 155,
+      "complexity": 2,
+      "gravity": 916,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet_test.go:TestCapletEvalError:142",
+          "testSymbolName": "TestCapletEvalError",
+          "testFile": "caplets/caplet_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkAtob:464",
+          "testSymbolName": "BenchmarkAtob",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkBtoa:451",
+          "testSymbolName": "BenchmarkBtoa",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkGzipCompress:478",
+          "testSymbolName": "BenchmarkGzipCompress",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:BenchmarkGzipDecompress:492",
+          "testSymbolName": "BenchmarkGzipDecompress",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestAtob:79",
+          "testSymbolName": "TestAtob",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestBtoa:11",
+          "testSymbolName": "TestBtoa",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestBtoaAtobRoundTrip:374",
+          "testSymbolName": "TestBtoaAtobRoundTrip",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipCompress:155",
+          "testSymbolName": "TestGzipCompress",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipCompressDecompressRoundTrip:413",
+          "testSymbolName": "TestGzipCompressDecompressRoundTrip",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipCompressInvalidArgs:235",
+          "testSymbolName": "TestGzipCompressInvalidArgs",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipDecompress:273",
+          "testSymbolName": "TestGzipDecompress",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/data_test.go:TestGzipDecompressInvalidArgs:336",
+          "testSymbolName": "TestGzipDecompressInvalidArgs",
+          "testFile": "js/data_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkAppendFile:1139",
+          "testSymbolName": "BenchmarkAppendFile",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkMkdirAll:1164",
+          "testSymbolName": "BenchmarkMkdirAll",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkReadDir:1181",
+          "testSymbolName": "BenchmarkReadDir",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkReadFile:1098",
+          "testSymbolName": "BenchmarkReadFile",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:BenchmarkWriteFile:1119",
+          "testSymbolName": "BenchmarkWriteFile",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestAppendFile:533",
+          "testSymbolName": "TestAppendFile",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:js/fs_test.go:TestFileSystemIntegration:987",
+          "testSymbolName": "TestFileSystemIntegration",
+          "testFile": "js/fs_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": true,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:Handlers:122",
+      "name": "Handlers",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 122,
+      "complexity": 1,
+      "gravity": 503,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29",
+          "testSymbolName": "TestNewAnyProxy",
+          "testFile": "modules/any_proxy/any_proxy_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:TestNewRestAPI:34",
+          "testSymbolName": "TestNewRestAPI",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:TestArpSpooferBanMode:488",
+          "testSymbolName": "TestArpSpooferBanMode",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:TestArpSpooferRestoresForwarding:727",
+          "testSymbolName": "TestArpSpooferRestoresForwarding",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:TestNewArpSpoofer:263",
+          "testSymbolName": "TestNewArpSpoofer",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ble/ble_recon_test.go:TestNewBLERecon:30",
+          "testSymbolName": "TestNewBLERecon",
+          "testFile": "modules/ble/ble_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkChannelSet:322",
+          "testSymbolName": "BenchmarkChannelSet",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkTemplateSet:340",
+          "testSymbolName": "BenchmarkTemplateSet",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:TestChannelHandlers:164",
+          "testSymbolName": "TestChannelHandlers",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:TestClearNonExistent:242",
+          "testSymbolName": "TestClearNonExistent",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:TestNewC2:27",
+          "testSymbolName": "TestNewC2",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:TestTemplateHandlers:203",
+          "testSymbolName": "TestTemplateHandlers",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:BenchmarkInjectHandler:390",
+          "testSymbolName": "BenchmarkInjectHandler",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestDBCLoadHandler:351",
+          "testSymbolName": "TestDBCLoadHandler",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestFuzzNotRunning:139",
+          "testSymbolName": "TestFuzzNotRunning",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestHandlerExecution:297",
+          "testSymbolName": "TestHandlerExecution",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestInjectNotRunning:122",
+          "testSymbolName": "TestInjectNotRunning",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestNewCanModule:27",
+          "testSymbolName": "TestNewCanModule",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/http_proxy/http_proxy_test.go:TestNewHttpProxy:123",
+          "testSymbolName": "TestNewHttpProxy",
+          "testFile": "modules/http_proxy/http_proxy_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:TestProberHandlers:434",
+          "testSymbolName": "TestProberHandlers",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": true,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler.go:ModuleHandler:22",
+      "name": "ModuleHandler",
+      "symbolType": "struct",
+      "file": "session/module_handler.go",
+      "line": 22,
+      "complexity": 1,
+      "gravity": 363,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestModuleHandler_Help:53",
+          "testSymbolName": "TestModuleHandler_Help",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestModuleHandler_MarshalJSON:168",
+          "testSymbolName": "TestModuleHandler_MarshalJSON",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestModuleHandler_Parse:103",
+          "testSymbolName": "TestModuleHandler_Parse",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestNewModuleHandler:9",
+          "testSymbolName": "TestNewModuleHandler",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestNewModuleHandler:9",
+          "testSymbolName": "TestNewModuleHandler",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkChannelSet:322",
+          "testSymbolName": "BenchmarkChannelSet",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2_test.go:BenchmarkTemplateSet:340",
+          "testSymbolName": "BenchmarkTemplateSet",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:BenchmarkInjectHandler:390",
+          "testSymbolName": "BenchmarkInjectHandler",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestDBCLoadHandler:351",
+          "testSymbolName": "TestDBCLoadHandler",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestTickerHandlers:203",
+          "testSymbolName": "TestTickerHandlers",
+          "testFile": "modules/ticker/ticker_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/update/update_test.go:TestHandlerExecution:295",
+          "testSymbolName": "TestHandlerExecution",
+          "testFile": "modules/update/update_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210",
+          "testSymbolName": "TestLegacyWiFiTargetCommandSyntaxStillParses",
+          "testFile": "modules/wifi/wifi_targets_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:TestWiFiModuleChannelHandler:332",
+          "testSymbolName": "TestWiFiModuleChannelHandler",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:TestWiFiModuleDeauth:301",
+          "testSymbolName": "TestWiFiModuleDeauth",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:TestWiFiModuleFakeAuth:521",
+          "testSymbolName": "TestWiFiModuleFakeAuth",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:TestWiFiModuleFilters:239",
+          "testSymbolName": "TestWiFiModuleFilters",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:TestWiFiModuleProbe:490",
+          "testSymbolName": "TestWiFiModuleProbe",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:TestZeroGodAdvertise:325",
+          "testSymbolName": "TestZeroGodAdvertise",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:TestZeroGodImpersonate:369",
+          "testSymbolName": "TestZeroGodImpersonate",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:TestZeroGodShow:258",
+          "testSymbolName": "TestZeroGodShow",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": true,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment.go:NewEnvironment:22",
+      "name": "NewEnvironment",
+      "symbolType": "function",
+      "file": "session/environment.go",
+      "line": 22,
+      "complexity": 4,
+      "gravity": 232,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:createMockSession:195",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/http_proxy/http_proxy_test.go:createMockSession:68",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/http_proxy/http_proxy_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:createMockSession:162",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:createMockSession:115",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:createMockSession:17",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:createMockSession:115",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentGet:213",
+          "testSymbolName": "TestSessionEnvironmentGet",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentGetInt:241",
+          "testSymbolName": "TestSessionEnvironmentGetInt",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentHas:133",
+          "testSymbolName": "TestSessionEnvironmentHas",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSave:108",
+          "testSymbolName": "TestSessionEnvironmentSave",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSaveWithError:95",
+          "testSymbolName": "TestSessionEnvironmentSaveWithError",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSet:159",
+          "testSymbolName": "TestSessionEnvironmentSet",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSetWithCallback:179",
+          "testSymbolName": "TestSessionEnvironmentSetWithCallback",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSorted:272",
+          "testSymbolName": "TestSessionEnvironmentSorted",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentWithDataFile:80",
+          "testSymbolName": "TestSessionEnvironmentWithDataFile",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentWithEmptyFile:67",
+          "testSymbolName": "TestSessionEnvironmentWithEmptyFile",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentWithInvalidFile:57",
+          "testSymbolName": "TestSessionEnvironmentWithInvalidFile",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentWithoutFile:47",
+          "testSymbolName": "TestSessionEnvironmentWithoutFile",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigFromModule:33",
+          "testSymbolName": "TestCertConfigFromModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigToModule:14",
+          "testSymbolName": "TestCertConfigToModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:ModuleParam:24",
+      "name": "ModuleParam",
+      "symbolType": "struct",
+      "file": "session/module_param.go",
+      "line": 24,
+      "complexity": 1,
+      "gravity": 443,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:BenchmarkModuleParamValidate:454",
+          "testSymbolName": "BenchmarkModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:BenchmarkModuleParamValidateInt:467",
+          "testSymbolName": "BenchmarkModuleParamValidateInt",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamHelp:307",
+          "testSymbolName": "TestModuleParamHelp",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Lock:164",
+      "name": "Lock",
+      "symbolType": "method",
+      "file": "session/session.go",
+      "line": 164,
+      "complexity": 1,
+      "gravity": 1523,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:TestShowWiFiJSONContract:95",
+          "testSymbolName": "TestShowWiFiJSONContract",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:ClearSentPackets:102",
+          "testSymbolName": "ClearSentPackets",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:GetSentPackets:96",
+          "testSymbolName": "GetSentPackets",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:Send:81",
+          "testSymbolName": "Send",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:ClearSentPackets:53",
+          "testSymbolName": "ClearSentPackets",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:GetSentPackets:47",
+          "testSymbolName": "GetSentPackets",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Send:32",
+          "testSymbolName": "Send",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Stop:59",
+          "testSymbolName": "Stop",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:AddIfNew:45",
+          "testSymbolName": "AddIfNew",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:Clear:70",
+          "testSymbolName": "Clear",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:Remove:60",
+          "testSymbolName": "Remove",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
+          "testSymbolName": "TestWiFiTargetCommandResultsForEmptySelections",
+          "testFile": "modules/wifi/wifi_targets_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
+          "testSymbolName": "TestWiFiTargetCommandResultsForEmptySelections",
+          "testFile": "modules/wifi/wifi_targets_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:routing/tables_test.go:TestGatewayNoDefaultRoute:171",
+          "testSymbolName": "TestGatewayNoDefaultRoute",
+          "testFile": "routing/tables_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:routing/tables_test.go:addTestRoutes:17",
+          "testSymbolName": "addTestRoutes",
+          "testFile": "routing/tables_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:routing/tables_test.go:resetTable:10",
+          "testSymbolName": "resetTable",
+          "testFile": "routing/tables_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Unlock:169",
+      "name": "Unlock",
+      "symbolType": "method",
+      "file": "session/session.go",
+      "line": 169,
+      "complexity": 1,
+      "gravity": 1523,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:TestShowWiFiJSONContract:95",
+          "testSymbolName": "TestShowWiFiJSONContract",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:ClearSentPackets:102",
+          "testSymbolName": "ClearSentPackets",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:GetSentPackets:96",
+          "testSymbolName": "GetSentPackets",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:Send:81",
+          "testSymbolName": "Send",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:ClearSentPackets:53",
+          "testSymbolName": "ClearSentPackets",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:GetSentPackets:47",
+          "testSymbolName": "GetSentPackets",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Send:32",
+          "testSymbolName": "Send",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Stop:59",
+          "testSymbolName": "Stop",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:AddIfNew:45",
+          "testSymbolName": "AddIfNew",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:Clear:70",
+          "testSymbolName": "Clear",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:Remove:60",
+          "testSymbolName": "Remove",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
+          "testSymbolName": "TestWiFiTargetCommandResultsForEmptySelections",
+          "testFile": "modules/wifi/wifi_targets_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
+          "testSymbolName": "TestWiFiTargetCommandResultsForEmptySelections",
+          "testFile": "modules/wifi/wifi_targets_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:routing/tables_test.go:TestGatewayNoDefaultRoute:171",
+          "testSymbolName": "TestGatewayNoDefaultRoute",
+          "testFile": "routing/tables_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:routing/tables_test.go:addTestRoutes:17",
+          "testSymbolName": "addTestRoutes",
+          "testFile": "routing/tables_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:routing/tables_test.go:resetTable:10",
+          "testSymbolName": "resetTable",
+          "testFile": "routing/tables_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:validate:65",
+      "name": "validate",
+      "symbolType": "method",
+      "file": "session/module_param.go",
+      "line": 65,
+      "complexity": 9,
+      "gravity": 128,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:TestArpSpooferConfigure:304",
+          "testSymbolName": "TestArpSpooferConfigure",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/http_proxy/http_proxy_test.go:TestHttpProxyConfigure:174",
+          "testSymbolName": "TestHttpProxyConfigure",
+          "testFile": "modules/http_proxy/http_proxy_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:TestHandlers:408",
+          "testSymbolName": "TestHandlers",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:BenchmarkModuleParamValidate:454",
+          "testSymbolName": "BenchmarkModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:BenchmarkModuleParamValidateInt:467",
+          "testSymbolName": "BenchmarkModuleParamValidateInt",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamValidate:107",
+          "testSymbolName": "TestModuleParamValidate",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:TestArpSpooferConfigure:304",
+          "testSymbolName": "TestArpSpooferConfigure",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "reference",
+          "relationshipType": "uses",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/http_proxy/http_proxy_test.go:TestHttpProxyConfigure:174",
+          "testSymbolName": "TestHttpProxyConfigure",
+          "testFile": "modules/http_proxy/http_proxy_test.go",
+          "evidence": "reference",
+          "relationshipType": "uses",
+          "confidence": 0.6
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:TestHandlers:408",
+          "testSymbolName": "TestHandlers",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "reference",
+          "relationshipType": "uses",
+          "confidence": 0.6
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:SetRunning:235",
+      "name": "SetRunning",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 235,
+      "complexity": 12,
+      "gravity": 796,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/api_rest/api_rest_test.go:TestConfigureAlreadyRunning:544",
+          "testSymbolName": "TestConfigureAlreadyRunning",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:Start:186",
+          "testSymbolName": "Start",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:Stop:190",
+          "testSymbolName": "Stop",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Start:153",
+          "testSymbolName": "Start",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Stop:59",
+          "testSymbolName": "Stop",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:Start:59",
+          "testSymbolName": "Start",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:Stop:63",
+          "testSymbolName": "Stop",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:TestZeroGodConfigure:227",
+          "testSymbolName": "TestZeroGodConfigure",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:NewSessionModule:51",
+      "name": "NewSessionModule",
+      "symbolType": "function",
+      "file": "session/module.go",
+      "line": 51,
+      "complexity": 1,
+      "gravity": 473,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:NewMockNetRecon:149",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:NewMockNetRecon:116",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:BenchmarkRunDiff:618",
+          "testSymbolName": "BenchmarkRunDiff",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:TestRunDiff:172",
+          "testSymbolName": "TestRunDiff",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:newMockModule:31",
+          "testSymbolName": "newMockModule",
+          "testFile": "modules/utils/view_selector_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:NewMockNetRecon:22",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigFromModule:33",
+          "testSymbolName": "TestCertConfigFromModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigToModule:14",
+          "testSymbolName": "TestCertConfigToModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:EventPool:53",
+      "name": "EventPool",
+      "symbolType": "struct",
+      "file": "session/events.go",
+      "line": 53,
+      "complexity": 1,
+      "gravity": 223,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestEventPool_Add:252",
+          "testSymbolName": "TestEventPool_Add",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestEventPool_Clear:213",
+          "testSymbolName": "TestEventPool_Clear",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestEventPool_SetDebug:147",
+          "testSymbolName": "TestEventPool_SetDebug",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestEventPool_SetSilent:83",
+          "testSymbolName": "TestEventPool_SetSilent",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestNewEventPool:44",
+          "testSymbolName": "TestNewEventPool",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestNewEventPool:44",
+          "testSymbolName": "TestNewEventPool",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "instantiates",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestNewEventPool:44",
+          "testSymbolName": "TestNewEventPool",
+          "testFile": "session/events_test.go",
+          "evidence": "reference",
+          "relationshipType": "references",
+          "confidence": 0.6
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:NewEventPool:65",
+      "name": "NewEventPool",
+      "symbolType": "function",
+      "file": "session/events.go",
+      "line": 65,
+      "complexity": 1,
+      "gravity": 93,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:createMockSession:195",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/http_proxy/http_proxy_test.go:createMockSession:68",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/http_proxy/http_proxy_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:createMockSession:162",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_recon/net_recon_test.go:createMockSession:115",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/net_recon/net_recon_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:createMockSession:17",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:createMockSession:115",
+          "testSymbolName": "createMockSession",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestNewEventPool:44",
+          "testSymbolName": "TestNewEventPool",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler.go:NewModuleHandler:32",
+      "name": "NewModuleHandler",
+      "symbolType": "function",
+      "file": "session/module_handler.go",
+      "line": 32,
+      "complexity": 2,
+      "gravity": 406,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:NewMockNetRecon:149",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:NewMockNetRecon:116",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:NewMockNetRecon:22",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestNewModuleHandler:9",
+          "testSymbolName": "TestNewModuleHandler",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:StringParam:151",
+      "name": "StringParam",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 151,
+      "complexity": 3,
+      "gravity": 429,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestNewTicker:27",
+          "testSymbolName": "TestNewTicker",
+          "testFile": "modules/ticker/ticker_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:TestViewSelectorFor:37",
+          "testSymbolName": "TestViewSelectorFor",
+          "testFile": "modules/utils/view_selector_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/wifi/wifi_test.go:TestWiFiModuleBruteforce:414",
+          "testSymbolName": "TestWiFiModuleBruteforce",
+          "testFile": "modules/wifi/wifi_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:AddHandler:213",
+      "name": "AddHandler",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 213,
+      "complexity": 1,
+      "gravity": 393,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:NewMockNetRecon:149",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/arp_spoof/arp_spoof_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:NewMockNetRecon:116",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/net_probe/net_probe_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_test.go:NewMockNetRecon:22",
+          "testSymbolName": "NewMockNetRecon",
+          "testFile": "modules/zerogod/zerogod_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:IntParam:171",
+      "name": "IntParam",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 171,
+      "complexity": 3,
+      "gravity": 299,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker_test.go:TestNewTicker:27",
+          "testSymbolName": "TestNewTicker",
+          "testFile": "modules/ticker/ticker_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/utils/view_selector_test.go:TestViewSelectorFor:37",
+          "testSymbolName": "TestViewSelectorFor",
+          "testFile": "modules/utils/view_selector_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment.go:Save:55",
+      "name": "Save",
+      "symbolType": "method",
+      "file": "session/environment.go",
+      "line": 55,
+      "complexity": 2,
+      "gravity": 46,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSave:108",
+          "testSymbolName": "TestSessionEnvironmentSave",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSaveWithError:95",
+          "testSymbolName": "TestSessionEnvironmentSaveWithError",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:NewEvent:25",
+      "name": "NewEvent",
+      "symbolType": "function",
+      "file": "session/events.go",
+      "line": 25,
+      "complexity": 1,
+      "gravity": 53,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/events_stream/wifi_contract_test.go:buildWiFiClientEvent:13",
+          "testSymbolName": "buildWiFiClientEvent",
+          "testFile": "modules/events_stream/wifi_contract_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestNewEvent:9",
+          "testSymbolName": "TestNewEvent",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:Parameters:126",
+      "name": "Parameters",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 126,
+      "complexity": 1,
+      "gravity": 63,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_test.go:TestDefaultParameters:271",
+          "testSymbolName": "TestDefaultParameters",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigToModule:14",
+          "testSymbolName": "TestCertConfigToModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler.go:Help:55",
+      "name": "Help",
+      "symbolType": "method",
+      "file": "session/module_handler.go",
+      "line": 55,
+      "complexity": 1,
+      "gravity": 53,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_handler_test.go:TestModuleHandler_Help:53",
+          "testSymbolName": "TestModuleHandler_Help",
+          "testFile": "session/module_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestModuleParamHelp:307",
+          "testSymbolName": "TestModuleParamHelp",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:NewStringParameter:49",
+      "name": "NewStringParameter",
+      "symbolType": "function",
+      "file": "session/module_param.go",
+      "line": 49,
+      "complexity": 1,
+      "gravity": 323,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestNewStringParameter:63",
+          "testSymbolName": "TestNewStringParameter",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigFromModule:33",
+          "testSymbolName": "TestCertConfigFromModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:NewIntParameter:57",
+      "name": "NewIntParameter",
+      "symbolType": "function",
+      "file": "session/module_param.go",
+      "line": 57,
+      "complexity": 1,
+      "gravity": 263,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestNewIntParameter:85",
+          "testSymbolName": "TestNewIntParameter",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        },
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigFromModule:33",
+          "testSymbolName": "TestCertConfigFromModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_parse.go:ParseCommands:10",
+      "name": "ParseCommands",
+      "symbolType": "function",
+      "file": "session/session_parse.go",
+      "line": 10,
+      "complexity": 18,
+      "gravity": 134,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_test.go:TestParseCommands:8",
+          "testSymbolName": "TestParseCommands",
+          "testFile": "session/session_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_setup.go:containsCapitals:19",
+      "name": "containsCapitals",
+      "symbolType": "function",
+      "file": "session/session_setup.go",
+      "line": 19,
+      "complexity": 4,
+      "gravity": 28,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_setup_test.go:Test_containsCapitals:5",
+          "testSymbolName": "Test_containsCapitals",
+          "testFile": "session/session_setup_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment.go:GetInt:116",
+      "name": "GetInt",
+      "symbolType": "method",
+      "file": "session/environment.go",
+      "line": 116,
+      "complexity": 3,
+      "gravity": 29,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentGetInt:241",
+          "testSymbolName": "TestSessionEnvironmentGetInt",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment.go:Sorted:128",
+      "name": "Sorted",
+      "symbolType": "method",
+      "file": "session/environment.go",
+      "line": 128,
+      "complexity": 2,
+      "gravity": 66,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSorted:272",
+          "testSymbolName": "TestSessionEnvironmentSorted",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:NewModuleParameter:33",
+      "name": "NewModuleParameter",
+      "symbolType": "function",
+      "file": "session/module_param.go",
+      "line": 33,
+      "complexity": 2,
+      "gravity": 106,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestNewModuleParameter:9",
+          "testSymbolName": "TestNewModuleParameter",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/command_handler.go:NewCommandHandler:19",
+      "name": "NewCommandHandler",
+      "symbolType": "function",
+      "file": "session/command_handler.go",
+      "line": 19,
+      "complexity": 1,
+      "gravity": 33,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/command_handler_test.go:TestSessionCommandHandler:28",
+          "testSymbolName": "TestSessionCommandHandler",
+          "testFile": "session/command_handler_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment.go:WithCallback:82",
+      "name": "WithCallback",
+      "symbolType": "method",
+      "file": "session/environment.go",
+      "line": 82,
+      "complexity": 1,
+      "gravity": 43,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/environment_test.go:TestSessionEnvironmentSetWithCallback:179",
+          "testSymbolName": "TestSessionEnvironmentSetWithCallback",
+          "testFile": "session/environment_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:SetSilent:121",
+      "name": "SetSilent",
+      "symbolType": "method",
+      "file": "session/events.go",
+      "line": 121,
+      "complexity": 1,
+      "gravity": 33,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestEventPool_SetSilent:83",
+          "testSymbolName": "TestEventPool_SetSilent",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events.go:SetDebug:127",
+      "name": "SetDebug",
+      "symbolType": "method",
+      "file": "session/events.go",
+      "line": 127,
+      "complexity": 1,
+      "gravity": 33,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/events_test.go:TestEventPool_SetDebug:147",
+          "testSymbolName": "TestEventPool_SetDebug",
+          "testFile": "session/events_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:AddParam:217",
+      "name": "AddParam",
+      "symbolType": "method",
+      "file": "session/module.go",
+      "line": 217,
+      "complexity": 1,
+      "gravity": 353,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:tls/tls_test.go:TestCertConfigFromModule:33",
+          "testSymbolName": "TestCertConfigFromModule",
+          "testFile": "tls/tls_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:NewBoolParameter:53",
+      "name": "NewBoolParameter",
+      "symbolType": "function",
+      "file": "session/module_param.go",
+      "line": 53,
+      "complexity": 1,
+      "gravity": 183,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestNewBoolParameter:74",
+          "testSymbolName": "TestNewBoolParameter",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:NewDecimalParameter:61",
+      "name": "NewDecimalParameter",
+      "symbolType": "function",
+      "file": "session/module_param.go",
+      "line": 61,
+      "complexity": 1,
+      "gravity": 43,
+      "links": [
+        {
+          "testSymbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param_test.go:TestNewDecimalParameter:96",
+          "testSymbolName": "TestNewDecimalParameter",
+          "testFile": "session/module_param_test.go",
+          "evidence": "direct_call",
+          "relationshipType": "calls",
+          "confidence": 0.85
+        }
+      ],
+      "strongestEvidence": "direct_call",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module_param.go:parse:105",
+      "name": "parse",
+      "symbolType": "method",
+      "file": "session/module_param.go",
+      "line": 105,
+      "complexity": 19,
+      "gravity": 268,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39",
+      "name": "jsOnEventFunc",
+      "symbolType": "function",
+      "file": "session/script_builtin_runtime.go",
+      "line": 39,
+      "complexity": 17,
+      "gravity": 34,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_routing.go:routeMon:23",
+      "name": "routeMon",
+      "symbolType": "method",
+      "file": "session/session_routing.go",
+      "line": 23,
+      "complexity": 15,
+      "gravity": 50,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_setup.go:setupReadline:28",
+      "name": "setupReadline",
+      "symbolType": "method",
+      "file": "session/session_setup.go",
+      "line": 28,
+      "complexity": 14,
+      "gravity": 48,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Start:233",
+      "name": "Start",
+      "symbolType": "method",
+      "file": "session/session.go",
+      "line": 233,
+      "complexity": 13,
+      "gravity": 49,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_core_handlers.go:registerCoreHandlers:348",
+      "name": "registerCoreHandlers",
+      "symbolType": "method",
+      "file": "session/session_core_handlers.go",
+      "line": 348,
+      "complexity": 13,
+      "gravity": 46,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Close:183",
+      "name": "Close",
+      "symbolType": "method",
+      "file": "session/session.go",
+      "line": 183,
+      "complexity": 12,
+      "gravity": 66,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Run:448",
+      "name": "Run",
+      "symbolType": "method",
+      "file": "session/session.go",
+      "line": 448,
+      "complexity": 12,
+      "gravity": 66,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:WithOptions:100",
+      "name": "WithOptions",
+      "symbolType": "function",
+      "file": "session/session.go",
+      "line": 100,
+      "complexity": 10,
+      "gravity": 60,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_core_handlers.go:moduleHelp:66",
+      "name": "moduleHelp",
+      "symbolType": "method",
+      "file": "session/session_core_handlers.go",
+      "line": 66,
+      "complexity": 10,
+      "gravity": 40,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script.go:preprocess:26",
+      "name": "preprocess",
+      "symbolType": "function",
+      "file": "session/script.go",
+      "line": 26,
+      "complexity": 10,
+      "gravity": 40,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_core_handlers.go:getHandler:192",
+      "name": "getHandler",
+      "symbolType": "method",
+      "file": "session/session_core_handlers.go",
+      "line": 192,
+      "complexity": 9,
+      "gravity": 38,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_core_handlers.go:generalHelp:26",
+      "name": "generalHelp",
+      "symbolType": "method",
+      "file": "session/session_core_handlers.go",
+      "line": 26,
+      "complexity": 8,
+      "gravity": 36,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_setup.go:startNetMon:93",
+      "name": "startNetMon",
+      "symbolType": "method",
+      "file": "session/session_setup.go",
+      "line": 93,
+      "complexity": 8,
+      "gravity": 36,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session_setup.go:setupEnv:132",
+      "name": "setupEnv",
+      "symbolType": "method",
+      "file": "session/session_setup.go",
+      "line": 132,
+      "complexity": 8,
+      "gravity": 36,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    },
+    {
+      "symbolId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsSaveJSONFunc:177",
+      "name": "jsSaveJSONFunc",
+      "symbolType": "function",
+      "file": "session/script_builtin_runtime.go",
+      "line": 177,
+      "complexity": 8,
+      "gravity": 16,
+      "links": [],
+      "strongestEvidence": "none",
+      "linksTruncated": false,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "entry-page: showing 50 of 187 production symbols — raise limit for the rest"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "test-intel@intelligence",
+    "engineVersion": "m10.05",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_symbol+brain_relationship+brain_file",
+    "limitations": [
+      "Static relationships do not prove runtime execution or line coverage.",
+      "A production symbol is one whose type is in PROD_SYMBOL_TYPES; constants, properties, type aliases, modules and namespaces are outside the untested denominator entirely.",
+      "An entry carries at most 20 links (linksTruncated says when more exist); the ranking and the summary use the complete set."
+    ]
+  },
+  "summary": {
+    "productionSymbols": 187,
+    "excludedAsNoise": 0,
+    "returned": 50,
+    "truncated": true,
+    "testedSymbols": 34,
+    "untestedSymbols": 153,
+    "testFiles": 66,
+    "scannedTestSymbols": 915,
+    "evidenceLinks": 264
+  },
+  "freshness": {
+    "fresh": 13,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "structurallyImpossible": 1048,
+  "detail": [
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 330
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 291
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "make",
+      "rt": "imports",
+      "n": 170
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "yaml",
+      "rt": "imports",
+      "n": 138
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "xml",
+      "rt": "uses",
+      "n": 58
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "javascript",
+      "rt": "imports",
+      "n": 26
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "html",
+      "rt": "uses",
+      "n": 17
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 8
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "make",
+      "rt": "calls",
+      "n": 6
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "make",
+      "rt": "uses",
+      "n": 2
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "xml",
+      "rt": "calls",
+      "n": 2
+    }
+  ]
+}

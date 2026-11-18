@@ -1,0 +1,256 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: Session",
+  "summary": "1 file(s) and 1 symbol(s) in scope, 5 cited claim(s) across 5 section(s) from 28 source(s).",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "property Session: *Session is defined in session/module.go at lines 35-35.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/module.go:Session:35-35"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in session/module.go at line 35 and returns *Session.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/module.go:Session:35-35"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 relationship). Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "SessionModule contains Session.",
+          "confidence": 1,
+          "citationIds": [
+            "relationship:session/module.go:contains:35:SessionModule:Session"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:session/module.go:contains:35:SessionModule:Session"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "1 claim, 1 inferred because the index did not resolve the target, resting on 1 source (1 test).",
+      "facts": [
+        {
+          "classification": "inferred",
+          "statement": "Session is named in the test source modules/any_proxy/any_proxy_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:modules/any_proxy/any_proxy_test.go"
+          ]
+        }
+      ],
+      "citations": [
+        "test:modules/any_proxy/any_proxy_test.go"
+      ]
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "1 claim, 1 read directly from the index, resting on 1 source (1 symbol). What this document cannot say is stated here rather than filled in.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/module.go:Session:35-35"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:session/module.go:Session:35-35",
+      "kind": "symbol",
+      "path": "session/module.go",
+      "symbol": "Session",
+      "lineStart": 35,
+      "lineEnd": 35,
+      "evidence": "Indexed property Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:modules/any_proxy/any_proxy_test.go",
+      "kind": "test",
+      "path": "modules/any_proxy/any_proxy_test.go",
+      "evidence": "Test source references Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:session/module.go:contains:35:SessionModule:Session",
+      "kind": "relationship",
+      "path": "session/module.go",
+      "lineStart": 35,
+      "relationshipType": "contains",
+      "evidence": "contains edge between SessionModule and Session",
+      "freshness": "fresh",
+      "confidence": 1
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "No docstring was indexed for Session and none is present in the comment style this tool reads.",
+      "reason": "not-observed",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 1 at detail \"standard\", so 1 of 2 api items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "api"
+    },
+    {
+      "statement": "The per-section evidence cap is 1 at detail \"standard\", so 1 of 2 behavior items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 1 at detail \"standard\", so 24 of 25 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 4
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "19c43df39d20653a26b9e9dccefd1838",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 1901,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 1,
+      "sections": [
+        {
+          "id": "api",
+          "available": 2,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "behavior",
+          "available": 2,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "dependencies",
+          "available": 25,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "tests",
+          "available": 1,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        },
+        {
+          "id": "limitations",
+          "available": 1,
+          "capped": 1,
+          "droppedForBudget": 0,
+          "emitted": 1
+        }
+      ]
+    },
+    "warnings": [
+      "25 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "projectPath": "/home/ishaq2321/bettercap",
+    "snapshotId": "19c43df39d20653a26b9e9dccefd1838",
+    "generatedAt": "2026-11-18T22:36:01.439Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "go",
+    "canonicalPath": "Session",
+    "slugs": [
+      "symbol",
+      "Session"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 2,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

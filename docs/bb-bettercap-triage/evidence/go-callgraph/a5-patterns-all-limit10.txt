@@ -1,0 +1,12 @@
+patterns (4697 found):
+  [warning] god-class @ modules/arp_spoof/arp_spoof.go:17 (90%)
+  [warning] god-class @ modules/ble/ble_recon.go:21 (90%)
+  [warning] god-class @ modules/c2/c2.go:33 (90%)
+  [warning] god-class @ modules/dhcp6_spoof/dhcp6_spoof.go:28 (90%)
+  [warning] god-class @ modules/dns_proxy/dns_proxy_base.go:27 (90%)
+  [warning] high-complexity-function @ modules/dns_proxy/dns_proxy_js_record.go:364 (90%)
+  [warning] high-complexity-function @ modules/dns_proxy/dns_proxy_js_record.go:11 (90%)
+  [warning] god-class @ modules/events_stream/events_stream.go:27 (90%)
+  [info] orphaned_function @ modules/net_sniff/net_sniff_dns.go:12 (70%)
+  [info] framework-detected @ .github/workflows/release.yaml:0 (60%)
+[scan: 4697 finding(s) across orphaned_function=2739 orphaned_file=1644 high-complexity-function=196 god-class=69 long-parameter-list=38 framework-detected=9 orphaned_class=2; showing 10 — raise `limit` to see more (maximum 500)]

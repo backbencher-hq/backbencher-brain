@@ -1,0 +1,13 @@
+graph: 60 nodes, 134 links
+scope: file (session/session.go)
+view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity
+layout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)
+available: 61 symbol(s) match, 60 reached the projection, 60 returned — limits 200 nodes / 5000 links
+page: symbols 1-60 (offset 0, limit 200, page 1; 61 symbol(s) match this scope) — this is the LAST page
+edges: 136 relationship(s) connect the selected symbols — complete for this node set
+node selection: every symbol in the file, in source order
+returned kinds: property 31, method 13, function 5, variable 4, constant 3, struct 2, module 1, type 1 — no kind filter was passed, so this is the composition the index's own ranking produced
+returned languages: go 60
+annotations: none on the returned symbols — the index's agent notes were read, and none matches this page
+excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are included)
+provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=0 links-omitted-by-budget=0

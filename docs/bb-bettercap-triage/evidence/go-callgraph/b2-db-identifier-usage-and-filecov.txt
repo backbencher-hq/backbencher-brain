@@ -1,0 +1,32 @@
+=== identifier_usage rows: anchored vs leaf, cross-file stats
+n    anchored  leaf  crossfile_rows
+---  --------  ----  --------------
+366  366       0     0             
+
+=== sample identifier_usage rows (target + source file)
+target_external  anchored  confidence  line_number  src_file        tgt_file      
+---------------  --------  ----------  -----------  --------------  --------------
+arpLock          1         1.0         21           network/arp.go  network/arp.go
+arpTable         1         1.0         30           network/arp.go  network/arp.go
+arpLock          1         1.0         70           network/arp.go  network/arp.go
+arpTable         1         1.0         74           network/arp.go  network/arp.go
+arpLock          1         1.0         88           network/arp.go  network/arp.go
+arpTable         1         1.0         91           network/arp.go  network/arp.go
+arpLock          1         1.0         101          network/arp.go  network/arp.go
+arpWasParsed     1         1.0         103          network/arp.go  network/arp.go
+
+=== incoming usage rows targeting ANY symbol in session/script_builtin_runtime.go (coverage-gap indicator)
+rt    n  anchored_targets
+----  -  ----------------
+uses  3  3               
+
+=== incoming rows naming session.go source line 336 surroundings: session.go relationship rows by type
+rt            n  
+------------  ---
+calls         107
+contains      44 
+exports       10 
+imports       24 
+instantiates  2  
+references    53 
+uses          64 

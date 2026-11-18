@@ -1,0 +1,226 @@
+{
+  "symbol": "main",
+  "language": "go",
+  "languages": [
+    "go"
+  ],
+  "copies": [
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main_test.go:main:1",
+      "symbol": "main",
+      "file": "main_test.go",
+      "language": "go",
+      "line": 1,
+      "crossRowCount": 0
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1",
+      "symbol": "main",
+      "file": "main.go",
+      "language": "go",
+      "line": 1,
+      "crossRowCount": 7
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:20",
+      "symbol": "main",
+      "file": "main.go",
+      "language": "go",
+      "line": 20,
+      "crossRowCount": 0
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ticker/ticker.go:main:20",
+      "symbol": "main",
+      "file": "modules/ticker/ticker.go",
+      "language": "go",
+      "line": 20,
+      "crossRowCount": 0
+    }
+  ],
+  "copyCount": 4,
+  "copiesTruncated": false,
+  "copiesCap": 200,
+  "copiesNote": null,
+  "ambiguous": true,
+  "ambiguityNote": "4 indexed symbols are named 'main' across 3 file(s); the facts below are the union over all of them, and every fact names the copy it came from",
+  "facts": [
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "callee",
+      "other": {
+        "symbol": "os",
+        "file": ".github/workflows/release.yaml",
+        "language": "yaml",
+        "line": 15
+      },
+      "pair": "go → yaml",
+      "bridge": "name-resolution",
+      "tier": "import_based",
+      "confidence": 0.9,
+      "relationshipType": "imports",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:os:imports:6",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "callee",
+      "other": {
+        "symbol": "fmt",
+        "file": "Makefile",
+        "language": "make",
+        "line": 36
+      },
+      "pair": "go → make",
+      "bridge": "name-resolution",
+      "tier": "import_based",
+      "confidence": 0.9,
+      "relationshipType": "imports",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:fmt:imports:4",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "callee",
+      "other": {
+        "symbol": "io",
+        "file": "modules/ui/ui/assets/openlayers/ol.js",
+        "language": "javascript",
+        "line": 464
+      },
+      "pair": "go → javascript",
+      "bridge": "name-resolution",
+      "tier": "import_based",
+      "confidence": 0.9,
+      "relationshipType": "imports",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:1:io:imports:5",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "caller",
+      "other": {
+        "symbol": "makeIconMasking",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "language": "javascript",
+        "line": 742
+      },
+      "pair": "go → javascript",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.6,
+      "relationshipType": "uses",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconMasking:742:main:uses:745",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "caller",
+      "other": {
+        "symbol": "makeIconStandard",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "language": "javascript",
+        "line": 813
+      },
+      "pair": "go → javascript",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.6,
+      "relationshipType": "uses",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeIconStandard:813:main:uses:816",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "caller",
+      "other": {
+        "symbol": "asIcon",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "language": "javascript",
+        "line": 854
+      },
+      "pair": "go → javascript",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.6,
+      "relationshipType": "uses",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:asIcon:854:main:uses:856",
+      "match": "exact"
+    },
+    {
+      "self": {
+        "symbol": "main",
+        "file": "main.go",
+        "language": "go",
+        "line": 1
+      },
+      "direction": "caller",
+      "other": {
+        "symbol": "makeInlineSvgAbstract",
+        "file": "modules/ui/ui/assets/fontawesome/js/fontawesome.js",
+        "language": "javascript",
+        "line": 903
+      },
+      "pair": "go → javascript",
+      "bridge": "name-resolution",
+      "tier": "usage_contextual",
+      "confidence": 0.6,
+      "relationshipType": "uses",
+      "rowId": "4c7590f1cba319aac298a50453c0ec440f2dc857:rel:4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/js/fontawesome.js:makeInlineSvgAbstract:903:main:uses:905",
+      "match": "exact"
+    }
+  ],
+  "ownFactCount": 7,
+  "ownFactsTruncated": false,
+  "memberFacts": [],
+  "memberFactCount": 0,
+  "memberFactsTruncated": false,
+  "memberCount": 0,
+  "memberNote": null,
+  "factCount": 7,
+  "pairCount": 3,
+  "signatureCount": 4,
+  "storedRowCount": 7,
+  "unpairableRowCount": 0,
+  "collapsedRowCount": 0,
+  "limit": 200,
+  "truncated": false,
+  "truncationReason": null,
+  "totalCountIfKnown": 7,
+  "declaredAbsent": false,
+  "deeperDescendantRowCount": 0,
+  "deeperDescendantNote": null,
+  "absenceNote": null,
+  "pairlessRowNote": null,
+  "silentItselfButNotItsMembers": false
+}

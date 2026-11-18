@@ -1,0 +1,21 @@
+=== 1. symbol rows named jsOnEventFunc
+id                                                                                           symbol_type  line_start  line_end  file_id                                                                   
+-------------------------------------------------------------------------------------------  -----------  ----------  --------  --------------------------------------------------------------------------
+4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go:jsOnEventFunc:39  function     39          118       4c7590f1cba319aac298a50453c0ec440f2dc857:session/script_builtin_runtime.go
+
+=== 2. ALL relationship rows with target_symbol_id = jsOnEventFunc id (any type)
+
+=== 3. rows naming jsOnEventFunc in target_external (unanchored name channel)
+
+=== 4. distinct relationship kinds for project
+rt            n      minc  maxc
+------------  -----  ----  ----
+uses          38520  0.6   1.0 
+contains      34570  1.0   1.0 
+calls         26580  0.5   0.95
+instantiates  4228   0.6   0.95
+references    4222   0.9   1.0 
+imports       1908   0.6   1.0 
+exports       1252   1.0   1.0 
+mixes_in      92     0.8   1.0 
+part_of       36     1.0   1.0 

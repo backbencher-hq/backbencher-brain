@@ -1,0 +1,15 @@
+=== referencedFiles set size (clean cross-file anchored usage rows, engine formula)
+referenced_files
+----------------
+272             
+
+=== number of ui asset files that ARE in referencedFiles (expect 0)
+n   
+----
+1581
+
+=== file-candidate reconstruction: assets vs non-assets, applying simple exclusions (test suffixes, manifests, entry stems)
+bucket        candidates
+------------  ----------
+rest_of_repo  70        
+ui_assets     1573      

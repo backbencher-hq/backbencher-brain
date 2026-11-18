@@ -1,0 +1,29 @@
+sessionRoute [method] modules/api_rest/api_rest_controller.go:320 (go)
+    func (mod *RestAPI) sessionRoute(w http.ResponseWriter, r *http.Request) {
+    	mod.setSecurityHeaders(w)
+    
+    	if !mod.checkAuth(r) {
+    		mod.setAuthFailed(w, r)
+    		return
+    	} else if r.Method == "POST" {
+    		mod.runSessionCommand(w, r)
+updateSession [method] modules/ui/ui/main.js:1671 (javascript)
+        MainHeaderComponent.prototype.updateSession = function (session) {
+            this.rest = this.api.module('api.rest');
+            this.sessionError = null;
+            this.counters.hosts = session.lan['hosts'].length || 0;
+            this.counters.aps = session.wifi['aps'].length || 0;
+            this.counters.ble = session.ble['devices'].length || 0;
+            this.counters.hid = session.hid['devices'].length || 0;
+            this.counters.gps = this.api.module('gps').running ? (session.gps.NumSatellites || 0) : 0;
+sessionNew [method] modules/ui/ui/main.js:3082 (javascript)
+        ApiService.prototype.sessionNew = function (start, response) {
+            var wasError = this.error != null;
+            this.ping = new Date().getTime() - start.getTime();
+            this.error = null;
+            // if in prod, make sure we're talking to a compatible API version
+            if (compare_versions__WEBPACK_IMPORTED_MODULE_3___default()(response.version, _environments_environment__WEBPACK_IMPORTED_MODULE_9__["environment"].requires) == -1) {
+                if (_environments_environment__WEBPACK_IMPORTED_MODULE_9__["environment"].production) {
+                    this.logout();
+showing 3 of 139 matches
+[match-set] searchMode=symbols totalMatches=139 returned=3 truncated=false staleCount=0

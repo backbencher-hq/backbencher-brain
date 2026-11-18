@@ -1,0 +1,65 @@
+=== bettercap go.mod (module path) ===
+module github.com/bettercap/bettercap/v2
+
+go 1.25.0
+
+=== main.go:1-25 (imports) ===
+package main
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"runtime"
+
+	"github.com/bettercap/bettercap/v2/core"
+	"github.com/bettercap/bettercap/v2/log"
+	"github.com/bettercap/bettercap/v2/modules"
+	"github.com/bettercap/bettercap/v2/session"
+
+	"github.com/evilsocket/islazy/str"
+	"github.com/evilsocket/islazy/tui"
+)
+
+func main() {
+	sess, err := session.New()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+=== session/session.go:1-32 (imports) ===
+package session
+
+import (
+	"errors"
+	"fmt"
+	"net"
+	"os"
+	"regexp"
+	"runtime"
+	"runtime/pprof"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/bettercap/readline"
+
+	"github.com/bettercap/bettercap/v2/caplets"
+	"github.com/bettercap/bettercap/v2/core"
+	"github.com/bettercap/bettercap/v2/firewall"
+	my_log "github.com/bettercap/bettercap/v2/log"
+	"github.com/bettercap/bettercap/v2/network"
+	"github.com/bettercap/bettercap/v2/packets"
+
+	"github.com/evilsocket/islazy/data"
+	"github.com/evilsocket/islazy/fs"
+	"github.com/evilsocket/islazy/log"
+	"github.com/evilsocket/islazy/ops"
+	"github.com/evilsocket/islazy/plugin"
+	"github.com/evilsocket/islazy/str"
+	"github.com/evilsocket/islazy/tui"
+)
+

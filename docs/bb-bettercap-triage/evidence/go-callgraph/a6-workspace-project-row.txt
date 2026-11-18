@@ -1,0 +1,7 @@
+027e4740 | 1 files 3 syms | 0.5MB | idx 2026-10-17 | complete | /home/ishaq2321/mcp/backbencher-brain/.tools/m42-h1-fixture/src/main/java/com/demo/Highlight.java | db: /home/ishaq2321/.bb/projects/027e474080810f35c7f818785736c81da049c4bf/brain.db
+182472f0 | 4 files 29 syms | 1.1MB | idx 2026-10-17 | complete | /home/ishaq2321/mcp/backbencher-brain/src/ast/visualization | db: /home/ishaq2321/.bb/projects/182472f0cc4019b44c54adc197798ce075faa1c6/brain.db
+1d3d5710 | 34385 files 506841 syms | 18029.4MB | idx 2026-11-17 | partial | /home/ishaq2321/mcp/backbencher-brain/.corpus/axios | db: /home/ishaq2321/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db
+4c7590f1 | 1973 files 55785 syms | 393.2MB | idx 2026-11-18 | complete | /home/ishaq2321/bettercap | db: /home/ishaq2321/.bb/projects/4c7590f1cba319aac298a50453c0ec440f2dc857/brain.db
+94831c12 | 3 files 10 syms | 0.8MB | idx 2026-10-17 | complete | /home/ishaq2321/mcp/backbencher-brain/.tools/m44-u6-fixture/src/main/java/com/demo | db: /home/ishaq2321/.bb/projects/94831c127d7a9af378117fdcd21b36f23312f851/brain.db
+af0f2ee1 | 2 files 7 syms | 0.7MB | idx 2026-10-17 | complete | /home/ishaq2321/mcp/backbencher-brain/.tools/m42-h2-fixture/src/main/java/com/demo | db: /home/ishaq2321/.bb/projects/af0f2ee1dc5880ec8a53b6ae23bd73bca661d023/brain.db
+b750c264 | 213 files 11329 syms | 181.8MB | idx 2026-10-16 | complete | /home/ishaq2321/mcp/backbencher-brain/.backbencher-agent/validation/work/realwork | db: /home/ishaq2321/.bb/projects/b750c2644e0f50449cd827105bcd2a22fce791dd/brain.db

@@ -1,0 +1,1716 @@
+{
+  "dependencies": [
+    {
+      "file": "Makefile",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:Makefile",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "caplets/caplet.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/manager_test.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/manager.go",
+          "stale": false
+        },
+        {
+          "path": "firewall/firewall_darwin.go",
+          "stale": false
+        },
+        {
+          "path": "firewall/firewall_linux.go",
+          "stale": false
+        },
+        {
+          "path": "firewall/firewall_windows.go",
+          "stale": false
+        },
+        {
+          "path": "firewall/redirection.go",
+          "stale": false
+        },
+        {
+          "path": "js/fs_test.go",
+          "stale": false
+        },
+        {
+          "path": "js/http.go",
+          "stale": false
+        },
+        {
+          "path": "main.go",
+          "stale": false
+        },
+        {
+          "path": "modules/any_proxy/any_proxy_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/any_proxy/any_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_controller.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_record.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_replay.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest.go",
+          "stale": false
+        },
+        {
+          "path": "modules/arp_spoof/arp_spoof_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_recon.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_show_services.go",
+          "stale": false
+        },
+        {
+          "path": "modules/c2/c2.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc_compile.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dump_reader.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_fuzz.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_obd2_message.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_obd2_pid_request.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_obd2.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can.go",
+          "stale": false
+        },
+        {
+          "path": "modules/caplets/caplets.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dhcp6_spoof/dhcp6_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_base.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_js_query.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_js_record_edns0.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_js_record_svcb.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_js_record.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_spoof/dns_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_rotation.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_stream.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_ble.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_can.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_gateway.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_gps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_http.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_wifi.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_zeroconf.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/trigger_list.go",
+          "stale": false
+        },
+        {
+          "path": "modules/gps/gps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/create.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/edge.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/graph.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/node.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/build_microsoft.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/duckyparser.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid_inject.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid_sniff.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_cookietracker.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_cert_cache.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_js_request.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_js_response.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_server/http_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/https_server/https_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/mac_changer/mac_changer.go",
+          "stale": false
+        },
+        {
+          "path": "modules/mysql_server/mysql_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ndp_spoof/ndp_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe_nbns.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe_upnp.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe_wsd.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_recon/net_recon_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_recon/net_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_event.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_parsers.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_sni.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_tcp.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_udp.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_upnp.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_views.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff.go",
+          "stale": false
+        },
+        {
+          "path": "modules/packet_proxy/packet_proxy_linux.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_connection.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_keys.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_logger.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_origdst_darwin.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_origdst_linux.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_origdst_other.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/banner_grabbing.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/dns_grabber.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/http_grabber.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/syn_scan_parsers.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/syn_scan.go",
+          "stale": false
+        },
+        {
+          "path": "modules/tcp_proxy/tcp_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ui/ui.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 170,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": true,
+      "score": 170,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ui/ui/assets/fontawesome/metadata/icons.yml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/fontawesome/metadata/icons.yml",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "caplets/manager_test.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/manager.go",
+          "stale": false
+        },
+        {
+          "path": "core/core.go",
+          "stale": false
+        },
+        {
+          "path": "core/options.go",
+          "stale": false
+        },
+        {
+          "path": "modules/any_proxy/any_proxy_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest.go",
+          "stale": false
+        },
+        {
+          "path": "modules/arp_spoof/arp_spoof_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/arp_spoof/arp_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_recon_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/c2/c2_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc_compile.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_obd2.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dhcp6_spoof/dhcp6_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_spoof/dns_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_stream.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/trigger_list.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/edges.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/graph.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/module.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/node.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/stack.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/keymaps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_cookietracker.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_hosttracker.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_cert_cache.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ndp_spoof/ndp_spoof.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_probe/net_probe.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_recon/net_recon_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_recon/net_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_connection.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_logger.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/syn_scan/syn_scan.go",
+          "stale": false
+        },
+        {
+          "path": "modules/tcp_proxy/tcp_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ticker/ticker_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/update/update_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/utils/view_selector_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_assoc_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_assoc.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_deauth_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_deauth.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_show.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_targets_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wol/wol_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/service.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_browser.go",
+          "stale": false
+        },
+        {
+          "path": "network/arp.go",
+          "stale": false
+        },
+        {
+          "path": "network/ble.go",
+          "stale": false
+        },
+        {
+          "path": "network/can_device.go",
+          "stale": false
+        },
+        {
+          "path": "network/can.go",
+          "stale": false
+        },
+        {
+          "path": "network/hid_device.go",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
+          "stale": false
+        },
+        {
+          "path": "network/lan_test.go",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
+          "stale": false
+        },
+        {
+          "path": "network/meta.go",
+          "stale": false
+        },
+        {
+          "path": "network/net_netlink_linux.go",
+          "stale": false
+        },
+        {
+          "path": "network/net_wifi.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_concurrency_test.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_handshake.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_station.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi.go",
+          "stale": false
+        },
+        {
+          "path": "packets/ntlm.go",
+          "stale": false
+        },
+        {
+          "path": "packets/queue.go",
+          "stale": false
+        },
+        {
+          "path": "routing/tables_test.go",
+          "stale": false
+        },
+        {
+          "path": "routing/tables.go",
+          "stale": false
+        },
+        {
+          "path": "session/command_handler.go",
+          "stale": false
+        },
+        {
+          "path": "session/environment.go",
+          "stale": false
+        },
+        {
+          "path": "session/events_ignore_list.go",
+          "stale": false
+        },
+        {
+          "path": "session/events_test.go",
+          "stale": false
+        },
+        {
+          "path": "session/events.go",
+          "stale": false
+        },
+        {
+          "path": "session/module_handler.go",
+          "stale": false
+        },
+        {
+          "path": "session/module.go",
+          "stale": false
+        },
+        {
+          "path": "session/script_builtin_runtime.go",
+          "stale": false
+        },
+        {
+          "path": "session/session_core_handlers.go",
+          "stale": false
+        },
+        {
+          "path": "session/session.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 85,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 85,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": ".github/workflows/release.yaml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:.github/workflows/release.yaml",
+      "dependencies": [
+        {
+          "path": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "caplets/caplet_test.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/env_test.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/env.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/manager_test.go",
+          "stale": false
+        },
+        {
+          "path": "caplets/manager.go",
+          "stale": false
+        },
+        {
+          "path": "core/core_test.go",
+          "stale": false
+        },
+        {
+          "path": "firewall/firewall_darwin.go",
+          "stale": false
+        },
+        {
+          "path": "firewall/firewall_linux.go",
+          "stale": false
+        },
+        {
+          "path": "js/fs_test.go",
+          "stale": false
+        },
+        {
+          "path": "js/fs.go",
+          "stale": false
+        },
+        {
+          "path": "main.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_controller.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dbc.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dump_reader.go",
+          "stale": false
+        },
+        {
+          "path": "modules/caplets/caplets.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_spoof/dns_spoof_hosts.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_rotation.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_stream.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/edges.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/module.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/node.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/to_dot.go",
+          "stale": false
+        },
+        {
+          "path": "modules/graph/to_json.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_context.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_keys.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_bruteforce_linux.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_bruteforce.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_recon_handshakes.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_advertise.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_ipp_print_job.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_test.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod.go",
+          "stale": false
+        },
+        {
+          "path": "network/wifi.go",
+          "stale": false
+        },
+        {
+          "path": "session/environment_test.go",
+          "stale": false
+        },
+        {
+          "path": "session/events.go",
+          "stale": false
+        },
+        {
+          "path": "session/script_builtin_runtime.go",
+          "stale": false
+        },
+        {
+          "path": "session/session_core_handlers.go",
+          "stale": false
+        },
+        {
+          "path": "session/session_setup.go",
+          "stale": false
+        },
+        {
+          "path": "session/session.go",
+          "stale": false
+        },
+        {
+          "path": "tls/cert.go",
+          "stale": false
+        },
+        {
+          "path": "tls/tls_test.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 10,
+      "dependentsTotal": 44,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 44,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/ui/ui/assets/openlayers/ol.js",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/ui/ui/assets/openlayers/ol.js",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "js/http.go",
+          "stale": false
+        },
+        {
+          "path": "main.go",
+          "stale": false
+        },
+        {
+          "path": "modules/api_rest/api_rest_controller.go",
+          "stale": false
+        },
+        {
+          "path": "modules/caplets/caplets.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_stream.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_ble_unsupported.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_ble.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_can.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_gateway.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_gps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_http.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_wifi.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view_zeroconf.go",
+          "stale": false
+        },
+        {
+          "path": "modules/events_stream/events_view.go",
+          "stale": false
+        },
+        {
+          "path": "modules/gps/gps.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_filters.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base_sslstriper.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_js_request.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_js_response.go",
+          "stale": false
+        },
+        {
+          "path": "modules/net_sniff/net_sniff_http.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ssh_proxy/ssh_connection.go",
+          "stale": false
+        },
+        {
+          "path": "modules/tcp_proxy/tcp_proxy.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_http_handler.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_ipp_primitives.go",
+          "stale": false
+        },
+        {
+          "path": "network/net_darwin.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 26,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 26,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/zerogod/zerogod_acceptor.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/zerogod/zerogod_acceptor.go",
+      "dependencies": [
+        {
+          "path": "context",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "crypto/tls",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "net",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/ops",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/tui",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "modules/api_rest/api_rest.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_dump_reader.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_fuzz.go",
+          "stale": false
+        },
+        {
+          "path": "modules/can/can_inject.go",
+          "stale": false
+        },
+        {
+          "path": "modules/dns_proxy/dns_proxy_base.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_proxy/http_proxy_base.go",
+          "stale": false
+        },
+        {
+          "path": "modules/http_server/http_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/https_server/https_server.go",
+          "stale": false
+        },
+        {
+          "path": "modules/packet_proxy/packet_proxy_linux.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ui/ui.go",
+          "stale": false
+        },
+        {
+          "path": "modules/update/update.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/client.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 7,
+      "dependentsTotal": 12,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 12,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "log/doc.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:log/doc.go",
+      "dependencies": [],
+      "dependents": [
+        {
+          "path": "firewall/firewall_darwin.go",
+          "stale": false
+        },
+        {
+          "path": "modules/ble/ble_recon.go",
+          "stale": false
+        },
+        {
+          "path": "modules/hid/hid.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/client.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zeroconf/server.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 5,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 5,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "modules/can/can_dbc.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/can/can_dbc.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "go.einride.tech/can/pkg/descriptor",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [
+        {
+          "path": "modules/graph/edges.go",
+          "stale": false
+        },
+        {
+          "path": "modules/wifi/wifi_recon_handshakes.go",
+          "stale": false
+        },
+        {
+          "path": "modules/zerogod/zerogod_ipp_print_job.go",
+          "stale": false
+        }
+      ],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 3,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 3,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": ".github/dependabot.yml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:.github/dependabot.yml",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": ".github/FUNDING.yml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:.github/FUNDING.yml",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": ".github/ISSUE_TEMPLATE/config.yml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:.github/ISSUE_TEMPLATE/config.yml",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": ".github/ISSUE_TEMPLATE/default_issue.md",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:.github/ISSUE_TEMPLATE/default_issue.md",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": ".github/workflows/tests.yaml",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:.github/workflows/tests.yaml",
+      "dependencies": [
+        {
+          "path": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 3,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "AGENTS.md",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:AGENTS.md",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/caplet_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet_test.go",
+      "dependencies": [
+        {
+          "path": "errors",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/caplet.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/caplet.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 4,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/doc.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/doc.go",
+      "dependencies": [],
+      "dependents": [],
+      "dependenciesTotal": 0,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/env_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/env_test.go",
+      "dependencies": [
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "runtime",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/env.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/env.go",
+      "dependencies": [
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "runtime",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/str",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/mitchellh/go-homedir",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 5,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/manager_test.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager_test.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "testing",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    },
+    {
+      "file": "caplets/manager.go",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:caplets/manager.go",
+      "dependencies": [
+        {
+          "path": "fmt",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "io/ioutil",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "os",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "path/filepath",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sort",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "strings",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "sync",
+          "external": true,
+          "resolution": "unresolved"
+        },
+        {
+          "path": "github.com/evilsocket/islazy/fs",
+          "external": true,
+          "resolution": "unresolved"
+        }
+      ],
+      "dependents": [],
+      "dependenciesTotal": 8,
+      "dependentsTotal": 0,
+      "dependenciesTruncated": false,
+      "dependentsTruncated": false,
+      "score": 0,
+      "unresolvedSpecifiers": 0,
+      "stale": false
+    }
+  ],
+  "provenance": {
+    "truncated": true,
+    "sampled": false,
+    "unknowns": [
+      "file-page: showing 20 of 1972 files — raise limit for the rest"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "dependencies@intelligence",
+    "engineVersion": "m10.04",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship+brain_import",
+    "limitations": [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut."
+    ]
+  },
+  "summary": {
+    "returned": 20,
+    "totalFiles": 1972,
+    "scope": null,
+    "truncated": true,
+    "returnedInternalDependencies": 0,
+    "returnedInternalDependents": 275,
+    "pageLimit": 20
+  },
+  "freshness": {
+    "fresh": 201,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

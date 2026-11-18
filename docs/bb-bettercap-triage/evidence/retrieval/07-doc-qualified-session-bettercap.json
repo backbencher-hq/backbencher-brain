@@ -1,0 +1,724 @@
+{
+  "schemaVersion": "1",
+  "mode": "symbol",
+  "title": "symbol: session.Session",
+  "summary": "5 file(s) and 5 symbol(s) in scope, 50 cited claim(s) across 5 section(s) from 250 source(s).",
+  "sections": [
+    {
+      "id": "api",
+      "heading": "API",
+      "prose": "10 claims, 10 read directly from the index, resting on 5 sources (1 symbol).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "property Session: *Session is defined in session/module.go at lines 35-35.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "property Session: *session.Session is defined in modules/c2/c2.go at lines 46-46.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/c2/c2.go:Session:46-46"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/c2/c2.go:Session:46-46"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "property Session: session.Session is defined in modules/net_probe/net_probe_test.go at lines 67-67.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/net_probe/net_probe_test.go:Session:67-67"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/net_probe/net_probe_test.go:Session:67-67"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "struct Session is defined in session/session.go at lines 72-98.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:Session:72-98"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:Session:72-98"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "property Session: session.Session is defined in modules/arp_spoof/arp_spoof_test.go at lines 110-110.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is declared public.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/module.go:Session:35-35",
+        "symbol:modules/c2/c2.go:Session:46-46",
+        "symbol:modules/net_probe/net_probe_test.go:Session:67-67",
+        "symbol:session/session.go:Session:72-98",
+        "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+      ]
+    },
+    {
+      "id": "behavior",
+      "heading": "Behavior",
+      "prose": "10 claims, 10 read directly from the index, resting on 5 sources (1 symbol). Read from the index and, where the index has none, from the comment block above the definition on disk.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in session/module.go at line 35 and returns *Session.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in modules/c2/c2.go at line 46 and returns *session.Session.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/c2/c2.go:Session:46-46"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/c2/c2.go:Session:46-46"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in modules/net_probe/net_probe_test.go at line 67 and returns session.Session.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/net_probe/net_probe_test.go:Session:67-67"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/net_probe/net_probe_test.go:Session:67-67"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in session/session.go at line 72.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:Session:72-98"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:Session:72-98"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session is defined in modules/arp_spoof/arp_spoof_test.go at line 110 and returns session.Session.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has a measured complexity of 1.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/module.go:Session:35-35",
+        "symbol:modules/c2/c2.go:Session:46-46",
+        "symbol:modules/net_probe/net_probe_test.go:Session:67-67",
+        "symbol:session/session.go:Session:72-98",
+        "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+      ]
+    },
+    {
+      "id": "dependencies",
+      "heading": "Dependencies",
+      "prose": "10 claims, 10 read directly from the index, resting on 10 sources (1 relationship).",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "NewPacketProxy references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/packet_proxy/packet_proxy_freebsd.go:references:11:NewPacketProxy:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "testSession references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/c2/c2_test.go:references:12:testSession:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "NewBLERecon references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/ble/ble_unsupported.go:references:14:NewBLERecon:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "CommandHandler references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:session/command_handler.go:references:16:CommandHandler:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "createMockSession references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/c2/c2_test.go:references:16:createMockSession:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "NewDiscovery references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/net_recon/net_recon.go:references:17:NewDiscovery:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "NewHttpsProxy references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/https_proxy/https_proxy.go:references:17:NewHttpsProxy:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "NewCommandHandler references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:session/command_handler.go:references:19:NewCommandHandler:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "LANCompleterForMacs references Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:session/session_completers.go:references:19:LANCompleterForMacs:Session"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "sendProbeNBNS uses Session.",
+          "confidence": 0.7,
+          "citationIds": [
+            "relationship:modules/net_probe/net_probe_nbns.go:uses:19:sendProbeNBNS:Session"
+          ]
+        }
+      ],
+      "citations": [
+        "relationship:modules/packet_proxy/packet_proxy_freebsd.go:references:11:NewPacketProxy:Session",
+        "relationship:modules/c2/c2_test.go:references:12:testSession:Session",
+        "relationship:modules/ble/ble_unsupported.go:references:14:NewBLERecon:Session",
+        "relationship:session/command_handler.go:references:16:CommandHandler:Session",
+        "relationship:modules/c2/c2_test.go:references:16:createMockSession:Session",
+        "relationship:modules/net_recon/net_recon.go:references:17:NewDiscovery:Session",
+        "relationship:modules/https_proxy/https_proxy.go:references:17:NewHttpsProxy:Session",
+        "relationship:session/command_handler.go:references:19:NewCommandHandler:Session",
+        "relationship:session/session_completers.go:references:19:LANCompleterForMacs:Session",
+        "relationship:modules/net_probe/net_probe_nbns.go:uses:19:sendProbeNBNS:Session"
+      ]
+    },
+    {
+      "id": "tests",
+      "heading": "Tests",
+      "prose": "5 claims, 2 read directly from the index; 3 inferred because the index did not resolve the target, resting on 5 sources (1 test).",
+      "facts": [
+        {
+          "classification": "inferred",
+          "statement": "Session is named in the test source modules/any_proxy/any_proxy_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:modules/any_proxy/any_proxy_test.go"
+          ]
+        },
+        {
+          "classification": "inferred",
+          "statement": "Session is named in the test source modules/any_proxy/any_proxy_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:modules/any_proxy/any_proxy_test.go#2"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has indexed test evidence in modules/net_probe/net_probe_test.go.",
+          "confidence": 1,
+          "citationIds": [
+            "test:modules/net_probe/net_probe_test.go"
+          ]
+        },
+        {
+          "classification": "inferred",
+          "statement": "Session is named in the test source modules/any_proxy/any_proxy_test.go, but no indexed relationship connects them.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:modules/any_proxy/any_proxy_test.go#3"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has indexed test evidence in tls/tls_test.go, modules/any_proxy/any_proxy_test.go, modules/c2/c2_test.go, modules/api_rest/api_rest_test.go, modules/can/can_test.go, modules/arp_spoof/arp_spoof_test.go, modules/ble/ble_recon_test.go, modules/http_proxy/http_proxy_test.go, modules/net_recon/net_recon_test.go, modules/ticker/ticker_test.go.",
+          "confidence": 0.7,
+          "citationIds": [
+            "test:tls/tls_test.go"
+          ]
+        }
+      ],
+      "citations": [
+        "test:modules/any_proxy/any_proxy_test.go",
+        "test:modules/any_proxy/any_proxy_test.go#2",
+        "test:modules/net_probe/net_probe_test.go",
+        "test:modules/any_proxy/any_proxy_test.go#3",
+        "test:tls/tls_test.go"
+      ]
+    },
+    {
+      "id": "limitations",
+      "heading": "Limitations",
+      "prose": "5 claims, 5 read directly from the index, resting on 5 sources (1 symbol). What this document cannot say is stated here rather than filled in.",
+      "facts": [
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/module.go:Session:35-35"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/c2/c2.go:Session:46-46"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/net_probe/net_probe_test.go:Session:67-67"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:session/session.go:Session:72-98"
+          ]
+        },
+        {
+          "classification": "extracted",
+          "statement": "Session has no indexed docstring, and this language uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.",
+          "confidence": 1,
+          "citationIds": [
+            "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+          ]
+        }
+      ],
+      "citations": [
+        "symbol:session/module.go:Session:35-35",
+        "symbol:modules/c2/c2.go:Session:46-46",
+        "symbol:modules/net_probe/net_probe_test.go:Session:67-67",
+        "symbol:session/session.go:Session:72-98",
+        "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "symbol:session/module.go:Session:35-35",
+      "kind": "symbol",
+      "path": "session/module.go",
+      "symbol": "Session",
+      "lineStart": 35,
+      "lineEnd": 35,
+      "evidence": "Indexed property Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:modules/any_proxy/any_proxy_test.go",
+      "kind": "test",
+      "path": "modules/any_proxy/any_proxy_test.go",
+      "evidence": "Test source references Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "symbol:modules/c2/c2.go:Session:46-46",
+      "kind": "symbol",
+      "path": "modules/c2/c2.go",
+      "symbol": "Session",
+      "lineStart": 46,
+      "lineEnd": 46,
+      "evidence": "Indexed property Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:modules/any_proxy/any_proxy_test.go#2",
+      "kind": "test",
+      "path": "modules/any_proxy/any_proxy_test.go",
+      "evidence": "Test source references Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "symbol:modules/net_probe/net_probe_test.go:Session:67-67",
+      "kind": "symbol",
+      "path": "modules/net_probe/net_probe_test.go",
+      "symbol": "Session",
+      "lineStart": 67,
+      "lineEnd": 67,
+      "evidence": "Indexed property Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:modules/net_probe/net_probe_test.go",
+      "kind": "test",
+      "path": "modules/net_probe/net_probe_test.go",
+      "evidence": "Test file references Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "symbol:session/session.go:Session:72-98",
+      "kind": "symbol",
+      "path": "session/session.go",
+      "symbol": "Session",
+      "lineStart": 72,
+      "lineEnd": 98,
+      "evidence": "Indexed struct Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:modules/any_proxy/any_proxy_test.go#3",
+      "kind": "test",
+      "path": "modules/any_proxy/any_proxy_test.go",
+      "evidence": "Test source references Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "symbol:modules/arp_spoof/arp_spoof_test.go:Session:110-110",
+      "kind": "symbol",
+      "path": "modules/arp_spoof/arp_spoof_test.go",
+      "symbol": "Session",
+      "lineStart": 110,
+      "lineEnd": 110,
+      "evidence": "Indexed property Session",
+      "freshness": "fresh",
+      "confidence": 1
+    },
+    {
+      "id": "test:tls/tls_test.go",
+      "kind": "test",
+      "path": "tls/tls_test.go",
+      "evidence": "Test file references Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/packet_proxy/packet_proxy_freebsd.go:references:11:NewPacketProxy:Session",
+      "kind": "relationship",
+      "path": "modules/packet_proxy/packet_proxy_freebsd.go",
+      "lineStart": 11,
+      "relationshipType": "references",
+      "evidence": "references edge between NewPacketProxy and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/c2/c2_test.go:references:12:testSession:Session",
+      "kind": "relationship",
+      "path": "modules/c2/c2_test.go",
+      "lineStart": 12,
+      "relationshipType": "references",
+      "evidence": "references edge between testSession and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/ble/ble_unsupported.go:references:14:NewBLERecon:Session",
+      "kind": "relationship",
+      "path": "modules/ble/ble_unsupported.go",
+      "lineStart": 14,
+      "relationshipType": "references",
+      "evidence": "references edge between NewBLERecon and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:session/command_handler.go:references:16:CommandHandler:Session",
+      "kind": "relationship",
+      "path": "session/command_handler.go",
+      "lineStart": 16,
+      "relationshipType": "references",
+      "evidence": "references edge between CommandHandler and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/c2/c2_test.go:references:16:createMockSession:Session",
+      "kind": "relationship",
+      "path": "modules/c2/c2_test.go",
+      "lineStart": 16,
+      "relationshipType": "references",
+      "evidence": "references edge between createMockSession and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/net_recon/net_recon.go:references:17:NewDiscovery:Session",
+      "kind": "relationship",
+      "path": "modules/net_recon/net_recon.go",
+      "lineStart": 17,
+      "relationshipType": "references",
+      "evidence": "references edge between NewDiscovery and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/https_proxy/https_proxy.go:references:17:NewHttpsProxy:Session",
+      "kind": "relationship",
+      "path": "modules/https_proxy/https_proxy.go",
+      "lineStart": 17,
+      "relationshipType": "references",
+      "evidence": "references edge between NewHttpsProxy and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:session/command_handler.go:references:19:NewCommandHandler:Session",
+      "kind": "relationship",
+      "path": "session/command_handler.go",
+      "lineStart": 19,
+      "relationshipType": "references",
+      "evidence": "references edge between NewCommandHandler and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:session/session_completers.go:references:19:LANCompleterForMacs:Session",
+      "kind": "relationship",
+      "path": "session/session_completers.go",
+      "lineStart": 19,
+      "relationshipType": "references",
+      "evidence": "references edge between LANCompleterForMacs and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    },
+    {
+      "id": "relationship:modules/net_probe/net_probe_nbns.go:uses:19:sendProbeNBNS:Session",
+      "kind": "relationship",
+      "path": "modules/net_probe/net_probe_nbns.go",
+      "lineStart": 19,
+      "relationshipType": "uses",
+      "evidence": "uses edge between sendProbeNBNS and Session",
+      "freshness": "unknown",
+      "confidence": 0.7
+    }
+  ],
+  "unknowns": [
+    {
+      "statement": "No docstring was indexed for Session and none is present in the comment style this tool reads.",
+      "reason": "not-observed",
+      "affectedSection": "behavior"
+    },
+    {
+      "statement": "The per-section evidence cap is 20 at detail \"standard\", so 215 of 235 dependencies items were not selected. The output budget may have shortened this further; it reports its own count.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    },
+    {
+      "statement": "10 more dependencies item(s) were dropped to stay inside the 5895-token budget.",
+      "reason": "output-budget",
+      "affectedSection": "dependencies"
+    }
+  ],
+  "quality": {
+    "passed": true,
+    "factuality": {
+      "passed": true,
+      "uncitedClaims": 0,
+      "unsupportedClaims": 0
+    },
+    "references": {
+      "passed": true,
+      "broken": 0,
+      "stale": 0,
+      "missing": 0,
+      "collectedStale": 0,
+      "collectedMissing": 0
+    },
+    "completeness": {
+      "passed": true,
+      "covered": 5,
+      "expected": 5,
+      "unknown": 3
+    },
+    "freshness": {
+      "passed": true,
+      "snapshot": "19c43df39d20653a26b9e9dccefd1838",
+      "staleClaims": 0
+    },
+    "budget": {
+      "passed": true,
+      "estimatedTokens": 6289,
+      "maxTokens": 8000
+    },
+    "bounds": {
+      "perSection": 20,
+      "sections": [
+        {
+          "id": "api",
+          "available": 10,
+          "capped": 10,
+          "droppedForBudget": 0,
+          "emitted": 10
+        },
+        {
+          "id": "behavior",
+          "available": 10,
+          "capped": 10,
+          "droppedForBudget": 0,
+          "emitted": 10
+        },
+        {
+          "id": "dependencies",
+          "available": 235,
+          "capped": 20,
+          "droppedForBudget": 10,
+          "emitted": 10
+        },
+        {
+          "id": "tests",
+          "available": 5,
+          "capped": 5,
+          "droppedForBudget": 0,
+          "emitted": 5
+        },
+        {
+          "id": "limitations",
+          "available": 5,
+          "capped": 5,
+          "droppedForBudget": 0,
+          "emitted": 5
+        }
+      ]
+    },
+    "warnings": [
+      "1 section(s) were trimmed to stay inside the output budget",
+      "230 collected citation(s) were not emitted because no fact referred to them"
+    ]
+  },
+  "reference": {
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "projectPath": "/home/ishaq2321/bettercap",
+    "snapshotId": "19c43df39d20653a26b9e9dccefd1838",
+    "generatedAt": "2026-11-18T22:35:30.552Z",
+    "indexVersion": "v1.0.0",
+    "schemaVersion": 1,
+    "sourceLanguage": "go",
+    "canonicalPath": "session.Session",
+    "slugs": [
+      "symbol",
+      "session",
+      "Session"
+    ],
+    "tags": [
+      "symbol",
+      "developer",
+      "standard"
+    ],
+    "relatedReferences": [],
+    "diagrams": []
+  },
+  "freshness": {
+    "fresh": 15,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": "",
+    "passed": true
+  }
+}

@@ -1,0 +1,46 @@
+# Language comparison — same tool (bb_analyze mode=dependencies), different analyzers
+# Workspace project 1d3d57103be91b8f9716d70199fe28a3f39245d9 (MCP tools are workspace-scoped).
+# date 2026-11-18; HEAD be4c0ef25; bb 0.1.6; fixture-index creation BLOCKED in this sandbox
+# (bb index cannot mkdir ~/.bb/projects), so existing indexes were used (Lead ENV FACT).
+
+## TS — `bb_analyze {"mode":"dependencies","filePath":"src/intelligence/analysis","limit":25}`
+returned 6 / totalFiles 6 / truncated false
+returnedInternalDependencies 24, returnedInternalDependents 40
+per-row e.g. src/intelligence/analysis/run-history.ts:
+  dependencies: [node:crypto external:true resolution:"unresolved",
+                 src/brain/database.ts external:false resolution:"resolved",
+                 src/project/schema.ts  external:false resolution:"resolved",
+                 src/intelligence/contracts.ts external:false resolution:"resolved"]
+  dependents: 16 rows (script/..., src/mcp/tools/...), score 19, unresolvedSpecifiers 0
+=> RELATIVE SPECIFIERS RESOLVE. The mode's documented resolution path works for TS.
+
+## JS — `bb_analyze {"mode":"dependencies","filePath":".corpus/axios/lib","limit":5}`
+returned 5 / totalFiles 74 / truncated true
+returnedInternalDependencies 42, returnedInternalDependents 120
+per-row e.g. .corpus/axios/lib/adapters/http.js:
+  dependencies: 34 (20 relative internal `resolution:"resolved"`, e.g. .corpus/axios/lib/utils.js;
+                  npm/builtin specs external:true unresolved, e.g. follow-redirects, zlib, stream;
+                  one INTERNAL unresolved: "../env/data.js" -> unresolvedSpecifiers 1)
+  dependents: 4
+.corpus/axios/lib/utils.js: 1 dep (./helpers/bind.js) resolved, 54 dependents, score 55
+=> RELATIVE SPECIFIERS RESOLVE; the internal-unresolved counter is 1 on the row that has one.
+
+## Stored classification by language (read-only sqlite3 on workspace brain.db)
+file language census: javascript 20830, typescript 6642, python 50, go 17, csharp 10, java 10 (top js/ts)
+brain_import rows by language (rows | is_external=1 | is_external=0):
+  typescript | 32109 | 20963 | 11146    <- relative imports classified INTERNAL
+  javascript | 28749 |  7925 | 20824    <- relative imports classified INTERNAL
+  python     |   159 |   159 |     0    <- ALL imports are stdlib/3rd-party in this population
+  java       |     4 |     4 |     0    <- only third-party imports (spring/javax)
+  go         |    10 |    10 |     0    <- 17 stray .go files, no same-module project
+imports relationships by source language (rels | both symbols non-null):
+  javascript 4048|3966, typescript 673|649    <- index-time resolution works for js/ts
+  go 10|3, java 3|1
+=> The Go analyzer is the only indexed population where same-module imports exist AND none
+   of them is classified internal or resolved.
+
+## Python / Java cell status
+CANNOT-VERIFY empirically: no indexed project on this machine contains a same-project
+absolute-module import (python population above has zero; java population has only third-party).
+Mechanism-level (code path) prediction: they hit the same pool-worker.ts:1930-1937 fallback,
+but per Lead instruction a missing cell stays OPEN, not asserted.

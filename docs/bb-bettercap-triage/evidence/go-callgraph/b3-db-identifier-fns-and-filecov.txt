@@ -1,0 +1,25 @@
+=== identifier_usage rows by target symbol type (bettercap)
+symbol_type  n  
+-----------  ---
+constant     126
+function     10 
+variable     230
+
+=== 3 incoming uses rows into script_builtin_runtime.go
+rt    src_name                   tgt_name     symbol_type  confidence  line_number  why             
+----  -------------------------  -----------  -----------  ----------  -----------  ----------------
+uses  jsLoadJSONFunc             jsRuntime    variable     1.0         219          identifier_usage
+uses  jsOnEventFunc              jsListeners  variable     1.0         66           identifier_usage
+uses  jsRemoveEventListenerFunc  jsListeners  variable     1.0         146          identifier_usage
+
+=== ALL 7 js* callback symbols: incoming row count by type (expect none)
+name                       incoming_rows
+-------------------------  -------------
+jsEnvFunc                  0            
+jsFileExistsFunc           0            
+jsLoadJSONFunc             0            
+jsOnEventFunc              0            
+jsRemoveEventListenerFunc  0            
+jsRunFunc                  0            
+jsSaveJSONFunc             0            
+jsSaveToFileFunc           0            

@@ -1,0 +1,54 @@
+{
+  "mode": "refactor",
+  "dryRun": true,
+  "changes": [
+    {
+      "path": "/home/ishaq2321/bettercap/modules/modules.go",
+      "before": "package modules\n\nimport (\n\t\"github.com/bettercap/bettercap/v2/modules/any_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/api_rest\"\n\t\"github.com/bettercap/bettercap/v2/modules/arp_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/ble\"\n\t\"github.com/bettercap/bettercap/v2/modules/c2\"\n\t\"github.com/bettercap/bettercap/v2/modules/can\"\n\t\"github.com/bettercap/bettercap/v2/modules/caplets\"\n\t\"github.com/bettercap/bettercap/v2/modules/dhcp6_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/dns_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/dns_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/events_stream\"\n\t\"github.com/bettercap/bettercap/v2/modules/gps\"\n\t\"github.com/bettercap/bettercap/v2/modules/graph\"\n\t\"github.com/bettercap/bettercap/v2/modules/hid\"\n\t\"github.com/bettercap/bettercap/v2/modules/http_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/http_server\"\n\t\"github.com/bettercap/bettercap/v2/modules/https_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/https_server\"\n\t\"github.com/bettercap/bettercap/v2/modules/mac_changer\"\n\t\"github.com/bettercap/bettercap/v2/modules/mysql_server\"\n\t\"github.com/bettercap/bettercap/v2/modules/ndp_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/net_probe\"\n\t\"github.com/bettercap/bettercap/v2/modules/net_recon\"\n\t\"github.com/bettercap/bettercap/v2/modules/net_sniff\"\n\t\"github.com/bettercap/bettercap/v2/modules/packet_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/ssh_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/syn_scan\"\n\t\"github.com/bettercap/bettercap/v2/modules/tcp_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/ticker\"\n\t\"github.com/bettercap/bettercap/v2/modules/ui\"\n\t\"github.com/bettercap/bettercap/v2/modules/update\"\n\t\"github.com/bettercap/bettercap/v2/modules/wifi\"\n\t\"github.com/bettercap/bettercap/v2/modules/wol\"\n\t\"github.com/bettercap/bettercap/v2/modules/zerogod\"\n\n\t\"github.com/bettercap/bettercap/v2/session\"\n)\n\nfunc LoadModules(sess *session.Session) {\n\tsess.Register(any_proxy.NewAnyProxy(sess))\n\tsess.Register(arp_spoof.NewArpSpoofer(sess))\n\tsess.Register(api_rest.NewRestAPI(sess))\n\tsess.Register(ble.NewBLERecon(sess))\n\tsess.Register(can.NewCanModule(sess))\n\tsess.Register(dhcp6_spoof.NewDHCP6Spoofer(sess))\n\tsess.Register(net_recon.NewDiscovery(sess))\n\tsess.Register(dns_proxy.NewDnsProxy(sess))\n\tsess.Register(dns_spoof.NewDNSSpoofer(sess))\n\tsess.Register(events_stream.NewEventsStream(sess))\n\tsess.Register(gps.NewGPS(sess))\n\tsess.Register(graph.NewModule(sess))\n\tsess.Register(http_proxy.NewHttpProxy(sess))\n\tsess.Register(http_server.NewHttpServer(sess))\n\tsess.Register(https_proxy.NewHttpsProxy(sess))\n\tsess.Register(https_server.NewHttpsServer(sess))\n\tsess.Register(mac_changer.NewMacChanger(sess))\n\tsess.Register(mysql_server.NewMySQLServer(sess))\n\tsess.Register(zerogod.NewZeroGod(sess))\n\tsess.Register(net_sniff.NewSniffer(sess))\n\tsess.Register(packet_proxy.NewPacketProxy(sess))\n\tsess.Register(net_probe.NewProber(sess))\n\tsess.Register(syn_scan.NewSynScanner(sess))\n\tsess.Register(ssh_proxy.NewSSHProxy(sess))\n\tsess.Register(tcp_proxy.NewTcpProxy(sess))\n\tsess.Register(ticker.NewTicker(sess))\n\tsess.Register(wifi.NewWiFiModule(sess))\n\tsess.Register(wol.NewWOL(sess))\n\tsess.Register(hid.NewHIDRecon(sess))\n\tsess.Register(c2.NewC2(sess))\n\tsess.Register(ndp_spoof.NewNDPSpoofer(sess))\n\n\tsess.Register(caplets.NewCapletsModule(sess))\n\tsess.Register(update.NewUpdateModule(sess))\n\tsess.Register(ui.NewUIModule(sess))\n}\n",
+      "after": "package modules\n\nimport (\n\t\"github.com/bettercap/bettercap/v2/modules/any_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/api_rest\"\n\t\"github.com/bettercap/bettercap/v2/modules/arp_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/ble\"\n\t\"github.com/bettercap/bettercap/v2/modules/c2\"\n\t\"github.com/bettercap/bettercap/v2/modules/can\"\n\t\"github.com/bettercap/bettercap/v2/modules/caplets\"\n\t\"github.com/bettercap/bettercap/v2/modules/dhcp6_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/dns_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/dns_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/events_stream\"\n\t\"github.com/bettercap/bettercap/v2/modules/gps\"\n\t\"github.com/bettercap/bettercap/v2/modules/graph\"\n\t\"github.com/bettercap/bettercap/v2/modules/hid\"\n\t\"github.com/bettercap/bettercap/v2/modules/http_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/http_server\"\n\t\"github.com/bettercap/bettercap/v2/modules/https_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/https_server\"\n\t\"github.com/bettercap/bettercap/v2/modules/mac_changer\"\n\t\"github.com/bettercap/bettercap/v2/modules/mysql_server\"\n\t\"github.com/bettercap/bettercap/v2/modules/ndp_spoof\"\n\t\"github.com/bettercap/bettercap/v2/modules/net_probe\"\n\t\"github.com/bettercap/bettercap/v2/modules/net_recon\"\n\t\"github.com/bettercap/bettercap/v2/modules/net_sniff\"\n\t\"github.com/bettercap/bettercap/v2/modules/packet_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/ssh_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/syn_scan\"\n\t\"github.com/bettercap/bettercap/v2/modules/tcp_proxy\"\n\t\"github.com/bettercap/bettercap/v2/modules/ticker\"\n\t\"github.com/bettercap/bettercap/v2/modules/ui\"\n\t\"github.com/bettercap/bettercap/v2/modules/update\"\n\t\"github.com/bettercap/bettercap/v2/modules/wifi\"\n\t\"github.com/bettercap/bettercap/v2/modules/wol\"\n\t\"github.com/bettercap/bettercap/v2/modules/zerogod\"\n\n\t\"github.com/bettercap/bettercap/v2/session\"\n)\n\nfunc LoadModulesRenamed(sess *session.Session) {\n\tsess.Register(any_proxy.NewAnyProxy(sess))\n\tsess.Register(arp_spoof.NewArpSpoofer(sess))\n\tsess.Register(api_rest.NewRestAPI(sess))\n\tsess.Register(ble.NewBLERecon(sess))\n\tsess.Register(can.NewCanModule(sess))\n\tsess.Register(dhcp6_spoof.NewDHCP6Spoofer(sess))\n\tsess.Register(net_recon.NewDiscovery(sess))\n\tsess.Register(dns_proxy.NewDnsProxy(sess))\n\tsess.Register(dns_spoof.NewDNSSpoofer(sess))\n\tsess.Register(events_stream.NewEventsStream(sess))\n\tsess.Register(gps.NewGPS(sess))\n\tsess.Register(graph.NewModule(sess))\n\tsess.Register(http_proxy.NewHttpProxy(sess))\n\tsess.Register(http_server.NewHttpServer(sess))\n\tsess.Register(https_proxy.NewHttpsProxy(sess))\n\tsess.Register(https_server.NewHttpsServer(sess))\n\tsess.Register(mac_changer.NewMacChanger(sess))\n\tsess.Register(mysql_server.NewMySQLServer(sess))\n\tsess.Register(zerogod.NewZeroGod(sess))\n\tsess.Register(net_sniff.NewSniffer(sess))\n\tsess.Register(packet_proxy.NewPacketProxy(sess))\n\tsess.Register(net_probe.NewProber(sess))\n\tsess.Register(syn_scan.NewSynScanner(sess))\n\tsess.Register(ssh_proxy.NewSSHProxy(sess))\n\tsess.Register(tcp_proxy.NewTcpProxy(sess))\n\tsess.Register(ticker.NewTicker(sess))\n\tsess.Register(wifi.NewWiFiModule(sess))\n\tsess.Register(wol.NewWOL(sess))\n\tsess.Register(hid.NewHIDRecon(sess))\n\tsess.Register(c2.NewC2(sess))\n\tsess.Register(ndp_spoof.NewNDPSpoofer(sess))\n\n\tsess.Register(caplets.NewCapletsModule(sess))\n\tsess.Register(update.NewUpdateModule(sess))\n\tsess.Register(ui.NewUIModule(sess))\n}\n"
+    },
+    {
+      "path": "/home/ishaq2321/bettercap/modules/modules_test.go",
+      "before": "package modules\n\nimport (\n\t\"testing\"\n)\n\nfunc TestLoadModulesWithNilSession(t *testing.T) {\n\t// This test verifies that LoadModules handles nil session gracefully\n\t// In the actual implementation, this would panic, which is expected behavior\n\tdefer func() {\n\t\tif r := recover(); r == nil {\n\t\t\tt.Error(\"expected panic when loading modules with nil session, but didn't get one\")\n\t\t}\n\t}()\n\n\tLoadModules(nil)\n}\n\n// Since LoadModules requires a fully initialized session with command-line flags,\n// which conflicts with the test runner, we can't easily test the actual module loading.\n// The main functionality is tested through integration tests and the actual application.\n// This test file at least provides some coverage for the package and demonstrates\n// the expected behavior with invalid input.\n",
+      "after": "package modules\n\nimport (\n\t\"testing\"\n)\n\nfunc TestLoadModulesWithNilSession(t *testing.T) {\n\t// This test verifies that LoadModules handles nil session gracefully\n\t// In the actual implementation, this would panic, which is expected behavior\n\tdefer func() {\n\t\tif r := recover(); r == nil {\n\t\t\tt.Error(\"expected panic when loading modules with nil session, but didn't get one\")\n\t\t}\n\t}()\n\n\tLoadModulesRenamed(nil)\n}\n\n// Since LoadModules requires a fully initialized session with command-line flags,\n// which conflicts with the test runner, we can't easily test the actual module loading.\n// The main functionality is tested through integration tests and the actual application.\n// This test file at least provides some coverage for the package and demonstrates\n// the expected behavior with invalid input.\n"
+    }
+  ],
+  "formatted": false,
+  "validated": false,
+  "reindexed": false,
+  "warnings": [
+    "refactor LoadModules → LoadModulesRenamed: 2 site(s) across 2 file(s)"
+  ],
+  "summary": {
+    "renamedFiles": 2,
+    "renamedSites": 2
+  },
+  "envelope": {
+    "atomic": true,
+    "entries": [
+      {
+        "path": "modules/modules.go",
+        "entry": 0,
+        "mode": "refactor",
+        "planned": true,
+        "committed": false,
+        "restored": false,
+        "bytesBefore": 3420,
+        "bytesAfter": null
+      },
+      {
+        "path": "modules/modules_test.go",
+        "entry": 0,
+        "mode": "refactor",
+        "planned": true,
+        "committed": false,
+        "restored": false,
+        "bytesBefore": 797,
+        "bytesAfter": null
+      }
+    ],
+    "committed": 0,
+    "restored": 0,
+    "failed": []
+  }
+}

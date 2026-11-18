@@ -1,0 +1,176 @@
+{
+  "totals": {
+    "n": 2423,
+    "ext": 2423
+  },
+  "byPairType": [
+    {
+      "src_lang": "go",
+      "tgt_lang": "javascript",
+      "rt": "references",
+      "n": 606,
+      "external_declared": 606
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "go",
+      "rt": "uses",
+      "n": 423,
+      "external_declared": 423
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "yaml",
+      "rt": "calls",
+      "n": 330,
+      "external_declared": 330
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 291,
+      "external_declared": 291
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "go",
+      "rt": "calls",
+      "n": 202,
+      "external_declared": 202
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "make",
+      "rt": "imports",
+      "n": 170,
+      "external_declared": 170
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "yaml",
+      "rt": "imports",
+      "n": 138,
+      "external_declared": 138
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "javascript",
+      "rt": "uses",
+      "n": 108,
+      "external_declared": 108
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "xml",
+      "rt": "uses",
+      "n": 58,
+      "external_declared": 58
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "javascript",
+      "rt": "imports",
+      "n": 26,
+      "external_declared": 26
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "html",
+      "rt": "uses",
+      "n": 17,
+      "external_declared": 17
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "javascript",
+      "rt": "calls",
+      "n": 13,
+      "external_declared": 13
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "yaml",
+      "rt": "uses",
+      "n": 8,
+      "external_declared": 8
+    },
+    {
+      "src_lang": "go",
+      "tgt_lang": "javascript",
+      "rt": "instantiates",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "html",
+      "tgt_lang": "go",
+      "rt": "uses",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "make",
+      "rt": "calls",
+      "n": 6,
+      "external_declared": 6
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "go",
+      "rt": "references",
+      "n": 5,
+      "external_declared": 5
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "go",
+      "rt": "instantiates",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "make",
+      "rt": "uses",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "javascript",
+      "tgt_lang": "xml",
+      "rt": "calls",
+      "n": 2,
+      "external_declared": 2
+    },
+    {
+      "src_lang": "objective-c",
+      "tgt_lang": "go",
+      "rt": "calls",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "scss",
+      "tgt_lang": "go",
+      "rt": "part_of",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "scss",
+      "tgt_lang": "javascript",
+      "rt": "part_of",
+      "n": 1,
+      "external_declared": 1
+    },
+    {
+      "src_lang": "scss",
+      "tgt_lang": "yaml",
+      "rt": "part_of",
+      "n": 1,
+      "external_declared": 1
+    }
+  ]
+}

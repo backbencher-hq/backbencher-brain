@@ -1,0 +1,102 @@
+{
+  "symbol": "main",
+  "root": {
+    "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:main.go:main:20",
+    "name": "main",
+    "symbolType": "function",
+    "file": "main.go",
+    "line": 20,
+    "filePath": "/home/ishaq2321/bettercap/main.go",
+    "candidates": 1,
+    "match": "exact"
+  },
+  "callers": [],
+  "callees": [],
+  "summary": {
+    "totalCallers": 0,
+    "totalCallees": 0,
+    "maxDepthReached": 0,
+    "maxDepth": 5,
+    "crossLanguageEdges": 0,
+    "noiseFiltered": {
+      "callers": 0,
+      "callees": 0
+    },
+    "unattributed": {
+      "callers": 0,
+      "callees": 0
+    },
+    "crossLanguageExcluded": {
+      "callers": 0,
+      "callees": 0
+    },
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "filterNarrowed": true,
+    "filterReason": "relationshipTypes:imports|uses",
+    "edgeLimit": 40,
+    "maxEdges": 40,
+    "timeBudgetMs": 0,
+    "timeBudgetExhausted": false,
+    "totalEdgeLimitReached": false,
+    "cappedQueries": 0,
+    "callersIfUncapped": null,
+    "calleesIfUncapped": null,
+    "totalsAreLowerBounds": false,
+    "exactCallers": 0,
+    "cascadedCallers": 0,
+    "exactCallees": 0,
+    "cascadedCallees": 0,
+    "deeperCallers": 0,
+    "deeperCallees": 0,
+    "callerBudget": 50,
+    "calleeBudget": 50,
+    "callerBudgetExhausted": false,
+    "calleeBudgetExhausted": false,
+    "edgesInBothDirections": 0,
+    "edgesByType": {},
+    "edgeKindPriority": [
+      "calls",
+      "instantiates",
+      "extends",
+      "implements",
+      "mixes_in",
+      "renders",
+      "overrides",
+      "decorates",
+      "uses",
+      "references",
+      "imports",
+      "exports",
+      "contains",
+      "part_of"
+    ],
+    "dedupedAtToolLayer": {
+      "cascadeRepeatsCollapsed": 0,
+      "spellingVariantsCollapsed": 0
+    },
+    "scope": {
+      "direction": "callees",
+      "relationshipTypes": [
+        "imports",
+        "uses"
+      ],
+      "includeCrossLanguage": true
+    }
+  },
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [],
+    "evidenceClass": "inferred",
+    "engine": "graph@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+    "source": "brain_relationship",
+    "limitations": [
+      "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",
+      "provenance.evidenceClass is `inferred` for the ANSWER, not for every edge: root resolution, the owner cascade, the noise policy and any cap are constructions over stored rows, so the whole object cannot claim `structural` even when each returned edge carries a stored row. Per-row evidence is on `edge.tier` (a stored `calls` row is `structural`)."
+    ]
+  }
+}
