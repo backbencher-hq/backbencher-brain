@@ -1,0 +1,9 @@
+{
+  "fixtureId": "java/importdisambig/Filter",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The disambiguation TARGET: the top-level Filter whose qualified path a single-type import names. Kept as its own fixture so the target's declaration is measured rather than assumed.",
+  "expectSymbols": [
+    { "name": "Filter", "kind": "class" }
+  ]
+}

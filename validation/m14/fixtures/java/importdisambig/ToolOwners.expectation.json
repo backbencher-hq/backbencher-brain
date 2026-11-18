@@ -1,0 +1,11 @@
+{
+  "fixtureId": "java/importdisambig/ToolOwners",
+  "language": "java",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "The ambiguity SOURCE: declares Filter twice, so the project's simple-name count for Filter exceeds one and the disambiguation rule's precondition holds.",
+  "expectSymbols": [
+    { "name": "ToolOwners", "kind": "class" },
+    { "name": "Filter", "kind": "class" },
+    { "name": "Other", "kind": "class" }
+  ]
+}
