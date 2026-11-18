@@ -51,7 +51,7 @@
     {
       "name": "corrupt vector: retrieval still returns a shaped answer",
       "pass": true,
-      "detail": "method=vector"
+      "detail": "method=keyword-fallback"
     },
     {
       "name": "corrupt vector: no result similarity is NaN [negative]",
@@ -62,24 +62,24 @@
     {
       "name": "foreign model: index model equals the query model (never compared across spaces)",
       "pass": true,
-      "detail": "nvidia/nemotron-3-embed-1b vs nvidia/nemotron-3-embed-1b"
+      "detail": "none vs none"
     },
     {
       "name": "foreign model: its 4-dimension rows are not counted as comparable [negative]",
       "pass": true,
       "negative": true,
-      "detail": "comparable=4 scanned=4"
+      "detail": "comparable=3 scanned=3"
     },
     {
       "name": "comparison: comparable count equals the rows actually scanned when the scan is not capped",
       "pass": true,
-      "detail": "comparable=4 scanned=4 capped=false"
+      "detail": "comparable=3 scanned=3 capped=false"
     },
     {
       "name": "tfidf rows are never scanned by the dense path [negative]",
       "pass": true,
       "negative": true,
-      "detail": "nvidia/nemotron-3-embed-1b"
+      "detail": "none"
     },
     {
       "name": "tfidf insertion leaves no NaN similarity [negative]",
@@ -148,5 +148,5 @@
   "limitations": [
     "The dense-vector cases require a dense query model; if the embedder degrades they are recorded as skipped, not failed."
   ],
-  "generatedAt": "2026-11-05T04:04:51.698Z"
+  "generatedAt": "2026-11-16T06:36:37.065Z"
 }

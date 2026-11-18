@@ -1,12 +1,4285 @@
 {
   "schemaVersion": 1,
-  "status": "verified",
-  "currentCommit": "6425e19a473a6c330db914ca33709553246659f7",
-  "scannedFiles": 115,
-  "regexUses": 76,
+  "status": "violations",
+  "currentCommit": "2bd4ed80b0db4cef1404b0310ee71f617195afe8",
+  "scannedFiles": 164,
+  "regexUses": 788,
   "allowlisted": 14,
   "baselinedDebt": 62,
-  "newUses": [],
+  "newUses": [
+    {
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "kind": "literal",
+      "source": "/_/g",
+      "line": 301
+    },
+    {
+      "file": "src/mcp/tools/bb_security/handler.ts",
+      "kind": "literal",
+      "source": "/_/g",
+      "line": 353
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/^(?:export|public|private|protected|internal|static|final|readonly|const|constexpr|let|var|val|auto|my|local|mut|volatile|register|synchronized)\\s+/i",
+      "line": 194
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/[A-Za-z_$][\\w$]*/g",
+      "line": 358
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/[?=+!~^|]/",
+      "line": 388
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/[[\\]()]/",
+      "line": 407
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/([A-Za-z_$][\\w$]*(?:\\s*\\.\\s*[A-Za-z_$][\\w$]*)*)\\s*$/",
+      "line": 408
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/\\s*\\.\\s*/g",
+      "line": 410
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/[A-Za-z_$][\\w$]*(?:\\s*\\.\\s*[A-Za-z_$][\\w$]*)*/g",
+      "line": 519
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/\\s*\\.\\s*/g",
+      "line": 522
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "constructor",
+      "source": "<dynamic>",
+      "line": 638
+    },
+    {
+      "file": "src/intelligence/security/rebuild/flow.ts",
+      "kind": "literal",
+      "source": "/g/g",
+      "line": 638
+    },
+    {
+      "file": "src/intelligence/security/rebuild/matcher.ts",
+      "kind": "constructor",
+      "source": "<dynamic>",
+      "line": 400
+    },
+    {
+      "file": "src/intelligence/security/rebuild/matcher.ts",
+      "kind": "literal",
+      "source": "/([A-Za-z_$][\\w$]*)\\s*\\(/",
+      "line": 447
+    },
+    {
+      "file": "src/intelligence/security/rebuild/matcher.ts",
+      "kind": "literal",
+      "source": "/^([A-Za-z_$][\\w$]*)\\s*\\./",
+      "line": 449
+    },
+    {
+      "file": "src/intelligence/security/rebuild/matcher.ts",
+      "kind": "literal",
+      "source": "/^[A-Za-z_$][\\w$]*$/",
+      "line": 451
+    },
+    {
+      "file": "src/intelligence/security/rebuild/matcher.ts",
+      "kind": "literal",
+      "source": "/[A-Za-z0-9_$]/",
+      "line": 564
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\$\\{?[1-9][0-9]*\\}?|\\$\\{?[@*]\\}?/",
+      "line": 32
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\$\\{?[A-Z_][A-Z0-9_]*\\}?/",
+      "line": 38
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\bread\\s+(?:-[a-zA-Z]+\\s+)*[A-Za-z_][A-Za-z0-9_]*/",
+      "line": 44
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\b(?:curl|wget)\\s+/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s+/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\b(?:bash|sh|zsh|ksh|dash)\\s+(?:-[a-zA-Z]+\\s+)*-[cC]\\s+/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\$\\(/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\bexec\\s+/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\b(?:source|\\.)\\s+[A-Za-z_$\\/.]/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysql|psql|sqlite3)\\s+(?:-[A-Za-z]+\\s+)*-[eE]\\s+/",
+      "line": 104
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/[>]{1,2}\\s*\"?\\$\\{?[A-Za-z_]/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\b(?:cat|cp|mv|rm|chmod|chown|head|tail|tee)\\s+(?:-[A-Za-z]+\\s+)*\\$\\{?[A-Za-z_]/",
+      "line": 122
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\bprintf\\s+-v\\s+[A-Za-z_][A-Za-z0-9_]*\\s+/",
+      "line": 134
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\bprintf\\s+-v\\s+[A-Za-z_][A-Za-z0-9_]*\\s+/",
+      "line": 140
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/bash.ts",
+      "kind": "literal",
+      "source": "/\\bcase\\s+[^;\\n]*\\bin\\b/",
+      "line": 146
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bgetenv\\s*\\(/",
+      "line": 29
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bargv\\s*\\[/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:gets|fgets|scanf|fscanf|sscanf|getline|read)\\s*\\(/",
+      "line": 41
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\brecv(?:from)?\\s*\\(/",
+      "line": 47
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bfread\\s*\\(/",
+      "line": 53
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bsystem\\s*\\(/",
+      "line": 61
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bpopen\\s*\\(/",
+      "line": 70
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bexec(?:l|v)[a-z]*\\s*\\(/",
+      "line": 79
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysql_query|PQexec|sqlite3_exec)\\s*\\(/",
+      "line": 88
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:fopen|open|fopen64|remove|unlink|rename)\\s*\\(/",
+      "line": 97
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bdlopen\\s*\\(/",
+      "line": 106
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\bcurl_easy_setopt\\s*\\(/",
+      "line": 115
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:MD5_Init|SHA1_Init|DES_set_key|RC4_set_key)\\s*\\(/",
+      "line": 124
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysql_stmt_prepare|PQprepare|sqlite3_prepare(?:_v2|_v3)?)\\s*\\(/",
+      "line": 136
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:PQexecParams|mysql_stmt_bind_param|sqlite3_bind_\\w+)\\s*\\(/",
+      "line": 142
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 148
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/c.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 154
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bgetEnvironmentVariable\\b/",
+      "line": 37
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\b(?:getCommandLine|getArg)\\b/",
+      "line": 43
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\b(?:freadline|freads|freadc)\\b/",
+      "line": 49
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bfopen\\s+[A-Za-z_(]/",
+      "line": 57
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bsfopen\\s+[A-Za-z_(]/",
+      "line": 66
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bfremove\\s+[A-Za-z_(]/",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bcreateDirectory\\s+[A-Za-z_(]/",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bfmove\\s+[A-Za-z_(]/",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bsetCurrentDirectory\\s+[A-Za-z_(]/",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bgetDirectoryContents\\s+[A-Za-z_(]/",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clean.ts",
+      "kind": "literal",
+      "source": "/\\bgetFileInfo\\s+[A-Za-z_(]/",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*read-line\\b/",
+      "line": 28
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*slurp\\b/",
+      "line": 34
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*System\\/getenv\\b/",
+      "line": 40
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\*command-line-args\\*/",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/:(?:query-params|form-params|path-params|params)\\b/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*clojure\\.java\\.io\\/reader\\b/",
+      "line": 58
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*clojure\\.java\\.shell\\/sh\\b/",
+      "line": 66
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*\\.exec\\b/",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*(?:clojure\\.java\\.jdbc|next\\.jdbc|jdbc)\\/[a-z!?-]+\\b/",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*eval\\s+/",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*load-string\\b/",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*read-string\\b/",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*spit\\b/",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*(?:hiccup\\.util|hiccup\\.core)\\/raw(?:-string)?\\b/",
+      "line": 129
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*clojure\\.java\\.browse\\/browse-url\\b/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*(?:clojure\\.java\\.jdbc|next\\.jdbc|jdbc)\\/[a-z!?-]+\\s+[^\\s()]+\\s+\\[/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/clojure.ts",
+      "kind": "literal",
+      "source": "/(?:hiccup\\.util\\/)?escape-html\\b/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:std::)?getenv\\s*\\(/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bargv\\s*\\[/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bstd::getline\\s*\\(\\s*std::cin\\b/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bstd::cin\\s*>>/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\brecv(?:from)?\\s*\\(/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bstd::ifstream\\s+\\w+\\s*\\(/",
+      "line": 57
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bstd::system\\s*\\(/",
+      "line": 65
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bpopen\\s*\\(/",
+      "line": 74
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bexec(?:l|v)[a-z]*\\s*\\(/",
+      "line": 83
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysql_query|PQexec|sqlite3_exec)\\s*\\(/",
+      "line": 92
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:fopen|open|remove|rename)\\s*\\(/",
+      "line": 101
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bdlopen\\s*\\(/",
+      "line": 110
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\bcurl_easy_setopt\\s*\\(/",
+      "line": 119
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:MD5_Init|SHA1_Init|DES_set_key|RC4_set_key)\\s*\\(/",
+      "line": 128
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysql_stmt_prepare|PQprepare|sqlite3_prepare(?:_v2|_v3)?)\\s*\\(/",
+      "line": 140
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:PQexecParams|mysql_stmt_bind_param|sqlite3_bind_\\w+)\\s*\\(/",
+      "line": 146
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 152
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/cpp.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 158
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bRequest\\.(?:QueryString|Form|Params|Query|Cookies|Headers)\\b/",
+      "line": 32
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bConsole\\.ReadLine\\s*\\(/",
+      "line": 38
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bEnvironment\\.GetEnvironmentVariable\\s*\\(/",
+      "line": 44
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bargs\\s*\\[/",
+      "line": 50
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.ReadAll(?:Text|Bytes|Lines)\\s*\\(/",
+      "line": 56
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bProcess\\.Start\\s*\\(/",
+      "line": 64
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bProcessStartInfo\\s*\\(/",
+      "line": 73
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:SqlCommand|NpgsqlCommand|MySqlCommand|SqliteCommand|OleDbCommand|OracleCommand)\\s*\\(/",
+      "line": 82
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:ExecuteSqlRaw|FromSqlRaw|ExecuteSqlCommand)\\s*\\(/",
+      "line": 91
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bAssembly\\.Load\\s*\\(/",
+      "line": 100
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:BinaryFormatter|LosFormatter|NetDataContractSerializer|ObjectStateFormatter|SoapFormatter)\\s*\\(/",
+      "line": 109
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.(?:ReadAllText|ReadAllBytes|ReadAllLines|WriteAllText|Open|Delete|Copy|Move)\\s*\\(/",
+      "line": 118
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Html\\.Raw|Response\\.Write)\\s*\\(/",
+      "line": 127
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:GetStringAsync|GetAsync|PostAsync|DownloadString)\\s*\\(/",
+      "line": 136
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:MD5|SHA1|DES|RC2|TripleDES)\\.Create\\s*\\(/",
+      "line": 145
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:SqlParameter|NpgsqlParameter|MySqlParameter|OleDbParameter|OracleParameter)\\b|\\bAddWithValue\\s*\\(|\\bParameters\\.Add\\s*\\(/",
+      "line": 157
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/@[A-Za-z_][A-Za-z0-9_]*/",
+      "line": 163
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:HtmlEncoder\\.Default\\.Encode|HttpUtility\\.HtmlEncode|WebUtility\\.HtmlEncode)\\s*\\(/",
+      "line": 169
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/csharp.ts",
+      "kind": "literal",
+      "source": "/\\bArgumentList\\s*\\.\\s*Add\\s*\\(/",
+      "line": 175
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bPlatform\\.environment\\s*\\[/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bstdin\\s*\\.\\s*readLineSync\\s*\\(/",
+      "line": 41
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\b(?:request|req)\\.(?:url|uri|headers|body)\\b/",
+      "line": 47
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bargs\\s*\\[/",
+      "line": 53
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\breadAs(?:String|Bytes)(?:Sync)?\\s*\\(/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bProcess\\.run(?:Sync)?\\s*\\(/",
+      "line": 67
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bProcess\\.start\\s*\\(/",
+      "line": 76
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\b(?:db|database|connection)\\s*\\.\\s*(?:execute|query|rawQuery|rawInsert|rawUpdate|rawDelete)\\s*\\(/",
+      "line": 85
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\b(?:File|Directory|Link)\\s*\\(/",
+      "line": 94
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\b(?:HttpClient|http)\\s*\\.\\s*(?:get|post|put|delete|getUrl|openUrl|request)\\s*\\(/",
+      "line": 103
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\.innerHtml\\s*=/",
+      "line": 112
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\b(?:md5|sha1)\\s*\\.\\s*convert\\s*\\(/",
+      "line": 121
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bwhereArgs\\s*:/",
+      "line": 133
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\brawQuery\\s*\\([^)\\n]*,\\s*\\[/",
+      "line": 139
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 145
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/dart.ts",
+      "kind": "literal",
+      "source": "/\\bHtmlEscape\\b|\\bhtmlEscape\\s*\\(/",
+      "line": 151
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.get_env\\s*\\(/",
+      "line": 32
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.argv\\s*\\(/",
+      "line": 38
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bIO\\.(?:gets|read|binread)\\s*\\(/",
+      "line": 44
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bconn\\.(?:params|query_params|body_params|path_params)\\b/",
+      "line": 50
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.read!\\s*\\(/",
+      "line": 56
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.cmd\\s*\\(/",
+      "line": 64
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bPort\\.open\\s*\\(/",
+      "line": 73
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Ecto\\.Adapters\\.SQL|Repo|repo)\\.query\\s*\\(/",
+      "line": 82
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bCode\\.(?:eval_string|eval_file|eval_quoted|compile_string)\\s*\\(/",
+      "line": 91
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b:erlang\\.binary_to_term\\s*\\(/",
+      "line": 100
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.(?:read!|write!|rm!|cp!|rename!|stream!)\\s*\\(/",
+      "line": 109
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Phoenix\\.HTML\\.)?raw\\s*\\(/",
+      "line": 118
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b(?:HTTPoison|Req|Finch|Tesla)\\.(?:get|post|request|get!)\\s*\\(/",
+      "line": 127
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b:crypto\\.hash\\s*\\(\\s*:(?:md5|sha)\\b/",
+      "line": 136
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Repo|repo)\\.query\\s*\\([^)\\n]*,\\s*\\[/",
+      "line": 148
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\(\\s*from\\s+[a-zA-Z_][a-zA-Z0-9_]*\\s+in\\b/",
+      "line": 154
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 160
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/elixir.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Phoenix\\.HTML\\.)?html_escape\\s*\\(/",
+      "line": 166
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bos:getenv\\s*\\(/",
+      "line": 29
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\binit:get_(?:plain_)?arguments?\\s*\\(/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bio:(?:get_line|read|fread)\\s*\\(/",
+      "line": 41
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bgen_(?:tcp|udp):recv\\s*\\(/",
+      "line": 47
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bos:cmd\\s*\\(/",
+      "line": 55
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bopen_port\\s*\\(/",
+      "line": 64
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\b(?:odbc|epgsql|mysql|pgsql|pgo|sqerl):(?:sql_query|equery|query|execute)\\s*\\(/",
+      "line": 73
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\berlang:binary_to_term\\s*\\(/",
+      "line": 82
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\berlang:apply\\s*\\(/",
+      "line": 91
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bfile:(?:read_file|write_file|delete|rename|copy|open)\\s*\\(/",
+      "line": 100
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bhttpc:request\\s*\\(/",
+      "line": 109
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bcrypto:hash\\s*\\(\\s*(?:md5|sha)\\b/",
+      "line": 118
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bepgsql:equery\\s*\\([^)\\n]*,[^)\\n]*,\\s*\\[/",
+      "line": 130
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\bodbc:param_query\\s*\\(/",
+      "line": 136
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/erlang.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 142
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bEnvironment\\.GetEnvironmentVariable\\s*\\(/",
+      "line": 30
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:fsi\\.CommandLineArgs|Environment\\.GetCommandLineArgs)\\b/",
+      "line": 36
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bConsole\\.ReadLine\\s*\\(/",
+      "line": 42
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.ReadAll(?:Text|Lines|Bytes)\\s*\\(/",
+      "line": 48
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bRequest\\.(?:QueryString|Form|Params|Query)\\b/",
+      "line": 54
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Process\\.Start|ProcessStartInfo)\\s*\\(/",
+      "line": 62
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:SqlCommand|NpgsqlCommand|MySqlCommand|OleDbCommand)\\s*\\(/",
+      "line": 71
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:ExecuteSqlRaw|FromSqlRaw|ExecuteSqlCommand)\\s*\\(/",
+      "line": 80
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bAssembly\\.Load\\s*\\(/",
+      "line": 89
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:BinaryFormatter|NetDataContractSerializer|LosFormatter)\\s*\\(/",
+      "line": 98
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.(?:ReadAllText|WriteAllText|ReadAllLines|Open|Delete|Copy|Move)\\s*\\(/",
+      "line": 107
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Html\\.Raw|HtmlString|Response\\.Write)\\s*\\(/",
+      "line": 116
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:GetStringAsync|GetAsync|DownloadString)\\s*\\(/",
+      "line": 125
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:MD5|SHA1|DES|RC2|TripleDES)\\.Create\\s*\\(/",
+      "line": 134
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:SqlParameter|AddWithValue|Parameters\\.Add)\\b/",
+      "line": 146
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/@[A-Za-z_][A-Za-z0-9_]*/",
+      "line": 152
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\b(?:HtmlEncode|WebUtility\\.HtmlEncode|HtmlEncoder\\.Default\\.Encode)\\s*\\(/",
+      "line": 158
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/fsharp.ts",
+      "kind": "literal",
+      "source": "/\\bArgumentList\\s*\\.\\s*Add\\s*\\(/",
+      "line": 164
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\b(?:r|req|request)\\.(?:FormValue|PostFormValue|URL|Form|PostForm|MultipartForm|Body|Header|Cookie)\\b/",
+      "line": 28
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.(?:Getenv|Environ)\\s*\\(/",
+      "line": 34
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.Args\\b|\\bflag\\.Args?\\s*\\(/",
+      "line": 40
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bfmt\\.(?:Scan|Scanf|Scanln|Fscan|Fscanf)\\s*\\(|\\bbufio\\.NewReader\\s*\\(\\s*os\\.Stdin\\b/",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.(?:Open|ReadFile)\\s*\\(|\\bioutil\\.ReadFile\\s*\\(/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bexec\\.Command(?:Context)?\\s*\\(/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bsyscall\\.Exec\\s*\\(/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\b(?:db|tx|conn|database)\\.(?:Query|QueryContext|QueryRow|QueryRowContext|Exec|ExecContext)\\s*\\(/",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bdb\\.Raw\\s*\\(/",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.(?:Open|OpenFile|Create|Remove|RemoveAll|ReadFile|WriteFile|MkdirAll)\\s*\\(|\\bioutil\\.(?:ReadFile|WriteFile)\\s*\\(/",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\btemplate\\.HTML\\s*\\(/",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bhttp\\.(?:Get|Post|Head|NewRequest)\\s*\\(/",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bplugin\\.Open\\s*\\(/",
+      "line": 123
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\b(?:md5|sha1)\\.(?:New|Sum)\\s*\\(/",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bgob\\.NewDecoder\\s*\\(/",
+      "line": 141
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Prepare|PrepareContext)\\s*\\(/",
+      "line": 153
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Query|QueryRow|Exec)(?:Context)?\\s*\\([^)\\n]*,\\s*[A-Za-z_]/",
+      "line": 159
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 165
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 171
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/go.ts",
+      "kind": "literal",
+      "source": "/\\bhtml\\.EscapeString\\s*\\(/",
+      "line": 177
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bparams\\s*[.[]/",
+      "line": 31
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\brequest\\.(?:getParameter|getParameterValues|getHeader|getInputStream|getReader)\\s*\\(/",
+      "line": 37
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.getenv\\s*\\(/",
+      "line": 43
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bargs\\s*\\[/",
+      "line": 49
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+File(?:Reader|InputStream)\\s*\\(/",
+      "line": 55
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bProcessBuilder\\s*\\(/",
+      "line": 63
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/(?<=\\.)\\s*exec\\s*\\(/",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\b(?:executeQuery|executeUpdate|executeLargeUpdate)\\s*\\(/",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bsql\\s*\\.\\s*(?:firstRow|rows|eachRow|execute|executeInsert|executeUpdate)\\s*\\(/",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\b(?:GroovyShell|GroovyClassLoader)\\s*\\(|\\bEval\\.(?:me|x|xy|xyz)\\s*\\(|\\bevaluate\\s*\\(/",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+(?:URL|URI)\\s*\\(|\\bopenConnection\\s*\\(/",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+(?:File|FileInputStream|FileOutputStream|FileReader|FileWriter|RandomAccessFile)\\s*\\(/",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+ObjectInputStream\\s*\\(|\\breadObject\\s*\\(/",
+      "line": 129
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\byieldUnescaped\\s*\\(/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bprepareStatement\\s*\\(|\\bPreparedStatement\\b/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\bsql\\s*\\.\\s*(?:firstRow|rows|eachRow|execute|executeUpdate)\\s*\\([^)\\n]*,\\s*\\[/",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/groovy.ts",
+      "kind": "literal",
+      "source": "/\\b(?:HtmlUtils\\.htmlEscape|StringEscapeUtils\\.escapeHtml4?)\\s*\\(/",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bgetArgs\\b/",
+      "line": 29
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:getEnv|lookupEnv)\\b/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:getLine|getContents|hGetLine|hGetContents)\\b/",
+      "line": 41
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:BS\\.)?readFile\\b|\\bLBS\\.readFile\\b/",
+      "line": 47
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bsystem\\s+[A-Za-z_(]/",
+      "line": 55
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:callCommand|callProcess|rawSystem|readProcess)\\s+/",
+      "line": 64
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bcreateProcess\\s+[A-Za-z_(]/",
+      "line": 73
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:rawSql|runRaw)\\s+[A-Za-z_(]|\\bPQ\\.exec\\s*\\(/",
+      "line": 82
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:writeFile|appendFile|openFile|removeFile|renameFile|copyFile|createDirectory|removeDirectory)\\s+[A-Za-z_(]/",
+      "line": 91
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bpreEscapedToHtml\\s+|\\bpreEscapedString\\b/",
+      "line": 100
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:simpleHTTP|httpLbs|httpNoBody)\\s+[A-Za-z_(]/",
+      "line": 109
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bhashWith\\s+(?:MD5|SHA1)\\b/",
+      "line": 118
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bproc\\s+[A-Za-z\"]/",
+      "line": 130
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\bexecParams\\b/",
+      "line": 136
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 142
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/haskell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:toHtml|escapeHtml)\\b/",
+      "line": 148
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\brequest\\.(?:getParameter\\w*|getHeader\\w*|getInputStream|getReader)\\s*\\(/",
+      "line": 29
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.getenv\\s*\\(/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bargs\\s*\\[/",
+      "line": 41
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.console\\s*\\(\\s*\\)\\s*\\.\\s*readLine\\s*\\(/",
+      "line": 47
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bFiles\\.read(?:AllBytes|AllLines|AllString|String)\\s*\\(/",
+      "line": 53
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/@(?:RequestParam|PathVariable|RequestHeader|RequestBody)\\b/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/(?<=\\.)\\s*exec\\s*\\(/",
+      "line": 70
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+ProcessBuilder\\s*\\(/",
+      "line": 79
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*execute(?:Query|Update|LargeUpdate)?\\s*\\(/",
+      "line": 88
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*create(?:Native)?Query\\s*\\(/",
+      "line": 97
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*eval\\s*\\(/",
+      "line": 106
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+(?:ObjectInputStream|XMLDecoder)\\s*\\(|\\.\\s*readObject\\s*\\(|\\.\\s*fromXML\\s*\\(/",
+      "line": 115
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+(?:File|FileInputStream|FileOutputStream|FileReader|FileWriter)\\s*\\(|\\bPaths\\.get\\s*\\(|\\bFiles\\.(?:delete|newInputStream|newOutputStream)\\s*\\(/",
+      "line": 124
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/(?<=\\))\\s*\\.\\s*(?:print|println|write)\\s*\\(/",
+      "line": 135
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+URL\\s*\\(|\\bopenConnection\\s*\\(/",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\brestTemplate\\.(?:getForObject|getForEntity|exchange|postForObject|postForEntity)\\s*\\(/",
+      "line": 153
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+Random\\s*\\(\\s*\\)/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bprepareStatement\\s*\\(|\\bsetString\\s*\\(|\\bPreparedStatement\\b/",
+      "line": 174
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 180
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\b(?:escapeHtml4?|HtmlUtils\\.htmlEscape|encodeForHTML)\\s*\\(/",
+      "line": 186
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/java.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+ProcessBuilder\\s*\\(\\s*(?:List|Arrays\\.asList|java\\.util\\.List)/",
+      "line": 192
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\breq(?:uest)?\\.(?:query|body|params|headers|cookies)\\b/",
+      "line": 32
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:window|document|globalThis)\\.location\\b|\\blocation\\.(?:search|href|hash)\\b/",
+      "line": 38
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bprocess\\.argv\\b/",
+      "line": 44
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bprocess\\.env\\b/",
+      "line": 50
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bprocess\\.stdin\\b|\\breadline\\.createInterface\\s*\\(/",
+      "line": 56
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bfs\\.(?:readFile|readFileSync|createReadStream)\\s*\\(/",
+      "line": 62
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bfetch\\s*\\(/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bchild_process\\.(?:exec|execFile|spawn|fork)(?:Sync)?\\s*\\(|(?<!\\.)\\b(?:exec|execFile|spawn|fork)(?:Sync)?\\s*\\(/",
+      "line": 76
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:connection|conn|client|db|pool|sequelize|knex)\\s*\\.\\s*(?:query|execute|raw|unsafe)\\s*\\(/",
+      "line": 85
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(|\\bnew\\s+Function\\s*\\(|\\bvm\\.run(?:In(?:New|This)Context)?\\s*\\(/",
+      "line": 94
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*(?:innerHTML|outerHTML)\\s*=|\\bdocument\\.write(?:ln)?\\s*\\(|\\binsertAdjacentHTML\\s*\\(|\\b(?:res|response)\\.(?:send|end|write)\\s*\\(/",
+      "line": 103
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bfs(?:\\.promises)?\\.(?:readFile|writeFile|appendFile|readFileSync|writeFileSync|unlink|unlinkSync|rm|rmSync|rmdir|rmdirSync|open|openSync|createReadStream|createWriteStream)\\s*\\(/",
+      "line": 112
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bunserialize\\s*\\(|\\byaml\\.load\\s*\\(/",
+      "line": 121
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\baxios\\.(?:get|post|put|delete|head|request)\\s*\\(|\\bgot\\s*\\(|\\bhttps?\\.(?:get|request)\\s*\\(/",
+      "line": 130
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\bMath\\.random\\s*\\(/",
+      "line": 139
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:query|execute)\\s*\\([^;)\\n]*,\\s*\\[/",
+      "line": 151
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"'`]|,|\\)|$)/m",
+      "line": 157
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 163
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/javascript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:escapeHtml|escapeHTML|DOMPurify\\.sanitize|he\\.encode)\\s*\\(/",
+      "line": 169
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bARGS\\b/",
+      "line": 28
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bENV\\s*\\[/",
+      "line": 34
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\breadline\\s*\\(|\\breadlines\\s*\\(|\\beachline\\s*\\(/",
+      "line": 40
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bread\\s*\\(\\s*stdin\\b/",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Downloads\\.download|HTTP\\.(?:get|post|request))\\s*\\(/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\brun\\s*\\(/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/`[^`\\n]*\\$[A-Za-z_]/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(|\\bMeta\\.parse\\s*\\(|\\binclude\\s*\\(/",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\b(?:DBInterface|LibPQ)\\.execute\\s*\\(/",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/(?<!\\.)\\bopen\\s*\\(/",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bdeserialize\\s*\\(/",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bDownloads\\.download\\s*\\(/",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bCmd\\s*\\(/",
+      "line": 126
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\bDBInterface\\.execute\\s*\\([^)\\n]*,\\s*\\[/",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/julia.ts",
+      "kind": "literal",
+      "source": "/\\$\\d+\\b/",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\brequest\\.(?:getParameter\\w*|getHeader\\w*|getInputStream|getReader)\\s*\\(/",
+      "line": 30
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bSystem\\.getenv\\s*\\(/",
+      "line": 36
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bargs\\s*\\[/",
+      "line": 42
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\breadLine\\s*\\(/",
+      "line": 48
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bread(?:Text|Lines|Bytes)\\s*\\(/",
+      "line": 54
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/@(?:RequestParam|PathVariable|RequestHeader|RequestBody)\\b/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/(?<=\\.)\\s*exec\\s*\\(/",
+      "line": 71
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bProcessBuilder\\s*\\(/",
+      "line": 80
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*execute(?:Query|Update|LargeUpdate)?\\s*\\(/",
+      "line": 89
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*create(?:Native)?Query\\s*\\(/",
+      "line": 98
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\.\\s*eval\\s*\\(|\\bScriptEngineManager\\b/",
+      "line": 107
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bObjectInputStream\\s*\\(|\\.\\s*readObject\\s*\\(|\\.\\s*fromXML\\s*\\(|\\bYaml\\s*\\(\\s*\\)\\s*\\.\\s*load\\s*\\(/",
+      "line": 116
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bFile(?:InputStream|OutputStream|Reader|Writer)?\\s*\\(|\\bPaths\\.get\\s*\\(|\\bFiles\\.(?:delete|newInputStream|newOutputStream)\\s*\\(/",
+      "line": 125
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/(?<=\\))\\s*\\.\\s*(?:print|println|write)\\s*\\(/",
+      "line": 136
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bURL\\s*\\(|\\bopenConnection\\s*\\(/",
+      "line": 145
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bRandom\\s*\\(\\s*\\)/",
+      "line": 154
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bprepareStatement\\s*\\(|\\bsetString\\s*\\(|\\bPreparedStatement\\b/",
+      "line": 166
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 172
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\b(?:escapeHtml4?|HtmlUtils\\.htmlEscape|encodeForHTML)\\s*\\(/",
+      "line": 178
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/kotlin.ts",
+      "kind": "literal",
+      "source": "/\\bProcessBuilder\\s*\\(\\s*(?:listOf|mutableListOf|arrayListOf)\\s*\\(/",
+      "line": 184
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\barg\\s*\\[/",
+      "line": 31
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.getenv\\s*\\(/",
+      "line": 37
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bio\\.read\\s*\\(/",
+      "line": 43
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bngx\\.(?:req|var)\\b/",
+      "line": 49
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bio\\.lines\\s*\\(/",
+      "line": 55
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.execute\\s*\\(/",
+      "line": 63
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bio\\.popen\\s*\\(/",
+      "line": 72
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\b(?:loadstring|loadfile|dofile)\\s*\\(/",
+      "line": 81
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\b(?:conn|connection|db|cur|cursor)\\s*[:.]\\s*(?:execute|query)\\s*\\(/",
+      "line": 90
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bio\\.open\\s*\\(|\\bos\\.remove\\s*\\(|\\bos\\.rename\\s*\\(/",
+      "line": 99
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bngx\\.(?:say|print)\\s*\\(/",
+      "line": 108
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bngx\\.location(?:\\.capture)?\\s*\\(|\\bhttpc\\s*:\\s*request\\s*\\(/",
+      "line": 117
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bngx\\.(?:md5|sha1)\\s*\\(|\\bmd5\\.sum\\s*\\(/",
+      "line": 126
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bconn\\s*:\\s*prepare\\s*\\(/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\?\\s*(?:[\"']|,|\\)|$)/m",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/lua.ts",
+      "kind": "literal",
+      "source": "/\\bescape_html\\s*\\(|\\bngx\\.escape_html\\s*\\(/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/\\$\\((?:[A-Za-z_][\\w.-]*)\\)|\\$\\{[A-Za-z_][\\w.-]*\\}/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/^\\s*(?:export|unexport)\\s+[A-Za-z_]/m",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/\\$\\((?:shell|wildcard)\\s+/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/\\b(?:sh|bash|zsh|dash|ksh)\\s+-c\\b/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s+/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/^\\s*(?:exec)\\s+/m",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/\\$\\((?:MAKE|MAKE)\\s*\\)|\\bmake\\s+-C\\b/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/\\b(?:curl|wget)\\s+/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/make.ts",
+      "kind": "literal",
+      "source": "/'[^'$`\\\\]*'/",
+      "line": 112
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\binput\\s*\\(/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bgetenv\\s*\\(/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bfileread\\s*\\(/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bwebread\\s*\\(/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bvarargin\\b/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bsystem\\s*\\(/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bunix\\s*\\(/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bdos\\s*\\(/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bevalin\\s*\\(/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bfeval\\s*\\(/",
+      "line": 104
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bexec\\s*\\(\\s*[A-Za-z_]\\w*\\s*,/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bfopen\\s*\\(/",
+      "line": 122
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bsave\\s*\\(/",
+      "line": 131
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bwebwrite\\s*\\(/",
+      "line": 140
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bvalidateattributes\\s*\\(/",
+      "line": 152
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bmustBeMember\\s*\\(/",
+      "line": 158
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bvalidatestring\\s*\\(/",
+      "line": 164
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bexec\\s*\\([^,()]+,[^,()]+,/",
+      "line": 170
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/matlab.ts",
+      "kind": "literal",
+      "source": "/\\bfileparts\\s*\\(/",
+      "line": 176
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\breadLine\\s*\\(\\s*stdin\\s*\\)/",
+      "line": 28
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bgetEnv\\s*\\(/",
+      "line": 34
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bparamStr\\s*\\(/",
+      "line": 40
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bparamCount\\s*\\(/",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\breadFile\\s*\\(/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\.getContent\\s*\\(/",
+      "line": 58
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bexecShellCmd\\s*\\(/",
+      "line": 66
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bexecProcess\\s*\\(/",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bexecCmd(?:Ex)?\\s*\\(/",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bstartProcess\\s*\\(/",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:db|conn|database)\\.(?:exec|rawExec|execSQL)\\s*\\(/",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bwriteFile\\s*\\(/",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:removeFile|removeDir|moveFile)\\s*\\(/",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:client|http|request)\\.(?:get|post|request)\\s*\\(/",
+      "line": 129
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\bgetMD5\\s*\\(|\\bsecureHash\\s*\\(/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\.exec\\s*\\([^,()]+,[^,()]+/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:execProcess|startProcess)\\s*\\(\\s*@\\[|\\bstartProcess\\s*\\([^,()]+,\\s*(?:args\\s*=\\s*)?@?\\[/",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:extractFilename|splitFile)\\s*\\(/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:parseInt|parseFloat|parseBiggestInt)\\s*\\(/",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/nim.ts",
+      "kind": "literal",
+      "source": "/\\b(?:staticExec|parseStmt|parseExpr)\\s*\\(/",
+      "line": 174
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bgetenv\\s*\\(/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bNSProcessInfo\\b[^;\\n]{0,80}\\barguments\\b/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bcontentsOf(?:File|URL)\\s*:/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bdataTaskWith(?:Request|URL)\\b/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:UITextField|UITextView|NSTextField)\\b[^;\\n]{0,160}?\\.text\\b/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\b(?:system|popen)\\s*\\(/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bNSTask\\b[^;\\n]{0,120}?\\blaunch\\b/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bperformSelector\\s*:/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bNSClassFromString\\s*\\(/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bexecute(?:Query|Update)\\s*:/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bwriteToFile\\s*:/",
+      "line": 104
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bNSKeyedUnarchiver\\b|\\bunarchiveObject\\b/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bdataWithContentsOfURL\\s*:/",
+      "line": 122
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bevaluateJavaScript\\s*:/",
+      "line": 131
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/withArgumentsInArray\\s*:|withParameterDictionary\\s*:/",
+      "line": 143
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\.lastPathComponent\\b/",
+      "line": 149
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\bposix_spawn\\s*\\(/",
+      "line": 155
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/\\.(?:integerValue|intValue|longLongValue|boolValue)\\b/",
+      "line": 161
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/objective-c.ts",
+      "kind": "literal",
+      "source": "/stringByAddingPercentEncodingWithAllowedCharacters/",
+      "line": 167
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/<STDIN>/",
+      "line": 30
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\$ENV\\s*\\{/",
+      "line": 36
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/@ARGV\\b|\\$ARGV\\b/",
+      "line": 42
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\breadline\\s*\\(/",
+      "line": 48
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bparam\\s*\\(/",
+      "line": 54
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\b(?:system|exec)\\s*\\(/",
+      "line": 63
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bqx\\s*[(\\[{<]/",
+      "line": 72
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\breadpipe\\s*\\(/",
+      "line": 81
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*(?:\\(|\\$)/",
+      "line": 90
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/->\\s*(?:do|prepare|selectall_arrayref|selectrow_array|selectrow_hashref|selectcol_arrayref)\\s*\\(/",
+      "line": 99
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\b(?:unlink|rename|rmtree)\\s*\\(/",
+      "line": 108
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bStorable\\s*::\\s*(?:thaw|retrieve)\\s*\\(|\\bYAML\\s*::\\s*(?:Load|load)\\s*\\(/",
+      "line": 117
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\b(?:LWP::UserAgent|HTTP::Tiny|Mojo::UserAgent)\\b[^;\\n]{0,160}?->\\s*(?:get|post|request)\\s*\\(/",
+      "line": 126
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bbind_param\\s*\\(/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bshell_quote\\s*\\(/",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bbasename\\s*\\(/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bencode_entities\\s*\\(|\\bHTML::Entities\\b/",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bSafe\\s*->\\s*new\\b/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/perl.ts",
+      "kind": "literal",
+      "source": "/\\bJSON::(?:PP\\.)?(?:decode|decode_json)\\s*\\(/",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\$_(?:GET|POST|REQUEST|COOKIE|FILES|SERVER)\\b/i",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bgetenv\\s*\\(/i",
+      "line": 34
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\$argv\\b/i",
+      "line": 40
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bSTDIN\\b/i",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bfilter_input\\s*\\(/i",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:system|exec|shell_exec|passthru|proc_open|popen)\\s*\\(/i",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/`[^`\\n]{0,240}\\$/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(/i",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:include|include_once|require|require_once)\\b\\s*\\(?\\s*\\$/i",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysqli_query|mysql_query|pg_query|sqlite_query)\\s*\\(|->\\s*(?:query|exec)\\s*\\(/i",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bunserialize\\s*\\(/i",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:file_put_contents|fwrite|unlink|rename|move_uploaded_file)\\s*\\(/i",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bcurl_init\\s*\\(/i",
+      "line": 123
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\becho\\b\\s+\\$|\\becho\\s*\\(\\s*\\$|\\bprintf\\s*\\(/i",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:md5|sha1)\\s*\\(/i",
+      "line": 141
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:mysqli_real_escape_string|mysql_real_escape_string|pg_escape_string)\\s*\\(/i",
+      "line": 153
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/->\\s*prepare\\s*\\(|\\bPDO::prepare\\s*\\(/i",
+      "line": 159
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:escapeshellarg|escapeshellcmd)\\s*\\(/i",
+      "line": 165
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\b(?:htmlspecialchars|htmlentities)\\s*\\(/i",
+      "line": 171
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bbasename\\s*\\(/i",
+      "line": 177
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\brealpath\\s*\\(/i",
+      "line": 183
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/php.ts",
+      "kind": "literal",
+      "source": "/\\bfilter_var\\s*\\([^)]*FILTER_VALIDATE/i",
+      "line": 189
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bparam\\s*\\(/i",
+      "line": 26
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\$args\\b/i",
+      "line": 32
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\$env:[A-Za-z_]/i",
+      "line": 38
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bRead-Host\\b/i",
+      "line": 44
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\$Request\\.(?:QueryString|Form|Params)\\b/i",
+      "line": 50
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bGet-Content\\b/i",
+      "line": 57
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bInvoke-Expression\\b|\\biex\\s+/i",
+      "line": 65
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\[scriptblock\\]\\s*::\\s*Create\\s*\\(/i",
+      "line": 74
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bAdd-Type\\b/i",
+      "line": 83
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bStart-Process\\b/i",
+      "line": 92
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/&\\s*\\$\\w/",
+      "line": 101
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bInvoke-Sqlcmd\\b/i",
+      "line": 110
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Set-Content|Out-File|Remove-Item)\\b/i",
+      "line": 119
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bInvoke-WebRequest\\b/i",
+      "line": 128
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\bImport-Clixml\\b/i",
+      "line": 137
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/Parser\\s*\\]\\s*::\\s*ParseInput\\s*\\(/i",
+      "line": 149
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\[Validate(?:Set|Pattern|Script|Range|Length)\\s*\\(/i",
+      "line": 155
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/-ArgumentList\\s+@\\(/i",
+      "line": 161
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/-Variable\\b/i",
+      "line": 167
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/powershell.ts",
+      "kind": "literal",
+      "source": "/\\[System\\.IO\\.Path\\]\\s*::\\s*GetFileName\\s*\\(/i",
+      "line": 173
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\binput\\s*\\(/",
+      "line": 29
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bsys\\.argv\\b/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.(?:environ|getenv)\\b/",
+      "line": 41
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\brequest\\.(?:args|form|json|values|files|data|GET|POST|COOKIE)\\b/",
+      "line": 47
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bsys\\.stdin\\.read(?:line)?\\s*\\(/",
+      "line": 54
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bopen\\s*\\(/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.(?:system|popen)\\s*\\(/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bsubprocess\\.(?:run|call|Popen|check_output|check_call)\\s*\\([^;\\n]{0,300}?shell\\s*=\\s*True/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bexec\\s*\\(/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\b(?:pickle|cPickle|dill|marshal)\\.loads?\\s*\\(/",
+      "line": 104
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\byaml\\.load\\s*\\(/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\b(?:cursor|conn|connection)\\.execute(?:many|script)?\\s*\\(/",
+      "line": 122
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\b(?:requests|httpx)\\.(?:get|post|put|patch|delete|request)\\s*\\(/",
+      "line": 131
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\b(?:shutil\\.rmtree|os\\.(?:remove|unlink|rmdir|rename)|shutil\\.move)\\s*\\(/",
+      "line": 140
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bhashlib\\.(?:md5|sha1)\\s*\\(/",
+      "line": 149
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bexecute(?:many)?\\s*\\([^,()]+,\\s*[(\\[]/",
+      "line": 161
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bshlex\\.quote\\s*\\(/",
+      "line": 167
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bsubprocess\\.(?:run|call|Popen|check_output|check_call)\\s*\\(\\s*\\[/",
+      "line": 173
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\byaml\\.SafeLoader\\b/",
+      "line": 179
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bast\\.literal_eval\\s*\\(/",
+      "line": 185
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/python.ts",
+      "kind": "literal",
+      "source": "/\\bos\\.path\\.basename\\s*\\(/",
+      "line": 191
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bcommandArgs\\s*\\(/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bSys\\.getenv\\s*\\(/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\breadline\\s*\\(/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\breadLines\\s*\\(|\\bread\\.csv\\s*\\(/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\binput\\s*\\$/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bhttr::(?:GET|POST)\\s*\\(/",
+      "line": 58
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bsystem2?\\s*\\(/",
+      "line": 66
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bshell\\s*\\(/",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\beval(?:q)?\\s*\\(/",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bparse\\s*\\(/",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bsource\\s*\\(/",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bdb(?:GetQuery|Execute|SendQuery)\\s*\\(/",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bwrite\\.(?:csv|table|Lines)\\s*\\(|\\bsaveRDS\\s*\\(|\\bfile\\.remove\\s*\\(/",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\b(?:readRDS|load)\\s*\\(/",
+      "line": 129
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bdownload\\.file\\s*\\(/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bHTML\\s*\\(/",
+      "line": 147
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bdb(?:GetQuery|Execute|SendQuery)\\s*\\([^,()]+,[^,()]+,/",
+      "line": 159
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bshQuote\\s*\\(/",
+      "line": 165
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bbasename\\s*\\(/",
+      "line": 171
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bmatch\\.arg\\s*\\(/",
+      "line": 177
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/r.ts",
+      "kind": "literal",
+      "source": "/\\bhtmltools::(?:htmlEscape|escapeHtml)\\s*\\(/",
+      "line": 183
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bparams\\s*\\[/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bENV\\s*\\[/",
+      "line": 34
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bARGV\\b/",
+      "line": 40
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bgets\\b|\\bSTDIN\\b/",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\brequest\\.(?:params|body|cookies|headers)\\b/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.(?:read|readlines)\\s*\\(/",
+      "line": 58
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:system|exec|spawn)\\s*\\(/",
+      "line": 66
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/`[^`\\n]{0,240}\\#\\{/",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/%x[(\\[{<]/",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:eval|instance_eval|class_eval|module_eval)\\s*\\(/",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bMarshal\\.load\\s*\\(/",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bYAML\\.(?:load|unsafe_load)\\s*\\(/",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:find_by_sql|execute|exec_query|exec_update)\\s*\\(/",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.(?:write|delete|rename)\\s*\\(|\\bFileUtils\\.(?:rm_rf|rm|mv|cp)\\s*\\(/",
+      "line": 129
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bURI\\.open\\s*\\(|\\bNet::HTTP\\.(?:get|post|get_response|start)\\s*\\(/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bShellwords\\.(?:escape|shellescape|shellsplit|join)\\s*\\(/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:where|having|find_by_sql)\\s*\\([^,()]+,\\s*[^,()]+|\\bsanitize_sql(?:_array|_for_database)?\\s*\\(/",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:ERB::Util\\.html_escape|CGI\\.escapeHTML)\\s*\\(/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:File\\.basename|File\\.expand_path)\\s*\\(/",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\bJSON\\.(?:parse|load)\\s*\\(/",
+      "line": 174
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/ruby.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Integer|Float)\\s*\\(/",
+      "line": 180
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\b(?:std::)?env::var(?:_os)?\\s*\\(/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\b(?:std::)?env::args(?:_os)?\\s*\\(/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bio::stdin\\s*\\(/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bfs::(?:read|read_to_string)\\s*\\(/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bweb::(?:Query|Json|Form)\\b/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bCommand::new\\s*\\(/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bsqlx::query(?:_as|_scalar)?\\s*\\(|\\bconn\\.(?:execute|query_row|prepare)\\s*\\(/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bfs::(?:write|remove_file|remove_dir_all|copy|rename|set_permissions)\\s*\\(/",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\b(?:bincode|serde_cbor|rmp_serde)::(?:deserialize|from_slice|from_str)\\s*\\(/",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\b(?:libloading::)?Library::new\\s*\\(/",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\b(?:reqwest|ureq)::(?:get|post|request)\\s*\\(/",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\b(?:md5::compute|sha1::Sha1|sha1::Digest)\\s*\\(/",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bCommand::new\\s*\\([^;\\n]{0,160}?\\)\\s*\\.arg(?:s)?\\s*\\(/",
+      "line": 126
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\.bind\\s*\\(/",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bfile_name\\s*\\(\\s*\\)/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\bserde_json::from_(?:str|slice)\\s*\\(/",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/rust.ts",
+      "kind": "literal",
+      "source": "/\\.parse::<[^>\\n]{1,60}>\\s*\\(\\s*\\)/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bargs\\s*\\(\\s*\\d/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bsys\\.(?:env|props)\\b/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\brequest\\.(?:getQueryString|body|headers|queryString|cookies|uri)\\b/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bStdIn\\s*\\./",
+      "line": 46
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bSource\\.from(?:File|InputStream)\\s*\\(/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bRuntime\\.getRuntime\\s*\\(\\s*\\)\\s*\\.exec\\s*\\(|\\bProcess\\s*\\(/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bscala\\.sys\\.process\\b|\\.lines_!\\b/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bClass\\.forName\\s*\\(/",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\b(?:scala\\.reflect\\.toolbox|runtimeMirror|ToolBox)\\b/",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\b(?:executeQuery|executeUpdate|executeBatch)\\s*\\(/",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bObjectInputStream\\s*\\(|\\bJavaSerializer\\b/",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bFiles\\.(?:write|delete|move|copy|createFile)\\s*\\(/",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bHttp\\s*\\(|\\bWS\\.url\\s*\\(/",
+      "line": 123
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bHtml\\s*\\(/",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bPreparedStatement\\b|prepareStatement\\s*\\(/",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bProcess\\s*\\(\\s*Seq\\s*\\(/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\bHtmlFormat\\.escape\\s*\\(/",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\.getName\\b/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/scala.ts",
+      "kind": "literal",
+      "source": "/\\.to(?:Int|Long|Double)\\b/",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bmsg\\.sender\\b/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bmsg\\.(?:data|sig)\\b/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\btx\\.origin\\b/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bcalldata\\b/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bblock\\.(?:timestamp|number|difficulty|prevrandao|coinbase)\\b/",
+      "line": 52
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\.(?:call|staticcall)\\s*[{(]/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\.delegatecall\\s*[{(]/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\.call\\.value\\s*\\(/",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bcreate2?\\s*\\(/",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\becrecover\\s*\\(/",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\babi\\.encodePacked\\s*\\(/",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bblockhash\\s*\\(/",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bonlyOwner\\b/",
+      "line": 126
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\bnonReentrant\\b/",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\brequire\\s*\\([^;\\n]{0,160}?(?:==|!=|<=|>=|\\ballow(?:ed|list)\\b)/",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/solidity.ts",
+      "kind": "literal",
+      "source": "/\\b(?:allowlist|allowedTargets|allowedAddresses)\\b/",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bexport\\s+let\\s+(\\w+)/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\$(?:props|state|derived|bindable)\\s*\\(/",
+      "line": 42
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\b(?:location\\.(?:search|hash|href)|document\\.(?:URL|referrer|cookie))\\b/",
+      "line": 48
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\b(?:await\\s+)?(?:fetch|XMLHttpRequest)\\s*\\(/",
+      "line": 54
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bimport\\.meta\\.env\\b/",
+      "line": 60
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+Function\\s*\\(/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\b(?:child_process\\.)?(?:exec|execSync|spawn|spawnSync|execFile|execFileSync)\\s*\\(/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\.innerHTML\\s*=/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bdocument\\.write\\s*\\(/",
+      "line": 104
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\.insertAdjacentHTML\\s*\\(/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\b(?:connection|pool|client|db|knex)\\.(?:query|raw|execute)\\s*\\(/",
+      "line": 122
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bfs(?:\\.promises)?\\.(?:writeFile|appendFile|unlink|rm|rmdir|rename|copyFile|createWriteStream)\\s*\\(/",
+      "line": 131
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\b(?:fetch|axios\\.(?:get|post|put|patch|delete|request))\\s*\\(\\s*[`'\"]?\\s*\\$\\{/",
+      "line": 140
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\blocation\\.(?:href\\s*=|assign\\s*\\()/",
+      "line": 149
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\b(?:query|execute)\\s*\\([^,()]+,\\s*[(\\[]|\\bvalues\\s*:\\s*\\[/",
+      "line": 161
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\.prepare\\s*\\(/",
+      "line": 167
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bexecFile(?:Sync)?\\s*\\([^,()]+,\\s*\\[/",
+      "line": 173
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bDOMPurify\\.sanitize\\s*\\(|\\bsanitizeHtml\\s*\\(/",
+      "line": 179
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bpath\\.(?:basename|normalize)\\s*\\(/",
+      "line": 185
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/svelte.ts",
+      "kind": "literal",
+      "source": "/\\bJSON\\.parse\\s*\\(/",
+      "line": 191
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bProcessInfo\\.processInfo\\.environment\\b/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bCommandLine\\.arguments\\b/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\breadLine\\s*\\(/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bcontentsOf(?:File|URL)\\s*:/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bdataTask\\s*\\(/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\b(?:textField|searchBar|textView)\\.text\\b/",
+      "line": 57
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\b(?:system|popen)\\s*\\(/",
+      "line": 65
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bposix_spawn\\s*\\(/",
+      "line": 74
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bNSClassFromString\\s*\\(/",
+      "line": 83
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bsqlite3_exec\\s*\\(|\\bsqlite3_prepare_v2\\s*\\(|\\bdb\\.run\\s*\\(/",
+      "line": 92
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bNSKeyedUnarchiver\\b|\\bunarchiveObject\\b/",
+      "line": 101
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bURLSession\\.(?:shared|ephemeral|configuration)?[^;\\n]{0,60}?\\.(?:data|dataTask|downloadTask)\\s*\\(/",
+      "line": 110
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bFileManager\\.default\\.(?:removeItem|moveItem|copyItem|createFile|createDirectory)\\s*\\(/",
+      "line": 119
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bevaluateJavaScript\\s*\\(/",
+      "line": 128
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\b(?:CC_MD5|CC_SHA1|Insecure\\.MD5|Insecure\\.SHA1)\\b/",
+      "line": 137
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Process|NSTask)\\b[^;\\n]{0,160}?\\.arguments\\s*=\\s*\\[/",
+      "line": 149
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\bsqlite3_bind_\\w+\\s*\\(|\\.prepare\\s*\\(/",
+      "line": 155
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\blastPathComponent\\b/",
+      "line": 161
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/requiringSecureCoding\\s*:\\s*true/",
+      "line": 167
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/swift.ts",
+      "kind": "literal",
+      "source": "/\\b(?:Int|Double|UInt)\\s*\\(\\s*[A-Za-z_]/",
+      "line": 173
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:req|request)\\.(?:query|body|params|headers|cookies)\\b/",
+      "line": 30
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bprocess\\.env\\b/",
+      "line": 37
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bprocess\\.argv\\b/",
+      "line": 43
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bprocess\\.stdin\\b/",
+      "line": 49
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bfs(?:\\.promises)?\\.(?:readFile|readFileSync|readdir|readdirSync|createReadStream)\\s*\\(/",
+      "line": 55
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:location\\.(?:search|hash|href)|document\\.cookie)\\b/",
+      "line": 61
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:child_process\\.)?(?:exec|execSync|spawn|spawnSync|execFile|execFileSync)\\s*\\(/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(/",
+      "line": 78
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+Function\\s*\\(/",
+      "line": 87
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bvm\\.(?:runInNewContext|runInThisContext|runInContext|compileFunction|createScript)\\s*\\(/",
+      "line": 96
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:connection|pool|client|db)\\.(?:query|execute|raw)\\s*\\(/",
+      "line": 105
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bunserialize\\s*\\(/",
+      "line": 114
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bfs(?:\\.promises)?\\.(?:writeFile|appendFile|unlink|rm|rmdir|rename|copyFile|createWriteStream)\\s*\\(/",
+      "line": 123
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:fetch|axios\\.(?:get|post|put|patch|delete|request)|https?\\.(?:get|request))\\s*\\(/",
+      "line": 132
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\.innerHTML\\s*=|\\bdangerouslySetInnerHTML\\b|\\.insertAdjacentHTML\\s*\\(/",
+      "line": 141
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:res|response)\\.redirect\\s*\\(/",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:query|execute)\\s*\\([^,()]+,\\s*[(\\[]|\\bvalues\\s*:\\s*\\[/",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\.prepare\\s*\\(/",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bexecFile(?:Sync)?\\s*\\([^,()]+,\\s*\\[/",
+      "line": 174
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bDOMPurify\\.sanitize\\s*\\(|\\bsanitizeHtml\\s*\\(/",
+      "line": 180
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bpath\\.(?:basename|normalize)\\s*\\(/",
+      "line": 186
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\bJSON\\.parse\\s*\\(/",
+      "line": 192
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/typescript.ts",
+      "kind": "literal",
+      "source": "/\\b(?:isSafeRedirect|allowedRedirect|safeRedirect)\\s*\\(/",
+      "line": 198
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bConsole\\.ReadLine\\s*\\(/i",
+      "line": 24
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bEnvironment\\.GetEnvironmentVariable\\s*\\(/i",
+      "line": 30
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\b(?:My\\.Application\\.CommandLineArgs|Environment\\.GetCommandLineArgs)\\b/i",
+      "line": 36
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bRequest\\.(?:QueryString|Form|Params|Cookies)\\b/i",
+      "line": 42
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bFile\\.ReadAll(?:Text|Lines)\\s*\\(/i",
+      "line": 49
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bProcess\\.Start\\s*\\(/i",
+      "line": 57
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bShell\\s*\\(/i",
+      "line": 66
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bAssembly\\.Load(?:From|File)?\\s*\\(/i",
+      "line": 75
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\b(?:ExecuteReader|ExecuteNonQuery|ExecuteScalar)\\s*\\(/i",
+      "line": 84
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bCommandText\\s*=/i",
+      "line": 93
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\b(?:File\\.WriteAllText|File\\.WriteAllLines|File\\.Delete|File\\.Move|File\\.Copy|Directory\\.Delete)\\s*\\(/i",
+      "line": 102
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bBinaryFormatter\\b|\\.Deserialize\\s*\\(/i",
+      "line": 111
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\b(?:WebClient|HttpClient)\\b[^;\\n]{0,120}?\\.(?:DownloadString|DownloadData|GetStringAsync|GetAsync|SendAsync)\\s*\\(/i",
+      "line": 120
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bResponse\\.Redirect\\s*\\(/i",
+      "line": 129
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bResponse\\.Write\\s*\\(/i",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bParameters\\.(?:Add|AddWithValue)\\s*\\(/i",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bArgumentList\\.Add\\s*\\(/i",
+      "line": 156
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\b(?:HttpUtility|WebUtility)\\.HtmlEncode\\s*\\(|\\bServer\\.HtmlEncode\\s*\\(/i",
+      "line": 162
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bPath\\.GetFileName\\s*\\(/i",
+      "line": 168
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\b(?:XmlSerializer|DataContractSerializer|JsonSerializer)\\b/i",
+      "line": 174
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vb.ts",
+      "kind": "literal",
+      "source": "/\\bUrl\\.IsLocalUrl\\s*\\(/i",
+      "line": 180
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bInputBox\\s*\\(/i",
+      "line": 24
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bEnviron\\s*\\(/i",
+      "line": 30
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bCommand\\s*\\(\\s*\\)/i",
+      "line": 36
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bRange\\s*\\([^)\\n]{0,120}\\)\\s*\\.Value\\b/i",
+      "line": 42
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bRequest\\.(?:QueryString|Form)\\b/i",
+      "line": 49
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bOpen\\s+[^;\\n]{0,160}?\\bFor\\s+Input\\b/i",
+      "line": 55
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bShell\\s*\\(/i",
+      "line": 63
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bEval\\s*\\(/i",
+      "line": 72
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\b(?:ExecuteGlobal|ExecuteExcel4Macro|Application\\.Run)\\s*\\(/i",
+      "line": 81
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bCreateObject\\s*\\(/i",
+      "line": 90
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\b(?:CurrentDb\\.Execute|OpenRecordset|DoCmd\\.RunSQL)\\s*\\(/i",
+      "line": 99
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\.(?:OpenTextFile|CreateTextFile)\\s*\\(/i",
+      "line": 108
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\b(?:MSXML2\\.(?:XMLHTTP|ServerXMLHTTP)|WinHttp\\.WinHttpRequest)\\b/i",
+      "line": 117
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bResponse\\.Write\\s*\\(/i",
+      "line": 126
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bCreateParameter\\s*\\(|\\bParameters\\.Append\\s*\\(/i",
+      "line": 138
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\bGetFileName\\s*\\(/i",
+      "line": 144
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vba.ts",
+      "kind": "literal",
+      "source": "/\\b(?:IsNumeric|CLng|CInt)\\s*\\(/i",
+      "line": 150
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bdefineProps\\s*[<(]/",
+      "line": 35
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bprops\\.\\w+/",
+      "line": 44
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:route|useRoute)\\b\\s*(?:\\.\\s*query|\\.\\s*params|\\.\\s*fullPath)?|[^.\\w]\\$route\\b/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:location\\.(?:search|hash|href)|document\\.(?:URL|referrer|cookie))\\b/",
+      "line": 57
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:await\\s+)?(?:fetch|axios(?:\\.\\w+)?|XMLHttpRequest)\\s*\\(/",
+      "line": 63
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bimport\\.meta\\.env\\b/",
+      "line": 69
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\beval\\s*\\(/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bnew\\s+Function\\s*\\(/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:child_process\\.)?(?:exec|execSync|spawn|spawnSync|execFile|execFileSync)\\s*\\(/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\.innerHTML\\s*=/",
+      "line": 104
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bdocument\\.write\\s*\\(/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\.insertAdjacentHTML\\s*\\(/",
+      "line": 122
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:connection|pool|client|db|knex)\\.(?:query|raw|execute)\\s*\\(/",
+      "line": 131
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bfs(?:\\.promises)?\\.(?:writeFile|appendFile|unlink|rm|rmdir|rename|copyFile|createWriteStream)\\s*\\(/",
+      "line": 140
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:fetch|axios\\.(?:get|post|put|patch|delete|request))\\s*\\(\\s*[`'\"]?\\s*\\$\\{/",
+      "line": 149
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\blocation\\.(?:href\\s*=|assign\\s*\\()/",
+      "line": 158
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\b(?:query|execute)\\s*\\([^,()]+,\\s*[(\\[]|\\bvalues\\s*:\\s*\\[/",
+      "line": 170
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\.prepare\\s*\\(/",
+      "line": 176
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bexecFile(?:Sync)?\\s*\\([^,()]+,\\s*\\[/",
+      "line": 182
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bDOMPurify\\.sanitize\\s*\\(|\\bsanitizeHtml\\s*\\(/",
+      "line": 188
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bpath\\.(?:basename|normalize)\\s*\\(/",
+      "line": 194
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/vue.ts",
+      "kind": "literal",
+      "source": "/\\bJSON\\.parse\\s*\\(/",
+      "line": 200
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.process\\.args\\w*\\s*\\(/",
+      "line": 27
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.os\\.argv\\b/",
+      "line": 33
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.process\\.getEnvVar(?:Owned)?\\s*\\(/",
+      "line": 39
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.io\\.getStdIn\\s*\\(/",
+      "line": 45
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.fs\\.cwd\\s*\\(\\s*\\)\\s*\\.(?:openFile|readFileAlloc)\\s*\\(/",
+      "line": 51
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\b(?:std\\.process\\.)?Child\\.(?:init|run)\\s*\\(/",
+      "line": 59
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.process\\.execv(?:e|pe)?\\s*\\(/",
+      "line": 68
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.process\\.Child\\b[^;\\n]{0,120}?\\.spawn\\s*\\(/",
+      "line": 77
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.fs\\.cwd\\s*\\(\\s*\\)\\s*\\.(?:deleteFile|deleteDir|rename|createFile|writeFile|copyFile)\\s*\\(/",
+      "line": 86
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bDynLib\\.open\\s*\\(/",
+      "line": 95
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\.argv\\s*=\\s*&\\.\\{/",
+      "line": 107
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\bstd\\.fs\\.path\\.(?:basename|dirname)\\s*\\(/",
+      "line": 113
+    },
+    {
+      "file": "src/intelligence/security/rebuild/specs/zig.ts",
+      "kind": "literal",
+      "source": "/\\b(?:std\\.fmt\\.)?parseInt\\s*\\(/",
+      "line": 119
+    },
+    {
+      "file": "src/brain/semantic/engine.ts",
+      "kind": "literal",
+      "source": "/integrate\\.api\\.nvidia\\.com/i",
+      "line": 64
+    },
+    {
+      "file": "src/brain/semantic/engine.ts",
+      "kind": "literal",
+      "source": "/nemotron-3\\.5-embed|llama-nemotron-embed|embed-qa|nv-embedqa/i",
+      "line": 65
+    }
+  ],
   "staleAllow": [],
   "allowWithoutTest": [],
   "staleBaseline": [
@@ -23,5 +4296,5 @@
     "src/mcp/tools/bb_migrate/handler.ts::literal::/\\\\/g",
     "src/mcp/tools/bb_migrate/handler.ts::literal::/\\\\/g"
   ],
-  "generatedAt": "2026-11-09T09:09:08.273Z"
+  "generatedAt": "2026-11-16T19:02:19.239Z"
 }

@@ -13,7 +13,7 @@
     {
       "name": "generated page exists",
       "pass": true,
-      "detail": "len=17689"
+      "detail": "len=17696"
     },
     {
       "name": "generated page carries the author header",
@@ -76,7 +76,7 @@
     {
       "name": "docs: single-tool generator check passes",
       "pass": true,
-      "detail": "TOOL DOCS: PASS (16 public tools, 1 artifacts)\nnpm notice\nnpm notice New minor version of npm available! 11.12.1 -> 11.21.2\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.2\nnpm notice To update run: npm install -g npm@"
+      "detail": "TOOL DOCS: PASS (16 public tools, 1 artifacts)\n"
     },
     {
       "name": "evidence: an1.json verified",
@@ -113,5 +113,5 @@
   "limitations": [
     "Covers bb_analyze only."
   ],
-  "generatedAt": "2026-11-05T04:03:05.869Z"
+  "generatedAt": "2026-11-16T05:14:19.247Z"
 }

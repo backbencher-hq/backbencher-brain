@@ -2,14 +2,14 @@
   "status": "verified",
   "milestone": "M32",
   "issue": "G1",
-  "currentCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
+  "currentCommit": "1a0510718618343b0fac20c41b6a50dcf8a47e75",
   "verifierCommand": "npx tsx script/m32/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-15T05:17:45.025Z",
+  "generatedAt": "2026-11-17T03:04:24.722Z",
   "passed": 27,
   "failed": 0,
   "negativeCases": 10,
-  "trackedFilesScanned": 15186,
+  "trackedFilesScanned": 15091,
   "keyPatternsChecked": [
     "openrouter",
     "nvidia"

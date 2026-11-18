@@ -14,7 +14,7 @@
     {
       "name": "CLI (source entry): stats answer carries provenance, bounds and the count",
       "pass": true,
-      "detail": "answer: There are 1 symbols in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-05T04:04:58.000Z (0 s ago); these counts describe the index"
+      "detail": "answer: There are 1 symbols in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-16T21:51:05.000Z (1 s ago); these counts describe the index"
     },
     {
       "name": "CLI (source entry): empty query rejected [negative]",
@@ -25,7 +25,7 @@
     {
       "name": "MCP (source entry): answer carries provenance and bounds",
       "pass": true,
-      "detail": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: src/app.ts (Line 1) ---\n[function] handleRequest — similarity 0.597\n``"
+      "detail": "answer: Note: the embedding provider did not answer within 2000 ms, so this question was embedded with the local word-vector model (local-word-vectors-v3). Only 0 of 1 indexed symb"
     },
     {
       "name": "MCP (source entry): empty query rejected [negative]",
@@ -41,7 +41,7 @@
     {
       "name": "corpus rake/lib/rake (Ruby): stat answer matches indexed count exactly",
       "pass": true,
-      "detail": "answer=There are 496 symbols in this project db=496"
+      "detail": "answer=There are 497 symbols in this project db=497"
     },
     {
       "name": "corpus rake/lib/rake (Ruby): stat answer carries provenance, bounds and snapshot",
@@ -56,18 +56,18 @@
     {
       "name": "corpus rake/lib/rake (Ruby): semantic answer declares its bounds",
       "pass": true,
-      "detail": "{\"returned\":5,\"totalMatches\":147,\"truncated\":true,\"truncationReason\":\"limit 5 of 147 candidates above the similarity floor\"}"
+      "detail": "{\"returned\":5,\"totalMatches\":0,\"truncated\":false}"
     },
     {
       "name": "corpus rake/lib/rake (Ruby): every source resolves to a real file on disk",
       "pass": true,
-      "detail": "[{\"file\":\"ext/string.rb\",\"line\":4,\"context\":\"String\"},{\"file\":\"file_list.rb\",\"line\":22,\"context\":\"FileList\"},{\"file\":\"ex"
+      "detail": "[{\"file\":\"application.rb\",\"line\":208,\"context\":\"standard_exception_handling\"},{\"file\":\"promise.rb\",\"line\":42,\"context\":\""
     },
     {
       "name": "corpus rake/lib/rake (Ruby): no fabricated count in a non-aggregate answer [negative]",
       "pass": true,
       "negative": true,
-      "detail": "Note: this ranking does not distinguish its top results — 26 other symbol(s) scored within the same "
+      "detail": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the "
     },
     {
       "name": "corpus graphql-js/src (TypeScript): stat answer matches indexed count exactly",
@@ -87,18 +87,18 @@
     {
       "name": "corpus graphql-js/src (TypeScript): semantic answer declares its bounds",
       "pass": true,
-      "detail": "{\"returned\":5,\"totalMatches\":1779,\"truncated\":true,\"truncationReason\":\"limit 5 of 1779 candidates above the similarity floor\"}"
+      "detail": "{\"returned\":5,\"totalMatches\":0,\"truncated\":false}"
     },
     {
       "name": "corpus graphql-js/src (TypeScript): every source resolves to a real file on disk",
       "pass": true,
-      "detail": "[{\"file\":\"type/scalars.ts\",\"line\":358,\"context\":\"coerceOutputValueObject\"},{\"file\":\"language/blockString.ts\",\"line\":52,\""
+      "detail": "[{\"file\":\"execution/incremental/WorkQueue.ts\",\"line\":209,\"context\":\"createWorkQueue\"},{\"file\":\"execution/incremental/Inc"
     },
     {
       "name": "corpus graphql-js/src (TypeScript): no fabricated count in a non-aggregate answer [negative]",
       "pass": true,
       "negative": true,
-      "detail": "Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within the same "
+      "detail": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the "
     },
     {
       "name": "corpus rebar3/apps (Erlang): stat answer matches indexed count exactly",
@@ -118,18 +118,18 @@
     {
       "name": "corpus rebar3/apps (Erlang): semantic answer declares its bounds",
       "pass": true,
-      "detail": "{\"returned\":4,\"totalMatches\":378,\"truncated\":true,\"truncationReason\":\"limit 5 of 378 candidates above the similarity floor\"}"
+      "detail": "{\"returned\":5,\"totalMatches\":0,\"truncated\":false}"
     },
     {
       "name": "corpus rebar3/apps (Erlang): every source resolves to a real file on disk",
       "pass": true,
-      "detail": "[{\"file\":\"rebar/src/rebar_resource_v2.erl\",\"line\":48,\"context\":\"find_resource\"},{\"file\":\"rebar/src/cth_retry.erl\",\"line\""
+      "detail": "[{\"file\":\"rebar/src/rebar_user.erl\",\"line\":196,\"context\":\"io_request\"},{\"file\":\"rebar/src/vendored/r3_hex_api.erl\",\"line"
     },
     {
       "name": "corpus rebar3/apps (Erlang): no fabricated count in a non-aggregate answer [negative]",
       "pass": true,
       "negative": true,
-      "detail": "Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within the same "
+      "detail": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the "
     },
     {
       "name": "corpus go-tools/go/analysis/passes (Go): stat answer matches indexed count exactly",
@@ -149,18 +149,18 @@
     {
       "name": "corpus go-tools/go/analysis/passes (Go): semantic answer declares its bounds",
       "pass": true,
-      "detail": "{\"returned\":5,\"totalMatches\":380,\"truncated\":true,\"truncationReason\":\"limit 5 of 380 candidates above the similarity floor\"}"
+      "detail": "{\"returned\":5,\"totalMatches\":0,\"truncated\":false}"
     },
     {
       "name": "corpus go-tools/go/analysis/passes (Go): every source resolves to a real file on disk",
       "pass": true,
-      "detail": "[{\"file\":\"framepointer/framepointer.go\",\"line\":83,\"context\":\"run\"},{\"file\":\"unreachable/unreachable.go\",\"line\":77,\"conte"
+      "detail": "[{\"file\":\"asmdecl/asmdecl.go\",\"line\":153,\"context\":\"run\"},{\"file\":\"hostport/hostport.go\",\"line\":51,\"context\":\"run\"},{\"fi"
     },
     {
       "name": "corpus go-tools/go/analysis/passes (Go): no fabricated count in a non-aggregate answer [negative]",
       "pass": true,
       "negative": true,
-      "detail": "Note: this ranking does not distinguish its top results — 49 other symbol(s) scored within the same "
+      "detail": "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the "
     }
   ],
   "negativeCases": 6,
@@ -179,5 +179,5 @@
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is the corpus lane.",
     "A sub-directory with no resolvable symbols is skipped (recorded, not failed)."
   ],
-  "generatedAt": "2026-11-05T04:06:50.643Z"
+  "generatedAt": "2026-11-16T21:52:36.581Z"
 }

@@ -64,11 +64,11 @@
       "detail": "caught"
     }
   ],
-  "currentCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
+  "currentCommit": "1a0510718618343b0fac20c41b6a50dcf8a47e75",
   "sourceFingerprint": "76699eb7e7846ef780ff5065dadf64c658cc51f30bc1637f8baeb290d1ea4dc1",
   "verifierCommand": "npx tsx script/m30/verify-setup.ts",
   "evidenceFile": "S1.json",
-  "generatedAt": "2026-11-15T05:17:14.689Z",
+  "generatedAt": "2026-11-17T03:03:59.520Z",
   "limitations": [
     "Interactive TTY prompt path (runSetupWizard readline flow) is exercised only via the non-TTY guard tests; full keystroke-level TTY interaction is not simulated here.",
     "Live provider key validation (real OpenRouter/NVIDIA endpoints) is gated behind BB_M30_LIVE_KEYS=1 and covered by S3, not this verifier.",

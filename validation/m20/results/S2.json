@@ -8,19 +8,19 @@
   "failed": 0,
   "negativeCases": 15,
   "negativePassed": 15,
-  "currentCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
-  "sourceFingerprint": "667264e01d1025cd715b16bca0c748f0e6ba65a0ed5cb32143084ee058980a93",
+  "currentCommit": "1a0510718618343b0fac20c41b6a50dcf8a47e75",
+  "sourceFingerprint": "a33dcff126b7f22fd90855fc0e04906d556aa7ed06f344eca2a8bf09cbc2a493",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m20/verify-security-adversarial.ts",
   "evidenceFile": "S2.json",
-  "generatedAt": "2026-11-15T05:32:54.448Z",
+  "generatedAt": "2026-11-17T03:15:37.221Z",
   "limitations": [
     "Policy matrix and real-behavior fixtures cover classification, calibration, dedup, filters, and mutation response; they do not prove real-world taint recall.",
     "Real-repository security coverage is measured by the m15 corpus leg and validation/tools/bb_security/REAL-CORPUS.json; template-literal XSS and cross-symbol Python CMDi remain analyzer blind spots documented in docs/BB_SECURITY.md."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-15T05:32:54.449Z",
-    "contentSha256": "dec8d16ca61fec5abbdac12b1ea80c68a61737e055d1bf16e1492b67927a36bb"
+    "sealedAt": "2026-11-17T03:15:37.222Z",
+    "contentSha256": "b976d9563952b4681dfbd6028dea31fd5041cccf1aa4ecfb442bf452d6a895a9"
   }
 }

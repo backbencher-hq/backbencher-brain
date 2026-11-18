@@ -100,13 +100,13 @@
       "name": "CLI (source entry): empty query rejected [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_ask requires a non-empty query\nCommand failed: /home/ishaq2321/.bun/bin/bun /home/ishaq2321/mcp/backbencher-brain/src/cli/index.ts"
+      "detail": "error: bb_ask requires a non-empty query\nCommand failed: /home/ishaq2321/.nvm/versions/node/v22.22.1/bin/node /home/ishaq2321/mcp/backbenche"
     },
     {
       "name": "CLI (source entry): mode=explain rejected as unknown option [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit\nCommand failed: /home/ishaq2321/.bun/bin/bun /home/ishaq"
+      "detail": "error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit\nCommand failed: /home/ishaq2321/.nvm/versions/node/v22.2"
     },
     {
       "name": "CLI (source entry): limit=0 refused with the page-size rule [negative]",
@@ -135,7 +135,7 @@
     {
       "name": "MCP (source entry): valid query returns an answer with provenance and bounds",
       "pass": true,
-      "detail": "answer: Closest matches from the AST index for your query (search results, not a verified answer):\n\n--- File: src/app.ts (Line 1) ---\n[function] handleRequest — similarity 0.597\n``"
+      "detail": "answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer th"
     },
     {
       "name": "MCP (source entry): empty query rejected [negative]",
@@ -177,5 +177,5 @@
     "The gate drives the SOURCE CLI/MCP entries (dist/ is a build artifact, rebuilt centrally).",
     "The corpus leg lives in verify-ask-e2e-corpus; this gate is a small fixture by design."
   ],
-  "generatedAt": "2026-11-05T04:04:56.663Z"
+  "generatedAt": "2026-11-16T21:51:01.712Z"
 }

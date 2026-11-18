@@ -13,7 +13,7 @@
     {
       "name": "integration: every answer source resolves to an indexed brain_file row",
       "pass": true,
-      "detail": "[{\"file\":\"src/beta.ts\",\"line\":1,\"context\":\"requestHandler\"},{\"file\":\"src/alpha.ts\",\"line\":1,\"context\":\"requestHandler\"}]"
+      "detail": "[{\"file\":\"src/alpha.ts\",\"line\":1,\"context\":\"requestHandler\"},{\"file\":\"src/beta.ts\",\"line\":1,\"context\":\"requestHandler\"}]"
     },
     {
       "name": "integration: answer is non-empty with provenance and bounds",
@@ -40,25 +40,25 @@
       "name": "integration: a semantic answer leaves brain.db and its WAL unchanged [negative]",
       "pass": true,
       "negative": true,
-      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793851614004},\"wal\":{\"size\":1577992,\"mtimeMs\":1793851615265}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793851614004},\"wal\":{\"size\":1577992,\"mtimeMs\":1793851615265}}"
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1794810998944},\"wal\":{\"size\":1656272,\"mtimeMs\":1794811001135}} after={\"db\":{\"size\":4096,\"mtimeMs\":1794810998944},\"wal\":{\"size\":1656272,\"mtimeMs\":1794811001135}}"
     },
     {
       "name": "integration: an aggregate answer leaves brain.db and its WAL unchanged [negative]",
       "pass": true,
       "negative": true,
-      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793851614004},\"wal\":{\"size\":1577992,\"mtimeMs\":1793851615265}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793851614004},\"wal\":{\"size\":1577992,\"mtimeMs\":1793851615265}}"
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1794810998944},\"wal\":{\"size\":1656272,\"mtimeMs\":1794811001135}} after={\"db\":{\"size\":4096,\"mtimeMs\":1794810998944},\"wal\":{\"size\":1656272,\"mtimeMs\":1794811001135}}"
     },
     {
       "name": "integration: a changed file is marked STALE [negative]",
       "pass": true,
       "negative": true,
-      "detail": "--- File: src/beta.ts (Line 1) [MISSING — file no longer on disk] --- | [function] requestHandler — similarity 0.669 [MISSING — file no longer on disk] | --- File: src/alpha.ts (Line 1) [STALE — file "
+      "detail": "--- File: src/alpha.ts (Line 1) [STALE — file changed since index] --- | [function] requestHandler — similarity 0.691 [STALE — file changed since index] | --- File: src/beta.ts (Line 1) [MISSING — fil"
     },
     {
       "name": "integration: a deleted file is marked MISSING, not 'changed' [negative]",
       "pass": true,
       "negative": true,
-      "detail": "--- File: src/beta.ts (Line 1) [MISSING — file no longer on disk] --- | [function] requestHandler — similarity 0.669 [MISSING — file no longer on disk] | --- File: src/alpha.ts (Line 1) [STALE — file "
+      "detail": "--- File: src/alpha.ts (Line 1) [STALE — file changed since index] --- | [function] requestHandler — similarity 0.691 [STALE — file changed since index] | --- File: src/beta.ts (Line 1) [MISSING — fil"
     },
     {
       "name": "integration: the changed file's result carries stale=true and is not marked missing",
@@ -107,5 +107,5 @@
   "limitations": [
     "The lexical-fallback leg's read-only status depends on the shared content-search/symbol-search engines and is asserted in the honesty gate, which names that dependency."
   ],
-  "generatedAt": "2026-11-05T04:06:56.510Z"
+  "generatedAt": "2026-11-16T06:36:43.151Z"
 }

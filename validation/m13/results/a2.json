@@ -64,7 +64,7 @@
     {
       "name": "aggregate: index snapshot is reported (or explicitly unavailable)",
       "pass": true,
-      "detail": "{\"updatedAt\":1793851618000,\"ageMs\":389,\"lastFullIndex\":1793851618376,\"lastIncrementalIndex\":null}"
+      "detail": "{\"updatedAt\":1794810985000,\"ageMs\":90,\"lastFullIndex\":1794810985082,\"lastIncrementalIndex\":null}"
     },
     {
       "name": "no-match: answer says it could not find anything (no fabricated claim) [negative]",
@@ -132,18 +132,18 @@
     {
       "name": "handler: provenance block is always present",
       "pass": true,
-      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-05T04:06:58.000Z (0 s"
+      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-16T06:36:25.000Z (0 s"
     },
     {
       "name": "handler: bounds block is always present",
       "pass": true,
-      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-05T04:06:58.000Z (0 s"
+      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-16T06:36:25.000Z (0 s"
     },
     {
       "name": "handler: aggregate answer carries no 'no matches' footer [negative]",
       "pass": true,
       "negative": true,
-      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-05T04:06:58.000Z (0 s ago); these counts describe the indexed"
+      "detail": "answer: There are 2 files in this project\n\nconfidence: 0.95 (exact aggregate over the index)\n\n[index: snapshot 2026-11-16T06:36:25.000Z (0 s ago); these counts describe the indexed"
     },
     {
       "name": "handler: no-match response carries an unknown class with unknowns [negative]",
@@ -167,5 +167,5 @@
   "limitations": [
     "This gate pins the lexical route (BB_EMBEDDING_DISABLED=1) so the no-match contract is deterministic; the vector route's labelled non-discriminative behaviour is measured by the ask lane's retrieval evidence, not asserted here."
   ],
-  "generatedAt": "2026-11-05T04:06:58.440Z"
+  "generatedAt": "2026-11-16T06:36:25.124Z"
 }

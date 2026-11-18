@@ -15,12 +15,12 @@
       "name": "vector: every similarity is finite, never NaN [negative]",
       "pass": true,
       "negative": true,
-      "detail": "[0.6691598698300963,0.6691598698300963,0.6691598670848896,0.5584626900173354]"
+      "detail": "[0.6905683311703625,0.6905683311703625,0.6905683311703625]"
     },
     {
       "name": "vector: results carry real numbers on the vector path",
       "pass": true,
-      "detail": "[0.6691598698300963,0.6691598698300963,0.6691598670848896]"
+      "detail": "[0.6905683311703625,0.6905683311703625,0.6905683311703625]"
     },
     {
       "name": "ranking: the identical-body fixture is non-discriminative",
@@ -51,17 +51,17 @@
     {
       "name": "bounds: a page smaller than the match set is declared truncated",
       "pass": true,
-      "detail": "{\"returned\":1,\"totalMatches\":4,\"truncated\":true,\"truncationReason\":\"limit 1 of 4 candidates above the similarity floor\"}"
+      "detail": "{\"returned\":1,\"totalMatches\":3,\"truncated\":true,\"truncationReason\":\"limit 1 of 3 candidates above the similarity floor\"}"
     },
     {
       "name": "bounds: the truncation reason names the page size",
       "pass": true,
-      "detail": "limit 1 of 4 candidates above the similarity floor"
+      "detail": "limit 1 of 3 candidates above the similarity floor"
     },
     {
       "name": "bounds: totalMatches reports the match set, not the page",
       "pass": true,
-      "detail": "{\"returned\":1,\"totalMatches\":4,\"truncated\":true,\"truncationReason\":\"limit 1 of 4 candidates above the similarity floor\"}"
+      "detail": "{\"returned\":1,\"totalMatches\":3,\"truncated\":true,\"truncationReason\":\"limit 1 of 3 candidates above the similarity floor\"}"
     },
     {
       "name": "coverage: comparable count ignores foreign-model rows",
@@ -82,25 +82,25 @@
     {
       "name": "coverage: the compared model is named on the comparison facts",
       "pass": true,
-      "detail": "nvidia/nemotron-3-embed-1b vs nvidia/nemotron-3-embed-1b"
+      "detail": "local-word-vectors-v3 vs local-word-vectors-v3"
     },
     {
       "name": "read-only: a vector answer leaves brain.db and its WAL unchanged [negative]",
       "pass": true,
       "negative": true,
-      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}}"
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1794810987709},\"wal\":{\"size\":1701592,\"mtimeMs\":1794810990588}} after={\"db\":{\"size\":4096,\"mtimeMs\":1794810987709},\"wal\":{\"size\":1701592,\"mtimeMs\":1794810990588}}"
     },
     {
       "name": "read-only: an aggregate answer leaves brain.db and its WAL unchanged [negative]",
       "pass": true,
       "negative": true,
-      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}} after={\"db\":{\"size\":4096,\"mtimeMs\":1793851611292},\"wal\":{\"size\":1627432,\"mtimeMs\":1793851612501}}"
+      "detail": "before={\"db\":{\"size\":4096,\"mtimeMs\":1794810987709},\"wal\":{\"size\":1701592,\"mtimeMs\":1794810990588}} after={\"db\":{\"size\":4096,\"mtimeMs\":1794810987709},\"wal\":{\"size\":1701592,\"mtimeMs\":1794810990588}}"
     },
     {
       "name": "read-only: asking about an unindexed project creates no database [negative]",
       "pass": true,
       "negative": true,
-      "detail": "/tmp/bb-verify-tools-dEhD9z/data/projects/bb-ask-honesty-missing-1793851613486/brain.db"
+      "detail": "/tmp/bb-test-gates2/projects/bb-ask-honesty-missing-1794810992831/brain.db"
     },
     {
       "name": "bounds: aggregate answer declares returned/totalMatches/truncated",
@@ -110,7 +110,7 @@
     {
       "name": "bounds: retrieval answer declares returned/totalMatches/truncated",
       "pass": true,
-      "detail": "[bounds: returned=4, totalMatches=4, truncated=false]"
+      "detail": "[bounds: returned=3, totalMatches=3, truncated=false]"
     },
     {
       "name": "bounds: exact-name answer declares returned/totalMatches/truncated",
@@ -120,7 +120,7 @@
     {
       "name": "bounds: no-match answer declares returned/totalMatches/truncated",
       "pass": true,
-      "detail": "[bounds: returned=4, totalMatches=4, truncated=false]"
+      "detail": "[bounds: returned=0, totalMatches=0, truncated=false]"
     },
     {
       "name": "page size 0: handler refuses with the page-size sentence [negative]",
@@ -191,5 +191,5 @@
   "limitations": [
     "The lexical-fallback leg's read-only status depends on shared engines outside this lane; when they still open read-write the check passes only with those files named as a blocked-on-bb_search leg (reported in the result detail and the lane evidence)."
   ],
-  "generatedAt": "2026-11-05T04:06:53.676Z"
+  "generatedAt": "2026-11-16T06:36:32.866Z"
 }
