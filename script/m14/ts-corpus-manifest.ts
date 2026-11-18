@@ -136,7 +136,23 @@ if (CHECK) {
   const diffs: string[] = []
   if (prev.totals?.admitted !== totals.admitted) diffs.push(`admitted ${prev.totals?.admitted} -> ${totals.admitted}`)
   if (prev.totals?.populationDigest !== totals.populationDigest) diffs.push(`digest ${String(prev.totals?.populationDigest).slice(0, 12)} -> ${String(totals.populationDigest).slice(0, 12)}`)
-  if (prev.selfCorpus?.gitHead !== doc.selfCorpus.gitHead) diffs.push(`self HEAD ${prev.selfCorpus?.gitHead} -> ${doc.selfCorpus.gitHead}`)
+  // THE SELF-CORPUS HEAD IS DELIBERATELY NOT COMPARED (2026-11-18). A manifest
+  // committed INSIDE the repository can never name the HEAD that contains it — the
+  // commit that records the manifest moves the HEAD past it, so the check was
+  // structurally unable to pass at any HEAD and turned a population guarantee into a
+  // permanently-red gate. Measured: after every single commit the verdict was
+  // "MANIFEST STALE — self HEAD <previous> -> <current>", which is the exact
+  // "gate that teaches its readers to ignore it" failure this lane has been closing.
+  //
+  // What the self-corpus guarantee actually needs is that a PROBE RECORDS the
+  // revision it measured, and it does: `ts-self-corpus-probe.ts` prints the HEAD in
+  // its own report and the manifest's `selfCorpus` block stays as that record. The
+  // POPULATION is what must not drift silently, and that is still checked two ways —
+  // `totals.admitted` and the population digest over the external root, plus every
+  // repository's own HEAD. A self-corpus whose FILE COUNT moved is still caught,
+  // because `selfCorpus.trackedTsFamily` is compared below.
+  if (prev.selfCorpus?.trackedTsFamily !== doc.selfCorpus.trackedTsFamily)
+    diffs.push(`self tracked .ts-family ${prev.selfCorpus?.trackedTsFamily} -> ${doc.selfCorpus.trackedTsFamily}`)
   const prevByRepo = new Map((prev.repos ?? []).map((r: any) => [r.repo, r.gitHead]))
   for (const r of repos) if (prevByRepo.get(r.repo) !== r.gitHead) diffs.push(`${r.repo} HEAD ${prevByRepo.get(r.repo)} -> ${r.gitHead}`)
   if (diffs.length > 0) {
