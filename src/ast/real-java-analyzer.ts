@@ -2734,6 +2734,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // file's own import is the evidence the arbiter verifies the claim against. The analyzer
     // half is the emission below; the arbiter half is the claim kind that already exists.
     this.attachJavaSingleTypeImportBindingClaims(relationships, symbols, receiverTypes, context?.projectIndex)
+    // AMBIGUOUS REFERENCE TARGETS (java lane, 2026-11-17). Run LAST, after every pass
+    // that reads a target's spelling, so nothing above sees a rewritten name. A bare
+    // reference to a type whose SIMPLE NAME the project declares more than once is the
+    // largest addressable slice of this lane's ambiguity, and the same compilation-unit
+    // evidence that settles heritage clauses settles it: a single-type import
+    // (JLS 7.5.1) or the file's own package (JLS 6.5.5). Only bare targets are
+    // considered, only when a COMPLETE index says the name really is ambiguous, never
+    // when this file declares it, and only to a path the project key space holds.
+    this.attachJavaDisambiguatedReferenceTargets(relationships, symbols, currentPackage, receiverTypes, context?.projectIndex)
 
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
@@ -5497,9 +5506,47 @@ currentPackage,
     if (index.typeNames.has(leaf)) return leaf
     const imported = index.importSinglePaths.get(leaf)
     if (imported && projectIndex.typeKinds.has(imported)) return imported
-    const ownPackage = currentPackage ? `${currentPackage}.${leaf}` : ""
-    if (ownPackage && projectIndex.typeKinds.has(ownPackage)) return ownPackage
+    // THE OWN-PACKAGE RULE IS DELIBERATELY ABSENT, and java/singleimportproject/ExternalUse
+    // is the fixture that proved why. `JAVA_DECLARATION_SPEC` sets `qualifyTypeWithFile`,
+    // which files every declared type under the SUFFIXES OF ITS DIRECTORY PATH — including
+    // NESTED types, whose declared name is the leaf alone. So a nested `Tool` inside
+    // `pkg/ToolOwners.java` is filed as `pkg.Tool`, indistinguishable from a top-level
+    // `pkg.Tool`. Re-spelling a reference to `pkg.Tool` therefore cannot be shown to name
+    // the top-level declaration, and a rule that guesses is exactly the fabrication this
+    // lane removes. Only the SINGLE-TYPE IMPORT is usable evidence: it states a full path
+    // the source itself wrote.
     return leaf
+  }
+
+  /** Re-spell ambiguous bare `references` targets with the declaring path the
+   *  compilation unit names (single-type import, then own package).
+   *
+   *  Runs as the LAST post-pass so no earlier pass sees a rewritten target. Only
+   *  `references` rows are touched; `imports`/`exports` name modules, `calls` names a
+   *  member, `uses` names a field and `contains` names a child — none of those is a
+   *  type that package qualification could spell. Rows carrying an import MENTION are
+   *  skipped: their target IS the module path already. */
+  private attachJavaDisambiguatedReferenceTargets(
+    relationships: ASTEngine.UniversalRelationship[],
+    symbols: ASTEngine.UniversalSymbol[],
+    currentPackage: string,
+    index: JavaReceiverTypeIndex,
+    projectIndex: ProjectIndex | undefined,
+  ): void {
+    if (projectIndex?.complete !== true) return
+    const fileDeclared = new Set<string>()
+    for (const s of symbols) if (s && s.name) fileDeclared.add(s.name)
+    for (const r of relationships) {
+      if (String(r.type) !== "references") continue
+      const target = String(r.target ?? "")
+      if (!target || target.indexOf(".") !== -1) continue
+      if (fileDeclared.has(target)) continue
+      const md = r.metadata as Record<string, unknown> | undefined
+      if (md && String(md.relationshipType ?? "") === "import_declaration_mention") continue
+      if ((projectIndex.symbolCounts.get(target) ?? 0) <= 1) continue
+      const resolved = this.javaDisambiguateTypeTarget(target, currentPackage, index, projectIndex)
+      if (resolved !== target) r.target = resolved
+    }
   }
 
   /** Can an owner spelled `ownerName` be attached at all?
