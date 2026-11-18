@@ -1148,7 +1148,12 @@ async function projectIndexesFor(
         }
       }
     } catch { /* no usable cache: build below */ }
-    const index = await mod.buildProjectIndexStreaming(wasm, repoFiles, spec)
+    // COMPLETENESS IS STATED, NOT ASSUMED. `whole` is true only when the run admitted the project's
+    // ENTIRE file set (maxFiles <= 0 with no offset); a stride sample is not a project index, and the
+    // fail-closed module claims must stay shut on one. Measured before this flag was passed: the
+    // --index arm returned byte-identical numbers to the index-less arm, because no builder ever set
+    // `complete`, so the claims that read it could never open on ANY run.
+    const index = await mod.buildProjectIndexStreaming(wasm, repoFiles, spec, undefined, { complete: whole })
     damaged += index.stats.damaged
     indexed += index.stats.files
     // The builder never states completeness (it cannot see the run); the caller does.

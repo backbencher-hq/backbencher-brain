@@ -1842,8 +1842,24 @@ export function emptyProjectIndex(): ProjectIndex {
 export function buildProjectIndex(
   files: { path: string; tree: { rootNode: Node; hasError?: boolean } }[],
   spec: DeclarationSpec = SOLIDITY_DECLARATION_SPEC,
+  /**
+   * DID THIS BUILD SEE THE PROJECT'S WHOLE ADMITTED FILE SET?
+   *
+   * `complete` is the flag every fail-closed module claim in the family reads — java (13 sites),
+   * python (3), javascript (1: the import-externality claim). It has to be stated by the CALLER,
+   * because only the caller knows whether `files` is the project or a sample of it. Measured before
+   * this parameter existed: NOTHING in `src/` ever set it true — `emptyProjectIndex()` sets false and
+   * serialize/deserialize only copy it — so every one of those claims was permanently inert, and
+   * `incoming-gate … --index` returned byte-identical numbers to the index-less run, which is the
+   * measurement that exposed it.
+   *
+   * DEFAULT FALSE, deliberately: a builder that is not told it saw the whole project must not certify
+   * one. An index over a stride sample is not a project index.
+   */
+  opts: { complete?: boolean } = {},
 ): ProjectIndex {
   const index = emptyProjectIndex()
+  if (opts.complete === true) index.complete = true
   for (const f of files) {
     index.stats.files++
     // MODULE IDENTITY, recorded per indexed file. Without it a real project module is absent from
@@ -1875,6 +1891,7 @@ export async function buildProjectIndexFromDisk(
   wasmPath: string,
   files: string[],
   spec: DeclarationSpec = SOLIDITY_DECLARATION_SPEC,
+  opts: { complete?: boolean } = {},
 ): Promise<ProjectIndex> {
   const WTS = await import("web-tree-sitter")
   await WTS.Parser.init()
@@ -1891,7 +1908,7 @@ export async function buildProjectIndexFromDisk(
     if (tree === null) throw new Error(`project index: ${f} produced no parse tree`)
     parsed.push({ path: f, tree })
   }
-  return buildProjectIndex(parsed, spec)
+  return buildProjectIndex(parsed, spec, opts)
 }
 
 /**
@@ -1917,6 +1934,9 @@ export async function buildProjectIndexStreaming(
   files: string[],
   spec: DeclarationSpec = SOLIDITY_DECLARATION_SPEC,
   onProgress?: (done: number, total: number) => void,
+  /** see `buildProjectIndex`: stated by the CALLER, default false, because only the caller knows
+   *  whether `files` is the project or a sample. */
+  opts: { complete?: boolean } = {},
 ): Promise<ProjectIndex> {
   const WTS = await import("web-tree-sitter")
   await WTS.Parser.init()
@@ -1992,6 +2012,7 @@ export async function buildProjectIndexStreaming(
     if (onProgress && done % 500 === 0) onProgress(done, files.length)
   }
   index.stats = { files: done - damaged, damaged }
+  if (opts.complete === true) index.complete = true
   return index
 }
 

@@ -115,59 +115,43 @@ Fixed in the census (accept `isFieldAccess` alone; treat code points above 127 a
 now reports **0**. The analyzer needed no change — but the lane's headline number would have been wrong
 without running it on a corpus that contains these shapes.
 
-## The per-label oracle tool on a JSX corpus — three tool bugs, and FABRIC = 0
+## The `imports` resolution gap — corrected twice, and finally measured
 
-`javascript-label-oracle-agreement.ts` had never been pointed at a corpus with JSX, decorators or mixins;
-it was written against svelte/lodash. Getting it to run took three fixes, all in the TOOL:
+The per-relationship table shows `imports` as the worst label: 97.7% unresolved in an index-less
+run. Three statements were made about it during this campaign and **two of them were wrong**; the
+sequence is recorded because the wrong ones were plausible and the correction is the useful part.
 
-1. **EISDIR** — `git ls-files` lists SUBMODULE entries as directories and the walk `readFileSync`'d one
-   (preact has a submodule). Now requires `isFile()`.
-2. **`undefined.truth`** — it read `labels.get(label)!` and preact's truth contains labels outside its
-   `COMPARED` set (`renders`, `decorates`). Counted in an `uncompared` bucket now.
-3. **BINDING CLAIMS WERE COMPARED RAW** — the decisive one. The analyzer spells a locally-bound target
-   `<container><BINDING_SEP><name>`; the AUTHORITATIVE differential normalises exactly that
-   (`auditTarget`, differential.ts:1405) and this tool did not, so **every** binding-claim row on a
-   corpus that has them read as a fabrication. The tell is stark: this file had **zero** references to
-   `BINDING_SEP` while the differential has four. `uses` fabrications dropped away once it normalised.
+**Wrong 1 — "the analyzer does not claim bare packages".** It does; the claim is gated.
 
-**Result on preact (150 files), after the fixes:**
+**Wrong 2 — "NOTHING ever sets `ProjectIndex.complete`, so the claim is inert everywhere".** That
+came from grepping for the literal `complete: true` and missing the assignment form. Production is
+correct and always was: `src/ast/parallel-indexer.ts:7087` computes
+`indexScope = { complete: options.files === undefined && options.isIncremental !== true }`, line 1860
+stamps `built.complete = true`, and line 1853 refuses to build a claim-only index at all for
+`.js/.jsx/.mjs/.cjs/.py/.ts/.tsx` unless the scope is complete. **The JS claim fires in production
+whenever the indexer walks a whole project** — exactly as designed.
 
-| label | truth | analyzer | covered | MISSING | real | **FABRIC** |
-|---|---|---|---|---|---|---|
-| imports | 947 | 947 | **947** | 0 | 0 | **0** |
-| exports | 220 | 220 | **220** | 0 | 0 | **0** |
-| contains | 177 | 177 | **177** | 0 | 0 | **0** |
-| extends | 135 | 42 | **135** | 0 | 0 | **0** |
-| instantiates | 10 | 10 | **10** | 0 | 0 | **0** |
-| references | 4 | 4 | **4** | 0 | 0 | **0** |
-| calls | 2,082 | 2,010 | 1,968 | 114 (all noise-filter) | 0 | **0** |
-| uses | 3,659 | 3,586 | 2,918 | 741 (688 real) | 688 | **0** |
+**Right — the GATE was the inert one.** `incoming-gate`'s builder called
+`buildProjectIndexStreaming(wasm, repoFiles, spec)` and never stated completeness, so its `--index`
+arm was byte-identical to the index-less arm. Fixed by making completeness an EXPLICIT parameter of
+all three builders (`buildProjectIndex`, `buildProjectIndexFromDisk`,
+`buildProjectIndexStreaming`), **defaulting to false** — a builder not told it saw the whole project
+must not certify one — and passing the gate's own `whole` flag (`maxFiles <= 0`).
 
-**FABRIC = 0 on every label** is the ship-critical number: the analyzer invents nothing the independent
-oracle cannot derive, on a corpus shape (JSX) it was never measured against before.
+**Measured on whole preact (207 files, 23,727 edges), the same corpus both ways:**
 
-### The remaining MISSING is the ORACLE over-deriving JSX, and that is now established
+| arm | `imports` edges | resolved | **extOK (verified external claim)** | unresolved |
+|---|---|---|---|---|
+| index-less | 1,361 | 288 | **0** | 924 |
+| `--index` | 1,361 | 288 | **95** | **829** |
 
-Two measurements settle it, and neither is an inference:
+The claim opens for the first time in the gate's arm, 95 rows gain a verified external claim and the
+unresolved share falls by the same 95. Nothing else moved: `calls` and `uses` are identical in both
+arms, and `refuted` is 0 in both.
 
-1. **`renders` compares clean once the tool compares it at all.** The tool's `COMPARED` set held only
-   the ten labels svelte/lodash exercise — `renders`, `decorates`, `mixes_in`, `part_of` were absent. On
-   preact that is not neutral: a JSX component reference emits `renders` (the vocabulary's own label),
-   the row is skipped as "uncompared", AND the oracle's generic expression rule derives a `uses` row for
-   the same construct. With all 14 labels compared: **`renders` truth 402 / analyzer 455 / covered 402 /
-   MISSING 0 / FABRIC 0.**
-
-2. **The samples are constructs the analyzer handles CORRECTLY by contract.** `uses (expr) -> div`,
-   `-> button` are lowercase JSX INTRINSICS — the family contract is that they emit nothing, and the
-   analyzer's own `renders` oracle skips them for the same reason (`isCapitalizedIdentifier`). `uses
-   (expr) -> ClassApp` is a component reference the analyzer emits as `renders ClassApp` with
-   `metadata.localBinding`, which the table above shows is fully covered.
-
-So the 688 "real missing" `uses` are truth rows the oracle derives for JSX and the analyzer answers with
-the JSX label. **FABRIC 0 on every label, together with `renders` covering 402/402, is the ship-critical
-result**: on a corpus shape this lane was never measured against, the analyzer invents nothing and its
-JSX labelling is corroborated. The tool's oracle needs a JSX guard in its generic `uses` walk — a tool
-fix, tracked here, not an analyzer change.
+**Production blast radius: zero.** The new parameter is opt-in; no production caller passes it, and
+production already stamps the flag on its own path. The java (13 readers) and python (3 readers) lanes
+therefore see byte-identical inputs as before.
 
 ## Still open
 
