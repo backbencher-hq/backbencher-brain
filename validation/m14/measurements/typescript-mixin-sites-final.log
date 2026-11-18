@@ -1,0 +1,72 @@
+[INFO] [23:26:53] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:26:53] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [23:26:53] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:27:22] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:27:23] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [23:27:23] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[census] 867/17350 files · heritage 64 · call-shaped 0 · refdirs 3
+[INFO] [23:27:48] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:28:11] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 1734/17350 files · heritage 98 · call-shaped 0 · refdirs 5
+[INFO] [23:28:44] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 2601/17350 files · heritage 218 · call-shaped 0 · refdirs 15
+[INFO] [23:28:58] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:29:12] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[census] 3468/17350 files · heritage 267 · call-shaped 0 · refdirs 17
+[INFO] [23:29:22] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:29:35] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 4335/17350 files · heritage 308 · call-shaped 0 · refdirs 31
+[INFO] [23:29:44] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 5202/17350 files · heritage 431 · call-shaped 0 · refdirs 31
+[INFO] [23:30:02] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:30:20] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 6069/17350 files · heritage 431 · call-shaped 0 · refdirs 31
+[INFO] [23:30:28] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:30:51] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 6936/17350 files · heritage 533 · call-shaped 0 · refdirs 33
+[INFO] [23:31:06] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:31:11] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[census] 7803/17350 files · heritage 612 · call-shaped 0 · refdirs 39
+[INFO] [23:31:30] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:31:31] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 8670/17350 files · heritage 645 · call-shaped 0 · refdirs 39
+[INFO] [23:31:52] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 9537/17350 files · heritage 658 · call-shaped 0 · refdirs 39
+[INFO] [23:31:55] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:32:20] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 10404/17350 files · heritage 685 · call-shaped 0 · refdirs 39
+[INFO] [23:32:32] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[census] 11271/17350 files · heritage 706 · call-shaped 0 · refdirs 39
+[INFO] [23:32:43] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:32:49] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 12138/17350 files · heritage 866 · call-shaped 0 · refdirs 39
+[INFO] [23:32:53] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:32:59] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 13005/17350 files · heritage 935 · call-shaped 0 · refdirs 42
+[INFO] [23:33:05] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:33:06] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 13872/17350 files · heritage 941 · call-shaped 0 · refdirs 42
+[INFO] [23:33:15] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:33:31] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 14739/17350 files · heritage 1543 · call-shaped 0 · refdirs 42
+[INFO] [23:34:21] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 15606/17350 files · heritage 1908 · call-shaped 0 · refdirs 49
+[INFO] [23:34:40] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:34:51] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 16473/17350 files · heritage 2456 · call-shaped 2 · refdirs 50
+[INFO] [23:35:22] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[census] 17340/17350 files · heritage 3265 · call-shaped 2 · refdirs 50
+[census] 17350/17350 files · heritage 3266 · call-shaped 2 · refdirs 50
+POPULATION: parsed=17350/17350 admitted=17350 repos=41 overCap=1 absent=0 per-ext[cts 3/3 mts 140/140 ts 13830/13831 tsx 3377/3377]
+POPULATION DIGEST (sha256 of the sorted admitted paths): 4bd7bba5441c534460c5ac1e23fbc38c0c1f682c04b172bcb1be7c6bee4410ec
+SAMPLE: 17350 of 17350 (whole=true)
+PARSE: ok 17350 · failed 0 
+HERITAGE: class_heritage clauses 2421 · extends clauses 3267
+  by expression shape: {"member_expression":519,"identifier":1211,"interface:type_identifier":818,"interface:generic_type":283,"type_arguments":432,"interface:nested_type_identifier":2,"call_expression":2}
+  call callee shape: {"identifier":2}
+  call argument counts: {"0":2}
+NEAR MISSES: call-shaped sites 2 · already published as extends 0 · not published 2 · published extends edges 3327
+REFERENCE DIRECTIVES: total 50 · by role {"path":2,"types":47,"lib":1} · by target {"relative-path":1,"package-or-lib":47,"ambient-declaration":1,"other":1} · trigger sites 0
+ANALYZER: relationships 994415 · extends 3327 · mixes_in 2 · part_of 49
+VERDICT mixes_in: R3 GAP: the construct EXISTS in the admitted population, so a grammar-absence exclusion is FALSIFIED and mixes_in must be implemented
+VERDICT part_of: the STOCK grammar lexes these as COMMENTS; the SERVED build is the patched grammar that exposes them as reference_directive NODES, and the analyzer publishes part_of rows by reading that node (never the comment text). This census counts SITES from the source text INDEPENDENTLY of the grammar — which is why it is the construct witness and not the resolution — and 50 sites minus 1 repeated (file, role, target) triple is the 49 rows the analyzer published on this run

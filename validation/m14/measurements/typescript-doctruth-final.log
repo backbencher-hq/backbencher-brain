@@ -1,0 +1,63 @@
+NON_ENGINE_KIND [clojure] <language-specific> cell="✅"
+  docs/analyzers/clojure.md:109
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [java] depends cell="❌ not a kind"
+  docs/analyzers/java.md:109
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [java] fieldaccess cell="❌ not a kind"
+  docs/analyzers/java.md:110
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luarequire cell="yes — the `metadata.relationshipType` label ON the `imports` edge (`addI"
+  docs/analyzers/lua.md:128
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luanameread cell="yes — the label ON the `uses` edge (`emitNameRead`)"
+  docs/analyzers/lua.md:129
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luamemberread cell="yes — the label ON the `references` edge (`emitMemberRead`)"
+  docs/analyzers/lua.md:130
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luamodulereturn cell="yes — the label ON the `exports` edge (`extractExport`)"
+  docs/analyzers/lua.md:131
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luametatable cell="yes — the label ON the `setmetatable`/`__index` `extends` edge"
+  docs/analyzers/lua.md:132
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luafactorysupertype cell="yes — the label ON the factory-argument `extends` edge (LUA-51)"
+  docs/analyzers/lua.md:133
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luaredefinition cell="yes — the label ON the same-chunk redefinition `overrides` edge"
+  docs/analyzers/lua.md:134
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luainheritedmember cell="yes — the label ON the inherited-member `overrides` edge (LUA-52)"
+  docs/analyzers/lua.md:135
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] luadecoratorapplication cell="yes — the label ON the `decorates` edge"
+  docs/analyzers/lua.md:136
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [lua] externalclaim cell="yes — an ADDITIVE claim on a `calls` or `references` edge whose target i"
+  docs/analyzers/lua.md:137
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [matlab] depends cell="no — not an engine value"
+  docs/analyzers/matlab.md:112
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [matlab] fieldaccess cell="no — not an engine value"
+  docs/analyzers/matlab.md:113
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [protobuf] extension-membership (proto2 extend) cell="yes, as `contains` + `references`"
+  docs/analyzers/protobuf.md:198
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [protobuf] proto2 group cell="yes, as `contains` + `references`"
+  docs/analyzers/protobuf.md:199
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [ruby] partof (canonical) cell="**no** — ruled undecidable"
+  docs/analyzers/ruby.md:108
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [scala] depends cell="✅"
+  docs/analyzers/scala.md:57
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+NON_ENGINE_KIND [scala] fieldaccess cell="❌ (not emitted)"
+  docs/analyzers/scala.md:58
+  row name is not a RelationshipType alias in src/ast/types.ts, so its cell states no emission claim
+
+wrote docs/DOC-TRUTH-EMISSIONS.md
+doc-truth-emissions: 50 analyzers, FALSE_NEGATIVE=0 FALSE_POSITIVE=0 UNDOCUMENTED=0 MISSING_DOC=0 NO_CLAIM_TABLE=0 -> PASS

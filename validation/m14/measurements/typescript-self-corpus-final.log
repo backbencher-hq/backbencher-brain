@@ -1,0 +1,56 @@
+[INFO] [23:16:09] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:16:09] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [23:16:09] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:18:02] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:19:01] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [23:19:01] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:19:17] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+{
+ "instrument": "script/m14/ts-self-corpus-probe.ts",
+ "corpus": {
+  "kind": "self",
+  "path": "/home/ishaq2321/mcp/backbencher-brain",
+  "gitHead": "d97e81772cd4a92c025e1abd5feef6e7c806a095",
+  "trackedTsFamily": 6820
+ },
+ "population": {
+  "files": 1500,
+  "stride": 4,
+  "parsed": 1500,
+  "fallback": 0,
+  "parseFailed": 0
+ },
+ "symbols": 39672,
+ "relationships": 165922,
+ "byType": {
+  "calls": 119920,
+  "contains": 7205,
+  "decorates": 3,
+  "exports": 1125,
+  "extends": 16,
+  "implements": 20,
+  "imports": 8303,
+  "instantiates": 1171,
+  "overrides": 2,
+  "references": 16040,
+  "renders": 1,
+  "uses": 12116
+ },
+ "fileLevel": {
+  "rows": 67655,
+  "contractViolations": 0
+ },
+ "endpoints": {
+  "empty": 0,
+  "notAName": 8,
+  "bindingKeyTargets": 9999
+ },
+ "owner": {
+  "calls": 119920,
+  "memberCalls": 81767,
+  "callsWithOwner": 12938,
+  "uses": 12116,
+  "usesWithOwner": 2018
+ },
+ "note": "measured through ASTEngine.parseFile (the production path, filter included), not the analyzer alone. A sample prints its stride; the default is every tracked .ts/.tsx/.mts/.cts file under the size cap."
+}

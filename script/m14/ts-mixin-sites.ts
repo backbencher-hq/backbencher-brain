@@ -252,7 +252,11 @@ const verdict = {
     byTargetShape: census.referenceDirectives.byTargetShape,
     triggerSites: census.referenceDirectives.triggerSites,
     publishedPartOfEdges: census.analyzer.publishedPartOf,
-    reading: "the served grammar lexes these as COMMENTS, so the construct has no node; a grammar remedy is required before it can be a relation",
+    // SUPERSEDED 2026-11-18 — the old reading ("the served grammar lexes these as COMMENTS; a
+    // grammar remedy is required") described the STOCK build. The remedy was TAKEN (R2): the pinned
+    // grammar was patched to expose `reference_directive` nodes, proven behaviourally by
+    // script/m14/ts-partof-grammar-proof.ts (8 conditions green), and the engine serves it.
+    reading: "the STOCK grammar lexes these as COMMENTS; the SERVED build is the patched grammar that exposes them as reference_directive NODES, and the analyzer publishes part_of rows by reading that node (never the comment text). This census counts SITES from the source text INDEPENDENTLY of the grammar — which is why it is the construct witness and not the resolution — and 50 sites minus 1 repeated (file, role, target) triple is the 49 rows the analyzer published on this run",
   },
 }
 

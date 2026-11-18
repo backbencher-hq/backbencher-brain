@@ -30,7 +30,12 @@ const LANES = {
   CSHARP:      ["csharp", "real-csharp-analyzer", "csharp-sample"],
   JAVA:        ["java", "real-java-analyzer", "java-lib"],
   OBJECTIVE_C: ["objective-c", "real-objective-c-analyzer", "objc"],
-  TYPESCRIPT:  ["typescript", "real-typescript-analyzer", "typescript"],
+  // 2026-11-18: the corpus is REPO-NAMED, not lane-named — this entry pointed at a
+  // `<corpus>/typescript` directory that has never existed, so the master instrument printed
+  // "TYPESCRIPT 0 types fired NO CORPUS" and the lane's firing evidence could not be produced at
+  // all. The lane's corrected copy (`ts-firing-check.ts`) documents the same defect. Pointed at the
+  // lane's M12 primary corpus, which exists in the recorded corpus root.
+  TYPESCRIPT:  ["typescript", "real-typescript-analyzer", "vue-core"],
   JAVASCRIPT:  ["javascript", "real-javascript-analyzer", "lodash"],
   ELIXIR:      ["elixir", "real-elixir-analyzer", "elixir"],
   CPP:         ["cpp", "real-cpp-analyzer", "cpp-example"],

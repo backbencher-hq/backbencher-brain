@@ -582,7 +582,8 @@
   ],
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES. The M60 label-coverage sweep (script/m14/verify-label-coverage.ts) reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage, because the dropped rows enter neither the matched nor the unexplained bucket. Each entry below is a label this lane publishes and does not compare.",
-    "declared_gaps": [
+    "declared_gaps": [],
+    "_history_2026_11_18": [
       {
         "label": "imports",
         "reason": "The analyzer emits `imports` (an import mention routed to the import label) and the allowlist omits the label, so every one is invisible. Measured at 126 edges per 15 files on vue-core and 23 per 6 files. There is no imports oracle, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement \u2014 the #910 shape in reverse. Closes when an imports oracle exists; until then the edges are published and unmeasured, which is stated here rather than hidden.",
@@ -593,7 +594,8 @@
         "reason": "Same class as `imports`: emitted by the analyzer (116 edges per 25 files on vue-core), dropped by the allowlist, and no exports oracle exists. Closes with one.",
         "closes_when": "an exports oracle exists; then admit the label and reconcile"
       }
-    ]
+    ],
+    "_note_2026_11_18": "BOTH GAPS CLOSED: `deriveTypeScriptImportTruth` and `deriveTypeScriptExportTruth` exist and were wired into the differential on 2026-10-18 (M60 label-coverage sweep), so the two labels are COMPARED. The pre-closure entries are preserved in `_history_2026_11_18` because the reasoning they record \u2014 'an oracle is what closes the gap, not an allowlist edit' \u2014 is the lesson, not the debt."
   },
   "coverage": {
     "implemented": [
@@ -616,42 +618,48 @@
     "corpusUnexercised": [],
     "_from": "FOURTEEN OF FOURTEEN \u2014 ALL FOURTEEN TYPES ARE IMPLEMENTED, AND NEITHER REMAINING TYPE WAS RULED AWAY. The round opened at TWELVE OF TWELVE with both remaining types declared grammar-absence, then went to 12 of 14, then 13 of 14, and the arithmetic moved every time an INSTRUMENT disagreed with a claim rather than the other way round. `mixes_in` at R3: no grammar change, the heritage clause already carried the shape, and the corpus exercises it 2 times. `part_of` at R2: R1 was exhausted by measurement (8 of 8 published releases carry 0 reference-directive node types) and R3 was refused by contract (a directive read out of a comment's text is a text resolution), so the lane patched the derived grammar into a `reference_directive` node carrying `role` and `target` AS FIELDS \u2014 one atomic token, b75fa34c\u2026 \u2014 proved it behaviourally with a proof that exits 1 when either build stops behaving, measured its regeneration control against the bytes the resolver actually served (0 non-target files of 207, and the control was itself corrected twice before it was believable), and the remedy is now SERVED through the engine's per-file digest-checked grammar table. \u21d2 THE LANE READS 14 OF 14 AND EVERY NUMBER IS THE INSTRUMENT STACK'S OWN.",
     "_implemented_measured": {
-      "_unit": "edges published through the production path over the WHOLE ADMITTED population (17,689 files / 42 repos, population digest 949d0fd6a615bd3e\u2026 \u2014 git-tracked, extension-admitted .ts/.tsx/.mts/.cts from the ROUTER'S ONE TABLE, at most the gate's 1 MB SIZE_CAP, present; 0 parse failures; 1 file over the cap and never parsed) \u2014 the arm's own TABLE 1, published in validation/m14/measurements/typescript-cell-3bb68c27fdc4.md, whose twelve rows sum to its own TOTAL and whose class sum closes to the edge count EXACTLY. Population rule: script/m14/ts-corpus.ts (one place, imported by every lane instrument). Command: BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index",
+      "_unit": "edges published through the production path over the WHOLE ADMITTED population (17,350 files / 41 repos, population digest 4bd7bba5441c5344 \u2014 git-tracked, extension-admitted .ts/.tsx/.mts/.cts from the ROUTER'S ONE TABLE, at most the gate's 1 MB SIZE_CAP, present; 0 parse failures; 1 file over the cap and never parsed) \u2014 the arm's own TABLE 1, published in validation/m14/measurements/typescript-arm-final-2026-11-18.log, whose per-type rows sum to its own TOTAL and whose declaration closure is EXACT (992,652 = 992,652; unclassed 0). Population rule: script/m14/ts-corpus.ts (one place, imported by every lane instrument). Root policy: validation/m14/instruments/typescript/corpus-manifest.json. Command: BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index",
       "calls": {
-        "edges": 532701
+        "edges": 526773
       },
       "uses": {
-        "edges": 41131
+        "edges": 62729
       },
       "contains": {
-        "edges": 94481
+        "edges": 91687
       },
       "imports": {
-        "edges": 110599
+        "edges": 107896
       },
       "references": {
-        "edges": 125746
+        "edges": 122060
       },
       "exports": {
-        "edges": 41698
+        "edges": 40619
       },
       "extends": {
-        "edges": 3444
+        "edges": 3327
       },
       "implements": {
-        "edges": 312
+        "edges": 275
       },
       "overrides": {
-        "edges": 687
+        "edges": 677
       },
       "instantiates": {
-        "edges": 17034
+        "edges": 16886
       },
       "decorates": {
         "edges": 2119
       },
       "renders": {
-        "edges": 18744
+        "edges": 17553
+      },
+      "mixes_in": {
+        "edges": 2
+      },
+      "part_of": {
+        "edges": 49
       }
     },
     "grammarRemedyPending": [],
@@ -676,5 +684,5 @@
       ]
     }
   },
-  "_after_the_arm": "THE WHOLE-POPULATION ARM RAN (17,689 files / 42 repos, --index, on the build that was wired at the time: 8586372d\u2026): 1,011,022 edges, 13 of the 14 types publishing. THE ARM'S OWN RESOLUTION CLOSURE IS OFF BY ONE \u2014 TOTAL resolves to 1,011,021 against 1,011,022 edges, and the single unaccounted edge is in `contains` (94,113 of 94,114) \u2014 so the declaration generator REFUSES to write until the arm closes, because the difference must not be parked in `unclassed`. `part_of` published 50 edges (0 resolved, 12 ambiguous, 38 unresolved) and `mixes_in` 2 (both resolved)."
+  "_after_the_arm": "THE WHOLE-POPULATION ARM WAS RE-RUN ON 2026-11-18 ON THE RECORDED DEFAULT ROOT (17,350 files / 41 repos, --index, the served grammar b75fa34c\u2026 and the post-fix analyzer): 992,652 edges, 14 of 14 types publishing, and THE DECLARATION'S CLOSURE IS EXACT \u2014 resolved 458,125 + external 214,351 + ambiguous 83,489 + otherUnresolved 236,687 = 992,652, unclassed 0 (the previous edition recorded an off-by-one in `contains` and refused to write; that hole is gone and the generator's own refusal guard remains). `mixes_in` published 2 edges (both resolved \u2014 the corpus DOES exercise the call-shaped heritage twice) and `part_of` published 49 (0 resolved, 12 ambiguous, 37 unresolved \u2014 a directive's target is a package/lib name, so per-file scope cannot resolve it). The construct census over the same population counts 2,421 heritage clauses (3,267 extends clauses), 2 call-shaped sites (0 already published as extends), and 50 reference-directive sites; the analyzer publishes 49 part_of rows from 50 sites because a repeated (file, role, target) triple is deduplicated by design \u2014 every site is accounted for. The arm's own verdict is FAIL on CLAUSE 1 (this lane's edges are not all resolvable from a per-file scope, and the causes are dispositioned in the declaration's six causeRulings), which is a RESOLUTION claim, not a closure claim: the closure is exact and the cause rulings are the clause-2/3 answer."
 }

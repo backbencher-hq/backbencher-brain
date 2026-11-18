@@ -1,0 +1,247 @@
+enum has 14 types: calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+[INFO] [23:02:45] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:02:45] [ast-engine] language grammar allocated {"language":"markdown"}
+[INFO] [23:02:45] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4_5vl6co"}
+instrument self-test: PASS — planted markdown link through parseFile: uses FIRED (types seen: uses)
+# instrument self-test: population is the corpus sample below; a SILENT type is a claim about THESE files, not the language
+
+[INFO] [23:02:45] [ast-engine] language grammar allocated {"language":"rust"}
+[INFO] [23:02:45] [ast-engine] language parser loaded {"language":"rust","wasmPath":"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_4_8aro37"}
+[INFO] [23:03:11] [ast-engine] language grammar allocated {"language":"clojure"}
+[INFO] [23:03:11] [ast-engine] language parser loaded {"language":"clojure","wasmPath":"/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm_4_c4jzez6"}
+[INFO] [23:03:13] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [23:03:13] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:03:13] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [23:03:13] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:03:27] [ast-engine] language grammar allocated {"language":"javascript"}
+[INFO] [23:03:27] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [23:03:36] [ast-engine] language grammar allocated {"language":"elixir"}
+[INFO] [23:03:36] [ast-engine] language parser loaded {"language":"elixir","wasmPath":"/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm_4_nmjdt6e"}
+[INFO] [23:03:44] [ast-engine] language grammar allocated {"language":"erlang"}
+[INFO] [23:03:44] [ast-engine] language parser loaded {"language":"erlang","wasmPath":"/tmp/bb-wasm_tree-sitter-erlang_tree-sitter-erlang.wasm_4_r711wcg"}
+[INFO] [23:03:46] [ast-engine] language grammar allocated {"language":"c"}
+[INFO] [23:03:46] [ast-engine] language parser loaded {"language":"c","wasmPath":"/tmp/bb-wasm_tree-sitter-c_tree-sitter-c.wasm_4_s8814ik"}
+[INFO] [23:04:08] [ast-engine] language grammar allocated {"language":"svelte"}
+[INFO] [23:04:08] [ast-engine] language parser loaded {"language":"svelte","wasmPath":"/tmp/bb-wasm_tree-sitter-svelte_tree-sitter-svelte.wasm_4_1299wexi"}
+[INFO] [23:04:09] [ast-engine] language grammar allocated {"language":"bash"}
+[INFO] [23:04:09] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_4_12s8e9bl"}
+[INFO] [23:04:11] [ast-engine] language grammar allocated {"language":"fsharp"}
+[INFO] [23:04:11] [ast-engine] language parser loaded {"language":"fsharp","wasmPath":"/tmp/bb-wasm_tree-sitter-fsharp_tree-sitter-fsharp.wasm_4_13gzfqrt"}
+[INFO] [23:04:16] [ast-engine] language grammar allocated {"language":"zig"}
+[INFO] [23:04:16] [ast-engine] language parser loaded {"language":"zig","wasmPath":"/tmp/bb-wasm_tree-sitter-zig_tree-sitter-zig.wasm_4_15wa2rqq"}
+[INFO] [23:04:36] [ast-engine] language grammar allocated {"language":"julia"}
+[INFO] [23:04:36] [ast-engine] language parser loaded {"language":"julia","wasmPath":"/tmp/bb-wasm_tree-sitter-julia_tree-sitter-julia.wasm_4_1fb3elo7"}
+[INFO] [23:04:47] [ast-engine] language grammar allocated {"language":"nim"}
+[INFO] [23:04:47] [ast-engine] language parser loaded {"language":"nim","wasmPath":"/tmp/bb-wasm_tree-sitter-nim_tree-sitter-nim.wasm_4_1kdpi6em"}
+[INFO] [23:04:51] [ast-engine] language grammar allocated {"language":"php"}
+[INFO] [23:04:51] [ast-engine] language parser loaded {"language":"php","wasmPath":"/tmp/bb-wasm_tree-sitter-php_tree-sitter-php.wasm_4_1luvhjeh"}
+[INFO] [23:04:53] [ast-engine] language grammar allocated {"language":"powershell"}
+[INFO] [23:04:53] [ast-engine] language parser loaded {"language":"powershell","wasmPath":"/tmp/bb-wasm_tree-sitter-powershell_tree-sitter-powershell.wasm_4_1mzirrla"}
+[INFO] [23:05:05] [ast-engine] language grammar allocated {"language":"dart"}
+[INFO] [23:05:05] [ast-engine] language parser loaded {"language":"dart","wasmPath":"/tmp/bb-wasm_tree-sitter-dart_tree-sitter-dart.wasm_4_1s8ckq3f"}
+[INFO] [23:05:14] [ast-engine] language grammar allocated {"language":"sql"}
+[INFO] [23:05:14] [ast-engine] language parser loaded {"language":"sql","wasmPath":"/tmp/bb-wasm_tree-sitter-sql_tree-sitter-sql.wasm_4_1waelmvj"}
+[INFO] [23:05:15] [ast-engine] language grammar allocated {"language":"graphql"}
+[INFO] [23:05:15] [ast-engine] language parser loaded {"language":"graphql","wasmPath":"/tmp/bb-wasm_tree-sitter-graphql_tree-sitter-graphql.wasm_4_1wykdage"}
+[INFO] [23:05:15] [ast-engine] language grammar allocated {"language":"protobuf"}
+[INFO] [23:05:15] [ast-engine] language parser loaded {"language":"protobuf","wasmPath":"/tmp/bb-wasm_tree-sitter-protobuf_tree-sitter-protobuf.wasm_4_1x4d7c53"}
+[INFO] [23:05:16] [ast-engine] language grammar allocated {"language":"json"}
+[INFO] [23:05:16] [ast-engine] language parser loaded {"language":"json","wasmPath":"/tmp/bb-wasm_tree-sitter-json_tree-sitter-json.wasm_4_1xlzzdds"}
+[INFO] [23:05:17] [ast-engine] language grammar allocated {"language":"yaml"}
+[INFO] [23:05:17] [ast-engine] language parser loaded {"language":"yaml","wasmPath":"/tmp/bb-wasm_tree-sitter-yaml_tree-sitter-yaml.wasm_4_1y3zdm8g"}
+[INFO] [23:05:18] [ast-engine] language grammar allocated {"language":"css"}
+[INFO] [23:05:18] [ast-engine] language parser loaded {"language":"css","wasmPath":"/tmp/bb-wasm_tree-sitter-css_tree-sitter-css.wasm_4_1ye99lf0"}
+[INFO] [23:05:56] [ast-engine] language grammar allocated {"language":"scss"}
+[INFO] [23:05:56] [ast-engine] language parser loaded {"language":"scss","wasmPath":"/tmp/bb-wasm_tree-sitter-scss.wasm_4_2g1ev9ly"}
+[INFO] [23:06:04] [ast-engine] language grammar allocated {"language":"hcl"}
+[INFO] [23:06:04] [ast-engine] language parser loaded {"language":"hcl","wasmPath":"/tmp/bb-wasm_tree-sitter-hcl_tree-sitter-hcl.wasm_4_2jqlj42v"}
+[INFO] [23:06:04] [ast-engine] language grammar allocated {"language":"terraform"}
+[INFO] [23:06:04] [ast-engine] language parser loaded {"language":"terraform","wasmPath":"/tmp/bb-wasm_tree-sitter-hcl_tree-sitter-hcl.wasm_4_2jr3oe1t"}
+[INFO] [23:06:05] [ast-engine] language grammar allocated {"language":"make"}
+[INFO] [23:06:05] [ast-engine] language parser loaded {"language":"make","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-make.wasm"}
+[INFO] [23:06:05] [ast-engine] language grammar allocated {"language":"toml"}
+[INFO] [23:06:05] [ast-engine] language parser loaded {"language":"toml","wasmPath":"/tmp/bb-wasm_tree-sitter-toml_tree-sitter-toml.wasm_4_2k8b2b0u"}
+[INFO] [23:06:06] [ast-engine] language grammar allocated {"language":"xml"}
+[INFO] [23:06:06] [ast-engine] language parser loaded {"language":"xml","wasmPath":"/tmp/bb-wasm_tree-sitter-xml_tree-sitter-xml.wasm_4_2kd8zn5n"}
+[INFO] [23:06:07] [ast-engine] language grammar allocated {"language":"markdown"}
+[INFO] [23:06:07] [ast-engine] language parser loaded {"language":"markdown","wasmPath":"/tmp/bb-wasm_tree-sitter-markdown_tree-sitter-markdown.wasm_4_2l0er0zg"}
+[INFO] [23:06:10] [ast-engine] language grammar allocated {"language":"clean"}
+[INFO] [23:06:10] [ast-engine] language parser loaded {"language":"clean","wasmPath":"/tmp/bb-wasm_tree-sitter-clean_tree-sitter-clean.wasm_4_2mhvl70f"}
+RUST          12 types fired   110/110 parsed of 110 admitted (even stride)  [corpus=ripgrep WHOLE]
+   calls:16733  contains:3809  decorates:1372  exports:229  extends:7  implements:252  imports:673  instantiates:659  mixes_in:750  overrides:979  references:2928  uses:3171
+   SILENT (constructible but produced nothing): renders part_of
+
+PYTHON         0 types fired   NO CORPUS under python-codesql
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+GO             0 types fired   NO CORPUS under go-stdlib
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+KOTLIN         0 types fired   NO CORPUS under kotlin
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+SCALA          0 types fired   NO CORPUS under scala
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+GROOVY         0 types fired   NO CORPUS under groovy
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+HASKELL        0 types fired   NO CORPUS under haskell
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+SWIFT          0 types fired   NO CORPUS under swift-corpus
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+PERL           0 types fired   NO CORPUS under perl5
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+CLOJURE       10 types fired   120/120 parsed of 502 admitted (even stride)  [corpus=clj-kondo]
+   calls:3510  contains:747  exports:574  extends:1  implements:17  imports:253  instantiates:30  overrides:11  references:1045  uses:119
+   SILENT (constructible but produced nothing): decorates renders mixes_in part_of
+
+CSHARP         0 types fired   NO CORPUS under csharp-sample
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+JAVA           0 types fired   NO CORPUS under java-lib
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+OBJECTIVE_C    0 types fired   NO CORPUS under objc
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+TYPESCRIPT    10 types fired   120/120 parsed of 491 admitted (even stride)  [corpus=vue-core]
+   calls:13135  contains:597  exports:373  extends:19  imports:1476  instantiates:81  overrides:4  references:2001  renders:83  uses:814
+   SILENT (constructible but produced nothing): implements decorates mixes_in part_of
+
+JAVASCRIPT     7 types fired   51/51 parsed of 51 admitted (even stride)  [corpus=lodash WHOLE]
+   calls:12397  contains:16  exports:60  imports:78  instantiates:586  references:46  uses:11092
+   SILENT (constructible but produced nothing): extends implements overrides decorates renders mixes_in part_of
+
+ELIXIR        10 types fired   120/120 parsed of 568 admitted (even stride)  [corpus=elixir]
+   calls:9147  contains:1893  exports:1055  implements:39  imports:55  instantiates:326  mixes_in:98  overrides:12  references:192  uses:370
+   SILENT (constructible but produced nothing): extends decorates renders part_of
+
+CPP            0 types fired   NO CORPUS under cpp-example
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+RUBY           0 types fired   NO CORPUS under ruby
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+ERLANG         9 types fired   120/120 parsed of 4140 admitted (even stride)  [corpus=otp]
+   calls:9450  contains:4491  exports:1973  implements:15  imports:6  instantiates:184  part_of:101  references:5122  uses:1354
+   SILENT (constructible but produced nothing): extends overrides decorates renders mixes_in
+
+C              9 types fired   120/120 parsed of 354 admitted (even stride)  [corpus=sqlite]
+   calls:21333  contains:1783  exports:55  imports:300  instantiates:33  overrides:33  part_of:140  references:1946  uses:12520
+   SILENT (constructible but produced nothing): extends implements decorates renders mixes_in
+
+VISUAL_BASIC   0 types fired   NO CORPUS under moo
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+VUE            0 types fired   NO CORPUS under vuejs
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+SVELTE         8 types fired   120/120 parsed of 1681 admitted (even stride)  [corpus=shadcn-svelte]
+   calls:73  contains:187  exports:21  imports:503  instantiates:6  references:47  renders:711  uses:191
+   SILENT (constructible but produced nothing): extends implements overrides decorates mixes_in part_of
+
+HTML           0 types fired   NO CORPUS under vuejs
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+BASH           4 types fired   120/120 parsed of 556 admitted (even stride)  [corpus=bash-completion]
+   calls:1344  contains:1353  references:2  uses:1318
+   SILENT (constructible but produced nothing): extends implements imports exports overrides instantiates decorates renders mixes_in part_of
+
+FSHARP_B      10 types fired   120/120 parsed of 6617 admitted (even stride)  [corpus=fsharp]
+   calls:3629  contains:1386  exports:911  extends:4  implements:19  imports:244  instantiates:5  overrides:3  references:690  uses:319
+   SILENT (constructible but produced nothing): decorates renders mixes_in part_of
+
+ZIG            7 types fired   120/120 parsed of 2933 admitted (even stride)  [corpus=zig]
+   calls:3265  contains:2678  exports:1035  imports:179  instantiates:98  references:667  uses:3287
+   SILENT (constructible but produced nothing): extends implements overrides decorates renders mixes_in part_of
+
+LUA            7 types fired   120/120 parsed of 1312 admitted (even stride)  [corpus=kong]
+   calls:2481  contains:2850  exports:114  extends:10  imports:324  references:1724  uses:2612
+   SILENT (constructible but produced nothing): implements overrides instantiates decorates renders mixes_in part_of
+
+JULIA         10 types fired   120/120 parsed of 941 admitted (even stride)  [corpus=julia]
+   calls:8679  contains:1022  decorates:181  exports:273  extends:102  imports:224  instantiates:216  part_of:35  references:3546  uses:2855
+   SILENT (constructible but produced nothing): implements overrides renders mixes_in
+
+NIM           10 types fired   120/120 parsed of 3968 admitted (even stride)  [corpus=nim]
+   calls:1555  contains:485  exports:6  extends:11  imports:181  instantiates:59  overrides:1  part_of:13  references:1245  uses:794
+   SILENT (constructible but produced nothing): implements decorates renders mixes_in
+
+PHP           11 types fired   120/120 parsed of 4541 admitted (even stride)  [corpus=phpunit]
+   calls:2436  contains:708  extends:58  implements:23  imports:281  instantiates:443  mixes_in:7  overrides:2  part_of:35  references:100  uses:1321
+   SILENT (constructible but produced nothing): exports decorates renders
+
+POWERSHELL    11 types fired   120/120 parsed of 553 admitted (even stride)  [corpus=powershell]
+   calls:13919  contains:3713  exports:14  extends:36  implements:2  imports:25  instantiates:323  overrides:12  part_of:1  references:25  uses:14845
+   SILENT (constructible but produced nothing): decorates renders mixes_in
+
+R_LANG         0 types fired   NO CORPUS under ggplot2
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+DART          12 types fired   120/120 parsed of 20000 admitted (even stride)  [corpus=dart-sdk]
+   calls:2754  contains:1580  exports:27  extends:82  implements:33  imports:486  instantiates:377  mixes_in:22  overrides:322  part_of:9  references:563  uses:6289
+   SILENT (constructible but produced nothing): decorates renders
+
+SQL            3 types fired   120/120 parsed of 594 admitted (even stride)  [corpus=duckdb]
+   calls:87  contains:176  uses:459
+   SILENT (constructible but produced nothing): extends implements imports exports references overrides instantiates decorates renders mixes_in part_of
+
+GRAPHQL        6 types fired   120/120 parsed of 179 admitted (even stride)  [corpus=gql-gqlgen]
+   contains:1230  exports:601  implements:86  overrides:146  references:1456  uses:365
+   SILENT (constructible but produced nothing): calls extends imports instantiates decorates renders mixes_in part_of
+
+PROTOBUF       3 types fired   120/120 parsed of 128 admitted (even stride)  [corpus=pb-googleapis]
+   contains:3269  imports:329  references:1073
+   SILENT (constructible but produced nothing): calls extends implements uses exports overrides instantiates decorates renders mixes_in part_of
+
+JSON_B         1 types fired   120/120 parsed of 2370 admitted (even stride)  [corpus=shadcn-svelte]
+   contains:2249
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports references overrides instantiates decorates renders mixes_in part_of
+
+YAML           4 types fired   120/120 parsed of 2082 admitted (even stride)  [corpus=ansible]
+   contains:4203  imports:35  references:11  uses:1
+   SILENT (constructible but produced nothing): calls extends implements exports overrides instantiates decorates renders mixes_in part_of
+
+CSS_B          3 types fired   120/120 parsed of 238 admitted (even stride)  [corpus=pico]
+   contains:60657  references:64324  uses:1153
+   SILENT (constructible but produced nothing): calls extends implements imports exports overrides instantiates decorates renders mixes_in part_of
+
+SCSS           9 types fired   120/120 parsed of 179 admitted (even stride)  [corpus=bulma]
+   calls:47  contains:495  exports:607  extends:28  imports:12  mixes_in:73  part_of:49  references:491  uses:4
+   SILENT (constructible but produced nothing): implements overrides instantiates decorates renders
+
+HCL            6 types fired   120/120 parsed of 3399 admitted (even stride)  [corpus=terragrunt]
+   contains:647  exports:245  imports:1  instantiates:15  references:109  uses:7
+   SILENT (constructible but produced nothing): calls extends implements overrides decorates renders mixes_in part_of
+
+MAKE           6 types fired   110/110 parsed of 110 admitted (even stride)  [corpus=otp WHOLE]
+   contains:408  exports:77  imports:11  overrides:2  references:302  uses:1516
+   SILENT (constructible but produced nothing): calls extends implements instantiates decorates renders mixes_in part_of
+
+TOML_B         2 types fired   120/120 parsed of 684 admitted (even stride)  [corpus=cargo]
+   contains:882  imports:16
+   SILENT (constructible but produced nothing): calls extends implements uses exports references overrides instantiates decorates renders mixes_in part_of
+
+XML_B          5 types fired   120/120 parsed of 1143 admitted (even stride)  [corpus=libxslt]
+   calls:29  contains:2209  imports:10  references:22  uses:530
+   SILENT (constructible but produced nothing): extends implements exports overrides instantiates decorates renders mixes_in part_of
+
+MARKDOWN_B     3 types fired   120/120 parsed of 2105 admitted (even stride)  [corpus=redwood]
+   contains:3731  references:73  uses:1301
+   SILENT (constructible but produced nothing): calls extends implements imports exports overrides instantiates decorates renders mixes_in part_of
+
+MATLAB         0 types fired   NO CORPUS under robotics-toolbox-matlab
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+VBA            0 types fired   NO CORPUS under VBA-Web
+   SILENT (constructible but produced nothing): calls extends implements uses imports exports contains references overrides instantiates decorates renders mixes_in part_of
+
+CLEAN_B        9 types fired   109/109 parsed of 109 admitted (even stride)  [corpus=Clyde WHOLE]
+   calls:2143  contains:3634  exports:2467  implements:69  imports:668  instantiates:122  overrides:14  references:5487  uses:1330
+   SILENT (constructible but produced nothing): extends decorates renders mixes_in part_of
+

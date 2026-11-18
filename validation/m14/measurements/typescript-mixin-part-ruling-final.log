@@ -1,0 +1,96 @@
+[INFO] [23:26:32] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:26:32] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [23:26:32] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:26:32] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [23:26:32] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:26:33] [ast-engine] language grammar allocated {"language":"dart"}
+[INFO] [23:26:33] [ast-engine] language parser loaded {"language":"dart","wasmPath":"/tmp/bb-wasm_tree-sitter-dart_tree-sitter-dart.wasm_5_7jrjk5"}
+THE TYPESCRIPT `mixes_in` / `part_of` RULING — the citation, rebuilt from the PINNED GRAMMARS
+
+A1 · typescript
+     wasm: /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm
+     sha256: b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335
+       candidate HIT  /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm
+       candidate HIT  /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm
+       candidate miss /home/ishaq2321/mcp/backbencher-brain/src/wasm/tree-sitter-typescript.wasm
+       candidate HIT  /home/ishaq2321/.bb/wasm/tree-sitter-typescript.wasm
+     node types: 192 named of 385 ids
+     /mix/ names: NONE
+     /part/ names: NONE
+     the fleet's cited names PRESENT: mixes_in → NONE · part_of → NONE
+
+A1 · tsx
+     wasm: /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-tsx.wasm
+     sha256: 6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6
+       candidate HIT  /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-tsx.wasm
+       candidate HIT  /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-tsx.wasm
+       candidate miss /home/ishaq2321/mcp/backbencher-brain/src/wasm/tree-sitter-tsx.wasm
+       candidate HIT  /home/ishaq2321/.bb/wasm/tree-sitter-tsx.wasm
+     node types: 203 named of 405 ids
+     /mix/ names: NONE
+     /part/ names: NONE
+     the fleet's cited names PRESENT: mixes_in → NONE · part_of → NONE
+
+A1 · dart
+     wasm: /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-dart.wasm
+     sha256: 7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1
+       candidate HIT  /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-dart.wasm
+       candidate HIT  /home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-dart.wasm
+       candidate miss /home/ishaq2321/mcp/backbencher-brain/src/wasm/tree-sitter-dart.wasm
+       candidate HIT  /home/ishaq2321/.bb/wasm/tree-sitter-dart.wasm
+     node types: 222 named of 527 ids
+     /mix/ names: mixin, mixin_application, mixin_application_class, mixin_declaration, mixins
+     /part/ names: argument_part, for_loop_parts, part_directive, part_of_builtin, part_of_directive
+     the fleet's cited names PRESENT: mixes_in → mixins, mixin_declaration, mixin_application, mixin_application_class · part_of → part_directive, part_of_directive, part_of_builtin
+
+A2 · THE CONTROL — the SAME scan against a grammar that HAS the constructs
+     dart: mixes_in → mixins, mixin_declaration, mixin_application, mixin_application_class · part_of → part_directive, part_of_directive, part_of_builtin
+     ⇒ THE SCAN FIRES ✓ — so the ABSENCE reported for typescript is a fact about the
+       typescript grammar, not an artefact of the instrument. **A RULING WHOSE CONTROL
+       DID NOT FIRE IS NOT A RULING** ✓
+
+     ⇒ typescript: mixes_in → ABSENT (0 of 5 cited names) · part_of → ABSENT (0 of 5 cited names)
+       wider name patterns: /mix/ → 0 hits · /part/ → 0 hits
+     ⇒ tsx: mixes_in → ABSENT (0 of 5 cited names) · part_of → ABSENT (0 of 5 cited names)
+       wider name patterns: /mix/ → 0 hits · /part/ → 0 hits
+
+E · THE COUNTERFACTUAL — what the PINNED typescript grammar makes of the candidate spellings
+     a Dart-style mixin declaration: is `mixin` a keyword here, or an ordinary identifier?
+       node types produced: program · ERROR · identifier · { · property_identifier · formal_parameters · ( · ) · type_annotation · : · predefined_type · }
+       hasError: true
+
+     a Dart-style part directive: is `part` a directive here, or an ordinary expression statement?
+       node types produced: program · ERROR · identifier · expression_statement · string · ' · string_fragment · ;
+       hasError: true
+
+     the nearest TypeScript mixin spelling — declaration merging: which relationship does TypeScript give a merged interface+class?
+       node types produced: program · interface_declaration · interface · type_identifier · interface_body · { · method_signature · } · class_declaration · class · class_heritage · implements_clause · class_body
+       hasError: false
+
+     the nearest TypeScript 'belongs to another unit' spelling: is the reference directive a NODE, or a comment?
+       node types produced: program · reference_directive · export_statement · export · lexical_declaration · const · variable_declarator
+       hasError: false
+
+     the TypeScript heritage the analyzer already spells: which node types does the pinned grammar give the heritage clause?
+       node types produced: program · class_declaration · class · type_identifier · class_heritage · extends_clause · class_body · { · }
+       hasError: false
+
+C · THE CORPUS HALF
+     EDGE count (the whole-population arm's own TABLE 1, whole admitted population):
+       mixes_in 0 edges · part_of 0 edges — 17,689 files / 42 repos, command:
+       BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index
+     (the arm's TABLE 1 is the artifact; the row is reproduced in
+      validation/m14/measurements/typescript-cell-*.md)
+     CONSTRUCT-SITE count: NOT RUN (pass --census to walk the whole admitted population)
+
+THE RULING (SUPERSEDED 2026-11-18 — BOTH TYPES ARE NOW IMPLEMENTED; n = 14)
+  `mixes_in` — IMPLEMENTED at R3 without a grammar change: the heritage expression's SHAPE
+  (a call in extends position) is the discriminator, and the whole-population construct
+  census counts 2 such sites while the analyzer publishes 2 `mixes_in` edges.
+  `part_of` — IMPLEMENTED at R2 by patching the pinned grammar so the directive is a
+  `reference_directive` NODE (the stock grammar lexes it as a comment, which the A2/A3
+  halves above still show — that is why the patch was needed), proven behaviourally by
+  script/m14/ts-partof-grammar-proof.ts (8/8 green) and served via the engine digest table;
+  the construct census counts 50 directive sites vs 49 published rows (one repeated triple).
+  ⇒ n = 14 of 14, and this instrument remains the citation for WHY the stock grammar could
+    not carry the `part_of` construct without the patch, and why `mixes_in` needs no node.

@@ -1,0 +1,79 @@
+[INFO] [23:08:26] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:08:26] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [23:08:26] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:08:32] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [23:08:32] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:09:03] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:09:49] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:10:24] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:10:26] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [23:10:37] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+TS RECEIVER-WALL PROBE — corpus /home/ishaq2321/bb_tests/repositories
+population: 1500 parsed of 17350 admitted file(s) across 41 repo(s) · parse failures 0
+calls edges 40709 · member calls 19811 · carrying metadata.owner 1939 (9.8% of member calls)
+uses edges 5055 · carrying metadata.owner 264
+
+THE WALL — member calls with NO owner, by CAUSE (17872 rows):
+       6762   37.8%  receiver root is not a plain identifier
+              · .… -> map @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ConfirmedBlockUpload.ts:94
+              · .… -> map @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ConfirmedBlockUpload.ts:113
+              · .… -> toISOString @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ConfirmedBlockUpload.ts:114
+       6501   36.4%  receiver is a LOCAL with NO type stated in this file — the type is not in the file
+              · response.… -> value @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:169
+              · response.… -> value @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:224
+              · response.… -> value @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:279
+       1691    9.5%  receiver is an IMPORTED BINDING — the type lives in another file or in node_modules
+              · jest.… -> fn @ apollo-server/packages/server/src/__tests__/mockLogger.ts:5
+              · jest.… -> fn @ apollo-server/packages/server/src/__tests__/mockLogger.ts:6
+              · jest.… -> fn @ apollo-server/packages/server/src/__tests__/mockLogger.ts:7
+       1328    7.4%  receiver is `this` — the field's type is not stated (or the field is untyped)
+              · this.… -> createWebhookRuleRequestOpts @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:158
+              · this.… -> request @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:159
+              · this.… -> createWebhookRuleRaw @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:168
+        835    4.7%  receiver is a CHAIN off a root (depth ≥ 2) — needs the member's member
+              · Object.… -> call @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/LibraryCatalogRejectionReason.ts:32
+              · Object.… -> call @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ReferenceType.ts:32
+              · Object.… -> call @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/RepositoryStatus.ts:31
+        301    1.7%  receiver's type is an IMPORTED CLASS — named here, declared in another file (the member set is not here)
+              · chunks.… -> map @ Grace/sdk/typescript/grace/src/protocol/content-block.ts:68
+              · chunks.… -> push @ Grace/sdk/typescript/grace/src/protocol/content-block.ts:178
+              · chunks.… -> map @ Grace/sdk/typescript/grace/src/protocol/content-block.ts:192
+        206    1.2%  receiver is a CHAIN off a typed root — the one-hop class reads the root's type, not the member's
+              · node.… -> some @ apollo-server/packages/server/src/plugin/usageReporting/iterateOverTrace.ts:59
+              · node.… -> some @ apollo-server/packages/server/src/plugin/usageReporting/iterateOverTrace.ts:66
+              · node.… -> some @ apollo-server/packages/server/src/plugin/usageReporting/iterateOverTrace.ts:89
+        202    1.1%  receiver's type is a GENERIC over a type PARAMETER — the concrete type is the CALLER's argument (another file)
+              · wrapper.… -> text @ element-plus/packages/components/select/__tests__/select.test.ts:342
+              · wrapper.… -> querySelectorAll @ element-plus/packages/components/select/__tests__/select.test.ts:355
+              · wrapper.… -> text @ element-plus/packages/components/select/__tests__/select.test.ts:406
+         27    0.2%  DEFECT CLASS — the file states this name's type and no owner was carried
+              · fragments.… -> fragmentUsages @ gql-federation/internals-js/src/operations.ts:787
+              · fragments.… -> fragmentUsages @ gql-federation/internals-js/src/operations.ts:899
+              · fragment.… -> collectUsedFragmentNames @ gql-federation/internals-js/src/operations.ts:1409
+         19    0.1%  receiver's type is a TYPE ALIAS (no member set of its own) — resolves against an arm
+              · path.… -> filter @ gql-federation/internals-js/src/operations.ts:717
+              · path.… -> flat @ gql-federation/internals-js/src/operations.ts:717
+              · selection.… -> withoutDefer @ gql-federation/internals-js/src/operations.ts:1918
+
+THE FALSIFIER: 27 rows where the file STATES the receiver's type and no owner was carried.
+  ZERO here means the analyzer reads every type the file states, and the wall is a TYPE-INFERENCE wall.
+  NON-ZERO means the wall has a defect component: 27 stated types the analyzer did not read.
+
+R5's BOUND — the RECEIVER-TYPING EVIDENCE CLASS, bounded by the DECLARED-POPULATION SHARE:
+  the wall: member calls with NO owner = 17872
+  W0 no identifier root (no NAME)          6762   37.8%  (outside the partition — a call result or a literal receiver)
+  W1 the FILE binds the name                 7183   40.2%  (the lane's OWN file-local receiver classes are the evidence class)
+  W2 the PROJECT declares it                     2    0.0%  (a CROSS-FILE receiver-typing class could point at a declaration)
+  W3 the project declares it NOWHERE          3925   22.0%  (an SDK / third-party member — a VOCABULARY question; the instrument is the package-scope claim)
+  a receiver-typing evidence class could move at most the W2 rows: 2 — not 17872.
+    W0 · .… -> map @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ConfirmedBlockUpload.ts:94
+    W0 · .… -> map @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ConfirmedBlockUpload.ts:113
+    W0 · .… -> toISOString @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ConfirmedBlockUpload.ts:114
+    W1 · response.… -> value @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:169
+    W1 · response.… -> value @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:224
+    W1 · response.… -> value @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:279
+    W2 · props.… -> includes @ hasura-engine/docs/src/components/CustomDocItem/index.tsx:59
+    W2 · props.… -> includes @ hasura-engine/docs/src/components/CustomDocItem/index.tsx:74
+    W3 · this.… -> createWebhookRuleRequestOpts @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:158
+    W3 · this.… -> request @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:159
+    W3 · this.… -> createWebhookRuleRaw @ Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/src/apis/WebhooksApi.ts:168

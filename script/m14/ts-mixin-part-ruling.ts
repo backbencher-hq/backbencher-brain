@@ -408,19 +408,32 @@ async function main() {
   }
   say("")
 
-  say("THE RULING, IN ONE PARAGRAPH")
-  say("  `mixes_in` — GRAMMAR-ABSENCE for TypeScript. The pinned `typescript` and `tsx` grammars")
-  say("  declare no mixin node of any name (/mix/ matches 0 of the inventory's named types), and")
-  say("  the control grammar that DOES declare one (dart's `mixin_declaration`,")
-  say("  `mixin_application`) proves the scan fires. The nearest TypeScript spelling —")
-  say("  declaration merging, `interface M {}` + `class M implements M {}` — is already carried by")
-  say("  the `implements` type, so nothing is lost by the ruling.")
-  say("  `part_of` — GRAMMAR-ABSENCE for TypeScript, for the same reason and with the same control")
-  say("  (dart's `part_directive` / `part_of_directive`). The nearest TypeScript spelling — the")
-  say("  `/// <reference path=...>` directive — is lexed as a COMMENT by the pinned grammar (the")
-  say("  counterfactual prints the node types it produces), and the file-to-file relationship it")
-  say("  denotes is already carried by `imports` / `references`.")
-  say("  ⇒ n = 14 − 2 = 12 for TypeScript, and BOTH subtractions are CITED, not asserted.")
+  // SUPERSEDED 2026-11-18. The paragraph this replaces ruled BOTH types grammar-absence and set
+  // n = 14 − 2 = 12. That was true of the STOCK grammar at the time and is no longer the lane's
+  // state: `mixes_in` is IMPLEMENTED without a grammar node (the heritage clause's SHAPE is the
+  // discriminator — R3), and `part_of` is IMPLEMENTED because the grammar remedy was TAKEN (R2: the
+  // pinned grammar is patched to expose `reference_directive`, proven by
+  // script/m14/ts-partof-grammar-proof.ts and served through the engine's digest table). The lane
+  // now reads 14 of 14. What this instrument still establishes, and why it stays:
+  //   · the STOCK grammar declares no mixin node of any name (/mix/ matches 0 named types) and its
+  //     control (dart) proves the scan fires — so the shape-based implementation is justified and
+  //     the construct is not a grammar absence for the LANGUAGE, only for the stock grammar;
+  //   · the STOCK grammar lexes `/// <reference ...>` as a COMMENT — which is exactly why a grammar
+  //     patch was needed for `part_of`, and the patch's proof is the behavioural one;
+  //   · the CONSTRUCT-SITE census (script/m14/ts-mixin-sites.ts) is the population half: on
+  //     17,350 files it measured 2 call-shaped heritage sites (the analyzer publishes 2 `mixes_in`
+  //     edges) and 50 reference-directive sites (49 `part_of` rows after one repeated triple).
+  say("THE RULING (SUPERSEDED 2026-11-18 — BOTH TYPES ARE NOW IMPLEMENTED; n = 14)")
+  say("  `mixes_in` — IMPLEMENTED at R3 without a grammar change: the heritage expression's SHAPE")
+  say("  (a call in extends position) is the discriminator, and the whole-population construct")
+  say("  census counts 2 such sites while the analyzer publishes 2 `mixes_in` edges.")
+  say("  `part_of` — IMPLEMENTED at R2 by patching the pinned grammar so the directive is a")
+  say("  `reference_directive` NODE (the stock grammar lexes it as a comment, which the A2/A3")
+  say("  halves above still show — that is why the patch was needed), proven behaviourally by")
+  say("  script/m14/ts-partof-grammar-proof.ts (8/8 green) and served via the engine digest table;")
+  say("  the construct census counts 50 directive sites vs 49 published rows (one repeated triple).")
+  say("  ⇒ n = 14 of 14, and this instrument remains the citation for WHY the stock grammar could")
+  say("    not carry the `part_of` construct without the patch, and why `mixes_in` needs no node.")
 
   const text = L.join("\n")
   console.log(text)

@@ -1,0 +1,31 @@
+  [cold-pool] vue-core:typescript: 60/60 fresh (rot 1, corpus 484)
+[vue-core] typescript: files=60 tree-truth=4936 file-level-label-target-covered=4739 (96%) MISSING=197 | analyzer-edges=4026 unexplained=221 (5.5%) heuristic=0 hash=771c854fefb7fcdc | unexplained-by-label: references=152,uses=69
+  [cold-pool] element-plus:typescript: 60/60 fresh (rot 1, corpus 990)
+[element-plus] typescript: files=60 tree-truth=1566 file-level-label-target-covered=1507 (96.2%) MISSING=59 | analyzer-edges=1496 unexplained=76 (5.1%) heuristic=0 hash=02f7248d60f646f7 | unexplained-by-label: references=39,uses=37
+  [typescript] 197 MISSING / undefined truth — samples:
+    references App -> mixin   (packages/runtime-core/src/apiCreateApp.ts)
+    references App -> component   (packages/runtime-core/src/apiCreateApp.ts)
+    references App -> directive   (packages/runtime-core/src/apiCreateApp.ts)
+    references App -> filter   (packages/runtime-core/src/apiCreateApp.ts)
+    references app -> rootComponent   (packages/runtime-core/src/apiCreateApp.ts)
+    references app -> context   (packages/runtime-core/src/apiCreateApp.ts)
+    references use -> app   (packages/runtime-core/src/apiCreateApp.ts)
+    references withDirectives -> modifiers   (packages/runtime-core/src/directives.ts)
+    references AssetURLTagConfig -> name   (packages/compiler-sfc/src/template/transformAssetUrl.ts)
+    uses transformAssetUrl -> name   (packages/compiler-sfc/src/template/transformAssetUrl.ts)
+    uses resolveOrRegisterImport -> existingIndex   (packages/compiler-sfc/src/template/transformAssetUrl.ts)
+    uses resolveOrRegisterImport -> exp   (packages/compiler-sfc/src/template/transformAssetUrl.ts)
+  [element-plus:typescript] 59 MISSING / undefined truth — samples:
+    uses setup -> label   (packages/components/slider/src/marker.ts)
+    uses setup -> style   (packages/components/slider/src/marker.ts)
+    references useKeydown -> el$   (packages/components/tree/src/model/useKeydown.ts)
+    references buildProps -> fromPairs   (packages/utils/vue/props/runtime.ts)
+    references buildProps -> Object   (packages/utils/vue/props/runtime.ts)
+    uses buildProp -> allowValuesText   (packages/utils/vue/props/runtime.ts)
+    uses createDocumentHandler -> popperRef   (packages/directives/click-outside/index.ts)
+    uses ClickOutside -> bindingFn   (packages/directives/click-outside/index.ts)
+    uses TrapChild -> childKls   (packages/components/focus-trap/__tests__/focus-trap.test.ts)
+    uses TrapChild -> AXIOM   (packages/components/focus-trap/__tests__/focus-trap.test.ts)
+    uses FormProps -> FormMetaProps   (packages/components/form/src/form.ts)
+    references DialogProps -> DialogContentProps   (packages/components/dialog/src/dialog.ts)
+probe run (--lang typescript): measured 2 lane(s) — M14.0.F5 NOT written. The artifact belongs to the canonical 60-file, 50-language sweep; a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.

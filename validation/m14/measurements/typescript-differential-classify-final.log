@@ -1,0 +1,93 @@
+[INFO] [19:54:38] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:54:39] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [19:54:39] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+element-plus: files=60 truth=1627 covered=1574 (96.7%) MISSING=53 | analyzer=2121 unexplained=126 (5.9%)
+
+POPULATION: deterministic stride above, NOT the differential's rotating sample — these buckets classify the ROW CLASSES; the differential's own counts remain its measurement.
+
+MISSING — truth derives a row the analyzer did not emit:
+     16  uses: target is a DECLARED MEMBER NAME (reached by contains, not a reference)
+           e.g. ElLoading -> _context @ element-plus/packages/components/loading/index.ts
+           e.g. install -> _context @ element-plus/packages/components/loading/index.ts
+           e.g. useSelect -> isDisabled @ element-plus/packages/components/select/src/useSelect.ts
+           e.g. getOption -> isDisabled @ element-plus/packages/components/select/src/useSelect.ts
+     10  uses: other (sample for manual read)
+           e.g. transformComponentMarkdown -> linksText @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. sourceSection -> linksText @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. getExampleImports -> file @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. getExampleImports -> name @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+     10  references: THE EDGE EXISTS, THE LABEL DIFFERS (references -> calls)
+           e.g. validator -> isBoolean @ element-plus/packages/components/select-v2/src/defaults.ts
+           e.g. validator -> isNumber @ element-plus/packages/components/select-v2/src/defaults.ts
+           e.g. useSelect -> get @ element-plus/packages/components/select/src/useSelect.ts
+           e.g. getOption -> get @ element-plus/packages/components/select/src/useSelect.ts
+      5  references: THE EDGE EXISTS, THE LABEL DIFFERS (references -> uses)
+           e.g. transformComponentMarkdown -> GITHUB_BLOB_URL @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. transformComponentMarkdown -> GITHUB_TREE_URL @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. _mount -> LIST_ITEM_CLASS @ element-plus/packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts
+           e.g. _mount -> LIST_ITEM_STYLE @ element-plus/packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts
+      4  references: THE EDGE EXISTS, THE LABEL DIFFERS (references -> contains)
+           e.g. NotificationOptions -> vm @ element-plus/packages/components/notification/src/notification.ts
+           e.g. NotifyFn -> position @ element-plus/packages/components/notification/src/notification.ts
+           e.g. TreeStoreNodesMap -> key @ element-plus/packages/components/tree/src/tree.type.ts
+           e.g. TreeOptionProps -> key @ element-plus/packages/components/tree/src/tree.type.ts
+      3  references: other (sample for manual read)
+           e.g. Color -> key @ element-plus/packages/components/color-picker-panel/src/utils/color.ts
+           e.g. set -> key @ element-plus/packages/components/color-picker-panel/src/utils/color.ts
+           e.g. setup -> INITIAL_VALUE @ element-plus/packages/components/infinite-scroll/__tests__/infinite-scroll.test.ts
+      1  references: THE EDGE EXISTS, THE LABEL DIFFERS (references -> instantiates)
+           e.g. Color -> TinyColor @ element-plus/packages/components/color-picker-panel/src/utils/color.ts
+      1  references: THE EDGE EXISTS, THE LABEL DIFFERS (references -> imports)
+           e.g. install -> vLoading @ element-plus/packages/components/loading/index.ts
+      1  uses: THE EDGE EXISTS, THE LABEL DIFFERS (uses -> extends)
+           e.g. Notify -> NotifyFn @ element-plus/packages/components/notification/src/notification.ts
+      1  references: target is NOT DECLARED ANYWHERE IN THE PROJECT (a global or builtin the oracle over-derives)
+           e.g. useSelect -> ValidateComponentsMap @ element-plus/packages/components/select/src/useSelect.ts
+      1  uses: THE EDGE EXISTS, THE LABEL DIFFERS (uses -> contains)
+           e.g. translate -> move @ element-plus/packages/components/virtual-list/src/utils.ts
+
+UNEXPLAINED — analyzer emitted a row no truth derivation explains:
+     64  references: THE EDGE EXISTS, THE LABEL DIFFERS (uses -> references)
+           e.g. append -> Append @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. constructor -> ColorOptions @ element-plus/packages/components/color-picker-panel/src/utils/color.ts
+           e.g. DateTableEmits -> RangePickerEmits @ element-plus/packages/components/date-picker-panel/src/props/basic-date-table.ts
+           e.g. DateTableEmits -> DatePickerEmits @ element-plus/packages/components/date-picker-panel/src/props/basic-date-table.ts
+     28  uses: THE EDGE EXISTS, THE LABEL DIFFERS (references -> uses)
+           e.g. Module -> modules @ element-plus/internal/build/src/build-info.ts
+           e.g. BuildConfig -> buildConfig @ element-plus/internal/build/src/build-info.ts
+           e.g. BasicDateTableProps -> basicDateTableProps @ element-plus/packages/components/date-picker-panel/src/props/basic-date-table.ts
+           e.g. BasicDateTablePropsPublic -> basicDateTableProps @ element-plus/packages/components/date-picker-panel/src/props/basic-date-table.ts
+      7  uses: analyzer BINDING-SPELLED target (truth derives a bare name or nothing)
+           e.g. combineMarkdown -> combineMarkdown\0code @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+           e.g. getCssVarName -> getCssVarName\0namespace @ element-plus/docs/.vitepress/vitepress/utils/colors.ts
+           e.g. useCopyColor -> useCopyColor\0colorType @ element-plus/docs/.vitepress/vitepress/utils/colors.ts
+           e.g. set -> set\0prop @ element-plus/packages/components/color-picker-panel/src/utils/color.ts
+      7  references: THE EDGE EXISTS, THE LABEL DIFFERS (imports -> references)
+           e.g. DatePickerInstance -> DatePicker @ element-plus/packages/components/date-picker/src/instance.ts
+           e.g. NotificationInstance -> Notification @ element-plus/packages/components/notification/src/notification.ts
+           e.g. RateInstance -> Rate @ element-plus/packages/components/rate/src/rate.ts
+           e.g. selectV2Props -> OptionType @ element-plus/packages/components/select-v2/src/defaults.ts
+      7  references: target is NOT DECLARED ANYWHERE IN THE PROJECT (a global or builtin the analyzer does not publish a project reference to)
+           e.g. input -> HTMLElement @ element-plus/packages/components/focus-trap/__tests__/utils.test.ts
+           e.g. span -> HTMLElement @ element-plus/packages/components/focus-trap/__tests__/utils.test.ts
+           e.g. selectV2Props -> Record @ element-plus/packages/components/select-v2/src/defaults.ts
+           e.g. selectV2Emits -> FocusEvent @ element-plus/packages/components/select-v2/src/defaults.ts
+      4  references: THE EDGE EXISTS, THE LABEL DIFFERS (contains -> references)
+           e.g. SubMenu -> parent @ element-plus/packages/components/menu/src/utils/submenu.ts
+           e.g. SubMenu -> domNode @ element-plus/packages/components/menu/src/utils/submenu.ts
+           e.g. TransferProps -> renderContent @ element-plus/packages/components/transfer/src/transfer.ts
+           e.g. transferProps -> renderContent @ element-plus/packages/components/transfer/src/transfer.ts
+      3  uses: THE EDGE EXISTS, THE LABEL DIFFERS (contains -> uses)
+           e.g. SubMenu -> domNode @ element-plus/packages/components/menu/src/utils/submenu.ts
+           e.g. addListeners -> domNode @ element-plus/packages/components/menu/src/utils/submenu.ts
+           e.g. addListeners -> parent @ element-plus/packages/components/menu/src/utils/submenu.ts
+      2  references: THE EDGE EXISTS, THE LABEL DIFFERS (exports -> references)
+           e.g. buildConfigEntries -> BuildConfigEntries @ element-plus/internal/build/src/build-info.ts
+           e.g. selectV2Props -> TagTooltipProps @ element-plus/packages/components/select-v2/src/defaults.ts
+      2  uses: THE EDGE EXISTS, THE LABEL DIFFERS (exports -> uses)
+           e.g. buildConfigEntries -> BuildConfigEntries @ element-plus/internal/build/src/build-info.ts
+           e.g. selectV2Props -> TagTooltipProps @ element-plus/packages/components/select-v2/src/defaults.ts
+      1  uses: THE EDGE EXISTS, THE LABEL DIFFERS (imports -> uses)
+           e.g. transformComponentMarkdown -> footerLocale @ element-plus/docs/.vitepress/plugins/markdown-transform.ts
+      1  uses: target is NOT DECLARED ANYWHERE IN THE PROJECT (a global or builtin the analyzer does not publish a project reference to)
+           e.g. autoResizerProps -> AutoResizeHandler @ element-plus/packages/components/table-v2/src/auto-resizer.ts

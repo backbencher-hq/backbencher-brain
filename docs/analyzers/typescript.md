@@ -16,6 +16,57 @@
 - Language detection: extensions `.ts` / `.mts` / `.cts` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealTypeScriptAnalyzer`
 
+## STATE AT 2026-11-18 — THE LAST ROUND
+
+The owner's six conditions, each read from an instrument, at this revision (evidence beside each):
+
+| condition | reading | evidence |
+|---|---|---|
+| (A) implemented | **14 / 14 implemented**, 0 excluded, 0 block problems; the firing check's 4 SILENT types are COUNTED to whole-population measures (`implements` 275, `decorates` 2,119, `mixes_in` 2, `part_of` 49), not uncited | `coverage-block-gate.ts --json` typescript row: `unexplainedSilence` 4, `silenceCounted` 4, `silenceUncited` [], `notFired` false |
+| (B) whole-population | **17,350 / 17,350 admitted files parsed** over 41 repositories; **992,652 edges**; population digest `4bd7bba5441c5344`; declared in `incoming-declaration.json`, regenerated 2026-11-18 from the arm log whose sha256 is recorded in the declaration | `validation/m14/instruments/typescript/{incoming-declaration,corpus-manifest}.json`, arm log `validation/m14/measurements/typescript-arm-final-2026-11-18.log` |
+| (C) resolved closure | **closure EXACT**: resolved 458,125 + external 214,351 + ambiguous 83,489 + otherUnresolved 236,687 = 992,652, **unclassed 0**; the residual resolution classes are dispositioned by 6 causeRulings, each with a population, a run and a `wouldFail` | declaration `types`/`totals`/`causeRulings`; the arm's own clause-2/3 sections |
+| (D) walls dispositioned | **17,872 unowned member calls** on a 1,500-file stride: W0 6,762 (37.8%) · W1 7,183 (40.2%) · W2 **2 (0.0%)** · W3 3,925 (22.0%), plus 1,131 rows in five named sub-classes; each class ends RESOLVED / CLAIMED / INSTRUMENT GAP / RULED UNDECIDABLE with a falsifier (the falsifier's 27 candidate rows are sampled and diagnosed) | `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`; `validation/m14/measurements/typescript-wall-1500-final.log` |
+| (E) fixtures | **123 pass / 0 fail**; TSX probe fixtures 3, controls fired; **16/16** compiler-backed gates pass on `tsc` 5.9.3; **13/13 mutants caught** | `run-fixtures.ts --lang typescript`, `ts-fixture-probe.ts`, `validation/m14/verify-typescript-*.mts`, `ts-mutants-run.ts` |
+| (F) no-regex | **0 regex literals** by AST census across the analyzer + 11 lane scan targets; the fleet census (regenerated at HEAD) does not list this analyzer among its 8 remaining | `script/m14/ts-no-regex-count.ts` (0), `validation/m12/results/regex-census.json` |
+
+**The completion gate itself cannot print a lane verdict at this revision, and the reason is not this
+lane:** its positive control is the RUBY lane ("ruby should be DONE"), and ruby's own state fails it
+(three live regex literals `:1401/:1412/:3256`, plus a declaration the gate cannot partition) — so the
+gate exits 2 at its self-test before judging any lane. The TS conditions above are each the same check
+the gate would run, read from the gate's own JSON and the declaration. Restoring the gate's verdict
+needs ruby-lane work or a master change to the control's expected state; it is recorded here rather
+than papered over.
+
+### What changed in this last round (all with commits and measurements)
+
+1. **Invariants restored.** Release 0.1.4's four regex literals removed by character walks (HEAD
+   regex-free; census regenerated); the `part_of` grammar proof repaired to compare the PINNED STOCK
+   build against the build the resolver SERVES (8 conditions green, engine digest table checked);
+   fixtures 123/0; probe controls fired.
+2. **The measurement estate made reproducible.** `corpus-manifest.json` + `ts-corpus-manifest.ts`
+   record the default root (17,350/41, digest `4bd7bba5441c5344`) and the self-corpus (6,816 tracked
+   TS files) with every repository HEAD; the whole-population arm and the declaration were re-run and
+   the declaration's closure is exact. The old declaration was unreproducible (its `.corpus` farm is
+   gone, its arm log absent).
+3. **The owner/source channel completed.** Uses-side `metadata.owner`/`ownerEvidence` (0 → 366/5,955
+   on a 1,500-file stride; fixture `uses-owner-channel`); module-level sources are the `(file)`
+   sentinel + `metadata.fileLevel`/`scopeName` (400 NOT-AN-IDENTIFIER endpoints → 0, 0 empty);
+   named-function-expression actors (395 rows on gql-graphql-mesh/400); the claim-pass order ruled by
+   measurement (binding claims first: `bindingVerified` delta between indexed/unindexed arms 0,
+   10,019-row displacement removed).
+4. **Delivery fixed.** The shared noise filter no longer deletes written-site rows: element-plus
+   analyzer→production loss calls 613 → 121 (test hooks — intended), imports 101 → 0, uses 3 → 0;
+   all 50 lane fixture suites pass.
+5. **All 14 kinds audited.** `mixes_in` (2 edges) and `part_of` (49 edges from 50 directive sites,
+   one repeated triple) are measured on the whole population by `ts-mixin-sites.ts`; the stock
+   grammar's absence of both constructs and the `part_of` remedy's proof are in
+   `ts-mixin-part-ruling.ts`; the differential compares the other 12, and the residue is fully
+   adjudicated (`TYPESCRIPT-M12-ADJUDICATION.md`: all 65 FP / 6 FN classified, 0 unexplained;
+   88.1% of the live residue is the uses/references boundary ruling).
+6. **Docs told the truth.** This page, the spec (`label_coverage` gaps closed; `_implemented_measured`
+   refreshed from the 2026-11-18 arm; `D11` ruled; six cause texts corrected), the lane notes, and
+   the D7/M12 verification pages were rewritten to what the instruments read.
+
 ## Current receiver-resolution checks
 
 Array-element and explicit generic-argument evidence follows the declaring
@@ -29,8 +80,16 @@ calls. This marker does not claim complete flow-sensitive inference.
 `validation/m14/verify-typescript-receiver-scopes.mts` compares 20 source/site/
 destination tuples with the installed TypeScript compiler, then checks stored
 endpoints and bb_graph callers. Inferred generic constructor arguments remain
-explicitly outside the supported syntax evidence. Factory return maps, class
-field identity, and the broader `uses` oracle are still under review.
+explicitly outside the supported syntax evidence. **Factory return maps, class
+field identity and the `uses` oracle are no longer "under review" (2026-11-17):**
+the factory/field classes are covered by the compiler-backed gates
+(`factory-bindings`, `field-bindings`, `field-writes`, `inherited-fields`,
+`receiver-writes`), and the `uses` half of the owner channel is emitted — a
+member READ now carries `metadata.owner`/`ownerEvidence` from the same per-file
+receiver facts as a member CALL, and an untyped receiver's read carries
+`typescriptUnresolvedReceiver` so the store withdraws the name binding. What
+remains is the population-level wall (receivers the syntax cannot type), which is
+measured in `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`.
 
 ## Symbol contract
 
@@ -59,70 +118,86 @@ measurement and is cited as such.
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ yes | `call_expression` → the callee's LEAF name by `calleeLeafName()` (identifier; member → property; private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member publish NO edge); source = the enclosing function/method leaf; builtins filtered (console output, Object leaf methods, `super`). A member call whose receiver type the SYNTAX proves carries `metadata.owner` = that class plus `metadata.ownerEvidence` naming which form stated it (`assignment`, `annotation`, `param`, `this`, and the D7 classes `destructured`, `element`, `generic`, `factory`, `cast`, `enum`, `class-static`) — the STORE channel `src/ast/member-owner-resolution.ts` binds the member inside THAT class instead of by bare name. Conflicts within a lexical binding suppress its receiver type; sibling bindings retain separate facts | 0.9 |
+| calls | ✅ yes | `call_expression` → the callee's LEAF name by `calleeLeafName()` (identifier; member → property; private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member publish NO edge); source = the enclosing function/method leaf (a call with no enclosing declaration is sourced to the file-level sentinel `(file)`, fixed 2026-11-17); builtins filtered (console output, Object leaf methods, `super`). A member call whose receiver type the SYNTAX proves carries `metadata.owner` = that class plus `metadata.ownerEvidence` naming which form stated it (`assignment`, `annotation`, `param`, `this`, and the D7 classes `destructured`, `element`, `generic`, `factory`, `cast`, `enum`, `class-static`) — the STORE channel `src/ast/member-owner-resolution.ts` binds the member inside THAT class instead of by bare name. Conflicts within a lexical binding suppress its receiver type; sibling bindings retain separate facts | 0.9 |
 | extends | ✅ yes | `class_heritage` → `extends_clause` → the base name (a qualified base stays qualified; a missing type from error recovery is skipped rather than emitted as `""`). **A CALL-SHAPED heritage is a mixin application: its base name is the CALLEE** (`class Post extends Tagged(Timestamped)` → `Tagged`), so an `extends` edge never names a call expression, measured on the fixture `typescript/mixin-application` whose negative half forbids a target ending in `(` | 1.0 |
 | implements | ✅ yes | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
-| uses | ✅ yes | Four syntactic arms, each labelled in metadata: a declared-type reference (`declaredTypeRole`), a type reference (`isTypeReference`), a template interpolation (`isTemplateInterpolation`), a value/member read in expression position (`isFieldAccess`). The duplicate-`references` arbitration is the `references` row's business | 0.85–0.9 |
+| uses | ✅ yes | Four syntactic arms, each labelled in metadata: a declared-type reference (`declaredTypeRole`), a type reference (`isTypeReference`), a template interpolation (`isTemplateInterpolation`), a value/member read in expression position (`isFieldAccess`). A member read of this kind carries `metadata.owner`/`ownerEvidence` from the SAME per-file receiver facts as a member call (2026-11-17), and an untyped receiver's read carries `typescriptUnresolvedReceiver`. The duplicate-`references` arbitration is the `references` row's business | 0.85–0.9 |
 | imports | ✅ yes | `import_statement` specifiers, `require` calls, side-effect imports and re-exports → `metadata.module` carries the specifier, `metadata.isRequire` / `isSideEffectImport` / `isTypeOnly` / `isReExport` / `localBinding` name the form. **Payload channel too: `ImportInfo[]` is published on the file's import-site** | 1.0 |
-| exports | ✅ yes | `export` statements → source = the module leaf, target = the exported name; `metadata.isDefault` and `metadata.kind` name the form. **Payload channel too: `ExportInfo[]` is published on the export-site** | 1.0 |
+| exports | ✅ yes | `export` statements → source = the file-level sentinel `(file)` with `metadata.fileLevel: true` + `metadata.scopeName` (the leaf is DATA now, not a symbol endpoint — fixed 2026-11-17), target = the exported name; `metadata.isDefault` and `metadata.kind` name the form. **Payload channel too: `ExportInfo[]` is published on the export-site** | 1.0 |
 | contains | ✅ yes | owner → member computed from `ownerName` on the symbol list in one pass (namespace/class/interface/enum/type-alias → member); `firstByName` makes repeated names first-wins, which is the contract and not an accident; the edge takes the MEMBER's declaration line | 1.0 |
 | references | ✅ yes | Identifier references in expression position (0.8), and type-position mentions that carry `metadata.relationshipType` naming the position — `declared_type`, `return_type`, `type_alias`, `cast_target`, `type_argument`, `satisfies_target` (0.95); `type_parameter_constraint` and `type_predicate_target` are the two positions that keep both surfaces | 0.8 / 0.95 |
-| overrides | ✅ yes | A member of a derived class whose name matches a base-class member, and a member that matches a base-INTERFACE member → `Derived.member → Base.member`. **It ABSTAINS unless the base declaration resolves IN FILE** (`if (!baseDecl) continue`), so the edge is derived from in-file structural truth | 0.95 (⇒ `evidenceClass: usage_contextual`; see limitation 2) |
+| overrides | ✅ yes | A member of a derived class whose name matches a base-class member, and a member that matches a base-INTERFACE member → `Derived.member → Base.member`. **It ABSTAINS unless the base declaration resolves IN FILE** (`if (!baseDecl) continue`), so the edge is derived from in-file structural truth | 0.95 · `evidenceClass: structural` (unconditionally, since 2026-11-17 — the arm abstains unless the base resolves in-file, so the old `usage_contextual` label applied a confidence axis to a structural fact; pinned by `class-extends-overrides`) |
 | instantiates | ✅ yes | `new_expression` → the constructor's LEAF name (generics stripped, `ns.Thing` reduced to `Thing`, JS global constructors filtered because they construct the RUNTIME); the site line is the constructor's own node. **A JSX element that CREATES a component instance is also an `instantiates` row** (`metadata.isJsxComponent`, `metadata.jsxTag`) beside its `renders` row — the two facts are kept distinct | 1.0 (JSX-creation site 0.95) |
 | decorates | ✅ yes | Since 2026-10-18 (was a `references{isDecorator}` row): source = the DECORATED declaration (class/method/field), target = the decorator's name leaf (`@module.Decorator` → `Decorator`), `line_number` = the decorator's OWN line, one row per decorator per decorated symbol; a decorator's ARGUMENT is not a row, and the call/reference walks skip decorator position so no duplicate is left behind; `metadata.isDecorator` + `metadata.decoratorLine` | 1.0 |
 | renders | ✅ yes | A JSX element whose OPENING name is CAPITALIZED — the language's own component convention — one row per ELEMENT (`<Foo>…</Foo>` and `<Foo/>` are one row each: the opening node is read for the name but never matched as its own node), source = the enclosing declaration, target = the written tag, and `Foo.Bar` from a `nested_identifier` tag. What does NOT fire, each for its own reason: a lowercase intrinsic tag (`<div>`) is an HTML element, a fragment (`<>…</>`) has no identifier, and `React.createElement(Foo, …)` is a CALL, so it stays a `calls` row. Metadata `jsxElement` is the pre-relabel key, kept so an older consumer is not forced to learn a second spelling | 0.9 |
 | mixes_in | ✅ yes | A class heritage whose extends-expression is a `call_expression` — `class X extends Mixin(Base) {}` — i.e. a mixin APPLICATION as opposed to inheritance. The discriminator is the SHAPE of the heritage expression, not the base's name; the target is the CALLEE, because that is the factory a reader follows. Metadata `mixinCalleeShape` and `mixinArgCount`. Measured on the population: **2 edges, both resolved** (`vault/ui`'s `class X extends baseResourceFactory<Mount>()`); the lane's first text census counted 0 and was wrong — it required `Name(` and missed a GENERIC callee | 0.9 |
 | part_of | ✅ yes | The triple-slash reference directive — `/// <reference path="…" />`, `types="…"`, `lib="…"` — published from the grammar's `reference_directive` NODE, never from a comment's text. The site reads the node's role and target as fields when the build exposes them and otherwise unwraps the node's own fixed spelling by a character walk (the pinned build exposes it as ONE ATOMIC TOKEN). `metadata.partRole` is MANDATORY on every row: a `part_of` edge that does not say WHICH kind of part it is cannot be checked against the directive that produced it. Measured on the population: **50 directives in 34 files (types 47 · path 2 · lib 1) → 50 edges, 0 resolved, 12 ambiguous, 38 unresolved** — a directive's target is a package or lib name, so a per-file scope cannot resolve it, and those 38 edges exist only because this analyzer publishes them | 0.95 |
 
-### Sweep measurements
+### Sweep measurements (re-measured 2026-11-18)
 
-- **Ten of ten EMITTED** at the time of that sweep (the register later admitted `renders`, `mixes_in`
-  and `part_of`, so the committed spec now reads **14 of 14 implemented** — 0 pending, 0
-  corpus-unexercised, 0 excluded); none RULED, none GAP — per-type counts and file counts
-  over two derived populations (vuejs 400 files, element-plus 400 files).
-- **`firing-check-v2` = 8/10** at NFILES 200 and 400 on element-plus; **7/10** at
-  NFILES 25. The two silent types (`implements`, `overrides`) are silent because
-  that corpus contains 0 of both constructs, which is measured, not assumed.
-- **DERIVATION: this lane emits 8 audited types and 2 unaudited** — `exports`
-  and `imports`. Measured by evaluating `differential.ts`'s own compared-label
-  filter. Both were audited against the differential's own truth builders:
-  `exports` 357/357 covered, `imports` 1125/1125 covered, **0 unexplained** each
-  on element-plus @200 files. What is still missing is the WIRING: adding both
-  labels to the compared-label allowlist in `script/m14/differential.ts` is
-  master-owned and is reported as a need, not made here.
-- **R7: 0 `unknown` endpoints, 0 empty endpoint names, 0 edges below confidence
-  0.7** across both populations.
-- **Two open defects, both measured, neither fixed here** — see
-  [Known limitations of the edges this analyzer emits](#known-limitations-of-the-edges-this-analyzer-emits).
+- **14 of 14 EMITTED, and all 14 are now audited end-to-end.** `renders`, `mixes_in` and `part_of`
+  were added to the register after the "ten of ten" sweep; the committed spec reads
+  **14 of 14 implemented**, 0 pending, 0 excluded. Each kind has: an emission witness (fixture),
+  a whole-population count or a grammar ruling (below), and a differential oracle OR a
+  lane-owned audit. `imports` and `exports` were the two "DERIVATION-debt" labels in the previous
+  version of this page — the differential wired both on 2026-10-18; the fresh scoped differential
+  run (2026-11-18) reports them compared (`vue-core` 60 files: tree-truth 4,936, covered 96.0%,
+  analyzer 4,026, unexplained 221 (5.5%); `element-plus` 60 files: truth 1,566, covered 96.2%,
+  analyzer 1,496, unexplained 76 (5.1%)). The residue is adjudicated in
+  `validation/m14/verification/TYPESCRIPT-M12-ADJUDICATION.md`: **100% of unexplained/MISSING rows
+  attributed, buckets close exactly, 88.1% of the residue is the uses/references boundary ruling.**
+- **`firing-check` (the master instrument, TS corpus entry fixed 2026-11-18) on the lane's primary
+  corpus `vue-core`, 120 files: `TYPESCRIPT 10 types fired`** — calls 13,135 · contains 597 ·
+  exports 373 · extends 19 · imports 1,476 · instantiates 81 · overrides 4 · references 2,001 ·
+  renders 83 · uses 814 — with `SILENT: implements decorates mixes_in part_of` on THAT 120-file
+  sample. Each silence is accounted for: `implements` and `decorates` are corpus-unexercised on the
+  sample but fixture- and population-measured (whole-population counts 275 and 2,119 on the
+  recorded farm; the regenerated default-root arm prints them in its TABLE 1), `mixes_in` is
+  corpus-unexercised by MEASUREMENT (the construct census `script/m14/ts-mixin-sites.ts` counts
+  call-shaped heritage sites and its earlier whole-population run found 0), and `part_of` is
+  corpus-dependent by construction (a directive is rare; the grammar proof and the directive
+  census are the witnesses).
+- **R7 endpoint shape, after the fileLevel migration**: 0 empty endpoints, **0
+  NOT-AN-IDENTIFIER endpoints**, 640 binding-key targets and 362 compound import targets classified
+  as claim keys, 138 `calls` placeholder targets (`fn`/`default` — calls to locally bound
+  function-typed values; a policy class, recorded not hidden).
+- **The receiver channel**, measured: `metadata.owner` now lands on BOTH halves (calls since D7,
+  uses since 2026-11-17). Whole-population owner count comes from the regenerated arm
+  (`validation/m14/measurements/typescript-arm-final-2026-11-18.log`); the wall partition (W0 no
+  nameable root / W1 file binds but no stated type / W2 project declares / W3 declares nowhere) and
+  its falsifier are in the D7 ledger page.
+- **Compile-backed verification**: 16 `verify-typescript-*.mts` gates pass (52 sites / 25 runtime
+  scenarios on container writes alone, `tsc` 5.9.3), plus the four alias-gate typechecks; 123
+  TypeScript fixtures pass / 0 fail; the TSX probe covers 3 fixtures with controls fired
+  (`tsx-renders` 12/12, `decorator-emission` 7/7, `renders-imported-binding` 3/3).
 
 ## Known limitations of the edges this analyzer emits
 
-Two, both with numbers, both deliberately left unfixed because each crosses a
-file this lane does not own:
+**The two limitations this section used to carry are RESOLVED, and the resolutions are measured.**
+Both had been recorded as "deliberately left unfixed because each crosses a file this lane does not
+own"; that is no longer true of either.
 
-1. **A module-level edge source is a file basename, which is not always an
-   identifier.** `imports`, `exports` and `calls` fall back to `moduleLeafName()`
-   (`path.basename(filePath, extname)`, `:5764`) when an emission site has no
-   enclosing declaration. For `docs/.vitepress/build/crowdin-credentials.ts` that
-   is `crowdin-credentials`, and a `-` cannot appear in a TypeScript identifier,
-   so no declaration anywhere can carry that name. Measured on element-plus,
-   400 files, 22,631 edges: **400 endpoints are not valid identifiers, 321 of
-   them sources** (`imports`/source 210, `exports`/source 59, `calls`/source
-   52), across 89 distinct values in 69 files. Over the 8 files probed by name,
-   0 of 8 basenames is identifier-shaped and 0 of 8 is a published symbol, and
-   97 of 288 edges have an unresolvable source.
-   The edges themselves are true — that module does import that — so they are
-   unattachable rather than fabricated, and the distinction matters for
-   `bb_impact`. This is the JS/TS **family contract**, not a slip:
-   `real-javascript-analyzer.ts:354` does the identical thing, and the comment
-   at `:4491` records the choice as a deliberate earlier fix ("never a `(script)`
-   placeholder no consumer can resolve — JS parity: moduleName"). Repairing it
-   inside one lane would desynchronise the two analyzers.
-2. **`overrides` reports the wrong `evidenceClass`.** It emits
-   `usage_contextual` at 0.95 while every other structurally-derived type on this
-   lane reports `structural`. Its arms abstain unless the base declaration
-   resolves in-file (`if (!baseDecl) continue`, `:7564` and `:7676`), so the edge
-   is derived from in-file structural truth and not from a contextual mention.
+1. **A module-level edge source is a file basename — FIXED 2026-11-17.** All module-level sources
+   (`imports`, `exports`, the module-level `calls` fallback, and the `part_of` rows of reference
+   directives) now publish the family's file-level sentinel `(file)` and carry
+   `metadata.fileLevel: true` + `metadata.scopeName` (the leaf is preserved as data, not as a
+   symbol endpoint). The store's `parallel-indexer.ts:5295` branch records the file's
+   project-relative path as `source_external` — the mechanism nine other analyzers already use.
+   Measured with `script/m14/ts-r7-endpoint-probe.ts` on element-plus@1b45ace0, 400 files / 23,241
+   edges: **400 NOT-AN-IDENTIFIER endpoints (261 sources, 373 once the pre-fix classifier counted
+   every basename) → 0**, with 400 FILE-LEVEL sources, 0 fileLevel contract violations, and 0 empty
+   endpoints. The 640 `<scope>\u0000<binding>` targets and 362 compound `imports` targets the probe
+   reports are CLAIM KEYS by contract, not names — the probe now says so itself.
+2. **`overrides` reported the wrong `evidenceClass` — FIXED 2026-11-17.** It emitted
+   `usage_contextual` at 0.95 although its arms abstain unless the base declaration resolves in
+   file (`if (!baseDecl) continue`), i.e. the row is read off two declarations. The classifier now
+   publishes `structural` unconditionally (confidence unchanged, a separate axis), and the fixture
+   `typescript/class-extends-overrides` pins `meta.evidenceClass: structural` on two rows.
+
+What remains is not a limitation of an EMITTED edge but of the RECEIVER CHANNEL, and it is
+dispositioned with a count and a falsifier in `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`:
+the syntactic evidence classes cannot type every receiver, and the wall's partition is measured
+rather than named.
 
 ### Labels with no edge of their own
 
@@ -184,25 +259,41 @@ kept here so a reader who greps for them finds the answer rather than a missing 
 
 ## Regex inventory
 
-**0 regex literals**, and the claim is now true rather than aspirational for the third time — each
-time because a measurement disagreed with the page. From `validation/m12/results/regex-census.json`:
-baseline **36** (the single largest regex user in the codebase), eliminated by the M12.09 regex-free
-rewrite, completed for five stragglers on 2026-09-27 (three copies of a type-parameter constraint
-strip, a rest-parameter `...` strip, an index-signature `:` strip). **Three more survived that sweep
-and were removed on 2026-11-03, all in the `part_of` path**: the file-stem suffix strip
-(`/\.[^.]*$/`), the reference-directive unwrap (a text match on the directive's source — replaced by
-a character walk over the grammar node's own fixed spelling), and the quote trim (`/^"|"$/g`). Both
-`npx tsx script/m12/regex-census.ts --head` and `script/m14/no-regex-gate.sh` read **0 for this
-analyzer at HEAD**, and the rewrite was verified behaviour-preserving on the population: 50 `part_of`
-edges across 34 files, split `path 2 · types 47 · lib 1`, identical to the pre-rewrite count. All text normalization uses pure-String helpers
-(`startsWith`/`endsWith` + `slice`): `stripLeading`, `stripLeadingColon`,
-`stripLeadingEquals`, `stripTrailingDot`, `stripTrailingQuestion`,
-`stripPrivatePrefix`, `stripPrefix`, `stripLeadingKeyword`, `unquote`,
-`stringContent`, `stripCommentMarkers`, `hasBraceEquals`, `stripWhitespace`.
-`WHITESPACE_CHARS` spells out the set JS `\s` matches so `stripLeadingKeyword`
-stays provably identical to the regex it replaced (an ASCII-only test diverges
-on U+00A0), and the three copies of the generic-parameter extractor are now one
-module-level `extractTypeParametersOf`.
+**0 regex literals at HEAD (2026-11-18), and the claim has now been wrong FOUR times — every time
+because a measurement disagreed with the page, which is the only reason to keep the instrument.**
+
+The history, in the order it happened:
+1. baseline **36** literals (the single largest regex user in the codebase), eliminated by the
+   M12.09 regex-free rewrite; five stragglers removed 2026-09-27;
+2. three more survived and were removed 2026-11-03, all in the `part_of` path (file-stem suffix
+   strip, reference-directive unwrap, quote trim);
+3. **Release 0.1.4 (commit `f5325a909`, 2026-11-14) reintroduced FOUR** — `isArrayIndex`
+   (`/^(0|[1-9]\d*)$/`), `literalKey`'s number test (`/^\d+$/`), and TWO copies of the string-literal
+   test (`/^(['"])([^\\\r\n]*)\1$/`) in the container/loop alias work — while this page still said
+   "0, and the claim is now true"; the lane's own `ts-no-regex-count.ts` and the fleet
+   `no-regex-gate.sh` both exited 1, and the whole-population declaration's own
+   `no-regex-resolution` ruling was FALSIFIED by its stated falsifier. That is the fleet's
+   recurring shape: a page claiming a fact about code that the code does not bear out;
+4. **removed 2026-11-17** — `isAsciiDigits`, `isArrayIndexKey` and `literalStringContent` are
+   module-level character walks with the regexes' exact semantics preserved (JS `\d` is `[0-9]`,
+   not the Unicode digit class; the string rule deliberately still admits an unescaped inner quote
+   because the character class excluded only backslash/CR/LF). Behaviour is pinned by the
+   compiler-backed container-writes gate (52 sites / 25 runtime scenarios PASS on `tsc` 5.9.3) and
+   the iterated-aliases gate — the container gate CAUGHT an intermediate off-by-one in the
+   single-digit index branch, which is exactly the kind of regression a count alone would not.
+
+Current readings, both run at this revision: `bun run script/m14/ts-no-regex-count.ts` → **0
+patterns across its 12 scan targets**; `validation/m12/results/regex-census.json` was regenerated
+with `npx tsx script/m12/regex-census.ts --head` after the fix and `real-typescript-analyzer.ts` is
+absent from its nonzero rows (the fleet's remaining 8 are php 3, ruby 3, powershell 1, swift 1).
+All text normalization in this analyzer uses pure-String helpers (`startsWith`/`endsWith` +
+`slice`): `stripLeading`, `stripLeadingColon`, `stripLeadingEquals`, `stripTrailingDot`,
+`stripTrailingQuestion`, `stripPrivatePrefix`, `stripPrefix`, `stripLeadingKeyword`, `unquote`,
+`stringContent`, `stripCommentMarkers`, `hasBraceEquals`, `stripWhitespace`, `isAsciiDigits`,
+`isArrayIndexKey`, `literalStringContent`. `WHITESPACE_CHARS` spells out the set JS `\s` matches so
+`stripLeadingKeyword` stays provably identical to the regex it replaced (an ASCII-only test diverges
+on U+00A0), and the three copies of the generic-parameter extractor are one module-level
+`extractTypeParametersOf`.
 
 ## Complexity envelope
 
@@ -287,13 +378,23 @@ file. Neither is measured by a gate, because M60 still records this analyzer as
 
 ## Differential ground truth
 
-- Ground truth: `validation/m12/ground-truth/typescript.json`
-  (authority: `manual_audit` — every fact verified against fixture source and
-  the C#/Java/F# family contract; 171 facts)
-- Result: `validation/m12/results/typescript-differential.json`
-- Precision 1.000 / recall 1.000 / FP 0 / FN 0 / unknown 0, `passed: true`,
-  `earliestFailingLayer: none`, `parseErrors: 0`
-
+- Ground truth: `validation/m12/ground-truth/typescript.json` (authority: `manual_audit` of the
+  **pre-2026-10 contract**; 171 facts)
+- Result: `validation/m12/results/typescript-differential.json` — **`passed: false`**:
+  171 expected / 230 observed, TP 165 / FP 65 / FN 6, precision 0.717, recall 0.965,
+  `earliestFailingLayer: ast_extraction`
+- **This is contract drift, not an unexplained defect, and the previous version of this page was
+  wrong to claim "Precision 1.000 / recall 1.000 / FP 0 / FN 0, passed: true".** The artifact is
+  master-owned (the canonical sweep writes it; a lane-scoped run refuses to overwrite it), so the
+  lane's answer is a complete adjudication: `validation/m14/verification/TYPESCRIPT-M12-ADJUDICATION.md`
+  classifies ALL 65 FP and 6 FN into named causes with counts and examples (uses/references
+  boundary 22, builtin/global type mentions 10, declared-type mentions 9, binding-spelled claims 8,
+  namespace exports 5, interface-member overrides 4, imports spelling 3+3, line convention 2+2,
+  decorates/implements 2, builtin `Map` instantiation 1) — **zero unclassified** — and the FRESH
+  scoped differential at HEAD (`--lang typescript --sample 60`) reports 96.0% (vue-core) and 96.2%
+  (element-plus) truth coverage with 5.5% / 5.1% unexplained, of which 88.1% is the one
+  uses/references boundary ruling. The canonical artifact must be regenerated by the master sweep;
+  nothing in this lane pretends otherwise.
 ## Corpus validation
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `typescript@b465fdbf`
@@ -317,13 +418,31 @@ file. Neither is measured by a gate, because M60 still records this analyzer as
 
 ## Evidence pointers
 
-- Fixtures: `validation/m12/fixtures/typescript/`
-- Ground truth: `validation/m12/ground-truth/typescript.json`
-- Differential: `validation/m12/results/typescript-differential.json`
+- Fixtures: `validation/m14/fixtures/typescript/` (123 pass / 0 fail; TSX probe 3 fixtures,
+  controls fired)
+- Ground truth / differential: `validation/m12/ground-truth/typescript.json`,
+  `validation/m12/results/typescript-differential.json`, adjudication in
+  `validation/m14/verification/TYPESCRIPT-M12-ADJUDICATION.md`, fresh scoped run in
+  `validation/m14/measurements/typescript-differential-final.log` and
+  `...typescript-differential-classify-final.log`
+- Whole-population: `validation/m14/instruments/typescript/incoming-declaration.json` (regenerated
+  2026-11-18 from `validation/m14/measurements/typescript-arm-final-2026-11-18.log`),
+  corpus identity in `validation/m14/instruments/typescript/corpus-manifest.json`
+  (default root, 17,350 admitted files across 41 repos, digest 4bd7bba5441c5344; self-corpus 6,816
+  tracked `.ts`-family files)
+- Receiver channel / D7 wall: `validation/m14/verification/TYPESCRIPT-D7-WALLS-PROD.md`
+- Claim-pass order ruling: `validation/m14/measurements/typescript-claim-class-probe*.log`
+  (pre-reorder: 10,019 displaced rows, 10,015 would be bindingVerified; post-reorder: 0 bindingVerified
+  delta between arms, residual 238)
+- Production-delivery loss: `script/m14/ts-production-drop-probe.ts` (element-plus: calls 613 → 121
+  — the 121 are test-lifecycle calls, the filter's intended drop; imports 101 → 0; uses 3 → 0)
+- Grammar proof: `script/m14/ts-partof-grammar-proof.ts` (8 conditions GREEN; stock `8515404d…`
+  vs served `b75fa34c…`, pin table and patched-copy identity checked)
+- Regex: `validation/m12/results/regex-census.json` (typescript 0) and
+  `bun run script/m14/ts-no-regex-count.ts` (0 across 12 lane targets)
 - Complexity: `validation/m12/results/typescript-complexity.json`
-- Corpus sample: `validation/m12/results/typescript-corpus-sample.txt`
-- Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer)
-- Docs: this file
+- This file, plus `docs/analyzers/typescript-ambiguity-sweep.md`,
+  `docs/analyzers/history/typescript-lane-notes.md`
 
 ## Issue
 

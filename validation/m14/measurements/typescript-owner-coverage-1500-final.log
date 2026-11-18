@@ -1,0 +1,34 @@
+[INFO] [23:08:26] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:08:26] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [23:08:26] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:10:25] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [23:11:42] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+TS OWNER-COVERAGE — the STORE's receiver channel (metadata.owner), counted by evidence class
+population: 1500 parsed of 13830 admitted file(s) across 39 repo(s) · stride 9 · over size cap 1 · absent 0 · parse failures 0
+extensions: ts   (source: script/m14/incoming-gate.ts (no LANES_A declaration — the historical list is used, and this says so))
+SAMPLE, NOT POPULATION: 1500 of 13830 files. A stride truncates each project's file set, so per-repo shares are less stable than the whole-repo arm.
+
+calls edges                      47251
+  of which member calls          23978   (callee contains a dot — the class the 54.1% wall was measured on)
+  carrying metadata.owner        3099   (6.6% of all calls · 12.9% of member calls)
+    ownerEvidence=assignment     1698   (54.8% of owner-carrying)
+    ownerEvidence=annotation      410   (13.2% of owner-carrying)
+    ownerEvidence=param           518   (16.7% of owner-carrying)
+    ownerEvidence=this            347   (11.2% of owner-carrying)
+    ownerEvidence=destructured      0   (0.0% of owner-carrying)
+    ownerEvidence=element           4   (0.1% of owner-carrying)
+    ownerEvidence=generic           0   (0.0% of owner-carrying)
+    ownerEvidence=factory          26   (0.8% of owner-carrying)
+    ownerEvidence=cast             96   (3.1% of owner-carrying)
+    ownerEvidence=enum              0   (0.0% of owner-carrying)
+    ownerEvidence=class-static      0   (0.0% of owner-carrying)
+uses edges                       5955   · with metadata.owner 366 (the uses half of the channel; emitted since the 2026-11-17 JS-twin parity fix, measured at 33 of 808 on the 200-file stride — this line was "not emitted by this lane yet" before that commit)
+
+PER-EVIDENCE RESOLUTION (production owner rule over this run's pools; declined = falls back to the name model):
+    annotation   carried    410 · resolved      1 (0.2%) · declined    409   [ownerAbsent 406 · noMember 3]
+    assignment   carried   1698 · resolved     43 (2.5%) · declined   1655   [ownerAbsent 1655]
+    cast         carried     96 · resolved      0 (0.0%) · declined     96   [ownerAbsent 91 · noMember 5]
+    element      carried      4 · resolved      0 (0.0%) · declined      4   [ownerAbsent 4]
+    factory      carried     26 · resolved      3 (11.5%) · declined     23   [ownerAbsent 21 · noMember 2]
+    param        carried    518 · resolved     66 (12.7%) · declined    452   [ownerAbsent 425 · noMember 27]
+    this         carried    347 · resolved     32 (9.2%) · declined    315   [ownerAbsent 300 · noMember 15]

@@ -45,27 +45,7 @@ const MAX_BYTES = Number(argOf("--max-bytes") ?? String(1024 * 1024))
 
 const ALL_TYPES = ["calls", "contains", "exports", "extends", "implements", "imports", "instantiates", "overrides", "references", "uses"] as const
 
-/** A TypeScript name: an identifier, a dotted path, a `#private`, or — because
- *  two labels spell a compound endpoint — `A.b`. Anything containing whitespace,
- *  brackets, angle brackets, a question mark, a colon-space or a bare `(` is not
- *  a name any TypeScript declaration can carry. */
-function nameShapeOk(s: string): boolean {
-  if (!s) return false
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i]
-    const ok = (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") ||
-      c === "_" || c === "$" || c === "#" || c === "."
-    if (!ok) return false
-  }
-  return true
-}
-
-/** Syntactically fine, semantically a stand-in. Case-folded. */
-const PLACEHOLDER_LITERALS = new Set([
-  "unknown", "unknown_symbol", "unknownsymbol", "<unknown>", "todo", "tbd", "n/a", "na",
-  "none", "anonymous", "<anonymous>", "anonymousfunction", "placeholder", "xxx", "<lambda>",
-  "lambda", "func", "fn", "emptyname", "noname", "unnamed", "notset", "unset", "default",
-])
+import { nameShapeOk, PLACEHOLDER_LITERALS } from "./ts-endpoint-shape"
 
 type Row = { label: string; end: "source" | "target"; value: string; file: string }
 const notIdent: Row[] = []

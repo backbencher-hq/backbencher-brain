@@ -142,7 +142,11 @@ const declaration = {
     armLog: logPath.replace(`${REPO}/`, ""),
     armLogSha256: logSha,
     instrument: "script/m14/incoming-gate.ts (the shared arm) over the population rule in script/m14/ts-corpus.ts",
-    command: `BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ${exts} 0 --index`,
+    // 2026-11-18: the .corpus FARM this string named no longer exists (it is the javascript lane's
+    // clone set now), and a command naming a population that is gone is the exact defect the corpus
+    // manifest closes. The root is the recorded default root; its identity is
+    // validation/m14/instruments/typescript/corpus-manifest.json.
+    command: `BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/incoming-gate.ts typescript ${exts} 0 --index`,
     // ⇒ THE SERVED DIGEST IS MEASURED FROM THE RESOLVER AND SUPPLIED BY THE CALLER. It has NO default,
     // because a default would be an assertion and this lane has published a wrong served digest twice.
     // Measure it with: getParser("typescript"), read the logged `wasmPath`, sha256 THAT file.
@@ -181,37 +185,37 @@ Object.assign(declaration.causeRulings, {
   "directory-level-ambiguity": wall(
     "directory-level-ambiguity — two files in one directory declaring the same name",
     "MEASURED by the arm: `collRes` is the share of `resolved` where the target had more than one declaration and production's tie-break chose one. It is reported beside `resolved` and never folded into it.",
-    "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index",
+    "BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/incoming-gate.ts typescript ts,tsx,mts,cts 0 --index",
     "a run whose collRes is 0 with a non-zero resolved count, on a corpus that demonstrably contains same-name declarations in one directory — that would mean the tie-break was never exercised and `resolved` is over-counted",
   ),
   "declaration-merging": wall(
     "declaration-merging — `interface X extends Y` merging a mixin's members onto a class",
-    "1,107 interface declaration-merging clauses over the admitted population, counted by script/m14/ts-mixin-sites.ts. They publish as `extends`, which is what they are; the near miss is that they compose MEMBERS, and `mixes_in` is reserved for the call-shaped application (0 sites).",
-    "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/ts-mixin-sites.ts --all",
+    "the construct census (script/m14/ts-mixin-sites.ts, whole admitted population 17,350 files / 41 repos) counts 2,421 class heritage clauses and 3,267 extends clauses, of which 2 are CALL-SHAPED (the mixin application). They publish as `extends`, which is what the plain ones are; the near miss is that they compose MEMBERS, and `mixes_in` is reserved for the call-shaped application — measured 2 sites and the analyzer publishes 2 `mixes_in` edges (this replaces an earlier census that read 0 because it required `Name(` and missed a generic callee).",
+    "BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/ts-mixin-sites.ts",
     "the census printing interface-merging clauses under a label other than `extends`, or a `mixes_in` row whose heritage expression is a plain name rather than a call",
   ),
   "mixin-shape": wall(
     "mixin-shape — `class X extends Mixin(Base) {}`",
-    "0 call-shaped heritage clauses over 17,689 files (2,186 class heritage clauses, 0 bases named `*mixin*`). The type is IMPLEMENTED and corpus-unexercised; the fixture proves the edge fires when the shape is present.",
-    "BB_CORPUS_ROOT=$PWD/.corpus bun run script/m14/ts-mixin-sites.ts --all",
+    "2 call-shaped heritage clauses over 17,350 files / 41 repos (2,421 class heritage clauses, 0 bases named `*mixin*`). The type is IMPLEMENTED and corpus-EXERCISED: the census counts 2 sites and the analyzer publishes 2 `mixes_in` edges (arm TABLE 1, both resolved); the fixture also proves the edge fires on the minimal shape.",
+    "BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/ts-mixin-sites.ts",
     "the census printing ≥ 1 call-shaped heritage site, which would make the corpus-unexercised property FALSE (the implementation itself is unaffected)",
   ),
   "reference-directive": wall(
     "reference-directive — `/// <reference path|types|lib=\"…\" />`",
-    "51 directives in 35 files of 17,689 (path 2 · types 48 · lib 1). The served grammar lexes them as comments, so this lane PATCHED the grammar (8586372d…, a `reference_directive` node carrying `role` and `target` as FIELDS) and proved the swap behaviourally. `part_of` edges are emitted from the node's fields, never from a comment's text.",
+    "50 directive SITES over 17,350 files / 41 repos (by role and target shape in the census log). The STOCK grammar lexes them as comments, so this lane PATCHED the grammar — the served build is b75fa34c…, which exposes a single atomic `reference_directive` NODE — and proved the swap behaviourally (script/m14/ts-partof-grammar-proof.ts, 8 conditions). The analyzer emits `part_of` from that node's own fixed spelling by a character walk, never from a comment's text; 50 sites minus one repeated (file, role, target) triple is the 49 rows the arm publishes.",
     "bun run script/m14/ts-partof-grammar-proof.ts script/m14/ts-grammar-patch/tree-sitter-typescript-patched.wasm",
     "the proof exiting non-zero — specifically, the patched build NOT producing three `reference_directive` nodes for three directives, or the ordinary comment ceasing to be a comment",
   ),
   "grammar-swap-safety": wall(
     "grammar-swap-safety — the R2 build replaces the served build",
-    "the fixture suite reads 121 pass / 0 fail on the patched build, and the swap preserves the served build at script/m14/ts-grammar-patch/tree-sitter-typescript-served.wasm (8515404d…) so every earlier number remains re-measurable.",
+    "the fixture suite reads 123 pass / 0 fail on the patched build, and the swap preserves the PREVIOUS served build at script/m14/ts-grammar-patch/tree-sitter-typescript-served.wasm (8515404d…) so every earlier number remains re-measurable; the proof checks the stock copy, the served copy, and engine.ts's digest table together.",
     "bun run script/m14/run-fixtures.ts --lang typescript",
     "any fixture failing on the patched build that passed on the served one, or the served build's copy not hashing to 8515404dceed…",
   ),
   "no-regex-resolution": wall(
     "no-regex-resolution — a relation may not be resolved by matching text",
-    "every relation in this analyzer is read from a node: `part_of` from `childForFieldName('role'|'target')` on the patched `reference_directive`, `mixes_in` from the extends clause's expression TYPE, `extends` from the heritage base name. The analyzer contains no regex literal by contract.",
-    "grep -nE '/[^/]+/[gimsuy]*' src/ast/real-typescript-analyzer.ts | grep -v '^\\s*//' | head",
+    "every relation in this analyzer is read from a node: `part_of` from the patched grammar's `reference_directive` NODE (its role/target unwrapped from the node's own fixed spelling by a character walk — the pinned build exposes one atomic token, not fields), `mixes_in` from the extends clause's expression TYPE, `extends` from the heritage base name. HEAD contains 0 regex literals — and the falsifier FIRED before it was true: Release 0.1.4 (f5325a909) reintroduced four, the lane's own counter and the fleet gate both exited 1, and the fix (2026-11-17) is character walks. The falsifier stays armed: the run below is an AST census, never a text scan.",
+    "bun run script/m14/ts-no-regex-count.ts",
     "a live (non-comment) regex literal in the analyzer, or a relation whose source is a match offset rather than a node",
   ),
 })

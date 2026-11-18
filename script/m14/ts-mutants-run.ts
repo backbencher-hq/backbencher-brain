@@ -132,25 +132,32 @@ function loadFixtures(): { fixture: string; exp: any }[] {
 // SOURCE mutants: edit, run the REAL shared runner, restore.
 // ---------------------------------------------------------------------------
 const SOURCE_MUTANTS: Record<string, { file: string; from: string; to: string }> = {
+  // 2026-11-18: ALL FOUR ANCHORS WERE STALE and the mutants were surviving as "ANCHOR NOT FOUND"
+  // — the exact defect this runner's header names ("a rename that stops the mutant matching is
+  // exactly how a mutant survives unnoticed"). Re-anchored against the CURRENT source; each one
+  // reverts the same real pre-fix shape, not a different one.
   "typescript/parameterized-heritage-raw-text-target": {
     file: "src/ast/real-typescript-analyzer.ts",
-    from: "result.implements.push(heritageTypeLeaf(type.text))",
+    // CURRENT structural leaf -> the pre-fix RAW SOURCE TEXT (`implements I<T>` -> "I<T>").
+    from: "result.implements.push(TypeScriptAnalysisRunner.heritageBaseName(type.text))",
     to: "result.implements.push(type.text)",
   },
   "typescript/re-export-dependency-not-emitted": {
     file: "src/ast/real-typescript-analyzer.ts",
-    from: "for (const reExport of this._pendingReExportImports) {",
-    to: "for (const reExport of [] as ASTEngine.ImportInfo[]) {",
+    // CURRENT: the re-export branch emits an `imports` row per specifier/star. PRE-FIX: nothing was
+    // emitted, only the payload entry. The guard makes the branch refuse every re-export.
+    from: "const modulePath = stringContent(sourceNode)\n      if (modulePath.length === 0) return",
+    to: "const modulePath = stringContent(sourceNode)\n      if (modulePath.length >= 0) return",
   },
   "typescript/type-predicate-position-dropped": {
     file: "src/ast/real-typescript-analyzer.ts",
-    from: 'case "type_predicate": {\n          const predicateType = n.childForFieldName("type")',
-    to: 'case "type_predicate_DISABLED": {\n          const predicateType = n.childForFieldName("type")',
+    from: 'case "type_predicate": {',
+    to: 'case "type_predicate_DISABLED": {',
   },
   "typescript/type-parameter-constraint-position-dropped": {
     file: "src/ast/real-typescript-analyzer.ts",
-    from: 'case "type_parameter": {\n          const constraint = n.childForFieldName("constraint")',
-    to: 'case "type_parameter_DISABLED": {\n          const constraint = n.childForFieldName("constraint")',
+    from: 'case "constraint": {\n          emit(resolveOwner(n), [n], "type_parameter_constraint")',
+    to: 'case "constraint_DISABLED": {\n          emit(resolveOwner(n), [n], "type_parameter_constraint")',
   },
 }
 

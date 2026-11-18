@@ -1,0 +1,33 @@
+HONESTY-GATE FAIL: banned term "perfection" in validation/m14/analyzer-launch-review.md
+HONESTY-GATE FAIL: banned term "complete" in validation/m14/analyzer-launch-review.md
+HONESTY-GATE FAIL: banned term "complete" in validation/m14/go/GO-FINAL-REVIEW.md
+ok   banned-vocabulary lint over validation/m14 + M14 docs (prose whole, JSON claim fields; 15 historical record(s) under verification/ and 2159 fixture input(s) outside the live-claim lint — both disclosed, count-checked)
+ok   banned-vocabulary rule discriminates (claim reported, corpus payload and quoted third party not)
+ok   evidence presence/schema/mutation-backing for F1-F6
+HONESTY-GATE FAIL: M14.0.F6 has 1 non-passing language check(s): fixture-coverage-javascript
+HONESTY-GATE FAIL: M14.0.F7 has 2 non-passing check(s): analyzer-hygiene-typescript, analyzer-hygiene-javascript
+ok   M14.0.F8 all-green (27 checks)
+ok   M14.0.F9 all-green (52 checks)
+ok   M14.0.PIPE all-green (2 checks)
+ok   M14.0.WC1 all-green (1 checks)
+ok   M14.0.SC1 all-green (1 checks)
+ok   M14.0.CENSUS all-green (3 checks)
+ok   M14.0.TOML-CENSUS all-green (2 checks)
+ok   M14.0.SVELTE-CENSUS all-green (8 checks)
+ok   regression baselines present (grammar, fixtures, differential)
+ok   corpus pins present (/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web, /home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab, Clyde, DISMTools, Exposed, FSharp.Data, P3D-Legacy, afnetworking, alamofire, ansible, cabal, cargo, cats-effect, clean-stdlib, clj-kondo, clojure, consul, cython, dart-http, dplyr, duckdb, element-plus, elixir, fmt, fsharp, geb, go-tools, gql-graphql-platform, grails-core, hledger, jq, julia, kong, kotlinx-coroutines, kubernetes, lodash, mojo, nim, nim-lang-nimble, nlohmann-json, otp, pb-googleapis, phoenix, phpmyadmin, phpunit, plack, powershell, proxicall, rack, rake, rebar3, redis, requests, ripgrep, scala3, sdwebimage, shadcn-svelte, solidity, sqlite, svelte, swift-nio, terraform, tf-aws-components, vue-core, vue-element-admin, zig, zls)
+ok   differential evidence declares its code inputs clean at the commit it names
+HONESTY-GATE FAIL: M14.0.F1: 10 declared input(s) changed since a4db342b5b — regenerate (src/ast/engine.ts, src/ast/member-owner-resolution.ts, src/ast/parallel-indexer.ts, src/ast/pool-worker.ts, …)
+HONESTY-GATE FAIL: M14.0.F2: lineage "7ce95431bd2573283fb55cab44de296d4da10bd9" is not a commit in this repository — refresh the artifact
+HONESTY-GATE FAIL: M14.0.F4: 79 declared input(s) changed since c6d227bd1c — regenerate (src/ast/engine.ts, src/ast/pool-worker.ts, src/ast/project-index.ts, src/ast/real-cpp-analyzer.ts, …)
+HONESTY-GATE FAIL: M14.0.F5: lineage "53432b48a82e1829994862d85b5d630c8d4ebc68" is not a commit in this repository — refresh the artifact
+HONESTY-GATE FAIL: M14.0.F7: 10 declared input(s) changed since a4db342b5b — regenerate (src/ast/engine.ts, src/ast/member-owner-resolution.ts, src/ast/parallel-indexer.ts, src/ast/pool-worker.ts, …)
+HONESTY-GATE FAIL: M14.0.F8: lineage "7ce95431bd2573283fb55cab44de296d4da10bd9" is not a commit in this repository — refresh the artifact
+HONESTY-GATE FAIL: M14.0.F9: lineage "9b542f2c5d60a79eb8644f6c38f375a48bd14db6" is not a commit in this repository — refresh the artifact
+ok   evidence freshness: 2 artifact(s) current against their declared inputs
+ok   every declared input set covers its artifact's producer (9 artifact(s))
+ok   producer coverage discriminates (F9's own producer covered, F8's producer not covered by F9's inputs)
+ok   freshness rule discriminates (5071 input(s) changed since 187bc86)
+ok   completeness ledger present (34 PENDING cells tracked)
+
+honesty gate: 12 failure(s) — release blocked

@@ -1,0 +1,16 @@
+PASS alias-writes
+PASS call-sites
+PASS conditional-aliases
+PASS container-writes
+PASS destructured-aliases
+PASS factory-bindings
+PASS field-bindings
+PASS field-writes
+PASS generic-positions
+PASS inherited-fields
+PASS iterated-aliases
+PASS loop-bindings
+PASS named-callers
+PASS receiver-scopes
+PASS receiver-writes
+PASS redeclared-aliases
