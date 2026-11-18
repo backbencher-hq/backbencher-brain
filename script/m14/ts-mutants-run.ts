@@ -149,6 +149,17 @@ const SOURCE_MUTANTS: Record<string, { file: string; from: string; to: string }>
     from: "const modulePath = stringContent(sourceNode)\n      if (modulePath.length === 0) return",
     to: "const modulePath = stringContent(sourceNode)\n      if (modulePath.length >= 0) return",
   },
+  "typescript/accessor-named-field-name-lost": {
+    file: "src/ast/real-typescript-analyzer.ts",
+    // Disable the accessor-name recovery entirely. `accessor: T` is a field legitimately NAMED
+    // `accessor`; the pinned grammar reads the auto-accessor KEYWORD, so PRE-FIX the symbol was
+    // published with an empty name (or with the annotation as its name) and a
+    // `contains X -> ""` edge resulted — the whole-population arm's single NO-TARGET LANE DEFECT.
+    // `fieldDeclaresAccessorName(node) === false` is exactly the pre-fix behaviour: the written
+    // name is never recovered, so the fixture's expected `accessor` member disappears.
+    from: 'const accessorNamed = fieldDeclaresAccessorName(node)',
+    to: 'const accessorNamed = false && fieldDeclaresAccessorName(node)',
+  },
   "typescript/type-predicate-position-dropped": {
     file: "src/ast/real-typescript-analyzer.ts",
     from: 'case "type_predicate": {',

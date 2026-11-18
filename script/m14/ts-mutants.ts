@@ -143,6 +143,14 @@ export const TS_MUTANTS: TsMutant[] = [
     },
   },
   {
+    id: "typescript/accessor-named-field-name-lost",
+    language: "typescript",
+    defectClass: "grammar-loss-recovery",
+    description:
+      "The pinned grammar loses the name of a field legitimately NAMED `accessor` (`accessor: T` reads `accessor` as the auto-accessor keyword and emits a MISSING name token). PRE-FIX the analyzer published a symbol with an EMPTY name and a `contains X -> <empty>` edge — the whole-population arm's single NO-TARGET LANE DEFECT (992,652 edges, 1 empty target; located at redwood/packages/jobs/src/adapters/PrismaAdapter/PrismaAdapter.ts:75). The mutant disables the recovery, which removes the field symbol; caught by typescript/field-named-accessor, which expects the recovered `accessor` member and forbids an empty containment target.",
+    transform: (_r: any) => _r,
+  },
+  {
     id: "typescript/type-predicate-position-dropped",
     language: "typescript",
     defectClass: "missing-whole-position",
