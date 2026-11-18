@@ -2046,9 +2046,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // the node's source text. An empty endpoint is worse than a missing
           // one — it is a symbol no file contains — so the edge is skipped.
           if (!typeName) continue
+          // `new Action()` has the same collision shape as a heritage clause: the source
+          // writes a leaf and the project may declare several types with that name. The
+          // same compilation-unit evidence decides it (JLS 7.5.1 single-type import, JLS
+          // 6.5.5 own package), under the same narrow guards — complete index only, only
+          // when the project really does declare more than one, never when this file
+          // declares the name, and only to a path the project key space holds.
           relationships.push({
             source,
-            target: typeName,
+            target: this.javaDisambiguateTypeTarget(typeName, currentPackage, receiverTypes, context?.projectIndex),
             type: ASTEngine.RelationshipType.Instantiates,
             confidence: 0.95,
             // M59 (#825): the instantiated type is NAMED by its type node — that
