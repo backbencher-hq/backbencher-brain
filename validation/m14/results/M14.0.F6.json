@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "53063415b3b90bc13ec5a3ff444aae075cfc8d059527b32a30b6dd35293be827",
-    "sealedAt": "2026-11-18T06:06:28.000Z"
+    "contentSha256": "ca266fbcff1cf94c2c8e1cffec213788263b69e9e347fd505d631fd96a561020",
+    "sealedAt": "2026-11-18T18:41:33.000Z"
   },
   "checks": [
     {
@@ -196,8 +196,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "e5797e90c86eea94ed2331697d24e69076b9fe2a",
-  "committedAt": "2026-11-18T01:06:28-05:00",
+  "commit": "c0a4ba51646f67a234de238c3b993b194f1edce8",
+  "committedAt": "2026-11-18T13:41:33-05:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F6",
   "layers": [
@@ -208,8 +208,8 @@
       "description": "Coverage checked against single-file fixtures; per-language multi-file construct families (e.g. cross-file extends) rely on the differential gate instead"
     }
   ],
-  "regeneratedAt": "2026-11-18T01:06:28-05:00",
-  "regeneratedAtCommit": "e5797e90c86eea94ed2331697d24e69076b9fe2a",
+  "regeneratedAt": "2026-11-18T13:41:33-05:00",
+  "regeneratedAtCommit": "c0a4ba51646f67a234de238c3b993b194f1edce8",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Fixture-coverage gate: spec-handled node types must be exercised by fixtures; no dead analyzer literals"
