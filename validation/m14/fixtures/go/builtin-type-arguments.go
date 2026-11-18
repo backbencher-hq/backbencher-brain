@@ -12,6 +12,12 @@
 //     type Other struct{ M int }
 
 type Third struct{ K int }
+
+type Fourth struct{}
+
+type Key struct{}
+
+type Val struct{}
 //     func build() { p := new(Thing); _ = p }
 //     func check(x any) { _ = x.(*Other); switch x.(type) { case Thing: } }
 //
@@ -44,6 +50,12 @@ type Other struct{ M int }
 
 type Third struct{ K int }
 
+type Fourth struct{}
+
+type Key struct{}
+
+type Val struct{}
+
 func build() {
 	p := new(Thing)        // 1. same-file type via new
 	m := make(MSet)        // 1. same-file named map via make
@@ -66,4 +78,23 @@ func sw(x any) {
 	case *Third:
 		_ = x
 	}
+}
+
+// A MULTI-TYPE switch case: one `type_case` node with three type children. Reading only the
+// first published A and silently dropped B and C.
+func multi(x any) {
+	switch x.(type) {
+	case *Other, *Third, *Fourth:
+		_ = x
+	}
+}
+
+// COMPOSITE arguments to the builtins: `make([]Wset, n)` names Wset and published nothing
+// while the branch required a bare type node. The walker reaches element and map key/value
+// types, and filters predeclared ones (`make([]int, 0)` is not a reference).
+func composites(n int) {
+	s := make([]Thing, n)
+	m := make(map[Key]Val)
+	_ = s
+	_ = m
 }

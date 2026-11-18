@@ -737,6 +737,7 @@ type ReasonCode =
   | "call-to-locally-bound-function-value"
   | "read-of-a-locally-bound-name"
   | "variable-export-out-of-scope-by-decision"
+  | "value-read-mistyped-as-a-type-reference"
   | "UNEXPLAINED"
 
 function classifyOracOnly(
@@ -783,6 +784,21 @@ function classifyOracOnly(
   if (type === "uses" && model.funcBoundNames.get(e[0])?.has(e[1])) return "read-of-a-locally-bound-name"
   if (type === "calls" && GO_BUILTIN_FUNCS.has(e[1])) return "go-builtin-call-not-an-edge"
   if (type === "references" && PREDECLARED_TYPES.has(e[1])) return "predeclared-type-not-an-edge"
+  // The oracle's rule is "every type_identifier outside a qualified_type is a reference", which
+  // is over-broad exactly where Go's grammar is: a VALUE named in a context the grammar types as
+  // a type. `TYPE(toklev[t])` in goyacc (where `TYPE` is a macro the grammar reads as a
+  // conversion) makes `toklev` — a package-scope `var toklev []int` — look like a type name.
+  // A name DECLARED AS A VARIABLE in this file cannot be a type reference, so this is the
+  // oracle mis-typing a value, not the analyzer missing an edge.
+  if (type === "references" && model.decls.some((d) => d.kind === "var" && d.name === e[1])) {
+    return "value-read-mistyped-as-a-type-reference"
+  }
+  // The same mis-typing one level down: a name the SOURCE FUNCTION BINDS is a local value, never
+  // a type reference. `is` and `testcase` are the measured shapes (25 and 16 rows) — ordinary
+  // local variables the grammar typed as type identifiers.
+  if (type === "references" && model.funcBoundNames.get(e[0])?.has(e[1])) {
+    return "value-read-mistyped-as-a-type-reference"
+  }
   // AN EXPORTED PACKAGE-SCOPE VARIABLE IS DELIBERATELY OUT OF SCOPE for the `exports` edge,
   // even though Go really does export it. The M49 JVM-closure F3 invariant requires export
   // names to be unique and top-level-resolvable, and Go permits `type Foo struct{}` plus

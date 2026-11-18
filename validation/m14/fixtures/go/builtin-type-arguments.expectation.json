@@ -2,7 +2,7 @@
   "fixtureId": "go/builtin-type-arguments",
   "language": "go",
   "authoredBeforeAnalyzerRun": true,
-  "rationale": "PINS THREE MISSING-EDGE CLASSES THAT EVERY INTERNAL INVARIANT WAS BLIND TO. Three expression-position surfaces name a TYPE: `new(T)`/`make(T, ...)` (the callee is a BUILTIN, so no `calls` edge exists), a TYPE ASSERTION `x.(*T)`, and a TYPE SWITCH case `case *T:`. All three published NOTHING before this fix, so the types were invisible to the graph. THIS FIXTURE'S OWN BODY, BEFORE: it emitted `Thing contains -> N`, `builtintypearguments exports -> Thing`, `-> MSet`, `-> Slice` and NOT ONE edge for the six uses. IT WAS FOUND BY THE ORACLE DIFFERENTIAL, NOT BY AN INTERNAL INVARIANT: every range check, resolution check, explanation-coverage check and fixture the lane owns was GREEN while these edges were missing. That is the whole reason an independent oracle has to exist, and it is why 'all internal gates green' is a weaker claim than 'the graph is correct'. MEASURED on go-tools + terraform (3,422 files): 636 `new`/`make` call sites, 180 passing a type declared in the SAME file. After BOTH fixes the baseline gains 7,859 `references` edges (71,249 -> 79,108; +898 new/make, +6,961 assertions and type switches) with the symbol count UNCHANGED at 58,470 and every other relationship type byte-identical — the exact shape a pure missing-edge fix must have. Dangling source improved 0.2039 % -> 0.1999 % as a side effect. THE SIX EXPECTED ROWS COVER ALL THREE CONSTRUCTS AND BOTH TARGET SHAPES: four via the builtins including one QUALIFIED type (`new(bytes.Buffer)`) whose target must be the LEAF `Buffer` with the full spelling in `qualifiedType`; one assertion; one type-switch case. THE FORBID ROWS ARE THE ANTI-OVERREACH HALF: no `calls` edge may name `new` or `make` (the builtin filter still holds, so the fix cannot have been achieved by un-filtering builtins), and no reference row may carry an empty construct label. NOT PINNED: line numbers (they would pin this fixture's layout rather than the analyzer), and `make([]T, 0)` / `make(map[K]V)`, whose composite-argument ELEMENT types belong to the declaration pass — this pass takes a bare `type_identifier` or `qualified_type` there and leaves a composite node alone rather than mining it for extra rows.",
+  "rationale": "PINS THREE MISSING-EDGE CLASSES THAT EVERY INTERNAL INVARIANT WAS BLIND TO. Three expression-position surfaces name a TYPE: `new(T)`/`make(T, ...)` (the callee is a BUILTIN, so no `calls` edge exists), a TYPE ASSERTION `x.(*T)`, and a TYPE SWITCH case `case *T:`. All three published NOTHING before this fix, so the types were invisible to the graph. THIS FIXTURE'S OWN BODY, BEFORE: it emitted `Thing contains -> N`, `builtintypearguments exports -> Thing`, `-> MSet`, `-> Slice` and NOT ONE edge for the six uses. IT WAS FOUND BY THE ORACLE DIFFERENTIAL, NOT BY AN INTERNAL INVARIANT: every range check, resolution check, explanation-coverage check and fixture the lane owns was GREEN while these edges were missing. That is the whole reason an independent oracle has to exist, and it is why 'all internal gates green' is a weaker claim than 'the graph is correct'. MEASURED on go-tools + terraform (3,422 files): 636 `new`/`make` call sites, 180 passing a type declared in the SAME file. After BOTH fixes the baseline gains 7,859 `references` edges (71,249 -> 79,108; +898 new/make, +6,961 assertions and type switches) with the symbol count UNCHANGED at 58,470 and every other relationship type byte-identical — the exact shape a pure missing-edge fix must have. Dangling source improved 0.2039 % -> 0.1999 % as a side effect. THE SIX EXPECTED ROWS COVER ALL THREE CONSTRUCTS AND BOTH TARGET SHAPES: four via the builtins including one QUALIFIED type (`new(bytes.Buffer)`) whose target must be the LEAF `Buffer` with the full spelling in `qualifiedType`; one assertion; one type-switch case. THE FORBID ROWS ARE THE ANTI-OVERREACH HALF: no `calls` edge may name `new` or `make` (the builtin filter still holds, so the fix cannot have been achieved by un-filtering builtins), and no reference row may carry an empty construct label. NOT PINNED: line numbers (they would pin this fixture's layout rather than the analyzer), and `make([]T, 0)` / `make(map[K]V)`, whose composite-argument ELEMENT types belong to the declaration pass — this pass takes a bare `type_identifier` or `qualified_type` there and leaves a composite node alone rather than mining it for extra rows. EXTENDED TWICE AFTER THE FIRST PIN, each time because the ORACLE DIFFERENTIAL found the previous fix had a hole: (a) a MULTI-TYPE switch case `case *A, *B, *C:` is ONE `type_case` node with three type children, and reading only `namedChild(0)` published A and silently dropped B and C — found on `go/ssa/interp/value.go:437` (`case *ssa.Function, *ssa.Builtin, *closure:`), where Builtin reached the oracle and not the analyzer; (b) a COMPOSITE argument to the builtins — `make([]Wset, n)` names Wset — published nothing while the branch required a bare `type_identifier`/`qualified_type`, found on goyacc's `wsets = make([]Wset, nnonter+WSETINC)`. The branch now WALKS any type node with the same collector the assertion and case branches use, so slice element types and map key/value types are reached, and predeclared types are filtered in the walker so `make([]int, 0)` stays silent. Both holes were mine, in the fix above, and both were caught by the same oracle that found the original gap — which is the argument for keeping the differential running rather than trusting a green suite. MEASURED after both: the baseline reaches 387,981 edges and on the 400-file draw `references` recall 0.778 with the UNEXPLAINED total down to 174.",
   "expectSymbols": [
     {
       "name": "Thing",
@@ -34,6 +34,26 @@
     },
     {
       "name": "sw",
+      "kind": "function"
+    },
+    {
+      "name": "Fourth",
+      "kind": "struct"
+    },
+    {
+      "name": "Key",
+      "kind": "struct"
+    },
+    {
+      "name": "Val",
+      "kind": "struct"
+    },
+    {
+      "name": "multi",
+      "kind": "function"
+    },
+    {
+      "name": "composites",
       "kind": "function"
     }
   ],
@@ -84,6 +104,51 @@
       "from": "sw",
       "target": "Third",
       "meta.relationshipType": "go_type_switch_case"
+    },
+    {
+      "comment": "MULTI-TYPE CASE: all three types of one `case *A, *B, *C:` clause must publish, not just the first.",
+      "type": "references",
+      "from": "multi",
+      "target": "Other",
+      "meta.relationshipType": "go_type_switch_case"
+    },
+    {
+      "comment": "The second type of the same clause — the one `namedChild(0)` dropped.",
+      "type": "references",
+      "from": "multi",
+      "target": "Third",
+      "meta.relationshipType": "go_type_switch_case"
+    },
+    {
+      "comment": "The third type of the same clause.",
+      "type": "references",
+      "from": "multi",
+      "target": "Fourth",
+      "meta.relationshipType": "go_type_switch_case"
+    },
+    {
+      "comment": "COMPOSITE ARGUMENT: `make([]Thing, n)` names Thing as the slice element type.",
+      "type": "references",
+      "from": "composites",
+      "target": "Thing",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "make"
+    },
+    {
+      "comment": "The key type of `make(map[Key]Val)`.",
+      "type": "references",
+      "from": "composites",
+      "target": "Key",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "make"
+    },
+    {
+      "comment": "The value type of `make(map[Key]Val)` — both operands of a map type are uses.",
+      "type": "references",
+      "from": "composites",
+      "target": "Val",
+      "meta.relationshipType": "go_builtin_type_argument",
+      "meta.builtin": "make"
     }
   ],
   "forbidRelationships": [
@@ -105,6 +170,12 @@
       "from": "build",
       "target": "Thing",
       "meta.relationshipType": null
+    },
+    {
+      "comment": "A PREDECLARED element type must stay silent: `make([]int, 0)` is not a reference to a declaration.",
+      "type": "references",
+      "from": "composites",
+      "target": "int"
     }
   ]
 }

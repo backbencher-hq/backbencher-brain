@@ -781,13 +781,23 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < symbols.length; i++) {
       const s = symbols[i]
       const isPrivate = s.visibility === "private"
-      const isVar = s.kind === ASTEngine.SymbolKind.Variable
       const isMethod = s.kind === ASTEngine.SymbolKind.Method
       // GO7 (go review): owned members (struct fields with ownerName) are
       // not top-level units — the old predicate exported every PUBLIC
       // field (`X int` in any struct), tripping the harness-global
       // export-uniqueness invariant on the first fixture with an uppercase
       // field. Membership rides Contains (same rule as methods).
+      // GO7 (go review), and one of the lane's TWO deliberate scope decisions: an exported
+      // package-scope VARIABLE is NOT published as an `exports` edge, even though the Go spec
+      // really does export it. The reason is the M49 JVM-closure F3 invariant, which requires
+      // export names to be unique and top-level-resolvable — and Go permits `type Foo struct{}`
+      // alongside `var Foo = ...` in one package, so a var can collide with a type of the same
+      // name. `go/exports-contract` pins the exclusion with a forbid row on `ErrNoWidget` and
+      // `go/exports-package-scope` on `WidgetRegistry`, and its rationale calls it a DECISION,
+      // not a fact about the language. A later reading of the oracle differential tried to
+      // widen this (exported vars looked like an oversight because nothing here said why) and
+      // those two forbid rows caught it on the next run — which is exactly why they exist.
+      const isVar = s.kind === ASTEngine.SymbolKind.Variable
       if (!isPrivate && !isVar && !isMethod && !s.ownerName && !seenExportNames.has(s.name)) {
         seenExportNames.add(s.name)
         exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" })
@@ -4701,7 +4711,8 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const collectTypeLeaves = (n: Node, out: Array<{ leaf: string; raw: string }>): void => {
       if (n.type === "type_identifier") {
         const raw = String(n.text ?? "")
-        if (raw.length > 0 && raw !== "_") out.push({ leaf: raw, raw })
+        // A predeclared type is a primitive, not a declaration this graph can name.
+        if (raw.length > 0 && raw !== "_" && !RealGoAnalyzer.GO_PREDECLARED_TYPES.has(raw)) out.push({ leaf: raw, raw })
         return
       }
       if (n.type === "qualified_type") {
@@ -4762,7 +4773,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The callee must be the BARE builtin, never `pkg.new` / a method named `New`.
         if (fn && fn.type === "identifier" && BUILTIN_TYPE_CTORS.has(fn.text) && args) {
           const first = args.namedChild(0)
-          if (first && (first.type === "type_identifier" || first.type === "qualified_type")) {
+          // ANY type node, not just a bare name: `make([]Wset, n)` names `Wset` and published
+          // nothing while the branch required `type_identifier`/`qualified_type`. Found on
+          // goyacc's `wsets = make([]Wset, nnonter+WSETINC)`. Composite nodes are WALKED
+          // (the same collector the assertion and case branches use), so the element types of a
+          // slice/map/chan/allocation are reached; predeclared types are filtered in the walker.
+          if (first && TYPE_NODE_TYPES.has(first.type)) {
             emit(node, first, "go_builtin_type_argument", { builtin: fn.text })
           }
         }
@@ -4774,8 +4790,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // A TYPE SWITCH case `case *T:` — one row per named type in the case's type node.
       else if (node.type === "type_case") {
-        const first = node.namedChild(0)
-        if (first && TYPE_NODE_TYPES.has(first.type)) emit(node, first, "go_type_switch_case", {})
+        // A case may name SEVERAL types: `case *A, *B, *C:` is one `type_case` with three type
+        // children. Reading only `namedChild(0)` published the first and silently dropped the
+        // rest — found on `go/ssa/interp/value.go:437`
+        // (`case *ssa.Function, *ssa.Builtin, *closure:`), where `Builtin` reached the oracle
+        // and not the analyzer. Every type child is a use, so every type child is read; the
+        // clause's optional `expression_list`/`assignment_statement` is not a type node and
+        // falls through the guard.
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && TYPE_NODE_TYPES.has(c.type)) emit(node, c, "go_type_switch_case", {})
+        }
       }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const c = node.namedChild(i)
