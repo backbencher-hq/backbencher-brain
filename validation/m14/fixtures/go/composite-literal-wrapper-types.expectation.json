@@ -1,0 +1,57 @@
+{
+  "fixtureId": "go/composite-literal-wrapper-types",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THAT A COMPOSITE LITERAL CONSTRUCTS THE NAMED TYPE INSIDE A WRAPPER, NOT ONLY A BARE ONE. The pass handled just `type_identifier`, `qualified_type` and `generic_type`, and its own comment declared that wrapper types 'yield no named target' — so a slice, array, map, pointer or channel of a named type published NOTHING while the bare form worked. FOUND BY THE ORACLE DIFFERENTIAL, not by an internal invariant: on go-tools/internal/refactor/inline/inline_test.go, `runTests(t, []testcase{...})` occurs EIGHT times and only the one direct `testcase{...}` had a row. MEASURED on go-tools + terraform (3,422 files): edges 387,981 -> 422,841 (+34,860, all `instantiates`), symbols UNCHANGED at 58,470, dangling source 0.1915 % -> 0.1800 %; on the 400-file oracle draw `references` oracle-only fell 120 -> 62, because the oracle expects BOTH a construction row and a reference row from the same literal. THE FIVE EXPECTED ROWS ARE ONE PER LINE, and that is deliberate: the pass's dedupe key was `source.target`, which collapsed all five literals into ONE row carrying the FIRST line — three real constructions vanished and the survivor pointed at the wrong line. The key now includes the literal's line, so each site is its own row while a genuine re-visit of the same node is still suppressed. THREE SUBTLETIES, each a bug the first cut had: (1) a MAP constructs its KEY and VALUE types, so both are emitted — but the key here is PREDECLARED, and predeclared types are filtered, so `map[string]Item{}` yields Item alone; without that filter the first cut published `instantiates -> string`, which the forbid row now rejects; (2) the elided element literal `[]Item{{N: 1}}` yields Item from the OUTER type node, not from the inner brace; (3) `&Item{}` is a pointer_type and constructs Item. NOT PINNED: `chan Item` and `func(Item)` (the latter constructs nothing), confidence values, and the line numbers themselves, which would pin this fixture's layout rather than the analyzer.",
+  "expectSymbols": [
+    { "name": "Item", "kind": "struct" },
+    { "name": "N", "kind": "property" },
+    { "name": "build", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "SLICE of a named type with an ELIDED element literal: the type comes from the outer slice_type, not from the inner brace.",
+      "type": "instantiates",
+      "from": "build",
+      "target": "Item"
+    },
+    {
+      "comment": "ARRAY of a named type — `[4]Item{}` carries a length expression and an element type.",
+      "type": "instantiates",
+      "from": "build",
+      "target": "Item"
+    },
+    {
+      "comment": "MAP: the value type is Item. The key `string` is PREDECLARED and must NOT produce a row (see the forbid).",
+      "type": "instantiates",
+      "from": "build",
+      "target": "Item"
+    },
+    {
+      "comment": "POINTER to a named type: `&Item{}` has a pointer_type node and constructs Item.",
+      "type": "instantiates",
+      "from": "build",
+      "target": "Item"
+    },
+    {
+      "comment": "CONTROL: the bare form that already worked must keep working, so the widening is additive rather than a replacement.",
+      "type": "instantiates",
+      "from": "build",
+      "target": "Item"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "A PREDECLARED type is a primitive, not a declaration this graph names: `map[string]Item{}` constructs Item and its key `string` is not an edge. The first cut of this fix emitted exactly this row.",
+      "type": "instantiates",
+      "from": "build",
+      "target": "string"
+    },
+    {
+      "comment": "A composite literal is not a call: no `calls` edge may be invented for the literal's own braces.",
+      "type": "calls",
+      "from": "build",
+      "target": "Item"
+    }
+  ]
+}

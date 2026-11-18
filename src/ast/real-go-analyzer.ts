@@ -4405,6 +4405,49 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * type) and elided element literals have no type child — both are skipped
    * naturally by the type-child gate below.
    */
+  /**
+   * The NAMED type a composite literal's type node constructs, looking THROUGH the Go wrapper
+   * types: `[]T{...}`, `[N]T{...}`, `map[K]V{...}`, `*T{...}` and `chan T{...}` all construct
+   * (or require) T, and `pkg.T` inside them keeps its qualifier.
+   *
+   * WHY: the pass handled only a bare `type_identifier`, `qualified_type` or `generic_type` and
+   * its comment declared that wrapper types "yield no named target" — so `[]Item{{...}}` published
+   * NOTHING while `Item{...}` published a construction. Found by the oracle differential on
+   * `go-tools/internal/refactor/inline/inline_test.go`, where `runTests(t, []testcase{...})` occurs
+   * eight times and only the one direct `testcase{...}` had a row.
+   *
+   * A MAP literal constructs its KEY and VALUE types too, so both are returned; every other wrapper
+   * yields the single element/named type.
+   */
+  private goCompositeLiteralTargets(typeNode: Node): Array<{ leaf: string; raw: string }> {
+    const out: Array<{ leaf: string; raw: string }> = []
+    const add = (n: Node | null | undefined): void => {
+      if (!n) return
+      if (n.type === "type_identifier") {
+        const raw = String(n.text ?? "")
+        // A PREDECLARED type is a primitive, not a declaration this graph names:
+        // `map[string]Item{}` constructs Item, and its key `string` is not an edge.
+        if (raw.length > 0 && raw !== "_" && !RealGoAnalyzer.GO_PREDECLARED_TYPES.has(raw)) out.push({ leaf: raw, raw })
+      } else if (n.type === "qualified_type") {
+        const raw = String(n.text ?? "")
+        const dot = raw.lastIndexOf(".")
+        const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+        if (leaf.length > 0) out.push({ leaf, raw })
+      } else if (n.type === "generic_type") {
+        add(n.namedChildCount > 0 ? n.namedChild(0) : null)
+      } else if (n.type === "pointer_type" || n.type === "slice_type" || n.type === "array_type" || n.type === "channel_type") {
+        // `[N]T` carries the length as an expression child; the element type is the last named child.
+        const kids: Node[] = []
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) kids.push(c) }
+        add(kids.length > 0 ? kids[kids.length - 1] : null)
+      } else if (n.type === "map_type") {
+        for (let i = 0; i < n.namedChildCount; i++) add(n.namedChild(i))
+      }
+    }
+    add(typeNode)
+    return out
+  }
+
   private analyzeGoCompositeLiteralConstruction(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -4444,36 +4487,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (node.type === "composite_literal") {
         const typeNode = node.childForFieldName("type") ?? (node.namedChildCount > 0 ? node.namedChild(0) : undefined)
-        let target: string | undefined
-        // The qualified spelling the source wrote (`http.Server`), kept for the stdlib proof below.
-        let qualifiedRaw: string | undefined
-        if (typeNode) {
-          if (typeNode.type === "type_identifier") {
-            target = typeNode.text
-          } else if (typeNode.type === "qualified_type") {
-            const raw = typeNode.text
-            qualifiedRaw = raw
-            const dot = raw.lastIndexOf(".")
-            target = dot !== -1 ? raw.slice(dot + 1) : raw
-          } else if (typeNode.type === "generic_type") {
-            // GO8 (go review): generic composite literals (`Box[int]{...}`)
-            // carry a generic_type child — the constructed type is its base
-            // type_identifier. Previously no edge at all.
-            const base = typeNode.namedChildCount > 0 ? typeNode.namedChild(0) : undefined
-            if (base && (base.type === "type_identifier" || base.type === "qualified_type")) {
-              const raw = base.text
-              if (base.type === "qualified_type") qualifiedRaw = raw
-              const dot = raw.lastIndexOf(".")
-              target = dot !== -1 ? raw.slice(dot + 1) : raw
-            }
-          }
-        }
-        // Elided element literal (`[]Foo{{...}}`) and wrapper-type literals
-        // (map/slice/array/function) yield no named target. Builtin-guard:
-        // composite literals cannot target builtins directly.
-        if (target && !this.isGoBuiltin(target)) {
+        const targets = typeNode ? this.goCompositeLiteralTargets(typeNode) : []
+        // One construction row per NAMED type the literal's type node reaches. A bare `Item{...}`
+        // yields one; `[]Item{...}`, `[N]Item{...}`, `map[K]V{...}`, `*Item{...}` and
+        // `chan Item` yield their element/key/value types. The ELIDED inner literal
+        // (`[]Item{{...}}`) still yields Item, because the OUTER type node names it.
+        // Builtin-guard: a composite literal cannot construct a predeclared type.
+        for (const { leaf: target, raw: qualifiedRaw } of targets) {
+          if (!target || this.isGoBuiltin(target)) continue
           const src = this.resolveGoWorkSource(node)
-          const key = `${src}.${target}`
+          // KEY PER SITE, not per (source, target): the lane's other passes dedupe by name, but a
+          // function that builds `[]Item{...}` on four different lines has four real constructions,
+          // and collapsing them to one row also collapsed their line numbers to the first. The
+          // at-a-line term keeps every site while still suppressing a genuine re-visit of the same
+          // node (the walker can reach one literal through more than one path).
+          const at0 = this.nodeLine(typeNode)
+          const key = `${src}.${target}@${at0 ?? 0}`
           if (!seen.has(key)) {
             seen.add(key)
             // The constructed type is written `pkg.Type`; when `pkg` is a stdlib package this file
