@@ -1,0 +1,37 @@
+{
+  "fixtureId": "typescript/renders-imported-binding",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "RENDERS CARRY THE IMPORTED-BINDING CLAIM \u2014 for an EXTERNAL package component. The TS claim pass stakes binding claims only on specifiers that are not project-local (the lane's ruling: a project-local name can be resolved by the name model, and a claim would displace a possibly-correct binding), and a JSX tag from `element-plus` is exactly the external case, so `renders App -> ElButton` must carry metadata.importedBinding {specifier: element-plus, binding: ElButton} \u2014 the store verifies it against the file's own imports evidence. The second tag, `Local` from the relative specifier `./local`, is the CONTROL: it must carry NO claim, and the forbid pins that the ruling is a decision and not an accident (a change that starts claiming project-local bindings will fail here before it steals resolvable edges). The tag shapes are pinned by tsx-renders; this fixture is about the claim channel only.",
+  "expectSymbols": [
+    {
+      "name": "App",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "ElButton",
+      "note": "the external imported component's renders row carries the claim, verified against the imports edge",
+      "meta.importedBindingName": "ElButton",
+      "meta.importedBindingSpecifier": "element-plus"
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Local",
+      "note": "the project-local relative import still renders (the edge exists)"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Local",
+      "note": "THE RULING: project-local imports are not claimed by this pass \u2014 the control that keeps the divergence deliberate",
+      "meta.importedBindingName": "Local"
+    }
+  ]
+}

@@ -3039,7 +3039,7 @@ class TypeScriptAnalysisRunner {
     //      runs BEFORE the claim passes, which read the target);
     //   3. the file-local external markers still own their rows (existing accounting must not shrink);
     //   4. imported-binding CLAIMS land only on rows nobody else claimed;
-    //   5. the project-index pass stays last and skips both binding classes (see its PASS 2 guard).
+    //   5. the project-index pass runs LAST and skips both binding classes (see its PASS 2 guard).
     void this.publishImportedBindingEvidence(relationships)
     // LAST, AND DELIBERATELY SO. Every phase that can DROP an edge has run
     // (`dropDuplicateTypeMentionLabels`, `filterPhantomDupKeyEdges`), so a marker can only ever
@@ -3047,18 +3047,31 @@ class TypeScriptAnalysisRunner {
     // no longer exist, which is a claim about nothing. The pass reads this file's own symbols and
     // import edges as its evidence; it changes no target, no source and no line.
     void this.markExternalTargets(relationships, symbols)
-    // THE PROJECT-INDEX PASS — it can only run on a COMPLETE index and it is fail-closed, so it is a
-    // no-op in every sampled run (see the method's header). It runs BEFORE the binding passes
-    // deliberately: its external claims own their rows, and a binding claim landing on one of them
-    // would steal a verified `extOK`/`ext?` row into `bindOK` (the arbiter's binding claims are sole
-    // authority) — the measured whole-population defect this ordering fixes.
-    void this.applyProjectIndexClaims(relationships, context)
-    // THE BINDING PASSES, LAST — they may only claim rows nobody else claimed (see
-    // `carriesClaimMarker`). Re-spell before claiming, so a locally-bound target is claimed by its
-    // own spelling and never by a stale bare name; each pass re-checks the guard because the spell
-    // pass itself marks rows.
+    //
+    // THE PASS ORDER WAS MEASURED AND THE OLD ORDER WAS WRONG (2026-11-17). The three lines above
+    // described the intended order; the CODE ran `applyProjectIndexClaims` BEFORE the binding
+    // passes, and because `carriesClaimMarker` makes the binding passes skip a claimed row, the
+    // index pass took rows the binding claim would own. `script/m14/ts-claim-class-probe.ts` (1,313
+    // files / 91,524 rows, no-index vs --index on the SAME rows) measured the displacement: the
+    // index pass claimed 10,019 rows, and the SUPPRESSED binding claim would have said
+    // `bindingVerified` for 10,015 of them (3 resolved, 1 bindingRefuted) — 99.96% of the displaced
+    // rows were a VERIFIED binding claim being reclassified as an external one, purely because the
+    // index was available. That made `bindOK`/`extOK` a function of pass order rather than of
+    // evidence, and it contradicted the project-index pass's own header ("stays last and skips both
+    // binding classes").
+    //
+    // THE RULING: the binding claim is the more specific evidence — it cites the file's OWN import
+    // edge, while an external claim is answered through the project's symbol key space, where a
+    // same-named declaration elsewhere is a decoy the binding claim exists to displace. So the
+    // binding passes run FIRST and the project-index pass runs LAST; its PASS 2 guard then skips
+    // every row carrying `localBinding`/`importedBinding`, and the index pass keeps only the rows
+    // nobody claimed.
     void this.applyLocalBindingSpellings(rootNode, relationships, symbols)
     void this.applyImportedBindingClaims(relationships, symbols)
+    // THE PROJECT-INDEX PASS, LAST — it can only run on a COMPLETE index and it is fail-closed, so
+    // it is a no-op in every sampled run (see the method's header). It skips the binding classes by
+    // its PASS 2 guard; rows no claim owns are the ones it may classify as external.
+    void this.applyProjectIndexClaims(relationships, context)
 
     return {
       language: "typescript",

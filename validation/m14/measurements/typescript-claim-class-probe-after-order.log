@@ -1,0 +1,288 @@
+TS CLAIM-CLASS PROBE — corpus /home/ishaq2321/bb_tests/repositories · maxFiles 40 per repo (0 = whole population)
+[INFO] [19:36:31] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:36:31] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [19:36:31] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [19:37:00] [ast-engine] language grammar allocated {"language":"tsx"}
+[INFO] [19:37:00] [ast-engine] language parser loaded {"language":"tsx","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"}
+[INFO] [19:37:13] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [19:37:54] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  no-index arm: files 1313 · relationships 91524
+[INFO] [19:38:30] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+[INFO] [19:39:10] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-typescript.wasm"}
+  --index arm : files 1313 · relationships 91524
+
+JOIN: matched rows 91524 · no-index-only 0 · index-only 0
+
+ARBITER OUTCOMES PER ARM (the gate's columns, row-exact):
+  resolved    no-index     33687   --index     33732   delta +45
+  amb         no-index      2276   --index      2276   delta 0
+  unresolved  no-index     24143   --index     20380   delta -3763
+  ext         no-index     16869   --index     20587   delta +3718
+  bind        no-index     14549   --index     14549   delta 0
+  per-outcome detail (no-index -> --index):
+    resolved                 33687 ->     33732   delta +45
+    ambDeclOnly                925 ->       925   delta 0
+    ambBoth                   1351 ->      1351   delta 0
+    unresolved               24143 ->     20380   delta -3763
+    externalVerified         16869 ->     20492   delta +3623
+    externalUnverified           0 ->        95   delta +95
+    bindingVerified          14549 ->     14549   delta 0
+
+ROUTING SPLIT (the arbiter's routing decision — every edge, by the claim that owns it):
+  (no claim)           no-index     58990   --index     55249   delta -3741
+  owner                no-index     17985   --index     18223   delta +238
+  importedBinding      no-index     11812   --index     11812   delta 0
+  moduleNamespace      no-index         0   --index      3503   delta +3503
+  binding              no-index      2737   --index      2737   delta 0
+  TOTAL                no-index     91524   --index     91524
+  a CLAIM-carrying row: no-index 32534 · --index 36275   (the name model owns the rest)
+
+WHAT EACH ROUTED CLAIM PRODUCED (the --index arm; the outcome the routed claim produced):
+  (no claim)           resolved 33189 · unresolved 20380 · ambDeclOnly 908 · ambBoth 772
+  owner                externalVerified 17077 · ambBoth 579 · resolved 543 · ambDeclOnly 17 · externalUnverified 7
+  importedBinding      bindingVerified 11812
+  moduleNamespace      externalVerified 3415 · externalUnverified 88
+  binding              bindingVerified 2737
+
+THE DISPLACEMENT — rows the index pass claimed, and what the SUPPRESSED claim would have said:
+  --index arm · rows the index pass claimed (owner + imported-from-external-module): 238
+      the suppressed claim would have said: bindingVerified              234
+      the suppressed claim would have said: resolved                       3
+      the suppressed claim would have said: bindingRefuted                 1
+  no-index arm · rows carrying the imported-binding claim: 11812
+      the index pass's claim would have said: externalVerified         11181
+      the index pass's claim would have said: resolved                   401
+      the index pass's claim would have said: externalUnverified         185
+      the index pass's claim would have said: ambDeclOnly                 43
+      the index pass's claim would have said: ambBoth                      2
+
+THE amb(decl) CEILING — production PREFERS THE EDGE'S OWN FILE, so an ambiguous row whose own file declares the target is PRODUCTION-BOUND:
+  no-index: 2276 ambiguous rows
+    the row's OWN FILE declares the target (production-bound)          1    0.0%
+    genuinely ambiguous (no file-local declaration)                  2275  100.0%
+      calls          own-file        0 · genuinely ambiguous     1978
+      imports        own-file        0 · genuinely ambiguous      201
+      references     own-file        0 · genuinely ambiguous       72
+      exports        own-file        0 · genuinely ambiguous       16
+      uses           own-file        1 · genuinely ambiguous        8
+  no-index: THE TIE-BREAK'S POPULATION — a row that CARRIES A CLAIM returns before the count:
+    CLAIM-FREE ambiguous rows (the tie-break can move these)        1683
+      of which the row's OWN FILE declares the target                  1    0.1%   <-- THE TIE-BREAK'S PRICE ON THIS LANE
+      genuinely ambiguous                                         1682   99.9%
+    CLAIM-CARRYING ambiguous rows (the change CANNOT touch these)       593
+      of which the row's OWN FILE declares the target                  0    0.0%
+      genuinely ambiguous                                          593  100.0%
+    WHOLE-CLASS own-file share (the fleet's headline shape)       0.0%   <-- NOT the tie-break's price; a different population
+    THE PRICE = the whole-class own-file count MINUS the claim-carrying own-file count
+              1 −         0 =         1   <-- THE TIE-BREAK'S PRICE ON THIS LANE (and the claim-free own-file count IS the difference, by construction)
+      calls          (claim-free) own-file        0 · genuinely ambiguous     1390
+      imports        (claim-free) own-file        0 · genuinely ambiguous      201
+      references     (claim-free) own-file        0 · genuinely ambiguous       67
+      exports        (claim-free) own-file        0 · genuinely ambiguous       16
+      uses           (claim-free) own-file        1 · genuinely ambiguous        8
+  --index: 2276 ambiguous rows
+    the row's OWN FILE declares the target (production-bound)          1    0.0%
+    genuinely ambiguous (no file-local declaration)                  2275  100.0%
+      calls          own-file        0 · genuinely ambiguous     1978
+      imports        own-file        0 · genuinely ambiguous      201
+      references     own-file        0 · genuinely ambiguous       72
+      exports        own-file        0 · genuinely ambiguous       16
+      uses           own-file        1 · genuinely ambiguous        8
+  --index: THE TIE-BREAK'S POPULATION — a row that CARRIES A CLAIM returns before the count:
+    CLAIM-FREE ambiguous rows (the tie-break can move these)        1680
+      of which the row's OWN FILE declares the target                  1    0.1%   <-- THE TIE-BREAK'S PRICE ON THIS LANE
+      genuinely ambiguous                                         1679   99.9%
+    CLAIM-CARRYING ambiguous rows (the change CANNOT touch these)       596
+      of which the row's OWN FILE declares the target                  0    0.0%
+      genuinely ambiguous                                          596  100.0%
+    WHOLE-CLASS own-file share (the fleet's headline shape)       0.0%   <-- NOT the tie-break's price; a different population
+    THE PRICE = the whole-class own-file count MINUS the claim-carrying own-file count
+              1 −         0 =         1   <-- THE TIE-BREAK'S PRICE ON THIS LANE (and the claim-free own-file count IS the difference, by construction)
+      calls          (claim-free) own-file        0 · genuinely ambiguous     1390
+      imports        (claim-free) own-file        0 · genuinely ambiguous      201
+      references     (claim-free) own-file        0 · genuinely ambiguous       64
+      exports        (claim-free) own-file        0 · genuinely ambiguous       16
+      uses           (claim-free) own-file        1 · genuinely ambiguous        8
+
+THE PROBE'S OWN TABLE 1 (the same columns the gate prints, from the same classifyEdge):
+  type              edges  resolved   collRes   ambDecl   ambKind unresolved     extOK      extQ   extFAIL    bindOK     bindQ  bindFAIL   causeOK causeFAIL
+  calls             52842     11578         0      1978      1218     14532     14941         6         0      9807         0         0         0         0
+  uses               5774      5076         0         9         0       187         2         0         0       500         0         0         0         0
+  contains           7464      7464         0         0         0         0         0         0         0         0         0         0         0         0
+  imports            7710      1440         0       201       103      2211      3415        88         0       355         0         0         0         0
+  references        11478      4423         0        72        17      2373      2119         1         0      2490         0         0         0         0
+  exports            3491      3068         0        16        13       401         2         0         0         4         0         0         0         0
+  extends             321       204         0         0         0        23        12         0         0        82         0         0         0         0
+  implements           13         2         0         0         0        11         0         0         0         0         0         0         0         0
+  overrides           121         0         0         0         0       121         0         0         0         0         0         0         0         0
+  instantiates       1605       286         0         0         0       505         1         0         0       813         0         0         0         0
+  decorates           316         0         0         0         0         0         0         0         0       316         0         0         0         0
+  renders             381       191         0         0         0         8         0         0         0       182         0         0         0         0
+  mixes_in              0         0         0         0         0         0         0         0         0         0         0         0         0         0
+  part_of               8         0         0         0         0         8         0         0         0         0         0         0         0         0
+  TOTAL             91524     33732         0      2276      1351     20380     20492        95         0     14549         0         0         0         0
+  the probe's own closure: EXACT — the class sum equals the edge count
+
+THE TIE-BREAK'S MOVEMENT — COUNTED PER ROW, COUNTED DIRECTLY (L-2026-10-21-03):
+  Every row is classified TWICE over the SAME key space with the SAME arbiter: once with
+  the gate's own ownFileDeclares fact, and once with it undefined (the tie-break disabled,
+  nothing else changed). A row whose OUTCOME DIFFERS IS A MOVED ROW.
+  NOT collRes (set only by the contains LIMIT-1 rule) and NOT TABLE 1 - TABLE 2 (a
+  different key space). The count below is a COUNT OF ROWS, and the two derivations
+  below it are the instrument's OWN falsifier.
+    MOVED ROWS (counted per row, directly)                   4231
+      of which the row CARRIED A CLAIM                         4   <-- C4: a claim carried by a moved row would be a CLAIM MERGED INTO RESOLUTION
+      of which the row carried NO claim                     4227
+      uses                1527
+      calls               1225
+      references           685
+      exports              601
+      extends               84
+      renders               65
+      instantiates          31
+      imports               13
+      ambDeclOnly -> resolved                 2932
+      ambBoth -> resolved                     1299
+        e.g. references instanceOfApprovalDecision -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalDecisionFromJSON -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalDecisionFromJSONTyped -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalDecisionToJSON -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalDecisionToJSONTyped -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. exports (file) -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. exports (file) -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. references ApprovalDecision -> ApprovalDecision @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalDecision.ts:0  (ambBoth -> resolved)
+        e.g. references instanceOfApprovalPolicyStatus -> ApprovalPolicyStatus @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalPolicyStatus.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalPolicyStatusFromJSON -> ApprovalPolicyStatus @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalPolicyStatus.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalPolicyStatusFromJSONTyped -> ApprovalPolicyStatus @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalPolicyStatus.ts:0  (ambBoth -> resolved)
+        e.g. uses ApprovalPolicyStatusToJSON -> ApprovalPolicyStatus @ sdk/generated/matrix/openapi-generator/typescript-fetch/src/models/ApprovalPolicyStatus.ts:0  (ambBoth -> resolved)
+    THE C4 ROWS — the moved rows that CARRIED A CLAIM. The arbiter attaches a claim's
+    disposition to an ambiguous row at `incoming-rule.ts:2248`, and the tie-break RETURNS
+    at :2223 — so on a moved row the claim's verdict is NEVER ATTACHED. The claim is not
+    MERGED into the resolution (it fell through its own branch, which is guarded by
+    `decls === 0` or is read earlier); it is DISCARDED on a row that became a resolution.
+    The javascript lane measured 0 such rows on bulma; this lane's count is BELOW.
+      claim kind owner                   4
+    THE DISPOSITIONS THE ARBITER NOW ATTACHES TO THE MOVED CLAIM-CARRYING ROWS:
+      disposition owner/contradicted                  4
+    THE MOVED CLAIM-CARRYING ROWS THAT NOW CARRY A DISPOSITION: 4 of 4
+        e.g. exports (file) -> requireAuth @ __fixtures__/empty-project/api/src/directives/requireAuth/requireAuth.ts:0  claim=owner/src/lib/auth  disposition=owner/contradicted  (ambBoth -> resolved)
+        e.g. exports (file) -> requireAuth @ __fixtures__/fragment-test-project/api/src/directives/requireAuth/requireAuth.ts:0  claim=owner/src/lib/auth  disposition=owner/contradicted  (ambBoth -> resolved)
+        e.g. exports (file) -> CompileOptions @ packages/svelte/src/compiler/types/legacy-interfaces.d.ts:0  claim=owner/#compiler  disposition=owner/contradicted  (ambBoth -> resolved)
+        e.g. exports (file) -> Warning @ packages/svelte/src/compiler/types/legacy-interfaces.d.ts:0  claim=owner/#compiler  disposition=owner/contradicted  (ambBoth -> resolved)
+    THE FALSIFIER — the two derivations, independently counted:
+      derivation 1: the rows classified TWICE, the differences counted per row       4231
+      derivation 2: the two tables' resolved columns, differenced                   4231   (33,732 with the tie-break − 29,501 without)
+      THEY AGREE — the movement is the same number by two independent derivations ✓✓
+    THE SECOND TABLE, printed so a reader can check the difference by eye:
+      type              edges  resolved   collRes   ambDecl   ambKind unresolved     extOK      extQ   extFAIL    bindOK     bindQ  bindFAIL   causeOK causeFAIL
+      calls             52842     10353         0      3203      1582     14532     14941         6         0      9807         0         0         0         0
+      uses               5774      3549         0      1536       460       187         2         0         0       500         0         0         0         0
+      contains           7464      7464         0         0         0         0         0         0         0         0         0         0         0         0
+      imports            7710      1427         0       214       110      2211      3415        88         0       355         0         0         0         0
+      references        11478      3738         0       757       220      2373      2119         1         0      2490         0         0         0         0
+      exports            3491      2467         0       617       202       401         2         0         0         4         0         0         0         0
+      extends             321       120         0        84         1        23        12         0         0        82         0         0         0         0
+      implements           13         2         0         0         0        11         0         0         0         0         0         0         0         0
+      overrides           121         0         0         0         0       121         0         0         0         0         0         0         0         0
+      instantiates       1605       255         0        31        13       505         1         0         0       813         0         0         0         0
+      decorates           316         0         0         0         0         0         0         0         0       316         0         0         0         0
+      renders             381       126         0        65        62         8         0         0         0       182         0         0         0         0
+      mixes_in              0         0         0         0         0         0         0         0         0         0         0         0         0         0
+      part_of               8         0         0         0         0         8         0         0         0         0         0         0         0         0
+      TOTAL             91524     29501         0      6507      2650     20380     20492        95         0     14549         0         0         0         0
+      the tie-break-disabled closure: EXACT
+
+R5's BOUND — the RECEIVER-TYPING EVIDENCE CLASS, over the UNRESOLVED NAME-SHAPED rows:
+  no-index: 18732 unresolved name-shaped rows
+    W1 the FILE binds the name               12    0.1%  (a read of a LOCAL)
+    W2 the PROJECT declares it               237    1.3%  (a member of a project type; the site does not say WHICH — the receiver-wall class)
+    W3 the project declares it NOWHERE     18483   98.7%  (an SDK / third-party member — a VOCABULARY question; the instrument is the package-scope claim)
+    => a receiver-typing evidence class could move at most the W2 rows: 237 — not 18732.
+      calls          W1       11 · W2      138 · W3    14409
+      uses           W1        1 · W2       99 · W3       89
+      instantiates   W1        0 · W2        0 · W3      506
+      imports        W1        0 · W2        0 · W3     1606
+      references     W1        0 · W2        0 · W3     1444
+      exports        W1        0 · W2        0 · W3      403
+      implements     W1        0 · W2        0 · W3       11
+      extends        W1        0 · W2        0 · W3        6
+      renders        W1        0 · W2        0 · W3        8
+      part_of        W1        0 · W2        0 · W3        1
+  --index: 18517 unresolved name-shaped rows
+    W1 the FILE binds the name               12    0.1%  (a read of a LOCAL)
+    W2 the PROJECT declares it               237    1.3%  (a member of a project type; the site does not say WHICH — the receiver-wall class)
+    W3 the project declares it NOWHERE     18268   98.7%  (an SDK / third-party member — a VOCABULARY question; the instrument is the package-scope claim)
+    => a receiver-typing evidence class could move at most the W2 rows: 237 — not 18517.
+      calls          W1       11 · W2      138 · W3    14383
+      uses           W1        1 · W2       99 · W3       87
+      instantiates   W1        0 · W2        0 · W3      505
+      imports        W1        0 · W2        0 · W3     1606
+      references     W1        0 · W2        0 · W3     1260
+      exports        W1        0 · W2        0 · W3      401
+      implements     W1        0 · W2        0 · W3       11
+      extends        W1        0 · W2        0 · W3        6
+      renders        W1        0 · W2        0 · W3        8
+      part_of        W1        0 · W2        0 · W3        1
+
+OUTCOME MOVEMENT (no-index outcome -> --index outcome), by label:
+       3415  unresolved -> externalVerified   [imports]  markers: NONE -> isExternalTarget  reason: module-namespace
+        183  unresolved -> externalVerified   [references]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingVerified
+         88  unresolved -> externalUnverified   [imports]  markers: NONE -> isExternalTarget  reason: module-namespace
+         45  unresolved -> resolved   [imports]  markers: NONE -> NONE
+         20  unresolved -> externalVerified   [calls]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingVerified
+          6  unresolved -> externalUnverified   [calls]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingVerified
+          2  unresolved -> externalVerified   [exports]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingRefuted
+          2  unresolved -> externalVerified   [uses]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingVerified
+          1  unresolved -> externalUnverified   [references]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingVerified
+          1  unresolved -> externalVerified   [instantiates]  markers: NONE -> isExternalTarget  reason: imported-from-external-module  the OTHER claim would be: bindingVerified
+  TOTAL outcome changes: 3763
+
+CLASS CHANGES (marker no-index -> marker --index), by label:
+       3503  NONE -> isExternalTarget   [imports]  reasons: module-namespace=3503
+        189  NONE -> isExternalTarget   [references]  reasons: imported-from-external-module=189
+         26  NONE -> isExternalTarget   [calls]  reasons: imported-from-external-module=26
+         15  NONE -> isExternalTarget   [exports]  reasons: imported-from-external-module=15
+          3  NONE -> isExternalTarget   [contains]  reasons: imported-from-external-module=3
+          2  NONE -> isExternalTarget   [instantiates]  reasons: imported-from-external-module=2
+          2  NONE -> isExternalTarget   [uses]  reasons: imported-from-external-module=2
+          1  NONE -> isExternalTarget   [renders]  reasons: imported-from-external-module=1
+  TOTAL class changes: 3741
+
+EXPLANATION: explained 3741 · unexplained 0
+
+COUNTERFACTUAL — for each outcome-moved row, what the OTHER claim would have said:
+       3415  unresolved -> (index arm claim) ; the OTHER claim would be: (not reconstructible from published metadata)
+        183  unresolved -> (index arm claim) ; the OTHER claim would be: bindingVerified
+         88  unresolved -> (index arm claim) ; the OTHER claim would be: (not reconstructible from published metadata)
+         45  unresolved -> (index arm claim) ; the OTHER claim would be: (not reconstructible from published metadata)
+         20  unresolved -> (index arm claim) ; the OTHER claim would be: bindingVerified
+          6  unresolved -> (index arm claim) ; the OTHER claim would be: bindingVerified
+          2  unresolved -> (index arm claim) ; the OTHER claim would be: bindingRefuted
+          2  unresolved -> (index arm claim) ; the OTHER claim would be: bindingVerified
+          1  unresolved -> (index arm claim) ; the OTHER claim would be: bindingVerified
+          1  unresolved -> (index arm claim) ; the OTHER claim would be: bindingVerified
+  TOTAL outcome-moved rows: 3763 · of which the other claim is NOT reconstructible: 3548
+
+EXTERNAL CLAIM REFUTATION RISK (the index pass's own claims, by whether the project DECLARES the name):
+        215  not-refutable
+         23  would-be-refuted
+  samples of the REFUTABLE claims (the extFAIL risk):
+    · contains App -> Resolver (specifier ember-resolver) @ ui/app/app.ts:0
+    · exports (file) -> setupApplicationTest (specifier ember-qunit) @ ui/tests/helpers/index.ts:0
+    · exports (file) -> setupRenderingTest (specifier ember-qunit) @ ui/tests/helpers/index.ts:0
+    · exports (file) -> setupTest (specifier ember-qunit) @ ui/tests/helpers/index.ts:0
+    · exports (file) -> requireAuth (specifier src/lib/auth) @ __fixtures__/empty-project/api/src/directives/requireAuth/requireAuth.ts:0
+    · exports (file) -> requireAuth (specifier src/lib/auth) @ __fixtures__/fragment-test-project/api/src/directives/requireAuth/requireAuth.ts:0
+    · exports (file) -> preset (specifier @shopify/graphql-codegen) @ packages/api-codegen-preset/src/preset.ts:0
+    · references HTMLAttributes -> Attachment (specifier svelte/attachments) @ packages/svelte/elements.d.ts:0
+    · references Comp -> SvelteComponent (specifier svelte) @ packages/svelte/src/ambient.d.ts:0
+    · exports (file) -> CompileOptions (specifier #compiler) @ packages/svelte/src/compiler/types/legacy-interfaces.d.ts:0
+    · exports (file) -> Warning (specifier #compiler) @ packages/svelte/src/compiler/types/legacy-interfaces.d.ts:0
+    · references paths -> Component (specifier svelte) @ packages/svelte/src/internal/server/renderer.test.ts:0
+    · references result -> Component (specifier svelte) @ packages/svelte/src/internal/server/renderer.test.ts:0
+    · renders App -> Routes (specifier react-router) @ webui/src/App.tsx:0
+    · instantiates App -> Routes (specifier react-router) @ webui/src/App.tsx:0
+  THE ARBITER'S OWN VERDICT for those predicted-refutable rows (the extFAIL risk MEASURED):
+           20  resolved
+            2  ambDeclOnly
+            1  ambBoth

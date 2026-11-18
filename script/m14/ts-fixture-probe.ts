@@ -43,6 +43,7 @@ const verbose = process.argv.includes("--verbose")
 const FIXTURES_TO_PROBE: { base: string; grammar: "typescript" | "tsx" }[] = [
   { base: "decorator-emission", grammar: "typescript" },
   { base: "tsx-renders", grammar: "tsx" },
+  { base: "renders-imported-binding", grammar: "tsx" },
 ]
 
 type Row = Record<string, any>
