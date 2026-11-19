@@ -53,6 +53,17 @@ process.env.BB_DATA_DIR = EMPTY
 process.env.BB_NO_AUTO_REFRESH = "1"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back
+// to the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data }
+    : payload
+
+
 const EVIDENCE = path.join(ROOT, "validation/m65/results/graph-blindspots.json")
 
 type Check = { name: string; passed: boolean; detail: string; negative?: boolean }
@@ -134,7 +145,7 @@ async function main() {
   const callGraph = async (fixture: string, projectId: string, args: Record<string, unknown>) => {
     const r = await handlers.bb_graph(args, { projectPath: fixture, projectId } as any)
     const text = r?.content?.[0]?.text ?? ""
-    return JSON.parse(text)
+    return flattenEnvelope(JSON.parse(text))
   }
 
   const perLanguage: Array<{ language: string; unattributed: number | null; callers: number; note: boolean }> = []

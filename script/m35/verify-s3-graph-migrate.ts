@@ -24,6 +24,17 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back to
+// the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data }
+    : payload
+
+
 const RESULT = path.join(ROOT, "validation/m35/results/S3.json")
 
 delete process.env.BB_EMBEDDING_BASE_URL
@@ -87,7 +98,7 @@ async function runSuite(): Promise<void> {
     check("viz: footer names the registered remediation", vizText.includes("bb index --changed") && vizText.includes("bb_index"), "")
 
     // ── 2. bb_visualize json: envelope + per-node flags + link inheritance ──
-    const vizJson = JSON.parse(await run("bb_visualize", { scope: "project", format: "json" }))
+    const vizJson = flattenEnvelope(JSON.parse(await run("bb_visualize", { scope: "project", format: "json" })))
     const f = vizJson.freshness
     check("viz: freshness block with exact registered keys", f && JSON.stringify(Object.keys(f).sort()) === JSON.stringify(["fresh", "missing", "mode", "remediation", "stale", "staleRatio"]), JSON.stringify(f))
     check("viz: staleRatio consistent", Math.abs(f.staleRatio - (f.stale + f.missing) / Math.max(1, f.fresh + f.stale + f.missing)) < 1e-9, String(f.staleRatio))
@@ -111,7 +122,7 @@ async function runSuite(): Promise<void> {
     if (freshLink) negative("viz: fresh-fresh link NOT flagged", freshLink.stale === false, `${nameOf(freshLink.source)}->${nameOf(freshLink.target)}=${freshLink.stale}`)
 
     // ── 3. truncation composes with staleness ──
-    const trunc = JSON.parse(await run("bb_visualize", { scope: "project", format: "json", maxNodes: 1 }))
+    const trunc = flattenEnvelope(JSON.parse(await run("bb_visualize", { scope: "project", format: "json", maxNodes: 1 })))
     check("viz: truncation reported honestly", trunc.truncation?.truncated === true, JSON.stringify(trunc.truncation))
     check("viz: truncated output still carries freshness envelope", trunc.freshness && typeof trunc.freshness.staleRatio === "number", JSON.stringify(trunc.freshness))
     check("viz: truncated nodes still carry stale flags", (trunc.nodes as any[]).length >= 1 && (trunc.nodes as any[]).every((n) => typeof n.stale === "boolean"), "")
@@ -119,7 +130,7 @@ async function runSuite(): Promise<void> {
     // ── 4. silence when fresh ──
     const freshVizText = await run("bb_visualize", { scope: "file", target: "util.ts" })
     negative("viz: no footer when all graph files fresh", !freshVizText.includes("graph files —"), freshVizText.slice(-160))
-    const freshVizJson = JSON.parse(await run("bb_visualize", { scope: "file", target: "util.ts", format: "json" }))
+    const freshVizJson = flattenEnvelope(JSON.parse(await run("bb_visualize", { scope: "file", target: "util.ts", format: "json" })))
     negative("viz: no remediation when fresh", freshVizJson.freshness.remediation === "", JSON.stringify(freshVizJson.freshness))
 
     // ── 5. bb_migrate: stale plan flagged UP FRONT + per-plan flags ──

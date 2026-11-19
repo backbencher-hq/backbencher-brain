@@ -84,7 +84,7 @@
     {
       "name": "evidence: all 4 S-issues claim verified with negatives",
       "pass": true,
-      "detail": "S1:3neg S2:10neg S3:4neg S4:4neg"
+      "detail": "S1:9neg S2:13neg S3:4neg S4:4neg"
     },
     {
       "name": "gate: verify-search-e2e.ts wired into quality gate",
@@ -125,7 +125,7 @@
       "name": "gate: tampered doc (failed>0, no negatives) cannot claim verified [negative]",
       "pass": true,
       "negative": true,
-      "detail": "summary.failed 3 != actual 0; negativeCases 0 is less than 3 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
+      "detail": "summary.failed 3 != actual 0; negativeCases 0 is less than 9 checks marked negative; verified claim has failed>0; verified claim has zero negative cases"
     },
     {
       "name": "gate: removing any single S-verifier breaks the gate [negative]",
@@ -149,5 +149,5 @@
     "Docs byte-freshness is proven by the generator's own verify mode, not by a duplicated render.",
     "This gate covers bb_search only; other tools have their own issues in M13."
   ],
-  "generatedAt": "2026-11-03T20:33:55.370Z"
+  "generatedAt": "2026-11-19T00:46:41.939Z"
 }

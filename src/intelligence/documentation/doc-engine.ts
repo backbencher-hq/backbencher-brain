@@ -67,6 +67,10 @@ export interface DocCitation {
   kind: "symbol" | "file" | "relationship" | "import" | "test" | "finding" | "embedding" | "health"
   path?: string
   symbol?: string
+  /** For a symbol citation: the indexed symbol id the citation names. It is the
+   *  only way `quality.scope` can check that the emitted document actually covers
+   *  the subject it declares (a path+line pair is not the index identity). */
+  symbolId?: string
   lineStart?: number
   lineEnd?: number
   relationshipType?: string
@@ -98,6 +102,22 @@ export interface DocUnknown {
 
 export interface DocQuality {
   passed: boolean
+  /**
+   * The measured subject scope (P2-1). Symbol mode RESOLVES a subject before it
+   * writes: a declaration (struct/class/function/…) is preferred over a field or
+   * variable that reuses the name, a qualified target selects the qualified
+   * symbol, and a genuine multi-declaration target is documented as a DECLARED
+   * union. `passed` is the checkable part: a `single` document must cite exactly
+   * its one subject; a `union` document must cite every subject it declares.
+   * `not-applicable` is every non-symbol mode.
+   */
+  scope: {
+    declared: "single" | "union" | "not-applicable"
+    passed: boolean
+    subjects: number
+    copies: number
+    resolvedBy: "qualified-name" | "qualified-path" | "declaration-kind" | "single-name" | "name-only" | "not-applicable"
+  }
   factuality: { passed: boolean; uncitedClaims: number; unsupportedClaims: number }
   /** `stale`/`missing`/`broken` count the citations the answer EMITS; the
    *  `collected*` figures count everything the generator gathered, including
@@ -432,7 +452,7 @@ function deriveConfidence(classification: DocFact["classification"], citations: 
 
 function addCitation(
   citations: DocCitation[],
-  spec: { kind: DocCitation["kind"]; idParts: Array<string | number | undefined>; relPath?: string; symbol?: string; lineStart?: number; lineEnd?: number; relationshipType?: string; evidence: string; fileId?: string; /** An index-scoped citation (totals, a language histogram) is current by construction. */ indexScoped?: boolean },
+  spec: { kind: DocCitation["kind"]; idParts: Array<string | number | undefined>; relPath?: string; symbol?: string; symbolId?: string; lineStart?: number; lineEnd?: number; relationshipType?: string; evidence: string; fileId?: string; /** An index-scoped citation (totals, a language histogram) is current by construction. */ indexScoped?: boolean },
   resolver: FreshnessResolver,
 ): string {
   const base = makeCitationId([spec.kind, ...spec.idParts])
@@ -447,6 +467,7 @@ function addCitation(
     kind: spec.kind,
     path: spec.relPath,
     symbol: spec.symbol || undefined,
+    symbolId: spec.symbolId || undefined,
     lineStart: spec.lineStart || undefined,
     lineEnd: spec.lineEnd || undefined,
     relationshipType: spec.relationshipType,
@@ -708,31 +729,139 @@ async function discoverFeatureSymbols(raw: any, projectId: string, request: DocR
   return out
 }
 
-async function targetSymbols(raw: any, projectId: string, request: DocRequest, files: Row[], limit: number): Promise<{ symbols: Row[]; feature: FeatureDiscovery | null }> {
+// ─────────────────────────────────────────────────────────────────────────────
+// symbol-target resolution (P2-1)
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * What a symbol-mode target RESOLVED TO, as opposed to what name it spelled.
+ *
+ * The pre-fix engine selected every indexed symbol whose NAME equalled the
+ * target and documented the union under one title. On bettercap `Session` that
+ * union was four `Session` FIELDS (`*Session`, `*session.Session`, two embedded
+ * `*session.Session`s) plus the canonical `struct Session`, ordered by line
+ * number — so the doc led with a field and `limit:1` documented only the field
+ * while `quality.passed` stayed true. `quality.scope` below is measured from
+ * `symbolIds`; the title and summary state the decision.
+ */
+export interface DocSymbolSubject {
+  declared: "single" | "union"
+  subjects: number
+  /** Every exact-name copy the index held for the target (before selection). */
+  copies: number
+  /** True when the name-copy scan hit RESOLUTION_CAP and may be incomplete. */
+  copiesCapped: boolean
+  resolvedBy: "qualified-name" | "qualified-path" | "declaration-kind" | "single-name" | "name-only"
+  symbolIds: string[]
+  primary: { name: string; symbolType: string; relativePath: string; lineStart: number | null } | null
+}
+
+/** Symbol kinds that DECLARE a name. A property/variable/constant that reuses
+ *  the name is data about another declaration, never the subject of "document
+ *  X" when a declaration exists. */
+const DECLARATION_KINDS = new Set([
+  "class", "struct", "interface", "enum", "type", "trait", "function", "method",
+  "module", "namespace", "protocol", "record", "union", "object", "actor", "delegate",
+])
+/** Bound on the name-copy scan. It is a RESOLUTION bound, deliberately separate
+ *  from `limit` (the per-section evidence cap): changing evidence detail must
+ *  never change which symbol a document is about. */
+const RESOLUTION_CAP = 200
+
+function isDeclarationKind(kind: unknown): boolean {
+  return DECLARATION_KINDS.has(String(kind ?? "").toLowerCase())
+}
+
+/** The qualifier segment of a dotted/`::` target (`session` in `session.Session`). */
+function qualifierHint(target: string): string | null {
+  const sep = target.includes("::") ? "::" : "."
+  const parts = target.split(sep).filter(Boolean)
+  return parts.length < 2 ? null : parts[parts.length - 2] ?? null
+}
+
+/**
+ * Does a repository-relative path belong to the qualified namespace?
+ *
+ * Measured on the corpora this fixes: `qualified_name` is populated with the
+ * BARE name (bettercap stores `Session`, gh-cli stores `Options`), so an exact
+ * qualified-name match cannot be the primary route on real indexes. The
+ * qualifier is therefore resolved the way the languages name their scopes: a
+ * directory segment (`config/config.go` for `config.Options`, `session/` for
+ * `session.Session`) or, for single-segment qualifiers, the file stem
+ * (`session.go`, `src/session.ts`). Whole-segment comparison, never a substring
+ * prefix — the difference between `session/` and `sessions/` is the defect.
+ */
+function pathMatchesQualifier(relativePath: string, hint: string): boolean {
+  const parts = relativePath.split("\\").join("/").split("/").filter(Boolean)
+  if (!parts.length) return false
+  const dirs = parts.slice(0, -1)
+  if (dirs.includes(hint)) return true
+  const file = parts[parts.length - 1] ?? ""
+  if (file.replace(/\.[^.]+$/, "") === hint) return true
+  return dirs.some((_, index) => dirs.slice(index).join(".") === hint)
+}
+
+function resolveSymbolSubject(raw: any, projectId: string, target: string): { symbols: Row[]; subject: DocSymbolSubject } {
+  const columns = "SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id"
+  const sep = target.includes("::") ? "::" : "."
+  const parts = target.split(sep).filter((part) => part.length > 0)
+  const leaf = parts.length ? (parts[parts.length - 1] as string) : target
+  const hint = qualifierHint(target)
+  const byName = (name: string): Row[] => queryRows(raw, `${columns} WHERE s.project_id=? AND s.name=? ORDER BY s.line_start LIMIT ?`, projectId, name, RESOLUTION_CAP)
+  // The indexed `name` column holds the bare name; the leaf lookup is the one
+  // that finds copies at all, and qualification then SELECTS among them.
+  let matches = leaf !== target ? byName(leaf) : byName(target)
+  if (!matches.length && leaf !== target) matches = byName(target)
+  const copiesCapped = matches.length >= RESOLUTION_CAP
+  const dedupe = new Map<string, Row>()
+  for (const row of matches) dedupe.set(String(row.id ?? `${row.relative_path}:${row.line_start}:${row.name}`), row)
+  const copies = [...dedupe.values()]
+  const totalCopies = copies.length
+  let candidates = copies
+  let resolvedBy: DocSymbolSubject["resolvedBy"] = totalCopies === 1 ? "single-name" : "name-only"
+  if (hint !== null && copies.length) {
+    // 1. an analyzer that stored a qualified name matching the whole target;
+    //    2. otherwise the qualifier as a path/namespace selector (the route real
+    //    corpora can answer). A qualified target that selects nothing falls back
+    //    to the name copies, and the scope declaration below says so.
+    const exactQualified = copies.filter((row) => String(row.qualified_name ?? "") === target)
+    const byPath = copies.filter((row) => pathMatchesQualifier(String(row.relative_path ?? ""), hint))
+    const selected = exactQualified.length ? exactQualified : byPath
+    if (selected.length) {
+      candidates = selected
+      resolvedBy = exactQualified.length ? "qualified-name" : "qualified-path"
+    }
+  }
+  const declarations = candidates.filter((row) => isDeclarationKind(row.symbol_type))
+  const preferred = declarations.length ? declarations : candidates
+  if (hint === null && declarations.length && declarations.length < candidates.length) resolvedBy = "declaration-kind"
+  const ordered = [...preferred].sort((left, right) => {
+    const byPath = String(left.relative_path ?? "").localeCompare(String(right.relative_path ?? ""))
+    return byPath !== 0 ? byPath : Number(left.line_start ?? 0) - Number(right.line_start ?? 0)
+  })
+  const primary = ordered.length === 1 ? ordered[0] : null
+  const subject: DocSymbolSubject = {
+    declared: ordered.length > 1 ? "union" : "single",
+    subjects: ordered.length,
+    copies: totalCopies,
+    copiesCapped,
+    resolvedBy,
+    symbolIds: ordered.map((row) => String(row.id ?? "")).filter(Boolean),
+    primary: primary
+      ? { name: String(primary.name ?? ""), symbolType: String(primary.symbol_type ?? ""), relativePath: String(primary.relative_path ?? ""), lineStart: primary.line_start == null ? null : Number(primary.line_start) }
+      : null,
+  }
+  return { symbols: ordered, subject }
+}
+
+async function targetSymbols(raw: any, projectId: string, request: DocRequest, files: Row[], limit: number): Promise<{ symbols: Row[]; feature: FeatureDiscovery | null; subject?: DocSymbolSubject }> {
   const target = request.target ? String(request.target) : ""
   if (request.mode === "symbol") {
-    // `name` is indexed per project; `qualified_name` is not, so an OR over both
-    // forced SQLite to scan every symbol in the project (measured 7.1 s on the
-    // reference index for ONE lookup). The indexed name routes run first, and
-    // the qualified-name match is only reached when they miss.
-    const short = target.split("::").pop() ?? target
-    const leaf = short.split(".").pop() ?? short
-    const names = [...new Set([target, short, leaf])].filter((name) => name.length > 0)
-    const columns = "SELECT s.*, f.path, f.relative_path, f.language AS file_language, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id"
-    const byName = queryRows(
-      raw,
-      `${columns} WHERE s.project_id=? AND s.name IN (${names.map(() => "?").join(",")}) ORDER BY s.line_start LIMIT ?`,
-      projectId, ...names, limit,
-    )
-    if (byName.length >= limit) return { symbols: byName, feature: null }
-    const byQualified = queryRows(
-      raw,
-      `${columns} WHERE s.project_id=? AND s.qualified_name IN (${names.map(() => "?").join(",")}) ORDER BY s.line_start LIMIT ?`,
-      projectId, ...names, limit,
-    )
-    const seen = new Set(byName.map((row) => String(row.id)))
-    const symbols = [...byName, ...byQualified.filter((row) => !seen.has(String(row.id)))].slice(0, limit)
-    return { symbols, feature: null }
+    // P2-1: resolve a SUBJECT, not a name union. Resolution has its own bound
+    // (RESOLUTION_CAP); `limit` is the per-section evidence cap and is
+    // deliberately NOT forwarded here, because changing evidence detail must
+    // never change which symbol the document is about.
+    const resolved = resolveSymbolSubject(raw, projectId, target)
+    return { symbols: resolved.symbols, feature: null, subject: resolved.subject }
   }
   if (request.mode === "api") {
     // The surface has two real routes: a symbol the index attributes to an HTTP
@@ -996,6 +1125,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
     const end = Number(symbol.line_end ?? start)
     const id = addCitation(citations, {
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
+      symbolId: String(symbol.id ?? ""),
       lineStart: start || undefined, lineEnd: end || undefined,
       evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
     }, resolver)
@@ -1151,6 +1281,7 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
     const framework = String(symbol.framework_type ?? "")
     const id = addCitation(citations, {
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
+      symbolId: String(symbol.id ?? ""),
       lineStart: start || undefined, lineEnd: end || undefined,
       evidence: `${symbol.symbol_type} ${symbol.name} in ${rel}${framework ? ` (index framework: ${framework})` : ""}`,
       fileId: String(symbol.source_file_id ?? ""),
@@ -1755,6 +1886,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const selected = await targetSymbols(raw, projectId, request, files, limit)
   let symbols = selected.symbols
   const feature = selected.feature
+  const subject = selected.subject
 
   if (!files.length && symbols.length) {
     const fileIds = [...new Set(symbols.map((symbol) => symbol.source_file_id).filter(Boolean))]
@@ -1792,6 +1924,11 @@ export async function generateDocumentation(projectId: string, projectPath: stri
 
   if (scope.truncated > 0) {
     unknowns.push({ statement: `The scope contains more indexed files than the evidence limit allows; ${scope.truncated} file(s) were not examined.`, reason: "output-budget", affectedSection: concern("scope") })
+  }
+  // A resolution cap is a bound of its own and is declared, not hidden: a target
+  // with more copies than the scan examined cannot claim it saw all of them.
+  if (subject?.copiesCapped) {
+    unknowns.push({ statement: `The target has at least ${RESOLUTION_CAP} indexed symbols with this name; resolution examined that many and may not have seen the whole copy set.`, reason: "output-budget", affectedSection: concern("scope") })
   }
   if (feature?.semanticError) {
     unknowns.push({ statement: `Semantic candidate discovery did not run: ${feature.semanticError}. Only lexical candidates are used, so feature recall is lower than the mode's ceiling.`, reason: "not-observed", affectedSection: concern("semantic") })
@@ -2025,7 +2162,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     __raw: raw,
     reader,
     projectId, projectPath, request, mode, detail, audience,
-    files, symbols, sections, citations, unknowns: distinctUnknowns, inventory,
+    files, symbols, sections, citations, unknowns: distinctUnknowns, inventory, subject,
     // The per-section cap is a bound of its own, announced where the cap is
     // applied, so the two bounds never recount the same facts.
     cappedOut, perSection,
@@ -2157,6 +2294,8 @@ interface MakeResultArgs {
   audience: DocAudience
   files: Row[]
   symbols: Row[]
+  /** Symbol-mode subject resolution (undefined for every other mode). */
+  subject?: DocSymbolSubject
   sections: DocSection[]
   citations: DocCitation[]
   unknowns: DocUnknown[]
@@ -2195,12 +2334,21 @@ function makeResult(args: MakeResultArgs): DocResult {
     .filter(Boolean)
     .slice(0, 4)
   const generatedAt = new Date().toISOString()
+  const baseTitle = request.target ? `${mode}: ${request.target}` : `${mode} documentation`
+  // A union is part of the TITLE, not a footnote: a caller (and a website cache
+  // keyed on the title/canonicalPath) must not read a multi-symbol document as
+  // one symbol. A single resolved subject keeps the pre-fix title byte-for-byte.
+  const title = mode === "symbol" && args.subject && args.subject.declared === "union"
+    ? `${baseTitle} (union of ${args.subject.subjects} indexed symbols)`
+    : baseTitle
+  const baseSummary = summarize(mode, args.files.length, args.symbols.length, sections, citations.length)
+  const summary = mode === "symbol" && args.subject ? `${symbolSubjectSentence(args.subject, String(request.target ?? ""))}${baseSummary}` : baseSummary
 
   const result: DocResult = {
     schemaVersion: "1",
     mode,
-    title: request.target ? `${mode}: ${request.target}` : `${mode} documentation`,
-    summary: summarize(mode, args.files.length, args.symbols.length, sections, citations.length),
+    title,
+    summary,
     sections,
     // Replaced by the surviving set below; the provisional list keeps the
     // object well-formed for the first measurement.
@@ -2208,6 +2356,7 @@ function makeResult(args: MakeResultArgs): DocResult {
     unknowns,
     quality: {
       passed: false,
+      scope: { declared: "not-applicable", passed: false, subjects: 0, copies: 0, resolvedBy: "not-applicable" },
       factuality: { passed: false, uncitedClaims, unsupportedClaims: 0 },
       references: { passed: false, broken: 0, stale: 0, missing: 0, collectedStale, collectedMissing },
       completeness: { passed: false, covered: 0, expected, unknown: unknowns.length },
@@ -2276,6 +2425,17 @@ function makeResult(args: MakeResultArgs): DocResult {
     const covered = REQUIRED_SECTION_IDS[mode].filter((id) => result.sections.some((section) => section.id === id)).length
     const factualityPassed = uncitedClaims === 0 && hasEvidence
     const referencesPassed = missing === 0 && broken === 0
+    // The scope term is MEASURED, not declared: every subject the resolution
+    // chose must be cited by a surviving symbol citation. A union whose own
+    // evidence cap trimmed a subject out cannot pass; a single-subject document
+    // that cites nothing cannot pass. Non-symbol modes are not applicable.
+    const subjectIds = mode === "symbol" && args.subject ? args.subject.symbolIds : []
+    const citedSubjectIds = new Set(keptCitations.filter((citation) => citation.kind === "symbol" && citation.symbolId).map((citation) => String(citation.symbolId)))
+    const scopePassed = mode !== "symbol" || !args.subject
+      ? true
+      : args.subject.declared === "single"
+        ? subjectIds.length === 1 && citedSubjectIds.has(subjectIds[0])
+        : subjectIds.length > 1 && subjectIds.every((id) => citedSubjectIds.has(id))
     // Unknowns are the gap inventory which the document already prints in full;
     // copying every statement into `warnings` doubled that text and spent the
     // caller's token budget on a second copy of the same sentences. Warnings
@@ -2293,7 +2453,14 @@ function makeResult(args: MakeResultArgs): DocResult {
       // over-budget output, and a missing required section. Stale evidence is a
       // warning here — the spec makes it a failure only for current-behavior
       // claims, which this result does not make.
-      passed: factualityPassed && referencesPassed && budgetPassed && covered === expected,
+      passed: factualityPassed && referencesPassed && budgetPassed && covered === expected && scopePassed,
+      scope: {
+        declared: mode === "symbol" && args.subject ? args.subject.declared : "not-applicable",
+        passed: scopePassed,
+        subjects: mode === "symbol" && args.subject ? args.subject.subjects : 0,
+        copies: mode === "symbol" && args.subject ? args.subject.copies : 0,
+        resolvedBy: mode === "symbol" && args.subject ? args.subject.resolvedBy : "not-applicable",
+      },
       factuality: { passed: factualityPassed, uncitedClaims, unsupportedClaims: 0 },
       references: { passed: referencesPassed, broken, stale, missing, collectedStale, collectedMissing },
       completeness: { passed: covered === expected, covered, expected, unknown: result.unknowns.length },
@@ -2590,6 +2757,25 @@ export function assertUnknownsNameRenderedSections(result: Pick<DocResult, "mode
   }
 }
 
+/** One sentence that names the resolved subject (or declares the union) before
+ *  the document's counts. A single unique symbol returns "" so a unique-symbol
+ *  document is byte-compatible with the pre-fix answer. */
+function symbolSubjectSentence(subject: DocSymbolSubject, target: string): string {
+  if (subject.declared === "union") {
+    return `Union: ${subject.subjects} indexed symbols named "${target}" are documented together; their claims are not interchangeable. `
+  }
+  if (subject.copies <= 1 || !subject.primary) return ""
+  const primary = subject.primary
+  const selection = subject.resolvedBy === "qualified-name"
+    ? "matched by qualified name"
+    : subject.resolvedBy === "qualified-path"
+      ? "matched by namespace path"
+      : subject.resolvedBy === "declaration-kind"
+        ? "declaration preferred over fields/variables sharing the name"
+        : "only declaration in the name set"
+  return `Subject: ${primary.symbolType} ${primary.name} in ${primary.relativePath}:${primary.lineStart ?? "?"} (selected from ${subject.copies} indexed symbols of that name; ${selection}). `
+}
+
 function summarize(mode: DocMode, fileCount: number, symbolCount: number, sections: DocSection[], citationCount: number): string {
   const factCount = sections.reduce((count, section) => count + section.facts.length, 0)
   const emptySections = sections.filter((section) => section.facts.length === 0).map((section) => section.heading)
@@ -2672,6 +2858,7 @@ export function formatDocumentation(result: DocResult, format: DocFormat = "mark
     `- factuality: ${q.factuality.passed} (${q.factuality.uncitedClaims} uncited claim(s))`,
     `- references: ${q.references.passed} (${q.references.broken} broken, ${q.references.stale} stale, ${q.references.missing} missing)`,
     `- completeness: ${q.completeness.passed} (${q.completeness.covered}/${q.completeness.expected} required sections, ${q.completeness.unknown} unknown(s))`,
+    `- scope: ${q.scope.declared === "not-applicable" ? "not-applicable" : `${q.scope.declared} (${q.scope.subjects} subject(s) of ${q.scope.copies} indexed symbol(s), resolved by ${q.scope.resolvedBy}; passed: ${q.scope.passed})`}`,
     `- budget: ${q.budget.passed} (${q.budget.estimatedTokens}/${q.budget.maxTokens} tokens)`,
     `- snapshot: \`${q.freshness.snapshot}\``,
     "",

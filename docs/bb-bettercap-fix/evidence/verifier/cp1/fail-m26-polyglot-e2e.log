@@ -1,0 +1,70 @@
+M26.A1 polyglot end-to-end verifier
+
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 23ms [plan=linear largest-intermediate=8]
+        cross-language: 3 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 13 relationships (0 patterns) in 9ms
+        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(15ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 7ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  FAIL: P1: java-scala db is polyglot (java+scala files)
+  FAIL: P1: insert-time path flags 3 cross-language rows — []
+  FAIL: P1: the scala->java call chain is flagged with bridge — []
+  FAIL: P1: instantiates + restock edges flagged
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 13ms [plan=linear largest-intermediate=7]
+        cross-language: 2 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 6 relationships (0 patterns) in 4ms
+        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(0ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 2ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 1ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  FAIL: P2: ts-js db is polyglot (javascript+typescript files)
+  FAIL: P2: late-resolution path flags 2 cross-language rows — []
+  FAIL: P3: flagged bridge rows are retained candidates (is_cross_language=1 + bridge=name-resolution) — []
+  FAIL: P4: real hover section renders for the scala caller — no db
+
+A1: FAILED (4/12 passed, 1 mutant)
+
+[INFO] [23:44:40] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:44:41] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:44:41] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"430fcc90","danglingSources":2,"totalRelationships":15}
+[INFO] [23:44:41] [project-health] project health computed {"projectId":"430fcc9018df94a74c5823aab7f8f13803528019","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+[INFO] [23:44:41] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:44:41] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [23:44:42] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:44:42] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"84ad3ec2","danglingSources":5,"totalRelationships":11}
+[INFO] [23:44:42] [project-health] project health computed {"projectId":"84ad3ec2db26fb38b67ee30c38720d98db43011b","complexityScore":93,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}

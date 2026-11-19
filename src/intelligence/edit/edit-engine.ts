@@ -38,6 +38,15 @@ import { reindexFilesParallel } from "../../ast/parallel-indexer"
 import { parseForSafety, assertFreshFiles, type DeclaredName, type IdentifierOccurrence, type SafetyParse, type BodyRange } from "../../ast/safety-primitives"
 import { EXTENSION_LANGUAGE } from "../../ast/language-detection"
 import { bbDataDir } from "../../util/bb-data-dir"
+import {
+  discoverModuleImporters,
+  goBuildContext,
+  moduleBindingsForFile,
+  resolveCallerWindow,
+  runGoBuild,
+  type EditVerification,
+  type ModuleBinding,
+} from "./refactor-safety"
 
 export type EditMode = "write" | "update" | "insert" | "delete" | "refactor" | "batch"
 export type InsertPosition = "before" | "after" | "inside-top" | "inside-bottom"
@@ -174,6 +183,14 @@ export interface EditResult {
    * up" and "not attempted" are different facts and only one of them is true.
    */
   importPruning?: ImportPruneReport
+  /**
+   * `refactor` only — the measured pre-commit verification status. This is the
+   * answer to "was the rename checked?", and it never claims more than ran:
+   * `reparsed` reports the post-rename syntax parse, `unresolvedReferences` the
+   * module/namespace-aware scan for the OLD name, and `build.attempted:false`
+   * (with `reason`) is reported as skipped, never as verified.
+   */
+  verification?: EditVerification
 }
 
 type SymbolMatch = { id: string; fileId: string; byteStart: number; byteEnd: number; lineStart?: number; name: string; symbolType?: string }
@@ -646,6 +663,86 @@ export function isReferenceSite(o: IdentifierOccurrence, _relType: string): bool
   return true
 }
 
+/** The three answers a rename classifier may give for one occurrence. */
+export type RenameSiteVerdict = "reference" | "skipped-member" | "not-reference"
+
+/**
+ * B — the rename decision for ONE occurrence, with the operand evidence it needs.
+ *
+ * A plain identifier reference is a reference (existing `isReferenceSite`). A
+ * MEMBER-NAME occurrence (`pkg.F`, `ns.f`, `obj.method`) is a reference only when
+ * its receiver is bound to a MODULE/NAMESPACE in this file (Go package import,
+ * TS `import * as`): `modules.LoadModules` and `m.target` are references, while
+ * `box.target` on a value is NOT — renaming it because an unrelated top-level
+ * function shares the name would corrupt the value's member (the documented
+ * negative control). A value-receiver member under a METHOD/CONSTRUCTOR target is
+ * returned as "skipped-member": it may be the call site, the engine cannot resolve
+ * its type, and the plan must REPORT it file:line rather than drop it silently.
+ */
+export function classifyRefactorSite(
+  occurrence: IdentifierOccurrence,
+  moduleQualifiers: Set<string>,
+  targetSymbolType?: string,
+): RenameSiteVerdict {
+  if (!occurrence.isMemberName) return isReferenceSite(occurrence, "") ? "reference" : "not-reference"
+  const receiver = occurrence.memberReceiver ?? ""
+  if (receiver && moduleQualifiers.has(receiver)) return "reference"
+  const targetIsMember = /^(method|constructor)$/i.test(targetSymbolType ?? "")
+  return targetIsMember ? "skipped-member" : "not-reference"
+}
+
+export type UnresolvedScan = {
+  /** Module/namespace-aware reference sites of the OLD name still present in the
+   *  planned `after` content, as `file:line (parentType)`. Empty is the only pass. */
+  unresolved: string[]
+  reparsed: "passed" | "failed"
+}
+
+/**
+ * D — the PLAN-time half of the verification gate: reparse every planned file's
+ * `after` content and scan for module/namespace-aware reference sites of the OLD
+ * name that the plan left behind. A non-empty list refuses the plan before the
+ * commit ever starts; the commit re-checks the same invariant on the bytes it is
+ * about to write (`validateFile` covers syntax, this covers the name).
+ */
+export async function scanPlannedRename(
+  projectPath: string,
+  projectId: string,
+  changes: EditPlanChange[],
+  symbolName: string,
+  targetSymbolType: string | undefined,
+  raw: any,
+  cache: Map<string, ModuleBinding>,
+): Promise<UnresolvedScan> {
+  const unresolved: string[] = []
+  let reparsed: "passed" | "failed" = "passed"
+  for (const change of changes) {
+    let parsed: SafetyParse
+    try {
+      parsed = await parseForSafety(change.path, change.after)
+    } catch {
+      reparsed = "failed"
+      continue
+    }
+    const relative = relativeTo(projectPath, change.path)
+    const qualifiers = moduleBindingsForFile(raw, projectId, `${projectId}:${path.relative(projectPath, change.path).split(path.sep).join("/")}`, change.path, cache).qualifiers
+    // R1: a site the PLAN skipped on purpose because a nested scope re-declares the
+    // name is not an unresolved reference. The scope must be recomputed on the AFTER
+    // text, not carried over from `before`: renamed sites shift byte offsets, so a
+    // recorded-indices set would miss every shadow after the first renamed site.
+    // In the after text the old name survives ONLY inside such scopes (plus real
+    // survivors), so `-1` as the declaration anchor excludes no real shadow.
+    const shadowScopes = collectShadowScopes(parsed, symbolName, -1)
+    for (const occurrence of parsed.occurrences) {
+      if (occurrence.text !== symbolName) continue
+      if (shadowScopes.some((scope) => occurrence.startIndex >= scope.start && occurrence.endIndex <= scope.end)) continue
+      if (classifyRefactorSite(occurrence, qualifiers, targetSymbolType) !== "reference") continue
+      unresolved.push(`${relative}:${occurrence.startLine} (${occurrence.parentType || "reference"})`)
+    }
+  }
+  return { unresolved, reparsed }
+}
+
 /** Find the declaration NAME within the symbol's byte range: the identifier
  *  occurrence whose parent is a binding node (the symbol's own name), taking the
  *  earliest match. Returns the byte start index, or undefined if not found. */
@@ -851,7 +948,7 @@ const MODULE_EXTENSIONS: readonly string[] = Object.freeze(
  *  This is a real blind spot and it is recorded as one in script/m70 rather than
  *  papered over: a project using path aliases gets no importer-based protection
  *  from this guard, and its only remaining signal is the indexed `calls` edge. */
-function resolveImportToFile(importerRelPath: string, spec: string, declRelPath: string): boolean {
+export function resolveImportToFile(importerRelPath: string, spec: string, declRelPath: string): boolean {
   if (!spec) return false
   const importerDir = path.posix.dirname(importerRelPath.replace(/\\/g, "/"))
   let base: string
@@ -1233,7 +1330,24 @@ function declarationRangeOf(
 /** D2/ what one `refactor` must rewrite in ONE file. */
 type RefactorFilePlan = {
   declaration?: { start: number; end: number }
-  callers: Array<{ start: number; end: number; relType: string }>
+  /**
+   * A: one entry per caller row, already distilled to the window that may be
+   * renamed. `line`/`lineOnly` are the fallback for a row whose source symbol is
+   * a container with no enclosing function: only the occurrence(s) on the recorded
+   * call line may move, never the whole file.
+   */
+  callers: Array<{
+    start: number
+    end: number
+    relType: string
+    line: number | null
+    lineOnly: boolean
+    /** The row's STORED source-symbol span, kept verbatim so a corrupt index
+     *  offset is refused even when the enclosing-function / call-line fallback
+     *  computes a usable window. Defense-in-depth, not decoration. */
+    storedStart: number | null
+    storedEnd: number | null
+  }>
   /**
    * D2: import bindings of THIS symbol in this file, from `brain_import`. The
    * `line` is the index's line for that specifier (used to pick the right one when
@@ -1242,6 +1356,12 @@ type RefactorFilePlan = {
    * rewritten and the local name left alone.
    */
   imports?: Array<{ line: number | null; aliased: boolean }>
+  /**
+   * B: this file imports the DECLARATION MODULE and names no symbol in the import
+   * (Go `import "<module>/pkg"`, TS `import * as ns`). The rename scans the file
+   * for qualified reference sites through its own measured module bindings.
+   */
+  modules?: Array<{ fileId: string }>
 }
 
 type EditPlan = {
@@ -1265,6 +1385,9 @@ type EditPlan = {
   batch?: Array<{ entry: number; mode: Exclude<EditMode, "batch">; files: string[]; importPruning?: ImportPruneReport }>
   /** `delete` only: the import-cleanup outcome to declare on the result. */
   importPruning?: ImportPruneReport
+  /** `refactor` only: pre-commit verification (reparse + unresolved-reference
+   *  scan at plan time; the bounded build leg is filled in by the commit). */
+  verification?: EditVerification
 }
 
 // ── batch ─────────────────────────────────────────────────────────
@@ -1446,6 +1569,7 @@ async function planBatch(projectPath: string, projectId: string, request: EditRe
   let renamedFiles = 0
   let renamedSites = 0
   let sawSummary = false
+  let verification: EditVerification | undefined
   for (const { entry, mode, request: concrete } of entries) {
     let planned: Omit<EditPlan, "preImages" | "preImageBytes" | "owners">
     try {
@@ -1465,6 +1589,7 @@ async function planBatch(projectPath: string, projectId: string, request: EditRe
       changes.push(change)
     }
     for (const warning of planned.warnings) warnings.push(`batch entry ${entry}: ${warning}`)
+    if (planned.verification) verification = planned.verification
     if (planned.summary) {
       sawSummary = true
       renamedFiles += planned.summary.renamedFiles
@@ -1484,6 +1609,7 @@ async function planBatch(projectPath: string, projectId: string, request: EditRe
     preImageBytes: Object.fromEntries(preImageBytes),
     owners,
     batch: [...batchRows.values()],
+    ...(verification ? { verification } : {}),
   }
 }
 
@@ -1854,18 +1980,32 @@ async function planEditInto(
   // `resolved_symbol_id` is NULL in every measured case, so it is not the signal;
   // the (imported_name, imported_as, import_path) triple is.
   const callerRows = raw.prepare(
-    "SELECT DISTINCT f.id AS fileId, f.path AS path, s.byte_start AS byteStart, s.byte_end AS byteEnd, r.relationship_type AS relType " +
+    "SELECT DISTINCT f.id AS fileId, f.path AS path, s.byte_start AS byteStart, s.byte_end AS byteEnd, " +
+    "       s.symbol_type AS sourceType, r.relationship_type AS relType, r.line_number AS callLine " +
     "FROM brain_relationship r " +
     "LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id " +
     "LEFT JOIN brain_file f ON f.id = s.file_id " +
     "WHERE r.target_symbol_id = ? AND r.relationship_type IN ('calls','instantiates','references','uses')",
-  ).all(match.id) as Array<{ fileId: string | null; path: string | null; byteStart: number | null; byteEnd: number | null; relType: string }>
+  ).all(match.id) as Array<{
+    fileId: string | null
+    path: string | null
+    byteStart: number | null
+    byteEnd: number | null
+    sourceType: string | null
+    relType: string
+    callLine: number | null
+  }>
   // A row with no source symbol carries no file (measured above): it is evidence
   // that a cross-file reference EXISTS, and the import route below is what makes it
   // reachable. Counted rather than discarded, so the closing warning can be honest
   // about what this rename could not reach.
-  const locatableCallerRows = callerRows.filter((r) => r.path != null && r.byteStart != null)
+  const locatableCallerRows = callerRows.filter((r) => r.path != null)
   const sourcelessCallerRows = callerRows.filter((r) => r.path == null)
+
+  // A/B evidence caches, per plan: file-id -> module bindings, and file -> the
+  // caller lines the index claims (kept so cause C can NAME a file it refuses on).
+  const moduleBindingCache = new Map<string, ModuleBinding>()
+  const callerEvidence = new Map<string, { fileId: string; lines: number[] }>()
 
   const declRelPath = projectRelativePath(raw, projectId, match.fileId, projectPath)
   const importers = new Map<string, { fileId: string; bindings: Array<{ line: number | null; aliased: boolean }> }>()
@@ -1898,6 +2038,21 @@ async function planEditInto(
     }
   }
 
+  // B — module-import evidence: files that import the DECLARATION MODULE without
+  // naming the symbol (Go package import; TS/JS namespace import). Neither the
+  // index caller route below (a source symbol may be NULL/container) nor the
+  // named-import route (imported_name never equals the symbol for these shapes)
+  // can see them, which is how a package-qualified caller stayed silent.
+  const fileIdsByPath = new Map<string, string>()
+  const moduleImporterFiles = new Set<string>()
+  if (declRelPath !== null) {
+    const discovered = discoverModuleImporters(raw, projectId, declRelPath, match.fileId, projectPath, resolveImportToFile)
+    for (const [importerPath, importer] of discovered) {
+      moduleImporterFiles.add(importerPath)
+      fileIdsByPath.set(importerPath, importer.fileId)
+    }
+  }
+
   // Fail loud on any stale file this plan will rewrite BEFORE renaming anything (no
   // silent partial rename). The declaration file was already freshness-checked by
   // uniqueSymbol(); the importing files are new to this path, and rewriting a
@@ -1907,6 +2062,7 @@ async function planEditInto(
   const callerFileIds = [...new Set([
     ...locatableCallerRows.map((r) => r.fileId).filter((id): id is string => id != null),
     ...[...importers.values()].map((i) => i.fileId),
+    ...[...moduleImporterFiles].map((p) => fileIdsByPath.get(p)).filter((id): id is string => id != null),
   ])].filter((id) => id !== match.fileId)
   if (callerFileIds.length > 0) assertFreshFiles(raw, callerFileIds, `refactor ${symbolName}`)
 
@@ -1915,15 +2071,46 @@ async function planEditInto(
   const declEntry = fileRanges.get(match.fileId) ?? { callers: [] }
   declEntry.declaration = { start: match.byteStart, end: match.byteEnd }
   fileRanges.set(match.fileId, declEntry)
+  fileIdsByPath.set(match.fileId, match.fileId)
   for (const row of locatableCallerRows) {
-    if (row.path == null || row.byteStart == null) continue
+    if (row.path == null || row.fileId == null) continue
+    if (row.fileId !== match.fileId) {
+      const evidence = callerEvidence.get(row.path) ?? { fileId: row.fileId, lines: [] }
+      if (typeof row.callLine === "number" && row.callLine > 0) evidence.lines.push(row.callLine)
+      callerEvidence.set(row.path, evidence)
+    }
+    // A: the row's own source span may be a container's (bettercap main.go:
+    // `main.go:main:1`, bytes 0–12, while the call is at line 47). The enclosing
+    // function at the recorded call line is the real window; when none exists the
+    // row is line-scoped, never widened to the whole file on a guess.
+    const window = resolveCallerWindow(raw, projectId, row)
+    if (!window) continue
     const entry = fileRanges.get(row.path) ?? { callers: [] }
-    entry.callers.push({ start: row.byteStart, end: row.byteEnd ?? Number.MAX_SAFE_INTEGER, relType: row.relType || "" })
+    entry.callers.push({
+      start: window.start,
+      end: window.end === Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : window.end,
+      relType: row.relType || "",
+      line: window.line,
+      lineOnly: window.lineOnly,
+      storedStart: row.byteStart,
+      storedEnd: row.byteEnd,
+    })
     fileRanges.set(row.path, entry)
+    fileIdsByPath.set(row.path, row.fileId)
   }
   for (const [importerPath, importer] of importers) {
     const entry = fileRanges.get(importerPath) ?? { callers: [] }
     entry.imports = [...(entry.imports ?? []), ...importer.bindings]
+    fileRanges.set(importerPath, entry)
+    fileIdsByPath.set(importerPath, importer.fileId)
+  }
+  // B (part 2) — attach the module-import evidence to the per-file plan. The scan
+  // happens in the per-file loop through this file's own measured bindings.
+  for (const importerPath of moduleImporterFiles) {
+    const fileId = fileIdsByPath.get(importerPath)
+    if (!fileId) continue
+    const entry = fileRanges.get(importerPath) ?? { callers: [] }
+    entry.modules = [...(entry.modules ?? []), { fileId }]
     fileRanges.set(importerPath, entry)
   }
 
@@ -1936,6 +2123,11 @@ async function planEditInto(
   let renamedFiles = 0
   let renamedSites = 0
   let declarationRenamed = false
+  // C — per-file evidence bookkeeping. `sitesByFile` is the measured reach, and the
+  // two skip maps keep every "why was this not renamed" answer attributable.
+  const sitesByFile = new Map<string, number>()
+  const explainedZeroSiteFiles = new Map<string, string[]>()
+  const allSkippedMemberSites: string[] = []
   for (const [file, ranges] of fileRanges) {
     resolveSafeEditPath(projectPath, file)
     const before = readPreImage(file, preImages, preImageBytes).text
@@ -1974,58 +2166,74 @@ async function planEditInto(
     const shadowedSites = new Set<number>()
     const isShadowed = (start: number, end: number): boolean =>
       shadowScopes.some((s) => start >= s.start && end <= s.end)
-    if (ranges.declaration && declStart != null) {
-      for (const o of parsed.occurrences) {
-        if (o.text !== symbolName) continue
-        if (!isReferenceSite(o, "")) continue
-        if (isShadowed(o.startIndex, o.endIndex)) { shadowedSites.add(o.startIndex); continue }
+    // B — this FILE's module/namespace bindings, measured from its own imports.
+    const qualifiedForFile = moduleBindingsForFile(
+      raw,
+      projectId,
+      fileIdsByPath.get(file) ?? `${projectId}:${relativeTo(projectPath, file)}`,
+      file,
+      moduleBindingCache,
+    ).qualifiers
+    // A candidate the rename may not safely rewrite (a member on a value receiver
+    // under a method target) is REPORTED file:line; silence is the defect.
+    const skippedMemberSites: string[] = []
+    const consider = (o: IdentifierOccurrence, reportSkipped: boolean): void => {
+      const verdict = classifyRefactorSite(o, qualifiedForFile, match.symbolType)
+      if (verdict === "reference") {
+        if (isShadowed(o.startIndex, o.endIndex)) { shadowedSites.add(o.startIndex); return }
         sites.add(o.startIndex)
+        return
+      }
+      if (verdict === "skipped-member" && reportSkipped) {
+        skippedMemberSites.push(`${relativeTo(projectPath, file)}:${o.startLine} (member of a value/receiver)`)
       }
     }
 
-    // 3. Cross-file caller references: rename only AST reference sites within
-    // each caller span (index-derived; declaration file already fully covered).
-    for (const span of ranges.callers) {
-      // Defense-in-depth: a caller span must lie strictly inside the current file. The
-      // hash freshness gate above already rejects any shrunk/changed caller, but
-      // a corrupt indexer offset must never be silently clamped or skipped.
-      const spanEnd = span.end === Number.MAX_SAFE_INTEGER ? before.length : span.end
-      if (span.start < 0 || span.start >= before.length || spanEnd < span.start || spanEnd > before.length) {
-        throw new Error(`refactor ${symbolName}: caller span out of bounds in ${file} (start=${span.start}, end=${span.end}, length=${before.length}); reindex before editing`)
+    // 2. COMPLETE reference rename in the declaration file — operand-aware: a
+    // plain reference and a module-qualified reference are both references; a
+    // value member is not. Every reference site of the name in the declaration
+    // file is renamed unless a nested scope shadows it.
+    if (ranges.declaration && declStart != null) {
+      for (const o of parsed.occurrences) {
+        if (o.text === symbolName) consider(o, false)
+      }
+    }
+
+    // 3. Cross-file caller windows. A row's source span is NOT trusted blindly: it
+    // may be a container's (cause A) or belong to another file. The window is the
+    // enclosing function at the recorded call line, a stored span when it is one,
+    // or the call line itself — never a silent whole-file widening.
+    for (const window of ranges.callers) {
+      // R2: a corrupt STORED caller span must abort even though A's fallback can
+      // compute a usable window from the call line. The fallback exists for a
+      // MIS-ATTRIBUTED span (the package-main collision), not for an IMPOSSIBLE
+      // one: silently clamping/skipping an out-of-bounds offset would hide index
+      // corruption behind a heuristic. Checked first, against the file's length.
+      if (window.storedStart != null || window.storedEnd != null) {
+        const storedStart = window.storedStart ?? -1
+        const storedEnd = window.storedEnd ?? -1
+        if (storedStart < 0 || storedStart >= before.length || storedEnd < storedStart || storedEnd > before.length) {
+          throw new Error(`refactor ${symbolName}: caller span out of bounds in ${file} (start=${storedStart}, end=${storedEnd}, length=${before.length}); reindex before editing`)
+        }
+      }
+      const spanEnd = window.end === Number.MAX_SAFE_INTEGER ? before.length : window.end
+      if (window.start < 0 || window.start >= before.length || spanEnd < window.start || spanEnd > before.length) {
+        throw new Error(`refactor ${symbolName}: caller span out of bounds in ${file} (start=${window.start}, end=${window.end}, length=${before.length}); reindex before editing`)
       }
       for (const o of parsed.occurrences) {
         if (o.text !== symbolName) continue
-        if (o.startIndex < span.start || o.endIndex > spanEnd) continue
-        if (!isReferenceSite(o, span.relType)) continue
-        // A caller span can CONTAIN a shadow of the name — the function it covers
-        // may take a parameter called `target` — and that site is the parameter's,
-        // not the symbol's (case W above).
-        if (isShadowed(o.startIndex, o.endIndex)) { shadowedSites.add(o.startIndex); continue }
-        sites.add(o.startIndex)
+        if (window.lineOnly) {
+          if (window.line == null || o.startLine !== window.line) continue
+        } else if (o.startIndex < window.start || o.endIndex > spanEnd) continue
+        consider(o, true)
       }
     }
 
     // 4. D2: the IMPORT BINDING itself, plus — when the binding is unaliased — every
-    // reference site of the name in the importing file.
-    //
-    // Renaming a declaration without rewriting the specifier that names it leaves
-    // `import { target }` pointing at a name that no longer exists; that is a broken
-    // file reported as a successful rename, and MEASURED it happened in the very
-    // shape the old gate called green (probe-refactor-completeness.ts case B: the
-    // call was renamed, the specifier was not).
-    //
-    // The sites come from `brain_import`, which is the only index row that names the
-    // importing FILE (measured: a `calls` row has no file column and its source
-    // symbol is NULL for any call outside an indexed symbol).
+    // reference site of the name in the importing file (unchanged named-import route).
     if (ranges.imports?.length) {
       const specifiers = parsed.occurrences.filter((o) => o.text === symbolName && IMPORT_SPECIFIER_PARENTS.has(o.parentType))
       for (const binding of ranges.imports) {
-        // Line-precise when the index recorded one: a file may import the same NAME
-        // from two modules (`import { target } from './a'` and `… from './b'`), and
-        // only the specifier whose module resolves to the declaration may move. If
-        // the recorded line matches nothing (drift), fall back to every specifier of
-        // the name in this file — bounded to files we already resolved to the
-        // declaration, and the leftover check below refuses rather than guess.
         const onLine = binding.line == null ? [] : specifiers.filter((o) => o.startLine === binding.line)
         const chosen = onLine.length > 0 ? onLine : specifiers
         for (const o of chosen) sites.add(o.startIndex)
@@ -2034,31 +2242,48 @@ async function planEditInto(
         // The import binds the symbol under its own name, so every reference site of
         // that name in this file refers to it — including a call at MODULE TOP
         // LEVEL, which is exactly the site the index stored with a NULL source and
-        // the edge query could not reach. Nested scopes that re-declare the name are
-        // left alone: those sites belong to the inner binding.
+        // the edge query could not reach.
         for (const o of parsed.occurrences) {
-          if (o.text !== symbolName) continue
-          if (!isReferenceSite(o, "")) continue
-          if (isShadowed(o.startIndex, o.endIndex)) { shadowedSites.add(o.startIndex); continue }
-          sites.add(o.startIndex)
+          if (o.text === symbolName) consider(o, false)
         }
+      }
+    }
+
+    // 4b. B — MODULE-IMPORT route: the file imports the declaration module and
+    // names no symbol in the import (Go `import "<module>/pkg"` → `pkg.F`;
+    // TS/JS `import * as m` → `m.f`). Only sites whose receiver is one of THIS
+    // file's module bindings are renamed, so a value receiver stays untouched.
+    if (ranges.modules?.length) {
+      for (const o of parsed.occurrences) {
+        if (o.text === symbolName) consider(o, true)
       }
     }
 
     // D2b: what this file's evidence covers but the plan does not rename. A
     // deliberately skipped site (a shadowed binding, which belongs to the inner
-    // symbol) is not a survivor; anything else is.
+    // symbol) is not a survivor; a module-qualified reference would be one.
     const fileHasEvidence = ranges.declaration != null || (ranges.imports?.length ?? 0) > 0
     if (fileHasEvidence) {
       for (const o of parsed.occurrences) {
         if (o.text !== symbolName) continue
         if (sites.has(o.startIndex) || shadowedSites.has(o.startIndex)) continue
-        if (!IMPORT_SPECIFIER_PARENTS.has(o.parentType) && !isReferenceSite(o, "")) continue
+        if (!IMPORT_SPECIFIER_PARENTS.has(o.parentType) && classifyRefactorSite(o, qualifiedForFile, match.symbolType) !== "reference") continue
         unrenamed.push(`${relativeTo(projectPath, file)}:${o.startLine} (${o.parentType || "reference"})`)
       }
     }
-
-    if (sites.size === 0) continue
+    sitesByFile.set(file, sites.size)
+    if (skippedMemberSites.length > 0) allSkippedMemberSites.push(...skippedMemberSites)
+    if (sites.size === 0) {
+      if (skippedMemberSites.length > 0) explainedZeroSiteFiles.set(file, skippedMemberSites)
+      // A file this plan does NOT rewrite must not leave a pre-image behind: the
+      // commit's pre-image check iterates the recorded targets, and a caller file
+      // that produced zero sites is not one of them. Leaving it made a legitimate
+      // plan refuse with "changed on disk between planning and committing" before
+      // anything was written (pre-fix gate G7 hit exactly that).
+      preImages.delete(file)
+      preImageBytes.delete(file)
+      continue
+    }
     let after = before
     for (const offset of [...sites].sort((a, b) => b - a)) after = replaceRange(after, offset, offset + symbolName.length, newName)
     changes.push({ path: file, before, after })
@@ -2097,6 +2322,51 @@ async function planEditInto(
   if (collisions.length > 0) {
     throw new Error(`refactor ${symbolName} → ${newName}: the new name is already declared — ${collisions.slice(0, 6).join(", ")}${collisions.length > 6 ? ", …" : ""}; renaming onto an existing declaration would leave two declarations with one name. No change was made.`)
   }
+  // C — FAIL CLOSED over evidence that produced no site. The defect was never that a
+  // conservative classifier can decline a site; it was that a file WITH index
+  // evidence produced zero renamed sites and the plan still reported success.
+  const unexplainedEvidence: string[] = []
+  const explainedEvidence: string[] = []
+  for (const file of new Set<string>([...callerEvidence.keys(), ...moduleImporterFiles])) {
+    if ((sitesByFile.get(file) ?? 0) > 0) continue
+    const rel = relativeTo(projectPath, file)
+    const explained = explainedZeroSiteFiles.get(file)
+    if (explained && explained.length > 0) {
+      explainedEvidence.push(`${rel} — ${explained.length} member site(s) on a value receiver were left unrenamed by design (${explained.slice(0, 3).join(", ")}${explained.length > 3 ? ", …" : ""})`)
+    } else {
+      const lines = callerEvidence.get(file)?.lines ?? []
+      unexplainedEvidence.push(`${rel}${lines.length ? ` (index call site line ${[...new Set(lines)].slice(0, 3).join(", ")})` : ""}`)
+    }
+  }
+  if (allSkippedMemberSites.length > 0) {
+    warnings.push(`refactor ${symbolName}: ${allSkippedMemberSites.length} candidate site(s) were NOT renamed — the receiver is a value/type the rename cannot resolve (documented conservative skip): ${allSkippedMemberSites.slice(0, 6).join(", ")}${allSkippedMemberSites.length > 6 ? ", …" : ""}`)
+  }
+  if (explainedEvidence.length > 0) {
+    warnings.push(`refactor ${symbolName}: ${explainedEvidence.length} evidence file(s) produced no rename site and are explained rather than silent — ${explainedEvidence.slice(0, 3).join("; ")}${explainedEvidence.length > 3 ? "; …" : ""}`)
+  }
+  if (unexplainedEvidence.length > 0) {
+    throw new Error(`refactor ${symbolName} → ${newName}: ${unexplainedEvidence.length} file(s) have index evidence that this rename found NO site to rewrite — ${unexplainedEvidence.slice(0, 6).join(", ")}${unexplainedEvidence.length > 6 ? ", …" : ""}. Those callers would keep the old name, so nothing was changed. Reindex the project, or rename the surviving sites manually.`)
+  }
+  // D — plan-time verification: reparse every planned file + module-aware scan for
+  // reference sites of the OLD name. A leftover refuses the plan before the commit.
+  const scan = await scanPlannedRename(projectPath, projectId, changes, symbolName, match.symbolType, raw, moduleBindingCache)
+  if (scan.reparsed !== "passed") {
+    throw new Error(`refactor ${symbolName} → ${newName}: verification failed — a planned file could not be parsed after the rename, so the plan's own bytes are not trustworthy. No change was made.`)
+  }
+  if (scan.unresolved.length > 0) {
+    throw new Error(`refactor ${symbolName} → ${newName}: verification failed — ${scan.unresolved.length} reference(s) to the old name remain in the planned files (${scan.unresolved.slice(0, 6).join(", ")}${scan.unresolved.length > 6 ? ", …" : ""}). No change was made.`)
+  }
+  const verification: EditVerification = {
+    reparsed: scan.reparsed,
+    unresolvedReferences: scan.unresolved,
+    build: {
+      attempted: false,
+      tool: null,
+      command: null,
+      ok: null,
+      reason: "plan preview — the plan was not applied, so there is nothing to build; the unresolved-identifier scan above still ran",
+    },
+  }
   if (request.mode === "refactor") {
     warnings.push(`refactor ${symbolName} → ${newName}: ${renamedSites} site(s) across ${renamedFiles} file(s)`)
     if (sourcelessCallerRows.length > 0) {
@@ -2104,10 +2374,10 @@ async function planEditInto(
       // not inside an indexed symbol, so the row itself cannot name its file. Every
       // file that IMPORTS the declaration was covered above; a call site in a file
       // that does not import it is out of this rename's reach and is said so.
-      warnings.push(`refactor ${symbolName}: ${sourcelessCallerRows.length} cross-file edge(s) to this symbol have no source symbol in the index; ${importers.size} importing file(s) were covered through brain_import, and a call site in a file that does not import the declaration module is not reachable by this rename`)
+      warnings.push(`refactor ${symbolName}: ${sourcelessCallerRows.length} cross-file edge(s) to this symbol have no source symbol in the index; ${importers.size + moduleImporterFiles.size} importing file(s) were covered through brain_import, and a call site in a file that does not import the declaration module is not reachable by this rename`)
     }
   }
-  return { changes, warnings, summary: request.mode === "refactor" ? { renamedFiles, renamedSites } : undefined }
+  return { changes, warnings, summary: request.mode === "refactor" ? { renamedFiles, renamedSites } : undefined, verification }
 }
 
 /**
@@ -2205,6 +2475,14 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       `bb_edit wrote nothing: ${moved.length} target file(s) changed on disk between planning and committing — ${moved.join(", ")}. The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit to re-plan against the current file.`,
     )
   }
+  // D — bounded build verification context. The BASELINE runs before the first
+  // write, so a tree that was already broken is never attributed to this edit; a
+  // failure AFTER the write restores every committed file through the catch below.
+  // Only multi-file all-Go refactors get a build leg (`goBuildContext` returns null
+  // otherwise), and when no check applies the answer says `attempted:false` with
+  // the reason — a skipped check is never reported as verified.
+  const buildContext = plan.verification ? goBuildContext(projectPath, changes) : null
+  const buildBaseline = buildContext ? runGoBuild(buildContext.dir) : null
   // which files were ACTUALLY replaced on disk, as opposed to merely
   // planned. A file whose write never happened needs no restore, and trying to
   // restore one is actively harmful: if the write failed because the directory is
@@ -2277,6 +2555,49 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       }
     }
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
+    // D — the COMMIT half of the verification gate. `validateFile` above proves every
+    // planned file still parses; the plan-time scan proved no module-aware reference
+    // to the OLD name survived planning. When a bounded build checker applies, the
+    // written bytes are now compiled; a failure that the PRE-EDIT tree did not have
+    // is attributed to this edit and rolls it back (the catch below restores bytes).
+    let verification: EditVerification | undefined
+    if (plan.verification) {
+      let buildVerification: EditVerification["build"]
+      if (!buildContext || !buildBaseline) {
+        buildVerification = {
+          attempted: false,
+          tool: null,
+          command: null,
+          ok: null,
+          reason:
+            "no bounded build check applies: the plan is not a multi-file all-Go refactor, the project root has no go.mod, or `go` is unavailable — the reparsed / unresolved-reference scan still ran",
+        }
+      } else {
+        const post = runGoBuild(buildContext.dir)
+        const baselineOk = buildBaseline.ok
+        buildVerification = {
+          attempted: true,
+          tool: "go",
+          command: buildContext.command,
+          ok: baselineOk ? post.ok : null,
+          baseline: baselineOk ? "passed" : "failed",
+          ...(post.ok ? {} : { outputTail: post.outputTail }),
+          ...(baselineOk
+            ? {}
+            : { reason: "the tree did not compile BEFORE this edit either, so this check cannot attribute a failure to the rename; the unresolved-reference scan still ran" }),
+        }
+        if (baselineOk && !post.ok) {
+          throw new Error(
+            `bb_edit verification failed and the edit was rolled back: \`${buildContext.command}\` passed on the pre-edit tree and fails after this rename — ${post.outputTail || "(no compiler output)"}`,
+          )
+        }
+      }
+      verification = {
+        reparsed: "passed",
+        unresolvedReferences: plan.verification.unresolvedReferences,
+        build: buildVerification,
+      }
+    }
     // the reindex call now applies the bounded post-pass internally
     // (snapshot + repair + scoped enrichment/gravity), so "AI edits a function
     // → seconds later the DB has it with resolved relationships" holds here.
@@ -2305,6 +2626,7 @@ async function commitPlan(projectPath: string, projectId: string, request: EditR
       summary,
       ...(batch ? { batch } : {}),
       ...(plan.importPruning ? { importPruning: plan.importPruning } : {}),
+      ...(verification ? { verification } : {}),
       envelope: closeEnvelope(envelope, changes),
     }
   } catch (error) {
@@ -2394,6 +2716,7 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       summary,
       ...(batch ? { batch } : {}),
       ...(plan.importPruning ? { importPruning: plan.importPruning } : {}),
+      ...(plan.verification ? { verification: plan.verification } : {}),
       envelope: plannedEnvelope(projectPath, plan),
     }
   }

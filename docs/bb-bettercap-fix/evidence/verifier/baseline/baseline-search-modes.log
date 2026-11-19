@@ -1,0 +1,6 @@
+  FAIL: search modes session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/15eefb329fbf0192dd3fe266dd4c2ba155643e88'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-search-modes.ts:64:3)
+S1: KNOWN-GAP (0/1 passed, 0 negatives)

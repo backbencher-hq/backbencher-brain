@@ -1,0 +1,1168 @@
+  ok: published matrix declares 41 languages
+  ok: published matrix capability list is complete
+  FAIL: published matrix matches fixture language set — matrix=41 fixtures=45
+  ok: public registry has exactly the 16 contracted tools
+  indexing 120 positive fixtures across 45 languages...
+  ok: all positive fixtures indexed
+  ok: indexer reports zero file errors
+  ok: bash has an indexed smoke target
+  ok: c has an indexed smoke target
+  ok: clean has an indexed smoke target
+  ok: clojure has an indexed smoke target
+  ok: cpp has an indexed smoke target
+  ok: csharp has an indexed smoke target
+  ok: css has an indexed smoke target
+  ok: dart has an indexed smoke target
+  ok: elixir has an indexed smoke target
+  ok: erlang has an indexed smoke target
+  ok: fsharp has an indexed smoke target
+  ok: go has an indexed smoke target
+  ok: graphql has an indexed smoke target
+  ok: groovy has an indexed smoke target
+  ok: haskell has an indexed smoke target
+  FAIL: hcl has an indexed smoke target
+  ok: html has an indexed smoke target
+  ok: java has an indexed smoke target
+  ok: javascript has an indexed smoke target
+  ok: json has an indexed smoke target
+  ok: kotlin has an indexed smoke target
+  ok: lua has an indexed smoke target
+  ok: make has an indexed smoke target
+  ok: markdown has an indexed smoke target
+  ok: matlab has an indexed smoke target
+  ok: nim has an indexed smoke target
+  ok: objective-c has an indexed smoke target
+  ok: perl has an indexed smoke target
+  ok: php has an indexed smoke target
+  ok: powershell has an indexed smoke target
+  ok: python has an indexed smoke target
+  ok: r has an indexed smoke target
+  ok: ruby has an indexed smoke target
+  ok: rust has an indexed smoke target
+  ok: scala has an indexed smoke target
+  ok: scss has an indexed smoke target
+  ok: sql has an indexed smoke target
+  ok: svelte has an indexed smoke target
+  ok: swift has an indexed smoke target
+  ok: toml has an indexed smoke target
+  ok: typescript has an indexed smoke target
+  ok: vue has an indexed smoke target
+  ok: xml has an indexed smoke target
+  ok: yaml has an indexed smoke target
+  ok: zig has an indexed smoke target
+  FAIL: indexed target set covers all 41 languages — 44/45
+  bash: 7/9 capabilities
+  c: 7/9 capabilities
+  clean: 7/9 capabilities
+  clojure: 7/9 capabilities
+  cpp: 7/9 capabilities
+  csharp: 7/9 capabilities
+  css: 7/9 capabilities
+  dart: 7/9 capabilities
+  elixir: 7/9 capabilities
+  erlang: 7/9 capabilities
+  fsharp: 7/9 capabilities
+  go: 7/9 capabilities
+  graphql: 7/9 capabilities
+  groovy: 7/9 capabilities
+  haskell: 7/9 capabilities
+  html: 7/9 capabilities
+  java: 7/9 capabilities
+  javascript: 7/9 capabilities
+  json: 7/9 capabilities
+  kotlin: 7/9 capabilities
+  lua: 7/9 capabilities
+  make: 7/9 capabilities
+  markdown: 7/9 capabilities
+  matlab: 7/9 capabilities
+  nim: 7/9 capabilities
+  objective-c: 7/9 capabilities
+  perl: 7/9 capabilities
+  php: 7/9 capabilities
+  powershell: 7/9 capabilities
+  python: 7/9 capabilities
+  r: 7/9 capabilities
+  ruby: 7/9 capabilities
+  rust: 7/9 capabilities
+  scala: 7/9 capabilities
+  scss: 7/9 capabilities
+  sql: 7/9 capabilities
+  svelte: 7/9 capabilities
+  swift: 7/9 capabilities
+  toml: 7/9 capabilities
+  typescript: 7/9 capabilities
+  vue: 7/9 capabilities
+  xml: 7/9 capabilities
+  yaml: 7/9 capabilities
+  zig: 7/9 capabilities
+  ok: MCP initialize handshake
+  ok: MCP tools/list matches the public registry
+  FAIL: MCP bb_search global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  FAIL: MCP bb_ask global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: MCP bb_health global smoke
+  FAIL: MCP bb_patterns global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  FAIL: MCP bb_security global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  FAIL: MCP bb_visualize global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  FAIL: MCP bb_migrate global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  FAIL: MCP bb_analyze global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  FAIL: MCP bb_doc global smoke — No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: MCP bb_edit global smoke
+  ok: MCP validation errors are structured
+  ok: MCP validation errors do not fabricate language attribution
+  ok: CLI validation errors are structured
+  ok: CLI validation errors contain no stack trace
+  ok: CLI validation errors do not fabricate language attribution
+  ok: bash indexed
+  ok: bash queried
+  ok: bash analyzed
+  ok: bash documented
+  ok: bash migrated
+  FAIL: bash visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: bash edited
+  ok: bash cli
+  FAIL: bash mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: c indexed
+  ok: c queried
+  ok: c analyzed
+  ok: c documented
+  ok: c migrated
+  FAIL: c visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: c edited
+  ok: c cli
+  FAIL: c mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: clean indexed
+  ok: clean queried
+  ok: clean analyzed
+  ok: clean documented
+  ok: clean migrated
+  FAIL: clean visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: clean edited
+  ok: clean cli
+  FAIL: clean mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: clojure indexed
+  ok: clojure queried
+  ok: clojure analyzed
+  ok: clojure documented
+  ok: clojure migrated
+  FAIL: clojure visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: clojure edited
+  ok: clojure cli
+  FAIL: clojure mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: cpp indexed
+  ok: cpp queried
+  ok: cpp analyzed
+  ok: cpp documented
+  ok: cpp migrated
+  FAIL: cpp visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: cpp edited
+  ok: cpp cli
+  FAIL: cpp mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: csharp indexed
+  ok: csharp queried
+  ok: csharp analyzed
+  ok: csharp documented
+  ok: csharp migrated
+  FAIL: csharp visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: csharp edited
+  ok: csharp cli
+  FAIL: csharp mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: css indexed
+  ok: css queried
+  ok: css analyzed
+  ok: css documented
+  ok: css migrated
+  FAIL: css visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: css edited
+  ok: css cli
+  FAIL: css mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: dart indexed
+  ok: dart queried
+  ok: dart analyzed
+  ok: dart documented
+  ok: dart migrated
+  FAIL: dart visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: dart edited
+  ok: dart cli
+  FAIL: dart mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: elixir indexed
+  ok: elixir queried
+  ok: elixir analyzed
+  ok: elixir documented
+  ok: elixir migrated
+  FAIL: elixir visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: elixir edited
+  ok: elixir cli
+  FAIL: elixir mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: erlang indexed
+  ok: erlang queried
+  ok: erlang analyzed
+  ok: erlang documented
+  ok: erlang migrated
+  FAIL: erlang visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: erlang edited
+  ok: erlang cli
+  FAIL: erlang mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: fsharp indexed
+  ok: fsharp queried
+  ok: fsharp analyzed
+  ok: fsharp documented
+  ok: fsharp migrated
+  FAIL: fsharp visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: fsharp edited
+  ok: fsharp cli
+  FAIL: fsharp mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: go indexed
+  ok: go queried
+  ok: go analyzed
+  ok: go documented
+  ok: go migrated
+  FAIL: go visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: go edited
+  ok: go cli
+  FAIL: go mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: graphql indexed
+  ok: graphql queried
+  ok: graphql analyzed
+  ok: graphql documented
+  ok: graphql migrated
+  FAIL: graphql visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: graphql edited
+  ok: graphql cli
+  FAIL: graphql mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: groovy indexed
+  ok: groovy queried
+  ok: groovy analyzed
+  ok: groovy documented
+  ok: groovy migrated
+  FAIL: groovy visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: groovy edited
+  ok: groovy cli
+  FAIL: groovy mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: haskell indexed
+  ok: haskell queried
+  ok: haskell analyzed
+  ok: haskell documented
+  ok: haskell migrated
+  FAIL: haskell visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: haskell edited
+  ok: haskell cli
+  FAIL: haskell mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: html indexed
+  ok: html queried
+  ok: html analyzed
+  ok: html documented
+  ok: html migrated
+  FAIL: html visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: html edited
+  ok: html cli
+  FAIL: html mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: java indexed
+  ok: java queried
+  ok: java analyzed
+  ok: java documented
+  ok: java migrated
+  FAIL: java visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: java edited
+  ok: java cli
+  FAIL: java mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: javascript indexed
+  ok: javascript queried
+  ok: javascript analyzed
+  ok: javascript documented
+  ok: javascript migrated
+  FAIL: javascript visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: javascript edited
+  ok: javascript cli
+  FAIL: javascript mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: json indexed
+  ok: json queried
+  ok: json analyzed
+  ok: json documented
+  ok: json migrated
+  FAIL: json visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: json edited
+  ok: json cli
+  FAIL: json mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: kotlin indexed
+  ok: kotlin queried
+  ok: kotlin analyzed
+  ok: kotlin documented
+  ok: kotlin migrated
+  FAIL: kotlin visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: kotlin edited
+  ok: kotlin cli
+  FAIL: kotlin mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: lua indexed
+  ok: lua queried
+  ok: lua analyzed
+  ok: lua documented
+  ok: lua migrated
+  FAIL: lua visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: lua edited
+  ok: lua cli
+  FAIL: lua mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: make indexed
+  ok: make queried
+  ok: make analyzed
+  ok: make documented
+  ok: make migrated
+
+  ok: make edited
+
+
+
+
+
+
+
+
+
+
+
+
+  ok: python indexed
+  ok: python queried
+  ok: python analyzed
+  ok: python documented
+  ok: python migrated
+  FAIL: python visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: python edited
+  ok: python cli
+  FAIL: python mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: r indexed
+  ok: r queried
+  ok: r analyzed
+  ok: r documented
+  ok: r migrated
+  FAIL: r visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: r edited
+  ok: r cli
+  FAIL: r mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: ruby indexed
+  ok: ruby queried
+  ok: ruby analyzed
+  ok: ruby documented
+  ok: ruby migrated
+  FAIL: ruby visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: ruby edited
+  ok: ruby cli
+  FAIL: ruby mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: rust indexed
+  ok: rust queried
+  ok: rust analyzed
+  ok: rust documented
+  ok: rust migrated
+  FAIL: rust visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: rust edited
+  ok: rust cli
+  FAIL: rust mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: scala indexed
+  ok: scala queried
+  ok: scala analyzed
+  ok: scala documented
+  ok: scala migrated
+  FAIL: scala visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: scala edited
+  ok: scala cli
+  FAIL: scala mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: scss indexed
+  ok: scss queried
+  ok: scss analyzed
+  ok: scss documented
+  ok: scss migrated
+  FAIL: scss visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: scss edited
+  ok: scss cli
+  FAIL: scss mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: sql indexed
+  ok: sql queried
+  ok: sql analyzed
+  ok: sql documented
+  ok: sql migrated
+  FAIL: sql visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: sql edited
+  ok: sql cli
+  FAIL: sql mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: svelte indexed
+  ok: svelte queried
+  ok: svelte analyzed
+  ok: svelte documented
+  ok: svelte migrated
+  FAIL: svelte visualized — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: svelte edited
+  ok: svelte cli
+  FAIL: svelte mcp — handler visualize: {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": " | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: swift indexed
+  ok: swift queried
+  ok: swift analyzed
+  ok: swift documented
+  ok: swift migrated
+  FAIL: swift visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: swift edited
+  ok: swift cli
+  FAIL: swift mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: toml indexed
+  ok: toml queried
+  ok: toml analyzed
+  ok: toml documented
+  ok: toml migrated
+  FAIL: toml visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: toml edited
+  ok: toml cli
+  FAIL: toml mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: typescript indexed
+  ok: typescript queried
+  ok: typescript analyzed
+  ok: typescript documented
+  ok: typescript migrated
+  FAIL: typescript visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: typescript edited
+  ok: typescript cli
+  FAIL: typescript mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: vue indexed
+  ok: vue queried
+  ok: vue analyzed
+  ok: vue documented
+  ok: vue migrated
+  FAIL: vue visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: vue edited
+  ok: vue cli
+  FAIL: vue mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: xml indexed
+  ok: xml queried
+  ok: xml analyzed
+  ok: xml documented
+  ok: xml migrated
+  FAIL: xml visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: xml edited
+  ok: xml cli
+  FAIL: xml mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: yaml indexed
+  ok: yaml queried
+  ok: yaml analyzed
+  ok: yaml documented
+  ok: yaml migrated
+  FAIL: yaml visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: yaml edited
+  ok: yaml cli
+  FAIL: yaml mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: zig indexed
+  ok: zig queried
+  ok: zig analyzed
+  ok: zig documented
+  ok: zig migrated
+  FAIL: zig visualized — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+  ok: zig edited
+  ok: zig cli
+  FAIL: zig mcp — handler visualize: {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null, | MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index "/tmp/bb-m12-surface-1Jfe6m".
+wrote /home/ishaq2321/mcp/backbencher-brain/validation/m12/results/mcp-cli-surface.json
+
+[INFO] [23:52:25] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:52:25] [parallel-indexer] project index built {"ext":".ts","files":4,"types":13}
+[INFO] [23:52:25] [parallel-indexer] project index built {"ext":".scss","files":1,"types":1}
+[INFO] [23:52:25] [parallel-indexer] project index built {"ext":".py","files":1,"types":5}
+[INFO] [23:52:25] [parallel-indexer] project index built {"ext":".rb","files":2,"types":4}
+[INFO] [23:52:26] [parallel-indexer] project index built {"ext":".fs","files":3,"types":13}
+[INFO] [23:52:26] [parallel-indexer] project index built {"ext":".dart","files":4,"types":10}
+[INFO] [23:52:26] [parallel-indexer] project index built {"ext":".cpp","files":1,"types":0}
+[INFO] [23:52:26] [parallel-indexer] project index built {"ext":".clj","files":1,"types":0}
+[INFO] [23:52:31] [parallel-indexer] worker pool complete {"files":120,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[INFO] [23:52:32] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:52:32] [ast-engine] language grammar allocated {"language":"perl"}
+[INFO] [23:52:32] [ast-engine] language parser loaded {"language":"perl","wasmPath":"/tmp/bb-wasm_tree-sitter-perl_tree-sitter-perl.wasm_531_3ip1uzb"}
+[INFO] [23:52:32] [parallel-indexer] override companion (perl): 2 owners, 1 file(s) re-analyzed, 1 reapplied, 1 confirmed, 0 still a guess, 0 failed, 1 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 1 new in the re-parse, 0 unconfirmed id(s)
+[SEVEN] NO_ROW storeRows=0 target=fetch line=15 diffId=- attemptedId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:perl/Service.pm:fetch:15:fetch:overrides:15
+[INFO] [23:52:32] [parallel-indexer] override companion (perl) write-back: 0 row(s) matched of 1 id(s) attempted, 1 matched NOTHING
+[INFO] [23:52:32] [parallel-indexer] override companion (perl) census: overrides conf = 0.5=25 0.85=2 0.95=10 1=14 · total=51
+[WARN] [23:52:32] [parallel-indexer] override companion (perl) WRITE-BACK MISS: 1 of 1 ids matched no stored row — Reading A is wrong for those rows and Reading B is the design for them. REPORTED, NOT RECOVERED: no fallback is attempted in this run.
+[INFO] [23:52:32] [ast-engine] language grammar allocated {"language":"python"}
+[INFO] [23:52:32] [ast-engine] language parser loaded {"language":"python","wasmPath":"/tmp/bb-wasm_tree-sitter-python_tree-sitter-python.wasm_531_3kvxa55"}
+[INFO] [23:52:32] [parallel-indexer] override companion (python): 3 owners, 1 file(s) re-analyzed, 1 reapplied, 1 confirmed, 0 still a guess, 0 failed, 1 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[INFO] [23:52:32] [parallel-indexer] override companion (python) write-back: 1 row(s) matched of 1 id(s) attempted, 0 matched NOTHING
+[INFO] [23:52:32] [parallel-indexer] override companion (python) census: overrides conf = 0.5=25 0.85=2 0.95=10 1=14 · total=51
+[INFO] [23:52:32] [ast-engine] language grammar allocated {"language":"javascript"}
+[INFO] [23:52:32] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [23:52:32] [parallel-indexer] override companion (javascript): 8 owners, 1 file(s) re-analyzed, 1 reapplied, 1 confirmed, 0 still a guess, 0 failed, 1 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[INFO] [23:52:32] [parallel-indexer] override companion (javascript) write-back: 1 row(s) matched of 1 id(s) attempted, 0 matched NOTHING
+[INFO] [23:52:32] [parallel-indexer] override companion (javascript) census: overrides conf = 0.5=24 0.85=2 0.95=11 1=14 · total=51
+[INFO] [23:52:32] [ast-engine] language grammar allocated {"language":"ruby"}
+[INFO] [23:52:32] [ast-engine] language parser loaded {"language":"ruby","wasmPath":"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_531_3nublp1"}
+[INFO] [23:52:32] [parallel-indexer] override companion (ruby): 3 owners, 1 file(s) re-analyzed, 1 reapplied, 0 confirmed, 2 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 2 unconfirmed id(s)
+[INFO] [23:52:32] [parallel-indexer] override companion (ruby) CLAUSE 4 per id: 2 of 2 unconfirmed id(s) still below the floor, 0 MOVED to or above it, 0 absent from the store
+[INFO] [23:52:32] [ast-engine] language grammar allocated {"language":"cpp"}
+[INFO] [23:52:32] [ast-engine] language parser loaded {"language":"cpp","wasmPath":"/tmp/bb-wasm_tree-sitter-cpp_tree-sitter-cpp.wasm_531_3ojn1l4"}
+[INFO] [23:52:32] [parallel-indexer] override companion (cpp): 4 owners, 1 file(s) re-analyzed, 1 reapplied, 3 confirmed, 0 still a guess, 0 failed, 3 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[SEVEN] DIFFERENT_ID storeRows=1 target=area line=33 diffId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:cpp/Shape.h:area:25:area:overrides:33 attemptedId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:cpp/Shape.h:area:33:area:overrides:33
+[SEVEN] DIFFERENT_ID storeRows=1 target=name line=34 diffId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:cpp/Shape.h:name:26:name:overrides:34 attemptedId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:cpp/Shape.h:name:34:name:overrides:34
+[SEVEN] DIFFERENT_ID storeRows=1 target=scale line=35 diffId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:cpp/Shape.h:scale:27:scale:overrides:35 attemptedId=8cb9ba013a39d33bc69380c3e9327283b525c633:rel:8cb9ba013a39d33bc69380c3e9327283b525c633:cpp/Shape.h:scale:35:scale:overrides:35
+[INFO] [23:52:32] [parallel-indexer] override companion (cpp) write-back: 0 row(s) matched of 3 id(s) attempted, 3 matched NOTHING
+[INFO] [23:52:32] [parallel-indexer] override companion (cpp) census: overrides conf = 0.5=24 0.85=2 0.95=11 1=14 · total=51
+[WARN] [23:52:32] [parallel-indexer] override companion (cpp) WRITE-BACK MISS: 3 of 3 ids matched no stored row — Reading A is wrong for those rows and Reading B is the design for them. REPORTED, NOT RECOVERED: no fallback is attempted in this run.
+[WARN] [23:52:33] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"8cb9ba01","danglingSources":293,"totalRelationships":3360}
+[INFO] [23:52:33] [project-health] project health computed {"projectId":"8cb9ba013a39d33bc69380c3e9327283b525c633","complexityScore":93,"maintainabilityScore":79,"techDebtScore":100,"codeQualityScore":91,"languages":45,"bottlenecks":0}
+[INFO] [23:52:34] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:34] [dependency-graph-visualizer] ✅ Graph Data Generated: 24 nodes, 39 links
+[INFO] [23:52:36] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:36] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 25 links
+[INFO] [23:52:37] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:37] [dependency-graph-visualizer] ✅ Graph Data Generated: 22 nodes, 50 links
+[INFO] [23:52:38] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:38] [dependency-graph-visualizer] ✅ Graph Data Generated: 15 nodes, 15 links
+[INFO] [23:52:39] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:39] [dependency-graph-visualizer] ✅ Graph Data Generated: 37 nodes, 31 links
+[INFO] [23:52:40] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:40] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 64 links
+[INFO] [23:52:41] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:41] [dependency-graph-visualizer] ✅ Graph Data Generated: 14 nodes, 0 links
+[INFO] [23:52:42] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:42] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 54 links
+[INFO] [23:52:44] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:44] [dependency-graph-visualizer] ✅ Graph Data Generated: 24 nodes, 42 links
+[INFO] [23:52:45] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:45] [dependency-graph-visualizer] ✅ Graph Data Generated: 22 nodes, 42 links
+[INFO] [23:52:46] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:46] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 43 links
+[INFO] [23:52:47] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:47] [dependency-graph-visualizer] ✅ Graph Data Generated: 23 nodes, 40 links
+[INFO] [23:52:49] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:49] [dependency-graph-visualizer] ✅ Graph Data Generated: 32 nodes, 44 links
+[INFO] [23:52:50] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:50] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 39 links
+[INFO] [23:52:52] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:52] [dependency-graph-visualizer] ✅ Graph Data Generated: 22 nodes, 33 links
+[INFO] [23:52:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 13 nodes, 0 links
+[INFO] [23:52:54] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:54] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 60 links
+[INFO] [23:52:56] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:56] [dependency-graph-visualizer] ✅ Graph Data Generated: 37 nodes, 36 links
+[INFO] [23:52:57] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:57] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 0 links
+[INFO] [23:52:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:52:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 68 links
+[INFO] [23:53:00] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:00] [dependency-graph-visualizer] ✅ Graph Data Generated: 8 nodes, 12 links
+[INFO] [23:53:01] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:01] [dependency-graph-visualizer] ✅ Graph Data Generated: 37 nodes, 93 links
+[INFO] [23:53:03] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:03] [dependency-graph-visualizer] ✅ Graph Data Generated: 23 nodes, 0 links
+[INFO] [23:53:05] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:05] [dependency-graph-visualizer] ✅ Graph Data Generated: 5 nodes, 6 links
+[INFO] [23:53:07] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:07] [dependency-graph-visualizer] ✅ Graph Data Generated: 39 nodes, 54 links
+[INFO] [23:53:09] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:09] [dependency-graph-visualizer] ✅ Graph Data Generated: 19 nodes, 21 links
+[INFO] [23:53:11] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:11] [dependency-graph-visualizer] ✅ Graph Data Generated: 11 nodes, 15 links
+[INFO] [23:53:13] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:13] [dependency-graph-visualizer] ✅ Graph Data Generated: 22 nodes, 24 links
+[INFO] [23:53:14] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:14] [dependency-graph-visualizer] ✅ Graph Data Generated: 30 nodes, 39 links
+[INFO] [23:53:16] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:16] [dependency-graph-visualizer] ✅ Graph Data Generated: 33 nodes, 40 links
+[INFO] [23:53:17] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:17] [dependency-graph-visualizer] ✅ Graph Data Generated: 13 nodes, 9 links
+[INFO] [23:53:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 13 nodes, 17 links
+[INFO] [23:53:20] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:20] [dependency-graph-visualizer] ✅ Graph Data Generated: 29 nodes, 49 links
+[INFO] [23:53:22] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:22] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 27 links
+[INFO] [23:53:24] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:24] [dependency-graph-visualizer] ✅ Graph Data Generated: 6 nodes, 0 links
+[INFO] [23:53:26] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:26] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 43 links
+[INFO] [23:53:28] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:28] [dependency-graph-visualizer] ✅ Graph Data Generated: 17 nodes, 0 links
+[INFO] [23:53:29] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:29] [dependency-graph-visualizer] ✅ Graph Data Generated: 28 nodes, 32 links
+[INFO] [23:53:31] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:31] [dependency-graph-visualizer] ✅ Graph Data Generated: 21 nodes, 0 links
+[INFO] [23:53:32] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:32] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 43 links
+[INFO] [23:53:34] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:34] [dependency-graph-visualizer] ✅ Graph Data Generated: 21 nodes, 0 links
+[INFO] [23:53:35] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:35] [dependency-graph-visualizer] ✅ Graph Data Generated: 40 nodes, 0 links
+[INFO] [23:53:37] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:37] [dependency-graph-visualizer] ✅ Graph Data Generated: 37 nodes, 0 links
+[INFO] [23:53:39] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:53:39] [dependency-graph-visualizer] ✅ Graph Data Generated: 38 nodes, 57 links
+
+M12.47 SURFACE: FAIL (99 failures)

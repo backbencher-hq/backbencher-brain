@@ -468,8 +468,8 @@ async function cmdIndex(
           : ""
         const remainingNote = reconciled.remaining > 0
           ? reconciled.stoppedEarly
-            ? `; stopped early after repeated provider failures — ${reconciled.remaining.toLocaleString()} still missing it, existing vectors kept; rerun bb index when the provider is available${errorNote}`
-            : `; ${reconciled.remaining.toLocaleString()} still missing it (provider failed/rate-limited — existing vectors kept; rerun bb index to continue)${errorNote}`
+            ? `; BACKFILL PENDING — stopped early after repeated provider failures: ${reconciled.remaining.toLocaleString()} symbol(s) still missing the configured model, existing vectors kept; rerun bb index when the provider is available (bb health reports the pending state)${errorNote}`
+            : `; BACKFILL PENDING — ${reconciled.remaining.toLocaleString()} symbol(s) still missing the configured model (provider failed/rate-limited — existing vectors kept; rerun bb index to continue; bb health reports the pending state)${errorNote}`
           : ""
         console.log(
           `  ✓ embeddings: re-embedded ${reconciled.embedded.toLocaleString()}/${reconciled.symbols.toLocaleString()} pending symbols with ${reconciled.configuredModel}${remainingNote}`,

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-green/test-intel",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-test-intel.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:41:11.484Z",
+  "endedAt": "2026-11-19T04:41:18.418Z",
+  "durationMs": 6933,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 98,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "\n[P1-3] test-link validation (mapping must not publish unvalidated evidence)\n  ok: test-intel engine exports validateTestLink (validation capability)\n  ok: MUST-REJECT: errors.New(...) in caplets/caplet_test.go is not evidence for session.New\n  ok: MUST-REJECT: otto.New() in js/data_test.go is not evidence for session.New\n  ok: MUST-REJECT: embedded sync.Mutex `m.Lock()` is not evidence for session.Lock\n  ok: MUST-REJECT: bare New() in another package is not evidence for session.New\n  ok: CONTROL: same-package Go call (session_test.go -> session.ParseCommands) is ACCEPTED\n  ok: CONTROL: genuinely imported package call (session.New from a file importing .../v2/session) is ACCEPTED\n  ok: CONTROL: same-package reference edge is ACCEPTED\n[brain] preparing the parallel worker pool (4 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 26ms [plan=linear largest-intermediate=9]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching enriching 25%\n  enriching done 100%\n  ✅ Enriched 2 relationships (0 patterns) in 35ms\n        ⚠ 7 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 7ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(3ms) + health(18ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 8ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 3ms\n  ok: mapping runs on brain_* tables (no crash)\n  ok: test files detected\n  ok: add is mapped to a test (direct call)\n  ok: add strongest evidence is direct_call\n  ok: untested has no test links\n  ok: helper in a.ts is mapped\n  ok: helper in b.ts is NOT mapped (same-name isolation + import reachability)\n  ok: gaps include untested symbol\n  ok: gaps exclude tested add\n  ok: no_evidence category present\n  ok: high-complexity untested ranks above trivial gap\n  ok: impact found for add\n  ok: impact lists a direct test\n  ok: impact affected test files non-empty\n  ok: runtime coverage is a separate unpopulated field\n  ok: impact not-found returns found:false\n\nTEST-INTEL: PASS\n",
+  "stderr": "[INFO] [23:41:15] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:41:16] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":4,\"types\":0}\n[INFO] [23:41:17] [parallel-indexer] worker pool complete {\"files\":4,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:41:18] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"09661fcd\",\"danglingSources\":7,\"totalRelationships\":9}\n[INFO] [23:41:18] [project-health] project health computed {\"projectId\":\"09661fcdad5861b81863a22d081758dcfa0671f8\",\"complexityScore\":90,\"maintainabilityScore\":78,\"techDebtScore\":100,\"codeQualityScore\":89,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2404,
+  "stderrBytes": 737,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044118Z-cp1f-green-test-intel.json"
+}

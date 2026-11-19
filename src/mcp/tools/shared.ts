@@ -143,6 +143,117 @@ export function textResult(text: string, isError = false): ToolResult {
   return { content: [{ type: "text", text }], ...(isError ? { isError: true } : {}) }
 }
 
+// ── ONE bounded response envelope for the graph family ─────────────────────────
+// bb has no output cap of its own: the consuming host does. A payload whose
+// bounds sit AFTER the data is therefore a payload whose declaration is the first
+// thing a host truncation removes (measured on bettercap: graph summary at
+// 99.5-99.7% of the payload bytes, impact counts at 99.7-99.9%). The mitigation
+// is ONE envelope, `{ summary, data }`, summary FIRST:
+//   summary — every declared bound and count, first, so `head -c 4096` sees the
+//             whole declaration even when the host cuts the body; it also carries
+//             `payloadBytes` / `payloadBudgetBytes` on EVERY answer, truncated or not;
+//   data    — the bulk rows. A payload over the transport budget is cut here and
+//             the cut is DECLARED in the summary like every other bound
+//             (`payload-byte-budget-exhausted`, `droppedRows`, `droppedByArray`).
+export const PAYLOAD_BUDGET_BYTES = 256 * 1024
+/** The budget bounds the DATA the caller reads, not the declaration that it was cut. */
+const PAYLOAD_ENVELOPE_SLACK_BYTES = 8192
+
+/** Test/ops override: the transport budget is a property of the caller, not the tool. */
+export function payloadBudgetBytes(): number {
+  const raw = Number(process.env.BB_PAYLOAD_BUDGET_BYTES)
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : PAYLOAD_BUDGET_BYTES
+}
+
+function envelopeBytes(text: string): number {
+  return Buffer.byteLength(text, "utf8")
+}
+
+export interface BoundedEnvelopeOptions {
+  /** Transport budget for the whole answer. Defaults to payloadBudgetBytes(). */
+  budgetBytes?: number
+  /** Rebuild derived structures (e.g. a graph node table) after rows are cut. */
+  onTruncate?: (data: Record<string, unknown>, dropped: Record<string, number>) => Record<string, unknown> | { data: Record<string, unknown>; summary?: Record<string, unknown> }
+}
+
+/**
+ * Emit one tool answer as `{ summary, data }`, summary first.
+ *
+ * The summary carries every bound/count the tool declares plus `payloadBytes` /
+ * `payloadBudgetBytes` (both present on every answer, truncated or not). When the
+ * serialized answer exceeds the transport budget, the data's top-level arrays are
+ * cut proportionally (binary-searched keep ratio) and the summary declares
+ * `truncated`, a `payload-byte-budget-exhausted` reason, `droppedRows` and
+ * `droppedByArray` — the cut is never silent.
+ */
+export function boundedResult(summary: Record<string, unknown>, data: Record<string, unknown>, options: BoundedEnvelopeOptions = {}): ToolResult {
+  const budgetBytes = options.budgetBytes ?? payloadBudgetBytes()
+  const declared: Record<string, unknown> = { ...summary, payloadBytes: 0, payloadBudgetBytes: budgetBytes }
+  const serialise = (head: Record<string, unknown>, body: Record<string, unknown>): string => JSON.stringify({ summary: head, data: body }, null, 2)
+  let payloadData: Record<string, unknown> = data
+  const dropped: Record<string, number> = {}
+  if (envelopeBytes(serialise(declared, payloadData)) > budgetBytes + PAYLOAD_ENVELOPE_SLACK_BYTES) {
+    const arrays = Object.entries(payloadData).filter((entry): entry is [string, unknown[]] => Array.isArray(entry[1]))
+    if (arrays.length > 0) {
+      const cutAt = (ratio: number): Record<string, unknown> => {
+        const next: Record<string, unknown> = { ...payloadData }
+        for (const [key, rows] of arrays) next[key] = rows.slice(0, Math.max(0, Math.floor(rows.length * ratio)))
+        return next
+      }
+      let low = 0
+      let high = 1
+      let fitted = cutAt(0)
+      for (let i = 0; i < 24; i++) {
+        const mid = (low + high) / 2
+        const candidate = cutAt(mid)
+        if (envelopeBytes(serialise({ ...declared, truncated: true }, candidate)) <= budgetBytes) {
+          fitted = candidate
+          low = mid
+        } else {
+          high = mid
+        }
+      }
+      payloadData = fitted
+      for (const [key, rows] of arrays) dropped[key] = rows.length - ((payloadData[key] as unknown[] | undefined)?.length ?? 0)
+      if (options.onTruncate) {
+        const hook = options.onTruncate(payloadData, dropped)
+        // A hook may rebuild derived structures AND restate the counts that the
+        // cut changed (a graph's returned-edge count must equal the rows it
+        // actually returns); a plain object return is the data-only form.
+        if (hook && typeof hook === "object" && "data" in hook) {
+          payloadData = (hook as { data: Record<string, unknown> }).data
+          const patch = (hook as { summary?: Record<string, unknown> }).summary
+          if (patch) Object.assign(declared, patch)
+        } else {
+          payloadData = hook as Record<string, unknown>
+        }
+      }
+      declared.truncated = true
+      declared.truncationReason = declared.truncationReason ? `${String(declared.truncationReason)}+payload-byte-budget-exhausted` : "payload-byte-budget-exhausted"
+      const existingReasons = Array.isArray(declared.truncationReasons) ? (declared.truncationReasons as unknown[]) : []
+      declared.truncationReasons = [...new Set([...existingReasons.map(String), "payload-byte-budget-exhausted"])]
+      declared.droppedRows = Object.values(dropped).reduce((total, count) => total + count, 0)
+      declared.droppedByArray = dropped
+    }
+  }
+  // The byte bound is declared on EVERY answer, not only when it fires: the
+  // vocabulary a reader needs to interpret `truncated` must not appear for the
+  // first time only in the pathological case.
+  declared.droppedRows = declared.droppedRows ?? 0
+  declared.droppedByArray = declared.droppedByArray ?? {}
+  declared.byteBudgetRule = "payload-byte-budget-exhausted"
+  declared.byteBudgetExhausted = (declared.droppedRows as number) > 0
+  // payloadBytes is the size of the answer the caller receives. Setting it
+  // changes the digit count, so it is settled with one extra serialization
+  // rather than reported from the pre-patch text.
+  let text = serialise(declared, payloadData)
+  declared.payloadBytes = envelopeBytes(text)
+  text = serialise(declared, payloadData)
+  declared.payloadBytes = envelopeBytes(text)
+  text = serialise(declared, payloadData)
+  return textResult(text)
+}
+
 export async function autoRefreshFile(projectId: string, projectPath: string, absPath: string, type: "added" | "modified" = "modified"): Promise<void> {
   try {
     await reindexFilesParallel(projectId as any, projectPath, [{ path: absPath, type }])

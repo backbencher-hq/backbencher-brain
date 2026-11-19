@@ -51,6 +51,17 @@ if (!process.env.BB_DATA_DIR) process.env.BB_DATA_DIR = mkdtempSync(path.join(tm
 process.env.BB_NO_AUTO_REFRESH = "1"
 
 const root = mkdtempSync(path.join(tmpdir(), "bb-analyze-an1-"))
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back
+// to the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data }
+    : payload
+
+
 const descriptor = PUBLIC_TOOL_DESCRIPTORS.find((tool) => tool.name === "bb_analyze")!
 const handler = createToolHandlers()["bb_analyze"]
 const projectId = getProjectId(root)
@@ -76,7 +87,7 @@ async function call(args: Record<string, unknown>): Promise<Call> {
     const res = await handler(validated, { projectPath: root, projectId })
     const text = res.content.map((item) => item.text).join("\n")
     let json: any = null
-    try { json = JSON.parse(text) } catch { json = null }
+    try { json = flattenEnvelope(JSON.parse(text)) } catch { json = null }
     return { isError: res.isError === true, text, json }
   } catch (error: any) {
     return { isError: true, text: `threw: ${error?.message ?? String(error)}`, json: null }

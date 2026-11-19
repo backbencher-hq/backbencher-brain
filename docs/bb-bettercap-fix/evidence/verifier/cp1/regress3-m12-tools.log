@@ -1,0 +1,220 @@
+  FAIL: fixture root covers 41 languages
+  indexing multi-language corpus...
+  ok: index completed with zero file errors
+  ok: all corpus files indexed
+  ok: bb_search resolves bash symbol "Common.sh"
+  ok: bb_search resolves bash symbol "SCRIPT_NAME"
+  ok: bb_search resolves bash symbol "LOG_LEVEL"
+  ok: bb_search resolves bash symbol "Deploy.sh"
+  ok: bb_search resolves clean symbol "Service"
+  ok: bb_search resolves clean symbol "User"
+  ok: bb_search resolves clean symbol "OrderBook"
+  ok: bb_search resolves clean symbol "Side"
+  ok: bb_search resolves clojure symbol "com.example.clojure.service"
+  ok: bb_search resolves clojure symbol "Formatter"
+  ok: bb_search resolves cpp symbol "geometry"
+  ok: bb_search resolves csharp symbol "Example.Base"
+  ok: bb_search resolves csharp symbol "IRepository"
+  ok: bb_search resolves csharp symbol "Entity"
+  ok: bb_search resolves csharp symbol "Example.Service"
+  ok: bb_search resolves css symbol "@layer base"
+  ok: bb_search resolves css symbol "body"
+  ok: bb_search resolves css symbol "#orders-table"
+  ok: bb_search resolves css symbol "@media (max-width: 768px)"
+  ok: bb_search resolves dart symbol "Status"
+  ok: bb_search resolves dart symbol "active"
+  ok: bb_search resolves dart symbol "inactive"
+  ok: bb_search resolves dart symbol "pending"
+  ok: bb_search resolves elixir symbol "MyApp"
+  ok: bb_search resolves elixir symbol "MyApp.User"
+  ok: bb_search resolves elixir symbol "t"
+  ok: bb_search resolves elixir symbol "email"
+  ok: bb_search resolves erlang symbol "service"
+  ok: bb_search resolves erlang symbol "MAX_JOBS"
+  ok: bb_search resolves erlang symbol "DEFAULT_TIMEOUT"
+  ok: bb_search resolves erlang symbol "job_id"
+  ok: bb_search resolves fsharp symbol "Example.Domain"
+  ok: bb_search resolves fsharp symbol "CustomerModule"
+  ok: bb_search resolves fsharp symbol "Status"
+  ok: bb_search resolves fsharp symbol "Active"
+  ok: bb_search resolves go symbol "service"
+  ok: bb_search resolves go symbol "Repository"
+  ok: bb_search resolves go symbol "BaseService"
+  ok: bb_search resolves go symbol "User"
+  ok: bb_search resolves graphql symbol "schema"
+  ok: bb_search resolves graphql symbol "Node"
+  ok: bb_search resolves graphql symbol "SearchResult"
+  ok: bb_search resolves graphql symbol "Role"
+  ok: bb_search resolves groovy symbol "Audited"
+  ok: bb_search resolves groovy symbol "Entity"
+  ok: bb_search resolves groovy symbol "Repository"
+  ok: bb_search resolves groovy symbol "Color"
+  ok: bb_search resolves haskell symbol "Service"
+  ok: bb_search resolves haskell symbol "User"
+  ok: bb_search resolves haskell symbol "OrderBook"
+  ok: bb_search resolves haskell symbol "Side"
+  FAIL: bb_search resolves hcl symbol "terraform" got 0
+  FAIL: bb_search resolves hcl symbol "aws" got 0
+  FAIL: bb_search resolves hcl symbol "locals" got 0
+  FAIL: bb_search resolves hcl symbol "network" got 0
+  ok: bb_search resolves html symbol "Page"
+  ok: bb_search resolves html symbol "theme"
+  ok: bb_search resolves java symbol "Entity"
+  ok: bb_search resolves java symbol "Repository"
+  ok: bb_search resolves java symbol "Status"
+  ok: bb_search resolves java symbol "ACTIVE"
+  ok: bb_search resolves javascript symbol "Status"
+  ok: bb_search resolves javascript symbol "localConstant"
+  ok: bb_search resolves javascript symbol "EventEmitter"
+  FAIL: bb_search resolves json symbol "api-contract" got 0
+  FAIL: bb_search resolves json symbol "package" got 0
+  ok: bb_search resolves kotlin symbol "Repository"
+  ok: bb_search resolves kotlin symbol "Entity"
+  ok: bb_search resolves make symbol "CC"
+  ok: bb_search resolves make symbol "CFLAGS"
+  ok: bb_search resolves make symbol "DEBUG"
+  ok: bb_search resolves make symbol "OBJS"
+  ok: bb_search resolves markdown symbol "front_matter"
+  ok: bb_search resolves markdown symbol "Main Title"
+  ok: bb_search resolves markdown symbol "Section One"
+  ok: bb_search resolves markdown symbol "Sub Section A"
+  (no GT for matlab)
+  ok: bb_search resolves nim symbol "Color"
+  ok: bb_search resolves nim symbol "Red"
+  ok: bb_search resolves nim symbol "Green"
+  ok: bb_search resolves nim symbol "Blue"
+  ok: bb_search resolves perl symbol "VERSION"
+  ok: bb_search resolves perl symbol "EXPORT"
+  ok: bb_search resolves php symbol "App\\Base"
+  ok: bb_search resolves php symbol "App\\Service"
+  ok: bb_search resolves php symbol "Auditable"
+  ok: bb_search resolves php symbol "Loggable"
+  ok: bb_search resolves powershell symbol "EnvironmentKind"
+  ok: bb_search resolves powershell symbol "Dev"
+  ok: bb_search resolves powershell symbol "Staging"
+  ok: bb_search resolves powershell symbol "Prod"
+  ok: bb_search resolves python symbol "Role"
+  ok: bb_search resolves python symbol "ADMIN"
+  ok: bb_search resolves python symbol "USER"
+  ok: bb_search resolves r symbol "GLOBAL_LIMIT"
+  ok: bb_search resolves ruby symbol "Billing"
+  ok: bb_search resolves ruby symbol "Audited"
+  ok: bb_search resolves ruby symbol "API_PREFIX"
+  ok: bb_search resolves rust symbol "storage"
+  ok: bb_search resolves rust symbol "Repository"
+  ok: bb_search resolves rust symbol "User"
+  ok: bb_search resolves rust symbol "Status"
+  ok: bb_search resolves scala symbol "Shape"
+  ok: bb_search resolves scala symbol "Color"
+  ok: bb_search resolves scala symbol "Red"
+  ok: bb_search resolves scala symbol "Green"
+  ok: bb_search resolves scss symbol "t"
+  ok: bb_search resolves sql symbol "app"
+  ok: bb_search resolves sql symbol "users_team_idx"
+  ok: bb_search resolves sql symbol "idx_customers_email"
+  ok: bb_search resolves sql symbol "oi_order_fk"
+  ok: bb_search resolves svelte symbol "theme"
+  ok: bb_search resolves swift symbol "Repository"
+  ok: bb_search resolves swift symbol "Item"
+  ok: bb_search resolves swift symbol "User"
+  ok: bb_search resolves swift symbol "Status"
+  FAIL: bb_search resolves toml symbol "Page" got 0
+  ok: bb_search resolves toml symbol "package"
+  ok: bb_search resolves toml symbol "dependencies"
+  ok: bb_search resolves toml symbol "bin"
+  ok: bb_search resolves typescript symbol "Repository"
+  ok: bb_search resolves typescript symbol "Example.Domain"
+  ok: bb_search resolves typescript symbol "Status"
+  ok: bb_search resolves typescript symbol "None"
+  ok: bb_search resolves vue symbol "count"
+  ok: bb_search resolves vue symbol "isActive"
+  ok: bb_search resolves vue symbol "select"
+  ok: bb_search resolves vue symbol "users"
+  ok: bb_search resolves xml symbol "catalog-processing"
+  ok: bb_search resolves xml symbol "default"
+  ok: bb_search resolves xml symbol "book"
+  ok: bb_search resolves xml symbol "xs"
+  FAIL: bb_search resolves yaml symbol "Docker-compose" got 0
+  FAIL: bb_search resolves yaml symbol "Flow" got 0
+  ok: bb_search resolves yaml symbol "base"
+  FAIL: bb_search resolves yaml symbol "Kubernetes" got 0
+  ok: bb_search resolves zig symbol "MAX_POINTS"
+  ok: bb_search resolves zig symbol "Point"
+  ok: bb_search resolves zig symbol "ShapeType"
+  ok: bb_search resolves zig symbol "circle"
+  FAIL: search sweep covered all 41 languages 44/41
+    -> 139 per-language symbol probes, 129/139 resolved
+  ok: bb_search content mode runs
+  ok: bb_health runs
+  ok: bb_health reports all corpus files
+  ok: bb_health reports symbols > 1000
+  ok: bb_health reports relationships > 1000
+  ok: no unknown-language files in health
+  ok: bb_analyze stats runs
+  ok: bb_analyze stats totals > 0
+  ok: bb_analyze complexity (java file) runs
+  ok: bb_analyze callers (countUsers) runs
+  ok: bb_patterns orphaned runs
+  FAIL: bb_patterns finds orphaned code count=undefined
+  ok: bb_security runs
+  ok: bb_visualize project runs
+  FAIL: visualize graph spans >= 3 language families langs=
+    -> graph: 0 nodes across 0 languages
+  ok: bb_doc symbol (storage) runs
+  ok: bb_doc cites the target symbol
+  ok: bb_migrate (Entity -> rust) runs
+  ok: bb_migrate returns a plan
+  ok: bb_edit dry-run refactor (UserService) runs
+  ok: bb_edit dry-run returns preview
+  ok: CLI/handler parity: search
+  FAIL: CLI/handler parity: health status=0 cliLen=898 handlerLen=896
+
+[INFO] [23:57:07] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".ts","files":4,"types":13}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".scss","files":1,"types":1}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".rb","files":2,"types":4}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".py","files":1,"types":5}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".clj","files":1,"types":0}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".cpp","files":1,"types":0}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".dart","files":4,"types":10}
+[INFO] [23:57:07] [parallel-indexer] project index built {"ext":".fs","files":3,"types":13}
+[INFO] [23:57:12] [parallel-indexer] worker pool complete {"files":120,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[INFO] [23:57:12] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:57:12] [ast-engine] language grammar allocated {"language":"perl"}
+[INFO] [23:57:12] [ast-engine] language parser loaded {"language":"perl","wasmPath":"/tmp/bb-wasm_tree-sitter-perl_tree-sitter-perl.wasm_713_34ggez7"}
+[INFO] [23:57:12] [parallel-indexer] override companion (perl): 2 owners, 1 file(s) re-analyzed, 1 reapplied, 1 confirmed, 0 still a guess, 0 failed, 1 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 1 new in the re-parse, 0 unconfirmed id(s)
+[SEVEN] NO_ROW storeRows=0 target=fetch line=15 diffId=- attemptedId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:perl/Service.pm:fetch:15:fetch:overrides:15
+[INFO] [23:57:12] [parallel-indexer] override companion (perl) write-back: 0 row(s) matched of 1 id(s) attempted, 1 matched NOTHING
+[INFO] [23:57:12] [parallel-indexer] override companion (perl) census: overrides conf = 0.5=25 0.85=2 0.95=10 1=14 · total=51
+[WARN] [23:57:12] [parallel-indexer] override companion (perl) WRITE-BACK MISS: 1 of 1 ids matched no stored row — Reading A is wrong for those rows and Reading B is the design for them. REPORTED, NOT RECOVERED: no fallback is attempted in this run.
+[INFO] [23:57:12] [ast-engine] language grammar allocated {"language":"python"}
+[INFO] [23:57:12] [ast-engine] language parser loaded {"language":"python","wasmPath":"/tmp/bb-wasm_tree-sitter-python_tree-sitter-python.wasm_713_362y6tf"}
+[INFO] [23:57:13] [parallel-indexer] override companion (python): 3 owners, 1 file(s) re-analyzed, 1 reapplied, 1 confirmed, 0 still a guess, 0 failed, 1 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[INFO] [23:57:13] [parallel-indexer] override companion (python) write-back: 1 row(s) matched of 1 id(s) attempted, 0 matched NOTHING
+[INFO] [23:57:13] [parallel-indexer] override companion (python) census: overrides conf = 0.5=25 0.85=2 0.95=10 1=14 · total=51
+[INFO] [23:57:13] [ast-engine] language grammar allocated {"language":"javascript"}
+[INFO] [23:57:13] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [23:57:13] [parallel-indexer] override companion (javascript): 8 owners, 1 file(s) re-analyzed, 1 reapplied, 1 confirmed, 0 still a guess, 0 failed, 1 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[INFO] [23:57:13] [parallel-indexer] override companion (javascript) write-back: 1 row(s) matched of 1 id(s) attempted, 0 matched NOTHING
+[INFO] [23:57:13] [parallel-indexer] override companion (javascript) census: overrides conf = 0.5=24 0.85=2 0.95=11 1=14 · total=51
+[INFO] [23:57:13] [ast-engine] language grammar allocated {"language":"ruby"}
+[INFO] [23:57:13] [ast-engine] language parser loaded {"language":"ruby","wasmPath":"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_713_39gcymd"}
+[INFO] [23:57:13] [parallel-indexer] override companion (ruby): 3 owners, 1 file(s) re-analyzed, 1 reapplied, 0 confirmed, 2 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 2 unconfirmed id(s)
+[INFO] [23:57:13] [parallel-indexer] override companion (ruby) CLAUSE 4 per id: 2 of 2 unconfirmed id(s) still below the floor, 0 MOVED to or above it, 0 absent from the store
+[INFO] [23:57:13] [ast-engine] language grammar allocated {"language":"cpp"}
+[INFO] [23:57:13] [ast-engine] language parser loaded {"language":"cpp","wasmPath":"/tmp/bb-wasm_tree-sitter-cpp_tree-sitter-cpp.wasm_713_3adnpt1"}
+[INFO] [23:57:13] [parallel-indexer] override companion (cpp): 4 owners, 1 file(s) re-analyzed, 1 reapplied, 3 confirmed, 0 still a guess, 0 failed, 3 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[SEVEN] DIFFERENT_ID storeRows=1 target=area line=33 diffId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:cpp/Shape.h:area:25:area:overrides:33 attemptedId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:cpp/Shape.h:area:33:area:overrides:33
+[SEVEN] DIFFERENT_ID storeRows=1 target=name line=34 diffId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:cpp/Shape.h:name:26:name:overrides:34 attemptedId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:cpp/Shape.h:name:34:name:overrides:34
+[SEVEN] DIFFERENT_ID storeRows=1 target=scale line=35 diffId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:cpp/Shape.h:scale:27:scale:overrides:35 attemptedId=9aed950e17ced7b7fc1233eb4731bf253b23ebef:rel:9aed950e17ced7b7fc1233eb4731bf253b23ebef:cpp/Shape.h:scale:35:scale:overrides:35
+[INFO] [23:57:13] [parallel-indexer] override companion (cpp) write-back: 0 row(s) matched of 3 id(s) attempted, 3 matched NOTHING
+[INFO] [23:57:13] [parallel-indexer] override companion (cpp) census: overrides conf = 0.5=24 0.85=2 0.95=11 1=14 · total=51
+[WARN] [23:57:13] [parallel-indexer] override companion (cpp) WRITE-BACK MISS: 3 of 3 ids matched no stored row — Reading A is wrong for those rows and Reading B is the design for them. REPORTED, NOT RECOVERED: no fallback is attempted in this run.
+[WARN] [23:57:14] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"9aed950e","danglingSources":293,"totalRelationships":3360}
+[INFO] [23:57:14] [project-health] project health computed {"projectId":"9aed950e17ced7b7fc1233eb4731bf253b23ebef","complexityScore":93,"maintainabilityScore":79,"techDebtScore":100,"codeQualityScore":91,"languages":45,"bottlenecks":0}
+[INFO] [23:57:14] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:57:14] [dependency-graph-visualizer] ✅ Graph Data Generated: 1524 nodes, 1639 links
+[INFO] [23:57:14] [ast-engine] language grammar allocated {"language":"java"}
+[INFO] [23:57:14] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_713_42h0skw"}
+
+M12 TOOLS VERIFY: FAIL (15 failures)

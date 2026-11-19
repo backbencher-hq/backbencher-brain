@@ -1,0 +1,43 @@
+[brain] preparing the parallel worker pool (5 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 12ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 5ms
+        ⚠ 4 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(0ms) + health(6ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+
+[INFO] [23:55:58] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:55:58] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [23:55:58] [parallel-indexer] project index built {"ext":".ts","files":4,"types":0}
+[INFO] [23:55:58] [parallel-indexer] worker pool complete {"files":5,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:55:58] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"fc1254e5","danglingSources":4,"totalRelationships":4}
+[INFO] [23:55:58] [project-health] project health computed {"projectId":"fc1254e56dee3c6de9cddbe35aeb421348787c9e","complexityScore":95,"maintainabilityScore":78,"techDebtScore":100,"codeQualityScore":91,"languages":2,"bottlenecks":0}
+[INFO] [23:55:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links
+67 | const note = (result: any): string => String(result.absenceNote ?? "")
+68 | 
+69 | // ── a control with no metacharacters, so the fixtures below are known reachable ─
+70 | {
+71 |   const plain = await run({ scope: "module", target: "src/util" })
+72 |   harness.check("control: a plain module target resolves", plain.nodes.length > 0 && plain.declaredAbsent === false, `nodes=${plain.nodes.length}`)
+                                                                      ^
+TypeError: undefined is not an object (evaluating 'plain.nodes.length')
+      at /home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-target-literals.ts:72:66
+
+Bun v1.3.14 (Linux x64)

@@ -1,0 +1,36 @@
+===== P0-1 gate =====
+P0-1 GATE EXIT=0
+  PASS G7 post-commit `go build ./...` — exit 0
+
+23 passed, 0 failed
+
+===== CP1 bettercap =====
+CP1 EXIT=0
+}
+CP1 PASS: fixed engine plans 3 files / 3 sites including main.go:47
+
+===== script/m13/verify-edit-rename.ts =====
+EXIT script/m13/verify-edit-rename.ts = 0
+E2: VERIFIED (92/92 passed, 24 negatives)
+
+===== script/verify-edit.ts =====
+EXIT script/verify-edit.ts = 0
+
+===== script/m13/verify-edit-honesty.ts =====
+EXIT script/m13/verify-edit-honesty.ts = 0
+E11: VERIFIED (10/10 passed, 1 negative)
+
+===== script/m13/verify-edit-batch.ts =====
+EXIT script/m13/verify-edit-batch.ts = 0
+E13: VERIFIED (61/61 passed, 19 negatives)
+
+===== script/m15/verify-edit-crossfile.ts =====
+EXIT script/m15/verify-edit-crossfile.ts = 0
+E4: VERIFIED (31/31 passed, 8 negatives)
+E5: VERIFIED (5/5 passed, 0 negatives)
+E8: VERIFIED (8/8 passed, 1 negatives)
+
+===== script/m13/verify-edit-freshness.ts =====
+EXIT script/m13/verify-edit-freshness.ts = 0
+E5: VERIFIED (14/14 passed, 5 negatives)
+

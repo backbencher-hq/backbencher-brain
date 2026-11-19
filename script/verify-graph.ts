@@ -80,6 +80,17 @@ const SCALA_CHAIN =
   "}\n"
 
 const root = mkdtempSync(path.join(tmpdir(), "bb-graph-"))
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back
+// to the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data }
+    : payload
+
+
 mkdirSync(path.join(root, "src"), { recursive: true })
 writeFileSync(path.join(root, "src", "chain.ts"), TS_CHAIN)
 writeFileSync(path.join(root, "src", "Chain.java"), JAVA_CHAIN)
@@ -378,7 +389,7 @@ try {
       const result = await handlers["bb_graph"]!(validated, { projectId, projectPath: root })
       const text = String(result?.content?.[0]?.text ?? "")
       if (result?.isError) return { ok: false as const, error: text }
-      return { ok: true as const, json: JSON.parse(text) }
+      return { ok: true as const, json: flattenEnvelope(JSON.parse(text)) }
     } catch (error) {
       return { ok: false as const, error: error instanceof Error ? error.message : String(error) }
     }

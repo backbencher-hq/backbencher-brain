@@ -1,0 +1,37 @@
+[brain] preparing the parallel worker pool (4 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:12:07] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [00:12:07] [parallel-indexer] project index built {"ext":".ts","files":4,"types":1}
+[INFO] [00:12:08] [parallel-indexer] worker pool complete {"files":4,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 34ms [plan=linear largest-intermediate=19]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:12:09] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"182f179c","danglingSources":11,"totalRelationships":20}
+  enriching done 100%
+  ✅ Enriched 9 relationships (0 patterns) in 35ms
+        ⚠ 11 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:12:09] [project-health] project health computed {"projectId":"182f179c96dfa9d8ddff7e51230dc12062da9cf8","complexityScore":95,"maintainabilityScore":95,"techDebtScore":100,"codeQualityScore":97,"languages":1,"bottlenecks":0}
+  ✓ taint(3ms) + health(46ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 15ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 6ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 5ms
+FAIL: P3: caller set identical (leaf) — graph= analyze=run,alpha,b1,Service,b2,c1,d1
+FAIL: P3: caller set identical (Service) — graph= analyze=Service
+FAIL: P3: caller set identical (c1) — graph= analyze=d1
+[INFO] [00:12:09] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [00:12:09] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links
+FAIL: P3: bb_graph resolves the same root
+[INFO] [00:12:09] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [00:12:09] [dependency-graph-visualizer] ✅ Graph Data Generated: 0 nodes, 0 links
+M48 P3 AGREEMENT: FAIL (26 passed, 4 failed, 5 negatives)

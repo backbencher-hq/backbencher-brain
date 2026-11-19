@@ -1,0 +1,146 @@
+{
+  "gate": "M65.graph-blindspots",
+  "at": "2026-11-19T05:15:52.173Z",
+  "atCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "command": "bun run script/m65/verify-graph-blindspots.ts",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "fixture-declares-the-target: typescript",
+      "passed": true,
+      "detail": "symbol blindTargetTs indexed",
+      "negative": false
+    },
+    {
+      "name": "unattributed-count-is-published",
+      "passed": true,
+      "detail": "summary.unattributed = {\"callers\":4,\"callees\":0} (seeded exactly one unattributed caller row)",
+      "negative": false
+    },
+    {
+      "name": "unattributed-count-names-itself-in-provenance",
+      "passed": true,
+      "detail": "provenance.unknowns carries an `unattributed-source` note: true",
+      "negative": false
+    },
+    {
+      "name": "mutation: the count tracks the data",
+      "passed": true,
+      "detail": "deleting the seeded row moved the count 4 -> 3",
+      "negative": true
+    },
+    {
+      "name": "noise-filter-count-is-published",
+      "passed": true,
+      "detail": "summary.noiseFiltered = {\"callers\":1,\"callees\":0} — the vendored caller row is removed BY POLICY and now counted",
+      "negative": false
+    },
+    {
+      "name": "a-filter-is-not-a-bound",
+      "passed": true,
+      "detail": "truncated = false with both filters non-zero: filters are counted, they do not claim a bound bit",
+      "negative": true
+    },
+    {
+      "name": "cross-language-state-is-seedable",
+      "passed": true,
+      "detail": "call row 8c9e0080e36cbf70ab66ef35e47cae7c8f9a3777:rel:8c9e0080e36cbf70ab66ef35e47cae7c8f9a3777:src/caller.ts:realCallerTs:2:blindTargetTs:calls:3:site:91 flagged as cross-language for the measurement",
+      "negative": false
+    },
+    {
+      "name": "cross-language-exclusion-is-counted",
+      "passed": true,
+      "detail": "includeCrossLanguage: false → summary.crossLanguageExcluded = {\"callers\":1,\"callees\":0} (measured against 1 caller(s) with the default)",
+      "negative": false
+    },
+    {
+      "name": "cross-language-count-is-absent-when-nothing-was-excluded",
+      "passed": true,
+      "detail": "default call reports crossLanguageExcluded.callers = {\"callers\":0,\"callees\":0} (0, not a stale number)",
+      "negative": true
+    },
+    {
+      "name": "fixture-declares-the-target: python",
+      "passed": true,
+      "detail": "symbol blind_target_py indexed",
+      "negative": false
+    },
+    {
+      "name": "fixture-declares-the-target: go",
+      "passed": true,
+      "detail": "symbol BlindTargetGo indexed",
+      "negative": false
+    },
+    {
+      "name": "fixture-declares-the-target: rust",
+      "passed": true,
+      "detail": "symbol blind_target_rs indexed",
+      "negative": false
+    },
+    {
+      "name": "fixture-declares-the-target: java",
+      "passed": true,
+      "detail": "symbol blindTargetJava indexed",
+      "negative": false
+    },
+    {
+      "name": "fixture-declares-the-target: csharp",
+      "passed": true,
+      "detail": "symbol BlindTargetCs indexed",
+      "negative": false
+    },
+    {
+      "name": "every-language-fixture-reports-the-count",
+      "passed": true,
+      "detail": "typescript=4 python=2 go=1 rust=2 java=1 csharp=1 (each fixture seeded exactly one unattributed caller row; the count is a store fact, not an analyzer one)",
+      "negative": false
+    }
+  ],
+  "negativeCases": 3,
+  "languages": [
+    {
+      "language": "typescript",
+      "unattributed": 4,
+      "callers": 1,
+      "note": true
+    },
+    {
+      "language": "python",
+      "unattributed": 2,
+      "callers": 0,
+      "note": true
+    },
+    {
+      "language": "go",
+      "unattributed": 1,
+      "callers": 3,
+      "note": true
+    },
+    {
+      "language": "rust",
+      "unattributed": 2,
+      "callers": 1,
+      "note": true
+    },
+    {
+      "language": "java",
+      "unattributed": 1,
+      "callers": 3,
+      "note": true
+    },
+    {
+      "language": "csharp",
+      "unattributed": 1,
+      "callers": 4,
+      "note": true
+    }
+  ],
+  "contract": "bb_graph publishes the two filters it applies (noiseFiltered, crossLanguageExcluded) and counts the rows its JOIN cannot reach (unattributed, per direction, null when not counted) — measured through the real MCP door",
+  "before": "noise fixture answered callers: 0 · truncated: false with only a prose provenance note; includeCrossLanguage: false dropped 29 of 270 edges uncounted; the unattributed class had no field at all (11.0% of this repo's stored rows)",
+  "note": "store: /tmp/m65-graph-blindspots-AX4Avb",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-19T05:15:52.178Z",
+    "contentSha256": "7547d949e4b4bc14746b628988a582ead6c2cc49fc04d5e70b9a3c5b97023103"
+  }
+}

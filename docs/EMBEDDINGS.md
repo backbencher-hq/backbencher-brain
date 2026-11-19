@@ -39,6 +39,34 @@ batches; coverage is never a one-shot snapshot.
 - `tfidf-v1` rows are sparse `{token, weight}` maps — structurally
   incompatible with dense cosine. They carry a distinct model label and are
   excluded from the dense path (`non-dense-query-model`). Verified in Q5.
+
+### 2b. Provider changes: the configured space can be empty (P2-3)
+
+A provider change is a NEW vector space. The index reconciles lazily:
+`reconcileEmbeddingModel` (`src/ast/parallel-indexer.ts`) runs only inside a
+`bb index` run, after the embedding drain. It re-embeds exactly the symbols
+with no row for the configured model (`allowLocalFallback:false`, so a failed
+provider keeps the old vector instead of downgrading the space), stops after two
+consecutive batches that convert nothing, and resumes on the next run. A run
+that never reconciles — or one that stalls — leaves a **pending backfill**: the
+index is healthy, the configured space is nearly empty.
+
+The read path (`src/intelligence/search/semantic-search.ts`) therefore decides
+the compared space explicitly, through the pure planner
+`src/brain/semantic/embedding-spaces.ts`:
+
+| configured-space coverage | compared space | declared facts |
+| --- | --- | --- |
+| ≥ 5% | the configured model | none — normal vector answer |
+| < 5%, populated local space | `local-word-vectors-v3` (query embedded locally) | `fallbackReason=configured-model-space-under-covered`, provenance names the configured space and the pending backfill |
+| < 5%, no usable dense space | none | keyword fallback, `fallbackReason` names the configured-space shortfall, no lexical result is presented as semantic |
+
+The 5% floor (`MIN_CONFIGURED_SPACE_COVERAGE`) is the plan-level rule: a project
+with <5% configured-space coverage can never return an **undeclared** keyword
+answer. The fallback is never a cross-space comparison: the query is embedded
+again with the fallback model, and the coverage number beside it describes that
+space. `bb_health` reports the same plan (`embeddings.configured`,
+`EMBEDDINGS_BACKFILL_PENDING`) so health and `bb_ask` cannot disagree.
 - Any stored vector that is not a finite numeric array is skipped (corrupt
   rows — malformed JSON, non-numeric, `Infinity` — are skipped without crash;
   Q5 case 1). Zero/norm-0 vectors never produce NaN similarity (Q5 case 9).
@@ -61,6 +89,14 @@ labels it. Coverage is reported through `bb_health` (machine-checkable) and is
 explicitly, and `bb_ask` surfaces the degradation note instead of presenting
 lexical matches as semantic).
 
+Since P2-3 the health line names TWO measurements: `library-wide` coverage (every
+stored vector, across all models — what the historical percentage meant) and the
+**configured model space's** coverage. They differ sharply on a mixed-model
+index (measured on bettercap: 42.9% library-wide, 0.0% configured (1/55,785)),
+and only the second decides whether a semantic answer is possible. When it is
+under-covered the health line says `BACKFILL PENDING` and the warning says which
+populated space `bb_ask` falls back to.
+
 Coverage is **volatile by design**: the embedding API batches and rate-limits,
 so one run may embed 62.2% of lodash and another 10.0% of the same corpus (both
 post-flush). The product therefore never claims a fixed coverage target — it
@@ -74,6 +110,12 @@ When no usable vector result exists, retrieval falls back to lexical search
 `embedding-error` · `no-query-vector` · `non-dense-query-model` ·
 `no-matching-model-embeddings` · `no-vector-above-threshold` ·
 `no-resolvable-entities`
+
+Two space-level rungs are declared when the CONFIGURED model space is
+under-covered (<5% of symbols): `configured-model-space-under-covered` (the
+answer came from the populated fallback space, named in the retrieval line and
+in provenance) and the pending-backfill note carried in provenance. Neither
+rung permits comparing vectors across spaces.
 
 Each of these is a real, reachable path — the deterministic wire‑tests in Q5
 prove the `embedding-error`, `no-query-vector`, `no-matching-model-embeddings`,

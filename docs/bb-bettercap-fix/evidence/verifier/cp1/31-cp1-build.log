@@ -1,0 +1,201 @@
+
+> @backbencher/brain@0.1.6 build
+> tsup
+
+CLI Building entry: {"index":"src/index.ts","cli/index":"src/cli/index.ts","mcp/server":"src/mcp/server.ts","lsp/server":"src/lsp/server.ts","pool-worker":"src/ast/pool-worker.ts"}
+CLI Using tsconfig: tsconfig.json
+CLI tsup v8.5.1
+CLI Using tsup config: /home/ishaq2321/mcp/backbencher-brain/tsup.config.ts
+CLI Target: node20
+CLI Cleaning output folder
+ESM Build start
+
+ WARN  [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThis case clause will never be evaluated because it duplicates an earlier case clause[0m [duplicate-case]
+
+    src/ast/real-scss-analyzer.ts:1387:13:
+[37m      1387 │         case [32m"use_statement"[37m:
+           ╵              [32m~~~~~~~~~~~~~~~[0m
+
+  The earlier case clause is here:
+
+    src/ast/real-scss-analyzer.ts:1323:13:
+[37m      1323 │         case [32m"use_statement"[37m:
+           ╵              [32m~~~~~~~~~~~~~~~[0m
+
+
+
+
+ WARN  [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThis case clause will never be evaluated because it duplicates an earlier case clause[0m [duplicate-case]
+
+    src/ast/real-scss-analyzer.ts:1388:13:
+[37m      1388 │         case [32m"forward_statement"[37m:
+           ╵              [32m~~~~~~~~~~~~~~~~~~~[0m
+
+  The earlier case clause is here:
+
+    src/ast/real-scss-analyzer.ts:1324:13:
+[37m      1324 │         case [32m"forward_statement"[37m:
+           ╵              [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+
+ESM dist/onboard-KNDE6ILL.js                       7.05 KB
+ESM dist/impact_request-XA4XEIHT.js                2.49 KB
+ESM dist/graph_request-6JB3UN6S.js                 16.70 KB
+ESM dist/embedding-setup-6GSHCVJE.js               14.43 KB
+ESM dist/freshness-6ZJP4P4O.js                     5.38 KB
+ESM dist/project-registry-INL52YRD.js              11.99 KB
+ESM dist/graph-engine-MOSLBQHT.js                  487.00 B
+ESM dist/tool-registry-7JDFU4OX.js                 357.00 B
+ESM dist/taint-6NLR4NXZ.js                         9.48 KB
+ESM dist/tool-handlers-W3WAFR33.js                 2.13 KB
+ESM dist/tool-validation-LQVIL5B4.js               1.06 KB
+ESM dist/database-UKBWCICN.js                      203.00 B
+ESM dist/doctor-XZLBCHMQ.js                        16.29 KB
+ESM dist/content-search-74R527L3.js                25.40 KB
+ESM dist/regex-search-DQEYQDMC.js                  8.73 KB
+ESM dist/symbol-search-BFTN2UNX.js                 397.00 B
+ESM dist/version-HLZ5WRRE.js                       161.00 B
+ESM dist/rules-6NCNAL3S.js                         7.42 KB
+ESM dist/setup-show-VUSO6H6I.js                    381.00 B
+ESM dist/edit-engine-CDQR73KI.js                   1.50 KB
+ESM dist/engine-DMBNE5NZ.js                        33.72 KB
+ESM dist/instance-FO6QZRLH.js                      382.00 B
+ESM dist/override-companion-pass-XR7MHTP7.js       4.11 KB
+ESM dist/brain-index-health-6MTJGXCA.js            407.00 B
+ESM dist/project-health-CDPGTW6W.js                4.07 KB
+ESM dist/brain-relationship-enrichment-5S2EKA4I.js 20.49 KB
+ESM dist/parallel-indexer-LWSRPZCG.js              2.69 KB
+ESM dist/fingerprint-UYZ77MD3.js                   1.07 KB
+ESM dist/chunk-4BAVUV7H.js                         5.97 KB
+ESM dist/real-xml-analyzer-ZBZJHEZN.js             117.57 KB
+ESM dist/real-vb-analyzer-ESNGLAZM.js              134.57 KB
+ESM dist/real-markdown-analyzer-BLV6GJTS.js        53.87 KB
+ESM dist/real-vba-analyzer-7X54RP5P.js             19.41 KB
+ESM dist/real-matlab-analyzer-HFMJR2OV.js          21.76 KB
+ESM dist/real-toml-analyzer-6VZPNYZL.js            33.78 KB
+ESM dist/taint-analyzer-N7YLZU3N.js                8.02 KB
+ESM dist/engine-Y433AO3Q.js                        387.00 B
+ESM dist/real-graphql-analyzer-MVNDEJIV.js         63.74 KB
+ESM dist/real-protobuf-analyzer-C2MMU5Y2.js        34.99 KB
+ESM dist/real-nim-analyzer-DXRF3O5B.js             151.22 KB
+ESM dist/real-fsharp-analyzer-GJVPGZEU.js          111.86 KB
+ESM dist/real-powershell-analyzer-STHWJHG4.js      122.55 KB
+ESM dist/real-zig-analyzer-SV5H5RYR.js             106.12 KB
+ESM dist/real-makefile-analyzer-AX3FB64T.js        34.10 KB
+ESM dist/real-solidity-analyzer-PE5FAYHD.js        101.50 KB
+ESM dist/real-csharp-analyzer-BGDV56S4.js          138.67 KB
+ESM dist/real-objective-c-analyzer-BPMFNEYH.js     63.55 KB
+ESM dist/real-groovy-analyzer-UKOEYEGT.js          95.02 KB
+ESM dist/real-r-analyzer-JORKRJOU.js               110.44 KB
+ESM dist/real-bash-analyzer-G64VE4XL.js            94.02 KB
+ESM dist/real-vue-analyzer-HH5AZQAU.js             110.97 KB
+ESM dist/real-svelte-analyzer-YVPVN23R.js          97.10 KB
+ESM dist/real-hcl-analyzer-GQM5JYRU.js             30.12 KB
+ESM dist/real-elixir-analyzer-MUWPMADL.js          101.13 KB
+ESM dist/real-clean-analyzer-FWH7JKDX.js           146.36 KB
+ESM dist/real-erlang-analyzer-576WUJK5.js          67.28 KB
+ESM dist/real-haskell-analyzer-66WNNI3J.js         104.50 KB
+ESM dist/real-clojure-analyzer-VPPFO5RB.js         103.13 KB
+ESM dist/real-julia-analyzer-MO4CHHK7.js           98.34 KB
+ESM dist/real-swift-analyzer-4FL7GKAI.js           99.50 KB
+ESM dist/real-go-analyzer-IX6X2KZ4.js              207.58 KB
+ESM dist/real-kotlin-analyzer-EWXXYZR6.js          160.88 KB
+ESM dist/chunk-OWISBAOF.js                         1.79 KB
+ESM dist/real-dart-analyzer-YVGF3CR2.js            173.10 KB
+ESM dist/real-scala-analyzer-PCMA2EQW.js           138.53 KB
+ESM dist/real-java-analyzer-YMSFEBOH.js            231.58 KB
+ESM dist/real-ruby-analyzer-DZNY7WZL.js            97.34 KB
+ESM dist/real-python-analyzer-WHHT3AGG.js          222.02 KB
+ESM dist/real-scss-analyzer-JT7GTRIJ.js            62.94 KB
+ESM dist/real-json-analyzer-TYLT2EHD.js            74.54 KB
+ESM dist/real-lua-analyzer-XWIKU2DN.js             93.38 KB
+ESM dist/chunk-2WXYNLBA.js                         1002.00 B
+ESM dist/real-php-analyzer-CKKH2TTF.js             294.16 KB
+ESM dist/real-yaml-analyzer-T2BXOSRI.js            163.29 KB
+ESM dist/real-perl-analyzer-FQPFKIEK.js            79.89 KB
+ESM dist/real-c-analyzer-36SBVA7B.js               245.75 KB
+ESM dist/project-index-7HDAZPQS.js                 1.37 KB
+ESM dist/real-cpp-analyzer-EFUJ3NUK.js             184.58 KB
+ESM dist/chunk-4Y3WGVEA.js                         51.87 KB
+ESM dist/chunk-EWMWK7WN.js                         2.60 KB
+ESM dist/real-rust-analyzer-3ZJUYPQY.js            137.10 KB
+ESM dist/wasm-NMWO3WXY.js                          325.00 B
+ESM dist/type-inference-SCEHOKMX.js                293.00 B
+ESM dist/framework-intelligence-N4MYT6SE.js        35.72 KB
+ESM dist/real-typescript-analyzer-KRDBG7M5.js      341.00 B
+ESM dist/real-sql-analyzer-UCHSSUDE.js             149.17 KB
+ESM dist/real-javascript-analyzer-W2YQG453.js      341.00 B
+ESM dist/chunk-R2GW4F6R.js                         410.00 B
+ESM dist/chunk-XNPX5Y7R.js                         336.61 KB
+ESM dist/chunk-RL2OLCED.js                         174.86 KB
+ESM dist/real-html-analyzer-3GHUDRHJ.js            73.63 KB
+ESM dist/real-css-analyzer-AG7V6MTK.js             333.00 B
+ESM dist/chunk-PA6KEW32.js                         124.10 KB
+ESM dist/vector-binary-LMY4QGAN.js                 329.00 B
+ESM dist/config-HZAAYDP3.js                        181.00 B
+ESM dist/openai-embed-HBPWDRBP.js                  807.00 B
+ESM dist/engine-ZHZ2BE7L.js                        265.00 B
+ESM dist/index-status-6ZUNXV7M.js                  681.00 B
+ESM dist/language-detection-DFCAU5DZ.js            231.00 B
+ESM dist/index-space-IUUN5WYV.js                   255.00 B
+ESM dist/store-PMTNM37F.js                         833.00 B
+ESM dist/index.js                                  4.44 KB
+ESM dist/cli/index.js                              1.11 KB
+ESM dist/mcp/server.js                             5.17 KB
+ESM dist/chunk-PUKVQ2EG.js                         68.42 KB
+ESM dist/chunk-VL52PL2T.js                         2.35 KB
+ESM dist/chunk-OB3PXUDF.js                         13.10 KB
+ESM dist/chunk-3CTFIJJB.js                         499.00 B
+ESM dist/chunk-MW7FVCW7.js                         6.75 KB
+ESM dist/chunk-ICRHTDLU.js                         83.76 KB
+ESM dist/chunk-SIIAWOQF.js                         10.47 KB
+ESM dist/chunk-P3X2LRO2.js                         12.06 KB
+ESM dist/chunk-QMF4G2GO.js                         105.26 KB
+ESM dist/chunk-MZXTR5EM.js                         80.68 KB
+ESM dist/chunk-C7CG6C2A.js                         4.79 KB
+ESM dist/chunk-OKL3YCMG.js                         34.39 KB
+ESM dist/chunk-2CXLFJEE.js                         5.65 KB
+ESM dist/chunk-PN5TQXKI.js                         22.33 KB
+ESM dist/chunk-CDB6ZAJU.js                         13.43 KB
+ESM dist/chunk-GEFFO6O2.js                         3.79 KB
+ESM dist/chunk-Y3GF4KQJ.js                         353.42 KB
+ESM dist/chunk-7AN7U5IZ.js                         7.47 KB
+ESM dist/chunk-SW6VW3EJ.js                         23.44 KB
+ESM dist/chunk-UGR4QIGS.js                         2.14 KB
+ESM dist/chunk-YB7PLP7N.js                         7.37 KB
+ESM dist/chunk-DYM4FQEE.js                         3.00 KB
+ESM dist/chunk-C7XNLMDO.js                         27.84 KB
+ESM dist/chunk-DVBLOVT2.js                         9.24 KB
+ESM dist/lsp/server.js                             160.45 KB
+ESM dist/chunk-FTTHWHHR.js                         212.17 KB
+ESM dist/chunk-5SJZ2W6C.js                         27.19 KB
+ESM dist/chunk-GBI7V7KY.js                         2.44 KB
+ESM dist/chunk-W5WX4CHK.js                         15.76 KB
+ESM dist/chunk-M3O4C3N3.js                         3.20 KB
+ESM dist/chunk-NPD7UCAV.js                         12.54 KB
+ESM dist/chunk-72I7E4ZK.js                         42.70 KB
+ESM dist/chunk-DIYAGQJL.js                         994.00 B
+ESM dist/chunk-UUNHHX4M.js                         186.00 B
+ESM dist/chunk-QDV7RSRO.js                         31.06 KB
+ESM dist/chunk-N5EQXCZ2.js                         8.92 KB
+ESM dist/chunk-SK6YVHFZ.js                         6.00 KB
+ESM dist/chunk-4OHXBKV7.js                         83.97 KB
+ESM dist/chunk-IRYHABHZ.js                         14.21 KB
+ESM dist/chunk-BQ3OVQ3P.js                         3.76 KB
+ESM dist/chunk-2BSKD7O3.js                         1.04 KB
+ESM dist/chunk-5SFAWRWT.js                         39.47 KB
+ESM dist/pool-worker.js                            50.16 KB
+ESM dist/chunk-KAET47ZL.js                         4.26 KB
+ESM dist/chunk-KCDECRJY.js                         19.58 KB
+ESM dist/brain.sql-63ZHFHSA.js                     731.00 B
+ESM dist/scoped-path-MJYWJZQX.js                   241.00 B
+ESM dist/chunk-D2Q4Y47A.js                         2.12 KB
+ESM dist/chunk-SX7O3GE7.js                         7.07 KB
+ESM dist/analysis-exclusions-PRLWHQB4.js           835.00 B
+ESM dist/chunk-5HHOAYKP.js                         18.95 KB
+ESM dist/chunk-MLKGABMK.js                         191.00 B
+ESM dist/chunk-L5TDYKYK.js                         1.77 KB
+ESM dist/chunk-LVKKOIGA.js                         674.85 KB
+ESM ⚡️ Build success in 821ms
+WALL=0:01.78 MAXRSS=154364KB

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-red/embedding-lifecycle",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-embedding-lifecycle.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix",
+  "startedAt": "2026-11-19T04:11:33.082Z",
+  "endedAt": "2026-11-19T04:11:34.210Z",
+  "durationMs": 1128,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "RED_CONFIRMED",
+  "expectRed": true,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 90,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1",
+  "stdout": "",
+  "stderr": "node:fs:3054\n  return binding.mkdtemp(prefix, options.encoding);\n                 ^\n\nError: ENOENT: no such file or directory, mkdtemp '/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/.tools/triage-fix/embeddings-health/gate-XXXXXX'\n    at mkdtempSync (node:fs:3054:18)\n    at <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-embedding-lifecycle.ts:37:17)\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {\n  errno: -2,\n  code: 'ENOENT',\n  syscall: 'mkdtemp',\n  path: '/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/.tools/triage-fix/embeddings-health/gate-XXXXXX'\n}\n\nNode.js v22.22.1\n",
+  "stdoutBytes": 0,
+  "stderrBytes": 843,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041134Z-cp1-red-embedding-lifecycle.json"
+}

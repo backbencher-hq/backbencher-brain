@@ -1,0 +1,11 @@
+=== verify-embedding-docs ===
+  checks: 55/57 passed, 4 mutants
+  documented knobs: 17 · knobs read by src/: 17
+VERDICT: FAIL
+  evidence: validation/embedding/results/EMBDOCS.json
+
+=== verify-health-docs ===
+  url: 'file:///home/ishaq2321/mcp/backbencher-brain/script/verify-health-docs.ts'
+}
+
+Node.js v22.22.1

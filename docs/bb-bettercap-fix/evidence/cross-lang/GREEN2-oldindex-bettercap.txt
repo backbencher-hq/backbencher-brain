@@ -1,0 +1,9 @@
+facts: 7 | storedRowCount: 7 | copies: 4
+{"rt":"imports","pair":"go → yaml","dir":"callee","conf":0.9,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"os@.github/workflows/release.yaml:15"}
+{"rt":"imports","pair":"go → make","dir":"callee","conf":0.9,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"fmt@Makefile:36"}
+{"rt":"imports","pair":"go → javascript","dir":"callee","conf":0.9,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"io@modules/ui/ui/assets/openlayers/ol.js:464"}
+{"rt":"uses","pair":"go → javascript","dir":"caller","conf":0.6,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"makeIconMasking@modules/ui/ui/assets/fontawesome/js/fontawesome.js:742"}
+{"rt":"uses","pair":"go → javascript","dir":"caller","conf":0.6,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"makeIconStandard@modules/ui/ui/assets/fontawesome/js/fontawesome.js:813"}
+{"rt":"uses","pair":"go → javascript","dir":"caller","conf":0.6,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"asIcon@modules/ui/ui/assets/fontawesome/js/fontawesome.js:854"}
+{"rt":"uses","pair":"go → javascript","dir":"caller","conf":0.6,"bridge":"name-resolution","bridgeMechanism":"name-resolution","bindingBasis":null,"candidate":true,"tier":"inferred","other":"makeInlineSvgAbstract@modules/ui/ui/assets/fontawesome/js/fontawesome.js:903"}
+RETRO-HONESTY OK: every old-index fact is inferred + candidate

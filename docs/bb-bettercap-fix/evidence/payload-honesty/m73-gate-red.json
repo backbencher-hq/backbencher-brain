@@ -1,0 +1,10 @@
+{
+  "gate": "M73 P1-4/P2-5",
+  "status": "RED",
+  "passed": 72,
+  "failed": 1,
+  "failures": [
+    "D1: docs/BB_SECURITY.md shows the corrected unit label — docs/BB_SECURITY.md must not contain an unlabelled `N leads`"
+  ],
+  "generatedAt": "2026-11-19T00:31:49.901Z"
+}

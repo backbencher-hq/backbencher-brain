@@ -16,7 +16,54 @@ import { BrainTools } from "../../../ast/tools"
 import { ASTEngine } from "../../../ast/engine"
 import { resolveRowsFreshnessDetailed, buildStalenessEnvelope } from "../../../brain/freshness"
 import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../../../ast/auto-refresh"
-import { relative, resolve, sep } from "node:path"
+import { relative, resolve, sep, isAbsolute } from "node:path"
+import { readFileSync } from "node:fs"
+
+/**
+ * P2-2: the exact-symbol mode returns a BOUNDED source slice, not only metadata.
+ *
+ * The descriptor promises "exact symbol source", the record already carries the
+ * indexed `byteStart`/`byteEnd`, and the whole file is on disk: a caller that
+ * asked for the exact symbol should not have to make a second call (and file
+ * mode returns the WHOLE file, up to 100k characters). Two bounds apply and both
+ * are declared: the slice is capped at SYMBOL_SOURCE_MAX_CHARS, and an indexed
+ * span past the current file end is truncated to the file (the file changed
+ * after indexing). Byte offsets are the analyzer's unit; the engine's repair path
+ * computed them in UTF-16 code units when the analyzer stored none, so a byte
+ * slice that does not decode cleanly is retried as a character slice.
+ */
+const SYMBOL_SOURCE_MAX_CHARS = 2000
+function symbolSourceSlice(
+  projectPath: string,
+  absolutePath: string,
+  relativePath: string,
+  byteStart: number | null,
+  byteEnd: number | null,
+): { source: string | null; sourceTruncated: boolean; sourceUnavailable?: string } {
+  const candidate = absolutePath || (relativePath ? resolve(projectPath, relativePath) : "")
+  if (!candidate) return { source: null, sourceTruncated: false, sourceUnavailable: "no file path on the indexed record" }
+  try {
+    // The slice is read from a path the index handed us; refuse one that escapes
+    // the project root instead of turning a stale index row into a file read.
+    const inside = relative(projectPath, candidate)
+    if (!inside || inside.startsWith("..") || isAbsolute(inside)) return { source: null, sourceTruncated: false, sourceUnavailable: "recorded path escapes the project root" }
+    const buffer = readFileSync(candidate)
+    const start = byteStart != null && Number.isFinite(byteStart) && byteStart > 0 ? byteStart : 0
+    if (start > buffer.length) return { source: null, sourceTruncated: false, sourceUnavailable: "indexed byte bounds are past the end of the file" }
+    let end = byteEnd != null && Number.isFinite(byteEnd) && byteEnd > start ? byteEnd : buffer.length
+    let truncated = false
+    if (end > buffer.length) { end = buffer.length; truncated = true }
+    let text = buffer.subarray(start, end).toString("utf8")
+    if (text.includes("\uFFFD")) {
+      const characters = buffer.toString("utf8")
+      text = characters.slice(Math.min(start, characters.length), Math.min(end, characters.length))
+    }
+    if (text.length > SYMBOL_SOURCE_MAX_CHARS) { text = text.slice(0, SYMBOL_SOURCE_MAX_CHARS); truncated = true }
+    return { source: text, sourceTruncated: truncated }
+  } catch (error: any) {
+    return { source: null, sourceTruncated: false, sourceUnavailable: `file could not be read: ${error?.message ?? "unknown error"}` }
+  }
+}
 
 export const handler: ToolHandler = async (args, { projectId, projectPath }) => {
     const mode = args.mode === "content" ? "content" : args.mode === "symbol" || args.mode === "file" ? args.mode : "symbols"
@@ -245,7 +292,30 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
         const page = pageLimit === null ? matches : matches.slice(pageOffset, pageOffset + pageLimit)
         const rows = [...scopeRows, ...page.map((m: any) => ({ filePath: m.fileId }))]
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, rows)
-        for (const m of page) m.stale = detail.statuses.get(m.fileId) !== "fresh"
+        for (const m of page) {
+          const absolute = String(m.fileId ?? "")
+          // Freshness is resolved against the absolute path the engine returns;
+          // the wire identity is remapped AFTER that resolution.
+          m.stale = detail.statuses.get(m.fileId) !== "fresh"
+          const relativeSymbolPath = String(m.relativePath ?? "").split("\\").join("/").replace(/^\/+/, "")
+          // P2-2 identity gate: every mode reports a file the same way, as the
+          // indexed file row id `<projectId>:<relativePath>` (content and file
+          // modes already did; symbol mode used to leak the machine path here).
+          // The machine path stays in `absolutePath` so a caller that needs to
+          // open the file keeps it, but no mode's `fileId` carries a root.
+          m.fileId = relativeSymbolPath ? `${String(projectId)}:${relativeSymbolPath}` : absolute
+          m.absolutePath = absolute
+          const sliced = symbolSourceSlice(
+            projectPath as string,
+            absolute,
+            relativeSymbolPath,
+            m.byteStart == null ? null : Number(m.byteStart),
+            m.byteEnd == null ? null : Number(m.byteEnd),
+          )
+          m.source = sliced.source
+          m.sourceTruncated = sliced.sourceTruncated
+          if (sliced.sourceUnavailable) m.sourceUnavailable = sliced.sourceUnavailable
+        }
         return {
           answer: {
             ...found,

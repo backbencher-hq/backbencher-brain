@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-green/m26-polyglot-e2e",
+  "command": [
+    "bun",
+    "run",
+    "script/m26/verify-polyglot-e2e.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:44:39.290Z",
+  "endedAt": "2026-11-19T04:44:42.620Z",
+  "durationMs": 3329,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 105,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "M26.A1 polyglot end-to-end verifier\n\n[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 23ms [plan=linear largest-intermediate=8]\n        cross-language: 3 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 13 relationships (0 patterns) in 9ms\n        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 3ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(15ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 7ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\n  FAIL: P1: java-scala db is polyglot (java+scala files)\n  FAIL: P1: insert-time path flags 3 cross-language rows — []\n  FAIL: P1: the scala->java call chain is flagged with bridge — []\n  FAIL: P1: instantiates + restock edges flagged\n[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 13ms [plan=linear largest-intermediate=7]\n        cross-language: 2 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 6 relationships (0 patterns) in 4ms\n        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 2ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(0ms) + health(4ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 2ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 1ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\n  FAIL: P2: ts-js db is polyglot (javascript+typescript files)\n  FAIL: P2: late-resolution path flags 2 cross-language rows — []\n  FAIL: P3: flagged bridge rows are retained candidates (is_cross_language=1 + bridge=name-resolution) — []\n  FAIL: P4: real hover section renders for the scala caller — no db\n\nA1: FAILED (4/12 passed, 1 mutant)\n",
+  "stderr": "[INFO] [23:44:40] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:44:41] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:44:41] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"430fcc90\",\"danglingSources\":2,\"totalRelationships\":15}\n[INFO] [23:44:41] [project-health] project health computed {\"projectId\":\"430fcc9018df94a74c5823aab7f8f13803528019\",\"complexityScore\":95,\"maintainabilityScore\":75,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n[INFO] [23:44:41] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:44:41] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":0}\n[INFO] [23:44:42] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:44:42] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"84ad3ec2\",\"danglingSources\":5,\"totalRelationships\":11}\n[INFO] [23:44:42] [project-health] project health computed {\"projectId\":\"84ad3ec2db26fb38b67ee30c38720d98db43011b\",\"complexityScore\":93,\"maintainabilityScore\":77,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2639,
+  "stderrBytes": 1385,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044442Z-cp1f-green-m26-polyglot-e2e.json"
+}

@@ -68,6 +68,28 @@ step. It carries its own force-directed layout and canvas renderer, publishes it
 state on `window.__bbView` (census, region links, layout, panel, `declared`), and
 writes its own file through `saveHtml`.
 
+## The "whole project" claim, and the response envelope
+
+The text answer's `excluded:` line states the NOISE-FILTER result. It used to end
+"this graph is the whole project" unconditionally, which contradicted the same
+answer's own `scope:`, `truncated:` and `page:` lines for every scope except a
+complete first-page project graph (measured: module, file, symbol, offset-page and
+an absent/empty module all claimed it, the last one two lines after "this is an
+empty PAGE, not an empty project"). The claim is now gated on
+`scope === "project" && truncated === false && offset === 0 && excluded.symbols === 0`;
+every other answer prints an explicit
+`completeness: this <scope> page holds N of M matching symbol(s) — not the whole project`.
+
+`format: "json"` is ONE bounded envelope: `summary` FIRST (`truncated`,
+`truncationReason(s)`, `totalNodesAvailable`, `originalNodes`/`originalLinks`,
+`returnedNodes`/`returnedLinks`, `maxNodes`/`maxLinks`, `offset`/`nextOffset`,
+`page`, `declaredAbsent`, `freshness`, `payloadBytes`/`payloadBudgetBytes`), then
+`data` with the legacy graph body (`nodes`, `links`, `excluded`, `considered`,
+`truncation`, `provenance`). Before the envelope `truncation` sat at 99.9% of the
+bytes (478,629 of 479,011 on a module answer), so a host cap could remove the page
+declaration. Over the 256 KiB transport budget the answer is cut with
+`payload-byte-budget-exhausted` declared in the summary, never silently.
+
 ## Freshness
 
 The answer reports `fresh`/`stale`/`missing` counts for the files its nodes live in,

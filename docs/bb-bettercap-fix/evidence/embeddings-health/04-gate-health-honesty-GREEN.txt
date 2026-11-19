@@ -1,0 +1,48 @@
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:48:16] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:48:17] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:48:19] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 30ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:48:19] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"78007e45","danglingSources":2,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 1 relationships (1 patterns) in 16ms
+        patterns: observer 1
+        ⚠ 2 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:48:19] [project-health] project health computed {"projectId":"78007e455f121df96bd55080d09afb5f68ae5cd8","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(21ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 9ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+  ok: C1 (control): a genuinely complete run still reports status=complete
+  ok: C2 (control): no INCOMPLETE_INDEX on a complete run
+  (index line: index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written (deliberate skip; force will not fix it) status=incomplete (recordedStatus=complete contradicts the counts) errors=0)
+  (embeddings line: embeddings: 2 rows / 2 entities / 100% of symbols (library-wide, 2/2 across 1 space(s)) · configured test/configured-embed: 0% (0/2) — BACKFILL PENDING)
+  (warning codes: SYNTAX_ERRORS,SKIPPED_FILES,EMBEDDINGS_BACKFILL_PENDING)
+  ok: R1: shortfall is still detected on the line
+  ok: R2: bare `status=complete` never prints beside the shortfall
+  ok: R3: the derived status names the shortfall
+  ok: R4: no `force=true to rebuild from scratch` remedy on a deliberate-skip shortfall
+  ok: R5: a warning explains the skip (size tier / deliberate skip), so force is not implied to fix it
+  ok: R6: incomplete/skip warning names the skipped count
+  ok: R7: syntax warning groups attribution by language
+  ok: R8: syntax grouping states a count per language
+  ok: R9: embeddings line names the configured model and its coverage
+  ok: R10: backfill-pending state is declared for the under-covered configured space
+  ok: R11: embeddings line distinguishes library-wide from configured-space coverage
+  ok: C3 (control): user embedding config was not mutated
+
+HEALTH HONESTY: PASS

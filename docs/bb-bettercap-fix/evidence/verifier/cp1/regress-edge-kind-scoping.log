@@ -1,0 +1,72 @@
+  door src/mcp/tools/bb_analyze/handler.ts: the bb_analyze graph modes' door: their all-kinds default is DOCUMENTED (docs/tools/bb_analyze.md), the answer publishes its composition and the kinds searched, and a caller can pass relationshipTypes; mode `impact` walks the declared dependency kinds instead
+  door src/mcp/tools/shared.ts: the shared graph-walk helper behind the analyze modes: it forwards the caller's relationshipTypes unchanged and takes the engine default when none is given, which is the documented all-kinds policy of the modes that call it
+  door src/ast/graph.ts: legacy BFS helper: it does not default at all — it passes Object.values(RelationshipType) explicitly, so the full kind set is NAMED at the call site rather than inherited
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 18ms [plan=linear largest-intermediate=14]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 10 relationships (0 patterns) in 11ms
+        ⚠ 6 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(14ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 7ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 0ms
+
+=== checks ===
+  PASS  A1-every-unscoped-call-site-is-a-declared-door
+        7 graph call site(s) in src/, 4 scoped; unscoped: src/ast/graph.ts:396, src/mcp/tools/bb_analyze/handler.ts:228, src/mcp/tools/shared.ts:420
+  PASS  A2-no-stale-door-declaration
+        all 3 declared door(s) still have an unscoped call site
+  PASS  A3-the-three-repaired-consumers-are-scoped
+        src/intelligence/testing/test-intel.ts: scoped · src/intelligence/testing/suggestions.ts: scoped · src/intelligence/analysis/impact.ts: scoped
+  PASS  A4-mutation-the-audit-reacts-when-a-filter-is-removed
+        with the filter line stripped from src/intelligence/testing/test-intel.ts, the audit reports 1 unscoped call site(s) — reverting a consumer's scoping turns A1/A3 red
+  PASS  P1-premises-test-file-flag-is-real
+        kind.test.ts is_test_file=1, target.test.ts is_test_file=1, prod.ts is_test_file=0
+  PASS  P2-premises-the-store-carries-a-DEPENDENCY-row-and-a-CONTAINMENT-row-into-each-target
+        nested: realTest-calls, TestHost-contains · target: consumer-calls, testTarget-calls, Host-contains — real analyzer output, nothing seeded
+  PASS  C1-the-default-still-covers-every-kind
+        default callers(nested) kinds=["calls","contains","instantiates","references"], summary.relationshipTypesUsed=14 kind(s) — the fix is at the consumers, NOT a narrowed engine
+  PASS  B1-differential-the-unscoped-walk-returns-BOTH-rows
+        unscoped callers(nested) = ["realTest","TestHost","realTest","realTest"] (distinct ["TestHost","realTest"]) — the containment row IS in the answer an unscoped consumer would receive
+  PASS  B2-differential-the-scoped-walk-keeps-the-dependency-row-only
+        relationshipTypes:[calls,instantiates,extends,implements] callers(nested) = ["realTest"]
+  PASS  B3-testImpact-does-not-report-the-container-as-a-direct-test
+        directTests = ["realTest:calls/direct_call"] — TestHost appears in the unscoped walk (B1) and NOT here, because that row is membership
+  PASS  B4-every-entry-names-its-own-kind-and-tier
+        direct[0] = {"testSymbol":"realTest","testFile":"src/kind.test.ts","depth":0,"relationshipType":"calls","evidence":"direct_call"} (the walk sees only the kinds this engine can classify: ["calls","instantiates","references","uses","extends","implements","imports"])
+  PASS  B5-blastRadius-counts-dependents-not-rows
+        unscoped callers(target) = ["Host","consumer","testTarget"] (consumer and testTarget CALL it, Host CONTAINS it) while testSuggestions reports blastRadius=2
+  PASS  B6-affected-test-rows-carry-the-kind-and-tier
+        affectedExistingTests = ["testTarget:calls/direct_call"]
+  PASS  B7-mutation-removing-the-dependency-row-moves-the-number
+        after deleting the consumer->target `calls` row: blastRadius 2 -> 1 while the Host->target `contains` row is still stored (true) — the count follows dependents, and the containment row was never evidence
+  PASS  B8-mutation-restoring-the-row-restores-the-number
+        blastRadius back to 2 after re-inserting the row — the measurement is data, not a constant
+  PASS  S1-source-guards-for-every-repair
+        all 7 guards present — reverting any repair fails this gate
+  PASS  S2-the-documented-default-is-the-engine's-own-list
+        DEFAULT_REL_TYPES holds 14 kind(s); docs/GRAPH_ENGINE.md's `relationshipTypes` row names every one of them
+  PASS  S3-the-bb_analyze-page-discloses-the-kind-set-its-graph-modes-walk
+        docs/tools/bb_analyze.md carries the all-kinds disclosure and names the dependency rule mode `impact` walks (regenerated from script/verify-tool-docs.ts)
+
+All checks passed — every consumer that names a kind measures that kind, the engine's default is untouched, and each repair is guarded in source.
+
+[INFO] [23:48:16] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:48:16] [parallel-indexer] project index built {"ext":".ts","files":3,"types":2}
+[INFO] [23:48:17] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:48:17] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"91717177","danglingSources":6,"totalRelationships":16}
+[INFO] [23:48:17] [project-health] project health computed {"projectId":"91717177129873f2626dbcbf2887ba9f443b66c0","complexityScore":95,"maintainabilityScore":83,"techDebtScore":100,"codeQualityScore":93,"languages":1,"bottlenecks":0}

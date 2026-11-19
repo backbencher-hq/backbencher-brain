@@ -1,0 +1,39 @@
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:11:50] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [00:11:50] [parallel-indexer] project index built {"ext":".ts","files":1,"types":1}
+[INFO] [00:11:51] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 19ms [plan=linear largest-intermediate=10]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:11:51] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"b2d3e048","danglingSources":3,"totalRelationships":12}
+  enriching done 100%
+  ✅ Enriched 9 relationships (0 patterns) in 35ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:11:51] [project-health] project health computed {"projectId":"b2d3e048a64177de58661ae9c110565ff34c2937","complexityScore":95,"maintainabilityScore":85,"techDebtScore":100,"codeQualityScore":93,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(15ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 5ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[INFO] [00:11:51] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [00:11:51] [dependency-graph-visualizer] ✅ Graph Data Generated: 3 nodes, 2 links
+/home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-owner-fold.ts:81
+  Object.fromEntries(r.nodes.map((n: any) => [n.id, `${n.name}:${n.type}`]))
+                             ^
+
+TypeError: Cannot read properties of undefined (reading 'map')
+    at byId (/home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-owner-fold.ts:81:30)
+    at <anonymous> (/home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-owner-fold.ts:86:17)
+
+Node.js v22.22.1

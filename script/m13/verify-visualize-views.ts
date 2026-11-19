@@ -60,6 +60,17 @@ const harness = new Harness({
 })
 
 const root = mkdtempSync(path.join(tmpdir(), "bb-viz-v7-"))
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back
+// to the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data }
+    : payload
+
+
 mkdirSync(path.join(root, "src"), { recursive: true })
 writeFileSync(path.join(root, "src", "app.ts"), "export function a(): number { return b() }\nexport function b(): number { return 1 }\n")
 const projectId = getProjectId(root)
@@ -83,7 +94,7 @@ const text = async (args: Record<string, unknown>): Promise<string> =>
 
 // ── json carries it ─────────────────────────────────────────────────────────
 {
-  const parsed = JSON.parse(await text({ scope: "project", view: "graph", format: "json" }))
+  const parsed = flattenEnvelope(JSON.parse(await text({ scope: "project", view: "graph", format: "json" })))
   harness.check("json: view=graph", parsed.view === "graph", String(parsed.view))
 }
 
@@ -236,8 +247,9 @@ const studioFor = async (view: string, extra: Record<string, unknown> = {}): Pro
   harness.negative("html: and it is not the region document again", forceDoc.length > 0 && forceDoc !== graphDoc, forceDoc === graphDoc ? "byte-identical to the region document" : "")
   harness.check("text: the graph view names the layout it will draw", (await text({ scope: "project", view: "graph", format: "text" })).includes("layout: regions "), "the text reply never names a layout")
   harness.check("text: and names the other one when it is asked for", (await text({ scope: "project", view: "graph", layout: "force", format: "text" })).includes("layout: force "), "layout=force is not named")
-  harness.check("json: the layout rides the answer", (JSON.parse(await text({ scope: "project", view: "graph", format: "json" })) as { layout: string }).layout === "regions", "no layout in json")
-  harness.check("json: layout=force is carried too", (JSON.parse(await text({ scope: "project", view: "graph", layout: "force", format: "json" })) as { layout: string }).layout === "force", "layout=force lost in json")
+  // ACCESS PATH ONLY: json is the bounded envelope now; flatten to the legacy view.
+  harness.check("json: the layout rides the answer", (flattenEnvelope(JSON.parse(await text({ scope: "project", view: "graph", format: "json" }))) as { layout: string }).layout === "regions", "no layout in json")
+  harness.check("json: layout=force is carried too", (flattenEnvelope(JSON.parse(await text({ scope: "project", view: "graph", layout: "force", format: "json" }))) as { layout: string }).layout === "force", "layout=force lost in json")
   // A force layout has no parts to anchor to and no parts to summarise between, so it
   // must neither seed per region nor draw pods NOR bundle -- and it must say so.
   harness.check("map: the force layout seeds the whole graph, not per region", forceDoc.includes("if (regions()) {") && forceDoc.includes("var ga = i * 2.399963229728653;"), "no global seed")

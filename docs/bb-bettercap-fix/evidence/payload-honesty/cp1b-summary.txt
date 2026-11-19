@@ -1,0 +1,16 @@
+CP1-B legacy gate access-path window (payload-honesty)
+date: 2026-11-19T05:14:26Z
+product source untouched in this window; gate files only
+
+== owner-fold
+  BEFORE: TypeError: Cannot read properties of undefined (reading 'map')
+  AFTER : V8: VERIFIED (29/29 passed, 8 negatives)
+== target-literals
+  BEFORE: TypeError: Cannot read properties of undefined (reading 'length')
+  AFTER : V6: VERIFIED (21/21 passed, 5 negatives)
+== s3-graph-migrate
+  BEFORE: FAIL: viz: freshness block with exact registered keys
+  AFTER : M35 S3 GRAPH+MIGRATE: PASS (23/23, negatives=4)
+== p3-agreement
+  BEFORE: FAIL: P3: caller set identical (leaf) — graph= analyze=run,alpha,b1,Service,b2,c1,d1
+  AFTER : M48 P3 AGREEMENT: PASS (30 passed, 0 failed, 5 negatives)

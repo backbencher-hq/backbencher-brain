@@ -45,10 +45,15 @@ declarations, in this order, before any result is listed:
 
 2. The project-independent tier declaration, printed verbatim from
    `formatSecurityTierDeclaration()` in
-   `src/intelligence/security/rebuild/registry.ts`:
+   `src/intelligence/security/rebuild/registry.ts`. Its three numbers count
+   LANGUAGES IN THE ANALYZER REGISTRY (53 analyzer specs), never stored leads:
+   the unit is in the label because the old `39 leads` read as a contradiction
+   of the `0 stored lead(s)` body line two lines below — two different
+   populations. The project language line (#3) counts languages PRESENT, and the
+   only lead count in the answer is the stored-lead body line:
 
    ```text
-   tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+   tiers (analyzer registry census, project-independent): 0 scan / 39 lead-tier analyzers / 14 unsupported (of 53 analyzer specs) — unsupported languages are NOT scanned by bb_security; analyzer specs require manual validation, and this project's stored leads are counted below, not here
    ```
 
 3. The per-project declaration, computed from the languages actually present in
@@ -72,7 +77,7 @@ A default read (`{}` or `{ limit, offset }`) reads the store with
 
 ```text
 ⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING
-tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+tiers (analyzer registry census, project-independent): 0 scan / 39 lead-tier analyzers / 14 unsupported (of 53 analyzer specs) — unsupported languages are NOT scanned by bb_security; analyzer specs require manual validation, and this project's stored leads are counted below, not here
 leads tier: 1 language(s) present; lexical output only
 security leads: 12 stored lead(s)
   [exec] lead: command injection @ src/app.ts:41 <- source:37; rule=ts.child_process.exec; symbol=run [reach: cmd]
@@ -183,7 +188,7 @@ Reproduce (the tool prints this line verbatim):
 
 ```text
 npx tsx -e 'import {formatSecurityTierDeclaration} from "./src/intelligence/security/rebuild/registry"; console.log(formatSecurityTierDeclaration())'
-→ tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+→ tiers (analyzer registry census, project-independent): 0 scan / 39 lead-tier analyzers / 14 unsupported (of 53 analyzer specs) — unsupported languages are NOT scanned by bb_security; analyzer specs require manual validation, and this project's stored leads are counted below, not here
 ```
 
 Aliases resolve before lookup: `tsx` → `typescript`, and `jsx`/`mjs`/`cjs` →

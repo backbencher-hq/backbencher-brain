@@ -1,0 +1,167 @@
+{
+  "fixtureId": "go/cross-file-value-read",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS THE GO1 CROSS-FILE VALUE-READ ROW (P1-2). The bare-identifier pass gated on `fileValues`, a set built from THIS file's package-scope symbols, so a function value read from a sibling file of the same package was discarded entirely: no row of any kind. PROVEN on bettercap session/: `plugin.Defines[\"onEvent\"] = jsOnEventFunc` (session/session.go:336; jsOnEventFunc declared in session/script_builtin_runtime.go:39) left ZERO relationship rows naming the function, so the orphan page calls all 8 registered callbacks dead at 70%. The analyzer is a per-file entry point with no package context, so the honest row is the documented leaf (target = name, confidence 0.6, reason code used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope); the fixture file deliberately does not declare its sibling. THE POSITIVE HALF is `setup -> packageCallback` (the RED row pre-fix). THE CONTROLS: the same-file read `sameFileNameRead -> fileLocal` must keep the existing row, and every locally-bound/predeclared identifier in `overreach`/`predeclaredValues` must stay silent \u2014 the three failure directions a naive 'emit every unresolved bare name' fix would take.",
+  "expectSymbols": [
+    {
+      "name": "setup",
+      "kind": "function"
+    },
+    {
+      "name": "sameFileNameRead",
+      "kind": "function"
+    },
+    {
+      "name": "overreach",
+      "kind": "function"
+    },
+    {
+      "name": "fileLocal",
+      "kind": "variable"
+    },
+    {
+      "name": "nonLocalCalls",
+      "kind": "function"
+    },
+    {
+      "name": "execFunc",
+      "kind": "type"
+    },
+    {
+      "name": "printer",
+      "kind": "interface"
+    },
+    {
+      "name": "funcTypeShapes",
+      "kind": "function"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "THE BUG: a function value declared in a SIBLING file of the same package. Must publish as a uses leaf.",
+      "type": "uses",
+      "from": "setup",
+      "target": "packageCallback"
+    },
+    {
+      "comment": "THE BUG, var half: a package-scope var from a sibling file read as a map index base.",
+      "type": "uses",
+      "from": "setup",
+      "target": "Registry"
+    },
+    {
+      "comment": "SAME-FILE CONTROL: unchanged behaviour.",
+      "type": "uses",
+      "from": "sameFileNameRead",
+      "target": "fileLocal"
+    },
+    {
+      "comment": "ARRAY LENGTH CONTROL: an identifier in TYPE position inside a parameter is a genuine read and must stay.",
+      "type": "uses",
+      "from": "funcTypeShapes",
+      "target": "FuncTypeArrayLen"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "uses",
+      "from": "overreach",
+      "target": "local",
+      "comment": "locally bound short-var"
+    },
+    {
+      "type": "uses",
+      "from": "overreach",
+      "target": "arr",
+      "comment": "locally bound short-var"
+    },
+    {
+      "type": "uses",
+      "from": "overreach",
+      "target": "v",
+      "comment": "range var"
+    },
+    {
+      "type": "uses",
+      "from": "overreach",
+      "target": "param",
+      "comment": "parameter (bound)"
+    },
+    {
+      "type": "uses",
+      "from": "overreach",
+      "target": "fn",
+      "comment": "parameter (bound)"
+    },
+    {
+      "type": "uses",
+      "from": "overreach",
+      "target": "nil",
+      "comment": "predeclared value"
+    },
+    {
+      "type": "uses",
+      "from": "predeclaredValues",
+      "target": "nil"
+    },
+    {
+      "type": "uses",
+      "from": "predeclaredValues",
+      "target": "true"
+    },
+    {
+      "type": "uses",
+      "from": "predeclaredValues",
+      "target": "false"
+    },
+    {
+      "type": "uses",
+      "from": "predeclaredValues",
+      "target": "len",
+      "comment": "predeclared builtin function"
+    },
+    {
+      "type": "uses",
+      "from": "nonLocalCalls",
+      "target": "errors",
+      "comment": "import binding must not be a value read"
+    },
+    {
+      "type": "uses",
+      "from": "nonLocalCalls",
+      "target": "t",
+      "comment": "parameter must not be a value read"
+    },
+    {
+      "type": "uses",
+      "from": "nonLocalCalls",
+      "target": "Error",
+      "comment": "qualified call must not leak a leaf read"
+    },
+    {
+      "type": "uses",
+      "from": "nonLocalCalls",
+      "target": "New",
+      "comment": "qualified call must not leak a leaf read"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "args",
+      "comment": "func-type/interface parameter NAME is a declaration, not a read"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "s",
+      "comment": "func-type parameter NAME is a declaration, not a read"
+    },
+    {
+      "type": "uses",
+      "from": "global",
+      "target": "format",
+      "comment": "interface method-spec parameter NAME is a declaration, not a read"
+    }
+  ]
+}

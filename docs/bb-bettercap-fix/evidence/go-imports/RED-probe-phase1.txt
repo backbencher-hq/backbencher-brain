@@ -1,0 +1,14 @@
+projectId: 81a83786ac314ade72a5fd4c6ed50e46ac48a07e
+=== relationships (source symbol resolution) ===
+{"t":"calls","se":null,"te":"helper","tgt":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:main.go:helper:8","sname":"main","sfile":"main.go","sline":1,"skind":"module"}
+{"t":"uses","se":null,"te":"Registry","tgt":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:registry.go:Registry:3","sname":"setup","sfile":"registry.go","sline":5,"skind":"function"}
+=== symbols ===
+{"name":"phase1","symbol_type":"module","line_start":1,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:callbacks.go"}
+{"name":"callback","symbol_type":"function","line_start":3,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:callbacks.go"}
+{"name":"main","symbol_type":"module","line_start":1,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:main.go"}
+{"name":"main","symbol_type":"function","line_start":3,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:main.go"}
+{"name":"helper","symbol_type":"function","line_start":8,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:main.go"}
+{"name":"phase1","symbol_type":"module","line_start":1,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:registry.go"}
+{"name":"Registry","symbol_type":"variable","line_start":3,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:registry.go"}
+{"name":"setup","symbol_type":"function","line_start":5,"file_id":"81a83786ac314ade72a5fd4c6ed50e46ac48a07e:registry.go"}
+=== imports ===

@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "kind": "bb-fix-campaign-cp1-red-replay",
+  "generatedAt": "2026-11-19T04:16:31.724Z",
+  "method": "Gate file copied from the lane working copy into .tools/verifier/pre-fix at the same repo-relative path (product src under it stays pre-fix bytes, gate ROOT resolves via import.meta to the pre-fix tree); run via script/m-fix/verify-fix-campaign.ts --expect-red --cwd .tools/verifier/pre-fix. Scratch dirs .tools/triage-fix/* were pre-created in the pre-fix tree (gitignored, absent from git archive) so mkdtemp setup is not mistaken for RED.",
+  "env": {
+    "BB_DATA_DIR": ".tools/verifier/bbdata-cp1",
+    "BB_M57_DATA_DIR": ".tools/verifier/bbdata-cp1",
+    "BB_M57_REAL_DB": "1"
+  },
+  "results": [
+    {
+      "label": "m71-refactor-safety",
+      "gate": "script/m71/verify-refactor-safety.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 37602,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T040739Z-cp1-red-m71-refactor-safety.json",
+      "redClassification": "honest-behavioral",
+      "summary": "plan renamedFiles/renamedSites 2/2 vs expected 3/3; main.go MISSING; silent-success instead of refusal; applied tree fails `go build` (undefined: modules.LoadModules)",
+      "redLines": [
+        "FAIL G1 files planned — expected {\"renamedFiles\":3,\"renamedSites\":3}, got {\"renamedFiles\":2,\"renamedSites\":2}",
+        "FAIL G1 main.go in plan — MISSING",
+        "FAIL G2 main.go caller file planned despite module-symbol attribution — MISSING",
+        "FAIL G3 namespace-import caller planned — MISSING",
+        "FAIL G6 outcome is a refusal (or an explicitly-named survivor) — expected \"refused\", got \"silent-success\"",
+        "FAIL G7 plan includes the qualified caller file — [\"/tmp/bb-refactor-safety-g7plan-V0ROes/modules/modules.go\"]",
+        "FAIL G7 plan-applied tree compiles — go build FAILED: # example.com/g7",
+        "FAIL G7 commit succeeds on a build-complete plan — bb_edit wrote nothing: 1 target file(s) changed on disk between planning and committing — main.go (planned 29d35bb6f1f7, now gone). The edit was planned from those bytes, so applying it now would overwrite content it never read; re-run the edit to re-plan against the current file.",
+        "- G7 G7 plan-applied tree compiles: go build FAILED: # example.com/g7"
+      ]
+    },
+    {
+      "label": "p02-name-binding",
+      "gate": "script/m57/verify-p02-name-binding.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 19408,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T040800Z-cp1-red-p02-name-binding.json",
+      "redClassification": "honest-behavioral",
+      "summary": "collision fixture: cross-lang imports/calls/instantiates=3, bound non-code targets=1, bare-name imports=3, isFieldAccess=2, external-claim=4",
+      "redLines": [
+        "FAIL: P1a collision fixture: no cross-language imports/calls/instantiates — cross imports/calls/instantiates = 3",
+        "FAIL: P1b collision fixture: no bound non-code-language target — bound non-code-language targets = 1",
+        "FAIL: P1c collision fixture: no bare-name import binding — cross-language bare-name imports bound = 3",
+        "FAIL: P1d collision fixture: no bound isFieldAccess row — isFieldAccess rows bound = 2",
+        "FAIL: P1e collision fixture: no bound external-claim row — external-claim rows bound = 4"
+      ]
+    },
+    {
+      "label": "test-intel",
+      "gate": "script/verify-test-intel.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 8603,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T040810Z-cp1-red-test-intel.json",
+      "redClassification": "api-presence (weak)",
+      "summary": "only FAIL is 'test-intel engine exports validateTestLink'; the gate hard-fails on the missing new export before it can exercise pre-fix mapping behavior — RED direction is right but it is not a behavioral reproduction; lane needs behavioral RED evidence or a negative control",
+      "redLines": [
+        "FAIL: test-intel engine exports validateTestLink (validation capability)",
+        "TEST-INTEL: 1 FAILURES"
+      ]
+    },
+    {
+      "label": "test-quality",
+      "gate": "script/verify-test-quality.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 8911,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T040820Z-cp1-red-test-quality.json",
+      "redClassification": "api-presence (weak)",
+      "summary": "4 export-presence FAILs (measureTestContent, per-language vocabularies, aggregateQuality, overallScore) — same limitation as test-intel",
+      "redLines": [
+        "FAIL: quality engine exports measureTestContent (language-aware basis)",
+        "FAIL: quality engine exports per-language vocabularies (go/python/javascript)",
+        "FAIL: quality engine exports aggregateQuality (pure aggregate)",
+        "FAIL: quality engine exports overallScore (pure per-file overall)",
+        "TEST-QUALITY: 4 FAILURES"
+      ]
+    },
+    {
+      "label": "payload-envelope",
+      "gate": "script/m73/verify-payload-envelope.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 7190,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041125Z-cp1-red-payload-envelope.json",
+      "redClassification": "honest-behavioral",
+      "summary": "bb_impact first key is not summary; payloadBytes/budget absent; each declared bound not inside head -c 4096; shownCount<=budget check absent",
+      "redLines": [
+        "FAIL: A1: bb_impact first top-level key is summary — {",
+        "FAIL: A1: bb_impact declares payloadBytes/payloadBudgetBytes in summary — {}",
+        "FAIL: A1: bb_impact bound \"truncated\" is inside head -c 4096",
+        "FAIL: A1: bb_impact bound \"truncationReason\" is inside head -c 4096",
+        "FAIL: A1: bb_impact bound \"shownCount\" is inside head -c 4096",
+        "FAIL: A1: bb_impact bound \"totalCountIfKnown\" is inside head -c 4096",
+        "FAIL: A1: bb_impact bound \"payloadBytes\" is inside head -c 4096",
+        "FAIL: A1: bb_impact declares the byte-budget vocabulary on every answer — {}",
+        "FAIL: A1: bb_impact summary.shownCount <= summary.budget.maxNodes — {}",
+        "FAIL: A1-control: real bb_impact answer keeps counts and rows — {}"
+      ]
+    },
+    {
+      "label": "retrieval-contract",
+      "gate": "script/verify-retrieval-contract.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 5744,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041132Z-cp1-red-retrieval-contract.json",
+      "redClassification": "honest-behavioral",
+      "summary": "doc subject unresolved union/property; declaration not preferred; limit:1 documents property; qualified target not disambiguated; search symbol-mode contract fails",
+      "redLines": [
+        "FAIL: A1 control: unique symbol declares single scope",
+        "FAIL: A2: ambiguous name documents a DECLARED scope",
+        "FAIL: A2: declaration preferred over the property — src/module.ts:4,src/session.ts:5",
+        "FAIL: A2: subject is the single declaration (not a silent union)",
+        "FAIL: A2: summary states the resolved subject — 2 file(s) and 2 symbol(s) in scope, 18 cited claim(s) across 5 section(s) from 10 source(s). No indexed evidence was found for: Tests.",
+        "FAIL: A3: limit:1 still documents the declaration, not the first line-ordered property — src/module.ts:4",
+        "FAIL: A3: limit:1 does not silently document a property — [\"property Session: Session | null is defined in src/module.ts at lines 4-4.\"]",
+        "FAIL: A4a: qualified target resolves exactly one subject",
+        "FAIL: A4a: qualified target documents the qualified declaration only — src/module.ts:4,src/session.ts:5",
+        "FAIL: A4b: qualified target on a bare-name corpus shape resolves exactly one subject"
+      ]
+    },
+    {
+      "label": "embedding-lifecycle",
+      "gate": "script/verify-embedding-lifecycle.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 11965,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041330Z-cp1-red-embedding-lifecycle.json",
+      "redClassification": "honest-behavioral",
+      "summary": "under-covered configured space not declared; read path hard-filters/degraded to keyword-fallback; no populated-space fallback; no pending-backfill state",
+      "redLines": [
+        "FAIL: A1: the under-covered configured space (1/24) is measured and named — [\"no-vector-above-threshold\"]",
+        "FAIL: A2: read path does NOT hard-filter to the near-empty configured space — method=keyword-fallback",
+        "FAIL: A3: answered from the populated local space — queryModel=none",
+        "FAIL: A4: fallback is DECLARED — fallbackReason=no-vector-above-threshold",
+        "FAIL: A5: pending backfill is named with the configured model — [\"no-vector-above-threshold\"]",
+        "EMBEDDING LIFECYCLE: 5 FAILURE(S)"
+      ]
+    },
+    {
+      "label": "health-honesty",
+      "gate": "script/verify-health-honesty.ts",
+      "runner": "npx tsx",
+      "verdict": "RED_CONFIRMED",
+      "exitCode": 1,
+      "durationMs": 7365,
+      "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+      "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041339Z-cp1-red-health-honesty.json",
+      "redClassification": "honest-behavioral",
+      "summary": "status=complete beside 1972/1973 INCOMPLETE; force=true remedy on deliberate skip; no per-language syntax grouping; embeddings line lacks configured-model/coverage split",
+      "redLines": [
+        "FAIL: R2: bare `status=complete` never prints beside the shortfall — index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written status=complete errors=0",
+        "FAIL: R3: the derived status names the shortfall — index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written status=complete errors=0",
+        "FAIL: R4: no `force=true to rebuild from scratch` remedy on a deliberate-skip shortfall — the last index run recorded 1972 of 1973 files as indexed — 1 file(s) were found by the walk but never written, so the index is INCOMPLETE even though the status field says \"complete\". counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.",
+        "FAIL: R5: a warning explains the skip (size tier / deliberate skip), so force is not implied to fix it — the last index run recorded 1972 of 1973 files as indexed — 1 file(s) were found by the walk but never written, so the index is INCOMPLETE even though the status field says \"complete\". counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.",
+        "FAIL: R8: syntax grouping states a count per language — 2 indexed files have syntax errors: assets/_mixins.scss, assets/_variables.less",
+        "FAIL: R9: embeddings line names the configured model and its coverage — embeddings: 2 rows / 2 entities / 100% of symbols",
+        "FAIL: R10: backfill-pending state is declared for the under-covered configured space — codes=SYNTAX_ERRORS,INCOMPLETE_INDEX",
+        "FAIL: R11: embeddings line distinguishes library-wide from configured-space coverage — embeddings: 2 rows / 2 entities / 100% of symbols",
+        "HEALTH HONESTY: 8 FAILURE(S)"
+      ]
+    }
+  ],
+  "summary": {
+    "replayed": 8,
+    "redConfirmed": 8,
+    "honestBehavioral": 6,
+    "apiPresenceWeak": 2
+  }
+}

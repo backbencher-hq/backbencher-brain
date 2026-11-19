@@ -341,7 +341,11 @@ export function runDoctorChecks(opts: {
         id: "model-mismatch",
         severity: "fail",
         message: `Model mismatch: config has ${winnerModel}, index has ${storedDesc}. Vectors from different models cannot be compared — the stored vectors are unusable.`,
-        fix: "bb index --force",
+        // `bb index` runs the embedding reconcile pass, which re-embeds only the
+        // symbols missing the configured model and keeps old vectors until they
+        // are converted — a resumable BACKFILL. `--force` re-parses the whole
+        // project, which is not required to fix a vector-space mismatch.
+        fix: "run bb index — its embedding reconcile pass backfills the configured model (best-effort, resumes on the next run; bb health reports BACKFILL PENDING until complete). Use --force only if a normal run keeps failing.",
       })
     } else {
       const foreign = storedModels.filter((s) => s.model !== winnerModel)
@@ -351,7 +355,7 @@ export function runDoctorChecks(opts: {
           id: "model-mixed",
           severity: "warn",
           message: `The index contains foreign-model vectors: ${foreignDesc}. They are never compared with ${winnerModel} queries.`,
-          fix: "bb index --force",
+          fix: "run bb index — the embedding reconcile pass backfills the configured model for symbols that do not have it yet (best-effort, resumes on the next run); bb health reports occupancy and BACKFILL PENDING until it converges. --force is the full re-parse, not the required first step.",
         })
       }
     }

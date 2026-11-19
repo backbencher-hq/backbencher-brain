@@ -1,0 +1,28 @@
+{
+  "summary": {
+    "renamedFiles": 3,
+    "renamedSites": 3
+  },
+  "warnings": [
+    "refactor LoadModules → LoadModulesRenamed: 3 site(s) across 3 file(s)"
+  ],
+  "verification": {
+    "reparsed": "passed",
+    "unresolvedReferences": [],
+    "build": {
+      "attempted": false,
+      "tool": null,
+      "command": null,
+      "ok": null,
+      "reason": "plan preview — the plan was not applied, so there is nothing to build; the unresolved-identifier scan above still ran"
+    }
+  },
+  "changes": [
+    "/home/ishaq2321/bettercap/modules/modules.go",
+    "/home/ishaq2321/bettercap/main.go",
+    "/home/ishaq2321/bettercap/modules/modules_test.go"
+  ],
+  "mainGoPlanned": true,
+  "mainGoAfter": "package main\n\nimport (\n\t\"fmt\"\n\t\"io\"\n\t\"os\"\n\t\"strings\"\n\n\t\"runtime\"\n\n\t\"github.com/bettercap/bettercap/v2/core\"\n\t\"github.com/bettercap/bettercap/v2/log\"\n\t\"github.com/bettercap/bettercap/v2/modules\"\n\t\"github.com/bettercap/bettercap/v2/session\"\n\n\t\"github.com/evilsocket/islazy/str\"\n\t\"github.com/evilsocket/islazy/tui\"\n)\n\nfunc main() {\n\tsess, err := session.New()\n\tif err != nil {\n\t\tfmt.Println(err)\n\t\tos.Exit(1)\n\t}\n\tdefer sess.Close()\n\n\tif !tui.Effects() {\n\t\tif sess.Options.NoColors {\n\t\t\tfmt.Printf(\"\\n\\nWARNING: Terminal colors have been disabled, view will be very limited.\\n\\n\")\n\t\t} else {\n\t\t\tfmt.Printf(\"\\n\\nWARNING: This terminal does not support colors, view will be very limited.\\n\\n\")\n\t\t}\n\t}\n\n\tif sess.Options.PrintVersion {\n\t\tfmt.Printf(\"%s v%s (built for %s %s with %s)\\n\", core.Name, core.Version, runtime.GOOS, runtime.GOARCH, runtime.Version())\n\t\treturn\n\t}\n\n\tappName := fmt.Sprintf(\"%s v%s\", core.Name, core.Version)\n\tappBuild := fmt.Sprintf(\"(built for %s %s with %s)\", runtime.GOOS, runtime.GOARCH, runtime.Version())\n\n\tfmt.Printf(\"%s %s [type '%s' for a list of commands]\\n\\n\", tui.Bold(appName), tui.Dim(appBuild), tui.Bold(\"help\"))\n\n\t// Load all modules\n\tmodules.LoadModulesRenamed(sess)\n\n\tif err = sess.Start(); err != nil {\n\t\tlog.Fatal(\"%s\", err)\n\t}\n\n\t// Some modules are enabled by default in order\n\t// to make the interactive session useful.\n\tfor _, modName := range str.Comma(sess.Options.AutoStart) {\n\t\tif err = sess.Run(modName + \" on\"); err != nil {\n\t\t\tlog.Fatal(\"error while starting module %s: %s\", modName, err)\n\t\t}\n\t}\n\n\t// Commands sent with -eval are used to set specific\n\t// caplet parameters (i.e. arp.spoof.targets) via command\n\t// line, therefore they need to be executed first otherwise\n\t// modules might already be started.\n\tfor _, cmd := range session.ParseCommands(sess.Options.Commands) {\n\t\tif err = sess.Run(cmd); err != nil {\n\t\t\tlog.Error(\"error while running '%s': %s\", tui.Bold(cmd), tui.Red(err.Error()))\n\t\t}\n\t}\n\n\t// Then run the caplet if specified.\n\tif sess.Options.Caplet != \"\" {\n\t\tif err = sess.RunCaplet(sess.Options.Caplet); err != nil {\n\t\t\tlog.Error(\"error while running caplet %s: %s\", tui.Bold(sess.Options.Caplet), tui.Red(err.Error()))\n\t\t}\n\t}\n\n\t// Eventually start the interactive session.\n\tfor sess.Active {\n\t\tline, err := sess.ReadLine()\n\t\tif err != nil {\n\t\t\tif err == io.EOF || err.Error() == \"Interrupt\" {\n\t\t\t\tif exitPrompt() {\n\t\t\t\t\tsess.Run(\"exit\")\n\t\t\t\t\tos.Exit(0)\n\t\t\t\t}\n\t\t\t\tcontinue\n\t\t\t} else {\n\t\t\t\tlog.Fatal(\"%s\", err)\n\t\t\t}\n\t\t}\n\n\t\tfor _, cmd := range session.ParseCommands(line) {\n\t\t\tif err = sess.Run(cmd); err != nil {\n\t\t\t\tlog.Error(\"%s\", err)\n\t\t\t}\n\t\t}\n\t}\n}\n\nfunc exitPrompt() bool {\n\tvar ans string\n\tfmt.Printf(\"Are you sure you want to quit this session? y/n \")\n\tfmt.Scan(&ans)\n\n\treturn strings.ToLower(ans) == \"y\"\n}\n"
+}
+CP1 PASS: fixed engine plans 3 files / 3 sites including main.go:47

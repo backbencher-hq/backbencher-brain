@@ -1,0 +1,7 @@
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+M35 ENVELOPE CONTRACT: PASS (37/37, negatives=8)
+
+[INFO] [23:52:11] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:52:11] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [23:52:12] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}

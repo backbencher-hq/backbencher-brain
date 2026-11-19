@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-red/embedding-lifecycle",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-embedding-lifecycle.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix",
+  "startedAt": "2026-11-19T04:13:18.883Z",
+  "endedAt": "2026-11-19T04:13:30.848Z",
+  "durationMs": 11965,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "RED_CONFIRMED",
+  "expectRed": true,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 90,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1",
+  "stdout": "[brain] preparing the parallel worker pool (24 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 63ms [plan=linear largest-intermediate=24]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 0 relationships (0 patterns) in 34ms\n        ⚠ 24 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 5ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(38ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 14ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 6ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 8ms\n  (fixture: 24 symbols, 24 local-word-vector rows)\n  ok: fixture has a populated local space\n  leg A: method=keyword-fallback queryModel=none fallbackReason=no-vector-above-threshold comparable=1/24\n  FAIL: A1: the under-covered configured space (1/24) is measured and named — [\"no-vector-above-threshold\"]\n  FAIL: A2: read path does NOT hard-filter to the near-empty configured space — method=keyword-fallback\n  FAIL: A3: answered from the populated local space — queryModel=none\n  FAIL: A4: fallback is DECLARED — fallbackReason=no-vector-above-threshold\n  FAIL: A5: pending backfill is named with the configured model — [\"no-vector-above-threshold\"]\n  ok: A6: provenance records the fallback evidence class/unknown\n  leg B: method=vector queryModel=test/configured-embed fallbackReason=none comparable=24/24\n  ok: B1 (control): backfilled configured space answers with vectors\n  ok: B2 (control): the configured model produced the query vector\n  ok: B3 (control): no fallback is declared when the configured space is populated\n  ok: B4 (control): results exist in the configured space\n  ok: C1 (control): user embedding config was not mutated\n\nEMBEDDING LIFECYCLE: 5 FAILURE(S)\n",
+  "stderr": "[INFO] [23:13:25] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:13:25] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":24,\"types\":0}\n[INFO] [23:13:29] [parallel-indexer] worker pool complete {\"files\":24,\"workers\":3,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:13:30] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"466dabc9\",\"danglingSources\":24,\"totalRelationships\":24}\n[INFO] [23:13:30] [project-health] project health computed {\"projectId\":\"466dabc9ee36ebe5f41c031417eae7d38ee5a657\",\"complexityScore\":95,\"maintainabilityScore\":87,\"techDebtScore\":100,\"codeQualityScore\":94,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2150,
+  "stderrBytes": 741,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041330Z-cp1-red-embedding-lifecycle.json"
+}

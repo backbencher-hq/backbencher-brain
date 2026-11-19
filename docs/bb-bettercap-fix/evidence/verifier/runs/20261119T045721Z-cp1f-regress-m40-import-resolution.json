@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/m40-import-resolution",
+  "command": [
+    "bun",
+    "run",
+    "script/m40/verify-import-resolution.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:57:19.507Z",
+  "endedAt": "2026-11-19T04:57:21.438Z",
+  "durationMs": 1930,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 119,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup\nindexing /tmp/m40-importres-proj-2ocGXl (project b802c954…)\n[brain] preparing the parallel worker pool (5 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 20ms [plan=linear largest-intermediate=12]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 10 relationships (0 patterns) in 6ms\n        ⚠ 16 dangling sources, 8 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 5ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(11ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 7ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 1ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\n  index space: db 0.5 MB, wal 0.0 MB\n  index: /tmp/m40-importres-data-COhGET/projects/b802c9549ebe6387c221d7b0d69ac9311523054e/brain.db · remove with: rm -rf /tmp/m40-importres-data-COhGET/projects/b802c9549ebe6387c221d7b0d69ac9311523054e\n  ✅ index health (after embeddings): 100% — all checks passed\n✓ indexed 5 files, 12 symbols, 26 relationships, 9 embeddings in 1.2s\n  stats: {\"totalFiles\":5,\"processed\":5,\"errors\":0}\n  graph: 10 relationships explained\n  run: 1 workers · 2 languages · discovery 27ms · parse 696ms · derive 62ms · total 1.2s\n  embeddings: local-word-vectors-v3 (50d)\n  breakdown: 5 newly parsed | 0 unchanged | 0 skipped | 1 symbol-loss (parsed 0 symbols) | 0 errors | 0 timeouts\n  parsed with the worker pool\n  derived: full (derived data fully re-processed)\n  consistency: every internal relationship is attached to a symbol (external references are attached to an external identity, which is correct)\n\nimport edges after resolution (5):\n   ./extra.js:*                 -> (unresolved)\n   ./nodefault.js:NoDefault     -> (unresolved)\n   helper                       -> helper  in src/extra.js\n   ./lib.js:Def                 -> Main  in src/lib.js\n   draw                         -> draw  in src/lib.js\n\n  ok   JD2.1 a named unaliased import of an internal module RESOLVES — got helper (row target helper)\n  ok   JD2.2 a namespace import does NOT resolve (no single target symbol) — got unresolved\n  ok   JD2.3 an ALIASED import resolves to the DECLARED name, not the local binding — got draw (row target draw)\n  ok   JD2.5 NEGATIVE: never attached to the same-named non-exported METHOD — attached to nothing\n  ok   JD2.4 a DEFAULT import resolves through the module's default export — got Main\n  ok   JD2.7 NEGATIVE: a default import of a module with no default export is REFUSED — attached to null\n  ok   JD2.6 no import edge resolves to a name the target module never exported\n\nIMPORT RESOLUTION GATE: PASS — 7 passed, 0 failed\n",
+  "stderr": "\nIndexing 5 files — a moment — this is a tiny project\n\n[index] 0% 0/5 files elapsed=0s eta=…\n[INFO] [23:57:20] [parallel-indexer] worker pool fork test passed — using parallel workers\n[index] 20% 1/5 files elapsed=0s eta=…\n[index] 100% 5/5 files elapsed=1s eta=finishing\n[INFO] [23:57:21] [parallel-indexer] worker pool complete {\"files\":5,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[INFO] [23:57:21] [parallel-indexer] override companion (javascript): 2 owners, 0 file(s) re-analyzed, 0 reapplied, 0 confirmed, 0 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)\n[WARN] [23:57:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"b802c954\",\"danglingSources\":16,\"totalRelationships\":26}\n[INFO] [23:57:21] [project-health] project health computed {\"projectId\":\"b802c9549ebe6387c221d7b0d69ac9311523054e\",\"complexityScore\":95,\"maintainabilityScore\":79,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":2,\"bottlenecks\":0}\n",
+  "stdoutBytes": 3114,
+  "stderrBytes": 1120,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T045721Z-cp1f-regress-m40-import-resolution.json"
+}

@@ -1,0 +1,1 @@
+BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata

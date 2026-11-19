@@ -1,0 +1,171 @@
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [18:57:15] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [18:57:15] [parallel-indexer] project index built {"ext":".ts","files":3,"types":0}
+[INFO] [18:57:18] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 54ms [plan=linear largest-intermediate=129]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [18:57:18] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"21d782a6","danglingSources":45,"totalRelationships":170}
+  enriching done 100%
+  ✅ Enriched 125 relationships (0 patterns) in 37ms
+        ⚠ 45 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [18:57:18] [project-health] project health computed {"projectId":"21d782a6d4c4d78e4c6347f439d2a7e1b25f7e28","complexityScore":95,"maintainabilityScore":98,"techDebtScore":100,"codeQualityScore":98,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(22ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 9ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 7ms
+FAIL: A1: bb_impact first top-level key is summary — {
+  "symbol": "hub",
+  "root": {
+    "id": "21d782a6d4c4d78e4c6347f439d2a7e1b25f
+FAIL: A1: bb_impact declares payloadBytes/payloadBudgetBytes in summary — {}
+FAIL: A1: bb_impact bound "truncated" is inside head -c 4096
+FAIL: A1: bb_impact bound "truncationReason" is inside head -c 4096
+FAIL: A1: bb_impact bound "shownCount" is inside head -c 4096
+FAIL: A1: bb_impact bound "totalCountIfKnown" is inside head -c 4096
+FAIL: A1: bb_impact bound "payloadBytes" is inside head -c 4096
+FAIL: A1: bb_impact summary.shownCount <= summary.budget.maxNodes — {}
+FAIL: A1-control: real bb_impact answer keeps counts and rows — {}
+FAIL: A2: bb_graph first top-level key is summary — {
+  "symbol": "hub",
+  "root": {
+    "id": "21d782a6d4c4d78e4c6347f439d2a7e1b25f
+FAIL: A2: bb_graph bound "truncated" is inside head -c 4096
+FAIL: A2: bb_graph bound "truncationReason" is inside head -c 4096
+FAIL: A2: bb_graph bound "totalCallers" is inside head -c 4096
+FAIL: A2: bb_graph bound "totalCallees" is inside head -c 4096
+FAIL: A2: bb_graph bound "edgeLimit" is inside head -c 4096
+FAIL: A2: bb_graph bound "maxEdges" is inside head -c 4096
+FAIL: A2: bb_graph bound "payloadBytes" is inside head -c 4096
+FAIL: A2: bb_graph summary declares payloadBytes
+FAIL: A2-control: real bb_graph answer keeps its edges — {}
+FAIL: A2: bb_graph dedupes endpoints into a node table — {"nodes":null}
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 41 nodes, 120 links
+FAIL: A3: bb_visualize json first top-level key is summary — {
+  "scope": "file",
+  "target": "src/hub.ts",
+  "format": "json",
+  "view": "gr
+FAIL: A3: bb_visualize bound "truncated" is inside head -c 4096
+FAIL: A3: bb_visualize bound "totalNodesAvailable" is inside head -c 4096
+FAIL: A3: bb_visualize bound "maxNodes" is inside head -c 4096
+FAIL: A3: bb_visualize bound "maxLinks" is inside head -c 4096
+FAIL: A3: bb_visualize bound "offset" is inside head -c 4096
+FAIL: A3: bb_visualize bound "nextOffset" is inside head -c 4096
+FAIL: A3: bb_visualize bound "payloadBytes" is inside head -c 4096
+FAIL: A3-control: bb_visualize json keeps its nodes/links — {}
+FAIL: A4: bb_analyze mode=impact first top-level key is summary — {
+  "target": "hub",
+  "found": true,
+  "root": {
+    "name": "hub",
+    "symbol
+FAIL: A4: bb_analyze-impact bound "payloadBytes" is inside head -c 4096
+FAIL: A4-control: bb_analyze impact keeps its counts — {}
+FAIL: B1: shared exports one bounded envelope helper — {"helper":"undefined"}
+FAIL: C1: bb_impact names the engine-row count `engineCallerRows` (units in the name) — null
+FAIL: C1: bb_impact budget states what maxNodes bounds — null
+FAIL: D1: security tier line labels its population (lead-tier analyzers) — tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+FAIL: D1: security tier line does NOT print an unlabelled `N leads` — tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+FAIL: D1: docs/BB_SECURITY.md shows the corrected unit label — docs/BB_SECURITY.md must not contain an unlabelled `N leads`
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 45 nodes, 125 links
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+FAIL: D2: visualize module page (scoped) MUST NOT claim whole-project — claimed whole project
+FAIL: D2: visualize module page (scoped) says explicitly it is not the whole project — page: symbols 1-2 (offset 0, limit 200, page 1; 2 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 41 nodes, 120 links
+FAIL: D2: visualize file page (scoped) MUST NOT claim whole-project — claimed whole project
+FAIL: D2: visualize file page (scoped) says explicitly it is not the whole project — page: symbols 1-41 (offset 0, limit 200, page 1; 41 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources a
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links
+FAIL: D2: visualize symbol page (scoped) MUST NOT claim whole-project — claimed whole project
+FAIL: D2: visualize symbol page (scoped) says explicitly it is not the whole project — page: symbols 1-1 (offset 0, limit 200, page 1; 1 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 0 nodes, 0 links
+FAIL: D2: visualize absent target MUST NOT claim whole-project — claimed whole project
+FAIL: D2: visualize absent target says explicitly it is not the whole project — page: offset 0 holds no drawable symbol — 0 symbol(s) match this scope, so this is an empty PAGE, not an empty project | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments;
+[INFO] [18:57:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [18:57:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 45 nodes, 125 links
+FAIL: D2: visualize offset page MUST NOT claim whole-project — claimed whole project
+FAIL: D2: visualize offset page says explicitly it is not the whole project — page: symbols 2-45 (offset 1, limit 200, page 1; 45 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources a
+
+M73 P1-4/P2-5: RED (14/62 passed)
+FAILURES:
+  - A1: bb_impact first top-level key is summary — {
+  "symbol": "hub",
+  "root": {
+    "id": "21d782a6d4c4d78e4c6347f439d2a7e1b25f
+  - A1: bb_impact declares payloadBytes/payloadBudgetBytes in summary — {}
+  - A1: bb_impact bound "truncated" is inside head -c 4096
+  - A1: bb_impact bound "truncationReason" is inside head -c 4096
+  - A1: bb_impact bound "shownCount" is inside head -c 4096
+  - A1: bb_impact bound "totalCountIfKnown" is inside head -c 4096
+  - A1: bb_impact bound "payloadBytes" is inside head -c 4096
+  - A1: bb_impact summary.shownCount <= summary.budget.maxNodes — {}
+  - A1-control: real bb_impact answer keeps counts and rows — {}
+  - A2: bb_graph first top-level key is summary — {
+  "symbol": "hub",
+  "root": {
+    "id": "21d782a6d4c4d78e4c6347f439d2a7e1b25f
+  - A2: bb_graph bound "truncated" is inside head -c 4096
+  - A2: bb_graph bound "truncationReason" is inside head -c 4096
+  - A2: bb_graph bound "totalCallers" is inside head -c 4096
+  - A2: bb_graph bound "totalCallees" is inside head -c 4096
+  - A2: bb_graph bound "edgeLimit" is inside head -c 4096
+  - A2: bb_graph bound "maxEdges" is inside head -c 4096
+  - A2: bb_graph bound "payloadBytes" is inside head -c 4096
+  - A2: bb_graph summary declares payloadBytes
+  - A2-control: real bb_graph answer keeps its edges — {}
+  - A2: bb_graph dedupes endpoints into a node table — {"nodes":null}
+  - A3: bb_visualize json first top-level key is summary — {
+  "scope": "file",
+  "target": "src/hub.ts",
+  "format": "json",
+  "view": "gr
+  - A3: bb_visualize bound "truncated" is inside head -c 4096
+  - A3: bb_visualize bound "totalNodesAvailable" is inside head -c 4096
+  - A3: bb_visualize bound "maxNodes" is inside head -c 4096
+  - A3: bb_visualize bound "maxLinks" is inside head -c 4096
+  - A3: bb_visualize bound "offset" is inside head -c 4096
+  - A3: bb_visualize bound "nextOffset" is inside head -c 4096
+  - A3: bb_visualize bound "payloadBytes" is inside head -c 4096
+  - A3-control: bb_visualize json keeps its nodes/links — {}
+  - A4: bb_analyze mode=impact first top-level key is summary — {
+  "target": "hub",
+  "found": true,
+  "root": {
+    "name": "hub",
+    "symbol
+  - A4: bb_analyze-impact bound "payloadBytes" is inside head -c 4096
+  - A4-control: bb_analyze impact keeps its counts — {}
+  - B1: shared exports one bounded envelope helper — {"helper":"undefined"}
+  - C1: bb_impact names the engine-row count `engineCallerRows` (units in the name) — null
+  - C1: bb_impact budget states what maxNodes bounds — null
+  - D1: security tier line labels its population (lead-tier analyzers) — tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+  - D1: security tier line does NOT print an unlabelled `N leads` — tiers: 0 scan / 39 leads / 14 unsupported (of 53 analyzers) — unsupported languages are NOT scanned by bb_security; leads require manual validation
+  - D1: docs/BB_SECURITY.md shows the corrected unit label — docs/BB_SECURITY.md must not contain an unlabelled `N leads`
+  - D2: visualize module page (scoped) MUST NOT claim whole-project — claimed whole project
+  - D2: visualize module page (scoped) says explicitly it is not the whole project — page: symbols 1-2 (offset 0, limit 200, page 1; 2 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are
+  - D2: visualize file page (scoped) MUST NOT claim whole-project — claimed whole project
+  - D2: visualize file page (scoped) says explicitly it is not the whole project — page: symbols 1-41 (offset 0, limit 200, page 1; 41 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources a
+  - D2: visualize symbol page (scoped) MUST NOT claim whole-project — claimed whole project
+  - D2: visualize symbol page (scoped) says explicitly it is not the whole project — page: symbols 1-1 (offset 0, limit 200, page 1; 1 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are
+  - D2: visualize absent target MUST NOT claim whole-project — claimed whole project
+  - D2: visualize absent target says explicitly it is not the whole project — page: offset 0 holds no drawable symbol — 0 symbol(s) match this scope, so this is an empty PAGE, not an empty project | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments;
+  - D2: visualize offset page MUST NOT claim whole-project — claimed whole project
+  - D2: visualize offset page says explicitly it is not the whole project — page: symbols 2-45 (offset 1, limit 200, page 1; 45 symbol(s) match this scope) — this is the LAST page | excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources a

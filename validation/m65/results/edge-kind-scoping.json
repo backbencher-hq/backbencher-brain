@@ -1,0 +1,131 @@
+{
+  "issue": "#65",
+  "probe": "M65 edge-kind scoping",
+  "command": "npx tsx script/m65/verify-edge-kind-scoping.ts",
+  "question": "does every consumer that names a relationship kearn measure that kind, or the engine's all-kinds default?",
+  "declaredAllKindsDoors": {
+    "src/mcp/tools/bb_analyze/handler.ts": "the bb_analyze graph modes' door: their all-kinds default is DOCUMENTED (docs/tools/bb_analyze.md), the answer publishes its composition and the kinds searched, and a caller can pass relationshipTypes; mode `impact` walks the declared dependency kinds instead",
+    "src/mcp/tools/shared.ts": "the shared graph-walk helper behind the analyze modes: it forwards the caller's relationshipTypes unchanged and takes the engine default when none is given, which is the documented all-kinds policy of the modes that call it",
+    "src/ast/graph.ts": "legacy BFS helper: it does not default at all — it passes Object.values(RelationshipType) explicitly, so the full kind set is NAMED at the call site rather than inherited"
+  },
+  "callSites": [
+    "src/intelligence/analysis/impact.ts:61 scoped",
+    "src/intelligence/testing/suggestions.ts:164 scoped",
+    "src/intelligence/testing/test-intel.ts:732 scoped",
+    "src/ast/graph.ts:396 all-kinds",
+    "src/mcp/tools/bb_analyze/handler.ts:228 all-kinds",
+    "src/mcp/tools/shared.ts:420 all-kinds",
+    "src/mcp/tools/bb_graph/handler.ts:132 scoped"
+  ],
+  "fixture": {
+    "project": "m65-kind-scope-proj-4BdE1H",
+    "nestedRows": [
+      "realTest-calls->nested",
+      "TestHost-contains->nested"
+    ],
+    "targetRows": [
+      "consumer-calls->target",
+      "testTarget-calls->target",
+      "Host-contains->target"
+    ]
+  },
+  "checks": [
+    {
+      "id": "A1-every-unscoped-call-site-is-a-declared-door",
+      "pass": true,
+      "detail": "7 graph call site(s) in src/, 4 scoped; unscoped: src/ast/graph.ts:396, src/mcp/tools/bb_analyze/handler.ts:228, src/mcp/tools/shared.ts:420"
+    },
+    {
+      "id": "A2-no-stale-door-declaration",
+      "pass": true,
+      "detail": "all 3 declared door(s) still have an unscoped call site"
+    },
+    {
+      "id": "A3-the-three-repaired-consumers-are-scoped",
+      "pass": true,
+      "detail": "src/intelligence/testing/test-intel.ts: scoped · src/intelligence/testing/suggestions.ts: scoped · src/intelligence/analysis/impact.ts: scoped"
+    },
+    {
+      "id": "A4-mutation-the-audit-reacts-when-a-filter-is-removed",
+      "pass": true,
+      "detail": "with the filter line stripped from src/intelligence/testing/test-intel.ts, the audit reports 1 unscoped call site(s) — reverting a consumer's scoping turns A1/A3 red"
+    },
+    {
+      "id": "P1-premises-test-file-flag-is-real",
+      "pass": true,
+      "detail": "kind.test.ts is_test_file=1, target.test.ts is_test_file=1, prod.ts is_test_file=0"
+    },
+    {
+      "id": "P2-premises-the-store-carries-a-DEPENDENCY-row-and-a-CONTAINMENT-row-into-each-target",
+      "pass": true,
+      "detail": "nested: realTest-calls, TestHost-contains · target: consumer-calls, testTarget-calls, Host-contains — real analyzer output, nothing seeded"
+    },
+    {
+      "id": "C1-the-default-still-covers-every-kind",
+      "pass": true,
+      "detail": "default callers(nested) kinds=[\"calls\",\"contains\",\"instantiates\",\"references\"], summary.relationshipTypesUsed=14 kind(s) — the fix is at the consumers, NOT a narrowed engine"
+    },
+    {
+      "id": "B1-differential-the-unscoped-walk-returns-BOTH-rows",
+      "pass": true,
+      "detail": "unscoped callers(nested) = [\"realTest\",\"TestHost\",\"realTest\",\"realTest\"] (distinct [\"TestHost\",\"realTest\"]) — the containment row IS in the answer an unscoped consumer would receive"
+    },
+    {
+      "id": "B2-differential-the-scoped-walk-keeps-the-dependency-row-only",
+      "pass": true,
+      "detail": "relationshipTypes:[calls,instantiates,extends,implements] callers(nested) = [\"realTest\"]"
+    },
+    {
+      "id": "B3-testImpact-does-not-report-the-container-as-a-direct-test",
+      "pass": true,
+      "detail": "directTests = [\"realTest:calls/direct_call\"] — TestHost appears in the unscoped walk (B1) and NOT here, because that row is membership"
+    },
+    {
+      "id": "B4-every-entry-names-its-own-kind-and-tier",
+      "pass": true,
+      "detail": "direct[0] = {\"testSymbol\":\"realTest\",\"testFile\":\"src/kind.test.ts\",\"depth\":0,\"relationshipType\":\"calls\",\"evidence\":\"direct_call\"} (the walk sees only the kinds this engine can classify: [\"calls\",\"instantiates\",\"references\",\"uses\",\"extends\",\"implements\",\"imports\"])"
+    },
+    {
+      "id": "B5-blastRadius-counts-dependents-not-rows",
+      "pass": true,
+      "detail": "unscoped callers(target) = [\"Host\",\"consumer\",\"testTarget\"] (consumer and testTarget CALL it, Host CONTAINS it) while testSuggestions reports blastRadius=2"
+    },
+    {
+      "id": "B6-affected-test-rows-carry-the-kind-and-tier",
+      "pass": true,
+      "detail": "affectedExistingTests = [\"testTarget:calls/direct_call\"]"
+    },
+    {
+      "id": "B7-mutation-removing-the-dependency-row-moves-the-number",
+      "pass": true,
+      "detail": "after deleting the consumer->target `calls` row: blastRadius 2 -> 1 while the Host->target `contains` row is still stored (true) — the count follows dependents, and the containment row was never evidence"
+    },
+    {
+      "id": "B8-mutation-restoring-the-row-restores-the-number",
+      "pass": true,
+      "detail": "blastRadius back to 2 after re-inserting the row — the measurement is data, not a constant"
+    },
+    {
+      "id": "S1-source-guards-for-every-repair",
+      "pass": true,
+      "detail": "all 7 guards present — reverting any repair fails this gate"
+    },
+    {
+      "id": "S2-the-documented-default-is-the-engine's-own-list",
+      "pass": true,
+      "detail": "DEFAULT_REL_TYPES holds 14 kind(s); docs/GRAPH_ENGINE.md's `relationshipTypes` row names every one of them"
+    },
+    {
+      "id": "S3-the-bb_analyze-page-discloses-the-kind-set-its-graph-modes-walk",
+      "pass": true,
+      "detail": "docs/tools/bb_analyze.md carries the all-kinds disclosure and names the dependency rule mode `impact` walks (regenerated from script/verify-tool-docs.ts)"
+    }
+  ],
+  "failures": [],
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-11-19T04:48:17.395Z",
+    "contentSha256": "24099b7abb727ba8f2178dfca1b3c243d3ec365358d5c4add07c157f8a9e28b2"
+  }
+}

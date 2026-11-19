@@ -71,9 +71,23 @@ export interface IdentifierOccurrence {
   /** Parent node type: "call_expression", "variable_declarator", … */
   parentType: string
   /** True when this occurrence is the member name of a dotted access or a
-   *  property key (obj.name / obj.name() / { name }), not a standalone
-   *  reference. Rename engines must never treat these as reference sites. */
+   *  property key (obj.name / obj.name() / { name }), not automatically a
+   *  standalone reference. A rename engine must NOT treat it as a reference
+   *  unless the receiver resolves to a MODULE/NAMESPACE binding (see
+   *  `memberReceiver`): `pkg.F` and `import * as ns; ns.f` ARE references to F,
+   *  `obj.method` on a value is not. */
   isMemberName: boolean
+  /** When `isMemberName` is true: the simple identifier spelling of the access's
+   *  receiver/operand (`modules` in `modules.LoadModules`, `m` in `m.target`,
+   *  `obj` in `obj.method`), or null when the receiver is not a simple
+   *  identifier (a call, indexed expression, nested access, …).
+   *
+   *  This is the evidence a consumer needs to distinguish a package/namespace
+   *  reference from a value-receiver member without re-parsing: the consumer
+   *  resolves the receiver against the file's imports (Go package import, TS/JS
+   *  `import * as`, Python module import). Populated by extraction, never by
+   *  text scanning. */
+  memberReceiver?: string | null
   /** The tree-sitter field this occurrence fills in its parent node
    *  ("name", "value", "left", "right", "object", "key", …) or null when it
    *  fills no named field. Lets classification distinguish `x = <ref>` (right
@@ -277,6 +291,36 @@ export function isMemberNameNode(node: any): boolean {
     .map((f) => (typeof parent.childForFieldName === "function" ? parent.childForFieldName(f) : null))
     .some((n) => n != null && n.startIndex === node.startIndex && n.endIndex === node.endIndex)
   return isName
+}
+
+/** Field names that hold the RECEIVER/operand of a dotted access, across the
+ *  grammars this engine edits. Wider than MEMBER_ACCESS_OBJECT_FIELDS because
+ *  this list only READS the receiver for evidence (it does not change which
+ *  nodes are member names): Go `selector_expression` spells it `operand`,
+ *  Rust `field_expression` uses `value`, Python `attribute` uses `object`. */
+const MEMBER_ACCESS_RECEIVER_FIELDS = ["object", "receiver", "operand", "value"]
+
+/**
+ * The simple identifier spelling of a member access's receiver, or null.
+ *
+ * Only a LEAF identifier/alias counts: `modules.LoadModules` → "modules",
+ * `m.target` → "m", `obj.method` → "obj". A call/index/nested-access receiver
+ * (`get().target`, `a.b.target`, `xs[0].target`) returns null, because resolving
+ * those to an import would require evaluation semantics this layer does not
+ * have — and a wrong "module" verdict would rename a value's member.
+ */
+export function memberReceiverName(node: any): string | null {
+  const parent = node.parent
+  if (!parent || typeof parent.childForFieldName !== "function") return null
+  for (const field of MEMBER_ACCESS_RECEIVER_FIELDS) {
+    const receiver = parent.childForFieldName(field)
+    if (!receiver) continue
+    if (receiver.startIndex === node.startIndex && receiver.endIndex === node.endIndex) continue
+    if (receiver.namedChildCount !== 0) return null
+    if (!isIdentifierNodeType(String(receiver.type))) return null
+    return String(receiver.text ?? "")
+  }
+  return null
 }
 
 /**
@@ -509,13 +553,15 @@ export function extractIdentifierOccurrences(tree: any, content: string): Identi
     if (node.namedChildCount !== 0) continue // container (scoped/qualified) — descend, not a site
     const text = content.substring(node.startIndex, node.endIndex)
     if (text.length === 0) continue
+    const memberName = isMemberNameNode(node)
     out.push({
       text,
       startIndex: node.startIndex,
       endIndex: node.endIndex,
       nodeType: type,
       parentType: node.parent ? node.parent.type : "",
-      isMemberName: isMemberNameNode(node),
+      isMemberName: memberName,
+      memberReceiver: memberName ? memberReceiverName(node) : null,
       parentField: parentFieldOf(node),
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,

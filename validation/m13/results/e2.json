@@ -348,6 +348,49 @@
       "detail": "parent=scoped_type_identifier isRef=true isMember=false"
     },
     {
+      "name": "Go: package-qualified call exposes its receiver",
+      "pass": true,
+      "detail": "[\"modules\",\"other\"]"
+    },
+    {
+      "name": "Go: package-qualified call IS a reference when the receiver is an imported module",
+      "pass": true,
+      "detail": "reference"
+    },
+    {
+      "name": "Go: same call is NOT a reference when the receiver is not a module binding (value member) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "Go: unresolved value-receiver member under a METHOD target is REPORTED, not silently dropped",
+      "pass": true,
+      "detail": "skipped-member"
+    },
+    {
+      "name": "TS: namespace-import member exposes its receiver",
+      "pass": true,
+      "detail": "[\"m\",\"box\"]"
+    },
+    {
+      "name": "TS: namespace-qualified member IS a reference",
+      "pass": true,
+      "detail": "reference"
+    },
+    {
+      "name": "TS: value-receiver member is NOT a reference [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "unit: bare isReferenceSite alone still treats a member name as non-reference (classifyRefactorSite is the fix) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
       "name": "ts: refactor produces exactly one change",
       "pass": true,
       "detail": "got 1"
@@ -453,10 +496,10 @@
       "detail": ""
     }
   ],
-  "negativeCases": 21,
+  "negativeCases": 24,
   "summary": {
-    "total": 84,
-    "passed": 84,
+    "total": 92,
+    "passed": 92,
     "failed": 0
   },
   "decisions": {
@@ -473,5 +516,5 @@
     "Some grammars name declaration identifiers with non-identifier node types (Bash 'word', Perl 'bareword', Erlang 'atom', Clojure 'sym_name'/'sym_lit', PowerShell 'function_name', PHP 'name') and Elixir 'def' names parse as call arguments — these names are not reference occurrences, so rename cannot see them. Tracked as reference-identification completeness.",
     "R function assignment (foo <- function()) parents the name under 'binary_operator' (ambiguous with arithmetic), so R binding names are not recognized. Tracked as."
   ],
-  "generatedAt": "2026-11-05T04:12:15.119Z"
+  "generatedAt": "2026-11-19T05:02:53.093Z"
 }

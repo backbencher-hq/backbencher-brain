@@ -1,0 +1,11 @@
+# pre-fix replay overlay — gates copied from main tree into .tools/verifier/pre-fix at same repo-relative paths
+# timestamp 2026-11-19T04:06:52Z
+# HEAD 75448b02991e6f6f5b1dfa0630b4e07c06436109
+ac9f709d960362f78d8b69e5082e2c5fb91ca3cc920020c3635f1e589579dad6  script/m71/verify-refactor-safety.ts
+ba3d74437015658caa1d1580815f8e2e8cb05d433ce17289712a06cc14b464ee  script/m57/verify-p02-name-binding.ts
+99c704d0aa05449017762ced59c60c05e96dcd4880855ecad85e61d601107376  script/verify-test-intel.ts
+8cc251b89b20a38c8a202938b7228a4cce43fa0c0154f26ad8a544e194305244  script/verify-test-quality.ts
+cac5a48392ad228856f74a3178e9afe759a8e0f229b9fe679a6ff699ccfc5827  script/m73/verify-payload-envelope.ts
+5269d09a4951f917d2d67ee3fdbe4fd8e769237091e633db06581e320621e84c  script/verify-retrieval-contract.ts
+d12cc904bb123646056b69afa38974cb8dc001e3b007a498eafc76d5de012039  script/verify-embedding-lifecycle.ts
+0effaba86f3f89311d8a723e2622610ce07a55c5f698edd82d525ce1d332722e  script/verify-health-honesty.ts

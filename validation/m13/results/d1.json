@@ -28,7 +28,7 @@
     {
       "name": "engine: file exists",
       "pass": true,
-      "detail": "160684"
+      "detail": "171734"
     },
     {
       "name": "engine: no code-generation claims [negative]",
@@ -106,5 +106,5 @@
   "limitations": [
     "Contract-level; the engine-level truth predicates live in m20/doc-truth."
   ],
-  "generatedAt": "2026-11-05T04:07:30.974Z"
+  "generatedAt": "2026-11-19T00:34:53.940Z"
 }

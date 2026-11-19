@@ -1,0 +1,268 @@
+{
+  "projectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+  "expectedProjectId": "4c7590f1cba319aac298a50453c0ec440f2dc857",
+  "matchesFrozenIndex": true,
+  "mapping": {
+    "summary": {
+      "productionSymbols": 187,
+      "testedSymbols": 18,
+      "evidenceLinks": 127,
+      "unvalidatedLinks": 137,
+      "unvalidatedByReason": {
+        "external-stdlib-leaf": 3,
+        "qualified-call-target-is-a-leaf": 127,
+        "receiver-selector-unresolved": 7
+      }
+    },
+    "New": {
+      "file": "session/session.go",
+      "line": 155,
+      "strongestEvidence": "direct_call",
+      "links": [
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/any_proxy/any_proxy_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkNewC2",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkChannelSet",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkTemplateSet",
+          "testFile": "modules/c2/c2_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkNewRestAPI",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkIsTLS",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkConfigure",
+          "testFile": "modules/api_rest/api_rest_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkNewCanModule",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkInjectHandler",
+          "testFile": "modules/can/can_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/ble/ble_recon_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/ticker/ticker_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkTickerCreate",
+          "testFile": "modules/ticker/ticker_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkTickerStartStop",
+          "testFile": "modules/ticker/ticker_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/update/update_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkVersionToNum",
+          "testFile": "modules/update/update_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "BenchmarkVersionComparison",
+          "testFile": "modules/update/update_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        },
+        {
+          "testSymbol": "createMockSession",
+          "testFile": "modules/utils/view_selector_test.go",
+          "evidence": "direct_call",
+          "confidence": 0.85
+        }
+      ]
+    },
+    "Lock": {
+      "strongestEvidence": "none",
+      "links": []
+    },
+    "Unlock": {
+      "strongestEvidence": "none",
+      "links": []
+    },
+    "unvalidatedUnknown": [
+      "unvalidated-test-links: 137 stored relationship row(s) from test files did not prove their target and were NOT published as evidence (external-stdlib-leaf=3, qualified-call-target-is-a-leaf=127, receiver-selector-unresolved=7); a stored call is not test evidence until the test can reach the target's exact symbol"
+    ]
+  },
+  "gaps": {
+    "summary": {
+      "productionSymbols": 187,
+      "total": 170,
+      "directlyTested": 17,
+      "excludedAsNoise": 0,
+      "returned": 50,
+      "truncated": true,
+      "byCategory": {
+        "no_evidence": 169,
+        "weak_evidence": 1
+      },
+      "highRisk": 170
+    },
+    "unvalidatedUnknown": [
+      "unvalidated-test-links: 137 stored test-file relationship row(s) did not prove their target and are NOT counted as evidence (external-stdlib-leaf=3, qualified-call-target-is-a-leaf=127, receiver-selector-unresolved=7)"
+    ]
+  },
+  "quality": {
+    "aggregate": {
+      "mean": 0.48809523809523814,
+      "perDimension": {
+        "assertions": 0.8571428571428573,
+        "mocking": 0,
+        "error_handling": 0.3333333333333333,
+        "parameterization": 0.6666666666666666,
+        "docs": 0.880952380952381,
+        "fixtures": 0
+      }
+    },
+    "files": [
+      {
+        "path": "session/command_handler_test.go",
+        "overall": 0.21312830687830692,
+        "assertions": 0.8333333333333334,
+        "assertionsAnchor": "t.Fatalf × 3, t.Fatal × 2",
+        "errorAnchor": "recover() × 1",
+        "parameterizationAnchor": null,
+        "parameterization": 0,
+        "issues": []
+      },
+      {
+        "path": "session/environment_test.go",
+        "overall": 0.5595238095238095,
+        "assertions": 1,
+        "assertionsAnchor": "t.Fatalf × 49, t.Fatal × 7",
+        "errorAnchor": "if err != nil × 18, if err == nil × 4",
+        "parameterizationAnchor": null,
+        "parameterization": 0,
+        "issues": []
+      },
+      {
+        "path": "session/events_test.go",
+        "overall": 0.5476190476190477,
+        "assertions": 1,
+        "assertionsAnchor": "t.Errorf × 5, t.Error × 2",
+        "errorAnchor": null,
+        "parameterizationAnchor": "range tests × 6, t.Run × 6",
+        "parameterization": 1,
+        "issues": [
+          "no_error_path_evidence"
+        ]
+      },
+      {
+        "path": "session/module_handler_test.go",
+        "overall": 0.5899470899470901,
+        "assertions": 1,
+        "assertionsAnchor": "t.Errorf × 7",
+        "errorAnchor": "if err != nil × 1",
+        "parameterizationAnchor": "range tests × 4, t.Run × 4",
+        "parameterization": 1,
+        "issues": []
+      },
+      {
+        "path": "session/module_param_test.go",
+        "overall": 0.6534391534391536,
+        "assertions": 1,
+        "assertionsAnchor": "t.Errorf × 14, t.Error × 10",
+        "errorAnchor": "if err != nil × 1, if err == nil × 1",
+        "parameterizationAnchor": "range tests × 4, t.Run × 4",
+        "parameterization": 1,
+        "issues": []
+      },
+      {
+        "path": "session/session_setup_test.go",
+        "overall": 0.3053902116402117,
+        "assertions": 0.16666666666666666,
+        "assertionsAnchor": "t.Errorf × 1",
+        "errorAnchor": null,
+        "parameterizationAnchor": "range tests × 1, t.Run × 1",
+        "parameterization": 0.6666666666666666,
+        "issues": [
+          "no_error_path_evidence"
+        ]
+      },
+      {
+        "path": "session/session_test.go",
+        "overall": 0.5476190476190477,
+        "assertions": 1,
+        "assertionsAnchor": "t.Fatalf × 13",
+        "errorAnchor": null,
+        "parameterizationAnchor": "t.Run × 6",
+        "parameterization": 1,
+        "issues": [
+          "no_error_path_evidence"
+        ]
+      }
+    ],
+    "vocabularyUnknowns": [
+      "language-vocabulary: go (7 file(s))"
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+M26.A1 polyglot end-to-end verifier
+
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 34ms [plan=linear largest-intermediate=8]
+        cross-language: 3 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 13 relationships (0 patterns) in 10ms
+        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(31ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 10ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 20ms [plan=linear largest-intermediate=7]
+        cross-language: 2 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 6 relationships (0 patterns) in 5ms
+        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(7ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 5ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+
+A1: VERIFIED (12/12 passed, 1 mutant)
+
+[INFO] [23:47:07] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:47:08] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:47:09] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"33da600f","danglingSources":2,"totalRelationships":15}
+[INFO] [23:47:09] [project-health] project health computed {"projectId":"33da600f7f92436b3d1d14d2999117d82c2ad827","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+[INFO] [23:47:10] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:47:10] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [23:47:12] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:47:12] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"60497252","danglingSources":5,"totalRelationships":11}
+[INFO] [23:47:12] [project-health] project health computed {"projectId":"604972529cb8813acfa4fcc2341336009bd77081","complexityScore":93,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}

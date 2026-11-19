@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-green/doc-surface",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-doc-tool-surface.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:23:34.116Z",
+  "endedAt": "2026-11-19T04:23:35.541Z",
+  "durationMs": 1425,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 95,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1",
+  "stdout": "DOC TOOL SURFACE — 16 registered tools\n\nDOC TOOL SURFACE: PASS — 16 registered tools, 53 docs scanned, 99 checks, 7/7 negatives, 0 violation(s)\n",
+  "stderr": "",
+  "stdoutBytes": 148,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T042335Z-cp1-green-doc-surface.json"
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/m48-p3-agreement",
+  "command": [
+    "bun",
+    "run",
+    "script/m48/verify-p3-agreement.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:52:20.443Z",
+  "endedAt": "2026-11-19T04:52:23.020Z",
+  "durationMs": 2577,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 112,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (4 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 27ms [plan=linear largest-intermediate=19]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 9 relationships (0 patterns) in 16ms\n        ⚠ 11 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 3ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(2ms) + health(17ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 8ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 2ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 0ms\nFAIL: P3: caller set identical (leaf) — graph= analyze=run,alpha,b1,Service,b2,c1,d1\nFAIL: P3: caller set identical (Service) — graph= analyze=Service\nFAIL: P3: caller set identical (c1) — graph= analyze=d1\nFAIL: P3: bb_graph resolves the same root\nM48 P3 AGREEMENT: FAIL (26 passed, 4 failed, 5 negatives)\n",
+  "stderr": "[INFO] [23:52:21] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:52:21] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":4,\"types\":1}\n[INFO] [23:52:22] [parallel-indexer] worker pool complete {\"files\":4,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:52:22] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"7c6db163\",\"danglingSources\":11,\"totalRelationships\":20}\n[INFO] [23:52:22] [project-health] project health computed {\"projectId\":\"7c6db16364014df48cf6d3430bcf537ab11375b4\",\"complexityScore\":95,\"maintainabilityScore\":95,\"techDebtScore\":100,\"codeQualityScore\":97,\"languages\":1,\"bottlenecks\":0}\n[INFO] [23:52:22] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [23:52:22] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links\n[INFO] [23:52:22] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [23:52:22] [dependency-graph-visualizer] ✅ Graph Data Generated: 0 nodes, 0 links\n",
+  "stdoutBytes": 1270,
+  "stderrBytes": 1117,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T045223Z-cp1f-regress-m48-p3-agreement.json"
+}

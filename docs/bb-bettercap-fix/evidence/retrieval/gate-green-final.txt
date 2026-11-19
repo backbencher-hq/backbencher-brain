@@ -1,0 +1,75 @@
+[brain] preparing the parallel worker pool (6 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:49:00] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:49:00] [parallel-indexer] project index built {"ext":".ts","files":6,"types":3}
+[INFO] [19:49:03] [parallel-indexer] worker pool complete {"files":6,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 26ms [plan=linear largest-intermediate=10]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:49:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e7049861","danglingSources":7,"totalRelationships":12}
+  enriching done 100%
+  ✅ Enriched 5 relationships (0 patterns) in 24ms
+        ⚠ 7 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:49:04] [project-health] project health computed {"projectId":"e70498617f2d7faecf287c2a8a20ce50ddad761c","complexityScore":95,"maintainabilityScore":78,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(28ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 14ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 4ms
+  ok: fixture: one declaration-kind Session row
+  ok: fixture: at least one property Session row
+  ok: fixture: unique function row exists
+  ok: fixture: two Dup declaration rows
+  ok: fixture: property precedes declaration in line order (defect trigger)
+  ok: A1 control: unique symbol title is `symbol: UniqueThing`
+  ok: A1 control: unique symbol quality.passed
+  ok: A1 control: unique symbol cites exactly its own declaration
+  ok: A1 control: unique symbol declares single scope
+  ok: A2: ambiguous name documents a DECLARED scope
+  ok: A2: declaration preferred over the property
+  ok: A2: subject is the single declaration (not a silent union)
+  ok: A2: summary states the resolved subject
+  ok: A3: limit:1 keeps the SAME subject as the default call
+  ok: A3: limit:1 still documents the declaration, not the first line-ordered property
+  ok: A3: limit:1 does not silently document a property
+  ok: A4a: qualified target resolves exactly one subject
+  ok: A4a: qualified target documents the qualified declaration only
+  ok: A4b: qualified target on a bare-name corpus shape resolves exactly one subject
+  ok: A4b: bare-name qualified resolution uses the namespace path
+  ok: A4b: bare-name qualified target documents the declaration only
+  ok: A5: two declarations produce a DECLARED union in the title
+  ok: A5: declared union scope
+  ok: A5: union documents both declarations
+  ok: A6: a declared union its citations cannot cover does not pass
+  ok: A7: markdown heading declares the union
+  ok: B1: symbol mode finds the unique symbol
+  ok: B1: symbol-mode fileId is <projectId>:<relativePath>
+  ok: B1: symbol-mode fileId is never an absolute machine path
+  ok: B1: absolute path moved to absolutePath
+  ok: B1: symbol mode returns the source slice (descriptor promise)
+  ok: B1: source declares its bound (sourceTruncated)
+  ok: B2: long symbol source is bounded
+  ok: B2: long symbol source is flagged truncated
+  ok: B3: content mode agrees on the fileId
+  ok: B3: file mode agrees on the fileId
+  ok: B3: no search-mode fileId is an absolute path
+  ok: B4 control: symbols mode still lists the name
+  ok: B4 control: file mode still returns source content
+  ok: C1: descriptor still promises exact symbol source and documents the bound
+  ok: C1: symbol-mode descriptor no longer claims byte bounds without source
+  ok: C2: BB_SEARCH.md documents <projectId>:<relativePath> fileId
+  ok: C2: BB_SEARCH.md documents the symbol source fields
+  ok: C3: BB_DOC.md documents quality.scope and the union title
+  ok: C4: generated bb_search page documents the source fields
+
+RETRIEVAL CONTRACT: 45/45 checks passed

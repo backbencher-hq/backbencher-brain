@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "cb90f8e8e9108a4114333b26e1ba5e60aac943d1cf716c391937dfb0f5f135df",
-    "sealedAt": "2026-11-05T16:51:20.000Z"
+    "contentSha256": "cc12e0fc2b3a6762fd0be1db27c2e7996ce2cb0433c0eee91954f4fd4f3dbe31",
+    "sealedAt": "2026-11-18T23:15:32.000Z"
   },
   "checks": [
     {
@@ -1039,80 +1039,6 @@
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
       "language": "zig",
-      "status": "pass"
-    },
-    {
-      "description": "csharp: every named node type classified",
-      "id": "inventory-fully-classified",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "csharp: 0 confirmed gaps declared",
-      "id": "gap-list-present",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "csharp: 11 ruled, 3 pending owner",
-      "id": "design-decisions-tracked",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "every named node type classified (csharp)",
-      "detail": "217 types, 52 handled, 165 silent, 0 gaps, 14 decisions",
-      "id": "section-a-structural",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "11 relationship kinds pinned by csharp fixtures; 11 emitted and all accounted for",
-      "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, declared_type, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, renders, return_type, uses, using_import, using_type_argument; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, renders, uses",
-      "id": "section-b-relationship-kinds",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "Matrix 1b payload rows pinned for csharp (3)",
-      "detail": "complexity, parameters, visibility",
-      "id": "section-c-payload-matrix",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
-      "id": "section-d-evidence-tiers",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "powershell:csharp at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor powershell:csharp: missing=0, unexplained=0 (differential-baseline.json)",
-      "id": "section-e-differential",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "csharp avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "powershell:csharp 91.2 ms/file",
-      "id": "section-f-perf-budget",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "csharp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
-      "detail": "docs/analyzers/csharp.md + head comment present",
-      "id": "section-g-docs",
-      "language": "csharp",
-      "status": "pass"
-    },
-    {
-      "description": "cross-language consistency checks all pass",
-      "detail": "12 checks pass",
-      "id": "section-h-cross-language",
-      "language": "csharp",
       "status": "pass"
     },
     {
@@ -2816,11 +2742,85 @@
       "id": "section-h-cross-language",
       "language": "elixir",
       "status": "pass"
+    },
+    {
+      "description": "csharp: every named node type classified",
+      "id": "inventory-fully-classified",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp: 0 confirmed gaps declared",
+      "id": "gap-list-present",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp: 11 ruled, 3 pending owner",
+      "id": "design-decisions-tracked",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "every named node type classified (csharp)",
+      "detail": "217 types, 52 handled, 165 silent, 0 gaps, 14 decisions",
+      "id": "section-a-structural",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "11 relationship kinds pinned by csharp fixtures; 11 emitted and all accounted for",
+      "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, declared_type, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, renders, return_type, uses, using_import, using_type_argument; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, renders, uses",
+      "id": "section-b-relationship-kinds",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "Matrix 1b payload rows pinned for csharp (3)",
+      "detail": "complexity, parameters, visibility",
+      "id": "section-c-payload-matrix",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": ">=2 distinct evidenceClass values pinned by fixtures",
+      "detail": "5 tier(s) pinned: import_based, inferred, reference_qualified, structural, usage_contextual",
+      "id": "section-d-evidence-tiers",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "powershell:csharp at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor powershell:csharp: missing=0, unexplained=0 (differential-baseline.json)",
+      "id": "section-e-differential",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "powershell:csharp 115.1 ms/file",
+      "id": "section-f-perf-budget",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "csharp analyzer docs present and committed, and its head comment names author + docs + kinds + co-edit list",
+      "detail": "docs/analyzers/csharp.md + head comment present",
+      "id": "section-g-docs",
+      "language": "csharp",
+      "status": "pass"
+    },
+    {
+      "description": "cross-language consistency checks all pass",
+      "detail": "12 checks pass",
+      "id": "section-h-cross-language",
+      "language": "csharp",
+      "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
-  "committedAt": "2026-11-05T11:51:20-05:00",
+  "commit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "committedAt": "2026-11-18T18:15:32-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -3146,7 +3146,7 @@
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "powershell:csharp 91.2 ms/file",
+            "detail": "powershell:csharp 115.1 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
@@ -5561,9 +5561,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-11-05T11:51:20-05:00",
-  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
-  "runtime": "node v22.22.1",
+  "regeneratedAt": "2026-11-18T18:15:32-05:00",
+  "regeneratedAtCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

@@ -48,12 +48,18 @@ they stay gone.
 - `refactor` validates the new identifier and renames **every AST-classified
   reference site** of the symbol — the declaration plus all occurrence sites in
   the declaration file where the classifier says the name is used (never
-  member names, comments, or string literals). Rename classification is
-  position-aware: in `x = target`, `const x = target`, or `{k: target}` the
-  value/right side is a reference, only the left/name side binds. Occurrences
-  inside a nested scope that re-declares the same name are left alone (shadow
-  guard). The response carries `summary` (files/sites renamed) and `warnings`
-  — a rename never silently under-reports itself.
+  comments or string literals). Rename classification is position-aware: in
+  `x = target`, `const x = target`, or `{k: target}` the value/right side is a
+  reference, only the left/name side binds. Occurrences inside a nested scope
+  that re-declares the same name are left alone (shadow guard). Classification
+  is also **operand-aware for member access**: `pkg.F` and `import * as ns; ns.f`
+  ARE references (the receiver is a module/namespace binding of the file, read
+  from `brain_import`), while `obj.method` on a value receiver is not. When the
+  receiver is a value and the target is a method, the site cannot be resolved
+  without type information: it is left unrenamed and **reported by file:line in
+  `warnings`**, never dropped silently. The response carries `summary`
+  (files/sites renamed), `warnings` and `verification` — a rename never silently
+  under-reports itself.
 
 ## Modes
 
@@ -178,28 +184,61 @@ writes rolls every committed file back to its exact bytes and mode.
 {"mode":"batch","edits":[{"mode":"insert","targetSymbolName":"init","position":"inside-top","newContent":"const started = true"}],"files":["src/a.ts","src/b.ts"]}
 ```
 
-Cross-file reach is built on two independent sources, because neither is
+Cross-file reach is built on three independent sources, because no one of them is
 complete on its own:
 
-- **index caller edges**, whose spans make the rename precise when the call site
-  sits inside an indexed symbol; and
-- **`brain_import`**, for every file that imports the declaration module and names
-  this symbol, which is the only index row that carries the importing FILE (a
-  `calls` row has no file column, and its source symbol is NULL for any call
-  outside an indexed symbol — a module-top-level call). The import specifier is
-  rewritten in that file, and when the import binds the symbol under its own name
-  the file's reference sites are renamed with it. An **aliased** import
-  (`import { target as t }`) rewrites only the specifier: `t` is the caller's
-  chosen local name and is left alone.
+- **index caller edges**. The row may point at a CONTAINER symbol rather than at the
+  calling function (measured: every bettercap `main.go` edge is stored on the
+  12-byte `package main` module symbol, bytes 0–12, so the call at line 47 is
+  outside the stored span). The engine therefore resolves the **enclosing
+  function/method at the recorded call line** and renames inside that window; when
+  no enclosing symbol exists the row falls back to its own span, or to the recorded
+  **call line only** — never to a whole-file guess.
+- **`brain_import` named imports**, for every file that imports the declaration
+  module and NAMES this symbol: the import specifier is rewritten, and when the
+  import binds the symbol under its own name the file's reference sites are renamed
+  with it. An **aliased** import (`import { target as t }`) rewrites only the
+  specifier: `t` is the caller's chosen local name and is left alone.
+- **`brain_import` module imports**, for files that import the declaration module
+  WITHOUT naming a symbol — Go `import "<module>/pkg"` then `pkg.F`, TypeScript
+  `import * as m from './a'` then `m.f`. Matched by module path (Go: the project's
+  own `go.mod` module + the declaration file's directory) or by the relative
+  specifier resolver (TS/JS namespace), and renamed only through the file's own
+  measured module bindings, so a value receiver is never touched.
 
-Two refusals keep the result honest, both by name and with the affected sites:
+Fail-closed rules keep the result honest, all by name and with the affected sites:
 
 - a plan that would leave a reference it has **evidence about** unrenamed is
-  refused rather than reported as a complete rename; and
+  refused rather than reported as a complete rename;
+- a **caller- or module-import-evidenced file that yields ZERO renamed sites** is
+  refused, naming the file and the recorded call line. The one exception is a site
+  explained by the documented conservative skip (a member call on a value receiver
+  under a method target): that site is listed by file:line in `warnings`, and the
+  file is reported as explained rather than silent;
 - a refactor that resolves **zero** sites is refused. A rename that covers nothing
   is a failure, not a result — this is the shape a grammar with no identifier
   reference produces (a YAML mapping key, a Makefile rule target, and any Erlang
   symbol, whose grammar exposes no occurrence for the name at all).
+
+### `verification` — what was checked, and what was not
+
+Every `refactor` result and preview carries `verification`, and it never claims
+more than ran:
+
+- `reparsed: "passed" | "failed"` — every planned file was parsed again after the
+  rename; a failure refuses;
+- `unresolvedReferences: [...]` — a module/namespace-aware scan of every planned
+  file's renamed content for reference sites of the OLD name. A non-empty list
+  fails the plan before the commit is attempted (refusal, nothing written);
+- `build: {attempted, tool, command, ok, baseline, outputTail?, reason?}` — a
+  bounded build check for multi-file all-Go refactors when the project root has a
+  `go.mod` and a working `go` exists. The pre-edit tree is built first
+  (`baseline`), then the renamed tree; a failure the baseline did not have is
+  attributed to the rename and **the edit is rolled back**. When no checker
+  applies, `attempted:false` plus `reason` is reported and `ok` stays null — a
+  skipped check is never reported as verified. Dry runs always report
+  `attempted:false` (nothing was applied to build), while the reparse and
+  unresolved-reference scan still run.
 
 The tool reports `summary.renamedSites` and `summary.renamedFiles` so callers can
 audit the exact reach.

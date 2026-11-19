@@ -28,7 +28,7 @@ current source. Symbol/content/symbol modes query the indexed `brain_symbol` /
 | Mode | Engine | What it searches | Ranking |
 | --- | --- | --- | --- |
 | `symbols` (default) | `symbol-search.ts` | Indexed symbol **names**, with exact/prefix/substring phases | relevance, production-before-tests, complexity, path, name |
-| `symbol` | `ASTEngine.findSymbol` | One exact indexed symbol's record(s), with byte bounds | exact name, optional `filePath` disambiguation |
+| `symbol` | `ASTEngine.findSymbol` | One exact indexed symbol's record(s), with byte bounds and the source slice those bounds name | exact name, optional `filePath` disambiguation |
 | `content` | `content-search.ts` | Indexed symbol corpus: name + qualified name + **docstring + stored bounded body** | name-weight phrase hits, or the terms route (bm25 when the maintenance trigram index exists) |
 | `file` | handler | One indexed project-relative file's current source | exact path |
 | `regex` | `regex-search.ts` via `regex:true` | Indexed symbol names matched against a JS `RegExp` source | production-before-tests, complexity, path, name |
@@ -90,11 +90,24 @@ filter kept matches out; `truncationReason` is appended when truncated.
   `symbolType`, `language`, `matchType: "content"`, `snippet`, `complexity`,
   `stale`, `_relevance`
 
-**`symbol`** is JSON: `matches[]` with `id`, `fileId` (the indexed file path),
+**`symbol`** is JSON: `matches[]` with `id`, `fileId`, `absolutePath`,
 `name`, `symbolType`, `lineStart`, `byteStart`, `byteEnd`, `language`,
-`relativePath`, `stale`; plus `found`, `totalMatches`, `returned`, `truncated`
-(true only when `limit` produced a page smaller than the set), optional
-`truncationReason`/`nextOffset`, and a `freshness` block.
+`relativePath`, `stale`, `source` and `sourceTruncated`; plus `found`,
+`totalMatches`, `returned`, `truncated` (true only when `limit` produced a page
+smaller than the set), optional `truncationReason`/`nextOffset`, and a
+`freshness` block. The exact-symbol mode returns the symbol's SOURCE, not only
+its record: `source` is the bytes between the indexed `byteStart`/`byteEnd`,
+bounded to 2,000 characters, and `sourceTruncated` declares any cut (the bound,
+or a file shorter than the indexed span). `sourceUnavailable` names why the
+slice could not be read when that happens. A caller that asked for the exact
+symbol no longer needs `file` mode (which returns the whole file, up to 100,000
+characters) to see its body.
+
+**`fileId` identity.** Every mode reports a file as the indexed file-row id
+`<projectId>:<relativePath>` — the same value `content` and `file` modes report —
+so a consumer can join the modes on one identity. `symbol` mode separately
+publishes the machine path as `absolutePath`; no mode's `fileId` is a filesystem
+path. `symbols` mode is text and has no `fileId` field.
 
 **`file`** is JSON: `searchMode: "file"`, project-relative `file`, indexed
 `fileId`, `language`, current `content`, `contentLength`, `truncated` (hard
@@ -106,7 +119,9 @@ file-scoped `freshness` block.
 `file` mode reads current bytes from disk for an indexed path and compares them
 with the indexed hash, so its `stale` flag is a measured comparison. The other
 modes search the index; their rows carry `stale: true` when the file changed or
-disappeared after indexing. Stale/missing files are flagged, never dropped, and
+disappeared after indexing. `symbol` mode's `source` slice is read from the
+current file at the INDEXED byte bounds: when the row is `stale` those bytes may
+no longer belong to the indexed symbol, and the `stale` flag is what says so. Stale/missing files are flagged, never dropped, and
 the freshness block's remediation names the manual repair (`bb index --changed`,
 or `bb index --file "<file>"` for file scope).
 

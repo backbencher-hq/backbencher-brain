@@ -1,0 +1,11 @@
+captured 2026-11-19T04:35:14Z
+HEAD 75448b02991e6f6f5b1dfa0630b4e07c06436109
+status_count 98
+--- src tree sha (ts/js files) ---
+0e20209df18b86e9c1186b0b9873df74638b870dd866a7eb5264ad0b7161e7b2  -
+--- script tree sha ---
+99c5e352f8d14f4894779637d1747080b2a53f5d7e86aef070f1212f6b5a208c  -
+--- validation fixtures sha ---
+b719014068c68c5ef2b93c5d2367bdf768a6d9eb07f27a937b87308f2f4fce8e  -
+src_unchanged=YES
+src_sha_after_suite=0e20209df18b86e9c1186b0b9873df74638b870dd866a7eb5264ad0b7161e7b2

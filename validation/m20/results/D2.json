@@ -2,17 +2,20 @@
   "issue": "M20.D2",
   "code": "D2",
   "milestone": "M20",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 10,
   "passed": 10,
   "failed": 0,
   "negativeCases": 3,
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
-  "sourceFingerprint": "5ff20da8f86be854936d18a0995efe2608d3741168dc66d936decc2c207e19cf",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "unknown",
+  "sourceFingerprint": "f3c57aaa1f59be3235d4b21eb8ff9d48862e72b7e16e90b4f1a349bb0f33cd71",
+  "workingTreeRelevantChanges": [
+    "docs/BB_DOC.md",
+    "src/intelligence/documentation/doc-engine.ts"
+  ],
   "verifierCommand": "bun run script/m20/verify-doc-citations.ts",
   "evidenceFile": "D2.json",
-  "generatedAt": "2026-11-05T04:28:24.851Z",
+  "generatedAt": "2026-11-19T00:35:43.114Z",
   "limitations": [
     "Fixture-level citation/freshness matrix; real-repository documentation coverage is owned by M20.X2."
   ]

@@ -1,0 +1,125 @@
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [23:58:17] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:58:18] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [23:58:18] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 13ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [23:58:18] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"1471e85c","danglingSources":2,"totalRelationships":4}
+  enriching enriching 50%
+  enriching done 100%
+  ✅ Enriched 2 relationships (0 patterns) in 23ms
+        ⚠ 2 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [23:58:19] [project-health] project health computed {"projectId":"1471e85c79f78fdd34fef54a85927698d14845d9","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(9ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: text: names view=graph graph: 2 nodes, 2 links | scope: project | view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gra
+  ok: text: view=grid is refused, not answered as the graph [negative] bb_visualize draws only the dependency graph: unknown view "grid". Omit view or pass view "graph".
+  ok: text: view=orbit is refused, not answered as the graph [negative] bb_visualize draws only the dependency graph: unknown view "orbit". Omit view or pass view "graph".
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: json: view=graph graph
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: html: the payload holds the one graph slot ["graph"]
+  ok: html: the graph slot holds a document that declares itself graph graph
+  ok: html: the graph is the view mounted mount("graph")
+  ok: html: and it is the only view mounted mount("graph")
+  ok: html: the status line names the mounted view by the label the page uses status missing
+  ok: studio: no rule hides the census or the encoding key [negative]
+  ok: studio: the sidebar carries the census no #census in the shell
+  ok: studio: and the encoding key no #encoding in the shell
+  ok: studio: and the filters beside the graph no #filters in the shell
+  ok: map: publishes its census to the mount no census API
+  ok: map: publishes the encoding key no encoding API
+  ok: map: publishes the filters no filters API
+  ok: studio: the sidebar is built from the mounted document's API no api() in the shell
+  ok: studio: the style branch reads the document's own declaration no documentView()
+  ok: studio: the style branch no longer branches on the mounted tab [negative] still branching on frame.dataset.mode
+  ok: studio: no synthetic input on load [negative] the studio still dispatches an event
+  ok: map: the fit frames every visible node no fitAll() over visible nodes
+  ok: studio: and the sidebar calls it no fit wiring in the shell
+  ok: map: every node carries the region it was grouped into no region published on nodes
+  ok: map: a region is a DIRECTORY, not a file no directory rule
+  ok: map: a directory of fewer than three symbols folds into its parent no fold rule
+  ok: map: regions are drawn as named pods no pod drawing
+  ok: map: the Modules filter is a real group with real counts no Modules filter group
+  ok: map: and it gates the drawn nodes the Modules filter does not gate anything
+  ok: map: the layout pulls members toward their region's anchor no anchor pull
+  ok: map: region positions come from the anchors, shapes from the simulation no anchored placement
+  ok: map: coincident members are spread, so every symbol is drawn no de-overlap pass
+  ok: map: the edge cap is heaviest-first and the readout names it no edge budget
+  ok: map: an edge's alpha falls off with its on-screen span no span weighting
+  ok: map: cross-region edges are bundled per region pair at the overview no bundling
+  ok: map: the bundle is keyed on the pair, not on one edge no pair key
+  ok: map: with a cap that is named rather than silent no cap
+  ok: map: the readout reconciles the canvas with the census no summary sentence
+  ok: map: and the readout fires whenever it is bundling [negative] the summary can be invisible
+  ok: map: a link is pickable and opens both regions no link interaction
+  ok: map: the detail panel answers for a link no link detail
+  ok: map: the encoding key shows the dotted line no encoding row
+  ok: map: the summary is published to the mount no summary in state()
+  ok: studio: the live line is built from the rows the VIEW publishes the shell still composes the line itself
+  ok: map: and the graph's reconciliation is one of its rows the reconciliation is gone
+  ok: map: the rows carry the census counts the counts are not published
+  ok: map: the links being drawn are published, with their geometry no links() API
+  ok: map: a selected link names the two regions it joins selected link is unnamed
+  ok: map: focus follows the selection, not the pointer hover still focuses
+  ok: map: the pointer no longer enters focus mode [negative] focusSet still reads hover
+  ok: map: a hovered node's edges are drawn as themselves hover cannot answer what a node connects to
+  ok: map: `node types` counts distinct types census expression not found
+  ok: map: `node types` is not .length of a count (the row never rendered) [negative]
+  ok: map: the languages row uses the same function languages row missing
+  ok: map: the census rows carry the count through to the sidebar census row wiring not found
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: map: the document declares its own layout, as it declares its view no data-bb-layout on <html>
+  ok: map: the renderer reads that declaration, not a mount option the layout is not read from the document
+  ok: map: regions and force are the two arrangements no layout fork
+  ok: html: layout=force ships a document that declares force the force slot does not declare itself
+  ok: html: and it is not the region document again [negative]
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: text: the graph view names the layout it will draw the text reply never names a layout
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: text: and names the other one when it is asked for layout=force is not named
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: json: the layout rides the answer no layout in json
+[INFO] [23:58:19] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:58:19] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 2 links
+  ok: json: layout=force is carried too layout=force lost in json
+  ok: map: the force layout seeds the whole graph, not per region no global seed
+  ok: map: the anchor pull belongs to the region layout only the anchor pull is not gated
+  ok: map: the force layout publishes the simulation's own positions no force placement
+  ok: map: no pods are drawn there pods are not gated
+  ok: map: the encoding key explains only the marks the layout draws the key still describes the other layout's marks
+  ok: map: both arrangements are published, with what each draws no layouts() API
+  ok: map: switching restarts the simulation rather than reusing positions no restart
+  ok: studio: the switch is in the sidebar and it calls the view no layout switch in the shell
+  ok: studio: a view with no second arrangement shows no switch the switch is always shown
+  ok: map: collapsing is its own control collapseEl.onclick = function () { setPanel({ collapsed: !panelCollapsed }); };
+  ok: map: and it does not clear the selection [negative]
+  ok: map: the X is the control that clears getElementById("dclose").onclick = function () { det.classList.remove("on"); document.body.classList.remove("detail-open"); sel = null; draw(); };
+  ok: map: a collapsed box still names what is picked a collapsed box cannot say what it hides
+  ok: map: the box docks to either side no dock rule
+  ok: map: and a drag across the middle of the frame moves it no drag-to-dock
+  ok: map: its state is published, not only painted no panel state on the API
+V7: VERIFIED (79/79 passed, 10 negatives)

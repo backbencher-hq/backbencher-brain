@@ -1,0 +1,9 @@
+  ok T1: control PASS, mutation FAILS, restored byte-identical
+FAIL T2: control=FAIL mutation-rejected=yes
+  (mutation setup error for T3: mutation anchor not found in src/intelligence/patterns/orphans.ts)
+FAIL T3: control=FAIL mutation-rejected=NO
+FAIL T4: control=FAIL mutation-rejected=yes
+  (mutation setup error for T5: mutation anchor not found in src/ast/analysis-exclusions.ts)
+FAIL T5: control=FAIL mutation-rejected=NO
+
+G2 self-test: 1 passed, 4 failed

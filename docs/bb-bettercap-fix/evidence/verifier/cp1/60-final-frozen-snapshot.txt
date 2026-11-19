@@ -1,0 +1,29 @@
+captured 2026-11-19T05:02:04Z
+HEAD 75448b02991e6f6f5b1dfa0630b4e07c06436109
+status_count 119
+src_sha 8b8ae8bc8875795c1190ded18a1865ef08f50971533cf5e91ef80f17d1bfbe1f
+script_sha b2943178a7df4adb3af495b49110aa52123701d962461d159bd401c344674dbe
+--- adapted/fixed gate files in status:
+ M script/m13/verify-analyze-modes.ts
+ M script/m13/verify-edit-rename.ts
+ M script/m13/verify-visualize-views.ts
+ M script/m26/verify-polyglot-e2e.ts
+ M script/m28/verify-mcp-tools.ts
+ M script/m48/verify-p1-impact-unity.ts
+ M script/m65/verify-graph-blindspots.ts
+ M script/tool-docs/curation/bb_graph.ts
+ M script/tool-docs/curation/bb_impact.ts
+ M script/tool-docs/curation/bb_search.ts
+ M script/tool-docs/curation/bb_visualize.ts
+ M script/verify-analyze.ts
+ M script/verify-graph.ts
+ M script/verify-test-intel.ts
+ M script/verify-test-quality.ts
+?? script/m-fix/
+?? script/m57/verify-p02-name-binding.ts
+?? script/m71/verify-refactor-safety.ts
+?? script/m73/
+?? script/verify-embedding-lifecycle.ts
+?? script/verify-health-honesty.ts
+?? script/verify-retrieval-contract.ts
+src_sha_after_build=8b8ae8bc8875795c1190ded18a1865ef08f50971533cf5e91ef80f17d1bfbe1f

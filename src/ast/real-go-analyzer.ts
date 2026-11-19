@@ -288,6 +288,100 @@ function isGoStdlibModulePath(module: string): boolean {
 }
 
 /**
+ * PREDECLARED VALUE NAMES — the identifiers Go's own spec predeclares, which are NOT project
+ * declarations and therefore can never be "a read of a package-scope value declared in a sibling
+ * file".
+ *
+ * WHY THIS LIST EXISTS. The GO1 pass can now publish a cross-file value read as a LEAF (the file
+ * that declares it is out of scope for a per-file analyzer). Opening the emission beyond
+ * `fileValues` is only honest if the identifiers that are NOT project declarations stay silent:
+ * without this list every `nil`, `true` and `len` in a read position would become a fabricated
+ * dependency row. Types (`int`, `string`, `error`, `any`, …) are a separate closed set
+ * (`GO_PREDECLARED_TYPES`) because they live in type positions; this is the VALUE half of the same
+ * sentence.
+ */
+const GO_PREDECLARED_VALUES = new Set<string>(["true", "false", "nil", "iota"])
+
+/** The predeclared BUILTIN FUNCTIONS. A builtin used as a value (`var f = len`) is not a project
+ *  declaration read either, and a builtin in call position is already excluded by the callee gate.
+ *  Kept beside the value set for the same reason. */
+const GO_PREDECLARED_BUILTINS = new Set<string>([
+  "append", "cap", "clear", "close", "complex", "copy", "delete", "imag", "len", "make",
+  "max", "min", "new", "panic", "print", "println", "real", "recover",
+])
+
+/**
+ * Go import identity — PURE. `modulePath` is the `module` line of the project's go.mod, or `null`
+ * when the caller does not know it (phase 1: the analyzer receives no project context; phase 2
+ * injects it). Returns `true` = outside this project (stdlib or third-party), `false` = the
+ * project's own package, `null` = undecidable at this information level (a domain-shaped specifier
+ * when the module path is unknown: it may be this project's own module).
+ *
+ * WHY A PURE FUNCTION. The defect behind the bettercap dependency graph (ISSUE-03) is that the Go
+ * analyzer never DECLARED externality, so a shared JS-shaped fallback ("a bare specifier is
+ * external") classified every Go import external — stdlib, third-party AND same-module — and the
+ * file-dependency engine then never attempted internal resolution. The decision is three rules and
+ * is unit-testable without a project; keeping it pure is what lets the indexer inject the module
+ * path in phase 2 without moving the rule.
+ */
+export function goImportExternality(importPath: string, modulePath: string | null): boolean | null {
+  const specifier = importPath.trim()
+  if (specifier.length === 0) return null
+  if (modulePath !== null && modulePath.length > 0) {
+    if (specifier === modulePath) return false
+    if (specifier.startsWith(modulePath + "/")) return false
+  }
+  const firstSegment = specifier.split("/")[0]
+  // No dot in the first segment: Go's own package naming (stdlib has no domain; a GOPATH-era
+  // import has no domain either) — outside the project.
+  if (!stringIncludes(firstSegment, ".")) return true
+  // A domain-shaped specifier when the project's own module path is unknown: it may be the
+  // project itself. Undecidable rather than guessed.
+  return modulePath === null ? null : true
+}
+
+/**
+ * Read the `module` line from `<projectRoot>/go.mod` — the one input phase 2 needs to make
+ * `goImportExternality` decidable for same-module imports. Pure I/O, no parsing library: go.mod's
+ * module directive is a single line, and a project without a readable go.mod answers `null` (never
+ * a guessed module path).
+ *
+ * PHASE-2 PROPOSAL (injection): the indexer calls this once per project (the project root is
+ * already known there), persists the value with the project, and passes it to the Go analyzer per
+ * file (analyzer context option) and/or to the file-dependency engine. The analyzer itself must
+ * NOT read go.mod per file: it is a per-file entry point and the read would pay N times for the
+ * same bytes.
+ */
+export function readGoModulePath(projectRoot: string): string | null {
+  let text: string
+  try {
+    text = readFileSync(joinPath(projectRoot, "go.mod"), "utf8")
+  } catch {
+    return null
+  }
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim()
+    if (!line.startsWith("module")) continue
+    const rest = line.slice(6)
+    // `module` must be followed by whitespace or the line is not the directive (`moduleX` is a
+    // different token). No regex: the no-regex policy holds here too.
+    if (rest.length > 0 && rest[0] !== " " && rest[0] !== "\t") continue
+    let token = ""
+    for (const ch of rest.trim()) {
+      if (ch === " " || ch === "\t") break
+      token += ch
+    }
+    if (token.length === 0) return null
+    // A quoted module path is legal (`module "example.com/m"`).
+    if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("`") && token.endsWith("`"))) {
+      token = token.slice(1, -1)
+    }
+    return token.length > 0 ? token : null
+  }
+  return null
+}
+
+/**
  * GO26 (round 5): the ONE Go framework vocabulary for this analyzer.
  *
  * The file previously carried TWO of them, written independently:
@@ -449,6 +543,8 @@ function getUniqueStrings(arr: string[]): string[] {
 // AST analysis for Go language
 
 import type { Node } from "web-tree-sitter"
+import { readFileSync } from "node:fs"
+import { join as joinPath } from "node:path"
 import { ASTEngine } from "./engine"
 
 export interface GoContext {
@@ -5028,6 +5124,34 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         fileValues.add(s.name)
       }
     }
+    // Package identifiers this file's import declarations bind. They are not reads of a
+    // project value — a bare `fmt` is the import itself, not a use of a declaration — and
+    // the qualified form (`fmt.Println`) is already excluded by the qualified-ancestor
+    // gate. This closes the bare form so the cross-file branch below cannot fabricate it.
+    const importBoundNames = new Set<string>()
+    {
+      const importWalk: Node[] = [rootNode]
+      while (importWalk.length > 0) {
+        const n = importWalk.pop()!
+        if (n.type === "import_spec") {
+          const nameNode = n.childForFieldName("name")
+          const pathNode = n.childForFieldName("path")
+          if (nameNode) {
+            if (nameNode.text !== "_" && nameNode.text !== ".") importBoundNames.add(nameNode.text)
+          } else if (pathNode) {
+            const specifier = this.stripQuotedString(pathNode.text)
+            const segments = specifier.split("/")
+            const leaf = segments[segments.length - 1]
+            if (leaf) importBoundNames.add(leaf)
+          }
+          continue
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) importWalk.push(c)
+        }
+      }
+    }
     const emitted = new Set<string>()
     interface ScopeFrame {
       names: Set<string>
@@ -5036,6 +5160,42 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isShadowed = (name: string): boolean => {
       for (let i = scopeStack.length - 1; i >= 0; i--) {
         if (scopeStack[i].names.has(name)) return true
+      }
+      return false
+    }
+    // A bare read whose name is declared in a SIBLING file of the same package. The
+    // analyzer is per-file (`analyze(rootNode, content, filePath)` has no package
+    // context), so it cannot VERIFY that declaration; what it can do is stop discarding
+    // the read. Every exclusion the same-file branch below enforces still applies; this
+    // adds only the two things a per-file analyzer can know for certain — Go's
+    // predeclared names and this file's own import bindings — plus the existing
+    // local-scope gate. The published row is the documented LEAF at an
+    // out-of-scope-declaration confidence, and the reason table names the gap:
+    // `used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope`.
+    const isCrossFileValueRead = (name: string): boolean =>
+      !fileValues.has(name) &&
+      !GO_PREDECLARED_VALUES.has(name) &&
+      !GO_PREDECLARED_BUILTINS.has(name) &&
+      !RealGoAnalyzer.GO_PREDECLARED_TYPES.has(name) &&
+      !importBoundNames.has(name)
+    // GO1 (fix campaign P1-2): a parameter NAME inside a
+    // parameter_declaration / variadic_parameter_declaration is a BINDING, not a
+    // value read. Function-declaration parameters are already bound by the GO10
+    // frame pass below and cannot reach this branch; a function TYPE declaration
+    // (`exec func(args []string, s *Session) error`) has no frame, so without
+    // this guard its parameter names were published as cross-file value reads
+    // (measured: 56 fabricated rows over bettercap session/, e.g. args/s/
+    // newValue/format). Only the leading identifier children are the param
+    // NAMES; a type-position identifier (`[N]int` in a param type) is untouched.
+    const isParameterNameOccurrence = (node: Node): boolean => {
+      const p = node.parent
+      if (!p) return false
+      if (p.type !== "parameter_declaration" && p.type !== "variadic_parameter_declaration") return false
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (!c) continue
+        if (c.id === node.id) return true
+        if (c.type !== "identifier") break
       }
       return false
     }
@@ -5379,8 +5539,9 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           !(p && (p.type === "inc_statement" || p.type === "dec_statement")) &&
           !(p && (p.type === "goto_statement" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "labeled_statement")) &&
           !isShadowed(name) &&
-          fileValues.has(name)
+          (fileValues.has(name) || (isCrossFileValueRead(name) && !isParameterNameOccurrence(node)))
         ) {
+          const sameFile = fileValues.has(name)
           const src = this.resolveGoWorkSource(node)
           const key = `${src}::uses::${name}`
           if (!emitted.has(key)) {
@@ -5389,10 +5550,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: src,
               target: name,
               type: ASTEngine.RelationshipType.Uses,
-              confidence: 1.0,
+              // Same-file: a name this file declares (the store can bind it here).
+              // Cross-file: the declaring file is out of scope for a per-file analyzer,
+              // so the row is a leaf at the confidence the reason table explains.
+              confidence: sameFile ? 1.0 : 0.6,
               // the identifier's own line.
               ...(this.nodeLine(node) ? { line_number: this.nodeLine(node)! } : {}),
-              metadata: { relationshipType: "identifier_usage", nodeType: node.type },
+              metadata: sameFile
+                ? { relationshipType: "identifier_usage", nodeType: node.type }
+                : { relationshipType: "identifier_usage", nodeType: node.type, crossFileValueRead: true },
             })
           }
         }

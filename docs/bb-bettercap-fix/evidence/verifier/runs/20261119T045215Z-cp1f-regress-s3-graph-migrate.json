@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/s3-graph-migrate",
+  "command": [
+    "bun",
+    "run",
+    "script/m35/verify-s3-graph-migrate.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:52:13.577Z",
+  "endedAt": "2026-11-19T04:52:15.631Z",
+  "durationMs": 2054,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 111,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 35ms [plan=linear largest-intermediate=7]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 6 relationships (2 patterns) in 18ms\n        patterns: callback 2\n        ⚠ 4 dangling sources, 3 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 5ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(20ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 15ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 5ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\nFAIL: viz: freshness block with exact registered keys\n",
+  "stderr": "[INFO] [23:52:14] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:52:14] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":0}\n[INFO] [23:52:15] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:52:15] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"15c61976\",\"danglingSources\":4,\"totalRelationships\":10}\n[INFO] [23:52:15] [project-health] project health computed {\"projectId\":\"15c6197694ce605cf33b6160c2b31c671b1c9f33\",\"complexityScore\":95,\"maintainabilityScore\":77,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":1,\"bottlenecks\":0}\n[INFO] [23:52:15] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [23:52:15] [dependency-graph-visualizer] ✅ Graph Data Generated: 3 nodes, 3 links\n[INFO] [23:52:15] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [23:52:15] [dependency-graph-visualizer] ✅ Graph Data Generated: 3 nodes, 3 links\n88 | \n89 |     // ── 2. bb_visualize json: envelope + per-node flags + link inheritance ──\n90 |     const vizJson = JSON.parse(await run(\"bb_visualize\", { scope: \"project\", format: \"json\" }))\n91 |     const f = vizJson.freshness\n92 |     check(\"viz: freshness block with exact registered keys\", f && JSON.stringify(Object.keys(f).sort()) === JSON.stringify([\"fresh\", \"missing\", \"mode\", \"remediation\", \"stale\", \"staleRatio\"]), JSON.stringify(f))\n93 |     check(\"viz: staleRatio consistent\", Math.abs(f.staleRatio - (f.stale + f.missing) / Math.max(1, f.fresh + f.stale + f.missing)) < 1e-9, String(f.staleRatio))\n                                                      ^\nTypeError: undefined is not an object (evaluating 'f.staleRatio')\n      at runSuite (/home/ishaq2321/mcp/backbencher-brain/script/m35/verify-s3-graph-migrate.ts:93:50)\n      at async main (/home/ishaq2321/mcp/backbencher-brain/script/m35/verify-s3-graph-migrate.ts:158:9)\n\nBun v1.3.14 (Linux x64)\n",
+  "stdoutBytes": 1061,
+  "stderrBytes": 2089,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T045215Z-cp1f-regress-s3-graph-migrate.json"
+}

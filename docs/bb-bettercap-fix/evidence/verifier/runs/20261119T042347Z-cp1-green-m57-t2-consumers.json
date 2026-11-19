@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-green/m57-t2-consumers",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m57/verify-t2-consumers.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:23:44.515Z",
+  "endedAt": "2026-11-19T04:23:47.772Z",
+  "durationMs": 3256,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 97,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1",
+  "stdout": "  ok U5: the search demotion comparator equals the canonical predicate\n  ok U7: the corrected corpus really has zero flagged files (precondition)\n  ok U1a: testMapping reports 0 test files\n  ok U1a: testMapping DISCLOSES the absence\n  ok U1b: testQuality lists 0 test files and discloses\n  ok U1c: testGaps discloses the absence of evidence edges\n  ok U2: suggestions refused or returned empty on a test-free corpus (no fabrication)\n  ok U2: no suggestion is located in a test-shaped file\n  ok U3: no orphan finding is located in a test-shaped file\n  ok U4: no rule finding is located in a test-shaped file\n  ok U6: doc-engine's test-fact sources are empty on the corrected corpus\n",
+  "stderr": "",
+  "stdoutBytes": 681,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T042347Z-cp1-green-m57-t2-consumers.json"
+}

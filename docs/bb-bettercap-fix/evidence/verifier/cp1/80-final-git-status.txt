@@ -1,0 +1,120 @@
+ M docs/BB_DOC.md
+ M docs/BB_EDIT.md
+ M docs/BB_HEALTH.md
+ M docs/BB_IMPACT.md
+ M docs/BB_SEARCH.md
+ M docs/BB_SECURITY.md
+ M docs/BB_VISUALIZE.md
+ M docs/EMBEDDINGS.md
+ M docs/data/public-tools.json
+ M docs/tools/bb_graph.md
+ M docs/tools/bb_impact.md
+ M docs/tools/bb_search.md
+ M docs/tools/bb_visualize.md
+ M script/m13/verify-analyze-modes.ts
+ M script/m13/verify-edit-rename.ts
+ M script/m13/verify-visualize-views.ts
+ M script/m26/verify-polyglot-e2e.ts
+ M script/m28/verify-mcp-tools.ts
+ M script/m48/verify-p1-impact-unity.ts
+ M script/m65/verify-graph-blindspots.ts
+ M script/tool-docs/curation/bb_graph.ts
+ M script/tool-docs/curation/bb_impact.ts
+ M script/tool-docs/curation/bb_search.ts
+ M script/tool-docs/curation/bb_visualize.ts
+ M script/verify-analyze.ts
+ M script/verify-graph.ts
+ M script/verify-test-intel.ts
+ M script/verify-test-quality.ts
+ M src/ast/parallel-indexer.ts
+ M src/ast/real-go-analyzer.ts
+ M src/ast/safety-primitives.ts
+ M src/cli/index.ts
+ M src/intelligence/documentation/doc-engine.ts
+ M src/intelligence/edit/edit-engine.ts
+ M src/intelligence/health/health-provider.ts
+ M src/intelligence/search/semantic-search.ts
+ M src/intelligence/security/rebuild/registry.ts
+ M src/intelligence/testing/quality.ts
+ M src/intelligence/testing/test-intel.ts
+ M src/intelligence/visualization/visualization-engine.ts
+ M src/lsp/cross_language_hover.ts
+ M src/lsp/evidence_tier.ts
+ M src/mcp/tools/bb_analyze/handler.ts
+ M src/mcp/tools/bb_graph/handler.ts
+ M src/mcp/tools/bb_impact/handler.ts
+ M src/mcp/tools/bb_search/descriptor.ts
+ M src/mcp/tools/bb_search/handler.ts
+ M src/mcp/tools/bb_visualize/handler.ts
+ M src/mcp/tools/shared.ts
+ M src/setup/doctor.ts
+ M validation/m12/results/mcp-cli-surface.json
+ M validation/m13/results/a1.json
+ M validation/m13/results/an1.json
+ M validation/m13/results/an2.json
+ M validation/m13/results/d1.json
+ M validation/m13/results/e11.json
+ M validation/m13/results/e13.json
+ M validation/m13/results/e2.json
+ M validation/m13/results/e5.json
+ M validation/m13/results/e7.json
+ M validation/m13/results/p3.json
+ M validation/m13/results/s1.json
+ M validation/m13/results/v1.json
+ M validation/m13/results/v2.json
+ M validation/m13/results/v7.json
+ M validation/m14/results/M14.0.F1.json
+ M validation/m14/results/M14.0.F3.json
+ M validation/m14/results/M14.0.SPEC.json
+ M validation/m15/results/c1.json
+ M validation/m15/results/e1.json
+ M validation/m15/results/e4.json
+ M validation/m15/results/e5.json
+ M validation/m15/results/e8.json
+ M validation/m20/results/D1.json
+ M validation/m20/results/D2.json
+ M validation/m20/results/DOC-TRUTH.json
+ M validation/m20/results/P2.json
+ M validation/m26/results/A1.json
+ M validation/m28/results/T1.json
+ M validation/m28/results/U2.json
+ M validation/m44/results/U5.json
+ M validation/m48/results/P1.json
+ M validation/m48/results/P2.json
+ M validation/m48/results/P3.json
+ M validation/m50/results/A2-test-sources.json
+ M validation/m57/results/G2-selftest.json
+ M validation/m57/results/T1-classifier.json
+ M validation/m57/results/T2-consumers.json
+ M validation/m57/results/T3-scope-all.json
+ M validation/m57/results/T4-corpus-identity.json
+ M validation/m57/results/T5-predicate-unity.json
+ M validation/m57/results/X1-closure.json
+ M validation/release/DOC-TOOL-SURFACE.json
+ M validation/tools/bb_search/gates/evidence/m13/s1.json
+ M validation/tools/bb_search/gates/evidence/m13/s4.json
+ M validation/tools/bb_search/gates/evidence/m13/s5.json
+?? .scratch/
+?? AtlasNav.tsx
+?? docs/bb-analyze-review/
+?? docs/bb-bettercap-fix/
+?? s3.go
+?? script/m-fix/
+?? script/m57/verify-p02-name-binding.ts
+?? script/m71/verify-refactor-safety.ts
+?? script/m73/
+?? script/verify-embedding-lifecycle.ts
+?? script/verify-health-honesty.ts
+?? script/verify-retrieval-contract.ts
+?? src/ast/real-powershell-analyzer.ts.clean3
+?? src/brain/semantic/embedding-spaces.ts
+?? src/intelligence/edit/refactor-safety.ts
+?? validation/embedding/
+?? validation/m14/fixtures/go/cross-file-value-read.expectation.json
+?? validation/m14/fixtures/go/cross-file-value-read.go
+?? validation/m14/fixtures/go/package-main.expectation.json
+?? validation/m14/fixtures/go/package-main.go
+?? validation/m14/measurements/csharp-grammar-nodes.json
+?? validation/m14/reviews/
+?? validation/m65/
+?? website/

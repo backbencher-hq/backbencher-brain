@@ -53,6 +53,42 @@ Options the selected call cannot honour are refused rather than ignored: a
 `sampleSize` with `freshness: "complete"` each come back as an `isError` naming
 the accepted form.
 
+## Index status is DERIVED, never just copied (P2-4)
+
+The stored `brain_index_status.status` field is decided only from parse errors
+and unrecovered files, so a run that deliberately skipped a file (>5 MB size
+tier, or an unchanged file on an incremental run) can store `complete` while its
+counters say `indexedFiles < totalFiles`. The report therefore prints a
+**derived** status computed from every completion cause:
+
+- `complete` — no discovered file is unexplained;
+- `incomplete` — a shortfall exists; the line additionally states whether it is a
+  deliberate skip ("force will not fix it") or a write/parse loss ("a rebuild can
+  fix it"), and shows `recordedStatus=...` when the stored field contradicts the
+  counters. A bare `status=complete` can never print beside an INCOMPLETE count.
+- `unrecorded` — no `brain_index_status` row (absence is not a zero).
+
+Warnings follow the cause: `SKIPPED_FILES` (warning) for a deliberate skip — with
+the real remedy (raise the size tier / split the file; `force=true` re-skips it),
+`INCOMPLETE_INDEX` (error) only for the unexplained remainder a rebuild can fix,
+and `INDEXING_ERRORS`/`INDEX_STATUS_COUNTERS` as before.
+
+## Embeddings: two spaces, one of them pending
+
+`embeddings:` reports `library-wide` coverage AND the configured model's space:
+`… 42.9% of symbols (library-wide, 23,925/55,785 across 2 space(s)) · configured
+nvidia/…: 0.0% (1/55,785) — BACKFILL PENDING`. `EMBEDDINGS_BACKFILL_PENDING`
+explains the state and the declared `bb_ask` fallback. See `docs/EMBEDDINGS.md`
+§2b/§3.
+
+## Syntax-error attribution
+
+`[SYNTAX_ERRORS]` groups by language lane instead of one blob: e.g. `24 indexed
+files have syntax errors (less (CSS grammar): 16, scss (SCSS grammar): 8)`.
+`.less` is routed to the CSS grammar (a known gap for `@variables` / `.@{}`
+interpolation); `.scss` has its own grammar and a separate gap — one count could
+not tell a reader which fix applies.
+
 ## Reading the answer
 
 ```

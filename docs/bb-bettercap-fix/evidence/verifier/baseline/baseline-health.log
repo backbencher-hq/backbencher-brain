@@ -1,0 +1,7 @@
+  FAIL: health fixture Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/62e1b44dba5f84907c2be70608eb2eee3d262c8c'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-health.ts:22:3)
+
+HEALTH VERIFICATION: 1 FAILURES

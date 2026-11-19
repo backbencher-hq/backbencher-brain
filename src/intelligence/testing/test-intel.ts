@@ -138,6 +138,149 @@ export function nonCodeUnknown(nonCodeTestFiles: number): string | null {
     : null
 }
 
+// ── P1-3: TEST-LINK VALIDATION ─────────────────────────────────────────────
+//
+// A stored relationship row whose SOURCE lives in a test file is NOT test
+// evidence by itself. The measured bettercap defect (ISSUE-05): the Go analyzer
+// records a package-qualified call as its bare leaf (`errors.New` → `New`,
+// `otto.New` → `New`) and the name resolver binds that leaf to the project-wide
+// lowest-id symbol, so `caplets/caplet_test.go:142` "called" `session.New` at
+// direct_call 0.85 although it only ever called `errors.New`/`NewCaplet`, and
+// `js/data_test.go` functions "called" it via `otto.New()`. Before a row becomes
+// a link it must now prove that the test can REACH the target:
+//   * the row's own metadata must not say the callee is an external/stdlib leaf;
+//   * a qualified call's qualifier must be an imported package naming the
+//     target's package (a package-qualified spelling stored as a bare leaf is
+//     not evidence for any same-named symbol);
+//   * a receiver/member chain (`m.Lock`, `mod.Session.Lock`) is unresolved here —
+//     the index carries no receiver type — so it fails closed instead of binding
+//     a same-named method from another package;
+//   * an unqualified callee must be in the caller's own package/module, or be
+//     reachable through the test file's imports.
+// Rejections are counted PER REASON and declared in provenance.unknowns, so a
+// user sees why a candidate row was not published rather than a silent drop.
+export type TestLinkRejection =
+  | "external-stdlib-leaf"
+  | "target-name-mismatch"
+  | "qualified-call-target-is-a-leaf"
+  | "receiver-selector-unresolved"
+  | "cross-package-unreachable"
+
+export interface TestLinkValidationInput {
+  relationshipType: string
+  /** the stored target name (leaf) */
+  targetExternal: string
+  /** the resolved target symbol's name */
+  targetName: string
+  /** project-relative target file */
+  targetFile: string
+  /** project-relative test file (the edge's source symbol's file) */
+  testFile: string
+  /** brain_file.language of the test file */
+  language: string | null
+  /** brain_relationship.metadata (parsed) — carries callExpression/isStdlib */
+  metadata: Record<string, unknown> | null
+  /** brain_import import_path values for the test file */
+  testImports: string[]
+}
+
+export type TestLinkValidation = { ok: true } | { ok: false; reason: TestLinkRejection }
+
+/** Languages whose module boundary IS the directory: an unqualified callee can
+ *  name a declaration in the caller's own directory, so same-directory is
+ *  reachability evidence. File-scoped module languages (JS/TS/Python) require an
+ *  actual import instead — `calc.test.ts` does not reach a sibling `b.ts` by
+ *  living next to it. */
+const PACKAGE_DIRECTORY_LANGUAGES = new Set(["go", "java", "kotlin", "scala", "csharp"])
+
+function posixDir(p: string): string {
+  const i = p.lastIndexOf("/")
+  return i < 0 ? "" : p.slice(0, i)
+}
+function posixBase(p: string): string {
+  const i = p.lastIndexOf("/")
+  return i < 0 ? p : p.slice(i + 1)
+}
+function withoutExtension(p: string): string {
+  return p.replace(/\.[^./]+$/, "")
+}
+
+/** Does one `brain_import` specifier reach the target file? */
+function importReachesTarget(spec: string, testFile: string, targetFile: string, language: string): boolean {
+  if (!spec) return false
+  const targetNoExt = withoutExtension(targetFile)
+  if (spec === targetFile || withoutExtension(spec) === targetNoExt) return true
+  if (spec.startsWith(".") || spec.startsWith("/")) {
+    const base = posixDir(testFile)
+    const joined = spec.startsWith("/") ? spec : base ? base + "/" + spec : spec
+    const parts: string[] = []
+    for (const seg of joined.split("/")) {
+      if (seg === "" || seg === ".") continue
+      if (seg === "..") {
+        parts.pop()
+        continue
+      }
+      parts.push(seg)
+    }
+    const resolved = parts.join("/")
+    return resolved.length > 0 && (resolved === targetNoExt || targetNoExt.startsWith(resolved + "/") || posixBase(resolved) === posixBase(targetNoExt))
+  }
+  if (language === "go") {
+    // A Go package import's last path segment names the target's package.
+    const segs = spec.split("/").filter(Boolean)
+    const last = segs[segs.length - 1] ?? ""
+    return last.length > 0 && last === posixBase(posixDir(targetFile))
+  }
+  return posixBase(withoutExtension(spec)) === posixBase(targetNoExt)
+}
+
+function goPackageNameFor(file: string): string {
+  return posixBase(posixDir(file))
+}
+
+/** Validate one candidate test-evidence row. Pure — exported for the gate. */
+export function validateTestLink(input: TestLinkValidationInput): TestLinkValidation {
+  const language = String(input.language ?? "").toLowerCase()
+  const meta = input.metadata ?? {}
+  const isDirect = input.relationshipType === "calls" || input.relationshipType === "instantiates"
+  const callExpression = String((meta.callExpression ?? meta.selectorExpression ?? "") || "")
+  const sameDirectory = posixDir(input.testFile) === posixDir(input.targetFile)
+  const reachableByImport = input.testImports.some((spec) => importReachesTarget(spec, input.testFile, input.targetFile, language))
+  const reachable = (sameDirectory && PACKAGE_DIRECTORY_LANGUAGES.has(language)) || reachableByImport
+
+  // The row itself states the callee is an external/stdlib package member: the
+  // stored target id cannot be that callee's declaration. (This is the precise
+  // `errors.New → session.New` pin.)
+  if (meta.isStdlib === true) return { ok: false, reason: "external-stdlib-leaf" }
+
+  // Non-call evidence (references/uses/extends/implements/imports) only needs
+  // reachability, not a call expression.
+  if (!isDirect) return reachable ? { ok: true } : { ok: false, reason: "cross-package-unreachable" }
+
+  // A direct call with no recorded call expression cannot be validated.
+  if (!callExpression) return reachable ? { ok: true } : { ok: false, reason: "cross-package-unreachable" }
+
+  const segments = callExpression.split(".").filter((s) => s.length > 0)
+  const leaf = segments[segments.length - 1] ?? ""
+  if (leaf !== input.targetName) return { ok: false, reason: "target-name-mismatch" }
+
+  if (segments.length > 1) {
+    // Receiver/package selector. A member chain (`mod.Session.Lock`) cannot be
+    // resolved without receiver types; a two-segment `pkg.Fn` is proven only when
+    // the qualifier names the TARGET's package AND the test file imports it.
+    if (segments.length > 2) return { ok: false, reason: "receiver-selector-unresolved" }
+    const qualifier = segments[0]
+    const targetPkg = goPackageNameFor(input.targetFile)
+    const qualifierNamesTargetPackage = language === "go" ? qualifier === targetPkg : true
+    if (qualifierNamesTargetPackage && reachableByImport) return { ok: true }
+    if (sameDirectory && PACKAGE_DIRECTORY_LANGUAGES.has(language) && qualifier === targetPkg) return { ok: true }
+    return { ok: false, reason: "qualified-call-target-is-a-leaf" }
+  }
+
+  // Unqualified callee names a declaration in the caller's OWN package/module.
+  return reachable ? { ok: true } : { ok: false, reason: "cross-package-unreachable" }
+}
+
 type ProdRow = {
   id: string
   name: string
@@ -154,6 +297,10 @@ type TestEdgeRow = {
   testSymId: string
   testSymName: string
   testFile: string
+  testLanguage: string | null
+  targetName: string | null
+  targetFile: string | null
+  metadata: string | null
 }
 
 function classify(relType: string): TestEvidenceKind | null {
@@ -226,12 +373,15 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
   // exists the answer is provably empty (same predicate, same definition), so
   // the scan is skipped entirely instead of paying 370ms to prove zero.
   const edgeCode = codeTestClause("tf")
-  const testEdges = testFileCount === 0 ? ([] as TestEdgeRow[]) : (raw.prepare(
+  const rawEdges = testFileCount === 0 ? ([] as TestEdgeRow[]) : (raw.prepare(
     "SELECT r.target_symbol_id AS targetId, r.relationship_type AS relType, " +
-      "ts.id AS testSymId, ts.name AS testSymName, tf.relative_path AS testFile " +
+      "ts.id AS testSymId, ts.name AS testSymName, tf.relative_path AS testFile, tf.language AS testLanguage, " +
+      "tgt.name AS targetName, tgtf.relative_path AS targetFile, r.metadata AS metadata " +
       "FROM brain_relationship r " +
       "JOIN brain_symbol ts ON ts.id = r.source_symbol_id " +
       "JOIN brain_file tf ON tf.id = ts.file_id AND COALESCE(tf.is_test_file,0) = 1 " +
+      "LEFT JOIN brain_symbol tgt ON tgt.id = r.target_symbol_id " +
+      "LEFT JOIN brain_file tgtf ON tgtf.id = tgt.file_id " +
       "WHERE r.project_id = ? AND r.target_symbol_id IS NOT NULL" + edgeCode.sql,
   ).all(projectId, ...edgeCode.params) as TestEdgeRow[])
 
@@ -257,8 +407,73 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
   // `productionSymbols: 169`. Two symbols were dropped as noise paths or noise
   // names — a reasonable decision, and one an agent cannot reconstruct, because
   // the numbers do not reconcile against anything they can query.
+  const filteredIds = new Set(filtered.map((r) => r.id))
+
+  // P1-3: the TEST FILE's imports are the reachability evidence. Read once per
+  // test corpus (relative path -> specifiers). A Go test file with no imports is
+  // still legitimate via same-directory package semantics.
+  const testImportsByFile = new Map<string, string[]>()
+  if (testFileCount > 0) {
+    const importCode = codeTestClause("f")
+    const importRows = raw.prepare(
+      "SELECT f.relative_path AS file, COALESCE(i.import_path, '') AS target " +
+        "FROM brain_file f JOIN brain_import i ON i.file_id = f.id AND i.project_id = f.project_id " +
+        "WHERE f.project_id = ? AND COALESCE(f.is_test_file,0) = 1" + importCode.sql,
+    ).all(projectId, ...importCode.params) as Array<{ file: string; target: string }>
+    for (const row of importRows) {
+      if (!row.target) continue
+      const arr = testImportsByFile.get(row.file) ?? []
+      arr.push(row.target)
+      testImportsByFile.set(row.file, arr)
+    }
+  }
+
+  // Validate every classified candidate row. Rejections are counted PER REASON so
+  // the payload can say WHY a candidate was not published (a bare rejection rate
+  // would be a different defect).
+  const rejectedLinks: Partial<Record<TestLinkRejection, number>> = {}
+  let rejectedTotal = 0
+  const testEdges: TestEdgeRow[] = []
+  for (const edge of rawEdges) {
+    // Only rows the classifier can name were ever candidate evidence; validating
+    // the rest would report "unvalidated" for kinds the mapping never published.
+    if (!classify(edge.relType)) continue
+    if (!filteredIds.has(edge.targetId)) continue
+    if (!edge.targetFile || !edge.targetName) {
+      rejectedLinks["target-name-mismatch"] = (rejectedLinks["target-name-mismatch"] ?? 0) + 1
+      rejectedTotal++
+      continue
+    }
+    let metadata: Record<string, unknown> | null = null
+    if (edge.metadata) {
+      try {
+        metadata = JSON.parse(edge.metadata) as Record<string, unknown>
+      } catch {
+        metadata = null
+      }
+    }
+    const verdict = validateTestLink({
+      relationshipType: edge.relType,
+      targetExternal: edge.targetName,
+      targetName: edge.targetName,
+      targetFile: edge.targetFile,
+      testFile: edge.testFile,
+      language: edge.testLanguage,
+      metadata,
+      testImports: testImportsByFile.get(edge.testFile) ?? [],
+    })
+    if (verdict.ok) {
+      testEdges.push(edge)
+      continue
+    }
+    rejectedLinks[verdict.reason] = (rejectedLinks[verdict.reason] ?? 0) + 1
+    rejectedTotal++
+  }
+
   const excludedAsNoise = prodRows.length - filtered.length
-  return { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise }
+  // P1-3: rows that FAILED validation are not dropped silently — they are counted
+  // per reason and declared by every consuming mode.
+  return { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise, rejectedLinks, rejectedTotal }
 }
 
 // MODE: mapping — production symbols -> test evidence, keyed by RESOLVED symbol
@@ -268,7 +483,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
   // The page, not the whole corpus: see DEFAULT_PAGE. At the old 1000 a
   // single call on backbencher-brain/src rendered 375,270 bytes (~104k tokens).
   const maxResults = options.maxResults ?? DEFAULT_PAGE
-  const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise } = await loadGraph(projectId, includeMethods, options.filePath)
+  const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise, rejectedLinks, rejectedTotal } = await loadGraph(projectId, includeMethods, options.filePath)
 
   const linksByTarget = new Map<string, TestLink[]>()
   let classifiedEdges = 0
@@ -319,6 +534,15 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
   }))
 
   const mappingUnknowns: string[] = []
+  if (rejectedTotal > 0) {
+    const why = Object.entries(rejectedLinks)
+      .map(([reason, count]) => `${reason}=${count}`)
+      .sort()
+      .join(", ")
+    mappingUnknowns.push(
+      `unvalidated-test-links: ${rejectedTotal} stored relationship row(s) from test files did not prove their target and were NOT published as evidence (${why}); a stored call is not test evidence until the test can reach the target's exact symbol`,
+    )
+  }
   if (classifiedEdges === 0) mappingUnknowns.push(NO_EVIDENCE_UNKNOWN)
   const mappingNonCode = nonCodeUnknown(nonCodeTestFiles)
   if (mappingNonCode) mappingUnknowns.push(mappingNonCode)
@@ -354,8 +578,13 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
       testFiles: testFileCount,
       scannedTestSymbols: testSymCount,
       evidenceLinks: totalLinks,
+      // P1-3: candidate rows that failed reachability validation. Not part of the
+      // frozen TestMappingReport contract (contracts.ts is frozen for this wave),
+      // so it is attached as a declared intersection field.
+      unvalidatedLinks: rejectedTotal,
+      unvalidatedByReason: rejectedLinks,
     },
-  }
+  } as TestMappingReport & { summary: TestMappingReport["summary"] & { unvalidatedLinks: number; unvalidatedByReason: Partial<Record<TestLinkRejection, number>> } }
 }
 
 // MODE: gaps — untested / weakly-tested production symbols, risk-ranked.
@@ -373,7 +602,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
 export async function testGaps(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestGapReport> {
   const maxResults = options.maxResults ?? DEFAULT_PAGE
   const includeMethods = options.includeMethods ?? true
-  const { filtered, testEdges, nonCodeTestFiles, excludedAsNoise } = await loadGraph(projectId, includeMethods, options.filePath)
+  const { filtered, testEdges, nonCodeTestFiles, excludedAsNoise, rejectedLinks, rejectedTotal } = await loadGraph(projectId, includeMethods, options.filePath)
 
   // One pass over the edges: classify once, count per target (the count is the
   // previous implementation's `links.length`, needed to reproduce its order).
@@ -426,6 +655,15 @@ export async function testGaps(projectId: ProjectID, options: TestIntelOptions =
   }))
 
   const gapUnknowns: string[] = []
+  if (rejectedTotal > 0) {
+    const why = Object.entries(rejectedLinks)
+      .map(([reason, count]) => `${reason}=${count}`)
+      .sort()
+      .join(", ")
+    gapUnknowns.push(
+      `unvalidated-test-links: ${rejectedTotal} stored test-file relationship row(s) did not prove their target and are NOT counted as evidence (${why})`,
+    )
+  }
   if (classifiedEdges === 0) gapUnknowns.push(NO_EVIDENCE_UNKNOWN)
   const gapNonCode = nonCodeUnknown(nonCodeTestFiles)
   if (gapNonCode) gapUnknowns.push(gapNonCode)

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-green2/m26-tsx",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m26/verify-polyglot-e2e.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:47:01.205Z",
+  "endedAt": "2026-11-19T04:47:13.586Z",
+  "durationMs": 12381,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 105,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "M26.A1 polyglot end-to-end verifier\n\n[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 34ms [plan=linear largest-intermediate=8]\n        cross-language: 3 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 13 relationships (0 patterns) in 10ms\n        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 7ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(31ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 10ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 3ms\n[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 20ms [plan=linear largest-intermediate=7]\n        cross-language: 2 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 6 relationships (0 patterns) in 5ms\n        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 3ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(7ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 5ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 2ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 3ms\n\nA1: VERIFIED (12/12 passed, 1 mutant)\n",
+  "stderr": "[INFO] [23:47:07] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:47:08] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:47:09] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"33da600f\",\"danglingSources\":2,\"totalRelationships\":15}\n[INFO] [23:47:09] [project-health] project health computed {\"projectId\":\"33da600f7f92436b3d1d14d2999117d82c2ad827\",\"complexityScore\":95,\"maintainabilityScore\":75,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n[INFO] [23:47:10] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:47:10] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":0}\n[INFO] [23:47:12] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:47:12] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"60497252\",\"danglingSources\":5,\"totalRelationships\":11}\n[INFO] [23:47:12] [project-health] project health computed {\"projectId\":\"604972529cb8813acfa4fcc2341336009bd77081\",\"complexityScore\":93,\"maintainabilityScore\":77,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2094,
+  "stderrBytes": 1385,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044713Z-cp1f-green2-m26-tsx.json"
+}

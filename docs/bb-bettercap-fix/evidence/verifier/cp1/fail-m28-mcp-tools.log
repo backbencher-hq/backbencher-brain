@@ -1,0 +1,22 @@
+
+[ERROR] [23:44:44] [parallel-indexer] parallel indexing failed {"projectId":"91e5fc004c39b7e3003a156b246b6cc295e22cb8","error":"'better-sqlite3' is not yet supported in Bun.\nTrack the status in https://github.com/oven-sh/bun/issues/4290\nIn the meantime, you could try bun:sqlite which has a similar API."}
+107 |         return opts[p] || p;
+108 |       })
+109 |     );
+110 |     tries.push(n);
+111 |     try {
+112 |       b = opts.path ? requireFunc.resolve(n) : requireFunc(n);
+                                                     ^
+error: 'better-sqlite3' is not yet supported in Bun.
+Track the status in https://github.com/oven-sh/bun/issues/4290
+In the meantime, you could try bun:sqlite which has a similar API.
+ code: "ERR_DLOPEN_FAILED"
+
+      at bindings (/home/ishaq2321/mcp/backbencher-brain/node_modules/bindings/bindings.js:112:48)
+      at new Database (/home/ishaq2321/mcp/backbencher-brain/node_modules/better-sqlite3/lib/database.js:48:29)
+      at openDatabase (/home/ishaq2321/mcp/backbencher-brain/dist/chunk-IRYHABHZ.js:27:14)
+      at getRawInstance (/home/ishaq2321/mcp/backbencher-brain/dist/chunk-IRYHABHZ.js:212:45)
+      at discoverAndFilterFiles (/home/ishaq2321/mcp/backbencher-brain/dist/chunk-Y3GF4KQJ.js:2880:59)
+      at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/dist/chunk-Y3GF4KQJ.js:6426:139)
+      at async main (/home/ishaq2321/mcp/backbencher-brain/script/m28/verify-mcp-tools.ts:105:43)
+

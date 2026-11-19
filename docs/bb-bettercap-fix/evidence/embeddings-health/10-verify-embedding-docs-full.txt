@@ -1,0 +1,8 @@
+EMB-DOCS embedding documentation contract
+  FAIL: mutant [the false unconditional retry claim returns outside the quoted message] applied — mutation produced no change — fix the mutant
+  FAIL: mutant [the false unconditional retry claim returns outside the quoted message] caught by the contract — survived
+
+  checks: 55/57 passed, 4 mutants
+  documented knobs: 17 · knobs read by src/: 17
+VERDICT: FAIL
+  evidence: validation/embedding/results/EMBDOCS.json

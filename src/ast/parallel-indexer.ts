@@ -17,7 +17,7 @@ import {
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { resolveScopedProjectFile } from "./scoped-path"
-import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
+import { isIndexArtifactName, isIndexArtifactNameStrict, NON_CODE_LANGUAGES } from "./analysis-exclusions"
 import { decideWatchdog, WATCHDOG_MIN_STALL_MS, WATCHDOG_TICK_MS } from "./watchdog-policy"
 import { isTestFileCandidate } from "./test-classification"
 import { createStoreDiagnostics } from "./store-diagnostics"
@@ -3655,6 +3655,194 @@ function prepareOwnedRelationshipDelete(rawDb: Awaited<ReturnType<typeof BrainDa
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// P0-2 — ONE authoritative name-binding / cross-language policy (fix campaign).
+//
+// Triage root cause (ISSUE-02, LEAD-FINDINGS L-1/L-2): the resolution arms
+// (eager per-edge resolve, `_res_*` strategies, `_i13_*` ranked pass) bind a
+// bare external target by NAME anywhere in the project, ranked
+// declaration→same-file→same-language→lowest-id. For a target the analyzer
+// declared EXTERNAL (a Go stdlib module path, a JS property name), that turns a
+// name coincidence into a confident edge: `main.go imports "os"` bound to a
+// YAML matrix key, `main = _ref.main` bound to `package main`. The
+// cross-language marker then trusts the binding because the two files'
+// languages differ, and stamps 0.9 / name-resolution.
+//
+// The policy below is the SINGLE enforcement point every arm flows through
+// (called before BOTH cross-language marker sites — the insert-time resolve in
+// `storeResults` and the deferred `resolveRelationships` pass). It does not add
+// another ranking; it refuses bindings the analyzer's own metadata says are
+// unownable and leaves the target unresolved (`ext:` at the read surfaces,
+// exactly as docs/GRAPH_ENGINE.md declares).
+//
+// KNOWN BRIDGE PAIRS are the declared evidence for a cross-language binding:
+// JVM interop (java/kotlin/scala/groovy), the TS/JS module graph, GraphQL
+// codegen, c/cpp headers, objc/swift. Those stay name-resolution cross-language
+// facts — the M26 java-scala and ts-js fixtures are the positive controls.
+// Anything else is a name coincidence, not a bridge.
+
+/** Declared interop pairs: the only language pairs where a name-resolution
+ *  binding is evidence-bearing. Ordered a|b with both directions listed. */
+export const P02_BRIDGE_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ["java", "scala"], ["scala", "java"],
+  ["java", "kotlin"], ["kotlin", "java"],
+  ["java", "groovy"], ["groovy", "java"],
+  ["scala", "kotlin"], ["kotlin", "scala"],
+  ["typescript", "javascript"], ["javascript", "typescript"],
+  ["typescript", "tsx"], ["tsx", "typescript"],
+  ["javascript", "tsx"], ["tsx", "javascript"],
+  ["vue", "typescript"], ["typescript", "vue"],
+  ["vue", "javascript"], ["javascript", "vue"],
+  ["svelte", "javascript"], ["javascript", "svelte"],
+  ["svelte", "typescript"], ["typescript", "svelte"],
+  ["graphql", "typescript"], ["typescript", "graphql"],
+  ["graphql", "javascript"], ["javascript", "graphql"],
+  ["c", "cpp"], ["cpp", "c"],
+  ["objective-c", "swift"], ["swift", "objective-c"],
+]
+
+/** Mutation switch for the gate: disabling it must make the collisions reappear
+ *  (script/m57/verify-p02-name-binding.ts MUTANT arm). Never disabled in product. */
+export const P02_BINDING_POLICY = { enabled: true }
+
+function p02NonCodeSqlList(): string {
+  return [...NON_CODE_LANGUAGES].map((l) => `'${l.replace(/'/g, "''")}'`).join(",")
+}
+
+function p02AllowedPairSqlList(): string {
+  return P02_BRIDGE_PAIRS.map(([a, b]) => `'${a}|${b}'`).join(",")
+}
+
+/** A cross-language binding is evidence-bearing only for a declared pair. */
+export function p02PairIsDeclaredBridge(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false
+  return P02_BRIDGE_PAIRS.some(([x, y]) => x === a.toLowerCase() && y === b.toLowerCase())
+}
+
+/**
+ * P0-2 binding gates — the ONE refusal pass shared by every resolution arm.
+ * Runs after the resolution strategies and BEFORE the cross-language marker, so
+ * a refused binding can neither be traversed nor labelled cross-language.
+ * Leaves the target unresolved (the analyzer's own declared limitation).
+ */
+export function applyP02BindingGates(
+  rawDb: { run(sql: string): { changes?: number } | undefined },
+  projectId: string,
+): { unbound: number } {
+  if (!P02_BINDING_POLICY.enabled) return { unbound: 0 }
+  const nonCode = p02NonCodeSqlList()
+  const allowedPairs = p02AllowedPairSqlList()
+  const tag = (reason: string) =>
+    `metadata = json_set(COALESCE(metadata, '{}'), '$.bindingPolicy', '${reason}')`
+  const statements = [
+    // 1. A target in a structural-key language (YAML key, Makefile target, JSON
+    //    property, Markdown word) is never a call/use/import target — the same
+    //    vocabulary analysis-exclusions.ts already declares has no callers.
+    `UPDATE brain_relationship
+     SET target_symbol_id = NULL, is_cross_file = 0, is_cross_language = 0,
+         ${tag("refused-non-code-target-language")}
+     WHERE project_id = '${projectId}' AND target_symbol_id IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM brain_symbol ts JOIN brain_file tf ON tf.id = ts.file_id
+         WHERE ts.id = brain_relationship.target_symbol_id
+           AND lower(COALESCE(tf.language, '')) IN (${nonCode}))`,
+    // 2. The analyzer's own external claim: a stdlib/module-path target, an
+    //    external target, a package-qualified leaf whose owner is not resolved
+    //    per file, or a property/field access. Binding any of these by name is
+    //    the L-1 defect (errors.New -> session.New; _ref.main -> package main).
+    `UPDATE brain_relationship
+     SET target_symbol_id = NULL, is_cross_file = 0, is_cross_language = 0,
+         ${tag("refused-external-claim")}
+     WHERE project_id = '${projectId}' AND target_symbol_id IS NOT NULL
+       AND (json_extract(metadata, '$.isStdlib') = 1
+            OR json_extract(metadata, '$.isExternalTarget') = 1
+            OR json_extract(metadata, '$.isPackageQualified') = 1
+            OR json_extract(metadata, '$.isFieldAccess') = 1)`,
+    // 3. An import of a bare module name must not cross a language boundary
+    //    (L-2: a Go import of "os" cannot be satisfied by a YAML key). Same-
+    //    language bare imports keep their pre-existing behavior — this gate is
+    //    about the language jump, not about re-litigating same-file resolution.
+    `UPDATE brain_relationship
+     SET target_symbol_id = NULL, is_cross_file = 0, is_cross_language = 0,
+         ${tag("refused-bare-module-name-import")}
+     WHERE project_id = '${projectId}' AND target_symbol_id IS NOT NULL
+       AND relationship_type = 'imports' AND target_external IS NOT NULL
+       AND instr(target_external, '.') = 0 AND instr(target_external, '/') = 0
+       AND instr(target_external, ':') = 0
+       AND EXISTS (
+         SELECT 1 FROM brain_symbol ss
+         JOIN brain_file sf ON sf.id = ss.file_id
+         JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+         JOIN brain_file tf ON tf.id = ts.file_id
+         WHERE ss.id = brain_relationship.source_symbol_id
+           AND COALESCE(sf.language, '') <> '' AND COALESCE(tf.language, '') <> ''
+           AND lower(sf.language) <> lower(tf.language))`,
+    // 4. `imports`/`calls`/`instantiates` never bind across languages except a
+    //    DECLARED interop pair (java-scala, ts-js, …). For every other pair the
+    //    binding is a name coincidence; leave it unresolved.
+    `UPDATE brain_relationship
+     SET target_symbol_id = NULL, is_cross_file = 0, is_cross_language = 0,
+         ${tag("refused-cross-language-leaf")}
+     WHERE project_id = '${projectId}' AND target_symbol_id IS NOT NULL
+       AND relationship_type IN ('imports', 'calls', 'instantiates')
+       AND EXISTS (
+         SELECT 1 FROM brain_symbol ss
+         JOIN brain_file sf ON sf.id = ss.file_id
+         JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+         JOIN brain_file tf ON tf.id = ts.file_id
+         WHERE ss.id = brain_relationship.source_symbol_id
+           AND COALESCE(sf.language, '') <> '' AND COALESCE(tf.language, '') <> ''
+           AND lower(sf.language) <> lower(tf.language)
+           AND (lower(sf.language) || '|' || lower(tf.language)) NOT IN (${allowedPairs}))`,
+  ]
+  let unbound = 0
+  for (const sql of statements) unbound += Number(rawDb.run(sql)?.changes ?? 0)
+  return { unbound }
+}
+
+/**
+ * P0-2 marker honesty — runs AFTER the cross-language marker. A row whose
+ * binding was a name coincidence is still a stored row, but it is a CANDIDATE,
+ * not an edge: floor its confidence to 0.5, relabel its evidence class
+ * `inferred`, and record the basis in metadata so every read surface can say
+ * so. The KNOWN BRIDGE PAIRS list does NOT exempt a row from this: a pair
+ * allowlist may only decide whether a name-only row is RETAINED as a candidate
+ * (parallel-indexer gate 4); it can never turn a name collision into a
+ * `structural`/`symbol` edge. Evidence-bearing rows are exempt only when the
+ * row carries import-path/FFI/generated evidence.
+ */
+export function applyP02CrossLanguageDegrade(
+  rawDb: { run(sql: string): { changes?: number } | undefined },
+  projectId: string,
+): { degraded: number } {
+  if (!P02_BINDING_POLICY.enabled) return { degraded: 0 }
+  const result = rawDb.run(`
+    UPDATE brain_relationship
+    SET confidence = CASE WHEN confidence IS NULL OR confidence > 0.5 THEN 0.5 ELSE confidence END,
+        metadata = json_set(COALESCE(metadata, '{}'),
+                            '$.evidenceClass', 'inferred',
+                            '$.bindingBasis', 'name-only')
+    WHERE project_id = '${projectId}' AND is_cross_language = 1
+      AND target_symbol_id IS NOT NULL
+      AND NOT (json_extract(metadata, '$.bridgeMechanism') IS NOT NULL
+               OR COALESCE(json_extract(metadata, '$.bindingBasis'), '') = 'import-path'
+               OR COALESCE(json_extract(metadata, '$.ffi'), 0) = 1
+               OR json_extract(metadata, '$.generatedFrom') IS NOT NULL
+               OR (relationship_type = 'imports' AND target_external IS NOT NULL
+                   AND (instr(target_external, '.') > 0 OR instr(target_external, '/') > 0
+                        OR instr(target_external, ':') > 0)))
+      AND EXISTS (
+        SELECT 1 FROM brain_symbol ss
+        JOIN brain_file sf ON sf.id = ss.file_id
+        JOIN brain_symbol ts ON ts.id = brain_relationship.target_symbol_id
+        JOIN brain_file tf ON tf.id = ts.file_id
+        WHERE ss.id = brain_relationship.source_symbol_id
+          AND COALESCE(sf.language, '') <> '' AND COALESCE(tf.language, '') <> ''
+          AND lower(sf.language) <> lower(tf.language))
+  `)
+  return { degraded: Number(result?.changes ?? 0) }
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -5862,6 +6050,11 @@ export async function storeResults(
            }
          }
 
+         // P0-2 (triage L-1/L-2, ISSUE-02): refuse name-coincidence bindings
+         // BEFORE the marker certifies them. This is the insert-time resolve
+         // arm; the deferred arm gets the same call in resolveRelationships.
+         applyP02BindingGates(rawDb as any, projectId)
+
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
          // the strategies above recompute is_cross_file but left is_cross_language
          // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
@@ -5900,6 +6093,11 @@ export async function storeResults(
              AND brain_relationship.target_symbol_id IS NOT NULL
          `)
  
+         // P0-2: a name-only binding is a CANDIDATE row, never an edge — floor it and
+         // record the basis (declared pairs are candidates too; only
+         // import-path/FFI/generated evidence keeps its confidence).
+         applyP02CrossLanguageDegrade(rawDb as any, projectId)
+
          // M60/SDJ-8: cross-file `overrides` retarget.
          //
          // The strategies above resolve a relationship's target_symbol_id BY NAME,
@@ -6735,6 +6933,10 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     reconcilePhpTypeTargets(rawDb as any, projectId)
     reconcilePhpFunctionTargets(rawDb as any, projectId)
 
+    // P0-2: the deferred arm must obey the same binding gates as the insert-time
+    // arm BEFORE this marker certifies a name coincidence as cross-language.
+    applyP02BindingGates(rawDb as any, projectId)
+
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
     // worker-pool flow (batches are stored with skipResolution=true, so a TS
@@ -6772,6 +6974,10 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       WHERE brain_relationship.project_id = '${projectId}'
         AND brain_relationship.target_symbol_id IS NOT NULL
     `)
+
+    // P0-2: candidate floors for the deferred arm, same policy as the
+    // insert-time arm.
+    applyP02CrossLanguageDegrade(rawDb as any, projectId)
 
     // Cleanup
     rawDb.run(`DROP TABLE IF EXISTS _res_qname`)

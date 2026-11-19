@@ -36,6 +36,7 @@ import { getAnalysisHistory } from "../analysis/run-history"
 import { Config } from "../../config/config"
 import { describeEmbeddingConfig } from "../../setup/setup-show"
 import { buildEmbeddingDiagnosis, renderChainSummary, type EmbeddingDiagnosis } from "../../brain/semantic/embedding-diagnosis"
+import { planEmbeddingSpaces, type EmbeddingSpacePlan } from "../../brain/semantic/embedding-spaces"
 
 export interface HealthWarning { code: string; message: string; severity: "warning" | "error" }
 export interface UnifiedHealthOptions {
@@ -85,6 +86,23 @@ export interface UnifiedHealthReport {
     isIncomplete: boolean
     indexingVersion: string | null
     status: string | null
+    /**
+     * Status DERIVED from every completion cause, not the stored `status` field.
+     * The stored field was decided only from `errorFiles`/`missingAfterRecovery`,
+     * so a run that deliberately skipped a file still stored "complete" while the
+     * counts said `indexedFiles < totalFiles` (bettercap: 1972/1973 +
+     * status=complete). This is the value every surface must print.
+     */
+    derivedStatus: "complete" | "partial" | "incomplete" | "unrecorded"
+    /** The stored status contradicts the counters (stored "complete", derived "incomplete"). */
+    statusContradicted: boolean
+    /** Last-run counters that explain a shortfall: deliberate skips vs parse/write errors. */
+    runSkippedFiles: number | null
+    runErrorFiles: number | null
+    /** Shortfall NOT explained by a deliberate skip — the population a rebuild can fix. */
+    unexplainedShortfall: number
+    /** Why the index is incomplete: no shortfall / deliberate skip / write failure / mixed / unrecorded. */
+    shortfallCause: "none" | "deliberate-skip" | "write-failure" | "mixed" | "unrecorded"
     errors: unknown[]
     recordPresent: boolean
   }
@@ -137,6 +155,23 @@ export interface UnifiedHealthReport {
     total: number
     embeddedEntities: number
     symbolCoveragePercent: number
+    /**
+     * Library-wide coverage: distinct embedded entities / indexed symbols. This
+     * is what the one-line `embeddings:` summary has always meant, and it is NOT
+     * the configured model's coverage — on a mixed-model index the two differ by
+     * an order of magnitude (bettercap: 42.9% library-wide, 0.0% configured).
+     * Both are exposed so no reader has to conflate them.
+     */
+    library: { embedded: number; symbols: number; percent: number }
+    /**
+     * The configured model's space (effective embedding config), when a remote
+     * provider is configured. `pendingBackfill` is the durable state: the index
+     * holds fewer vectors of this model than the coverage floor requires, so a
+     * backfill run is pending and the read path declares its fallback.
+     */
+    configured: { model: string; embedded: number; symbols: number; percent: number; pendingBackfill: boolean; fallbackSpace: string | null } | null
+    /** Every stored space, most populated first; `[]` when the index has no vectors. */
+    spaces: Array<{ model: string; dimension: number; entities: number }>
     models: Array<{ model: string; count: number; dimensions: number[] }>
     /** Entity kinds that have embeddings. Verbose output only; `[]` on a default call. */
     embeddedByEntityType: Array<{ entityType: string; count: number }>
@@ -301,6 +336,61 @@ function kindsWithNoEmbeddings(raw: any, projectId: string): Array<{ kind: strin
   }
 }
 
+/**
+ * Derive index completeness from EVERY completion cause, not the stored `status`
+ * field (P2-4). The stored field knows about parse errors and unrecovered files
+ * only; the counters also know how many discovered files were deliberately
+ * skipped (size tier / unchanged-file incremental skip). Pure, so the decision
+ * can be tested with the measured bettercap numbers without a database.
+ *
+ * `status` must never be read as "complete" while `recordedIndexed < recordedTotal`:
+ * that pairing is exactly the contradiction that shipped (`1972/1973` beside
+ * `status=complete`). `shortfallCause` is what makes the printed remedy honest:
+ * a deliberate skip cannot be fixed by `force`, an unexplained loss can.
+ */
+export interface IndexCompletenessInput {
+  recordPresent: boolean
+  storedStatus: string | null
+  recordedTotal: number | null
+  recordedIndexed: number | null
+  runSkippedFiles: number | null
+  runErrorFiles: number | null
+}
+export interface IndexCompleteness {
+  derivedStatus: "complete" | "partial" | "incomplete" | "unrecorded"
+  storedStatusContradicted: boolean
+  shortfall: number
+  /** Shortfall the last run's deliberate skips account for. */
+  explainedBySkips: number
+  /** Shortfall NOT explained by a deliberate skip — the population a rebuild can fix. */
+  unexplainedShortfall: number
+  shortfallCause: "none" | "deliberate-skip" | "write-failure" | "mixed" | "unrecorded"
+}
+export function deriveIndexCompleteness(input: IndexCompletenessInput): IndexCompleteness {
+  if (!input.recordPresent) {
+    return { derivedStatus: "unrecorded", storedStatusContradicted: false, shortfall: 0, explainedBySkips: 0, unexplainedShortfall: 0, shortfallCause: "unrecorded" }
+  }
+  const total = input.recordedTotal
+  const indexed = input.recordedIndexed
+  const shortfall = total !== null && indexed !== null && indexed < total ? total - indexed : 0
+  const skipCapacity = Math.max(0, input.runSkippedFiles ?? 0)
+  const explainedBySkips = shortfall > 0 ? Math.min(shortfall, skipCapacity) : 0
+  const unexplainedShortfall = Math.max(0, shortfall - explainedBySkips)
+  const shortfallCause: IndexCompleteness["shortfallCause"] =
+    shortfall === 0
+      ? "none"
+      : unexplainedShortfall === 0
+        ? "deliberate-skip"
+        : explainedBySkips > 0
+          ? "mixed"
+          : "write-failure"
+  const derivedStatus: IndexCompleteness["derivedStatus"] =
+    shortfall > 0 ? "incomplete" : input.storedStatus === "partial" ? "partial" : "complete"
+  const storedStatusContradicted =
+    shortfall > 0 && (input.storedStatus === "complete" || input.storedStatus === null)
+  return { derivedStatus, storedStatusContradicted, shortfall, explainedBySkips, unexplainedShortfall, shortfallCause }
+}
+
 const refreshQueues = new Map<string, Promise<unknown>>()
 
 /**
@@ -449,14 +539,14 @@ function emptyIndexReport(
   return {
     projectId, projectPath, timestamp: Date.now(),
     counts: { files: 0, symbols: 0, relationships: 0, imports: 0, syntaxErrors: 0 },
-    indexStatus: { lastFullIndex: null, lastIncrementalIndex: null, indexedFiles: null, totalFilesDiscovered: null, indexShortfall: 0, isIncomplete: false, indexingVersion: null, status: null, errors: [], recordPresent: false },
+    indexStatus: { lastFullIndex: null, lastIncrementalIndex: null, indexedFiles: null, totalFilesDiscovered: null, indexShortfall: 0, isIncomplete: false, indexingVersion: null, status: null, derivedStatus: "unrecorded", statusContradicted: false, runSkippedFiles: null, runErrorFiles: null, unexplainedShortfall: 0, shortfallCause: "unrecorded", errors: [], recordPresent: false },
     performanceStats: { schemaVersion: null, runs: [], latestRun: null },
     freshness: {
       mode: "complete", requestedMode: options.freshness ?? "sampled",
       checked: 0, total: 0, fresh: 0, stale: 0, missing: 0, staleFiles: [], missingFiles: [], unresolved: 0, isComplete: true,
       reasons: { byKind: zeroReasons, freshVerifiedByContent: 0, freshVerifiedByMetadata: 0, isSample: false },
     },
-    embeddings: { total: 0, embeddedEntities: 0, symbolCoveragePercent: 0, models: [], embeddedByEntityType: [], unembeddedKinds: [], byLanguage: [] },
+    embeddings: { total: 0, embeddedEntities: 0, symbolCoveragePercent: 0, library: { embedded: 0, symbols: 0, percent: 0 }, configured: null, spaces: [], models: [], embeddedByEntityType: [], unembeddedKinds: [], byLanguage: [] },
     schema: { version: null, migration: null, tables: 0 },
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: "sqlite" },
     timing,
@@ -608,8 +698,8 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // them was to write SQL. The files are cheap to select (same table, same
   // predicate) and this product's rule is that a warning says what it found.
   const syntaxErrorRows = raw
-    .prepare("SELECT relative_path FROM brain_file WHERE project_id=? AND COALESCE(has_syntax_errors,0)=1 ORDER BY relative_path LIMIT 8")
-    .all(projectId) as Array<{ relative_path: string }>
+    .prepare("SELECT relative_path, language FROM brain_file WHERE project_id=? AND COALESCE(has_syntax_errors,0)=1 ORDER BY relative_path")
+    .all(projectId) as Array<{ relative_path: string; language: string | null }>
   const syntaxErrors = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id=? AND COALESCE(has_syntax_errors,0)=1").get(projectId) as any)?.c ?? 0
   const status = raw.prepare("SELECT * FROM brain_index_status WHERE project_id=?").get(projectId) as any
   const freshnessMode = options.freshness ?? "sampled"
@@ -752,6 +842,35 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     : []
   const embeddingTotal = modelRows.reduce((sum, row) => sum + Number(row.c ?? 0), 0)
   const embeddedEntities = (raw.prepare("SELECT COUNT(DISTINCT entity_id) c FROM brain_semantic_embedding WHERE project_id=?").get(projectId) as any)?.c ?? 0
+  // ── configured-space coverage + pending backfill (P2-3) ──────────────────
+  // The one `symbolCoveragePercent` number conflated two different measurements:
+  // library-wide coverage (every stored vector, whatever model) and the share of
+  // symbols carrying a vector in the CONFIGURED model's space. After a provider
+  // change the two diverge sharply — measured on bettercap: 42.9% library-wide
+  // vs 0.0% in the configured space (1/55,785) — and only the second one decides
+  // whether `bb_ask` can answer semantically. The planner is shared with the
+  // query path so health and `bb_ask` cannot disagree about the space.
+  const embeddingSpaces = modelRows.map((row) => ({
+    model: String(row.model),
+    dimension: Number(String(row.dims ?? "").split(",").filter(Boolean)[0] ?? 0),
+    entities: Number(row.c ?? 0),
+  }))
+  let configuredEmbeddingModel: string | null = null
+  let embeddingPlan: EmbeddingSpacePlan | null = null
+  try {
+    const { resolveEmbeddingConfig } = await import("../../config/config")
+    const eff = resolveEmbeddingConfig(await Config.get())
+    configuredEmbeddingModel = eff.configured ? eff.model : null
+    const { SemanticEngine } = await import("../../brain/semantic/engine")
+    embeddingPlan = planEmbeddingSpaces({
+      configuredModel: configuredEmbeddingModel,
+      localModel: SemanticEngine.LOCAL_MODEL_LABEL,
+      symbolCount: symbols,
+      spaces: embeddingSpaces,
+    })
+  } catch {
+    embeddingPlan = null
+  }
   const schema = raw.prepare("SELECT version, migration_name FROM brain_schema_version ORDER BY version DESC LIMIT 1").get() as any
   const tableCount = (raw.prepare("SELECT COUNT(*) c FROM sqlite_master WHERE type='table' AND name LIKE 'brain_%'").get() as any)?.c ?? 0
 
@@ -1084,11 +1203,31 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     } catch (error) { warnings.push({ code: "ANALYSIS_HISTORY_FAILED", message: error instanceof Error ? error.message : String(error), severity: "warning" }) }
   }
   if (syntaxErrors > 0) {
+    // Attribution, not just a count: the same 24 files mean different things —
+    // `.less` rides the CSS grammar (no @variables / .@{} interpolation) while
+    // `.scss` has its OWN grammar and a separate gap. Grouping by lane is what
+    // tells a reader which fix applies, measured from brain_file.language
+    // (`css` for .less, `scss` for .scss) rather than guessed from the count.
+    const groups = new Map<string, number>()
+    for (const row of syntaxErrorRows) {
+      const language = String(row.language ?? "unknown")
+      const label =
+        language === "css" && /\.less$/i.test(row.relative_path)
+          ? "less (CSS grammar)"
+          : language === "scss"
+            ? "scss (SCSS grammar)"
+            : language
+      groups.set(label, (groups.get(label) ?? 0) + 1)
+    }
+    const attribution = [...groups.entries()]
+      .sort((a, b) => (b[1] !== a[1] ? b[1] - a[1] : a[0] < b[0] ? -1 : 1))
+      .map(([label, count]) => `${label}: ${count}`)
+      .join(", ")
     const named = syntaxErrorRows.map((r) => r.relative_path)
-    const shown = named.length === syntaxErrors ? named.join(", ") : `${named.join(", ")}${named.length > 0 ? "…" : ""}`
+    const shown = named.length === syntaxErrors ? named.join(", ") : `${named.slice(0, 8).join(", ")}${named.length > 8 ? ", …" : ""}`
     warnings.push({
       code: "SYNTAX_ERRORS",
-      message: `${syntaxErrors} indexed files have syntax errors${shown ? `: ${shown}` : ""}`,
+      message: `${syntaxErrors} indexed files have syntax errors (${attribution})${shown ? `: ${shown}` : ""}`,
       severity: "warning",
     })
   }
@@ -1164,12 +1303,70 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   const indexShortfall = recordedTotal !== null && recordedIndexed !== null && recordedIndexed < recordedTotal
     ? { missing: recordedTotal - recordedIndexed, total: recordedTotal, indexed: recordedIndexed }
     : null
-  if (indexShortfall) {
-    const contradicted = status?.status === "complete"
+  // ── derive completeness from ALL completion causes (P2-4) ────────────────
+  // The stored `status` field is decided only from errorFiles/missingAfterRecovery
+  // (parallel-indexer.ts:7989-8005), so a run that deliberately SKIPPED a file
+  // (>5MB size tier, or unchanged during an incremental run) still stores
+  // "complete" while the counters say `indexedFiles < totalFiles` — measured on
+  // bettercap: `status=complete` beside `1972/1973`. Deriving the status here
+  // means the contradiction cannot reach a reader, and splitting the shortfall by
+  // cause means the printed remedy can be one that can actually work:
+  //  · deliberate skips (skippedFiles explains the shortfall) -> NOT a lost
+  //    write; `force=true` skips the same file again. Say so.
+  //  · unexplained losses -> a rebuild can address them.
+  const perfCounters = (() => {
+    try {
+      const parsed = typeof status?.performance_stats === "string" ? JSON.parse(status.performance_stats) : status?.performance_stats
+      const runs = Array.isArray(parsed?.runs) ? parsed.runs : []
+      const last = runs[runs.length - 1]
+      return last?.counts ?? null
+    } catch {
+      return null
+    }
+  })()
+  const runSkippedFiles = typeof perfCounters?.skippedFiles === "number" ? perfCounters.skippedFiles : null
+  const runErrorFiles = typeof perfCounters?.errorFiles === "number" ? perfCounters.errorFiles : null
+  const completeness = deriveIndexCompleteness({
+    recordPresent: statusRecordPresent,
+    storedStatus: status?.status ?? null,
+    recordedTotal,
+    recordedIndexed,
+    runSkippedFiles,
+    runErrorFiles,
+  })
+  if (indexShortfall && completeness.shortfallCause === "deliberate-skip") {
+    // The shortfall is fully explained by skips the run recorded. It is NOT a
+    // lost write, and the old blanket remedy (`force=true to rebuild from
+    // scratch`) provably cannot fix it: a forced rebuild re-walks the corpus and
+    // skips the same file again. Report the cause and the real options.
+    warnings.push({
+      code: "SKIPPED_FILES",
+      message: `the last index run found ${indexShortfall.total} files and wrote ${indexShortfall.indexed}: ${indexShortfall.missing} file(s) were deliberately SKIPPED by indexing rules (skippedFiles=${runSkippedFiles}, errorFiles=${runErrorFiles}) — a file over the 5 MB size tier (>5MB) or an unchanged file on an incremental run. This is not a lost write, and a force=true rebuild will SKIP IT AGAIN. If such a file must be indexed, raise the size tier or split the file; otherwise the index correctly covers ${indexShortfall.indexed}/${indexShortfall.total} discovered files.`,
+      severity: "warning",
+    })
+  } else if (indexShortfall) {
+    const explained = completeness.shortfallCause === "mixed"
+      ? ` (${completeness.explainedBySkips} of them are deliberate skips that a rebuild will skip again)`
+      : ""
     warnings.push({
       code: "INCOMPLETE_INDEX",
-      message: `the last index run recorded ${indexShortfall.indexed} of ${indexShortfall.total} files as indexed — ${indexShortfall.missing} file(s) were found by the walk but never written, so the index is INCOMPLETE${contradicted ? " even though the status field says \"complete\"" : ""}. counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.`,
+      message: `the last index run recorded ${indexShortfall.indexed} of ${indexShortfall.total} files as indexed — ${completeness.unexplainedShortfall} file(s) were found by the walk but never written and are NOT explained by a deliberate skip${explained}. counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, wait=true (or bb index) to rebuild the unexplained file(s)${completeness.storedStatusContradicted ? `; the stored status field says "complete", which the counts contradict` : ""}.`,
       severity: "error",
+    })
+  }
+  // The configured embedding space's durable pending state. `bb_ask` declares a
+  // populated-space fallback for this (semantic-search.ts); the index side must
+  // say the backfill is pending so a reader knows why coverage is split.
+  if (embeddingPlan?.pendingBackfill && embeddingPlan.configuredModel) {
+    const configured = embeddingPlan.configuredSpace
+    const pct = Math.round((embeddingPlan.configuredCoverage * 1000) / 10)
+    const fallback = embeddingPlan.compareModel && embeddingPlan.compareModel !== embeddingPlan.configuredModel
+      ? `queries fall back to the populated space ${embeddingPlan.compareModel} (declared in bb_ask)`
+      : `no populated dense space is usable — semantic answers are declared unavailable rather than presented as lexical matches`
+    warnings.push({
+      code: "EMBEDDINGS_BACKFILL_PENDING",
+      message: `the configured embedding space ${embeddingPlan.configuredModel} covers ${configured?.entities ?? 0}/${embeddingPlan.symbolCount} symbols (${pct}%) — BACKFILL PENDING; ${fallback}. Library-wide coverage is ${symbols > 0 ? Math.round((embeddedEntities / symbols) * 1000) / 10 : 0}% (${embeddedEntities}/${symbols} across ${embeddingSpaces.length} space(s)). Run bb index to reconcile the configured model (the pass is best-effort and resumes on the next run).`,
+      severity: "warning",
     })
   }
   if (statusCountersDisagree) {
@@ -1212,6 +1409,12 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       isIncomplete: indexShortfall !== null,
       indexingVersion: status?.indexing_version ?? null,
       status: status?.status ?? null,
+      derivedStatus: completeness.derivedStatus,
+      statusContradicted: completeness.storedStatusContradicted,
+      runSkippedFiles,
+      runErrorFiles,
+      unexplainedShortfall: completeness.unexplainedShortfall,
+      shortfallCause: completeness.shortfallCause,
       errors: indexingErrors,
       recordPresent: statusRecordPresent,
     },
@@ -1241,6 +1444,22 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       total: embeddingTotal,
       embeddedEntities,
       symbolCoveragePercent: symbols > 0 ? Math.round((embeddedEntities / symbols) * 1000) / 10 : 0,
+      // Two measurements that were one number before: library-wide coverage
+      // (every stored vector) and the configured model space's coverage. The
+      // second decides whether bb_ask can answer semantically; the first is what
+      // the summary line always meant.
+      library: { embedded: embeddedEntities, symbols, percent: symbols > 0 ? Math.round((embeddedEntities / symbols) * 1000) / 10 : 0 },
+      configured: embeddingPlan && embeddingPlan.configuredModel
+        ? {
+            model: embeddingPlan.configuredModel,
+            embedded: embeddingPlan.configuredSpace?.entities ?? 0,
+            symbols: embeddingPlan.symbolCount,
+            percent: Math.round(embeddingPlan.configuredCoverage * 1000) / 10,
+            pendingBackfill: embeddingPlan.pendingBackfill,
+            fallbackSpace: embeddingPlan.fallbackDeclared ? embeddingPlan.compareModel : null,
+          }
+        : null,
+      spaces: embeddingSpaces,
       models: modelRows.map((row) => ({ model: row.model, count: Number(row.c), dimensions: String(row.dims ?? "").split(",").filter(Boolean).map(Number) })),
       // the percentage above is a ratio of two counts, and what it
       // measures is narrower than the label admits. On this repo: 4,569
@@ -1423,7 +1642,12 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // what they divide are all named. "22% symbol coverage" alone reads as
     // "22% of my code is semantically searchable"; 9,895 of 45,018 says the
     // share of the corpus that consists of the four kinds the embedder writes.
-    `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% of symbols`,
+    // Two spaces, named: library-wide coverage (what the summary always meant) and
+    // the configured model's space (what decides whether bb_ask can answer
+    // semantically). On a mixed-model index they diverge sharply, so printing one
+    // percentage let a reader take 42.9% as "the configured model works" when its
+    // space held 1/55,785 vectors. Pending backfill is declared here, not implied.
+    `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% of symbols (library-wide, ${e.library.embedded}/${e.library.symbols} across ${e.spaces.length} space(s))${e.configured ? ` · configured ${e.configured.model}: ${e.configured.percent}% (${e.configured.embedded}/${e.configured.symbols})${e.configured.pendingBackfill ? " — BACKFILL PENDING" : ""}` : ""}`,
     `models: ${e.models.map((model) => `${model.model}:${model.count}[${model.dimensions.join(",")}]`).join(" ") || "none"}`,
     `schema: ${report.schema.version ?? "unknown"} (${report.schema.migration ?? "no migration record"}), ${report.schema.tables} tables`,
     // `indexedFiles=0 errors=0` for a project with no status record is
@@ -1431,7 +1655,15 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // the line cannot be read as a healthy zero next to files=1654.
     // a recorded shortfall prints as INCOMPLETE, so a half-built index
     // cannot be skimmed as a normal one.
-    `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"}/${report.indexStatus.totalFilesDiscovered ?? "unrecorded"}${report.indexStatus.isIncomplete ? ` — INCOMPLETE, ${report.indexStatus.indexShortfall} file(s) found by the walk were never written` : ""}${lastRunCountersOnly ? " (last-run counters, not an index total)" : ""} status=${report.indexStatus.status ?? "unrecorded"} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
+    // The status printed here is DERIVED from every completion cause, never the
+    // stored field alone: a shortfall can be a deliberate size-tier skip (which a
+    // rebuild repeats) or a lost write (which a rebuild fixes), and the stored
+    // `status` field cannot tell them apart — it says "complete" for both when no
+    // parse error was recorded (measured: bettercap 1972/1973 + status=complete).
+    // The stored value is still shown, but labelled as the record it is, so
+    // `status=complete` can never print as this tool's verdict beside an
+    // INCOMPLETE count.
+    `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"}/${report.indexStatus.totalFilesDiscovered ?? "unrecorded"}${report.indexStatus.isIncomplete ? ` — INCOMPLETE, ${report.indexStatus.indexShortfall} file(s) found by the walk were never written (${report.indexStatus.shortfallCause === "deliberate-skip" ? "deliberate skip; force will not fix it" : report.indexStatus.shortfallCause === "mixed" ? `${report.indexStatus.unexplainedShortfall} unexplained + deliberate skips` : "write/parse loss; a rebuild can fix it"})` : ""}${lastRunCountersOnly ? " (last-run counters, not an index total)" : ""} status=${report.indexStatus.derivedStatus}${report.indexStatus.statusContradicted ? ` (recordedStatus=${report.indexStatus.status ?? "unrecorded"} contradicts the counts)` : ""} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
     // The last INDEX RUN, labelled as such: this is not the cost of the call you
     // just made, and the two were previously on adjacent lines under a bare
     // `perf:` with nothing to say which was which.

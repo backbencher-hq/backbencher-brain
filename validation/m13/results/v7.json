@@ -438,5 +438,5 @@
     "No DOM/browser dependency exists in this repository, so the studio is asserted structurally HERE; the pixels and the interactions are now a gate of their own — script/m13/verify-visualize-browser.ts (M13.64 / V10), run as `npm run verify:viz-browser`, which drives the artifact over CDP in a real chromium without adding a browser dependency to this repository.",
     "Interaction (drag, hover, tab switching) is not exercised by THIS file; the layout switch, the collapse/dock behaviour and the drag belong to V10 (script/m13/verify-visualize-browser.ts), and the screenshots that show them are in validation/m13/results/viz-layout-panel."
   ],
-  "generatedAt": "2026-11-05T04:20:17.495Z"
+  "generatedAt": "2026-11-19T05:15:56.370Z"
 }

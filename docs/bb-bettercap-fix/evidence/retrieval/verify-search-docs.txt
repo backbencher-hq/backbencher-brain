@@ -1,0 +1,26 @@
+[harness-redirect] active
+  ok: docs: bb_search.md exists
+  ok: docs: category matches registry registry=search
+  ok: docs: mutability matches registry registry=read
+  ok: docs: requiresIndex matches registry registry=true
+  ok: docs: modes line matches registry registry=`symbols`, `content`, `symbol`, `file`
+  ok: docs: defaults match registry registry={"mode":"symbols","limit":15,"includeContent":false,"exact":false,"caseSensitive":false,"regex":false,"offset":0}
+  ok: docs: every input property is documented 13 props
+  ok: docs: all four modes appear in the enum
+  ok: docs: retrieval-not-analysis positioning is documented
+  ok: docs: generator verify mode passes (bb_search.md byte-fresh)
+  ok: evidence: s1.json exists, validates, verified verified
+  ok: evidence: s2.json exists, validates, verified verified
+  ok: evidence: s3.json exists, validates, verified verified
+  ok: evidence: s4.json exists, validates, verified verified
+  ok: evidence: all 4 S-issues claim verified with negatives S1:9neg S2:13neg S3:4neg S4:4neg
+  ok: gate: verify-search-e2e.ts wired into quality gate
+  ok: gate: verify-search-e2e.ts wired into npm run verify
+  ok: gate: verify-search-corpus.ts wired into quality gate
+  ok: gate: verify-search-corpus.ts wired into npm run verify
+  ok: gate: verify-search-honesty.ts wired into quality gate
+  ok: gate: verify-search-honesty.ts wired into npm run verify
+  ok: gate: evidence validator (B3) is part of the gate
+  ok: gate: tampered doc (failed>0, no negatives) cannot claim verified [negative] summary.failed 3 != actual 0; negativeCases 0 is less than 9 checks marked negative; verified claim has failed>0; verified claim has zero negative cases
+  ok: gate: removing any single S-verifier breaks the gate [negative] all verifiers still present
+S5: VERIFIED (24/24 passed, 2 negatives)

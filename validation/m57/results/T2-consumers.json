@@ -2,13 +2,19 @@
   "probe": "M57.T2-consumers",
   "issue": 790,
   "milestone": "M57",
-  "at": "2026-11-05T04:31:58.838Z",
-  "commit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
-  "checks": 1,
-  "passed": 1,
-  "failed": 0,
-  "corpus": null,
+  "at": "2026-11-19T05:08:59.960Z",
+  "commit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "checks": 11,
+  "passed": 10,
+  "failed": 1,
+  "corpus": {
+    "files": 0,
+    "symbols": 0,
+    "relationships": 0,
+    "flagged": 0,
+    "digest": "e3b0c44298fc1c14"
+  },
   "classifierEpoch": "d1af1c1e4ba070dc",
   "verifierCommand": "BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> bun run script/m57/verify-t2-consumers.ts",
-  "status": "verified"
+  "status": "known-gap"
 }

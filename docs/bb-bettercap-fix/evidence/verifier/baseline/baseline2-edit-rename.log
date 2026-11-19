@@ -1,0 +1,265 @@
+[INFO] [19:18:21] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/wasm/tree-sitter-typescript.wasm"}
+  ok: TS: declaration is a binding, not a reference
+  ok: TS: object-literal property key is NOT a reference [negative]
+  ok: TS: local binding is NOT a reference [negative]
+  ok: TS: member access (local.target) is NOT a reference [negative]
+  ok: TS: exactly one reference site (target()) got 6
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"python"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"python","wasmPath":"/tmp/bb-wasm_tree-sitter-python_tree-sitter-python.wasm_32_1r6dvg6v42"}
+  ok: Python: declaration is a binding, not a reference
+  ok: Python: self.target() is NOT a reference [negative]
+  ok: Python: exactly one reference site (target()) got 3
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"java"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_32_1r6dvpo0my"}
+  ok: Java: declaration is a binding, not a reference
+  ok: Java: this.target() and helper.target() are NOT references [negative] refs=1 members=2
+  ok: TS: comment/string text is never an occurrence got 0
+  ok: findDeclarationName locates the binding identifier got 16 want 16
+  ok: typescript: declaration name is a recognized binding parent=function_declaration
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"javascript"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+  ok: javascript: declaration name is a recognized binding parent=function_declaration
+  ok: python: declaration name is a recognized binding parent=function_definition
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"ruby"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"ruby","wasmPath":"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_32_1r6dwjgmik"}
+  ok: ruby: declaration name is a recognized binding parent=method
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"haskell"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"haskell","wasmPath":"/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm_32_1r6dx22f0l"}
+  ok: haskell: declaration name is a recognized binding parent=bind
+  ok: lua: declaration name is a recognized binding parent=function_declaration
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"c"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"c","wasmPath":"/tmp/bb-wasm_tree-sitter-c_tree-sitter-c.wasm_32_1r6dxtfysz"}
+  ok: c: declaration name is a recognized binding parent=function_declarator
+[INFO] [19:18:21] [ast-engine] language grammar allocated {"language":"cpp"}
+[INFO] [19:18:21] [ast-engine] language parser loaded {"language":"cpp","wasmPath":"/tmp/bb-wasm_tree-sitter-cpp_tree-sitter-cpp.wasm_32_1r6dy4x7jz"}
+  ok: cpp: declaration name is a recognized binding parent=function_declarator
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"rust"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"rust","wasmPath":"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_32_1r6dynqr4a"}
+  ok: rust: declaration name is a recognized binding parent=function_item
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"go"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"go","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/wasm/tree-sitter-go.wasm"}
+  ok: go: declaration name is a recognized binding parent=function_declaration
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"zig"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"zig","wasmPath":"/tmp/bb-wasm_tree-sitter-zig_tree-sitter-zig.wasm_32_1r6dz3ockg"}
+  ok: zig: declaration name is a recognized binding parent=function_declaration
+  ok: java: declaration name is a recognized binding parent=method_declaration
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"kotlin"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"kotlin","wasmPath":"/tmp/bb-wasm_tree-sitter-kotlin_tree-sitter-kotlin.wasm_32_1r6dzcgfhj"}
+  ok: kotlin: declaration name is a recognized binding parent=function_declaration
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"scala"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"scala","wasmPath":"/tmp/bb-wasm_tree-sitter-scala_tree-sitter-scala.wasm_32_1r6e03oxnn"}
+  ok: scala: declaration name is a recognized binding parent=function_definition
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"groovy"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"groovy","wasmPath":"/tmp/bb-wasm_tree-sitter-groovy_tree-sitter-groovy.wasm_32_1r6e0pjmfw"}
+  ok: groovy: declaration name is a recognized binding parent=function_definition
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"swift"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"swift","wasmPath":"/tmp/bb-wasm_tree-sitter-swift_tree-sitter-swift.wasm_32_1r6e1af1bt"}
+  ok: swift: declaration name is a recognized binding parent=function_declaration
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"dart"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"dart","wasmPath":"/tmp/bb-wasm_tree-sitter-dart_tree-sitter-dart.wasm_32_1r6e2i0wx0"}
+  ok: dart: declaration name is a recognized binding parent=function_signature
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"csharp"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"csharp","wasmPath":"/tmp/bb-wasm_tree-sitter-c-sharp_tree-sitter-c_sharp.wasm_32_1r6e307nj8"}
+  ok: csharp: declaration name is a recognized binding parent=method_declaration
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"fsharp"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"fsharp","wasmPath":"/tmp/bb-wasm_tree-sitter-fsharp_tree-sitter-fsharp.wasm_32_1r6e4aofkr"}
+  ok: fsharp: declaration name is a recognized binding parent=function_declaration_left
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"objective-c"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"objective-c","wasmPath":"/tmp/bb-wasm_tree-sitter-objc_tree-sitter-objc.wasm_32_1r6e6c2tmh"}
+  ok: objective-c: declaration name is a recognized binding parent=method_declaration
+  ok: typescript: declaration name is a recognized binding parent=class_declaration
+  ok: rust: declaration name is a recognized binding parent=struct_item
+  ok: cpp: declaration name is a recognized binding parent=class_specifier
+  ok: go: declaration name is a recognized binding parent=type_spec
+  ok: ruby: declaration name is a recognized binding parent=class
+  ok: fsharp: declaration name is a recognized binding parent=type_name
+  ok: dart: declaration name is a recognized binding parent=class_definition
+  ok: java: declaration name is a recognized binding parent=class_declaration
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"bash"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_32_1r6e858a37"}
+  ok: bash: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"perl"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"perl","wasmPath":"/tmp/bb-wasm_tree-sitter-perl_tree-sitter-perl.wasm_32_1r6e8sl9n6"}
+  ok: perl: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"erlang"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"erlang","wasmPath":"/tmp/bb-wasm_tree-sitter-erlang_tree-sitter-erlang.wasm_32_1r6e9njbqx"}
+  ok: erlang: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"clojure"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"clojure","wasmPath":"/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm_32_1r6ea50aqk"}
+  ok: clojure: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"powershell"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"powershell","wasmPath":"/tmp/bb-wasm_tree-sitter-powershell_tree-sitter-powershell.wasm_32_1r6eab4nvw"}
+  ok: powershell: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [19:18:22] [ast-engine] language grammar allocated {"language":"php"}
+[INFO] [19:18:22] [ast-engine] language parser loaded {"language":"php","wasmPath":"/tmp/bb-wasm_tree-sitter-php_tree-sitter-php.wasm_32_1r6eb10poc"}
+  ok: php: name is a documented reference-identification gap (not an occurrence) got 0
+  ok: rust: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_expression isBinding=false isRef=true isMember=false
+  ok: rust: member name `field` in `obj.field` is NOT a reference [negative] parent=field_expression isMember=true
+  ok: java: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_access isBinding=false isRef=true isMember=false
+  ok: java: member name `field` in `obj.field` is NOT a reference [negative] parent=field_access isMember=true
+  ok: cpp: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_expression isBinding=false isRef=true isMember=false
+  ok: cpp: member name `field` in `obj.field` is NOT a reference [negative] parent=field_expression isMember=true
+  ok: scala: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_expression isBinding=false isRef=true isMember=false
+  ok: python: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=attribute isBinding=false isRef=true isMember=false
+  ok: python: member name `field` in `obj.field` is NOT a reference [negative] parent=attribute isMember=true
+  ok: go: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=selector_expression isBinding=false isRef=true isMember=false
+  ok: go: member name `field` in `obj.field` is NOT a reference [negative] parent=selector_expression isMember=true
+  ok: typescript: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=member_expression isBinding=false isRef=true isMember=false
+  ok: typescript: member name `field` in `obj.field` is NOT a reference [negative] parent=member_expression isMember=true
+  ok: dart: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=argument isBinding=false isRef=true isMember=false
+  ok: swift: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=navigation_expression isBinding=false isRef=true isMember=false
+  ok: kotlin: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=navigation_expression isBinding=false isRef=true isMember=false
+  ok: csharp: receiver `obj` in `obj.Field` is a REFERENCE (not a binding) parent=member_access_expression isBinding=false isRef=true isMember=false
+  ok: Groovy: qualified type reference `com.foo.Bar` — `Bar` is a REFERENCE parent=scoped_type_identifier isRef=true isMember=false
+  ok: Java: qualified type reference `com.foo.Bar` — `Bar` is a REFERENCE parent=scoped_type_identifier isRef=true isMember=false
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:24] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:24] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [19:18:26] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 23ms [plan=linear largest-intermediate=6]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:18:27] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"4322ec5c","danglingSources":2,"totalRelationships":7}
+  enriching done 100%
+  ✅ Enriched 5 relationships (0 patterns) in 50ms
+        ⚠ 2 dangling sources, 2 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 11ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:18:27] [project-health] project health computed {"projectId":"4322ec5cc9f1e3cd66282f1d178838ef9cbebbb3","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(32ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 18ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 10ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 5ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:29] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:31] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 11 relationship row(s) in changed files or their importers
+  bounded: reconciled 2 receiver-owned relationship row(s)
+[WARN] [19:18:31] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"4322ec5c","danglingSources":2,"totalRelationships":7}
+[INFO] [19:18:31] [project-health] project health computed {"projectId":"4322ec5cc9f1e3cd66282f1d178838ef9cbebbb3","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ok: ts: refactor produces exactly one change got 1
+  ok: TS: declaration renamed
+  ok: TS: reference call renamed
+  ok: TS: property key NOT renamed [negative]
+  ok: TS: other-object method NOT renamed [negative]
+  ok: TS: member access NOT renamed [negative]
+  ok: TS: string NOT renamed [negative]
+  ok: TS: comment NOT renamed [negative]
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:33] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:33] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [19:18:35] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 15ms [plan=linear largest-intermediate=2]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 5ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:18:36] [project-health] project health computed {"projectId":"ec1958b2eba070c43e2f70d8b61e09b3b03e8c98","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:37] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:39] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: resolved 2 relationship row(s) in changed files or their importers
+[INFO] [19:18:39] [project-health] project health computed {"projectId":"ec1958b2eba070c43e2f70d8b61e09b3b03e8c98","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ok: python: refactor produces exactly one change got 1
+  ok: Python: declaration renamed
+  ok: Python: reference call renamed
+  ok: Python: dict string key NOT renamed [negative]
+  ok: Python: string NOT renamed [negative]
+  ok: Python: comment NOT renamed [negative]
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:40] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:42] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 15ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 6 relationships (0 patterns) in 4ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:18:42] [project-health] project health computed {"projectId":"c15426641157f8d4c701f25488a74a8ce5fb487e","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(3ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 16ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:43] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:45] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 3 cross-file edge(s) into re-parsed files
+  bounded: resolved 5 relationship row(s) in changed files or their importers
+[INFO] [19:18:45] [project-health] project health computed {"projectId":"c15426641157f8d4c701f25488a74a8ce5fb487e","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ok: java: refactor produces exactly one change got 1
+  ok: Java: declaration renamed
+  ok: Java: reference call renamed
+  ok: Java: other-object method NOT renamed [negative]
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:18:47] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:18:47] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:18:50] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 25ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:18:50] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"17653de9","danglingSources":3,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 6ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 6ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:18:50] [project-health] project health computed {"projectId":"17653de9f58042d9db278999d5ddb1d05a3b0649","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(8ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  ok: cross-file refactor fails loud on a stale caller file [negative: not fresh]
+E2: VERIFIED (84/84 passed, 21 negatives)

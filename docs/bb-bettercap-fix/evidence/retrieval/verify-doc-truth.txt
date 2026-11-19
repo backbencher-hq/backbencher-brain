@@ -1,0 +1,243 @@
+[brain] preparing the parallel worker pool (6 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:34:59] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:34:59] [parallel-indexer] project index built {"ext":".rb","files":2,"types":2}
+[INFO] [19:35:00] [parallel-indexer] project index built {"ext":".ts","files":3,"types":0}
+[WARN] [19:35:00] [parallel-indexer] parent event loop was blocked {"ms":1175,"stalledTotalMs":1175}
+[INFO] [19:35:04] [parallel-indexer] worker pool complete {"files":6,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":1175}
+[INFO] [19:35:04] [parallel-indexer] override companion (ruby): 2 owners, 0 file(s) re-analyzed, 0 reapplied, 0 confirmed, 0 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 40ms [plan=linear largest-intermediate=9]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:35:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"93cbe370","danglingSources":12,"totalRelationships":20}
+  enriching done 100%
+  ✅ Enriched 8 relationships (0 patterns) in 52ms
+        ⚠ 12 dangling sources, 4 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 16ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:04] [project-health] project health computed {"projectId":"93cbe3708df6f7179629a4cd87584457408d2427","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":3,"bottlenecks":0}
+  ✓ taint(1ms) + health(32ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 14ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 6ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 5ms
+  ok: file mode: an existing DIRECTORY resolves — target="src" citations=12 unknowns=[]
+  ok: file mode: a path PREFIX resolves — target="src/lib" citations=6
+  ok: file mode: a basename WITHOUT extension resolves — target="math" citations=6
+  ok: file mode: an EXACT path still resolves — target="src/lib/math.ts" citations=6
+  ok: file mode: an absent path resolves to no files — target="no/such/file.ts" fileCitations=0 allCitations=1 kinds=["finding"]
+  ok: file-mode resolution discriminates existing from absent [negative] — exact resolved 1 file(s), absent resolved 0 — so an existing directory scoring 0 is a real miss
+  ok: empty result must NOT pass — passed=false citations=0 facts=0 unknowns=6
+  ok: empty-result predicate convicts the defect shape [negative] — a synthetic {citations:0, facts:0, passed:true} is REJECTED by emptyMustFail
+  ok: a symbol-directed relationship must not name a FILE — 0 offender(s): []
+  ok: the fixture really does produce relationship facts — 4 relationship facts, types=["imports","calls","exports"]
+  ok: file-naming predicate convicts a file-named target [negative] — 'calls src/lib/math.ts' is flagged; 'calls add' is not — the predicate discriminates
+  ok: citation ids carry no absolute path — 0/38 leak; sample="file:lib/helper.rb"
+  ok: citation ids are unique — 38/38
+  ok: absolute-path predicate convicts an old-shape id [negative] — an id built the old way (absolute path) is detected as leaking
+  ok: symbol mode emits its declared required sections — emitted=["API","Behavior","Dependencies","Tests","Limitations"] missing=[]
+  ok: symbol mode: completeness.expected is the mode's declared section count — expected=5 declared=5 covered=5 unknown=1
+  ok: file mode emits its declared required sections — emitted=["Overview","Public symbols","Dependencies","Risks"] missing=[]
+  ok: file mode: completeness.expected is the mode's declared section count — expected=4 declared=4 covered=4 unknown=0
+  ok: module mode emits its declared required sections — emitted=["Purpose","Entry points","Public surface","Module graph"] missing=[]
+  ok: module mode: completeness.expected is the mode's declared section count — expected=4 declared=4 covered=4 unknown=0
+  ok: feature mode emits its declared required sections — emitted=["Entry points","Flow","Components","Test coverage"] missing=[]
+  ok: feature mode: completeness.expected is the mode's declared section count — expected=4 declared=4 covered=4 unknown=2
+  ok: api mode emits its declared required sections — emitted=["Endpoints","Inputs and outputs","Errors","Examples","Dependencies"] missing=[]
+  ok: api mode: completeness.expected is the mode's declared section count — expected=4 declared=4 covered=4 unknown=4
+  ok: project mode emits its declared required sections — emitted=["Architecture","Inventory","Risks","Documentation map","Dependencies"] missing=[]
+  ok: project mode: completeness.expected is the mode's declared section count — expected=4 declared=4 covered=4 unknown=0
+  ok: coverage mode emits its declared required sections — emitted=["Documented","Undocumented","Stale","Unsupported"] missing=[]
+  ok: coverage mode: completeness.expected is the mode's declared section count — expected=4 declared=4 covered=4 unknown=0
+  ok: the old completeness shape is recognised as a tautology [negative] — covered=1, unknown=0, expected=1 is the old covered+unknown shape; the gate now compares expected against the declared section count
+  ok: summary is not a copy of the first section's prose — summary="6 file(s) and 9 symbol(s) in scope, 47 cited claim(s) across"
+  ok: no section prose is its facts joined by spaces — 0 of 5 sections repeat their facts verbatim
+  ok: every listed source is referenced by a fact — 0/38 unreferenced, e.g. []
+  ok: every file source is rendered as a markdown link — 34 linked of 34 file citation(s); index-scoped footnotes=4/4; first="- [1](lib/helper.rb) — file: Indexed file lib/helper.rb"
+  ok: every rendered source link resolves on disk — 34 link(s); unresolved=none
+  ok: every inline marker resolves to a listed source — 34 marker(s) used, 34 listed; dangling=[]
+  ok: markdown has no heading with an empty body — no empty section between two headings / at the end
+  ok: the file-link predicate convicts an unlinked source [negative] — a linked source is recognised and an unlinked one is not — the predicate discriminates
+  ok: no duplicate fact statements — 0 duplicate(s) of 47: []
+  ok: duplicate predicate convicts a duplicate [negative] — a synthetic duplicated statement pair is detected
+  ok: a locally-present import is not called external — 0/0 mislabelled: []
+  ok: local-import predicate convicts a real local import [negative] — built from a path the index holds (lib/helper.rb); flags it, spares an absent package
+  ok: indexed findings produce finding citations — finding citations=1; kinds=["file","relationship","import","health","finding","symbol"]
+  ok: the fixture really does hold an open finding [negative] — one open finding was planted in brain_analysis_finding, so an absent finding citation is a real miss
+  ok: project mode does not document dotfile/CI config first — first facts: ["The index holds 6 files, 9 symbols, 20 relationships and 3 imports.","ruby: 2 files, 4 symbols.","yaml: 1 files, 3 symbols."]
+  ok: dotfile predicate is not vacuous [negative] — a synthetic .github first-fact is detected
+  ok: project mode reports a real sourceLanguage — sourceLanguage=ruby indexedLanguages=["ruby","typescript","yaml"]
+  ok: snapshotId is independent of limit — limit2=0c0dcf0090df9f84decb164eccbbb2e8…(32ch) limit50=0c0dcf0090df9f84decb164eccbbb2e8…(32ch)
+  ok: reference carries the real index and schema version — indexVersion=v1.0.0 (project status row: {"v":"v1.0.0","files":6}) schemaVersion=1 (schema: 1)
+  ok: the version predicate distinguishes a project row from the __schema__ sentinel [negative] — a value read from the sentinel row is not the same as the null an un-indexed project must report
+  ok: the token estimate covers the whole payload — estimatedTokens*4=19816 actualChars=19811
+  ok: T27: estimatedTokens covers the emitted payload — estimatedTokens*4=28460 wireChars=28456
+  ok: T27: budget.passed agrees with the payload measurement — passed=true wireTokens=7114 maxTokens=8000
+  ok: T27: the payload still carries the declared section set — sections=5 completeness=true
+  ok: T27: the freshness envelope publishes its own verdict — {"fresh":6,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":"","passed":true}
+  ok: T27 the payload predicate convicts a figure that undercounts the payload [negative] — a figure 7104 tokens is rejected for 28456 chars
+  ok: the default call fits the default budget — est=4954 max=8000 output-budget drop(s)=0
+  ok: maxTokens below the default is honoured — requested=200 effective=200
+  ok: an unmet budget is declared, not hidden — budgetPassed=false est=1371 declaresShortfall=true
+  ok: trimming never drops a required section — sections kept=["architecture","inventory","risks","documentation-map","dependencies"]
+  ok: an over-budget result declares an output-budget unknown — over=false est=4954 max=8000 outputBudgetUnknowns=0
+  ok: detail changes the output — brief=1986tok/4sec deep=5864tok/6sec
+  ok: audience changes the output — user=architecture|inventory|risks|documentation-map|dependencies maintainer=architecture|inventory|risks|documentation-map|dependencies|evidence-index
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:35:07] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:35:10] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 14ms [plan=none largest-intermediate=-1]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 8ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 14ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:10] [project-health] project health computed {"projectId":"caf6b9414d40ffcedf9dc5216573b42a51e5dd9a","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(29ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 12ms
+  ⚠️  Index health: 85% — 2 warnings (run bb_health(integrity=true) for details)
+    ❌ Embedding Coverage: The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. 2 symbols are indexed.
+    ❌ Relationship Density: 0.00 relationships per symbol. Below 0.5 may indicate relationship extraction issues (some language analyzers may not produce relationships). Below 0.1 indicates a likely indexing failure.
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  ok: T18: a prose-language symbol is never given a fabricated docstring — 1 markdown symbol(s); documented-claims=0; fabricated-from-bold-prose=0
+  ok: T18: a prose-language symbol is reported undocumented rather than dropped — undocumented-claims=2 unknowns=2
+  ok: T20: no required section is empty without an unknown naming THAT section — 29 declared section(s) x 3 detail levels x 7 modes = 609 checks; placeholders: 0
+  ok: T20 the unexplained-empty predicate convicts a misaimed explanation [negative] — an empty section with an unknown aimed elsewhere is flagged; a populated section never is
+  ok: T20 an explained-empty section is accepted [negative] — an unknown naming the section itself is an explanation
+  ok: T21: every unknown names a section the result actually renders — 0 misaimed: []
+  ok: T22: symbol `limitations` is real cited content, not an empty section — 1 fact(s), 1 citation(s); first: 1 test file(s) are indexed in this project and none names add, so its test coverage is unestablished rather than absent.
+  ok: T22: every `limitations` fact names the symbol it constrains — 1/1 name "add"; generic facts would pass the citation check and mean nothing
+  ok: T22 the cited-content and subject predicates each convict their defect shape [negative] — a fact citing nothing is rejected by the citation predicate; a cited fact naming no subject is rejected by the subject predicate; the real section passes both
+  ok: T22: coverage `unsupported` names what it could not measure, cited — 2 fact(s): src/broken.ts is indexed with parser errors (Unexpected token at line 1), so its symbols and by || 1 symbol(s) counted as undocumented are in a language whose comment marker is "#", which this t
+  ok: T22: a symbol whose comment marker is unreadable is called unverified, not undocumented — undocumented lists 1 'legacy' row(s) (classification unknown); unsupported states the verdict is unverified: true
+  ok: T24: `api` mode describes an HTTP surface the index DOES attribute — endpoints 1 fact(s): function serve(req: Request, res: Response) is defined in src/server.ts at lines 1-1, in a file the ; inputs-outputs 1 fact(s): serve is defined in src/server.ts at line 1, takes req: Request, res: Response and returns void.
+  ok: T24: `api` mode says which of its sections it cannot fill, and why — errors explained: true; examples explained: true; errors facts=0 examples facts=0
+  ok: T28: `endpoints` reports callables and route-signalled symbols only — 1 endpoint fact(s) in a file holding a handler, a struct and a module declaration; handler present: true; struct or module leaked in: 0
+  ok: T28: an endpoint the index cannot route says so, instead of implying a route exists — 1/1 state that no method, path or route is recorded; first: function serve(req: Request, res: Response) is defined in src/server.ts at lines 1-1, in a file the index attributes to the HTTP framework net_http. T
+  ok: T28 the endpoint-subject predicate convicts each non-callable type [negative] — struct, module, property, variable and interface subjects are rejected; method and function subjects are accepted — and the gate's own endpoint list is judged by this predicate
+  ok: T24: with no HTTP surface indexed, `api` claims no endpoint and says what it looked for — endpoints facts with the attribution removed: 0 (was 1); 5 note(s) name it; the section's own explanation: "No endpoint is indexed. This tool looked for an API contract path, a route, endpoint or controller symbol, and a callable symbol in a file the index attributes to an HTTP framework; the index holds 0 contract path(s), 0 route-ish symbol type(s), and 0 HTTP-att"
+  ok: T25: a required section that can render empty and cannot explain itself throws — an empty required section with no note and no emptyExplanation is refused rather than shipped as a placeholder
+  ok: T25: a required section that DOES declare why it can be empty is accepted — a declared explanation, a RENDERED section that has facts, and an OPTIONAL section are each accepted — the guard is narrow, and it judges the rendered section because a draft can be capped to nothing on its way in
+  ok: T25: the written explanation names its own section — wrote [{"statement":"the index records no error surface","reason":"not-indexed","affectedSection":"errors"}]
+  ok: T25: a caveat does not excuse an empty section, but an absence does — a freshness note about endpoints still left the section unexplained (1 explanation written); a test-gap note about tests was accepted as the explanation (0 written) — otherwise the reader is shown a caveat and no reason
+  ok: T25: a note naming a section the result does not render throws — a note aimed at an unrendered section is refused; a note aimed at a rendered one is accepted
+  ok: T25 both guards convict their defect shape [negative] [negative] — neither guard is a no-op: both reject a result they should reject
+  ok: T29: the same concern, aimed in one mode and defaulted in another, is treated differently — the scope note DEFAULTED onto api's lead: both empty sections were written up (2: endpoints,inputs-outputs), so "endpoints" got its own reason rather than inheriting a scope caveat; the same note AIMED at file mode's "overview": only "public-symbols" was written (1: public-symbols)
+  ok: T29 the aimed-or-defaulted rule convicts both defect shapes [negative] — a scope note defaulted onto a section that does not render is struck from the explaining set; a freshness note aimed at a section the mode does render is kept — so the rule discriminates rather than disabling caveats wholesale
+  ok: T30: a signature with no indexed parameter list never claims an empty one — with-args rendered: function withArgs(a: number, b: string): void is defined in src/lib/math.ts at lines 5-5.; without-args rendered: function withoutArgs(…): void is defined in src/lib/math.ts at lines 5-5; the index records no parameter list for it, so its argum; property rendered: property aProperty: void is defined in src/lib/math.ts at lines 5-5. — and it carries NO caveat, because the fixture's index records a parameter list for no property at all, so the absence is the expected shape there rather than a gap. A hand-written list of kinds that take arguments gets this wrong in both directions: it excluded property, which does carry parameter lists for 343 symbols in the typescript index, and it would have added a caveat to every field in a project whose index never records them.
+  ok: T30 the false-signature predicate convicts both defect shapes [negative] — an empty bracket pair is a false claim whether or not the caveat sits beside it — the caveat says the list is unknown, the brackets say it is empty; a bare name with the caveat, and a property that never took arguments, are both accepted
+  ok: T31: a recorded parameter type is rendered, and an absent one renders the DECLARED marker — typed: function typedParams(alpha: Alpha, beta?: Beta[]): void is defined in src/lib/math.ts at lines 7-9. types=[["Alpha","Alpha"],["Beta[]","Beta[]"]]; untyped: function untypedParams(gamma: unknown, delta: unknown): void is defined in src/lib/math.ts at lines 7-9. types=[["unknown","unknown"],["unknown","unknown"]] marker="unknown" — a type the index does not record must not appear as itself, and optionality is the language's notation where the language has one (`name?: type` in TS/JS; the word `optional` where it does not, because `name?: type` is TS syntax and would be wrong in a Go document)
+  ok: T31 the marker predicate convicts a fabricated type AND a hidden absence [negative] — the declared marker passes; a type the row never held fails; a rendering that does not show the absence at all fails; and a parameter that is not in the statement is never counted as one that is
+  ok: T32: a rendered statement carries no unescaped markdown-active character — 8 fact/unknown bullet(s) rendered for a symbol whose return type is `map[string]*Server`; bullets with a bare `*` `_` `\`` `[` or `]`: 0; sample: -  _(100%)_ function hostileName(m: \*Server): map\[string\]\*Server is defined in src/lib/math.ts at lines 11-13.[1]
+  ok: T32 the escaping predicate convicts an unescaped statement [negative] — a bare asterisk, a bare bracket pair and a bare underscore are each flagged; the fully escaped form is accepted; and both pieces of markdown the renderer emits are invisible to the predicate
+  ok: T32: escaping did not break the citation markers — 5 bullet(s) still carry an inline citation marker after escaping; first: -  _(100%)_ function hostileName(m: \*Server): map\[string\]\*Server is defined in src/lib/math.ts at lines 11
+  ok: T33: a populated section says how its claims were obtained and what they rest on — 5 populated section(s); 5 name how the claims were obtained, 5 name what they rest on. e.g. 2 claims, 2 read directly from the index, resting on 1 source (1 symbol).
+  ok: T33: the richer prose still does not restate a fact — 0 section(s) quote a fact verbatim in their prose; orientation and restatement are different jobs and the spec separates them
+  ok: T33: an empty section's prose is its own explanation — 1 empty section(s), 1 carrying a reason rather than the generic absence. e.g. No indexed test relationship for add, and no indexed test file names it.
+  ok: T33 the prose predicates convict every shape they exist for [negative] — the old count-only phrasing is rejected; an empty section with a note gets its reason; an empty section with no note keeps the honest absence and is NOT counted as explained; a populated section states the claim count; and an inferred claim is named as inferred rather than folded into a total
+  ok: T26: every fact is either emitted or accounted for by a published bound — 7 modes x 3 detail levels; 5 cap note(s) announced; violations: 0
+  ok: T26: the published `emitted` count IS the section's fact count — 0 mismatch(es) — a bound that reports a number other than the one in the section is the same fabrication as a prose claim, with a number attached
+  ok: T26 the bounds predicate convicts the uncounted-fact shape [negative] — 9 emitted against a cap of 5 is rejected; 25 emitted against a cap of 20 is rejected; 12 emitted as 20 capped minus 8 dropped for budget is accepted — so the predicate discriminates and is not a tautology over real data
+  ok: T26: the cap really does bind — the widest section is cut to it — widest section had 20 fact(s) available, the cap is 5, and no section emitted more than the cap: architecture 5/6, inventory 5/20, risks 3/3, documentation-map 5/11
+  ok: T19: the fixture publishes at least one symbol-directed edge type — types=["calls","contains","exports","imports","references"] symbolDirected=["calls","exports","imports","references"]
+  ok: T19: every symbol-directed edge names a SYMBOL, whatever its type — 0 offender(s) across types ["exports","imports","calls"]: []
+  ok: T19: the symbol-directed predicate discriminates by type [negative] — 'contains' may name a file; 'calls' may not, and the file-naming predicate flags only the first
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:35:15] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:35:15] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:35:20] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 33ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:35:20] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"b4e18407","danglingSources":3,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 17ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 8ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:20] [project-health] project health computed {"projectId":"b4e184076928d07af8b598d489a2a4848fabbc0e","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(10ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 7ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 6ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 6ms
+  ok: D1: inbound edge names the documented symbol — ["caller calls callee."]
+  ok: D1: no relationship statement names the same symbol twice — ["caller calls callee."]
+  ok: D1: the pair-name predicate convicts a swapped pair [negative] — a synthetic duplicated pair is rejected
+  ok: D9: the symbol-selection bound is declared with both numbers — ["The scope contains more indexed files than the evidence limit allows; 4 file(s) ","The evidence limit selected 2 of 7 indexed symbol(s) in this scope (at most twic","Current source for src/legacy.py cannot be confirmed: the file changed after ind","The per-section evidence cap is 1 at detail \"standard\", so 5 of 6 architecture i","The per-section evidence cap is 1 at detail \"standard\", so 15 of 16 inventory it","The per-section evidence cap is 1 at detail \"standard\", so 2 of 3 risks items we","The per-section evidence cap is 1 at detail \"standard\", so 1 of 2 documentation ","The per-section evidence cap is 1 at detail \"standard\", so 4 of 5 dependencies i"]
+  ok: D9: the bound predicate convicts a silent selection [negative] — a silent claim is rejected
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:35:24] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:35:24] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [19:35:28] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 45ms [plan=linear largest-intermediate=1]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:35:28] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"21108b84","danglingSources":1,"totalRelationships":1}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 11ms
+        ⚠ 1 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:28] [project-health] project health computed {"projectId":"21108b8431dbb1f9c0c38712d2d9b94529a45243","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(7ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 9ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  ok: D2: emitted stale count equals the stated stale sources — references.stale=2 emittedStale=2
+  ok: D2: the collected total is published separately — {"passed":true,"broken":0,"stale":2,"missing":0,"collectedStale":3,"collectedMissing":0}
+  ok: D2: the emitted-count predicate convicts a collected count [negative] — a synthetic collected count is rejected
+  ok: D3: stale footer names cited files, not findings — "1 stale, 0 missing of 1 cited file(s) — this read does NOT auto-refresh this file — the rows describe the index as it st"
+  ok: D3: declined repair is declared with its reason — decline declared
+  ok: D3: the footer predicate convicts the old vocabulary [negative] — the old sentence is rejected
+  ok: D20: the reported budget describes the payload — estimate=2574 payloadChars=10294
+  ok: D20: an over-budget payload is never reported as passing — passed=false payloadTokens=2574 maxTokens=300
+  ok: D20: the payload-budget predicate convicts an object-only measurement [negative] — a compact-object measurement does not cover the decorated payload
+  ok: staleness footer does not name findings — footer="3 stale, 0 missing of 9 cited file(s) — this read does NOT auto-refresh — the rows describe the index as it st"
+  ok: every `refresh` the output names is a real input — footerNamesRefresh=true schemaHasRefresh=true
+  ok: handler mode=symbol returns parseable JSON — isError=false bytes=8135
+  ok: handler mode=file returns parseable JSON — isError=false bytes=8129
+  ok: handler mode=module returns parseable JSON — isError=false bytes=22493
+  ok: handler mode=feature returns parseable JSON — isError=false bytes=7977
+  ok: handler mode=api returns parseable JSON — isError=false bytes=9590
+  ok: handler mode=project returns parseable JSON — isError=false bytes=30264
+  ok: handler mode=coverage returns parseable JSON — isError=false bytes=13092
+
+DOC TRUTH: PASS

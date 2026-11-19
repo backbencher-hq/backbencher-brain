@@ -1,0 +1,7 @@
+  FAIL: bb_doc fixture Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/e4e3ff13e465c7bf58921a0d763580fd5ac48974'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-doc.ts:42:3)
+
+BB_DOC: 1 FAILURES

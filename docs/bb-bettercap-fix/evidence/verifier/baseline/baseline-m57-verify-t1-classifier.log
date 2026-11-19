@@ -1,0 +1,12 @@
+[brain] preparing the parallel worker pool (5 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [18:57:15] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [18:57:15] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [18:57:15] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [18:57:17] [parallel-indexer] worker pool complete {"files":5,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  ok C1: /spec/*.json data fixture is NOT flagged
+  ok C2a: src/x.test.ts IS flagged
+  ok C2b: tests/helper.py IS flagged
+  ok C3: plain production source is NOT flagged
+  ok C4: indexer flag == canonical predicate on every fixture file
+  -- C5 (real-DB re-index proof) skipped: set BB_M57_REAL_DB=1 after re-index

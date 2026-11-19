@@ -58,6 +58,17 @@ const harness = new Harness({
 })
 
 const root = mkdtempSync(path.join(tmpdir(), "bb-viz-v8-"))
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back to
+// the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data }
+    : payload
+
+
 mkdirSync(path.join(root, "src", "core"), { recursive: true })
 writeFileSync(path.join(root, "src", "core", "service.ts"), [
   "export class Service {",
@@ -76,7 +87,7 @@ const ctx = { projectPath: root, projectId }
 const reply = async (args: Record<string, unknown>): Promise<string> =>
   (await handlers.bb_visualize(args, ctx)).content[0].text as string
 const json = async (args: Record<string, unknown>): Promise<any> =>
-  JSON.parse(await reply({ ...args, format: "json" }))
+  flattenEnvelope(JSON.parse(await reply({ ...args, format: "json" })))
 const byId = (r: any): Record<string, string> =>
   Object.fromEntries(r.nodes.map((n: any) => [n.id, `${n.name}:${n.type}`]))
 

@@ -1,0 +1,39 @@
+# CP1 — positive-control audit (tautology check, independent verifier)
+
+Method: for every wave-1 gate I read the gate source at frozen HEAD and extracted its explicit
+positive-control assertions (the assertions that must PASS while the defect assertions must FAIL
+pre-fix). A control is **meaningful** if it exercises the same code path the fix touches and would
+catch the over-correction (deletion/blanket-disable) the gate's defect half forbids. A control is
+**tautological** if it cannot fail independently of the defect assertion (same expression, self-derived
+expected value, or asserted against a value the gate itself just constructed). No control was
+accepted from a lane report; each line below is from the gate source.
+
+| gate | positive control(s) quoted from source | meaningful? | why |
+|---|---|---|---|
+| `script/m71/verify-refactor-safety.ts` (P0-1) | `G1 CONTROL same-package unqualified call renamed` + `G1 control text … "LoadModulesRenamed()"`; `G4 CONTROL: value-receiver member obj.target() must NOT be renamed` + `G4 CONTROL unrelated member file untouched` + `G4 CONTROL named-import call renamed` (`"renamedTarget()"`) | **YES** | control pair is adversarial in both directions: a rename must still happen where genuine (same-package unqualified call, named import) and must NOT happen for a value-receiver member. G1 would fail if the fix simply refused every plan; G4 would fail if the fix renamed every matching text. |
+| `script/m57/verify-p02-name-binding.ts` (P0-2) | `PC1 java+scala bridge rows survive (expected 3)`; `PC2 ts+js bridge rows survive (expected 2)`; both with `bridges are evidence-bearing … name-resolution`; `PC3 same-language JS relative import is not cross-language` | **YES** | PC1/PC2 assert the legitimate polyglot fixtures still produce their bridge rows (so the binding gate cannot be "fixed" by deleting the cross-language feature); PC3 asserts the same-language path is untouched. |
+| `script/verify-test-intel.ts` (P1-3) | `CONTROL: same-package Go call (session_test.go -> session.ParseCommands) is ACCEPTED`; `CONTROL: genuinely imported package call (session.New from a file importing .../v2/session) is ACCEPTED`; `CONTROL: same-package reference edge is ACCEPTED` | **YES** | the mapping fix must reject unrelated same-named calls while still accepting reachable same-package/imported calls — exactly the precision/recall pair that a naive "reject everything" would break. |
+| `script/verify-test-quality.ts` (P1-3) | `GO: printf %s alone is NOT parameterization evidence` + `…gets a null parameterization anchor`; `GO: printf-verb file still gets its real assertion evidence`; `GO: fixtures anchored on real fixture setup (t.TempDir/TempFile/MkdirAll)`; `GO: a stdlib import is NOT fixture evidence`; `JS: expect().toBe()/toThrow assertions counted`; `JS: it.each parameterization detected`; `PY: assert …`, `PY: pytest.raises …`, `PY: pytest.mark.parametrize …` | **YES** | covers removal of the JS-shaped proxy (`%s`) without zeroing Go evidence, and keeps each language's real vocabulary working (the "blanket-language-blind" over-correction is caught). |
+| `script/m73/verify-payload-envelope.ts` (P1-4/P2-5) | `A1-control: real bb_impact answer keeps counts and rows`; `A2-control: real bb_graph answer keeps its edges` + `A2: bb_graph edge SET is unchanged by the node-table dedupe (vs the engine)`; `A3-control: bb_visualize json keeps its nodes/links`; `A4-control: bb_analyze impact keeps its counts`; `B2-control: a small payload is not byte-truncated`; `D1-control: the registry census is still computed`; `D1: the stored-lead body line stays the only stored-lead count` | **YES** | an envelope could be "passed" by truncating everything; A1–A4 require the real answers to keep nonzero counts and equal the engine, B2 forbids byte-truncating small payloads, D1 keeps the security census and renames the misleading label without deleting the count. |
+| `script/verify-retrieval-contract.ts` (P2-1/P2-2) | `A1 control: unique symbol title is symbol: UniqueThing`; `A1 control: unique symbol quality.passed`; `A1 control: unique symbol cites exactly its own declaration`; `A1 control: unique symbol declares single scope`; `B4 control: symbols mode still lists the name`; `B4 control: file mode still returns source content` | **YES** | the subject-scope fix could over-scope every symbol; A1 pins the unambiguous case to a single declaration/scope/citation. B4 pins the sibling modes against collateral damage from the symbol-mode source/identity change. |
+| `script/verify-embedding-lifecycle.ts` (P2-3) | `B1 (control): backfilled configured space answers with vectors`; `B2 (control): the configured model produced the query vector`; `B3 (control): no fallback is declared when the configured space is populated`; `B4 (control): results exist in the configured space`; `C1 (control): user embedding config was not mutated` | **YES** | leg B is the mirror case (configured space populated): the fix must NOT declare a fallback or leave the configured model, and must not mutate the user's config. This catches "always fall back to local" and config-writing shortcuts. |
+| `script/verify-health-honesty.ts` (P2-4) | `C1 (control): a genuinely complete run still reports status=complete`; `C2 (control): no INCOMPLETE_INDEX on a complete run`; `C3 (control): user embedding config was not mutated` | **YES** | the honesty fix could flip status to incomplete everywhere; C1/C2 require a truly complete run to still read complete. |
+| `script/verify-analyze.ts` added section (P1-2 GO1) | `GO1 control: same-file value read still publishes`; `Go import identity: same-module specifier is internal`; `… stdlib specifier is external`; `… third-party specifier is external`; `… module-path lookalike is NOT same-module`; `… unknown module path stays undecided (phase-2 boundary)`; `readGoModulePath reads the module line`; `… returns null when there is no go.mod`; `package-main control: call inside func main publishes with its call-site line` | **YES** | the leaf-emission fix could flood rows; the same-file control pins prior behavior, and the externality controls pin both error directions (lookalike must stay external, unknown module must stay `null` rather than guess). |
+| `script/m28/verify-mcp-tools.ts`, `script/m48/verify-p1-impact-unity.ts` (adapted) | not a fix gate; only `parse()/call()` flatten the new envelope so **every pre-existing predicate keeps its identical text** | **YES (no change to controls)** | diff review: no check added/removed/relaxed (see ownership audit F2). Re-run at CP1 as regression checks. |
+
+## Tautology findings
+
+- **No tautological control found.** None of the controls derives its expected value from the thing it
+  asserts (e.g. `check(x, computeX())` shape) and each would fail under the obvious over-correction.
+- **Two weakened-RED caveats (not control tautology, but evidence strength):**
+  1. `verify-test-intel` / `verify-test-quality`: their pre-fix RED is **api-presence (weak)** — the
+     gates hard-fail because the pre-fix engine lacks the new exports, so their behavioral checks never
+     execute against pre-fix bytes (see `red-replay-summary.md`). Their GREEN at CP1 is therefore
+     necessary but not sufficient; the lane's own pre-fix behavioral capture or a negative-control run
+     should be required before the finding is called closed.
+  2. `script/verify-doc-tool-surface.ts`: GREEN at CP1 is partly attributable to the untracked generated
+     `website/src/data/tools.generated.ts` now present (it was the baseline failure's cause). Recorded
+     as environment change, not as a lane fix.
+- **m26 contract correction** (approved): replaces an over-claiming assertion with the stricter
+  declared-candidate contract; see ownership audit F9. Not a control tautology — the tier rule remains
+  exercised with explicit inputs.

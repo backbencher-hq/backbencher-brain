@@ -1,0 +1,26 @@
+{
+  "fixtureId": "go/package-main-attribution",
+  "language": "go",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "ANALYZER-SIDE CONTROL for package-main span attribution (P1-2). `resolveGoWorkSource` answers the enclosing function's own name, so a call from inside func main publishes source \"main\" at the call-site line. The reported defect (44/44 bettercap call edges bound to the 12-byte module symbol main.go:main:1, 0 to func main:20) is store-side: parallel-indexer's write-time `nameToSymbol` is first-wins, and the module symbol is emitted before functions, so it claims the `main` name. Pinned here is the half the analyzer owns: the calls row exists, and the name is not silently replaced by a synthetic scope. The binding half is a phase-2 gate (indexer source resolution, blocked on P0-2 scope) with RED evidence at docs/bb-bettercap-fix/evidence/go-imports/RED-probe-phase1.txt.",
+  "expectSymbols": [
+    { "name": "main", "kind": "function" },
+    { "name": "helper", "kind": "function" }
+  ],
+  "expectRelationships": [
+    {
+      "comment": "The analyzer must publish the call from inside func main.",
+      "type": "calls",
+      "from": "main",
+      "target": "helper"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "comment": "A call callee is never also a read (one edge per pair).",
+      "type": "uses",
+      "from": "main",
+      "target": "helper"
+    }
+  ]
+}

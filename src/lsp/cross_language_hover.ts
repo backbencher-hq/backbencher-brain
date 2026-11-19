@@ -30,7 +30,7 @@
 //   the no-regex policy.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { classifyTier, evidenceClassOf as parseEvidenceClass, type EvidenceTier } from "./evidence_tier"
+import { bindingBasisOf, classifyTier, evidenceClassOf as parseEvidenceClass, type EvidenceTier } from "./evidence_tier"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The hover projection
@@ -46,6 +46,8 @@ export interface CrossLanguageEdgeRow {
   direction: "caller" | "callee"
   /** stored evidence class (metadata.evidenceClass), when the indexer wrote one */
   evidence_class: string | null
+  /** P0-2: stored binding basis (metadata.bindingBasis); "name-only" = candidate */
+  binding_basis: string | null
 }
 
 /** The tier vocabulary a cross-language fact can carry. The vocabulary itself is
@@ -60,11 +62,15 @@ export function tierForCrossLanguageEdge(edge: {
   relationship_type: string
   confidence: number | null
   evidence_class: string | null
+  binding_basis?: string | null
+  bridge_mechanism?: string | null
 }): EdgeTier {
   return classifyTier({
     relationshipType: edge.relationship_type,
     confidence: edge.confidence,
     evidenceClass: edge.evidence_class,
+    bindingBasis: edge.binding_basis ?? null,
+    bridgeMechanism: edge.bridge_mechanism ?? null,
   })
 }
 
@@ -75,6 +81,14 @@ export interface CrossLanguageFact {
   tier: EdgeTier
   confidence: number
   relationshipType: string
+  /** P0-2: stored binding basis, never inferred; "name-only" means the target was
+   *  attached by a project-wide name match with no import/FFI/generated evidence. */
+  bindingBasis: string | null
+  /** P0-2: stored bridge mechanism; "name-resolution" is a candidate bridge even
+   *  on old rows that carry no metadata.bindingBasis. */
+  bridgeMechanism: string | null
+  /** P0-2: true when the row is a name-coincidence candidate, not an interop edge */
+  candidate: boolean
 }
 
 /** The one honest wording for a row that carries no bridge mechanism. Exported
@@ -97,6 +111,9 @@ export function factsFromRows(rows: CrossLanguageEdgeRow[], hoverLanguage: strin
       tier: tierForCrossLanguageEdge(row),
       confidence: row.confidence ?? 0,
       relationshipType: row.relationship_type,
+      bindingBasis: row.binding_basis ?? null,
+      bridgeMechanism: row.bridge_mechanism ?? null,
+      candidate: (row.binding_basis ?? null) === "name-only" || row.bridge_mechanism === "name-resolution",
     })
   }
   return facts
@@ -109,7 +126,7 @@ export function crossLanguageSection(facts: CrossLanguageFact[]): string {
   const lines = ["**cross-language** (from stored index rows only):"]
   for (const f of facts) {
     const dir = f.direction === "caller" ? "called from" : "calls into"
-    lines.push(`- ${dir} ${f.pair.split(" → ")[1]} via ${f.bridge} — ${f.tier} (confidence ${f.confidence})`)
+    lines.push(`- ${dir} ${f.pair.split(" → ")[1]} via ${f.bridge} — ${f.tier} (confidence ${f.confidence})${f.candidate ? " [candidate: name-only binding, not an interop edge]" : ""}`)
   }
   return lines.join("\n")
 }
@@ -132,7 +149,8 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
   // Callers: edges INTO the symbol; the other side is the source file's language.
   const callers = db
     .prepare(
-      `SELECT r.relationship_type, r.confidence, r.bridge_mechanism, sf.language AS other_language, r.metadata
+      `SELECT r.relationship_type, r.confidence, r.bridge_mechanism, sf.language AS other_language, r.metadata,
+              json_extract(r.metadata, '$.bindingBasis') AS binding_basis
        FROM brain_relationship r
        JOIN brain_symbol ss ON ss.id = r.source_symbol_id AND ss.project_id = r.project_id
        JOIN brain_file sf ON sf.id = ss.file_id
@@ -140,11 +158,12 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
          AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)`,
     )
     .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
-  for (const r of callers) rows.push({ ...r, direction: "caller", evidence_class: parseEvidenceClass(r.metadata) })
+  for (const r of callers) rows.push({ ...r, direction: "caller" as const, evidence_class: parseEvidenceClass(r.metadata), binding_basis: (r as { binding_basis?: string | null }).binding_basis ?? bindingBasisOf(r.metadata) } as CrossLanguageEdgeRow)
   // Callees: edges OUT of the symbol; the other side is the target file's language.
   const callees = db
     .prepare(
-      `SELECT r.relationship_type, r.confidence, r.bridge_mechanism, tf.language AS other_language, r.metadata
+      `SELECT r.relationship_type, r.confidence, r.bridge_mechanism, tf.language AS other_language, r.metadata,
+              json_extract(r.metadata, '$.bindingBasis') AS binding_basis
        FROM brain_relationship r
        JOIN brain_symbol ts ON ts.id = r.target_symbol_id AND ts.project_id = r.project_id
        JOIN brain_file tf ON tf.id = ts.file_id
@@ -152,7 +171,7 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
          AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)`,
     )
     .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
-  for (const r of callees) rows.push({ ...r, direction: "callee", evidence_class: parseEvidenceClass(r.metadata) })
+  for (const r of callees) rows.push({ ...r, direction: "callee" as const, evidence_class: parseEvidenceClass(r.metadata), binding_basis: (r as { binding_basis?: string | null }).binding_basis ?? bindingBasisOf(r.metadata) } as CrossLanguageEdgeRow)
   return rows
 }
 
@@ -224,6 +243,12 @@ export interface CrossLanguageAgentFact {
   tier: EdgeTier
   confidence: number
   relationshipType: string
+  /** P0-2: stored binding basis; "name-only" = candidate, never an interop edge */
+  bindingBasis: string | null
+  /** P0-2: stored bridge mechanism; "name-resolution" = candidate bridge */
+  bridgeMechanism: string | null
+  /** P0-2: true when the row is a name-coincidence candidate */
+  candidate: boolean
   /** the stored row id — traceability, the same field bb_graph returns */
   rowId: string
   /** `exact` when the stored row names a copy of the asked name; `owner-cascade`
@@ -488,6 +513,7 @@ function factFromRow(row: AgentFactRow, match: CrossLanguageMatch, counters: { u
     : null
   if (pair === null) { counters.unpairable++; return null }
   const self: CrossLanguageEnd = { symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line }
+  const bindingBasis = bindingBasisOf(row.metadata)
   const fact: CrossLanguageAgentFact = {
     self,
     direction: row.direction,
@@ -498,9 +524,14 @@ function factFromRow(row: AgentFactRow, match: CrossLanguageMatch, counters: { u
       relationship_type: row.relationship_type,
       confidence: row.confidence,
       evidence_class: parseEvidenceClass(row.metadata),
+      binding_basis: bindingBasis,
+      bridge_mechanism: row.bridge_mechanism,
     }),
     confidence: row.confidence ?? 0,
     relationshipType: row.relationship_type,
+    bindingBasis,
+    bridgeMechanism: row.bridge_mechanism,
+    candidate: bindingBasis === "name-only" || row.bridge_mechanism === "name-resolution",
     rowId: row.row_id,
     match,
   }

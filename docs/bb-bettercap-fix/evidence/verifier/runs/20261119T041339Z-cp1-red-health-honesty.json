@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-red/health-honesty",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-health-honesty.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix",
+  "startedAt": "2026-11-19T04:13:32.486Z",
+  "endedAt": "2026-11-19T04:13:39.855Z",
+  "durationMs": 7365,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "RED_CONFIRMED",
+  "expectRed": true,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 90,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1",
+  "stdout": "[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 26ms [plan=linear largest-intermediate=3]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 1 relationships (1 patterns) in 21ms\n        patterns: observer 1\n        ⚠ 2 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 3ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(16ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 8ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 2ms\n  ok: C1 (control): a genuinely complete run still reports status=complete\n  ok: C2 (control): no INCOMPLETE_INDEX on a complete run\n  (index line: index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written status=complete errors=0)\n  (embeddings line: embeddings: 2 rows / 2 entities / 100% of symbols)\n  (warning codes: SYNTAX_ERRORS,INCOMPLETE_INDEX)\n  ok: R1: shortfall is still detected on the line\n  FAIL: R2: bare `status=complete` never prints beside the shortfall — index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written status=complete errors=0\n  FAIL: R3: the derived status names the shortfall — index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written status=complete errors=0\n  FAIL: R4: no `force=true to rebuild from scratch` remedy on a deliberate-skip shortfall — the last index run recorded 1972 of 1973 files as indexed — 1 file(s) were found by the walk but never written, so the index is INCOMPLETE even though the status field says \"complete\". counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.\n  FAIL: R5: a warning explains the skip (size tier / deliberate skip), so force is not implied to fix it — the last index run recorded 1972 of 1973 files as indexed — 1 file(s) were found by the walk but never written, so the index is INCOMPLETE even though the status field says \"complete\". counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.\n  ok: R6: incomplete/skip warning names the skipped count\n  ok: R7: syntax warning groups attribution by language\n  FAIL: R8: syntax grouping states a count per language — 2 indexed files have syntax errors: assets/_mixins.scss, assets/_variables.less\n  FAIL: R9: embeddings line names the configured model and its coverage — embeddings: 2 rows / 2 entities / 100% of symbols\n  FAIL: R10: backfill-pending state is declared for the under-covered configured space — codes=SYNTAX_ERRORS,INCOMPLETE_INDEX\n  FAIL: R11: embeddings line distinguishes library-wide from configured-space coverage — embeddings: 2 rows / 2 entities / 100% of symbols\n  ok: C3 (control): user embedding config was not mutated\n\nHEALTH HONESTY: 8 FAILURE(S)\n",
+  "stderr": "[INFO] [23:13:37] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:13:37] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":0}\n[INFO] [23:13:39] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:13:39] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"1acb73bb\",\"danglingSources\":2,\"totalRelationships\":3}\n[INFO] [23:13:39] [project-health] project health computed {\"projectId\":\"1acb73bb800cbcd1f523b3c2541fbb29d3467e41\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 3451,
+  "stderrBytes": 737,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041339Z-cp1-red-health-honesty.json"
+}

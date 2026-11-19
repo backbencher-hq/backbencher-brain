@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ToolHandler, ToolContext, ToolResult, ToolArguments } from "../shared"
-import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
+import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, boundedResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
 import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../../../brain/database"
@@ -473,11 +473,36 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       // Not-found reports carry an empty freshness block, as before — the
       // shared envelope over zero rows IS that block, so no special case.
       const affected = rep.found ? ((rep as any).affectedFiles as Array<{ file: string }>) : []
-      return withFreshness(
-        rep as unknown as Record<string, unknown>,
-        affected.map((a) => ({ fileId: relToFileId().get(a.file) ?? null })),
-        { onRows: (statuses) => { for (const a of affected as any[]) a.stale = statusFor(statuses, a.file) !== "fresh" } },
-      )
+      const rows = affected.map((a) => ({ fileId: relToFileId().get(a.file) ?? null }))
+      const detail = rows.length ? resolveRowsFreshnessDetailed(raw, projectId as any, rows) : null
+      const statuses = detail?.statuses ?? new Map<string, string>()
+      for (const a of affected as any[]) a.stale = statusFor(statuses, a.file) !== "fresh"
+      const freshness = detail
+        ? buildStalenessEnvelope(detail.summary, { kind: "dir" })
+        : buildStalenessEnvelope({ fresh: 0, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" } as any, { kind: "dir" })
+      // ONE bounded envelope, summary FIRST: bb_impact and bb_analyze mode=impact
+      // publish the same declared bounds from the same canonical walk, so they
+      // order them the same way (a host cap must not be able to remove the
+      // declaration from one door but not the other).
+      const summary = {
+        truncated: rep.truncated,
+        truncationReason: rep.truncationReason,
+        truncationReasons: rep.truncated && rep.truncationReason ? [String(rep.truncationReason)] : [],
+        target: rep.target,
+        found: rep.found,
+        depthCap: rep.depthCap,
+        nodeBudget: rep.nodeBudget,
+        depthReached: rep.depthReached,
+        totalSymbols: rep.totalSymbols,
+        totalSymbolsIfKnown: rep.totalSymbolsIfKnown,
+        directSymbols: rep.directSymbols,
+        transitiveFiles: rep.transitiveFiles,
+        crossLanguageFiles: rep.crossLanguageFiles,
+        unresolvedEdges: rep.unresolvedEdges,
+        riskLevel: rep.riskLevel,
+        freshness,
+      }
+      return boundedResult(summary, rep as unknown as Record<string, unknown>)
     }
     if (mode === "test_mapping") {
       const report = await testMapping(projectId as any, {

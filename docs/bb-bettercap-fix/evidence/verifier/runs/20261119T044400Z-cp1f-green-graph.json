@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-green/graph",
+  "command": [
+    "bun",
+    "run",
+    "script/verify-graph.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:43:58.649Z",
+  "endedAt": "2026-11-19T04:44:00.489Z",
+  "durationMs": 1839,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 98,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (4 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 19ms [plan=linear largest-intermediate=18]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 18 relationships (0 patterns) in 12ms\n        ⚠ 8 dangling sources, 2 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(8ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 8ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 2ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 0ms\n  ok: beta has callers (alpha)\n  ok: beta has callees (gamma)\n  ok: callee edge call site names the SOURCE file (this is NOT a line claim — see the recorded observation below)\n  ok: callee edge preserves relationship type\n  ok: callee edge preserves confidence\n  note (M59.A6): TypeScript's call site line is reported as 4 (call-site); the call is written on 4 — equal, so this analyzer's stored line is exact here\n  ok: java: call site is the line the call is WRITTEN on (gammaJ at 8, betaJ declared elsewhere)\n  ok: scala: call site is the line the call is WRITTEN on (gammaS at 6, betaS declared elsewhere)\n  ok: the java call row the control corrupts exists and stores the real line\n  ok: control A: a corrupted stored line (1) is CAUGHT by the same predicate\n  note (M59.A6): with the stored line NULL the tool reports 6 for a call written on 8 — a LABELLED substitute (the caller's own declaration) or an explicit unknown, never the call line; this control refuses a substitute presented AS the call site\n  ok: control B: an absent line is not presented as the call site\n  ok: control cleanup: restoring the real line makes the predicate pass again\n  ok: callers-only returns no callees\n  ok: callees-only returns no callers\n  ok: alpha transitively reaches gamma\n  ok: summary reports maxDepthReached >= 1\n  ok: self-recursive traversal terminates\n  ok: relationshipTypes filter excludes calls edges\n  ok: truncated flag present and false for small graph\n  ok: D5: a type-narrowed traversal is NOT reported as truncated\n  ok: D5: the filter declares itself in its OWN channel (filterNarrowed + filterReason)\n  ok: D5 negative control: an un-narrowed traversal claims no filter\n  ok: D6: maxEdges below edgeLimit bounds the answer (1 requested, 1 returned)\n  ok: D6: honoring that bound is DECLARED as a bound (not silent)\n  ok: D6: the un-asked-for case is unchanged (no maxEdges -> the default, not 1)\n  ok: D10: truncationReasons is a list whose join is exactly truncationReason\n  ok: D10: an unbounded answer reports an EMPTY list, never a placeholder reason\n  ok: D7: the DEFAULT asks for no clock bound (the applied budget is 0)\n  ok: D7: two identical default calls agree edge for edge (reproducible without asking)\n  ok: D7 negative control: the default is the SAME answer as asking for no bound explicitly\n  ok: D7: a ceiling the caller sets is published as asked, not silently raised\n  ok: D7: a walk that hits its ceiling DECLARES a sample (truncated + the reason)\n  ok: D7: a sampled answer is a SUBSET, never larger than the unbounded one\n  ok: door: a blank symbol is REFUSED instead of echoed back as a not-found scan\n  ok: door: a fractional maxDepth is refused, never floored\n  ok: door: a fractional maxEdges is refused, never floored\n  FAIL: D11: bb_graph edges expose the stored enrichment why (role/criticality + inferredAt) []\n  ok: door: an omitted maxDepth applies the DECLARED default (5) — the same default the engine uses\n  FAIL: graph session TypeError: Spread syntax requires ...iterable not be null or undefined\n    at /home/ishaq2321/mcp/backbencher-brain/script/verify-graph.ts:416:54\n    at processTicksAndRejections (native:7:39)\n\nGRAPH: 2 FAILURES\n",
+  "stderr": "[INFO] [23:43:59] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:43:59] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":1}\n[INFO] [23:44:00] [parallel-indexer] worker pool complete {\"files\":4,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:44:00] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"4a68c4a4\",\"danglingSources\":8,\"totalRelationships\":26}\n[INFO] [23:44:00] [project-health] project health computed {\"projectId\":\"4a68c4a468b5a39eb90282f61ac64ddf27dabf71\",\"complexityScore\":94,\"maintainabilityScore\":88,\"techDebtScore\":100,\"codeQualityScore\":94,\"languages\":3,\"bottlenecks\":0}\n",
+  "stdoutBytes": 4175,
+  "stderrBytes": 738,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044400Z-cp1f-green-graph.json"
+}

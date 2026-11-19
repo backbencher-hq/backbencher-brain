@@ -1,20 +1,23 @@
 {
-  "status": "verified",
-  "currentCommit": "922b4f883f3c07f8fbd9da3217458d7b9ee1cc7d",
+  "status": "known-gap",
+  "currentCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-p2-honesty-fields.ts",
   "evidenceFile": "P2.json",
-  "generatedAt": "2026-11-05T04:31:55.551Z",
-  "passed": 21,
-  "failed": 0,
+  "generatedAt": "2026-11-19T05:08:30.620Z",
+  "passed": 19,
+  "failed": 2,
   "negativeCases": 7,
-  "failures": [],
+  "failures": [
+    "P1 evidence verified (proves truncated can be true on a real fixture)",
+    "missing P1 evidence would fail the cross-ref [negative] — P1.json missing or not verified"
+  ],
   "buildersAudited": 35,
   "discoveredHandlers": 16,
-  "watchlistAssignments": 73,
+  "watchlistAssignments": 80,
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-05T04:31:55.551Z",
-    "contentSha256": "3ef2c4307a57ed774ddbcc17a46301461ff567c6bc9207ea331bc242ad14c147"
+    "sealedAt": "2026-11-19T05:08:30.620Z",
+    "contentSha256": "b091dca654dbdfe42342d21bed82af0adf71025a232fd67343af8fc49a08e40c"
   }
 }

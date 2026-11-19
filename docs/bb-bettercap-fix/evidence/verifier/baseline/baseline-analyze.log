@@ -1,0 +1,7 @@
+  FAIL: analyze session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/8df06c60137d8e0ae5ca53592a1a684e9cf8e554'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-analyze.ts:39:3)
+
+ANALYZE: 1 FAILURES

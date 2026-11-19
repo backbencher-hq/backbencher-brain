@@ -152,13 +152,32 @@ export function isDeclaredTier(value: string): value is LegendTier {
 }
 
 /** THE derivation rule. One row in, one tier out. Every server surface calls
- *  this (or `classifyStoredRow`) — there is no second derivation. */
+ *  this (or `classifyStoredRow`) — there is no second derivation.
+ *
+ *  P0-2 (fix campaign): a row whose metadata records `bindingBasis: "name-only"`
+ *  is a name-coincidence CANDIDATE, never a structural/import-based edge — the
+ *  binding gate floors its confidence and stamps the basis, and this rule makes
+ *  every read surface render it `inferred` even if a stored tier claim or a
+ *  relationship kind would otherwise promote it. */
 export function classifyTier(row: {
   relationshipType: string
   confidence: number | null
   /** stored metadata.evidenceClass, already parsed — null when none */
   evidenceClass: string | null
+  /** stored metadata.bindingBasis — "name-only" is a candidate, not an edge */
+  bindingBasis?: string | null
+  /** stored brain_relationship.bridge_mechanism — "name-resolution" is a CANDIDATE
+   *  bridge (triage ISSUE-02/L-2: every bettercap cross row was name-resolution),
+   *  including on OLD indexes whose metadata predates metadata.bindingBasis. */
+  bridgeMechanism?: string | null
 }): EvidenceTier {
+  if (row.bindingBasis === "name-only") return "inferred"
+  // Retro-honesty (P0-2): a stored name-resolution bridge means the target was
+  // attached by a project-wide name match. It is never structural/import_based,
+  // whatever the stored evidenceClass or confidence says — that over-claim is the
+  // exact defect the triage proved, and existing indexes carry it.
+  if (row.bridgeMechanism === "name-resolution") return "inferred"
+
   const stored = row.evidenceClass
   if (stored !== null && isDeclaredTier(stored)) return stored
 
@@ -177,6 +196,8 @@ export interface StoredTierRow {
   relationship_type: string
   confidence: number | null
   metadata?: string | null
+  /** brain_relationship.bridge_mechanism, when the caller selected it */
+  bridge_mechanism?: string | null
 }
 
 export function evidenceClassOf(metadata: string | null | undefined): string | null {
@@ -192,11 +213,28 @@ export function evidenceClassOf(metadata: string | null | undefined): string | n
   }
 }
 
+/** P0-2: the STORED binding basis (`metadata.bindingBasis`). "name-only" means the
+ *  target was attached by a project-wide name match with no import/FFI/generated
+ *  evidence; read surfaces publish it instead of implying `targetBasis: symbol`. */
+export function bindingBasisOf(metadata: string | null | undefined): string | null {
+  if (!metadata) return null
+  try {
+    const parsed = JSON.parse(metadata) as unknown
+    if (typeof parsed !== "object" || parsed === null) return null
+    const { bindingBasis } = parsed as { bindingBasis?: unknown }
+    return typeof bindingBasis === "string" ? bindingBasis : null
+  } catch {
+    return null
+  }
+}
+
 export function classifyStoredRow(row: StoredTierRow): EvidenceTier {
   return classifyTier({
     relationshipType: row.relationship_type,
     confidence: row.confidence,
     evidenceClass: evidenceClassOf(row.metadata),
+    bindingBasis: bindingBasisOf(row.metadata),
+    bridgeMechanism: row.bridge_mechanism ?? null,
   })
 }
 

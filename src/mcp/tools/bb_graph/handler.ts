@@ -28,7 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ToolHandler } from "../shared"
-import { textResult } from "../shared"
+import { boundedResult, textResult } from "../shared"
 import { graphTraversal } from "../../../intelligence/graph/graph-engine"
 // The ONE owner of the evidence-tier vocabulary and derivation. The answer must
 // call it rather than re-derive a tier, so the tool and the editor cannot
@@ -149,20 +149,26 @@ export const handler: ToolHandler = async (args, { projectId }) => {
     const tierFor = (e: { relationshipType: string; confidence: number | null; metadata?: { evidenceClass?: string | null } }): string =>
       classifyTier({ relationshipType: e.relationshipType, confidence: e.confidence ?? null, evidenceClass: e.metadata?.evidenceClass ?? null })
 
-    // Renders one endpoint out of the engine's node map, so an edge is
-    // self-contained: a reader never parses an id and never needs a second call to
-    // learn which file a caller lives in.
-    const describe = (id: string) => {
+    // ENDPOINTS ARE A NODE TABLE, NOT A PER-EDGE COPY. Every edge used to inline
+    // a full `{id,name,symbolType,file,line,isExternal}` object for BOTH endpoints,
+    // so a hub answer repeated the same symbol once per incident edge (measured:
+    // 466-caller + 377-callee = 822,916 bytes of edge JSON). The edge now carries
+    // the endpoint's id and the answer carries one `data.nodes` table; the EDGE SET
+    // and its order are unchanged — only the representation is deduped.
+    const nodesById: Record<string, { name: string; symbolType: string; file: string; line: number; isExternal: boolean }> = {}
+    const describeId = (id: string): string | null => {
       const n = (result.nodes as Record<string, any> | undefined)?.[id]
       if (!n) return null
-      return { id: compactId(n.id), name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+      const compact = compactId(n.id)
+      if (!nodesById[compact]) nodesById[compact] = { name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+      return compact
     }
 
     const edgesOf = (list: any[], direction: "caller" | "callee") =>
       list.map((e) => ({
         direction,
-        from: describe(e.from),
-        to: describe(e.to),
+        from: describeId(e.from),
+        to: describeId(e.to),
         relationshipType: e.relationshipType,
         confidence: e.confidence,
         tier: tierFor(e),
@@ -196,9 +202,9 @@ export const handler: ToolHandler = async (args, { projectId }) => {
         rowId: compactRowId(e.rowId),
       }))
 
-    return textResult(JSON.stringify({
-      symbol,
-      root: {
+    const callerEdges = edgesOf(result.callers as any[], "caller")
+    const calleeEdges = edgesOf(result.callees as any[], "callee")
+    const root = {
         id: result.root?.id,
         name: result.root?.name,
         symbolType: result.root?.symbolType ?? null,
@@ -212,10 +218,8 @@ export const handler: ToolHandler = async (args, { projectId }) => {
         // symbol whose name CONTAINS the one asked for, so the name was not itself
         // a symbol.
         match: result.rootMatch ?? null,
-      },
-      callers: edgesOf(result.callers as any[], "caller"),
-      callees: edgesOf(result.callees as any[], "callee"),
-      summary: {
+    }
+    const summary = {
         // RETURNED counts; `truncated`, `edgeLimit` and `callersIfUncapped` are
         // what tell a reader whether they hold the whole set.
         totalCallers: result.summary?.totalCallers ?? result.callers.length,
@@ -282,7 +286,44 @@ export const handler: ToolHandler = async (args, { projectId }) => {
           relationshipTypes: result.summary?.relationshipTypesUsed ?? [],
           includeCrossLanguage: crossLangArg !== false,
         },
+      }
+    // RETURNED counts are the rows this answer carries; the node table is the
+    // deduped endpoint set. Both are declared in the summary so the representation
+    // change (per-edge endpoint copies -> node table) cannot change what a reader
+    // counts: the edge SET and order are unchanged, only the encoding is deduped.
+    Object.assign(summary, {
+      totalCallers: callerEdges.length,
+      totalCallees: calleeEdges.length,
+      returnedEdges: callerEdges.length + calleeEdges.length,
+      nodes: Object.keys(nodesById).length,
+    })
+    const nodes: Record<string, any> = {}
+    for (const edge of [...callerEdges, ...calleeEdges]) {
+      for (const endpoint of [edge.from, edge.to]) {
+        if (typeof endpoint === "string" && nodesById[endpoint] && !nodes[endpoint]) nodes[endpoint] = nodesById[endpoint]
+      }
+    }
+    return boundedResult(summary, { root, callers: callerEdges, callees: calleeEdges, nodes, provenance: result.provenance ?? null }, {
+      onTruncate: (data) => {
+        // Rebuild the node table from the rows that survived: a dropped edge must
+        // not leave its endpoints counted as returned symbols.
+        const kept = [...((data.callers as any[]) ?? []), ...((data.callees as any[]) ?? [])]
+        const keepIds = new Set<string>()
+        for (const edge of kept) {
+          if (typeof edge.from === "string") keepIds.add(edge.from)
+          if (typeof edge.to === "string") keepIds.add(edge.to)
+        }
+        const pruned: Record<string, any> = {}
+        for (const id of keepIds) if ((data.nodes as any)?.[id]) pruned[id] = (data.nodes as any)[id]
+        // The declared counts describe the rows this answer RETURNS, so they are
+        // restated after the byte cut — a summary that kept counting the
+        // pre-cut edges would be a second, quieter dishonesty.
+        const keptCallers = ((data.callers as any[]) ?? []).length
+        const keptCallees = ((data.callees as any[]) ?? []).length
+        return {
+          data: { ...data, nodes: pruned },
+          summary: { totalCallers: keptCallers, totalCallees: keptCallees, returnedEdges: keptCallers + keptCallees, nodes: Object.keys(pruned).length },
+        }
       },
-      provenance: result.provenance ?? null,
-    }, null, 2))
+    })
   }

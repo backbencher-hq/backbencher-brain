@@ -1,0 +1,97 @@
+FAIL subordinate T1 (verify-t1-classifier.ts) exit=1
+  ---- T1 output (last 25 lines) ----
+  | [brain] preparing the parallel worker pool (5 files)…
+  | [brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  |   ok C1: /spec/*.json data fixture is NOT flagged
+  |   ok C2a: src/x.test.ts IS flagged
+  |   ok C2b: tests/helper.py IS flagged
+  |   ok C3: plain production source is NOT flagged
+  |   ok C4: indexer flag == canonical predicate on every fixture file
+  | [INFO] [19:27:48] [parallel-indexer] worker pool fork test passed — using parallel workers
+  | [INFO] [19:27:48] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+  | [INFO] [19:27:48] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+  | [INFO] [19:27:49] [parallel-indexer] worker pool complete {"files":5,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  | FAIL Error: EROFS: read-only file system, mkdir '/home/ishaq2321/.bb/projects/705cc09f13e711842dea9831c019716955fa0a88'
+  |     at mkdirSync (unknown)
+  |     at getRawInstance (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/brain/database.ts:259:44)
+  |     at main (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m57/verify-t1-classifier.ts:87:41)
+  |     at processTicksAndRejections (native:7:39)
+FAIL subordinate T2 (verify-t2-consumers.ts) exit=1
+  ---- T2 output (last 25 lines) ----
+  |   ok U5: the search demotion comparator equals the canonical predicate
+  | FAIL Error: EROFS: read-only file system, mkdir '/home/ishaq2321/.bb/projects/705cc09f13e711842dea9831c019716955fa0a88'
+  |     at mkdirSync (unknown)
+  |     at getRawInstance (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/brain/database.ts:259:44)
+  |     at main (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m57/verify-t2-consumers.ts:66:37)
+  ok subordinate T3 (verify-t3-scope-all.ts)
+FAIL subordinate T4 (verify-t4-corpus-identity.ts) exit=1
+  ---- T4 output (last 25 lines) ----
+  |   ok M4: the identity comparator rejects a different corpus
+  |   ok M4: the identity comparator accepts an identical corpus
+  | FAIL Error: EROFS: read-only file system, mkdir '/home/ishaq2321/.bb/projects/705cc09f13e711842dea9831c019716955fa0a88'
+  |     at mkdirSync (unknown)
+  |     at getRawInstance (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/brain/database.ts:259:44)
+  |     at main (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m57/verify-t4-corpus-identity.ts:72:37)
+FAIL subordinate T5 (verify-t5-predicate-unity.ts) exit=1
+  ---- T5 output (last 25 lines) ----
+  |   ok P1: src/list.test.ts -> true (infix .test.)
+  |   ok P1: tests/helper.py -> true (tests/ dir segment)
+  |   ok P1: internal/auth_test.go -> true (Go _test infix)
+  |   ok P1: crates/x/tests/it/main.rs -> true (tests/ dir (rust))
+  |   ok P1: UserTests.swift -> true (Tests? stem)
+  |   ok P1: spec/models/user_spec.rb -> true (spec/ dir + _spec infix)
+  |   ok P1: e2e/login.e2e.ts -> true (e2e/ dir)
+  |   ok P1: tools/spec/table.json -> false (M50 conviction: data fixture under /spec/)
+  |   ok P1: script/m14/spec/cpp-completeness.json -> false (the convicted corpus)
+  |   ok P1: src/contest.ts -> false (raw-substring false positive (old api-coverage regex))
+  |   ok P1: src/testing-utils.ts -> false (dir-less name containing 'test')
+  |   ok P1: docs/testing-guide.md -> false (non-code, test-shaped dir)
+  |   ok P1: validation/m14/results/M14.0.SPEC.json -> false (convicted corpus (uppercase SPEC))
+  |   ok P1: the non-code vocabulary is exported and non-empty
+  |   ok P1: the gate is type-first (spec/x.json false even though spec/ says test)
+  |   ok P2: isTestPath == canonical predicate on the whole battery
+  | FAIL P3: every test-shape mention in src/ imports the ONE definition or is allowlisted :: [{"file":"src/intelligence/documentation/doc-engine.ts","hit":"line 438"},{"file":"src/ast/real-fsharp-analyzer.ts","hit":"line 13"},{"file":"src/ast/real-dart-analyzer.ts","hit":"line 36"},{"file":"src/ast/real-nim-analyzer.ts","hit":"line 13"},{"file":"src/ast/real-html-analyzer.ts","hit":"line 8"},{"file":"src/ast/real-julia-analyzer.ts","hit":"line 8"},{"file":"src/ast/pool-worker.ts","hit":"line 663"},{"file":"src/ast/real-protobuf-analyzer.ts","hit":"line 15"},{"file":"src/ast/real-vue-analyzer.ts","hit":"line 16"},{"file":"src/ast/real-java-analyzer.ts","hit":"line 23"},{"file":"src/ast/real-perl-analyzer.ts","hit":"line 10"},{"file":"src/ast/real-powershell-analyzer.ts","hit":"line 7"},{"file":"src/ast/real-json-analyzer.ts","hit":"line 8"},{"file":"src/ast/real-r-analyzer.ts","hit":"line 7"},{"file":"src/ast/real-objective-c-analyzer.ts","hit":"line 15"},{"file":"src/ast/real-erlang-analyzer.ts","hit":"line 16"},{"file":"src/ast/real-python-analyzer.ts","hit":"line 8"},{"file":"src/ast/language-detection.ts","hit":"line 129"},{"file":"src/ast/cross-language-migration-assistant.ts","hit":"line 943"},{"file":"src/ast/engine.ts","hit":"line 104"},{"file":"src/ast/real-cpp-analyzer.ts","hit":"line 6"},{"file":"src/ast/real-clean-analyzer.ts","hit":"line 9"},{"file":"src/ast/real-zig-analyzer.ts","hit":"line 17"},{"file":"src/ast/real-graphql-analyzer.ts","hit":"line 8"},{"file":"src/ast/real-sql-analyzer.ts","hit":"line 144"},{"file":"src/ast/real-csharp-analyzer.ts","hit":"line 35"},{"file":"src/ast/real-vb-analyzer.ts","hit":"line 13"},{"file":"src/ast/real-typescript-analyzer.ts","hit":"line 35"},{"file":"src/ast/real-bash-analyzer.ts","hit":"line 9"},{"file":"src/ast/real-lua-analyzer.ts","hit":"line 7"},{"file":"src/ast/real-haskell-analyzer.ts","hit":"line 11"},{"file":"src/ast/real-xml-analyzer.ts","hit":"line 16"},{"file":"src/ast/real-swift-analyzer.ts","hit":"line 17"},{"file":"src/ast/real-ruby-analyzer.ts","hit":"line 33"},{"file":"src/ast/real-solidity-analyzer.ts","hit":"line 16"},{"file":"src/ast/dependency-graph-visualizer.ts","hit":"line 137"},{"file":"src/ast/real-go-analyzer.ts","hit":"line 21"},{"file":"src/ast/real-elixir-analyzer.ts","hit":"line 13"},{"file":"src/ast/real-kotlin-analyzer.ts","hit":"line 8"},{"file":"src/ast/real-hcl-analyzer.ts","hit":"line 9"},{"file":"src/ast/real-c-analyzer.ts","hit":"line 1592"},{"file":"src/ast/real-toml-analyzer.ts","hit":"line 15"},{"file":"src/ast/project-scoped-identity.ts","hit":"line 13"},{"file":"src/ast/real-javascript-analyzer.ts","hit":"line 23"},{"file":"src/ast/real-scala-analyzer.ts","hit":"line 6"},{"file":"src/ast/real-makefile-analyzer.ts","hit":"line 9"},{"file":"src/ast/real-css-analyzer.ts","hit":"line 13"},{"file":"src/ast/real-markdown-analyzer.ts","hit":"line 15"},{"file":"src/ast/real-groovy-analyzer.ts","hit":"line 8"},{"file":"src/ast/real-yaml-analyzer.ts","hit":"line 13"},{"file":"src/ast/real-rust-analyzer.ts","hit":"line 12"},{"file":"src/ast/real-scss-analyzer.ts","hit":"line 14"},{"file":"src/ast/real-svelte-analyzer.ts","hit":"line 22"},{"file":"src/ast/real-php-analyzer.ts","hit":"line 12"},{"file":"src/mcp/tools/bb_visualize/descriptor.ts","hit":"line 17"}]
+  |   ok P4a: api-coverage-analyzer delegates (old raw-substring regex gone)
+  |   ok P4b: relationship-enrichment isTestCode delegates
+  |   ok P5: flag == canonical predicate on all 0 real-DB rows
+  |   (real DB: 0 files, 0 flagged: none)
+  | FAIL NEGATIVE a fabricated flag/predicate divergence
+  ok downstream M50.A2-test-sources
+  ok downstream M48.P3-agreement
+  ok downstream M13.patterns-orphans
+  ok downstream M13.test-intel
+  ok downstream M13.test-quality
+FAIL foreign-red M20.patterns-orphan-semantics now PASSES — the documented conviction no longer reproduces; re-examine before closing
+  ---- M20.patterns-orphan-semantics output (last 25 lines) ----
+  |   [4/8] analyzing taint flows & security…
+  |         security leads: 0 (tier leads; not findings)
+  |   [5/8] computing project health…
+  |   ✓ taint(1ms) + health(32ms)
+  |   [6/8] integrity & freshness…
+  |   ✓ health check in 13ms
+  |   ✅ Index health: 100% — all checks passed
+  |   [7/8] vector blobs…
+  |   ✓ vector blobs: 0/0 promoted in 4ms
+  |   [8/8] planner stats (ANALYZE)…
+  |   ✓ planner stats (ANALYZE) in 0ms
+  |   ok: K1 same-named declarations are still candidates
+  |   ok: K2 an unanchored row about an AMBIGUOUS name does not clear a candidate
+  |   ok: K3 an unanchored row about a UNIQUE name clears the candidate (control)
+  |   ok: K4 a dynamic string access leaves no fabricated static target in the index
+  |   ok: K5 dynamic target remains visible as an uncertain candidate
+  |   ok: K5b the dynamic limitation is stated on the finding
+  |   ok: K6 all findings carry evidence
+  | 
+  | PATTERNS P2: PASS
+  | [INFO] [19:28:22] [parallel-indexer] worker pool fork test passed — using parallel workers
+  | [INFO] [19:28:22] [parallel-indexer] project index built {"ext":".ts","files":4,"types":0}
+  | [INFO] [19:28:23] [parallel-indexer] worker pool complete {"files":4,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  | [WARN] [19:28:23] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"2858a27e","danglingSources":7,"totalRelationships":7}
+  | [INFO] [19:28:23] [project-health] project health computed {"projectId":"2858a27e94ad2ff985a522f7a42cf1229cc05baf","complexityScore":95,"maintainabilityScore":79,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ok receipt T1-classifier.json is current (75448b02)
+  ok receipt T2-consumers.json is current (75448b02)
+  ok receipt T3-scope-all.json is current (75448b02)
+  ok receipt T4-corpus-identity.json is current (75448b02)
+  ok receipt T5-predicate-unity.json is current (75448b02)
+
+X1 closure: 11 passed, 5 failed

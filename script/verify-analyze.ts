@@ -5,6 +5,7 @@ import path from "node:path"
 import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
+import { goImportExternality, readGoModulePath } from "../src/ast/real-go-analyzer"
 import { getCoupling } from "../src/intelligence/analysis/coupling"
 import { getFileDependencies } from "../src/intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../src/intelligence/analysis/complexity"
@@ -101,6 +102,100 @@ try {
 } finally {
   rmSync(root, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })
+}
+
+// ── Go phase-1 gates (P1-2 GO1 cross-file reads; P1-1 identity prerequisites) ──
+//
+// (a) GO1 cross-file value read. The Go analyzer is a PER-FILE entry point
+// (`analyze(rootNode, content, filePath)` has no package context), so it cannot
+// verify that a sibling file declares a name. The honest row is the documented
+// LEAF: target = the name alone, confidence 0.6, metadata.relationshipType
+// "identifier_usage", reason code
+// `used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope`.
+//
+// RED pre-fix, measured on bettercap: `plugin.Defines["onEvent"] = jsOnEventFunc`
+// (session/session.go:336, jsOnEventFunc declared in a sibling file) produced ZERO
+// relationship rows naming the function, so `bb_patterns` called all 8 registered
+// callbacks dead. This gate is the isolated two-file shape.
+//
+// (b) Import identity prerequisites are PURE decisions — no DB, no I/O: the
+// classification function plus the go.mod module-path reader that phase 2 will use
+// to inject the module path into the analyzer. Import ROWS are unchanged in
+// phase 1 (module-path injection is task-17, blocked on P0-2).
+//
+// (c) package-main: the analyzer half is pinned here (the call row exists with its
+// call-site line). The store-side binding (module symbol main:1 instead of func
+// main:3) is a phase-2 indexer fix; RED evidence lives in
+// docs/bb-bettercap-fix/evidence/go-imports/RED-probe-phase1.txt.
+const goRoot = mkdtempSync(path.join(tmpdir(), "bb-analyze-go-"))
+const goMainRoot = mkdtempSync(path.join(tmpdir(), "bb-analyze-gomain-"))
+const goProjectId = getProjectId(goRoot)
+const goMainProjectId = getProjectId(goMainRoot)
+try {
+  writeFileSync(path.join(goRoot, "go.mod"), "module example.com/m\n\ngo 1.25.0\n")
+  writeFileSync(
+    path.join(goRoot, "registry.go"),
+    'package phase1\n\nvar Registry = map[string]func(){}\n\nfunc setup() {\n\tRegistry["onEvent"] = packageCallback\n}\n\nvar fileLocal = func() {}\n\nfunc sameFileNameRead() {\n\t_ = fileLocal\n}\n',
+  )
+  writeFileSync(path.join(goRoot, "callbacks.go"), "package phase1\n\nfunc packageCallback() {}\n")
+  writeFileSync(path.join(goMainRoot, "main.go"), "package main\n\nfunc main() {\n\thelper()\n}\n\nfunc helper() {}\n")
+  await indexProjectParallel(goProjectId, goRoot, {})
+  await indexProjectParallel(goMainProjectId, goMainRoot, {})
+
+  // ---- GO1 cross-file value read ----
+  const goRaw = await BrainDatabase.getRawInstance(goProjectId)
+  const usesRows = goRaw
+    .prepare(
+      "SELECT r.target_external AS te, r.target_symbol_id AS tgt, r.metadata AS md " +
+        "FROM brain_relationship r WHERE r.project_id = ? AND r.relationship_type = 'uses'",
+    )
+    .all(goProjectId) as any[]
+  const crossFileRow = usesRows.find((r) => r.te === "packageCallback" || String(r.tgt ?? "").includes(":packageCallback:"))
+  check("GO1 cross-file value read publishes a uses row", !!crossFileRow, JSON.stringify(usesRows))
+  check(
+    "GO1 cross-file row carries the out-of-scope reason code",
+    !!crossFileRow &&
+      String(crossFileRow.md ?? "").includes("used_identifier_recorded_as_a_leaf_whose_declaring_file_is_out_of_scope"),
+    crossFileRow ? String(crossFileRow.md) : "no row",
+  )
+  check(
+    "GO1 control: same-file value read still publishes",
+    usesRows.some((r) => r.te === "fileLocal"),
+    JSON.stringify(usesRows),
+  )
+
+  // ---- import identity prerequisites (pure) ----
+  check("Go import identity: same-module specifier is internal", goImportExternality("example.com/m/b", "example.com/m") === false)
+  check("Go import identity: stdlib specifier is external", goImportExternality("fmt", "example.com/m") === true)
+  check("Go import identity: third-party specifier is external", goImportExternality("github.com/x/y", "example.com/m") === true)
+  check(
+    "Go import identity: module-path lookalike is NOT same-module",
+    goImportExternality("example.com/m2/x", "example.com/m") === true,
+  )
+  check(
+    "Go import identity: unknown module path stays undecided (phase-2 boundary)",
+    goImportExternality("example.com/m/b", null) === null,
+  )
+  check("readGoModulePath reads the module line", readGoModulePath(goRoot) === "example.com/m")
+  check("readGoModulePath returns null when there is no go.mod", readGoModulePath(goMainRoot) === null)
+
+  // ---- package-main: analyzer-side control ----
+  const goMainRaw = await BrainDatabase.getRawInstance(goMainProjectId)
+  const callRows = goMainRaw
+    .prepare("SELECT r.target_external AS te, r.line_number AS ln FROM brain_relationship r WHERE r.project_id = ? AND r.relationship_type = 'calls'")
+    .all(goMainProjectId) as any[]
+  check(
+    "package-main control: call inside func main publishes with its call-site line",
+    callRows.some((r) => r.te === "helper" && r.ln === 4),
+    JSON.stringify(callRows),
+  )
+} catch (error) {
+  check("go phase-1 session", false, error instanceof Error ? (error.stack ?? error.message) : String(error))
+} finally {
+  rmSync(goRoot, { recursive: true, force: true })
+  rmSync(goMainRoot, { recursive: true, force: true })
+  rmSync(path.dirname(BrainDatabase.getDbPath(goProjectId)), { recursive: true, force: true })
+  rmSync(path.dirname(BrainDatabase.getDbPath(goMainProjectId)), { recursive: true, force: true })
 }
 
 console.log(failures === 0 ? "\nANALYZE: PASS" : "\nANALYZE: " + failures + " FAILURES")

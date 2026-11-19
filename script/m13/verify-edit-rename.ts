@@ -41,7 +41,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { executeEdit } from "../../src/intelligence/edit/edit-engine"
 import { parseForSafety } from "../../src/ast/safety-primitives"
-import { isReferenceSite, isBindingParentType, findDeclarationName } from "../../src/intelligence/edit/edit-engine"
+import { isReferenceSite, isBindingParentType, findDeclarationName, classifyRefactorSite } from "../../src/intelligence/edit/edit-engine"
 import { Harness } from "./harness"
 
 const harness = new Harness({
@@ -263,6 +263,39 @@ for (const c of memberAccessCases) {
       bars.length === 0 ? "Bar not extracted" : `parent=${bars[0].parentType} isRef=${isReferenceSite(bars[0], "")} isMember=${bars[0].isMemberName}`,
     )
   }
+}
+
+// ── UNIT: operand-aware qualified-reference classification (P0-1 fix B) ─────
+// A member-name occurrence is a REFERENCE when its receiver is a MODULE/NAMESPACE
+// binding of the file, and NOT a reference when the receiver is a value. This is
+// the classification that decided the triage defect: `modules.LoadModules` and
+// `m.target()` were dropped as "member names" and the files stayed stale while the
+// rename reported success. The negative direction is equally pinned: a value
+// receiver must stay unrenamed (renaming it would corrupt another symbol's member).
+{
+  const goCode = `package main\n\nimport "example.com/x/modules"\n\nfunc main() { modules.LoadModules(); other.LoadModules() }\n`
+  const parsed = await parseForSafety("main.go", goCode)
+  const sites = parsed.occurrences.filter((o) => o.text === "LoadModules")
+  harness.check("Go: package-qualified call exposes its receiver", sites.length === 2 && sites[0].memberReceiver === "modules" && sites[1].memberReceiver === "other", JSON.stringify(sites.map((o) => o.memberReceiver)))
+  harness.check("Go: package-qualified call IS a reference when the receiver is an imported module", classifyRefactorSite(sites[0], new Set(["modules"]), "function") === "reference", classifyRefactorSite(sites[0], new Set(["modules"]), "function"))
+  harness.negative("Go: same call is NOT a reference when the receiver is not a module binding (value member)", classifyRefactorSite(sites[0], new Set(), "function") === "not-reference")
+  harness.check("Go: unresolved value-receiver member under a METHOD target is REPORTED, not silently dropped", classifyRefactorSite(sites[0], new Set(), "method") === "skipped-member", classifyRefactorSite(sites[0], new Set(), "method"))
+}
+{
+  const tsCode = `import * as m from './a'\nexport const n = m.target()\nexport const v = box.target()\n`
+  const parsed = await parseForSafety("b.ts", tsCode)
+  const sites = parsed.occurrences.filter((o) => o.text === "target")
+  harness.check("TS: namespace-import member exposes its receiver", sites.length === 2 && sites[0].memberReceiver === "m" && sites[1].memberReceiver === "box", JSON.stringify(sites.map((o) => o.memberReceiver)))
+  harness.check("TS: namespace-qualified member IS a reference", classifyRefactorSite(sites[0], new Set(["m"]), "function") === "reference", classifyRefactorSite(sites[0], new Set(["m"]), "function"))
+  harness.negative("TS: value-receiver member is NOT a reference", classifyRefactorSite(sites[1], new Set(["m"]), "function") === "not-reference")
+}
+{
+  // The pre-fix classifier's answer for both positive cases must be documented as
+  // the behaviour that was wrong: bare isReferenceSite still says "not a reference"
+  // for a member name — classifyRefactorSite is the operand-aware door.
+  const parsed = await parseForSafety("main.go", `package main\n\nfunc main() { modules.LoadModules() }\n`)
+  const site = parsed.occurrences.find((o) => o.text === "LoadModules")!
+  harness.negative("unit: bare isReferenceSite alone still treats a member name as non-reference (classifyRefactorSite is the fix)", isReferenceSite(site, "") === false)
 }
 
 // ── INTEGRATION: full refactor on indexed projects ──────────────────────────

@@ -1,0 +1,24 @@
+=== dist integrity gate: npx tsx script/verify-dist-integrity.ts
+dist integrity: 155 JS chunk(s), 1055 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/dist
+  ✓ every relative chunk reference resolves; entry exists
+dist_integrity_exit=0
+
+=== dist inventory
+155
+8.8M	dist
+
+=== CLI smoke
+0.1.6
+bb_version_exit=0
+
+=== referenced-but-missing chunk scan (static ./ refs, independent of gate)
+{"files":155,"refs":1055,"missingCount":0,"missing":[]}
+
+=== stale-class probe: any dist reference to database-HE6EE3VA.js or other database-*.js
+grep_exit=0
+
+=== dynamic import chunks referenced
+151
+
+=== dist tree sha
+d4377e305fcf753116acd49e49a2820d64a98097008d0af45516cf5c6c312991  -

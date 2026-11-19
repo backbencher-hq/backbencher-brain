@@ -1,0 +1,27 @@
+[INFO] [23:17:01] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:17:01] [ast-engine] language grammar allocated {"language":"go"}
+[INFO] [23:17:01] [ast-engine] language parser loaded {"language":"go","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-go.wasm"}
+files=26 identifier_usage rows: same-file=49 cross-file=56
+stored baseline on the bettercap index (ISSUE-04 triage census): identifier_usage 366 total, 366 anchored, 0 leaf, 0 cross-file
+
+registered callbacks now carrying a cross-file read row:
+  jsOnEventFunc: 1 row(s) session.go <- Start:336
+  jsEnvFunc: 1 row(s) session.go <- Start:330
+  jsRunFunc: 1 row(s) session.go <- Start:331
+  jsFileExistsFunc: 1 row(s) session.go <- Start:332
+  jsLoadJSONFunc: 1 row(s) session.go <- Start:333
+  jsSaveJSONFunc: 1 row(s) session.go <- Start:334
+  jsSaveToFileFunc: 1 row(s) session.go <- Start:335
+  jsRemoveEventListenerFunc: 1 row(s) session.go <- Start:337
+
+fabrication controls (import/predeclared/param names): 0 row(s) []
+
+sample cross-file rows:
+  command_handler.go: global -> args @16
+  command_handler.go: global -> s @16
+  command_handler.go: NewCommandHandler -> args @19
+  command_handler.go: NewCommandHandler -> s @19
+  environment.go: global -> newValue @14
+  events.go: global -> format @42
+  events.go: global -> args @42
+  module_handler.go: global -> args @29

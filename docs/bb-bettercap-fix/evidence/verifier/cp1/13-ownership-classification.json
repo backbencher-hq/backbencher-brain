@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "kind": "bb-fix-campaign-cp1-ownership-audit",
+  "head": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "capturedAt": "2026-11-19T04:23:00.446Z",
+  "ownershipRule": "FIX-CHARTER §2 per-lane owned prefixes; shared generated-doc surface and out-of-charter paths called out separately",
+  "counts": {
+    "total": 93,
+    "byOwner": {
+      "edit-safety": 6,
+      "embeddings-health": 9,
+      "payload-honesty": 10,
+      "retrieval": 5,
+      "cross-lang": 6,
+      "go-imports": 9,
+      "go-testintel": 4,
+      "pre-existing(not-campaign)": 4,
+      "go-callgraph(verifier)": 2
+    },
+    "sharedGeneratedDocs": 10,
+    "outOfCharter": 28
+  },
+  "byOwner": {
+    "edit-safety": [
+      "M docs/BB_EDIT.md",
+      "M script/m13/verify-edit-rename.ts",
+      "M src/ast/safety-primitives.ts",
+      "M src/intelligence/edit/edit-engine.ts",
+      "?? script/m71/verify-refactor-safety.ts",
+      "?? src/intelligence/edit/refactor-safety.ts"
+    ],
+    "embeddings-health": [
+      "M docs/BB_HEALTH.md",
+      "M docs/EMBEDDINGS.md",
+      "M src/cli/index.ts",
+      "M src/intelligence/health/health-provider.ts",
+      "M src/intelligence/search/semantic-search.ts",
+      "M src/setup/doctor.ts",
+      "?? script/verify-embedding-lifecycle.ts",
+      "?? script/verify-health-honesty.ts",
+      "?? src/brain/semantic/embedding-spaces.ts"
+    ],
+    "payload-honesty": [
+      "M docs/BB_IMPACT.md",
+      "M docs/BB_SECURITY.md",
+      "M docs/BB_VISUALIZE.md",
+      "M src/intelligence/security/rebuild/registry.ts",
+      "M src/intelligence/visualization/visualization-engine.ts",
+      "M src/mcp/tools/bb_graph/handler.ts",
+      "M src/mcp/tools/bb_impact/handler.ts",
+      "M src/mcp/tools/bb_visualize/handler.ts",
+      "M src/mcp/tools/shared.ts",
+      "?? script/m73/"
+    ],
+    "retrieval": [
+      "M docs/BB_SEARCH.md",
+      "M src/intelligence/documentation/doc-engine.ts",
+      "M src/mcp/tools/bb_search/descriptor.ts",
+      "M src/mcp/tools/bb_search/handler.ts",
+      "?? script/verify-retrieval-contract.ts"
+    ],
+    "cross-lang": [
+      "M script/m26/verify-polyglot-e2e.ts",
+      "M src/ast/parallel-indexer.ts",
+      "M src/lsp/cross_language_hover.ts",
+      "M src/lsp/evidence_tier.ts",
+      "M validation/m26/results/A1.json",
+      "?? script/m57/verify-p02-name-binding.ts"
+    ],
+    "go-imports": [
+      "M script/verify-analyze.ts",
+      "M src/ast/real-go-analyzer.ts",
+      "M validation/m14/results/M14.0.F1.json",
+      "M validation/m14/results/M14.0.F3.json",
+      "M validation/m14/results/M14.0.SPEC.json",
+      "?? validation/m14/fixtures/go/cross-file-value-read.expectation.json",
+      "?? validation/m14/fixtures/go/cross-file-value-read.go",
+      "?? validation/m14/fixtures/go/package-main.expectation.json",
+      "?? validation/m14/fixtures/go/package-main.go"
+    ],
+    "go-testintel": [
+      "M script/verify-test-intel.ts",
+      "M script/verify-test-quality.ts",
+      "M src/intelligence/testing/quality.ts",
+      "M src/intelligence/testing/test-intel.ts"
+    ],
+    "pre-existing(not-campaign)": [
+      "?? AtlasNav.tsx",
+      "?? docs/bb-analyze-review/",
+      "?? s3.go",
+      "?? src/ast/real-powershell-analyzer.ts.clean3"
+    ],
+    "go-callgraph(verifier)": [
+      "?? docs/bb-bettercap-fix/",
+      "?? script/m-fix/"
+    ]
+  },
+  "sharedGeneratedDocs": [
+    "M docs/data/public-tools.json",
+    "M docs/tools/bb_graph.md",
+    "M docs/tools/bb_impact.md",
+    "M docs/tools/bb_search.md",
+    "M docs/tools/bb_visualize.md",
+    "M script/tool-docs/curation/bb_graph.ts",
+    "M script/tool-docs/curation/bb_impact.ts",
+    "M script/tool-docs/curation/bb_search.ts",
+    "M script/tool-docs/curation/bb_visualize.ts",
+    "?? website/"
+  ],
+  "outOfCharter": [
+    "M ocs/BB_DOC.md",
+    "M script/m28/verify-mcp-tools.ts",
+    "M script/m48/verify-p1-impact-unity.ts",
+    "M src/mcp/tools/bb_analyze/handler.ts",
+    "M validation/m13/results/d1.json",
+    "M validation/m13/results/e11.json",
+    "M validation/m13/results/e13.json",
+    "M validation/m13/results/e2.json",
+    "M validation/m13/results/e5.json",
+    "M validation/m13/results/e7.json",
+    "M validation/m15/results/e1.json",
+    "M validation/m15/results/e4.json",
+    "M validation/m15/results/e5.json",
+    "M validation/m15/results/e8.json",
+    "M validation/m20/results/D1.json",
+    "M validation/m20/results/D2.json",
+    "M validation/m20/results/DOC-TRUTH.json",
+    "M validation/m28/results/T1.json",
+    "M validation/m28/results/U2.json",
+    "M validation/m44/results/U5.json",
+    "M validation/m48/results/P1.json",
+    "M validation/m57/results/T5-predicate-unity.json",
+    "M validation/tools/bb_search/gates/evidence/m13/s1.json",
+    "M validation/tools/bb_search/gates/evidence/m13/s4.json",
+    "M validation/tools/bb_search/gates/evidence/m13/s5.json",
+    "?? -",
+    "?? validation/embedding/",
+    "?? validation/m14/reviews/"
+  ]
+}

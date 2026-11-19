@@ -1,0 +1,590 @@
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:01] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:02] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:03] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 16ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:03] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"b1ae0159","danglingSources":3,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 17ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:03] [project-health] project health computed {"projectId":"b1ae0159be7bd21185d15960b4621e24a7b7b40a","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(11ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 5ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[INFO] [19:21:03] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [19:21:03] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [19:21:03] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/wasm/tree-sitter-typescript.wasm"}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:04] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:05] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 7 relationship row(s) in changed files or their importers
+[WARN] [19:21:05] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"b1ae0159","danglingSources":3,"totalRelationships":4}
+[INFO] [19:21:05] [project-health] project health computed {"projectId":"b1ae0159be7bd21185d15960b4621e24a7b7b40a","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:06] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:06] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:07] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 11ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:07] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"acde1709","danglingSources":4,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 2ms
+        ⚠ 4 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:07] [project-health] project health computed {"projectId":"acde17092820862f0deb97783d2d1cc4d409607d","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(3ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:08] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:09] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 7 relationship row(s) in changed files or their importers
+[WARN] [19:21:09] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"acde1709","danglingSources":4,"totalRelationships":4}
+[INFO] [19:21:09] [project-health] project health computed {"projectId":"acde17092820862f0deb97783d2d1cc4d409607d","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:10] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:10] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:11] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 11ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:11] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"2b470209","danglingSources":3,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 2ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:11] [project-health] project health computed {"projectId":"2b470209fef48c7c5e09aa97fc26e86b7d08466e","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:12] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:13] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 7 relationship row(s) in changed files or their importers
+[WARN] [19:21:13] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"2b470209","danglingSources":3,"totalRelationships":4}
+[INFO] [19:21:13] [project-health] project health computed {"projectId":"2b470209fef48c7c5e09aa97fc26e86b7d08466e","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:14] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:14] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:15] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 10ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:15] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e3aea7db","danglingSources":4,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+        ⚠ 4 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:15] [project-health] project health computed {"projectId":"e3aea7db264835fa03d069426e512c6527fc0284","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:16] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:17] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 5 relationship row(s) in changed files or their importers
+[WARN] [19:21:17] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e3aea7db","danglingSources":4,"totalRelationships":4}
+[INFO] [19:21:17] [project-health] project health computed {"projectId":"e3aea7db264835fa03d069426e512c6527fc0284","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:18] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:18] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:19] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 13ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:19] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"402bb96f","danglingSources":3,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 2ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:19] [project-health] project health computed {"projectId":"402bb96f58a8e75ea98d4465e3fafd5e59e29f05","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:20] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:22] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 5 relationship row(s) in changed files or their importers
+[WARN] [19:21:22] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"402bb96f","danglingSources":3,"totalRelationships":3}
+[INFO] [19:21:22] [project-health] project health computed {"projectId":"402bb96f58a8e75ea98d4465e3fafd5e59e29f05","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:23] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:23] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:24] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 11ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:24] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"dac87630","danglingSources":3,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:24] [project-health] project health computed {"projectId":"dac876309b92dd42700b195d3853d5cf6d26df05","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:25] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:26] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: resolved 6 relationship row(s) in changed files or their importers
+[WARN] [19:21:26] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"dac87630","danglingSources":3,"totalRelationships":3}
+[INFO] [19:21:26] [project-health] project health computed {"projectId":"dac876309b92dd42700b195d3853d5cf6d26df05","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:27] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:27] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:29] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 15ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:29] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"45d00819","danglingSources":3,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 4ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:29] [project-health] project health computed {"projectId":"45d008198533e978f5981da9bcb229bd12866386","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(5ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 1ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:30] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:31] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 5 relationship row(s) in changed files or their importers
+[WARN] [19:21:31] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"45d00819","danglingSources":3,"totalRelationships":3}
+[INFO] [19:21:31] [project-health] project health computed {"projectId":"45d008198533e978f5981da9bcb229bd12866386","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:32] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:32] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:34] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 19ms [plan=linear largest-intermediate=2]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:34] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"017ef702","danglingSources":3,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+        ⚠ 3 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:34] [project-health] project health computed {"projectId":"017ef702aba35b2a28a7d33ef8d008b0e1842732","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:35] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:36] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: resolved 3 relationship row(s) in changed files or their importers
+[WARN] [19:21:36] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"017ef702","danglingSources":3,"totalRelationships":3}
+[INFO] [19:21:36] [project-health] project health computed {"projectId":"017ef702aba35b2a28a7d33ef8d008b0e1842732","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:37] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:37] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:38] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 12ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:38] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"c6ec6a52","danglingSources":5,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 2ms
+        ⚠ 5 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:38] [project-health] project health computed {"projectId":"c6ec6a526d134cbac6c557d21ee2331aa79b7897","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:39] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:39] [parallel-indexer] project index built {"ext":".ts","files":3,"types":0}
+[INFO] [19:21:40] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 12ms [plan=linear largest-intermediate=7]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:41] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"0f37a21d","danglingSources":7,"totalRelationships":7}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+        ⚠ 7 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:41] [project-health] project health computed {"projectId":"0f37a21d4f07a3534c9489812a6905af1ac9f0e0","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(3ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:41] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:43] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 2 cross-file edge(s) into re-parsed files
+  bounded: resolved 12 relationship row(s) in changed files or their importers
+[WARN] [19:21:43] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"0f37a21d","danglingSources":7,"totalRelationships":7}
+[INFO] [19:21:43] [project-health] project health computed {"projectId":"0f37a21d4f07a3534c9489812a6905af1ac9f0e0","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:44] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:44] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:45] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 12ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:45] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"22a070bb","danglingSources":5,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+        ⚠ 5 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:45] [project-health] project health computed {"projectId":"22a070bb36ec5e7390c50828a96d268396e6cee0","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:46] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:47] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 2 cross-file edge(s) into re-parsed files
+  bounded: resolved 8 relationship row(s) in changed files or their importers
+[WARN] [19:21:47] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"22a070bb","danglingSources":5,"totalRelationships":5}
+[INFO] [19:21:47] [project-health] project health computed {"projectId":"22a070bb36ec5e7390c50828a96d268396e6cee0","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:48] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:48] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:49] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 20ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:50] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"d67a646f","danglingSources":5,"totalRelationships":6}
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 5ms
+        ⚠ 5 dangling sources, 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:50] [project-health] project health computed {"projectId":"d67a646fbc8ba2271ffdb942812546dc4378d91c","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 5ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:51] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:52] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 2 cross-file edge(s) into re-parsed files
+  bounded: resolved 8 relationship row(s) in changed files or their importers
+[WARN] [19:21:52] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"d67a646f","danglingSources":5,"totalRelationships":6}
+[INFO] [19:21:52] [project-health] project health computed {"projectId":"d67a646fbc8ba2271ffdb942812546dc4378d91c","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:53] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:53] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [19:21:54] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 18ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:21:54] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"187514e0","danglingSources":5,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 4ms
+        ⚠ 5 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:21:54] [project-health] project health computed {"projectId":"187514e0917f5110461cad3b7f6a6c0e2466e728","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:55] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:57] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 2 cross-file edge(s) into re-parsed files
+  bounded: resolved 8 relationship row(s) in changed files or their importers
+[WARN] [19:21:57] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"187514e0","danglingSources":5,"totalRelationships":5}
+[INFO] [19:21:57] [project-health] project health computed {"projectId":"187514e0917f5110461cad3b7f6a6c0e2466e728","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:21:58] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:21:58] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [19:22:00] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 13ms [plan=linear largest-intermediate=2]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:22:00] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"751e400c","danglingSources":2,"totalRelationships":2}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 3ms
+        ⚠ 2 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:22:00] [project-health] project health computed {"projectId":"751e400cec34f4aeb004395d77ae674aea467b22","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(2ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:01] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:03] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: re-pointed 1 cross-file edge(s) into re-parsed files
+  bounded: resolved 3 relationship row(s) in changed files or their importers
+[WARN] [19:22:03] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"751e400c","danglingSources":2,"totalRelationships":2}
+[INFO] [19:22:03] [project-health] project health computed {"projectId":"751e400cec34f4aeb004395d77ae674aea467b22","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:05] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:05] [parallel-indexer] project index built {"ext":".ts","files":3,"types":0}
+[INFO] [19:22:06] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 37ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:22:07] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"224d54c4","danglingSources":5,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 5ms
+        ⚠ 5 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:22:07] [project-health] project health computed {"projectId":"224d54c4ce443e8b8de8e00282a227e67f75c24d","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:09] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:11] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: 3 in-edge(s) survive unresolved (target symbol gone; named in the index report)
+  bounded: resolved 2 relationship row(s) in changed files or their importers
+[WARN] [19:22:11] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"224d54c4","danglingSources":5,"totalRelationships":5}
+[INFO] [19:22:11] [project-health] project health computed {"projectId":"224d54c4ce443e8b8de8e00282a227e67f75c24d","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:13] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:15] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 20ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 8 relationships (0 patterns) in 5ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:22:15] [project-health] project health computed {"projectId":"21700d14b4f073188ed0f727946a1860b8ea21ce","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(3ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 3ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[INFO] [19:22:15] [ast-engine] language grammar allocated {"language":"yaml"}
+[INFO] [19:22:15] [ast-engine] language parser loaded {"language":"yaml","wasmPath":"/tmp/bb-wasm_tree-sitter-yaml_tree-sitter-yaml.wasm_2353_1r9dacr3bs"}
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:16] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:18] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 22ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 5 relationships (0 patterns) in 7ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:22:18] [project-health] project health computed {"projectId":"31b3d1351a1f2d3bbd20db9da6db173b91acb7cb","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+[INFO] [19:22:18] [ast-engine] language grammar allocated {"language":"make"}
+[INFO] [19:22:18] [ast-engine] language parser loaded {"language":"make","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/wasm/tree-sitter-make.wasm"}
+E4: VERIFIED (31/31 passed, 8 negatives)
+E5: VERIFIED (5/5 passed, 0 negatives)
+E8: VERIFIED (8/8 passed, 1 negatives)

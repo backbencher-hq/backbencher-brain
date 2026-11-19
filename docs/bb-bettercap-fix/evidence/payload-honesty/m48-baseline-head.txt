@@ -1,0 +1,30 @@
+[brain] preparing the parallel worker pool (17 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [23:59:01] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:59:01] [parallel-indexer] project index built {"ext":".ts","files":17,"types":3}
+[INFO] [23:59:04] [parallel-indexer] worker pool complete {"files":17,"workers":2,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 181ms [plan=linear largest-intermediate=1594]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [23:59:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"6fd06012","danglingSources":826,"totalRelationships":1599}
+  enriching done 100%
+  ✅ Enriched 773 relationships (0 patterns) in 84ms
+        ⚠ 826 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 14ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [23:59:04] [project-health] project health computed {"projectId":"6fd060126ddfcbbfe7a21797160819ef992522c6","complexityScore":95,"maintainabilityScore":0,"techDebtScore":100,"codeQualityScore":65,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(18ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 13ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 18ms
+FAIL: P1: a hint that cannot identify the symbol is refused, not ignored — bb_impact: symbol 'constructor' not found — no impact set exists (declared error; run `bb index` or check the name)
+M48 P1 IMPACT UNITY: FAIL (79 passed, 1 failed, 6 negatives)

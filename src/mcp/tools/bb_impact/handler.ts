@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ToolHandler, ToolContext, ToolResult, ToolArguments } from "../shared"
-import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
+import { derivedStaleness, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP, ANALYZE_GRAPH_WALK_CEILING_MS, textResult, boundedResult, autoRefreshFile, readSnippet, resolveProjectPath, ensureWithinProject, resolveSafeReadPath, readIndexedFile, describeUnknownFilters, canonicalImpactReport } from "../shared"
 import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../../../brain/database"
@@ -157,39 +157,48 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       }
       const rootStatus = rootRow.fileId ? (detail.statuses.get(rootRow.fileId) ?? "missing") : null
       const rootIsStale = rootStatus !== null && rootStatus !== "fresh"
-      return textResult(
-        JSON.stringify(
-          {
-            symbol,
-            root: impact.root,
-            rootStale: rootIsStale ? rootStatus : false,
-            rootMatch: impact.rootMatch,
-            resolution: impact.resolution,
-            rule: impact.rule,
-            budget: impact.budget,
-            traversal: impact.traversal,
-            cascade: impact.cascade,
-            countVerification: impact.countVerification,
-            reproducible: impact.reproducible,
-            ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
-            // The component's own bookkeeping does not ride the wire. `tracedId`
-            // is the walk node a cascade row was found at — deciding `via` needs
-            // it and a reader has no use for an opaque id, so the payload
-            // publishes the DECLARED fact (`via`, `viaMember`) and not the
-            // intermediate it was derived from. Everything else on a dependent is
-            // a fact about the stored row or about the file.
-            impact: dependents.map(({ tracedId: _internal, ...declared }) => declared),
-            shownCount: impact.shownCount,
-            directCount: impact.directCount,
-            totalCountIfKnown: impact.totalCountIfKnown,
-            truncated: impact.truncated,
-            truncationReason: impact.truncationReason,
-            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
-          },
-          null,
-          2,
-        ),
-      )
+      // ONE bounded envelope: every declared bound/count in `summary` FIRST (so a
+      // host cap cannot remove the declaration), the bulk rows in `data`. The
+      // component's own bookkeeping does not ride the wire. `tracedId` is the
+      // walk node a cascade row was found at — deciding `via` needs it and a
+      // reader has no use for an opaque id, so the payload publishes the DECLARED
+      // fact (`via`, `viaMember`) and not the intermediate it was derived from.
+      //
+      // `traversal.returnedCallers` is renamed `engineCallerRows`: it counts the
+      // graph engine's caller ROWS (call sites), which is a different population
+      // from `budget.maxNodes` (the dependent-NODE budget). The old unlabelled
+      // name sat two keys from `maxNodes` and read as a budget breach (345 rows
+      // against a 200-node budget). Units are in the name now, and
+      // `budget.nodeBudgetMeans` says which population the node budget bounds.
+      const { returnedCallers: engineCallerRows, ...traversalRest } = impact.traversal
+      const summary = {
+        truncated: impact.truncated,
+        truncationReason: impact.truncationReason,
+        truncationReasons: impact.truncated && impact.truncationReason ? [impact.truncationReason] : [],
+        symbol,
+        shownCount: impact.shownCount,
+        directCount: impact.directCount,
+        totalCountIfKnown: impact.totalCountIfKnown,
+        budget: {
+          ...impact.budget,
+          nodeBudgetMeans: "bounds the dependent NODES in data.impact[] — NOT the graph engine's caller rows (summary.traversal.engineCallerRows)",
+        },
+        traversal: { ...traversalRest, engineCallerRows },
+        cascade: impact.cascade,
+        countVerification: impact.countVerification,
+        reproducible: impact.reproducible,
+        freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
+      }
+      const data = {
+        root: impact.root,
+        rootStale: rootIsStale ? rootStatus : false,
+        rootMatch: impact.rootMatch,
+        resolution: impact.resolution,
+        rule: impact.rule,
+        ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
+        impact: dependents.map(({ tracedId: _internal, ...declared }) => declared),
+      }
+      return boundedResult(summary, data)
     } catch (error) {
       // The component's declared errors already carry the `bb/impact:` wire
       // prefix (the LSP twin's contract). This door names itself once, so the

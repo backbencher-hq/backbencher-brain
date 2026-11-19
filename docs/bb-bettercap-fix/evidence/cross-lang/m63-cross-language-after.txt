@@ -1,0 +1,1 @@
+set BB_CL1_CORPUS=<real repo path> to build an index, or BB_CL1_DB + BB_CL1_PROJECT to reuse one

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-red/retrieval-contract",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-retrieval-contract.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix",
+  "startedAt": "2026-11-19T04:11:26.465Z",
+  "endedAt": "2026-11-19T04:11:32.209Z",
+  "durationMs": 5744,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "RED_CONFIRMED",
+  "expectRed": true,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 90,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1",
+  "stdout": "[brain] preparing the parallel worker pool (6 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 26ms [plan=linear largest-intermediate=10]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 5 relationships (0 patterns) in 31ms\n        ⚠ 7 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(15ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 10ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 2ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 3ms\n  ok: fixture: one declaration-kind Session row\n  ok: fixture: at least one property Session row\n  ok: fixture: unique function row exists\n  ok: fixture: two Dup declaration rows\n  ok: fixture: property precedes declaration in line order (defect trigger)\n  ok: A1 control: unique symbol title is `symbol: UniqueThing`\n  ok: A1 control: unique symbol quality.passed\n  ok: A1 control: unique symbol cites exactly its own declaration\n  FAIL: A1 control: unique symbol declares single scope\n  FAIL: A2: ambiguous name documents a DECLARED scope\n  FAIL: A2: declaration preferred over the property — src/module.ts:4,src/session.ts:5\n  FAIL: A2: subject is the single declaration (not a silent union)\n  FAIL: A2: summary states the resolved subject — 2 file(s) and 2 symbol(s) in scope, 18 cited claim(s) across 5 section(s) from 10 source(s). No indexed evidence was found for: Tests.\n  ok: A3: limit:1 keeps the SAME subject as the default call\n  FAIL: A3: limit:1 still documents the declaration, not the first line-ordered property — src/module.ts:4\n  FAIL: A3: limit:1 does not silently document a property — [\"property Session: Session | null is defined in src/module.ts at lines 4-4.\"]\n  FAIL: A4a: qualified target resolves exactly one subject\n  FAIL: A4a: qualified target documents the qualified declaration only — src/module.ts:4,src/session.ts:5\n  FAIL: A4b: qualified target on a bare-name corpus shape resolves exactly one subject\n  FAIL: A4b: bare-name qualified resolution uses the namespace path\n  FAIL: A4b: bare-name qualified target documents the declaration only — src/module.ts:4,src/session.ts:5\n  FAIL: A5: two declarations produce a DECLARED union in the title — symbol: Dup\n  FAIL: A5: declared union scope\n  ok: A5: union documents both declarations\n  FAIL: A6: a declared union its citations cannot cover does not pass\n  FAIL: A7: markdown heading declares the union — # symbol: Dup\n  ok: B1: symbol mode finds the unique symbol\n  FAIL: B1: symbol-mode fileId is <projectId>:<relativePath> — /tmp/bb-retrieval-contract-XNRPtk/src/unique.ts\n  FAIL: B1: symbol-mode fileId is never an absolute machine path — /tmp/bb-retrieval-contract-XNRPtk/src/unique.ts\n  FAIL: B1: absolute path moved to absolutePath\n  FAIL: B1: symbol mode returns the source slice (descriptor promise)\n  FAIL: B1: source declares its bound (sourceTruncated)\n  FAIL: B2: long symbol source is bounded — undefined\n  FAIL: B2: long symbol source is flagged truncated\n  ok: B3: content mode agrees on the fileId\n  ok: B3: file mode agrees on the fileId\n  ok: B3: no search-mode fileId is an absolute path\n  ok: B4 control: symbols mode still lists the name\n  ok: B4 control: file mode still returns source content\n  FAIL: C1: descriptor still promises exact symbol source and documents the bound\n  FAIL: C1: symbol-mode descriptor no longer claims byte bounds without source\n  FAIL: C2: BB_SEARCH.md documents <projectId>:<relativePath> fileId\n  FAIL: C2: BB_SEARCH.md documents the symbol source fields\n  FAIL: C3: BB_DOC.md documents quality.scope and the union title\n  FAIL: C4: generated bb_search page documents the source fields\n\nRETRIEVAL CONTRACT: 16/45 checks passed\n",
+  "stderr": "[INFO] [23:11:29] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:11:30] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":6,\"types\":3}\n[INFO] [23:11:31] [parallel-indexer] worker pool complete {\"files\":6,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:11:31] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5f2259aa\",\"danglingSources\":7,\"totalRelationships\":12}\n[INFO] [23:11:31] [project-health] project health computed {\"projectId\":\"5f2259aaa9bdff9b5fdd8d66416739c4443f83f0\",\"complexityScore\":95,\"maintainabilityScore\":78,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 4144,
+  "stderrBytes": 738,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T041132Z-cp1-red-retrieval-contract.json"
+}

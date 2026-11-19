@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "49b9c826832576f37f21e4b3a2989863fc500685fcdf3e7b888a6ccba88e8e63",
-    "sealedAt": "2026-11-17T17:39:08.000Z"
+    "contentSha256": "42360344e4b88a41d189858c556f19e1ed93a472ef08ebb623ff33bdc921fe72",
+    "sealedAt": "2026-11-18T23:15:32.000Z"
   },
   "checks": [
     {
@@ -18,10 +18,10 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (50/50 languages pass)",
-      "detail": "50 language(s), every dead literal registered with a reason",
+      "description": "per-literal shrink-only register with reasons (49/50 languages pass)",
+      "detail": "unregistered javascript type \"implements_clause\"; unregistered javascript type \"implements_clause\"; unregistered javascript type \"generic_type\"; regression javascript 0->3",
       "id": "dead-literal-gate",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "the gate is proven able to fail: 8 negatives incl. a NEW literal under an improved count, an unreasoned entry, and an unrecorded repayment",
@@ -30,16 +30,44 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "a4db342b5b56bff427bd441d71987c072d4f358e",
-  "committedAt": "2026-11-17T12:39:08-05:00",
+  "commit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "committedAt": "2026-11-18T18:15:32-05:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [],
-        "ok": true,
+        "countRegressions": [
+          {
+            "from": 0,
+            "lang": "javascript",
+            "to": 3
+          }
+        ],
+        "ok": false,
         "recordIsV1": false,
         "shrunk": [],
-        "unregistered": []
+        "unregistered": [
+          {
+            "context": "real-javascript-analyzer.ts:findChildByType",
+            "kind": "type",
+            "lang": "javascript",
+            "line": 1036,
+            "literal": "implements_clause"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:findChildByType",
+            "kind": "type",
+            "lang": "javascript",
+            "line": 1037,
+            "literal": "implements_clause"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "javascript",
+            "line": 1043,
+            "literal": "generic_type"
+          }
+        ]
       },
       "counts": {
         "bash": 0,
@@ -359,8 +387,8 @@
         "oracleFieldCount": 35,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 214,
-        "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 61,
+        "referencedFieldLiterals": 15,
+        "referencedTypeLiterals": 69,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -521,10 +549,26 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
         "referencedFieldLiterals": 17,
-        "referencedTypeLiterals": 72,
-        "status": "pass",
+        "referencedTypeLiterals": 74,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-javascript-analyzer.ts:findChildByType",
+            "line": 1036,
+            "literal": "implements_clause"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:findChildByType",
+            "line": 1037,
+            "literal": "implements_clause"
+          },
+          {
+            "context": "real-javascript-analyzer.ts:comparison",
+            "line": 1043,
+            "literal": "generic_type"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-javascript.wasm"
@@ -2613,7 +2657,7 @@
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 8699,
+            "line": 8926,
             "literal": "default_export_expression"
           }
         ],
@@ -2748,10 +2792,10 @@
       }
     },
     "summary": {
-      "fail": 0,
+      "fail": 1,
       "languagesAudited": 50,
-      "pass": 50,
-      "totalUnknownReferences": 0
+      "pass": 49,
+      "totalUnknownReferences": 3
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -2779,8 +2823,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-11-17T12:39:08-05:00",
-  "regeneratedAtCommit": "a4db342b5b56bff427bd441d71987c072d4f358e",
+  "regeneratedAt": "2026-11-18T18:15:32-05:00",
+  "regeneratedAtCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

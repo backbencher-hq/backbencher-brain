@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-final/visualize-options",
+  "command": [
+    "bun",
+    "run",
+    "script/m13/verify-visualize-options.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T05:08:10.256Z",
+  "endedAt": "2026-11-19T05:08:11.699Z",
+  "durationMs": 1443,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 122,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1final",
+  "stdout": "[brain] preparing the parallel worker pool (7 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 24ms [plan=linear largest-intermediate=9]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 1 relationships (1 patterns) in 12ms\n        patterns: callback 1\n        ⚠ 8 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(10ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 7ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\n",
+  "stderr": "[INFO] [00:08:10] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:08:10] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":6,\"types\":0}\n[INFO] [00:08:10] [parallel-indexer] project index built {\"ext\":\".py\",\"files\":1,\"types\":0}\n[INFO] [00:08:11] [parallel-indexer] worker pool complete {\"files\":7,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:08:11] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"fc79c8f9\",\"danglingSources\":8,\"totalRelationships\":9}\n[INFO] [00:08:11] [project-health] project health computed {\"projectId\":\"fc79c8f9b688d85640dbeaea7cbd772cdf243f14\",\"complexityScore\":95,\"maintainabilityScore\":79,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":2,\"bottlenecks\":0}\n[INFO] [00:08:11] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:08:11] [dependency-graph-visualizer] ✅ Graph Data Generated: 7 nodes, 1 links\n90 | const fileOf = (node: any): string => String(node.filePath ?? node.file ?? \"\")\n91 | const files = (result: any): string[] => [...new Set((result.nodes as any[]).map(fileOf))]\n92 | \n93 | // ── the controls first, so every exclusion below is attributable ──────────────\n94 | const base = await run({})\n95 | harness.check(\"control: project scope returns the fixture's symbols\", base.nodes.length > 0, String(base.nodes.length))\n                                                                                ^\nTypeError: undefined is not an object (evaluating 'base.nodes.length')\n      at /home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-options.ts:95:76\n\nBun v1.3.14 (Linux x64)\n",
+  "stdoutBytes": 984,
+  "stderrBytes": 1749,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T050811Z-cp1-final-visualize-options.json"
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-green2/m28-tsx",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m28/verify-mcp-tools.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:47:14.528Z",
+  "endedAt": "2026-11-19T04:47:21.720Z",
+  "durationMs": 7192,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 105,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (3 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 26ms [plan=linear largest-intermediate=7]\n        cross-language: 2 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 8 relationships (0 patterns) in 8ms\n        ⚠ 5 dangling sources, 2 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 3ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(14ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 13ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 3ms\nT1: VERIFIED (26/26 passed, 2/2 mutants)\n",
+  "stderr": "[INFO] [23:47:19] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:47:21] [parallel-indexer] worker pool complete {\"files\":3,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:47:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"38503dee\",\"danglingSources\":5,\"totalRelationships\":13}\n[INFO] [23:47:21] [project-health] project health computed {\"projectId\":\"38503deeec479c3513c8481ec7aea33224ff20bd\",\"complexityScore\":95,\"maintainabilityScore\":75,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n",
+  "stdoutBytes": 1050,
+  "stderrBytes": 647,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044721Z-cp1f-green2-m28-tsx.json"
+}

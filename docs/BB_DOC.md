@@ -118,13 +118,51 @@ everything the generator gathered, including evidence no fact referred to.
 
 | Mode | Target | Primary evidence | Required sections |
 | --- | --- | --- | --- |
-| `symbol` | symbol name, qualified name, or its last dotted/`::` segment | signature, bounds, docstring, inbound/outbound relationships, imports, tests | API, Behavior, Dependencies, Tests, Limitations |
+| `symbol` | symbol name, qualified name, or its last dotted/`::` segment | the RESOLVED subject (declaration preferred), signature, bounds, docstring, inbound/outbound relationships, imports, tests | API, Behavior, Dependencies, Tests, Limitations |
 | `file` | exact repository-relative path, absolute path, directory prefix, or bare file name with/without extension | file row, symbols, imports/exports, syntax state, findings | Overview, Public symbols, Dependencies, Risks |
 | `module` | repository-relative directory the index holds | files under the module, its public surface, internal edges | Purpose, Entry points, Public surface, Module graph |
 | `feature` | feature name (lexical match over name, qualified name, docstring) | candidate symbols, their files, edges, tests | Entry points, Flow, Components, Test coverage |
 | `api` | optional path/contract target | symbols with `api_contract_path`, route/endpoint/controller symbol types, callables in files the index attributes to an HTTP framework | Endpoints, Inputs and outputs, Errors, Examples |
 | `project` | optional (metadata only) | project totals, language mix, entry points, findings, documentation coverage | Architecture, Inventory, Risks, Documentation map |
 | `coverage` | optional path/module | documented/undocumented symbols, stale sources, unmeasurable verdicts | Documented, Undocumented, Stale, Unsupported |
+
+### Subject resolution and scope (symbol mode)
+
+A symbol target is a NAME; a document needs a SUBJECT. `symbol` mode therefore
+resolves the name before it writes, and states what it resolved:
+
+- **A declaration is preferred over data that reuses the name.** When the name is
+  shared by a declaration (`struct`/`class`/`interface`/`type`/`enum`/`function`/
+  `method`/`module`/`namespace`/`protocol`/`record`) and a field/property/
+  variable/constant, the declaration is the subject. Measured defect this fixes:
+  on a real Go repository `Session` was four `Session` FIELDS plus the canonical
+  `struct`, ordered by line number, so the API section led with a field.
+- **A qualified target selects the qualified symbol.** `pkg.Name` first matches an
+  exactly stored `qualified_name`; when the analyzer stored only the bare name
+  (the measured shape on the corpora) the qualifier is resolved as a namespace
+  path — a whole directory segment (`config/config.go` for `config.Options`) or a
+  file stem (`session.go` for `session.Session`). A qualifier that selects
+  nothing falls back to the name copies, and `quality.scope.resolvedBy` says so.
+- **A genuine union is DECLARED.** When several declarations share the name and
+  no qualified selector applies, the title is
+  `symbol: <target> (union of <n> indexed symbols)`, the summary opens with
+  `Union: <n> indexed symbols named … are documented together; their claims are
+  not interchangeable.`, and `quality.scope.declared` is `union`.
+- **A single resolved subject is stated.** When one subject is selected out of
+  several copies, the summary opens with
+  `Subject: <kind> <name> in <path>:<line> (selected from <n> indexed symbols of
+  that name; <why>).` A target with exactly one indexed copy keeps the pre-fix
+  title and summary byte-for-byte.
+- **`limit` is a per-section evidence cap and never the subject selector.**
+  Resolution has its own bound (`RESOLUTION_CAP`, 200 copies, declared as an
+  `output-budget` unknown when hit) and does not receive `limit`; changing
+  `limit` changes how much evidence each section may carry, not which symbol the
+  document is about. `limit: 1` therefore still documents the resolved subject.
+- **`quality.scope` is measured, not asserted.** `{ declared, passed, subjects,
+  copies, resolvedBy }`: for `single` the document must cite exactly its one
+  subject; for `union` every declared subject must be cited by a surviving symbol
+  citation. The term joins `quality.passed`, so a document that cannot cover the
+  scope it declares fails; every non-symbol mode reports `not-applicable`.
 
 Evidence rules:
 
@@ -266,7 +304,9 @@ opt-in and the descriptor and pages say so.
 ## Operational limits and refusals
 
 - Default evidence limit: 20 items per section; accepted range 1–100; out-of-range values are
-  refused, not clamped.
+  refused, not clamped. `limit` is a per-section EVIDENCE cap only: in `symbol` mode the
+  documented subject is resolved independently of it, so lowering `limit` cannot change which
+  symbol the document is about (see Subject resolution and scope).
 - Default output budget: 8,000 tokens measured on the payload; hard maximum 16,000; out-of-range
   values are refused. The default clears the measured minimum honest rendering of a project
   document on the reference index (about 6,700 tokens); a smaller default could not be honoured by
@@ -300,6 +340,7 @@ been observed red on a planted or real regression before being observed green.
 | `bun run script/m20/verify-doc-truth.ts` | statement truth and self-consistency: inbound edges name the documented symbol, counts match emitted citations, the payload budget holds, prose is not a fact restatement, bounds close, stale-footer vocabulary |
 | `bun run script/verify-doc.ts` | engine-level smoke over all seven modes, citation resolution, stale labelling, budget failure, no source mutation |
 | `bun run script/verify-doc-design.ts` | this specification still states the required contract sections |
+| `bun run script/verify-retrieval-contract.ts` | symbol-mode subject resolution + scope (declaration preference, qualified target, declared union, `limit` does not select the subject) and the `bb_search` symbol-mode source/identity contract (bounded `source`, `sourceTruncated`, `fileId` = `<projectId>:<relativePath>` in every mode) |
 
 The real-repository corpus companion named in older revisions (the fixture-corpus corpus verifier (`bb_doc/verify-corpus.ts`),
 ten repositories) is not present in this checkout; the corpus legs that can run here use

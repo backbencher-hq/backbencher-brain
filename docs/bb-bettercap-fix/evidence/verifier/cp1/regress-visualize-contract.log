@@ -1,0 +1,17 @@
+  ok: viz: bb_visualize is in the registry missing
+  ok: viz: modes are exactly the five scopes got ["project","file","module","symbol","feature"]
+  ok: viz: scope enum is exactly the five scopes got ["project","file","module","symbol","feature"]
+  ok: viz: format enum is exactly text/json/html got ["text","json","html"]
+  ok: viz: format values are NOT in modes [negative] modes=["project","file","module","symbol","feature"]
+  ok: viz: scope values are NOT in the format enum [negative] formatEnum=["text","json","html"]
+  ok: viz: defaults carry scope scope=project
+  ok: viz: defaults carry format format=text
+  ok: viz: handler validates scope independently scope routing missing
+  ok: viz: handler validates format independently format routing missing
+  ok: viz: handler does not treat format as a mode [negative] format treated as scope
+  ok: viz: docs modes line = scopes only mode line mismatch
+  ok: viz: docs has separate format property format property missing
+  ok: viz: docs does not list format values under Modes [negative] format leaked into modes line
+  ok: viz: generator verify mode passes (bb_visualize.md byte-fresh)
+V1: VERIFIED (15/15 passed, 4 negatives)
+

@@ -1,0 +1,20 @@
+  ok: bb_analyze is registered as a public tool found
+  ok: mutability is read read
+  ok: requiresIndex is true true
+  ok: modes are exactly the 11 the handler implements callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality
+  ok: freshnessModes cover every mode callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality
+  ok: required is exactly [mode] ["mode"]
+  ok: parameters are exactly filePath, limit, mode, target filePath,limit,mode,target
+  ok: mode enum equals the registered modes callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality
+  ok: limit is declared as a number number
+  ok: descriptor defaults name the real per-mode defaults {"limit":"25 edges per direction (callers/callees/trace); 20 files (dependencies); 50 entries (test_mapping/test_gaps); 50 files (test_quality)","target":"required for callers, callees, trace, impact, test_impact; optional file path or directory prefix for complexity","filePath":"optional path prefix (or an exact file) for dependencies, test_mapping, test_gaps, test_quality"}
+  ok: validation layer accepts the aliases the descriptor documents {"symbol":"target","symbolName":"target","query":"target"}
+  ok: validation requires mode bb_analyze: missing required option: mode
+  ok: validation rejects an unknown option bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases accepted: symbol, symbolName, query)
+  ok: validation rejects an unknown mode bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality
+  ok: validation forgives symbol= as target accepted
+  ok: validation rejects conflicting alias and canonical bb_analyze: target and symbol are aliases with different values ("a" vs "b") — pass one
+  ok: handler registry answers bb_analyze function
+  ok: handler is not shared with another tool name [negative] distinct function
+An2: VERIFIED (18/18 passed, 1 negative)
+

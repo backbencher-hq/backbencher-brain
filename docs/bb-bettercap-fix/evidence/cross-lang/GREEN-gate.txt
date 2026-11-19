@@ -1,0 +1,102 @@
+P0-2 name-binding precision gate
+
+[brain] preparing the parallel worker pool (8 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:34:59] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:35:03] [parallel-indexer] worker pool complete {"files":8,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 43ms [plan=linear largest-intermediate=18]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:35:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"d1fdabca","danglingSources":5,"totalRelationships":37}
+  enriching done 100%
+  ✅ Enriched 32 relationships (0 patterns) in 42ms
+        ⚠ 5 dangling sources, 27 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:04] [project-health] project health computed {"projectId":"d1fdabca8bc751224ec0293f574eee542e2e1e68","complexityScore":95,"maintainabilityScore":84,"techDebtScore":100,"codeQualityScore":93,"languages":4,"bottlenecks":0}
+  ✓ taint(2ms) + health(50ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 14ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 6ms
+  -- collision fixture languages: go,javascript,make,yaml
+  ok: P1a collision fixture: no cross-language imports/calls/instantiates
+  ok: P1b collision fixture: no bound non-code-language target
+  ok: P1c collision fixture: no bare-name import binding
+  ok: P1d collision fixture: no bound isFieldAccess row
+  ok: P1e collision fixture: no bound external-claim row
+  ok: PC3 same-language JS relative import resolves
+  ok: PC3 same-language JS relative import is not cross-language
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:35:06] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:35:09] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 38ms [plan=linear largest-intermediate=8]
+        cross-language: 3 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:35:10] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"8dc5e734","danglingSources":2,"totalRelationships":15}
+  enriching done 100%
+  ✅ Enriched 13 relationships (0 patterns) in 11ms
+        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 10ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:10] [project-health] project health computed {"projectId":"8dc5e7348f329eab3f1f7fe5402a72fb4634f596","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+  ✓ taint(2ms) + health(10ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 6ms
+  ok: PC1 java+scala bridge rows survive (expected 3)
+  ok: PC1 java+scala bridge rows survive: bridges are evidence-bearing
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:35:13] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:35:13] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [19:35:19] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 26ms [plan=linear largest-intermediate=7]
+        cross-language: 2 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:35:19] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e44b6c51","danglingSources":5,"totalRelationships":11}
+  enriching done 100%
+  ✅ Enriched 6 relationships (0 patterns) in 9ms
+        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 8ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:35:19] [project-health] project health computed {"projectId":"e44b6c514ce86e4b097c17c2be1e70648395f20c","complexityScore":93,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+  ✓ taint(1ms) + health(18ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 29ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 17ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 14ms
+  ok: PC2 ts+js bridge rows survive (expected 2)
+  ok: PC2 ts+js bridge rows survive: bridges are evidence-bearing
+  -- P2 bettercap arm skipped: set BB_P02_BETTERCAP_DB=<read-only db path> to run it
+
+P0-2 gate: 11/11 assertions passed
+GREEN: all P0-2 assertions pass

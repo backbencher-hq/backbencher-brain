@@ -1,0 +1,7 @@
+  FAIL: test-intel session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/186639d64f920f369c9de1f18dc4534f3e8e1645'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-test-intel.ts:38:3)
+
+TEST-INTEL: 1 FAILURES

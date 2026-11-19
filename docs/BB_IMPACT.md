@@ -78,6 +78,37 @@ answer would otherwise run past the tool's 5 s budget, not a hidden cut. The clo
 is the one bound that is a property of the machine rather than of the index, so it
 is always declared rather than inferred.
 
+## The response envelope (summary first)
+
+A `bb_impact` answer is ONE bounded envelope: `{ "summary": …, "data": … }`.
+
+- **`summary` is emitted FIRST** and carries every declaration a caller must read
+  before trusting the rows: `truncated`, `truncationReason`, `truncationReasons`,
+  the counts (`shownCount`, `directCount`, `totalCountIfKnown`), the declared
+  `budget` (node budget 200 with `nodeBudgetMeans` stating that it bounds the
+  dependent NODES, not the engine's caller rows), `traversal` (whose engine row
+  count is named `engineCallerRows` — units in the name), `countVerification`,
+  `reproducible`, `freshness`, and `payloadBytes` / `payloadBudgetBytes`.
+- **`data` second** carries the root/rule and the dependent rows (`data.impact[]`).
+
+Why the order is load-bearing: before this envelope the decisive fields sat at
+99.7–99.9% of the payload, so any host that caps or truncates a large tool answer
+removed exactly the declaration that the answer was a prefix. `summary` is first,
+and every bound is inside the first 4 KB (gate: `script/m73/verify-payload-envelope.ts`).
+
+The transport budget is **256 KiB per answer** by default (`BB_PAYLOAD_BUDGET_BYTES`
+overrides it). Over budget, the dependent rows are cut and the cut is DECLARED in
+the same summary: `truncated: true`, `truncationReason` gains
+`payload-byte-budget-exhausted`, and `droppedRows` / `droppedByArray` state how many
+rows were removed. A `payloadBytes` over `payloadBudgetBytes` can therefore only
+appear next to its own declared cut — the transport bound is never silent.
+
+The engine-row count was renamed `traversal.returnedCallers` → `traversal.engineCallerRows`
+(pre-fix, the unlabelled name sat beside `budget.maxNodes` and read as a budget
+breach — 345 engine rows against a 200-dependent-node budget; the node budget was
+never breached: `shownCount` equals it and the reason names
+`impact-node-budget-exhausted`).
+
 ## Refusals
 
 - Missing symbol, or a symbol not found in the index.

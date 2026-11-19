@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-final/m57-t2-consumers",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m57/verify-t2-consumers.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T05:06:21.468Z",
+  "endedAt": "2026-11-19T05:06:23.049Z",
+  "durationMs": 1580,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 122,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1final",
+  "stdout": "  ok U5: the search demotion comparator equals the canonical predicate\n  -- U1-U4, U6, U7 (live consumer re-measurement) skipped: set BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir>\n",
+  "stderr": "",
+  "stdoutBytes": 178,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T050623Z-cp1-final-m57-t2-consumers.json"
+}

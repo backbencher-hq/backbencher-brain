@@ -104,7 +104,15 @@ async function main() {
   const call = async (name: string, args: Record<string, unknown>) => {
     const r = await (handlers as any)[name](args, ctx as any)
     if (r?.isError) return null
-    try { return JSON.parse(r.content[0].text) } catch { return null }
+    try {
+      const payload = JSON.parse(r.content[0].text)
+      // ACCESS PATH ONLY: the graph family now emits ONE bounded envelope
+      // ({ summary, data }, summary first). This helper flattens the declared
+      // envelope back to the legacy flat view, so every assertion below keeps the
+      // identical predicate text it had before the envelope — no check is added,
+      // removed or relaxed here.
+      return payload && typeof payload === "object" && "summary" in payload && "data" in payload ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data } : payload
+    } catch { return null }
   }
   const callError = async (name: string, args: Record<string, unknown>) => {
     const r = await (handlers as any)[name](args, ctx as any)

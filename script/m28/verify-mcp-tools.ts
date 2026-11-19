@@ -112,7 +112,13 @@ async function main(): Promise<void> {
     return { isError: result.isError === true, text: result.content?.[0]?.text ?? "" }
   }
   const parse = (text: string): any => {
-    try { return JSON.parse(text) } catch { return null }
+    try {
+      const payload = JSON.parse(text)
+      // ACCESS PATH ONLY: the graph family now emits ONE bounded envelope
+      // ({ summary, data }, summary first). Flatten it back to the legacy flat
+      // view so every assertion below keeps its identical pre-envelope predicate.
+      return payload && typeof payload === "object" && "summary" in payload && "data" in payload ? { ...payload.data, ...payload.summary, summary: payload.summary, data: payload.data } : payload
+    } catch { return null }
   }
 
   // --- R3: bb_graph semantics -------------------------------------------------

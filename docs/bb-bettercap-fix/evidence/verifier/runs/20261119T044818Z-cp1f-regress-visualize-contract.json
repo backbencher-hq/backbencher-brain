@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/visualize-contract",
+  "command": [
+    "bun",
+    "run",
+    "script/m13/verify-visualize-contract.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:48:18.385Z",
+  "endedAt": "2026-11-19T04:48:18.946Z",
+  "durationMs": 561,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 109,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "  ok: viz: bb_visualize is in the registry missing\n  ok: viz: modes are exactly the five scopes got [\"project\",\"file\",\"module\",\"symbol\",\"feature\"]\n  ok: viz: scope enum is exactly the five scopes got [\"project\",\"file\",\"module\",\"symbol\",\"feature\"]\n  ok: viz: format enum is exactly text/json/html got [\"text\",\"json\",\"html\"]\n  ok: viz: format values are NOT in modes [negative] modes=[\"project\",\"file\",\"module\",\"symbol\",\"feature\"]\n  ok: viz: scope values are NOT in the format enum [negative] formatEnum=[\"text\",\"json\",\"html\"]\n  ok: viz: defaults carry scope scope=project\n  ok: viz: defaults carry format format=text\n  ok: viz: handler validates scope independently scope routing missing\n  ok: viz: handler validates format independently format routing missing\n  ok: viz: handler does not treat format as a mode [negative] format treated as scope\n  ok: viz: docs modes line = scopes only mode line mismatch\n  ok: viz: docs has separate format property format property missing\n  ok: viz: docs does not list format values under Modes [negative] format leaked into modes line\n  ok: viz: generator verify mode passes (bb_visualize.md byte-fresh)\nV1: VERIFIED (15/15 passed, 4 negatives)\n",
+  "stderr": "",
+  "stdoutBytes": 1182,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044818Z-cp1f-regress-visualize-contract.json"
+}

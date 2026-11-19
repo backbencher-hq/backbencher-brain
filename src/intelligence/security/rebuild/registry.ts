@@ -162,11 +162,18 @@ export function securityTierCounts(): SecurityTierCounts {
   }
 }
 
-/** One line the tool answer can print verbatim; counts come from this registry. */
+/** One line the tool answer can print verbatim; counts come from this registry.
+ *
+ *  The population is LANGUAGES IN THE ANALYZER REGISTRY, not stored leads — and
+ *  the line used to say `39 leads` two lines above a body line saying `0 stored
+ *  lead(s)`, which read as a contradiction (the two numbers measure different
+ *  things). The unit is now in the label, and the census is declared
+ *  project-independent; the ONLY lead count is the stored-lead body line the
+ *  handler prints from the store. */
 export function formatSecurityTierDeclaration(): string {
   const c = securityTierCounts()
   return (
-    `tiers: ${c.scan} scan / ${c.leads} leads / ${c.unsupported} unsupported (of ${c.total} analyzers) — ` +
-    `unsupported languages are NOT scanned by bb_security; leads require manual validation`
+    `tiers (analyzer registry census, project-independent): ${c.scan} scan / ${c.leads} lead-tier analyzers / ${c.unsupported} unsupported (of ${c.total} analyzer specs) — ` +
+    `unsupported languages are NOT scanned by bb_security; analyzer specs require manual validation, and this project's stored leads are counted below, not here`
   )
 }

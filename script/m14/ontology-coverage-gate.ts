@@ -84,6 +84,13 @@ import { JSON_RULED } from "./json-ruled"
 // one supervisor-owned import + one line it needed. See that file's header for the implements
 // reversal the table now carries.
 import { PYTHON_RULED } from "./python-ruled"
+// csharp (2026-11-19): the lane's ruling table, imported like the twenty above. Until this line
+// and the `csharp:` entry in `RULED_BY_LANG` landed, the gate had no table for csharp at all, so
+// `ontology-coverage-gate.ts csharp` could not render a verdict for the three types the lane does
+// not emit — the two correct rulings lived only as prose in the spec, and the third (decorates)
+// was ruled on a grammar-absence claim the tree contradicts. `script/m14/csharp-ruled.ts` carries
+// two entries (mixes_in, part_of); decorates is now EMITTED and never reaches a ruling.
+import { CSHARP_RULED } from "./csharp-ruled"
 
 const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 /** The lane is the first NON-FLAG argument: `--self-test` / `--coverage` must not be read as a lane
@@ -567,6 +574,7 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   dart: DART_RULED,
   powershell: POWERSHELL_RULED,
   python: PYTHON_RULED,
+  csharp: CSHARP_RULED,
   // THE THREE TABLES THE REGISTRATION GATE FOUND MISSING (2026-11-04): these lanes had
   // committed `script/m14/{html,javascript,svelte}-ruled.ts` but no line here, so the
   // arbiter could not see them and each lane read as unadjudicated — a ruling table that

@@ -1,0 +1,82 @@
+[harness-redirect] active
+[brain] preparing the parallel worker pool (7 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:40:41] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:40:41] [parallel-indexer] project index built {"ext":".ts","files":4,"types":1}
+[INFO] [19:40:41] [parallel-indexer] project index built {"ext":".py","files":1,"types":0}
+[INFO] [19:40:42] [parallel-indexer] worker pool complete {"files":7,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 31ms [plan=linear largest-intermediate=13]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:40:42] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"aad409b2","danglingSources":8,"totalRelationships":13}
+  enriching done 100%
+  ✅ Enriched 5 relationships (1 patterns) in 11ms
+        patterns: observer 1
+        ⚠ 8 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 2ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:40:42] [project-health] project health computed {"projectId":"aad409b214073f889883f9370f3f37d2350ff004","complexityScore":94,"maintainabilityScore":85,"techDebtScore":100,"codeQualityScore":93,"languages":4,"bottlenecks":0}
+  ✓ taint(1ms) + health(11ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: exact matches only the exact symbol
+  ok: default mode is tagged symbol
+  ok: prefix finds handleRequest
+  ok: substring finds handleRequest
+  ok: substring finds both duplicate symbols
+  ok: pagination returns distinct pages
+  ok: regex matches by pattern
+  ok: regex mode is tagged
+  ok: regex reports truncation flag
+  ok: regex non-match returns empty
+  ok: regex:true routes through symbol dispatcher
+  ok: content search finds documented symbol
+  ok: content mode is tagged
+  ok: content results carry content matchType
+  ok: mode=content routes through dispatcher
+  ok: language filter narrows results
+  ok: language filter excludes other languages
+  ok: symbolKind filter narrows results
+  ok: public search rejects empty symbol query [negative: non-empty query]
+  ok: public file mode requires filePath [negative: requires filePath]
+  ok: invalid regex throws InvalidRegexError [negative: InvalidRegexError]
+  ok: public file mode returns a file envelope
+  ok: public file mode returns source content
+  ok: public file mode returns freshness metadata
+  ok: unmodified file mode reports fresh
+  ok: public file mode refuses a path escape with an error envelope isError=true text=bb_search mode=file: path escapes project root: /tmp/outside.ts
+  ok: content search reaches a body-only phrase results=1
+  ok: content declares matchMode on the phrase route phrase
+  ok: content declares bodyCoverage with stored bodies {"withBody":11,"symbols":13,"ratio":0.8461538461538461}
+  ok: content terms route reports matchMode=terms terms
+  ok: content language filter is case-insensitive (uppercase value matches) results=1
+  ok: content symbolKind filter is case-insensitive (uppercase value matches) results=1
+  ok: content read adds no schema objects to the index database [negative] before=(none) after=(none)
+  ok: public symbols answer carries the machine-readable match-set line handleRequest [function] src/app.ts:2 (typescript)
+showing 1 of 2 matches
+[match-set] searchMode=symbols totalMatches=2 returned=1 truncated=false staleCount=0
+  ok: door accepts limit/offset on symbol mode (paging contract) door rejected symbol-mode paging
+  ok: public boundary refuses limit above 2000 with the declared ceiling [negative] no refusal
+  ok: public boundary refuses exact combined with regex [negative] bb_search symbols mode: exact and regex cannot be combined — exact asks for a whole-name match, regex asks for a pattern
+  ok: public boundary refuses refresh in file mode (manual-only staleness) [negative] bb_search file mode does not accept: refresh — accepted for file: mode, filePath (file mode never auto-refreshes; its st
+  ok: symbol mode returns the COMPLETE match set when no limit is given {"total":2,"returned":2,"truncated":false}
+  ok: symbol mode pages with a declared total and distinct offsets {"p1":1,"p2":1,"total":2}
+  ok: symbol mode offset past the end is an empty page with a declared total, not an absent symbol [negative] {"total":2,"returned":0,"found":true}
+  ok: symbol mode match shape carries language on the filePath fallback path ["typescript"]
+  ok: regex scan is deterministic across 5 warm calls handle,handleRequest | handle,handleRequest | handle,handleRequest | handle,handleRequest | handle,handleRequest
+  ok: symbol search flags stale rows after modification
+  ok: regex search flags stale rows after modification
+  ok: content search flags stale rows after modification
+  ok: file mode reports stale after modification
+  ok: file mode's stale remediation does NOT claim auto-refresh or name refresh=false [negative] 1 stale in this file — this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index --file "src/app.ts" (or the bb_index tool with that file path)
+S1: VERIFIED (48/48 passed, 9 negatives)

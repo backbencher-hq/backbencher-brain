@@ -24,7 +24,7 @@
     {
       "name": "fidelity: the node cut and the budget cut are separate counters",
       "pass": true,
-      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"abda182dc1cc219f0bfbc127690f351198ea970f\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
     },
     {
       "name": "fidelity: the misleading `omittedDanglingLinks` name is gone [negative]",
@@ -36,7 +36,7 @@
       "name": "fidelity: nothing is cut when every node is retained [negative]",
       "pass": true,
       "negative": true,
-      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"abda182dc1cc219f0bfbc127690f351198ea970f\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":0}"
     },
     {
       "name": "truncation: nodes bounded",
@@ -97,7 +97,7 @@
     {
       "name": "node cut: the loss is attributed to the node cut",
       "pass": true,
-      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":1,\"linksOmittedByBudget\":0}"
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"abda182dc1cc219f0bfbc127690f351198ea970f\",\"linksOmittedWithNodeCut\":1,\"linksOmittedByBudget\":0}"
     },
     {
       "name": "node cut: `maxLinks` cut nothing, so the set is NOT reported truncated by it [negative]",
@@ -108,13 +108,13 @@
     {
       "name": "budget cut: a link budget below the edge set IS reported as a relationship cut",
       "pass": true,
-      "detail": "{\"provenance\":{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":4},\"truncated\":true}"
+      "detail": "{\"provenance\":{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"abda182dc1cc219f0bfbc127690f351198ea970f\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":4},\"truncated\":true}"
     },
     {
       "name": "budget cut: the two counters are not the same number [negative]",
       "pass": true,
       "negative": true,
-      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"33948a14dfdd3351f4f6a2b6a459418315350a87\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":4}"
+      "detail": "{\"source\":\"stored-symbol-and-relationship-rows\",\"indexedProject\":\"abda182dc1cc219f0bfbc127690f351198ea970f\",\"linksOmittedWithNodeCut\":0,\"linksOmittedByBudget\":4}"
     },
     {
       "name": "node cut: the text does not blame maxLinks for the node cut [negative]",
@@ -152,5 +152,5 @@
   "limitations": [
     "Small fixture; large graphs bounded by LIMIT queries."
   ],
-  "generatedAt": "2026-11-05T04:20:09.514Z"
+  "generatedAt": "2026-11-19T05:08:17.832Z"
 }

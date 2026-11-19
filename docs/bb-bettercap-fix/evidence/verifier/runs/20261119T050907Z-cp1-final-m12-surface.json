@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1-final/m12-surface",
+  "command": [
+    "npx",
+    "tsx",
+    "bun-run_scriptm12verify-m12-surface.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T05:09:06.364Z",
+  "endedAt": "2026-11-19T05:09:07.119Z",
+  "durationMs": 755,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 122,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1final",
+  "stdout": "",
+  "stderr": "\nnode:internal/modules/run_main:123\n    triggerUncaughtException(\n    ^\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/ishaq2321/mcp/backbencher-brain/bun-run_scriptm12verify-m12-surface.ts' imported from /home/ishaq2321/mcp/backbencher-brain/\n    at finalizeResolution (node:internal/modules/esm/resolve:275:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:985:11)\n    at nextResolve (node:internal/modules/esm/hooks:748:28)\n    at resolveBase (file:///home/ishaq2321/mcp/backbencher-brain/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:10334)\n    at resolveDirectory (file:///home/ishaq2321/mcp/backbencher-brain/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:11421)\n    at resolveTsPaths (file:///home/ishaq2321/mcp/backbencher-brain/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:13062)\n    at resolve (file:///home/ishaq2321/mcp/backbencher-brain/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:14748)\n    at nextResolve (node:internal/modules/esm/hooks:748:28)\n    at Hooks.resolve (node:internal/modules/esm/hooks:240:30) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///home/ishaq2321/mcp/backbencher-brain/bun-run_scriptm12verify-m12-surface.ts'\n}\n\nNode.js v22.22.1\n",
+  "stdoutBytes": 0,
+  "stderrBytes": 1256,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T050907Z-cp1-final-m12-surface.json"
+}

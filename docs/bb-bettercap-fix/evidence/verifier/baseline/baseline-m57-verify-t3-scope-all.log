@@ -1,0 +1,23 @@
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [18:57:22] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [18:57:22] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [18:57:23] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  ok K2: candidatesTotal equals the independent census
+  ok K1a: page is bounded (findings == min(candidates, 5))
+  ok K1b: candidates exceed the page (bounding is real here)
+  ok K1c: page is comparator-ordered (conf desc, file asc)
+  ok NEGATIVE a page that ignores the ask
+  ok NEGATIVE an off-by-one census
+  ok K3a: SQL count == JS derivation (parity)
+  ok K3b: the 8-param function is found
+  ok K3c: the 7-param function is NOT found (boundary)
+  ok K3d: the count in the finding text is the true arity (8)
+  ok K4: an array with >7 elements has minimum length 17
+  ok K5a: byType equals the independent census
+  ok K5b: averageConfidence equals the census mean
+  ok K5c: scan.candidatesEvaluated == candidates + rule findings
+  ok NEGATIVE a double-counted aggregate
+FAIL Error: ENOENT: no such file or directory, scandir '/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/dist'
+    at readdirSync (node:fs:1590:26)
+    at main (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m57/verify-t3-scope-all.ts:146:7)

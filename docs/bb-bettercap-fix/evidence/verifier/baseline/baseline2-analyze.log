@@ -1,0 +1,53 @@
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:25] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:25] [parallel-indexer] project index built {"ext":".ts","files":3,"types":2}
+[INFO] [19:22:27] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 23ms [plan=linear largest-intermediate=15]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:22:27] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"41ce66c7","danglingSources":6,"totalRelationships":18}
+  enriching done 100%
+  ✅ Enriched 12 relationships (0 patterns) in 29ms
+        ⚠ 6 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:22:27] [project-health] project health computed {"projectId":"41ce66c7d5554126b41d3b396901b0e6c3831c75","complexityScore":95,"maintainabilityScore":83,"techDebtScore":100,"codeQualityScore":93,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(16ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 9ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+  ok: coupling returns class entries
+  ok: coupling incoming and outgoing can differ (bug fixed)
+  ok: coupling score equals incoming + outgoing
+  ok: coupling entries have file paths
+  ok: dependencies return entries
+  ok: dependency paths are strings, not raw file IDs
+  ok: dependents carry a PATH, never a raw file id
+  ok: service.ts has a dependent (consumer.ts)
+  ok: project complexity has symbolCount > 0
+  ok: no complexity metric is NaN
+  ok: depthOfInheritance is marked unavailable (not fabricated)
+  ok: project LOC available and finite
+  ok: function scope resolves alpha
+  ok: function scope LOC is symbol-span based (>= 0)
+  ok: empty scope reports symbolCount 0
+  ok: empty scope marks cyclomaticAvg unavailable
+  ok: empty scope has no NaN
+  ok: impact found for gamma
+  ok: direct impact has direct symbols
+  ok: impact riskLevel is a valid label
+  ok: transitive impact >= direct impact files
+  ok: impact not-found returns found:false, low risk
+  ok: impact never claims test coverage
+
+ANALYZE: PASS

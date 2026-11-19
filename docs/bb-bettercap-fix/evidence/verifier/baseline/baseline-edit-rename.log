@@ -1,0 +1,140 @@
+[INFO] [18:56:16] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [18:56:16] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [18:56:16] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/wasm/tree-sitter-typescript.wasm"}
+  ok: TS: declaration is a binding, not a reference
+  ok: TS: object-literal property key is NOT a reference [negative]
+  ok: TS: local binding is NOT a reference [negative]
+  ok: TS: member access (local.target) is NOT a reference [negative]
+  ok: TS: exactly one reference site (target()) got 6
+[INFO] [18:56:16] [ast-engine] language grammar allocated {"language":"python"}
+[INFO] [18:56:16] [ast-engine] language parser loaded {"language":"python","wasmPath":"/tmp/bb-wasm_tree-sitter-python_tree-sitter-python.wasm_31_1qph8r2smq"}
+  ok: Python: declaration is a binding, not a reference
+  ok: Python: self.target() is NOT a reference [negative]
+  ok: Python: exactly one reference site (target()) got 3
+[INFO] [18:56:16] [ast-engine] language grammar allocated {"language":"java"}
+[INFO] [18:56:16] [ast-engine] language parser loaded {"language":"java","wasmPath":"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_31_1qph8wfgal"}
+  ok: Java: declaration is a binding, not a reference
+  ok: Java: this.target() and helper.target() are NOT references [negative] refs=1 members=2
+  ok: TS: comment/string text is never an occurrence got 0
+  ok: findDeclarationName locates the binding identifier got 16 want 16
+  ok: typescript: declaration name is a recognized binding parent=function_declaration
+[INFO] [18:56:16] [ast-engine] language grammar allocated {"language":"javascript"}
+[INFO] [18:56:16] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+  ok: javascript: declaration name is a recognized binding parent=function_declaration
+  ok: python: declaration name is a recognized binding parent=function_definition
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"ruby"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"ruby","wasmPath":"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_31_1qph9g0sxc"}
+  ok: ruby: declaration name is a recognized binding parent=method
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"haskell"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"haskell","wasmPath":"/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm_31_1qph9t97r0"}
+  ok: haskell: declaration name is a recognized binding parent=bind
+  ok: lua: declaration name is a recognized binding parent=function_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"c"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"c","wasmPath":"/tmp/bb-wasm_tree-sitter-c_tree-sitter-c.wasm_31_1qpha9mkda"}
+  ok: c: declaration name is a recognized binding parent=function_declarator
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"cpp"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"cpp","wasmPath":"/tmp/bb-wasm_tree-sitter-cpp_tree-sitter-cpp.wasm_31_1qphafb6vm"}
+  ok: cpp: declaration name is a recognized binding parent=function_declarator
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"rust"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"rust","wasmPath":"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_31_1qphare9et"}
+  ok: rust: declaration name is a recognized binding parent=function_item
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"go"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"go","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/wasm/tree-sitter-go.wasm"}
+  ok: go: declaration name is a recognized binding parent=function_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"zig"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"zig","wasmPath":"/tmp/bb-wasm_tree-sitter-zig_tree-sitter-zig.wasm_31_1qphb20v5k"}
+  ok: zig: declaration name is a recognized binding parent=function_declaration
+  ok: java: declaration name is a recognized binding parent=method_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"kotlin"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"kotlin","wasmPath":"/tmp/bb-wasm_tree-sitter-kotlin_tree-sitter-kotlin.wasm_31_1qphb9c7eq"}
+  ok: kotlin: declaration name is a recognized binding parent=function_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"scala"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"scala","wasmPath":"/tmp/bb-wasm_tree-sitter-scala_tree-sitter-scala.wasm_31_1qphbounp9"}
+  ok: scala: declaration name is a recognized binding parent=function_definition
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"groovy"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"groovy","wasmPath":"/tmp/bb-wasm_tree-sitter-groovy_tree-sitter-groovy.wasm_31_1qphc51qj4"}
+  ok: groovy: declaration name is a recognized binding parent=function_definition
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"swift"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"swift","wasmPath":"/tmp/bb-wasm_tree-sitter-swift_tree-sitter-swift.wasm_31_1qphciztl7"}
+  ok: swift: declaration name is a recognized binding parent=function_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"dart"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"dart","wasmPath":"/tmp/bb-wasm_tree-sitter-dart_tree-sitter-dart.wasm_31_1qphd2yzva"}
+  ok: dart: declaration name is a recognized binding parent=function_signature
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"csharp"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"csharp","wasmPath":"/tmp/bb-wasm_tree-sitter-c-sharp_tree-sitter-c_sharp.wasm_31_1qphd8qukg"}
+  ok: csharp: declaration name is a recognized binding parent=method_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"fsharp"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"fsharp","wasmPath":"/tmp/bb-wasm_tree-sitter-fsharp_tree-sitter-fsharp.wasm_31_1qphds34gn"}
+  ok: fsharp: declaration name is a recognized binding parent=function_declaration_left
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"objective-c"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"objective-c","wasmPath":"/tmp/bb-wasm_tree-sitter-objc_tree-sitter-objc.wasm_31_1qphf26w25"}
+  ok: objective-c: declaration name is a recognized binding parent=method_declaration
+  ok: typescript: declaration name is a recognized binding parent=class_declaration
+  ok: rust: declaration name is a recognized binding parent=struct_item
+  ok: cpp: declaration name is a recognized binding parent=class_specifier
+  ok: go: declaration name is a recognized binding parent=type_spec
+  ok: ruby: declaration name is a recognized binding parent=class
+  ok: fsharp: declaration name is a recognized binding parent=type_name
+  ok: dart: declaration name is a recognized binding parent=class_definition
+  ok: java: declaration name is a recognized binding parent=class_declaration
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"bash"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"bash","wasmPath":"/tmp/bb-wasm_tree-sitter-bash_tree-sitter-bash.wasm_31_1qphgf059i"}
+  ok: bash: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"perl"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"perl","wasmPath":"/tmp/bb-wasm_tree-sitter-perl_tree-sitter-perl.wasm_31_1qphgtds88"}
+  ok: perl: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"erlang"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"erlang","wasmPath":"/tmp/bb-wasm_tree-sitter-erlang_tree-sitter-erlang.wasm_31_1qphhlieul"}
+  ok: erlang: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"clojure"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"clojure","wasmPath":"/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm_31_1qphil98qv"}
+  ok: clojure: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"powershell"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"powershell","wasmPath":"/tmp/bb-wasm_tree-sitter-powershell_tree-sitter-powershell.wasm_31_1qphiv9mhg"}
+  ok: powershell: name is a documented reference-identification gap (not an occurrence) got 0
+[INFO] [18:56:17] [ast-engine] language grammar allocated {"language":"php"}
+[INFO] [18:56:17] [ast-engine] language parser loaded {"language":"php","wasmPath":"/tmp/bb-wasm_tree-sitter-php_tree-sitter-php.wasm_31_1qphjkuavn"}
+  ok: php: name is a documented reference-identification gap (not an occurrence) got 0
+  ok: rust: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_expression isBinding=false isRef=true isMember=false
+  ok: rust: member name `field` in `obj.field` is NOT a reference [negative] parent=field_expression isMember=true
+  ok: java: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_access isBinding=false isRef=true isMember=false
+  ok: java: member name `field` in `obj.field` is NOT a reference [negative] parent=field_access isMember=true
+  ok: cpp: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_expression isBinding=false isRef=true isMember=false
+  ok: cpp: member name `field` in `obj.field` is NOT a reference [negative] parent=field_expression isMember=true
+  ok: scala: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=field_expression isBinding=false isRef=true isMember=false
+  ok: python: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=attribute isBinding=false isRef=true isMember=false
+  ok: python: member name `field` in `obj.field` is NOT a reference [negative] parent=attribute isMember=true
+  ok: go: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=selector_expression isBinding=false isRef=true isMember=false
+  ok: go: member name `field` in `obj.field` is NOT a reference [negative] parent=selector_expression isMember=true
+  ok: typescript: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=member_expression isBinding=false isRef=true isMember=false
+  ok: typescript: member name `field` in `obj.field` is NOT a reference [negative] parent=member_expression isMember=true
+  ok: dart: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=argument isBinding=false isRef=true isMember=false
+  ok: swift: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=navigation_expression isBinding=false isRef=true isMember=false
+  ok: kotlin: receiver `obj` in `obj.field` is a REFERENCE (not a binding) parent=navigation_expression isBinding=false isRef=true isMember=false
+  ok: csharp: receiver `obj` in `obj.Field` is a REFERENCE (not a binding) parent=member_access_expression isBinding=false isRef=true isMember=false
+  ok: Groovy: qualified type reference `com.foo.Bar` — `Bar` is a REFERENCE parent=scoped_type_identifier isRef=true isMember=false
+  ok: Java: qualified type reference `com.foo.Bar` — `Bar` is a REFERENCE parent=scoped_type_identifier isRef=true isMember=false
+  FAIL: ts: refactor session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/edacd4478de10d2becf04c9170c2bfaa53cbcf4f'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async runIntegration (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:276:5)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:303:1)
+  FAIL: python: refactor session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/b111afff0d2acf9d045e798ad34be649d65644f4'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async runIntegration (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:276:5)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:314:1)
+  FAIL: java: refactor session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/d86bddda822f35af3420cb0139fbc1e81994cfcf'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async runIntegration (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:276:5)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:323:1)
+  FAIL: cross-file freshness session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/0b37edb5b699900ea86a217d7e60cd1eb9523a08'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-rename.ts:337:5)
+E2: KNOWN-GAP (65/69 passed, 11 negatives)

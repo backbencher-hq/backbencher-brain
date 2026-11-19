@@ -77,8 +77,9 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 
 ## Returns
 
+- The answer is ONE bounded envelope: `summary` FIRST — `truncated`/`truncationReason`/`truncationReasons`, the returned counts (`totalCallers`, `totalCallees`, `returnedEdges`, `nodes`) and every bound (`edgeLimit`, `maxEdges`, `callerBudget`, `calleeBudget`, `maxDepth`, plus `payloadBytes`/`payloadBudgetBytes`) — then `data` with `root`, the `nodes` table, `callers`, `callees` and `provenance`. `summary` is first so a host that truncates a large answer still receives the declaration; an answer over the transport budget (256 KiB default, `BB_PAYLOAD_BUDGET_BYTES` overridable) is cut and declares `payload-byte-budget-exhausted` with `droppedRows`/`droppedByArray`, and the node table is rebuilt from the surviving rows
 - Per-symbol dependency graph: callers and callees
-- Per-edge endpoints as described nodes — `{ id, name, symbolType, file, line, isExternal }` on BOTH ends, so an edge is self-contained and no id has to be parsed or looked up in a second call
+- Edges carry their endpoints by id (`from` / `to`) into ONE `data.nodes` table of `{ name, symbolType, file, line, isExternal }` — the same endpoint is described once instead of once per incident edge, so a hub answer no longer repeats each symbol object hundreds of times. The EDGE SET and its order are unchanged by the dedupe (gate-asserted against the engine's own traversal); only the encoding is deduped
 - Per-edge `rowId`: the stored `brain_relationship` row the edge came from, so every claim is auditable against the index (measured: every emitted rowId resolves to exactly one stored row, and the edge's endpoints agree with that row)
 - Endpoints the index could not resolve as `ext:<name>` nodes, with `isExternal: true` — a recorded name, never a symbol guessed from that name
 - Per-edge `match` (`exact` | `owner-cascade`) and `matchedMember` (`{ name, file }` when the cascade matched): whether the stored row names the symbol that was asked for, or one of its members folded onto it

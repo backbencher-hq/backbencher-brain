@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "7046676c4cfd4319d94e7ef88531837ae1d6c97fb466aeeb20b0e9b6e17d15d5",
-    "sealedAt": "2026-11-18T20:06:52.000Z"
+    "contentSha256": "c8f508b4934bc0d9583407c6a267fb2027552f6db2f9d9907031192fc75d962e",
+    "sealedAt": "2026-11-18T23:15:32.000Z"
   },
   "checks": [
     {
@@ -103,7 +103,7 @@
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "49/49 fixtures pass",
+      "detail": "51/51 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "95c41294adb1618ef1de324883825c54c76db312",
-  "committedAt": "2026-11-18T15:06:52-05:00",
+  "commit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "committedAt": "2026-11-18T18:15:32-05:00",
   "data": {
     "details": [
       {
@@ -5452,6 +5452,11 @@
         "problems": []
       },
       {
+        "fixture": "go/cross-file-value-read",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/dot-import-calls",
         "ok": true,
         "problems": []
@@ -5583,6 +5588,11 @@
       },
       {
         "fixture": "go/overrides-qualified-embed",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/package-main",
         "ok": true,
         "problems": []
       },
@@ -9564,7 +9574,7 @@
       },
       "go": {
         "fail": 0,
-        "pass": 49
+        "pass": 51
       },
       "graphql": {
         "fail": 0,
@@ -9733,8 +9743,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-18T15:06:52-05:00",
-  "regeneratedAtCommit": "95c41294adb1618ef1de324883825c54c76db312",
+  "regeneratedAt": "2026-11-18T18:15:32-05:00",
+  "regeneratedAtCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

@@ -1,0 +1,17 @@
+  ok: docs: bb_doc in registry found
+  ok: docs: 7 modes registered 7
+  ok: docs: requires target for scoped modes ok
+  ok: engine: file exists 171734
+  ok: engine: no code-generation claims [negative] clean
+  ok: engine: has fact classification classification found
+  ok: engine: confidence is derived, not passed in deriveConfidence present
+  ok: engine: no caller-supplied confidence field on DocRequest [negative] DocRequest has no confidence field
+  ok: handler: module exists at the split path handler chars=13994
+  ok: handler: validates mode mode refusal present
+  ok: handler: requires target for scoped modes target refusal present
+  ok: handler: refuses out-of-range limit limit range refusal
+  ok: handler: refuses out-of-range maxTokens maxTokens range refusal
+  ok: handler: refuses includeTests where the mode cannot honour it includeTests refusal
+  ok: engine/handler: refuses an unmatched module target [negative] exception type handled by the handler, message raised by the engine
+  ok: descriptor: declares the option ranges schema ranges present
+D1: VERIFIED (16/16 passed, 3 negatives)

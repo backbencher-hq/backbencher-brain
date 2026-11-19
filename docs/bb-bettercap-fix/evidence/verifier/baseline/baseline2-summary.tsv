@@ -1,0 +1,26 @@
+# baseline run WITH BB_DATA_DIR=/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata — snapshot 75448b02991e6f6f5b1dfa0630b4e07c06436109 (git archive, pre-fix)
+# started 2026-11-19T00:18:17Z
+label	exit	cmd
+edit-rename	0	npx tsx script/m13/verify-edit-rename.ts
+edit-unit	0	npx tsx script/m13/verify-edit-unit.ts
+edit-crossfile	0	npx tsx script/m15/verify-edit-crossfile.ts
+edit-classification	0	npx tsx script/m15/verify-edit-classification.ts
+analyze	0	npx tsx script/verify-analyze.ts
+test-intel	0	npx tsx script/verify-test-intel.ts
+test-quality	0	npx tsx script/verify-test-quality.ts
+graph	1	npx tsx script/verify-graph.ts
+search-modes	0	npx tsx script/verify-search-modes.ts
+ask-contract	0	npx tsx script/m13/verify-ask-contract.ts
+health	0	npx tsx script/verify-health.ts
+doc	0	npx tsx script/verify-doc.ts
+doc-surface	1	npx tsx script/verify-doc-tool-surface.ts
+m57-verify-closure	1	npx tsx script/m57/verify-closure.ts
+m57-verify-gate-selftest	1	npx tsx script/m57/verify-gate-selftest.ts
+m57-verify-governance	1	npx tsx script/m57/verify-governance.ts
+m57-verify-t1-classifier	0	npx tsx script/m57/verify-t1-classifier.ts
+m57-verify-t2-consumers	0	npx tsx script/m57/verify-t2-consumers.ts
+m57-verify-t3-scope-all	1	npx tsx script/m57/verify-t3-scope-all.ts
+m57-verify-t4-corpus-identity	0	npx tsx script/m57/verify-t4-corpus-identity.ts
+m57-verify-t5-predicate-unity	1	npx tsx script/m57/verify-t5-predicate-unity.ts
+tsc-noemit	0	npx tsc --noEmit
+# finished 2026-11-19T00:24:25Z

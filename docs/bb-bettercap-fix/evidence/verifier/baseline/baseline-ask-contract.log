@@ -1,0 +1,31 @@
+  ok: registry: executable modes are exactly [answer] ["answer"]
+  ok: registry: explain and feature are plannedModes (not executable) ["explain","feature"]
+  ok: registry: no `mode` input property (not mode-discriminated) mode property present
+  ok: registry: query is required
+  ok: registry: mutability is read + requiresIndex true
+  ok: registry: limit declares default 5 and range 1..100 in prose max results (default 5; whole number 1..100; values outside are refused, not clamped). A larger page also means a larger work budget.
+  ok: registry: limit carries machine-readable minimum/maximum min=1 max=100
+  ok: validation: empty query rejected Error: bb_ask requires a non-empty query
+  ok: validation: whitespace-only query rejected Error: bb_ask requires a non-empty query
+  ok: validation: mode=explain rejected as unknown option (not executable) [negative] Error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit
+  ok: validation: missing query rejected Error: bb_ask: missing required option: query
+  ok: validation: limit=0 refused by name, never clamped [negative] Error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 
+  ok: validation: limit=101 refused by name, never clamped [negative] Error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 
+  ok: validation: limit=-1 refused by name, never clamped [negative] Error: bb_ask: limit must be non-negative
+  ok: validation: limit=2.5 refused by name, never clamped [negative] Error: bb_ask: limit must be a whole number (got 2.5)
+node:fs:1370
+  const result = binding.mkdir(
+                         ^
+
+Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/c5dc046c302da3ef85e742bea4eff2d402646b7c'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-ask-contract.ts:97:1) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'mkdir',
+  path: '/home/ishaq2321/.bb/projects/c5dc046c302da3ef85e742bea4eff2d402646b7c'
+}
+
+Node.js v22.22.1

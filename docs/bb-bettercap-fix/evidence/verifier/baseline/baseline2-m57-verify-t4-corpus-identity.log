@@ -1,0 +1,3 @@
+  ok M4: the identity comparator rejects a different corpus
+  ok M4: the identity comparator accepts an identical corpus
+  -- M1-M3 (live corpus comparison) skipped: set BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> after the re-index

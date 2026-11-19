@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-green/doc",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-doc.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:42:14.673Z",
+  "endedAt": "2026-11-19T04:42:20.490Z",
+  "durationMs": 5817,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 98,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (4 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 27ms [plan=linear largest-intermediate=9]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 3 relationships (0 patterns) in 22ms\n        ⚠ 9 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 6ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(0ms) + health(18ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 10ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 2ms\n  ok: symbol returns sections\n  ok: symbol factual sections are cited\n  ok: symbol citations resolve to project files\n  ok: symbol JSON/Markdown share title\n  ok: file returns sections\n  ok: file factual sections are cited\n  ok: file citations resolve to project files\n  ok: file JSON/Markdown share title\n  ok: module returns sections\n  ok: module factual sections are cited\n  ok: module citations resolve to project files\n  ok: module JSON/Markdown share title\n  ok: feature returns sections\n  ok: feature factual sections are cited\n  ok: feature citations resolve to project files\n  ok: feature JSON/Markdown share title\n  ok: api returns sections\n  ok: api factual sections are cited\n  ok: api citations resolve to project files\n  ok: api JSON/Markdown share title\n  ok: project returns sections\n  ok: project factual sections are cited\n  ok: project citations resolve to project files\n  ok: project JSON/Markdown share title\n  ok: coverage returns sections\n  ok: coverage factual sections are cited\n  ok: coverage citations resolve to project files\n  ok: coverage JSON/Markdown share title\n  ok: symbol includes docstring\n  ok: no section prose repeats its own facts\n  ok: symbol includes test evidence\n  ok: feature resolves concrete multi-language symbols\n  ok: feature facts never cite embeddings alone\n  ok: API mode reports indexed contract\n  ok: coverage reports documented state\n  ok: stale source is labeled\n  ok: stale behavior is represented in quality\n  ok: output budget gate fails oversized result\n  ok: generation does not mutate source\n\nBB_DOC: PASS\n",
+  "stderr": "[INFO] [23:42:18] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:42:18] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":3,\"types\":0}\n[INFO] [23:42:18] [parallel-indexer] project index built {\"ext\":\".py\",\"files\":1,\"types\":0}\n[INFO] [23:42:19] [parallel-indexer] worker pool complete {\"files\":4,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:42:20] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"73a667a5\",\"danglingSources\":9,\"totalRelationships\":12}\n[INFO] [23:42:20] [project-health] project health computed {\"projectId\":\"73a667a55941722ef99663b9c2d1f38c4ac23fc6\",\"complexityScore\":95,\"maintainabilityScore\":77,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":2,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2526,
+  "stderrBytes": 829,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044220Z-cp1f-green-doc.json"
+}

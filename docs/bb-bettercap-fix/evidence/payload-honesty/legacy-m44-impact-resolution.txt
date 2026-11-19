@@ -1,0 +1,67 @@
+
+R0: the real indexer writes the constructor seed
+
+Indexing 2 files — a moment — this is a tiny project
+
+[index] 0% 0/2 files elapsed=0s eta=…
+[INFO] [19:35:07] [parallel-indexer] worker pool fork test passed — using parallel workers
+[index] 50% 1/2 files elapsed=1s eta=1s
+[index] 100% 2/2 files elapsed=1s eta=finishing
+[INFO] [19:35:09] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[INFO] [19:35:09] [project-health] project health computed {"projectId":"fb0f14e09fa4f516294ca6cd06cd8255aef7b521","complexityScore":95,"maintainabilityScore":80,"techDebtScore":100,"codeQualityScore":92,"languages":1,"bottlenecks":0}
+  ✓ R0: the real index stores a 'constructor' PER CLASS (2 classes -> 2 rows)
+  ✓ R0: both constructors are type 'constructor' (outside the engine whitelist)
+  ✓ R0: every constructor has an owner (its containing class)
+  ✓ R0: the owner is the Greeter class
+  ✓ R0: the constructor has NO stored reverse call edges (rule 3 holds)
+  ✓ R0: each class's constructor has its OWN containment row (2 rows, 2 targets, both classes)
+  ✓ R0: the real analyzer wrote the instantiates edges (main→Greeter, register→Registry)
+
+R1: computeImpact resolves the member through its owner
+  ✓ R1: an ambiguous member name without a file hint keeps the declared error
+  ✓ R1: file-hinted member roots at the owning class (Greeter)
+  ✓ R1: resolution is declared as owning-declaration
+  ✓ R1: the impact set is the class's reverse dependencies (main)
+  ✓ R1: shownCount/totalCount honest (untruncated)
+  ✓ R1: the SAME name in the other file roots at ITS class (Registry)
+  ✓ R1: Registry's impact set is its own reverse dependency (register)
+  ✓ R1: a hint matching no row keeps the declared error (never a guess)
+  ✓ R1: direct traversal path unchanged (Greeter roots at itself)
+
+R2: unknown symbol still errors (declared, never re-rooted)
+  ✓ R2: unknown symbol throws the declared error
+
+R3: a member with its own reverse edges keeps its own impact
+  ✓ R3: helper does not silently re-root through the owner
+
+R4: the renderer states the resolution (never a silent relabel)
+  ✓ R4: the resolution note renders
+  ✓ R4: the note names the member and the owner
+  ✓ R4: machine-readable attrs ride the layer
+  ✓ R4: a direct resolution renders NO note (declared absence)
+
+R6: the resolution laws CAN FAIL (mutants planted)
+  ✓ M1: post-traverse re-root gate dropped (gravity pick rides silently) (planted defect caught)
+  ✓ M2: disambiguation dropped (wrong same-name member resolved) (planted defect caught)
+  ✓ M3: rule 3 dropped (dependency-dropping re-root) (planted defect caught)
+  ✓ M4: silent relabel (resolution field dropped) (planted defect caught)
+  ✓ M5: note suppressed (UI hides the resolution) (planted defect caught)
+
+R5: real bb_lsp server over the real-indexed fixture
+
+Indexing 2 files — a moment — this is a tiny project
+
+[index] 0% 0/2 files elapsed=0s eta=…
+[INFO] [19:35:16] [parallel-indexer] worker pool fork test passed — using parallel workers
+[index] 50% 1/2 files elapsed=3s eta=3s
+[index] 100% 2/2 files elapsed=4s eta=finishing
+[INFO] [19:35:19] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[INFO] [19:35:20] [project-health] project health computed {"projectId":"fb0f14e09fa4f516294ca6cd06cd8255aef7b521","complexityScore":95,"maintainabilityScore":80,"techDebtScore":100,"codeQualityScore":92,"languages":1,"bottlenecks":0}
+  ✓ R5: bb/impact resolves the hinted constructor (no declared error)
+  ✓ R5: the wire result carries the declared resolution
+  ✓ R5: the impact set is the class's reverse dependencies
+  ✓ R5: the hint-less ambiguous name keeps the declared error over the wire
+  ✓ R5: the rendered panel states the resolution
+  ✓ R5: unknown symbol over the wire still errors (declared)
+
+U5: VERIFIED (33/33 passed, 5/5 mutants caught)

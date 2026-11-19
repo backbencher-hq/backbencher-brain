@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/visualize-honesty",
+  "command": [
+    "bun",
+    "run",
+    "script/m13/verify-visualize-honesty.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:48:19.878Z",
+  "endedAt": "2026-11-19T04:48:21.562Z",
+  "durationMs": 1683,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 110,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (4 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 20ms [plan=linear largest-intermediate=7]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 1 relationships (1 patterns) in 14ms\n        patterns: callback 1\n        ⚠ 6 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 3ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(0ms) + health(14ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 6ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 5ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 0ms\n  FAIL: attribution: the fixture excludes the vendored symbol\n",
+  "stderr": "[INFO] [23:48:20] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:48:20] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":4,\"types\":0}\n[INFO] [23:48:21] [parallel-indexer] worker pool complete {\"files\":4,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:48:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"a7a0ce47\",\"danglingSources\":6,\"totalRelationships\":7}\n[INFO] [23:48:21] [project-health] project health computed {\"projectId\":\"a7a0ce4739fce747538ef768ec7e2a7e2fd1f738\",\"complexityScore\":95,\"maintainabilityScore\":78,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":1,\"bottlenecks\":0}\n[INFO] [23:48:21] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [23:48:21] [dependency-graph-visualizer] ✅ Graph Data Generated: 4 nodes, 1 links\n 98 |   const attributed = Object.values(byPattern).reduce((a: number, b: any) => a + Number(b), 0) + Object.values(byRule).reduce((a: number, b: any) => a + Number(b), 0)\n 99 |   // The indexer stores no `.d.ts`, `.min.js` or `.map` symbol at all, so the SUFFIX rule cannot\n100 |   // fire through a fixture (asserted at the unit level below, which is how the review measured\n101 |   // it). What a fixture DOES exercise is the segment rule and the test rule.\n102 |   harness.check(\"attribution: the fixture excludes the vendored symbol\", (base.excluded?.symbols ?? 0) >= 1 && (base.excluded?.byPattern?.vendor ?? 0) === 1, JSON.stringify(base.excluded))\n103 |   harness.check(\"attribution: every dropped symbol is attributed to a named rule\", attributed === base.excluded.symbols, `attributed=${attributed} symbols=${base.excluded.symbols} byPattern=${JSON.stringify(byPattern)} byRule=${JSON.stringify(byRule)}`)\n                                                                                                             ^\nTypeError: undefined is not an object (evaluating 'base.excluded.symbols')\n      at /home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-honesty.ts:103:104\n\nBun v1.3.14 (Linux x64)\n",
+  "stdoutBytes": 1046,
+  "stderrBytes": 2147,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044821Z-cp1f-regress-visualize-honesty.json"
+}

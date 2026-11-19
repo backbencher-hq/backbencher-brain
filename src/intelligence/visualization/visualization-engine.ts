@@ -1011,16 +1011,32 @@ export function formatVisualization(result: VisualizationResult): string {
     }
   }
   // The exclusion is ALWAYS stated, including when it is empty. "Nothing was
-  // excluded" is information a reader needs in order to trust that the graph is
-  // the whole project, and a line that appears only when there is something to
-  // report makes silence and zero indistinguishable — which is the same class of
-  // defect as the slice being called "the original".
+  // excluded" is information a reader needs in order to trust the NOISE FILTER —
+  // it is NOT a completeness claim about the project. The old line promoted it
+  // into "this graph is the whole project" and kept saying that for scoped,
+  // truncated, paged and absent answers (measured: module/file/symbol/offset/
+  // absent all claimed it while the same answer printed "truncated: yes" or
+  // "this is an empty PAGE, not an empty project"). The claim is now gated on the
+  // three facts that make it true: project scope, no truncation, first page.
   if (result.excluded) {
     const byPattern = Object.entries(result.excluded.byPattern).map(([pattern, n]) => `${pattern} (${n})`).join(", ")
+    const wholeProject = result.scope === "project" && result.truncation.truncated === false && result.truncation.offset === 0 && result.excluded.symbols === 0
     lines.push(
       result.excluded.symbols > 0
-        ? `excluded: ${result.excluded.symbols} symbol(s) as noise by ${byPattern}${result.excluded.includesTestFiles ? "" : " (test sources excluded)"} — this graph is not the whole project`
-        : "excluded: nothing — this graph is the whole project (build output and VCS metadata are filtered on whole path segments; test sources are included)",
+        ? `excluded: ${result.excluded.symbols} symbol(s) as noise by ${byPattern}${result.excluded.includesTestFiles ? "" : " (test sources excluded)"} — noise was filtered, so this graph is not the complete project`
+        : wholeProject
+          ? "excluded: nothing — no symbol was filtered as build/VCS noise (test sources included), so this graph is the whole project"
+          : "excluded: nothing — no symbol was filtered as build/VCS noise (test sources included)",
+    )
+  }
+  // Completeness is a property of scope + pagination + truncation, so it is said
+  // explicitly whenever the answer is not the complete project graph. The report
+  // read the old unconditional claim as a contradiction of the answer's own
+  // `scope:`/`truncated:` lines; this line is the positive statement of what the
+  // page actually is.
+  if (result.scope !== "project" || result.truncation.truncated || result.truncation.offset > 0) {
+    lines.push(
+      `completeness: this ${result.scope} page holds ${result.nodes.length} of ${result.totalNodesAvailable} matching symbol(s) — not the whole project`,
     )
   }
   if (result.truncation.truncated) {

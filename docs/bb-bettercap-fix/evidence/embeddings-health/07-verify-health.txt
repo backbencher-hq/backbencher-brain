@@ -1,0 +1,41 @@
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [23:07:09] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:07:09] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [23:07:12] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 31ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [23:07:12] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e1b7a54b","danglingSources":2,"totalRelationships":3}
+  enriching done 100%
+  ✅ Enriched 1 relationships (1 patterns) in 42ms
+        patterns: observer 1
+        ⚠ 2 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [23:07:12] [project-health] project health computed {"projectId":"e1b7a54b6967218bd24b575e89ac11d5ea1c96ca","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(5ms) + health(33ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 15ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+  ok: sampled health reports sampled mode
+  ok: sample size is bounded
+  ok: complete health reports complete mode
+  ok: complete health checks indexed files
+  ok: unified report includes imports and syntax errors
+  ok: formatted report includes core sections
+[WARN] [23:07:12] [parallel-indexer] no files to index (all skipped or none found)
+  ok: refresh is observable
+  ok: refresh reports processed files
+  ok: refresh preserves project counts
+
+HEALTH VERIFICATION: PASS

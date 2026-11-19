@@ -20,6 +20,17 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
+
+// ACCESS PATH ONLY: the graph family now answers with ONE bounded envelope
+// ({ summary, data }, summary first). This flattens the declared envelope back to
+// the legacy flat view so every assertion in this gate keeps its identical
+// pre-envelope predicate — no check is added, removed or relaxed.
+const flattenEnvelope = (payload: any): any =>
+  payload && typeof payload === "object" && "summary" in payload && "data" in payload
+    ? { ...payload.summary, ...payload.data, summary: payload.summary, data: payload.data }
+    : payload
+
+
 const RESULTS_DIR = path.join(ROOT, "validation/m48/results")
 const READ_ONLY = process.env.BB_M48_READ_ONLY === "1"
 
@@ -51,7 +62,7 @@ async function main() {
   const call = async (name: string, args: any) => {
     const r = await (h as any)[name](args, ctx as any)
     if (r?.isError) return null
-    try { return JSON.parse(r.content[0].text) } catch { return null }
+    try { return flattenEnvelope(JSON.parse(r.content[0].text)) } catch { return null }
   }
   /**
    * The caller's NAME from either door's own endpoint spelling.

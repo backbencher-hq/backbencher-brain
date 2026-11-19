@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "kind": "bb-fix-campaign-baseline-verdicts",
+  "generatedAt": "2026-11-19T00:37:23.260Z",
+  "head": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "snapshot": ".tools/verifier/pre-fix (git archive HEAD + node_modules symlink + baseline dist with mtimes normalized)",
+  "env": {
+    "BB_DATA_DIR": ".tools/verifier/bbdata",
+    "BB_M57_DATA_DIR": ".tools/verifier/bbdata (m57 real-DB gates)"
+  },
+  "summary": {
+    "total": 22,
+    "pass": 17,
+    "fail": 5
+  },
+  "cp1RegressionRule": "a baseline PASS gate that goes RED under a lane change is a campaign regression; baseline FAIL rows are the only tolerated failures (unless a lane's gate turns them GREEN with controls)",
+  "gates": [
+    {
+      "id": 1,
+      "gate": "script/m13/verify-edit-rename.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-edit-rename.log"
+    },
+    {
+      "id": 2,
+      "gate": "script/m13/verify-edit-unit.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-edit-unit.log"
+    },
+    {
+      "id": 3,
+      "gate": "script/m15/verify-edit-crossfile.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-edit-crossfile.log"
+    },
+    {
+      "id": 4,
+      "gate": "script/m15/verify-edit-classification.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-edit-classification.log"
+    },
+    {
+      "id": 5,
+      "gate": "script/verify-analyze.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-analyze.log"
+    },
+    {
+      "id": 6,
+      "gate": "script/verify-test-intel.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-test-intel.log"
+    },
+    {
+      "id": 7,
+      "gate": "script/verify-test-quality.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-test-quality.log"
+    },
+    {
+      "id": 8,
+      "gate": "script/verify-graph.ts",
+      "runner": "npx tsx (fails) / bun (passes)",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "runner-mode pre-existing: gate must run under bun (#db bun: condition); tsx-only failure is not a product failure",
+      "evidence": "baseline2-graph.log + baseline2b-graph-bun.log"
+    },
+    {
+      "id": 9,
+      "gate": "script/verify-search-modes.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-search-modes.log"
+    },
+    {
+      "id": 10,
+      "gate": "script/m13/verify-ask-contract.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-ask-contract.log"
+    },
+    {
+      "id": 11,
+      "gate": "script/verify-health.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-health.log"
+    },
+    {
+      "id": 12,
+      "gate": "script/verify-doc.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-doc.log"
+    },
+    {
+      "id": 13,
+      "gate": "script/verify-doc-tool-surface.ts",
+      "runner": "npx tsx",
+      "exit": 1,
+      "verdict": "FAIL",
+      "classification": "PRE-EXISTING ENVIRONMENT: needs generated website/src/data/tools.generated.ts (not committed, absent)",
+      "evidence": "baseline2-doc-surface.log"
+    },
+    {
+      "id": 14,
+      "gate": "script/m57/verify-closure.ts",
+      "runner": "bun",
+      "exit": 1,
+      "verdict": "FAIL",
+      "classification": "PRE-EXISTING RED (campaign state): 13 pass / 3 fail with env; T4 needs populated real corpus DB (unavailable), T5 genuine P3 breach, foreign-red M20 now passes (documented conviction no longer reproduces)",
+      "evidence": "baseline2c-m57-closure-bun-workspace-data.log"
+    },
+    {
+      "id": 15,
+      "gate": "script/m57/verify-gate-selftest.ts",
+      "runner": "bun",
+      "exit": 1,
+      "verdict": "FAIL",
+      "classification": "PRE-EXISTING GATE ROT: mutation anchors absent from current src for T3/T5; T4/T5 control=FAIL from real-corpus dependency",
+      "evidence": "baseline2c-m57-gate-selftest-bun-workspace-data.log"
+    },
+    {
+      "id": 16,
+      "gate": "script/m57/verify-governance.ts",
+      "runner": "bun/tsx",
+      "exit": 1,
+      "verdict": "FAIL",
+      "classification": "PRE-EXISTING ENVIRONMENT: G1.4 requires GitHub milestone access (offline, curl 000); 33/34 checks pass",
+      "evidence": "baseline2-m57-verify-governance.log"
+    },
+    {
+      "id": 17,
+      "gate": "script/m57/verify-t1-classifier.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green (needs BB_DATA_DIR)",
+      "evidence": "baseline2-m57-verify-t1-classifier.log"
+    },
+    {
+      "id": 18,
+      "gate": "script/m57/verify-t2-consumers.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-m57-verify-t2-consumers.log"
+    },
+    {
+      "id": 19,
+      "gate": "script/m57/verify-t3-scope-all.ts",
+      "runner": "bun + baseline dist",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "needs dist/ newer than rules.ts (K6/K6b); tsx failure on dist-less copy is a snapshot artifact, PASS with baseline dist",
+      "evidence": "baseline2-m57-verify-t3-scope-all.log + baseline2b-m57-t3-bun.log"
+    },
+    {
+      "id": 20,
+      "gate": "script/m57/verify-t4-corpus-identity.ts",
+      "runner": "npx tsx",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "PASS standalone; inside verify-closure M2 fails because the live corpus is empty in-sandbox (environment)",
+      "evidence": "baseline2-m57-verify-t4-corpus-identity.log"
+    },
+    {
+      "id": 21,
+      "gate": "script/m57/verify-t5-predicate-unity.ts",
+      "runner": "npx tsx",
+      "exit": 1,
+      "verdict": "FAIL",
+      "classification": "PRE-EXISTING PRODUCT-LEVEL RED: P3 lists 55 src/ files mentioning test-shape rules without importing the canonical predicate (HEAD governance backlog)",
+      "evidence": "baseline2-m57-verify-t5-predicate-unity.log"
+    },
+    {
+      "id": 22,
+      "gate": "npx tsc --noEmit",
+      "runner": "npx tsc",
+      "exit": 0,
+      "verdict": "PASS",
+      "classification": "baseline green",
+      "evidence": "baseline2-tsc-noemit.log"
+    }
+  ]
+}

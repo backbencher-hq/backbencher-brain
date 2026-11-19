@@ -1,0 +1,77 @@
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 21ms [plan=linear largest-intermediate=12]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 6 relationships (2 patterns) in 15ms
+        patterns: callback 2
+        ⚠ 7 dangling sources, 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(11ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: fidelity: no dangling links 0
+  ok: fidelity: provenance names the stored rows it projects stored-symbol-and-relationship-rows
+  ok: fidelity: the node cut and the budget cut are separate counters {"source":"stored-symbol-and-relationship-rows","indexedProject":"ea586679162af802b09213f011bb550dd67751e0","linksOmittedWithNodeCut":0,"linksOmittedByBudget":0}
+  ok: fidelity: the misleading `omittedDanglingLinks` name is gone [negative] source,indexedProject,linksOmittedWithNodeCut,linksOmittedByBudget
+  ok: fidelity: nothing is cut when every node is retained [negative] {"source":"stored-symbol-and-relationship-rows","indexedProject":"ea586679162af802b09213f011bb550dd67751e0","linksOmittedWithNodeCut":0,"linksOmittedByBudget":0}
+  ok: truncation: nodes bounded 2
+  ok: truncation: links bounded 0
+  ok: truncation: truncated=true
+  ok: truncation: reason=output limits output limits
+  ok: truncation: orig>=shown 4
+  ok: truncation: not truncated with large budget
+  ok: truncation: never truncated when budget sufficient [negative] false
+  ok: scope: module -> src/api src/api/handlers.ts
+  ok: scope: symbol -> parse parse
+  ok: scope: feature runs 1
+  ok: scope: file -> engine.ts src/core/engine.ts
+  ok: node cut: the loss is attributed to the node cut {"source":"stored-symbol-and-relationship-rows","indexedProject":"ea586679162af802b09213f011bb550dd67751e0","linksOmittedWithNodeCut":1,"linksOmittedByBudget":0}
+  ok: node cut: `maxLinks` cut nothing, so the set is NOT reported truncated by it [negative] truncated=false budget=0 maxLinks=5000
+  ok: budget cut: a link budget below the edge set IS reported as a relationship cut {"provenance":{"source":"stored-symbol-and-relationship-rows","indexedProject":"ea586679162af802b09213f011bb550dd67751e0","linksOmittedWithNodeCut":0,"linksOmittedByBudget":4},"truncated":true}
+  ok: budget cut: the two counters are not the same number [negative] {"source":"stored-symbol-and-relationship-rows","indexedProject":"ea586679162af802b09213f011bb550dd67751e0","linksOmittedWithNodeCut":0,"linksOmittedByBudget":4}
+  ok: node cut: the text does not blame maxLinks for the node cut [negative] edges: 0 relationship(s) connect the selected symbols — complete for this node set; 1 more attached only to nodes the node cut removed
+  ok: node cut: the text names the cut it made edges: 0 relationship(s) connect the selected symbols — complete for this node set; 1 more attached only to nodes the node cut removed
+  ok: node cut: the text provenance line names both counters provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=1 links-omitted-by-budget=0
+  ok: budget cut: the text says maxLinks did it, with the count edges: 5 relationship(s) connect the selected symbols — complete for this node set, then cut by maxLinks (4 withdrawn)
+V2: VERIFIED (24/24 passed, 6 negatives)
+
+[INFO] [23:55:52] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:55:52] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [23:55:52] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:55:52] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"ea586679","danglingSources":7,"totalRelationships":13}
+[INFO] [23:55:53] [project-health] project health computed {"projectId":"ea586679162af802b09213f011bb550dd67751e0","complexityScore":95,"maintainabilityScore":78,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 6 nodes, 5 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 4 nodes, 1 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 6 nodes, 5 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 4 nodes, 4 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 0 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 4 nodes, 1 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 6 nodes, 5 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 4 nodes, 1 links
+[INFO] [23:55:53] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:55:53] [dependency-graph-visualizer] ✅ Graph Data Generated: 6 nodes, 5 links

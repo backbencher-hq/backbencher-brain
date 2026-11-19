@@ -1,0 +1,20 @@
+  ok: '..' in filePath is rejected (no project-root escape) [negative: escapes project root]
+  ok: absolute filePath outside root is rejected [negative: escapes project root]
+  ok: in-root filePath resolves
+  ok: a symlink pointing outside the project root is rejected [negative: escapes project root through symlink]
+node:fs:1370
+  const result = binding.mkdir(
+                         ^
+
+Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/1151bc643cc9909a5b4d8f080f8e804af7aeca9f'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m13/verify-edit-unit.ts:118:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'mkdir',
+  path: '/home/ishaq2321/.bb/projects/1151bc643cc9909a5b4d8f080f8e804af7aeca9f'
+}
+
+Node.js v22.22.1

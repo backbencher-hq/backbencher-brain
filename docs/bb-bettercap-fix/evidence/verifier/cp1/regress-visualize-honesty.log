@@ -1,0 +1,44 @@
+[brain] preparing the parallel worker pool (4 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 20ms [plan=linear largest-intermediate=7]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 1 relationships (1 patterns) in 14ms
+        patterns: callback 1
+        ⚠ 6 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(0ms) + health(14ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 0ms
+  FAIL: attribution: the fixture excludes the vendored symbol
+
+[INFO] [23:48:20] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:48:20] [parallel-indexer] project index built {"ext":".ts","files":4,"types":0}
+[INFO] [23:48:21] [parallel-indexer] worker pool complete {"files":4,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:48:21] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"a7a0ce47","danglingSources":6,"totalRelationships":7}
+[INFO] [23:48:21] [project-health] project health computed {"projectId":"a7a0ce4739fce747538ef768ec7e2a7e2fd1f738","complexityScore":95,"maintainabilityScore":78,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+[INFO] [23:48:21] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [23:48:21] [dependency-graph-visualizer] ✅ Graph Data Generated: 4 nodes, 1 links
+ 98 |   const attributed = Object.values(byPattern).reduce((a: number, b: any) => a + Number(b), 0) + Object.values(byRule).reduce((a: number, b: any) => a + Number(b), 0)
+ 99 |   // The indexer stores no `.d.ts`, `.min.js` or `.map` symbol at all, so the SUFFIX rule cannot
+100 |   // fire through a fixture (asserted at the unit level below, which is how the review measured
+101 |   // it). What a fixture DOES exercise is the segment rule and the test rule.
+102 |   harness.check("attribution: the fixture excludes the vendored symbol", (base.excluded?.symbols ?? 0) >= 1 && (base.excluded?.byPattern?.vendor ?? 0) === 1, JSON.stringify(base.excluded))
+103 |   harness.check("attribution: every dropped symbol is attributed to a named rule", attributed === base.excluded.symbols, `attributed=${attributed} symbols=${base.excluded.symbols} byPattern=${JSON.stringify(byPattern)} byRule=${JSON.stringify(byRule)}`)
+                                                                                                             ^
+TypeError: undefined is not an object (evaluating 'base.excluded.symbols')
+      at /home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-honesty.ts:103:104
+
+Bun v1.3.14 (Linux x64)

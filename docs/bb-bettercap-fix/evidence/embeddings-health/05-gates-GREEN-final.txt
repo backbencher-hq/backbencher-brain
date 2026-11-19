@@ -1,0 +1,39 @@
+=== GATE A: verify-embedding-lifecycle (GREEN-final) ===
+  (fixture: 24 symbols, 24 local-word-vector rows)
+  ok: fixture has a populated local space
+  leg A: method=vector queryModel=local-word-vectors-v3 fallbackReason=configured-model-space-under-covered comparable=23/24
+  ok: A1: the under-covered configured space (1/24) is measured and named
+  ok: A2: read path does NOT hard-filter to the near-empty configured space
+  ok: A3: answered from the populated local space
+  ok: A4: fallback is DECLARED
+  ok: A5: pending backfill is named with the configured model
+  ok: A6: provenance records the fallback evidence class/unknown
+  leg B: method=vector queryModel=test/configured-embed fallbackReason=none comparable=24/24
+  ok: B1 (control): backfilled configured space answers with vectors
+  ok: B2 (control): the configured model produced the query vector
+  ok: B3 (control): no fallback is declared when the configured space is populated
+  ok: B4 (control): results exist in the configured space
+  ok: C1 (control): user embedding config was not mutated
+EMBEDDING LIFECYCLE: PASS
+gateA_exit=0
+
+=== GATE B: verify-health-honesty (GREEN-final) ===
+  ok: C1 (control): a genuinely complete run still reports status=complete
+  ok: C2 (control): no INCOMPLETE_INDEX on a complete run
+  (index line: index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written (deliberate skip; force will not fix it) status=incomplete (recordedStatus=complete contradicts the counts) errors=0)
+  (embeddings line: embeddings: 2 rows / 2 entities / 100% of symbols (library-wide, 2/2 across 1 space(s)) · configured test/configured-embed: 0% (0/2) — BACKFILL PENDING)
+  (warning codes: SYNTAX_ERRORS,SKIPPED_FILES,EMBEDDINGS_BACKFILL_PENDING)
+  ok: R1: shortfall is still detected on the line
+  ok: R2: bare `status=complete` never prints beside the shortfall
+  ok: R3: the derived status names the shortfall
+  ok: R4: no `force=true to rebuild from scratch` remedy on a deliberate-skip shortfall
+  ok: R5: a warning explains the skip (size tier / deliberate skip), so force is not implied to fix it
+  ok: R6: incomplete/skip warning names the skipped count
+  ok: R7: syntax warning groups attribution by language
+  ok: R8: syntax grouping states a count per language
+  ok: R9: embeddings line names the configured model and its coverage
+  ok: R10: backfill-pending state is declared for the under-covered configured space
+  ok: R11: embeddings line distinguishes library-wide from configured-space coverage
+  ok: C3 (control): user embedding config was not mutated
+HEALTH HONESTY: PASS
+

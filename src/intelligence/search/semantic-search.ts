@@ -35,6 +35,7 @@ import type { SemanticResult, SemanticSearchOptions, SemanticSearchResults } fro
 import { readSymbolSnippet } from "../source-utils"
 import { makeProvenance } from "../evidence"
 import { embedLocal, projectVocabulary } from "../../brain/semantic/local-embed"
+import { planEmbeddingSpaces, readEmbeddingSpaces, resolveConfiguredEmbeddingModel, type EmbeddingSpacePlan } from "../../brain/semantic/embedding-spaces"
 
 declare module "../contracts" {
   interface SemanticResult {
@@ -118,6 +119,12 @@ export type SemanticSearchFacts = {
   comparison: SemanticComparison
   scan: SemanticScan
   embeddingBound?: SemanticEmbeddingBound
+  /**
+   * Extra DECLARED facts to carry into a keyword fallback's provenance — e.g.
+   * the configured embedding space's pending backfill, which is why no vector
+   * answer was possible. Never a guess: only measured facts a caller supplied.
+   */
+  extraUnknowns?: string[]
 }
 
 export type SemanticSearchResultsWithFacts = SemanticSearchResults & SemanticSearchFacts
@@ -293,7 +300,7 @@ export async function semanticVectorSearch(
       ...(embeddingBound ? { embeddingBound } : {}),
     })
   }
-  const dimension = queryVector.length
+  let dimension = queryVector.length
   // A vector of the right SHAPE but no magnitude is a different failure from an
   // empty one: the local word-vector model returns a 50-element zero vector when
   // every token in the query is out of vocabulary, and cosine against it is 0 for
@@ -313,6 +320,62 @@ export async function semanticVectorSearch(
       ...(embeddingBound ? { embeddingBound } : {}),
     })
   }
+
+  // ── declared space fallback (P2-3) ────────────────────────────────────────
+  // The configured provider can be newer than the index. After a provider change
+  // a project can hold thousands of vectors from the previous space (or from the
+  // local word-vector fallback) and almost none from the configured model —
+  // measured on bettercap: `nvidia/nemotron-3.5-embed-8b` held 1/55,785 vectors
+  // while `local-word-vectors-v3` held 23,924. The scan below stays model-exact
+  // (comparing across spaces is prohibited), but hard-filtering to an EMPTY
+  // configured space answers a lexical question while a populated, usable space
+  // exists. So decide the space explicitly:
+  //   · configured space at/above the coverage floor -> compare there;
+  //   · otherwise fall back to the populated LOCAL space (the only space this
+  //     process can always produce a query vector for), DECLARED in metadata and
+  //     provenance, and declare the pending backfill;
+  //   · no populated dense space -> no vector answer, and the fallback reason
+  //     names the pending backfill instead of pretending lexical = semantic.
+  // A READ still never writes: repairing the space is an index run, so its
+  // pending state is reported here, not fixed here.
+  let spacePlan: EmbeddingSpacePlan | null = null
+  let spaceFallbackReason: string | null = null
+  let pendingBackfillNote: string | null = null
+  try {
+    const librarySymbols = (await measureCounts(raw, projectId, null, 0)).librarySymbols
+    spacePlan = planEmbeddingSpaces({
+      configuredModel: await resolveConfiguredEmbeddingModel(),
+      localModel: SemanticEngine.LOCAL_MODEL_LABEL,
+      symbolCount: librarySymbols,
+      spaces: readEmbeddingSpaces(raw, projectId),
+    })
+    if (spacePlan.pendingBackfill) pendingBackfillNote = spacePlan.pendingDetail
+    if (spacePlan.compareModel !== null && spacePlan.compareModel !== queryModel) {
+      if (spacePlan.compareModel === SemanticEngine.LOCAL_MODEL_LABEL) {
+        // The declared fallback space is the local one: produce ITS query vector
+        // directly. Re-embedding in the fallback space is what keeps the
+        // similarity meaningful — reusing the remote vector here would compare
+        // across spaces, which is the one thing forbidden.
+        const localVec = localQueryVector(raw, projectId, query)
+        if (localVec.length > 0 && !localVec.every((component) => component === 0)) {
+          queryVector = localVec
+          queryModel = SemanticEngine.LOCAL_MODEL_LABEL
+          dimension = queryVector.length
+          spaceFallbackReason = spacePlan.fallbackReason
+        }
+      }
+    } else if (spacePlan.pendingBackfill && queryModel !== spacePlan.configuredModel) {
+      // Already comparing the populated local space (a query-side provider
+      // timeout produced the local vector). Declare the configured-space
+      // shortfall this answer is living with.
+      spaceFallbackReason = spacePlan.fallbackReason
+    }
+  } catch {
+    // A plan that cannot be computed must not fail the read: the strict
+    // model-consistency scan below remains the contract and its metadata still
+    // declares the model/coverage it compared.
+  }
+  const fallbackExtras = pendingBackfillNote ? { extraUnknowns: [pendingBackfillNote] } : {}
 
   // Coverage is measured AFTER the query vector exists, for the model and width
   // that will actually be compared — not for the whole library. The two numbers
@@ -351,6 +414,7 @@ export async function semanticVectorSearch(
       comparison,
       scan: emptyScan(),
       ...(embeddingBound ? { embeddingBound } : {}),
+      ...fallbackExtras,
     })
   }
 
@@ -384,6 +448,7 @@ export async function semanticVectorSearch(
       comparison,
       scan,
       ...(embeddingBound ? { embeddingBound } : {}),
+      ...fallbackExtras,
     })
   }
 
@@ -393,6 +458,7 @@ export async function semanticVectorSearch(
       comparison,
       scan,
       ...(embeddingBound ? { embeddingBound } : {}),
+      ...fallbackExtras,
     })
   }
 
@@ -411,15 +477,19 @@ export async function semanticVectorSearch(
       source: "brain_semantic_embedding",
       limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."],
       truncated: scan.capped,
-      unknowns: embeddingBound?.timedOut
-        ? [`The embedding provider did not answer within ${waitCeilingMs} ms; the question was embedded with the local word-vector model (${SemanticEngine.LOCAL_MODEL_LABEL}).`]
-        : [],
+      unknowns: [
+        ...(embeddingBound?.timedOut
+          ? [`The embedding provider did not answer within ${waitCeilingMs} ms; the question was embedded with the local word-vector model (${SemanticEngine.LOCAL_MODEL_LABEL}).`]
+          : []),
+        ...(pendingBackfillNote ? [pendingBackfillNote] : []),
+      ],
     }),
     metadata: {
       queryModel,
       indexModel: queryModel,
       method: "vector",
       dimension,
+      ...(spaceFallbackReason ? { fallbackReason: spaceFallbackReason } : {}),
       scannedRows: scan.scannedRows,
       filteredRows: scan.filteredRows,
       discriminative: competitors === 0,
@@ -578,13 +648,18 @@ async function keywordFallback(
       source: "content-search-fallback",
       limitations: ["Keyword fallback is not vector-ranked and similarity is not meaningful; results are candidate discovery, not behavioral proof."],
       truncated: facts.scan.capped,
-      unknowns: [reason],
+      unknowns: [reason, ...(facts.extraUnknowns ?? [])],
     }),
     metadata: {
-      queryModel: "none",
-      indexModel: "none",
+      // A keyword answer still carries the vector space that was COMPARED before
+      // the lexical route answered (the coverage number beside it describes that
+      // space). Hardcoding "none" here hid the model from every keyword-fallback
+      // line — measured on bettercap: `queryModel=none` on a line whose
+      // `embeddingCoverage=0% (1/55785 … in this model space)` named no model.
+      queryModel: facts.comparison.queryModel,
+      indexModel: facts.comparison.queryModel,
       method: "keyword-fallback",
-      dimension: 0,
+      dimension: facts.comparison.dimension,
       scannedRows: facts.scan.scannedRows,
       filteredRows: facts.scan.filteredRows,
       fallbackReason: reason,

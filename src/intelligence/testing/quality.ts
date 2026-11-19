@@ -2,11 +2,18 @@
 // Author: Muhammad Ishaq Khan
 //
 // WHAT THIS FILE IS — the test-quality engine: independent content/graph dimensions per test file, with unsupported dimensions declared instead of fabricated.
-// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, modes
+// WHICH TOOL IT SERVES — bb_analyze (mutability read, requiresIndex true, mode
 //   test_quality).
-// WHY IT IS SHAPED THIS WAY — a metric is only reported when it was measured; the content classifiers are a frozen, named table because no framework-agnostic AST equivalence exists, and they are tested edge-case by edge-case.
+// WHY IT IS SHAPED THIS WAY — a metric is only reported when it was measured; the
+//   content classifiers are frozen, named tables PER LANGUAGE because the
+//   language's own assertion/parameterization vocabulary is the evidence, and
+//   measuring Go with JavaScript syntax (P1-3, bettercap ISSUE-06) scored seven
+//   Go files with 114 real `t.Fatalf`/`t.Errorf` sites as `assertions: 0` and
+//   fired "parameterization" on the printf verb `%s` while anchoring as
+//   `it.each/test.each`. The vocabularies below name the observed token in
+//   `observedAnchor`; an anchor string is never hard-coded.
 // WHERE ITS EVIDENCE LIVES — docs/tools/bb_analyze.md, docs/BB_TEST_QUALITY.md, validation/tools/bb_analyze/**;
-//   gates: npx tsx script/m13/verify-analyze-modes.ts, npx tsx script/verify-analyze.ts.
+//   gates: npx tsx script/verify-test-quality.ts, npx tsx script/verify-analyze.ts.
 // EDIT TOGETHER WHEN THIS FILE CHANGES — src/mcp/tools/bb_analyze/handler.ts,
 //   script/tool-docs/curation/bb_analyze.ts, and the gates named above.
 // CONTRACTS IT MUST NOT BREAK — declared bounds, declared absence, freshness flags,
@@ -21,6 +28,10 @@
 //     content; otherwise it is explicitly `unknown` (supported=false) — never fabricated.
 //   * Verify-before-clone: dimensions without a deterministic graph/Table source are only
 //     claimed when content evidence is observed with a bounded confident verification.
+//   * P1-3: the vocabulary is the LANGUAGE's, not one language's projected onto all.
+//     A Go file is measured with Go assertion idioms, a Python file with Python's, JS/TS
+//     with theirs; an unrecognised language gets the declared `generic-superset` fallback
+//     and the payload says so (provenance.unknowns).
 import { readFile } from "node:fs/promises"
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
@@ -28,6 +39,7 @@ import type {
   TestQualityDimension,
   TestQualityDimensionId,
   TestQualityFile,
+  TestQualityIssue,
   TestQualityReport,
 } from "../contracts"
 import { makeProvenance } from "../evidence"
@@ -89,49 +101,476 @@ function testFileScope(filePath: string | undefined): { sql: string; params: str
   return { sql: " AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')", params: [clean, escapeLikeValue(clean) + "/%"] }
 }
 
-/**
- * The content classifiers, exported as one named table.
- *
- * WHY A REGEX IS UNAVOIDABLE HERE. The dimension asks "does this test exercise
- * assertions / error paths / parameterization" across ANY test framework, and
- * the evidence is statement-level source text. A framework-agnostic superset
- * (`assert`, `assert.equal`, `expect(...)`, `should.`, `toBe`, `it.each`,
- * `try {`, `catch (`) cannot be recognised by `includes`/`startsWith` without
- * missing the forms the model exists to count, and the tree-sitter AST does not
- * expose framework assertion calls as a node type. The sets are enumerated,
- * frozen here, and behaviourally tested by
- * `validation/tools/bb_analyze/regex-edge-cases.ts` (empty input, no-match,
- * boundary, Unicode, multiline, long-input timing). Their output only feeds a
- * confidence-weighted score (0.75-0.85 confidence); no resolved-symbol claim is
- * made from them.
- */
+// ── Language vocabularies (P1-3) ────────────────────────────────────────────
+//
+// Each pattern carries a LABEL that is a literal token appearing in the source.
+// The dimension's `observedAnchor` is `${label} × ${count}` for the label(s)
+// that actually matched — so an anchor can never name a construct the file does
+// not contain (the defect: every Go file reported "it.each/test.each template"
+// when the only match was `%s`).
+type TokenPattern = { re: RegExp; label: string }
+
+interface TestVocabulary {
+  id: string
+  /** brain_file.language values (lowercase) that select this vocabulary. */
+  languages: string[]
+  assertions: TokenPattern[]
+  errorPaths: TokenPattern[]
+  parameterization: TokenPattern[]
+  /** literal token that appears in an observed fixture-setup call. */
+  fixtures: TokenPattern[]
+  longTestName: RegExp
+  longTestNameLabel: string
+  commentLine: RegExp
+  commentLabel: string
+}
+
+const GO_VOCAB: TestVocabulary = {
+  id: "go",
+  languages: ["go"],
+  assertions: [
+    // One pattern per literal token so `observedAnchor` can name the token that
+    // actually matched (`t.Fatal × 2` is not `t.Fatalf × 2`).
+    { re: /\bt\.Fatalf\(/g, label: "t.Fatalf" },
+    { re: /\bt\.Errorf\(/g, label: "t.Errorf" },
+    { re: /\bt\.Fatal\(/g, label: "t.Fatal" },
+    { re: /\bt\.Error\(/g, label: "t.Error" },
+    { re: /\brequire\.[A-Z]\w*\(/g, label: "require" },
+    { re: /\bassert\.[A-Z]\w*\(/g, label: "assert" },
+    { re: /\bcmp\.Diff\(/g, label: "cmp.Diff" },
+  ],
+  errorPaths: [
+    { re: /if[^\n]*\berr\s*!=\s*nil/g, label: "if err != nil" },
+    { re: /if[^\n]*\berr\s*==\s*nil/g, label: "if err == nil" },
+    { re: /\brecover\(\)/g, label: "recover()" },
+  ],
+  // Go table tests / subtest runners. The printf verb `%s` is NOT parameterization.
+  parameterization: [
+    { re: /\bt\.Run\(/g, label: "t.Run" },
+    { re: /for\s+[^\n]*range\s+tests\b/g, label: "range tests" },
+  ],
+  fixtures: [
+    { re: /\bt\.TempDir\(/g, label: "t.TempDir" },
+    { re: /\bos\.MkdirTemp\(/g, label: "os.MkdirTemp" },
+    { re: /\bioutil\.TempFile\(/g, label: "ioutil.TempFile" },
+    { re: /\bos\.CreateTemp\(/g, label: "os.CreateTemp" },
+    { re: /\bos\.MkdirAll\(/g, label: "os.MkdirAll" },
+    { re: /\bt\.Setenv\(/g, label: "t.Setenv" },
+    { re: /\bhttptest\.NewServer\(/g, label: "httptest.NewServer" },
+  ],
+  longTestName: /\bfunc\s+(?:Test|Benchmark|Example)[A-Za-z0-9_]{11,}\(/g,
+  longTestNameLabel: "func Test",
+  commentLine: /(^|\n)\s*(\/\/|\/\*)/g,
+  commentLabel: "//",
+}
+
+const PYTHON_VOCAB: TestVocabulary = {
+  id: "python",
+  languages: ["python", "py"],
+  assertions: [
+    { re: /^\s*assert\s+/gm, label: "assert" },
+    { re: /\bself\.assert[A-Z]\w*\(/g, label: "self.assert" },
+    { re: /\bassert[A-Z]\w*\(/g, label: "assert" },
+  ],
+  errorPaths: [
+    { re: /\bpytest\.raises\(/g, label: "pytest.raises" },
+    { re: /\bassert_raises\(/g, label: "assert_raises" },
+    { re: /\bself\.assertRaises\(/g, label: "self.assertRaises" },
+    { re: /^\s*except\b/gm, label: "except" },
+  ],
+  parameterization: [
+    { re: /@pytest\.mark\.parametrize/g, label: "pytest.mark.parametrize" },
+    { re: /\.subTest\(/g, label: "subTest" },
+  ],
+  fixtures: [
+    { re: /\btmp_path\b/g, label: "tmp_path" },
+    { re: /\btmpdir\b/g, label: "tmpdir" },
+    { re: /\bNamedTemporaryFile\(/g, label: "NamedTemporaryFile" },
+    { re: /\bmkdtemp\(/g, label: "mkdtemp" },
+  ],
+  longTestName: /\bdef\s+test_[a-z0-9_]{10,}\(/g,
+  longTestNameLabel: "def test_",
+  commentLine: /(^|\n)\s*#/g,
+  commentLabel: "#",
+}
+
+const JS_VOCAB: TestVocabulary = {
+  id: "javascript",
+  languages: ["javascript", "typescript", "jsx", "tsx", "javascriptreact", "typescriptreact"],
+  assertions: [
+    { re: /\bexpect\s*\(/g, label: "expect" },
+    { re: /\bassert(?:\.[A-Za-z]+)?\s*\(/g, label: "assert" },
+    { re: /\bshould\./g, label: "should." },
+    { re: /\.toBe\(/g, label: "toBe" },
+    { re: /\.toEqual\(/g, label: "toEqual" },
+    { re: /\.toStrictEqual\(/g, label: "toStrictEqual" },
+    { re: /\.toThrow\(/g, label: "toThrow" },
+    { re: /\.toMatch\(/g, label: "toMatch" },
+    { re: /\.toContain\(/g, label: "toContain" },
+  ],
+  errorPaths: [
+    { re: /\btry\s*\{/g, label: "try {" },
+    { re: /\bcatch\s*\(/g, label: "catch (" },
+    { re: /\.toThrow\(/g, label: "toThrow" },
+    { re: /\brejects\b/g, label: "rejects" },
+    { re: /\bresolves\b/g, label: "resolves" },
+  ],
+  parameterization: [
+    { re: /\bit\.each\b/g, label: "it.each" },
+    { re: /\btest\.each\b/g, label: "test.each" },
+    { re: /\bdescribe\.each\b/g, label: "describe.each" },
+  ],
+  fixtures: [
+    { re: /\bbeforeEach\(/g, label: "beforeEach" },
+    { re: /\bbeforeAll\(/g, label: "beforeAll" },
+    { re: /\bmsw\./g, label: "msw" },
+  ],
+  longTestName: /\b(?:it|test|describe)\s*\(\s*['"`][^'"`]{24,}['"`]/g,
+  longTestNameLabel: "it(",
+  commentLine: /(^|\n)\s*(\/\/|\/\*)/g,
+  commentLabel: "//",
+}
+
+const RUST_VOCAB: TestVocabulary = {
+  id: "rust",
+  languages: ["rust"],
+  assertions: [
+    { re: /\bassert_eq!\(/g, label: "assert_eq!" },
+    { re: /\bassert_ne!\(/g, label: "assert_ne!" },
+    { re: /\bassert!\(/g, label: "assert!" },
+    { re: /\bdebug_assert(?:_eq|_ne)?!\(/g, label: "debug_assert!" },
+  ],
+  errorPaths: [
+    { re: /#\[should_panic\]/g, label: "should_panic" },
+    { re: /\bpanic!\(/g, label: "panic!" },
+  ],
+  // Rust has no in-language parameterization construct; the dimension is declared
+  // unsupported rather than fabricated as 0.
+  parameterization: [],
+  fixtures: [{ re: /\btempdir\(/g, label: "tempdir" }],
+  longTestName: /\bfn\s+[a-z0-9_]{16,}\(/g,
+  longTestNameLabel: "fn ",
+  commentLine: /(^|\n)\s*(\/\/|\/\*)/g,
+  commentLabel: "//",
+}
+
+/** Fallback for a language with no registered vocabulary: the documented
+ *  generic superset. Its use is DECLARED in provenance, so an under-scored
+ *  language is visible rather than silent. */
+const GENERIC_VOCAB: TestVocabulary = {
+  id: "generic-superset",
+  languages: [],
+  assertions: [
+    { re: /\bassert(?:\.[A-Za-z]+)?\s*\(/g, label: "assert" },
+    { re: /\bexpect\s*\(/g, label: "expect" },
+    { re: /\bshould\./g, label: "should." },
+  ],
+  errorPaths: [
+    { re: /\btry\s*\{/g, label: "try {" },
+    { re: /\bcatch\s*\(/g, label: "catch (" },
+    { re: /\bthrows\b/g, label: "throws" },
+  ],
+  parameterization: [
+    { re: /\bit\.each\b/g, label: "it.each" },
+    { re: /\btest\.each\b/g, label: "test.each" },
+  ],
+  fixtures: [
+    { re: /\btempdir\(/gi, label: "tempdir" },
+    { re: /\bfixtures?\//gi, label: "fixtures/" },
+  ],
+  longTestName: /\b(?:it|test|describe)\s*\(\s*['"`][^'"`]{24,}['"`]/g,
+  longTestNameLabel: "it(",
+  commentLine: /(^|\n)\s*(\/\/|\/\*|#)/g,
+  commentLabel: "//",
+}
+
+export const TEST_VOCABULARIES: Record<string, TestVocabulary> = {
+  go: GO_VOCAB,
+  python: PYTHON_VOCAB,
+  javascript: JS_VOCAB,
+  rust: RUST_VOCAB,
+  "generic-superset": GENERIC_VOCAB,
+}
+
+/** The shared low-level token table. Kept exported (script/m15 asserts every
+ *  entry is a global RegExp). `parameterized` deliberately no longer contains
+ *  the printf verb `%s` or the `$x` proxy — that was bettercap ISSUE-06's false
+ *  positive; it now names real data-driven-test constructs only. */
 export const CONTENT_CLASSIFIERS = {
-  // assertions — real API evidence, framework-agnostic superset. `assertCall`
-  // covers both `assert(...)` and node-assert's `assert.equal(` / `assert.deepEqual(`
-  // family; `chainedMatcher` matches the MATCHER METHOD rather than the
-  // receiver, because `expect(a).toBe(1)` has `(a)` between the two (measured
-  // by the edge-case suite: the receiver-anchored form matched neither).
   assertCall: /\bassert(?:\.[A-Za-z]+)?\s*\(/g,
   expectCall: /\bexpect\s*\(/g,
   shouldMember: /\bshould\./g,
   chainedMatcher: /\.(?:toBe|toEqual|toStrictEqual|toThrow|toBeTruthy|toBeFalsy|toMatch|toContain|rejects|resolves)\s*\(/g,
-  // error handling — rejects/resolves/try-catch/throws
   rejectsResolves: /\b(rejects|resolves)\b/g,
   tryBlock: /\btry\s*\{/g,
   throwMatcher: /\btoThrow|throws\b/g,
   catchClause: /\bcatch\s*\(/g,
-  // parameterization — data-driven tests
-  parameterized: /\b(?:it|test)\.each\b|\b(?:describe|it|test)\s*\(\s*`|%s|\$[a-zA-Z]/g,
-  // docs — comments and long descriptive test names
+  parameterized: /\b(?:it|test)\.each\b|\b(?:describe|it|test)\s*\(\s*`/g,
   commentLine: /(^|\n)\s*(\/\/|\/\*|#)/g,
   longTestName: /\b(?:it|test|describe)\s*\(\s*['"`][^'"`]{24,}['"`]/g,
-  // mocking — spy/mock call sites (graph import evidence is separate)
   spyMockCall: /\b(jest|sinon)\.(fn|spyOn|mock)\b|vi\.(fn|spyOn|mock)|\.mockImplementation|nock\(/g,
 } as const
 
 /** Mock-library import prefixes: a framework import is graph evidence that the
- *  file builds stubs. `startsWith` on a list, not a regex. */
-const MOCK_LIB_PREFIXES = ["jest", "vitest", "mocha", "chai", "sinon", "@sinonjs", "testdouble", "nock", "msw", "@testing-library", "ava", "tap", "node:test"]
+ *  file builds stubs. `startsWith` on a list, not a regex. Test frameworks
+ *  themselves are NOT mocking evidence (`testing`/`pytest` are not mock libs). */
+const MOCK_LIB_PREFIXES = ["jest", "vitest", "mocha", "chai", "sinon", "@sinonjs", "testdouble", "nock", "msw", "@testing-library", "ava", "tap", "node:test", "github.com/stretchr/testify/mock", "go.uber.org/mock", "github.com/golang/mock"]
+
+/** Import prefixes that are TEST FRAMEWORKS, never fixture evidence. */
+const TEST_FRAMEWORK_PREFIXES = ["testing", "github.com/stretchr/testify", "pytest", "unittest", "mock", "coverage", "vitest", "jest", "mocha", "chai", "sinon", "@testing-library", "ava", "tap", "node:test", "node:assert", "assert"]
+
+/** Node.js builtin modules: stdlib, never fixture evidence. */
+const NODE_BUILTINS = new Set([
+  "assert", "buffer", "child_process", "cluster", "console", "constants", "crypto", "dgram", "dns", "domain",
+  "events", "fs", "http", "http2", "https", "inspector", "net", "os", "path", "perf_hooks", "process", "punycode",
+  "querystring", "readline", "repl", "stream", "string_decoder", "timers", "tls", "trace_events", "tty", "url", "util",
+  "v8", "vm", "wasi", "worker_threads", "zlib",
+])
+
+/** Python stdlib modules (bounded, common set) — stdlib, never fixture evidence. */
+const PY_STDLIB = new Set([
+  "os", "sys", "io", "re", "json", "time", "datetime", "pathlib", "tempfile", "shutil", "subprocess", "typing",
+  "unittest", "collections", "functools", "itertools", "math", "random", "logging", "copy", "types", "abc",
+  "dataclasses", "enum", "warnings", "threading", "contextlib", "inspect", "hashlib", "base64", "csv", "pickle",
+  "socket", "struct", "textwrap", "traceback", "uuid", "argparse", "glob", "fnmatch", "stat", "errno", "signal",
+])
+
+/** Pick the vocabulary for a brain_file.language value. Returns the vocabulary
+ *  and whether the generic fallback was used (the caller must DECLARE it). */
+export function vocabularyFor(language: string | null | undefined): { id: string; vocabulary: TestVocabulary; fallback: boolean } {
+  const lang = String(language ?? "").toLowerCase()
+  for (const [id, vocab] of Object.entries(TEST_VOCABULARIES)) {
+    if (id === "generic-superset") continue
+    if (vocab.languages.includes(lang)) return { id, vocabulary: vocab, fallback: false }
+  }
+  return { id: GENERIC_VOCAB.id, vocabulary: GENERIC_VOCAB, fallback: true }
+}
+
+function isRelativeImport(spec: string): boolean {
+  return spec.startsWith(".") || spec.startsWith("/")
+}
+
+function firstSegment(spec: string): string {
+  const cleaned = spec.replace(/^@/, "")
+  return cleaned.split("/")[0] ?? ""
+}
+
+/** Is this import stdlib/framework plumbing (NOT fixture evidence)? */
+export function isInfrastructureImport(language: string | null, spec: string): boolean {
+  if (!spec) return true
+  const lang = String(language ?? "").toLowerCase()
+  if (TEST_FRAMEWORK_PREFIXES.some((prefix) => spec === prefix || spec.startsWith(prefix + "/"))) return true
+  if (lang === "go") {
+    // Go stdlib import paths have no dot in their first segment ("testing", "os").
+    return !firstSegment(spec).includes(".")
+  }
+  if (lang === "javascript" || lang === "typescript" || lang === "jsx" || lang === "tsx") {
+    if (spec.startsWith("node:")) return true
+    return !isRelativeImport(spec) && NODE_BUILTINS.has(firstSegment(spec))
+  }
+  if (lang === "python" || lang === "py") {
+    return PY_STDLIB.has(firstSegment(spec))
+  }
+  return false
+}
+
+function countPatterns(content: string, patterns: TokenPattern[]): { total: number; matched: Array<{ label: string; count: number }> } {
+  const matched: Array<{ label: string; count: number }> = []
+  let total = 0
+  for (const p of patterns) {
+    const count = (content.match(p.re) || []).length
+    if (count > 0) {
+      matched.push({ label: p.label, count })
+      total += count
+    }
+  }
+  matched.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+  return { total, matched }
+}
+
+/** Anchor naming only tokens that were OBSERVED. `label × count` for the
+ *  strongest matched label(s); null when nothing matched. */
+function observedAnchorFor(matched: Array<{ label: string; count: number }>): string | null {
+  if (matched.length === 0) return null
+  return matched.slice(0, 2).map((m) => `${m.label} × ${m.count}`).join(", ")
+}
+
+export interface TestContentInput {
+  relativePath: string
+  /** brain_file.language */
+  language: string | null
+  /** bounded file content */
+  content: string
+  /** brain_import import_path values for this file (graph evidence) */
+  imports?: string[]
+}
+
+export interface TestContentMeasurement {
+  relativePath: string
+  language: string
+  /** the vocabulary used: "go" | "python" | "javascript" | "rust" | "generic-superset" */
+  vocabulary: string
+  /** true when the generic fallback measured a language with no registered vocabulary (declared) */
+  vocabularyFallback: boolean
+  dimensions: TestQualityDimension[]
+  unsupported: string[]
+  issues: TestQualityIssue[]
+  strengths: string[]
+}
+
+/** Measure ONE test file's content with its LANGUAGE's vocabulary. Pure (no DB),
+ *  exported so the gate can exercise the exact measurement the engine uses. */
+export function measureTestContent(input: TestContentInput): TestContentMeasurement {
+  const { id: vocabId, vocabulary, fallback } = vocabularyFor(input.language)
+  const language = String(input.language ?? "").toLowerCase()
+  const c = input.content
+  const imports = input.imports ?? []
+  const issues: TestQualityIssue[] = []
+  const strengths: string[] = []
+  const unsupported: string[] = []
+  const dims: Record<TestQualityDimensionId, Dim> = {
+    assertions: { ...UNKNOWN },
+    mocking: { ...UNKNOWN },
+    error_handling: { ...UNKNOWN },
+    parameterization: { ...UNKNOWN },
+    docs: { ...UNKNOWN },
+    fixtures: { ...UNKNOWN },
+  }
+
+  // -- assertions --------------------------------------------------------------
+  const asserts = countPatterns(c, vocabulary.assertions)
+  dims.assertions = dim({
+    supported: true,
+    evidenceStrength: clamp01(asserts.total / 6),
+    penaltyPotential: asserts.total === 0 ? 1 : clamp01(1 - asserts.total / 6),
+    observedAnchor: observedAnchorFor(asserts.matched),
+    confidence: 0.85,
+  })
+  if (asserts.total === 0) issues.push({ category: "no_assertion_evidence", description: `no ${vocabId} assertion statement observed` })
+  else strengths.push(`${asserts.total} assertion site(s): ${observedAnchorFor(asserts.matched)}`)
+
+  // -- error handling ----------------------------------------------------------
+  const err = countPatterns(c, vocabulary.errorPaths)
+  dims.error_handling = dim({
+    supported: true,
+    evidenceStrength: clamp01(err.total / 3),
+    penaltyPotential: err.total === 0 ? 1 : clamp01(1 - err.total / 3),
+    observedAnchor: observedAnchorFor(err.matched),
+    confidence: 0.8,
+  })
+  if (err.total === 0) issues.push({ category: "no_error_path_evidence", description: `no ${vocabId} error-path evidence observed` })
+  else strengths.push(`${err.total} error-path site(s): ${observedAnchorFor(err.matched)}`)
+
+  // -- parameterization --------------------------------------------------------
+  if (vocabulary.parameterization.length === 0) {
+    // The language has no known data-driven test construct: UNKNOWN, never a fabricated 0.
+    unsupported.push("parameterization")
+    dims.parameterization = { ...UNKNOWN }
+  } else {
+    const param = countPatterns(c, vocabulary.parameterization)
+    dims.parameterization = dim({
+      supported: true,
+      evidenceStrength: clamp01(param.total / 3),
+      penaltyPotential: 0, // absence is not penalized heavily
+      observedAnchor: observedAnchorFor(param.matched),
+      confidence: 0.75,
+    })
+    if (param.total > 0) strengths.push(`parameterized cases: ${observedAnchorFor(param.matched)}`)
+  }
+
+  // -- docs --------------------------------------------------------------------
+  const comments = (c.match(vocabulary.commentLine) || []).length
+  const longNames = (c.match(vocabulary.longTestName) || []).length
+  const docsTotal = comments + longNames
+  dims.docs = dim({
+    supported: true,
+    evidenceStrength: clamp01(docsTotal / 6),
+    penaltyPotential: clamp01(1 - docsTotal / 6),
+    observedAnchor: observedAnchorFor([
+      ...(comments > 0 ? [{ label: vocabulary.commentLabel, count: comments }] : []),
+      ...(longNames > 0 ? [{ label: vocabulary.longTestNameLabel, count: longNames }] : []),
+    ]),
+    confidence: 0.7,
+  })
+
+  // -- fixtures (real fixtures, not a stdlib import) ---------------------------
+  const fixtureHits = countPatterns(c, vocabulary.fixtures)
+  const fixtureImports = imports.filter((spec) => (spec.length > 0 && !isRelativeImport(spec) ? !isInfrastructureImport(language, spec) : false))
+  const localFixtureImports = imports.filter((spec) => spec.length > 0 && isRelativeImport(spec))
+  const fixtureEvidence = fixtureHits.total + fixtureImports.length + localFixtureImports.length
+  const fixturesAnchor = observedAnchorFor(fixtureHits.matched) ?? (localFixtureImports.length > 0 ? `import: ${localFixtureImports[0]}` : null)
+  dims.fixtures = dim({
+    supported: true,
+    evidenceStrength: clamp01(fixtureEvidence / 3),
+    observedAnchor: fixturesAnchor,
+    confidence: fixtureHits.total > 0 || localFixtureImports.length > 0 ? 0.8 : 0.5,
+  })
+  if (fixtureHits.total > 0) strengths.push(`fixture setup: ${observedAnchorFor(fixtureHits.matched)}`)
+  else if (localFixtureImports.length > 0) strengths.push(`local fixture module(s): ${localFixtureImports[0]}`)
+
+  // -- mocking (content spy/mock call sites; graph mock-import is graph-only) --
+  const spyHits = (c.match(CONTENT_CLASSIFIERS.spyMockCall) || []).length
+  const mockImports = imports.filter((spec) => MOCK_LIB_PREFIXES.some((prefix) => spec === prefix || spec.startsWith(prefix + "/")))
+  if (mockImports.length > 0 || spyHits > 0) {
+    dims.mocking = dim({
+      supported: true,
+      evidenceStrength: clamp01((mockImports.length > 0 ? 0.5 : 0) + Math.min(spyHits, 4) / 8),
+      penaltyPotential: 0,
+      observedAnchor: mockImports.length > 0 ? `mock-library import: ${mockImports[0]}` : "spy/mock call site",
+      confidence: 0.8,
+    })
+    strengths.push("mocking evidence present")
+  } else {
+    dims.mocking = dim({ supported: true, evidenceStrength: 0, penaltyPotential: 0, confidence: 0.6 })
+  }
+
+  const dimObjs = (Object.keys(dims) as TestQualityDimensionId[]).map((id) => ({ id, ...dims[id] })).sort((a, b) => a.id.localeCompare(b.id))
+  for (const d of dimObjs) if (!d.supported && !unsupported.includes(d.id)) unsupported.push(d.id)
+  return {
+    relativePath: input.relativePath,
+    language: language || "unknown",
+    vocabulary: vocabId,
+    vocabularyFallback: fallback,
+    dimensions: dimObjs,
+    unsupported: unsupported.sort(),
+    issues,
+    strengths,
+  }
+}
+
+/** Per-file overall: confidence-weighted mean over MEASURED dimensions only, with
+ *  an EFFECTIVE penalty. The pre-fix formula clamped `strength - 0.5·penalty` at 0
+ *  (triage UNLOCKED: the penalty was inert — "no evidence" contributed exactly 0
+ *  and could never pull a file down). Multiplicative form: the penalty scales the
+ *  credit, so a zero-assertion dimension contributes 0 while a partially-measured
+ *  one is genuinely reduced by half its penalty share. */
+export function overallScore(dimensions: TestQualityDimension[]): number | null {
+  const measured = dimensions.filter((d) => d.supported && d.evidenceStrength !== null)
+  if (measured.length === 0) return null
+  let sum = 0
+  let w = 0
+  for (const d of measured) {
+    const conf = d.confidence ?? 0.5
+    const penalty = clamp01(d.penaltyPotential ?? 0)
+    sum += conf * clamp01((d.evidenceStrength ?? 0) * (1 - 0.5 * penalty))
+    w += conf
+  }
+  return w > 0 ? sum / w : null
+}
+
+/** Aggregate over a set of measured files: mean of per-file overalls where
+ *  present + per-dimension means. Pure, exported for the projection gate. */
+export function aggregateQuality(
+  files: Array<Pick<TestQualityFile, "relativePath" | "dimensions">>,
+): { mean: number | null; perDimension: Record<string, number | null> } {
+  const overalls = files.map((f) => overallScore(f.dimensions)).filter((x): x is number => x !== null)
+  const perDim: Record<string, number | null> = {}
+  for (const id of ["assertions", "mocking", "error_handling", "parameterization", "docs", "fixtures"] as const) {
+    const vals = files.flatMap((f) => f.dimensions.filter((d) => d.id === id && d.evidenceStrength !== null).map((d) => d.evidenceStrength as number))
+    perDim[id] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+  }
+  return { mean: overalls.length > 0 ? overalls.reduce((a, b) => a + b, 0) / overalls.length : null, perDimension: perDim }
+}
 
 export async function testQuality(projectId: ProjectID, options: QualityOptions = {}): Promise<TestQualityReport> {
   const maxFiles = options.maxFiles ?? 50
@@ -175,30 +614,20 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
   ).all(projectId, ...scopeParams, ...codeClause.params) as Array<{ fileId: string; target: string }>
 
   const fileImports = new Map<string, string[]>()
-  const fileMockImport = new Set<string>()
   for (const r of importRows) {
     if (!r.target) continue
     const arr = fileImports.get(r.fileId) ?? []
     arr.push(r.target)
     fileImports.set(r.fileId, arr)
-    if (MOCK_LIB_PREFIXES.some((prefix) => r.target.startsWith(prefix))) fileMockImport.add(r.fileId)
   }
 
   const report: TestQualityFile[] = []
   let analyzed = 0
+  const vocabularyCoverage = new Map<string, number>()
+  const fallbackLanguages = new Map<string, number>()
 
   for (const f of files) {
-    const dims: Record<TestQualityDimensionId, Dim> = {
-      assertions: { ...UNKNOWN },
-      mocking: { ...UNKNOWN },
-      error_handling: { ...UNKNOWN },
-      parameterization: { ...UNKNOWN },
-      docs: { ...UNKNOWN },
-      fixtures: { ...UNKNOWN },
-    }
-    const issues: TestQualityFile["issues"] = []
-    const strengths: string[] = []
-    const unsupported: string[] = []
+    const imports = fileImports.get(f.id) ?? []
     let content: string | null = null
 
     if (analyzed < maxFiles) {
@@ -211,149 +640,78 @@ export async function testQuality(projectId: ProjectID, options: QualityOptions 
       }
     }
 
-    // -- Graph-backed dimensions (always measurable) ------------------------------
-    const imports = fileImports.get(f.id) ?? []
-    const hasClaims = imports.length > 0
-    dims.fixtures = dim({
-      supported: true,
-      evidenceStrength: clamp01(imports.length / 4), // more distinct imports ≈ richer setup
-      observedAnchor: hasClaims ? imports[0] : null,
-      confidence: imports.length > 0 ? 0.8 : 0.5,
-      relevance: null,
-      penaltyPotential: null,
-    })
-    if (imports.length > 2) strengths.push("rich import surface (indicates composed fixtures)")
-
-    // -- Content-backed dimensions (only when we actually read the file) ---------
     if (content !== null) {
-      const c = content
-      const count = (re: RegExp) => (c.match(re) || []).length
-      const P = CONTENT_CLASSIFIERS
-
-      // The classifier table above documents why these are regexes; every
-      // literal is behaviourally tested by validation/tools/bb_analyze/regex-edge-cases.ts.
-      const asserts = count(P.assertCall) + count(P.expectCall) + count(P.shouldMember) + count(P.chainedMatcher)
-      dims.assertions = dim({
-        supported: true,
-        evidenceStrength: clamp01(asserts / 6),
-        penaltyPotential: asserts === 0 ? 1 : clamp01(1 - asserts / 6),
-        observedAnchor: asserts > 0 ? "assert/expect usage" : null,
-        confidence: 0.85,
-      })
-      if (asserts === 0) issues.push({ category: "no_assertion_evidence", description: "no assert/expect statements observed" })
-      else strengths.push(`${asserts} assertion site(s)`)
-
-      // Error handling — rejects/resolves/try-catch/throws.
-      const err = count(P.rejectsResolves) + count(P.tryBlock) + count(P.throwMatcher) + count(P.catchClause)
-      dims.error_handling = dim({
-        supported: true,
-        evidenceStrength: clamp01(err / 3),
-        penaltyPotential: err === 0 ? 1 : clamp01(1 - err / 3),
-        observedAnchor: err > 0 ? "rejects/try/catch/throws" : null,
-        confidence: 0.8,
-      })
-      if (err === 0) issues.push({ category: "no_error_path_evidence", description: "no error-path assertion observed" })
-
-      // Parameterization — data-driven tests.
-      const param = count(P.parameterized)
-      dims.parameterization = dim({
-        supported: true,
-        evidenceStrength: clamp01(param / 3),
-        penaltyPotential: 0, // absence is not penalized heavily
-        observedAnchor: param > 0 ? "it.each/test.each template" : null,
-        confidence: 0.75,
-      })
-      if (param > 0) strengths.push("parameterized cases detected")
-
-      // Docs — comments/docblocks + descriptive test names.
-      const comments = count(P.commentLine)
-      const longNames = count(P.longTestName)
-      dims.docs = dim({
-        supported: true,
-        evidenceStrength: clamp01((comments + longNames) / 6),
-        penaltyPotential: clamp01(1 - (comments + longNames) / 6),
-        observedAnchor: comments + longNames > 0 ? "comments/descriptive names" : null,
-        confidence: 0.7,
+      const measurement = measureTestContent({ relativePath: f.rel, language: f.language, content, imports })
+      vocabularyCoverage.set(measurement.vocabulary, (vocabularyCoverage.get(measurement.vocabulary) ?? 0) + 1)
+      if (measurement.vocabularyFallback) {
+        const lang = measurement.language
+        fallbackLanguages.set(lang, (fallbackLanguages.get(lang) ?? 0) + 1)
+      }
+      report.push({
+        relativePath: f.rel,
+        overall: overallScore(measurement.dimensions),
+        dimensions: measurement.dimensions,
+        unsupported: measurement.unsupported,
+        issues: measurement.issues,
+        strengths: [...measurement.strengths, `vocabulary: ${measurement.vocabulary}`],
       })
     } else {
-      // Content unreadable → these dimensions are genuinely unknown, never fabricated.
-      unsupported.push("assertions", "error_handling", "parameterization", "docs")
-    }
-
-    // Mocking — measurable via graph (mock lib import) OR content-spy evidence.
-    const spyHits = content !== null ? (content.match(CONTENT_CLASSIFIERS.spyMockCall) || []).length : 0
-    const mockGraph = fileMockImport.has(f.id)
-    if (mockGraph || spyHits > 0) {
-      dims.mocking = dim({
-        supported: true,
-        evidenceStrength: clamp01((mockGraph ? 0.5 : 0) + Math.min(spyHits, 4) / 8),
-        penaltyPotential: 0,
-        observedAnchor: mockGraph ? "mock-library import" : "spy/mock call sites",
-        confidence: 0.8,
-      })
-      strengths.push("mocking evidence present")
-    } else if (content !== null) {
-      dims.mocking = dim({ supported: true, evidenceStrength: 0, penaltyPotential: 0, confidence: 0.6 })
-    }
-    // else mocking stays unknown (no content + no graph evidence) — independent unknown.
-
-    // Weighted mean over measured dims only; penalty dims pull down.
-    const measured = Object.values(dims).filter((d) => d.supported && d.evidenceStrength !== null)
-    let overall: number | null = null
-    if (measured.length > 0) {
-      let sum = 0
-      let w = 0
-      for (const d of measured) {
-        const conf = d.confidence ?? 0.5
-        const penalty = d.penaltyPotential ?? 0
-        sum += conf * clamp01((d.evidenceStrength ?? 0) - 0.5 * penalty)
-        w += conf
+      // Content unreadable → content-backed dimensions are genuinely unknown, never
+      // fabricated. Graph-only evidence (fixtures/mocking by import) still reports.
+      const language = String(f.language ?? "")
+      const fixtureImports = imports.filter((spec) => (spec.length > 0 && !isRelativeImport(spec) ? !isInfrastructureImport(language, spec) : false))
+      const mockImports = imports.filter((spec) => MOCK_LIB_PREFIXES.some((prefix) => spec === prefix || spec.startsWith(prefix + "/")))
+      const dims: Record<TestQualityDimensionId, Dim> = {
+        assertions: { ...UNKNOWN },
+        mocking: mockImports.length > 0 ? dim({ supported: true, evidenceStrength: 0.5, penaltyPotential: 0, observedAnchor: `mock-library import: ${mockImports[0]}`, confidence: 0.8 }) : { ...UNKNOWN },
+        error_handling: { ...UNKNOWN },
+        parameterization: { ...UNKNOWN },
+        docs: { ...UNKNOWN },
+        fixtures: dim({ supported: true, evidenceStrength: clamp01(fixtureImports.length / 3), observedAnchor: fixtureImports[0] ?? null, confidence: fixtureImports.length > 0 ? 0.8 : 0.5 }),
       }
-      overall = w > 0 ? sum / w : null
+      const dimObjs = (Object.keys(dims) as TestQualityDimensionId[]).map((id) => ({ id, ...dims[id] })).sort((a, b) => a.id.localeCompare(b.id))
+      report.push({
+        relativePath: f.rel,
+        overall: overallScore(dimObjs),
+        dimensions: dimObjs,
+        unsupported: ["assertions", "error_handling", "parameterization", "docs"],
+        issues: [],
+        strengths: [],
+      })
     }
-
-    const dimObjs: TestQualityDimension[] = (Object.keys(dims) as TestQualityDimensionId[]).map((id) => ({
-      id,
-      ...dims[id],
-    }))
-    for (const d of dimObjs) if (!d.supported && !unsupported.includes(d.id)) unsupported.push(d.id)
-
-    report.push({
-      relativePath: f.rel,
-      overall,
-      dimensions: dimObjs.sort((a, b) => a.id.localeCompare(b.id)),
-      unsupported: unsupported.sort(),
-      issues,
-      strengths,
-    })
   }
 
-  // `maxFiles` bounds how many files get their CONTENT read; the handler bounds
-  // how many rows the answer carries (and states returned/totalFiles/truncated).
-  // Keeping the engine's rows complete is what lets `maxFiles: 0` report files
-  // whose content dimensions are unknown instead of reporting no files at all.
-  // Aggregate: mean of per-file overall where present; per-dimension means.
-  const overalls = report.map((r) => r.overall).filter((x): x is number => x !== null)
-  const perDim: Record<string, number | null> = {}
-  for (const id of ["assertions", "mocking", "error_handling", "parameterization", "docs", "fixtures"] as const) {
-    const vals = report.flatMap((r) => r.dimensions.filter((d) => d.id === id && d.evidenceStrength !== null).map((d) => d.evidenceStrength as number))
-    perDim[id] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null
-  }
-
+  const aggregate = aggregateQuality(report)
   const unsupportedCount = report.reduce((n, r) => n + r.unsupported.length, 0)
+  const vocabularyUnknowns = [...vocabularyCoverage.entries()].map(([vocab, count]) => `language-vocabulary: ${vocab} (${count} file(s))`)
+  for (const [lang, count] of fallbackLanguages.entries()) {
+    vocabularyUnknowns.push(`language-vocabulary-fallback: ${lang || "unknown"} has no registered vocabulary — measured with the generic superset (${count} file(s)); its assertion idioms may be under-counted`)
+  }
   return {
     files: report,
-    aggregate: { mean: overalls.length > 0 ? overalls.reduce((a, b) => a + b, 0) / overalls.length : null, perDimension: perDim },
-    provenance: makeProvenance({ evidenceClass: "static_finding", engine: "test-quality@intelligence", engineVersion: "m10.02", projectId, source: "brain_file+brain_import+bounded-source-content", limitations: ["Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness."], sampled: files.length > maxFiles, unknowns: [...report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index), ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : []), // A zero-code-test corpus must disclose WHY it is zero — the
-        // same honesty rule testGaps/testMapping already follow.
-        ...(files.length === 0 ? [noEvidenceUnknown()] : [])] }),
+    aggregate,
+    provenance: makeProvenance({
+      evidenceClass: "static_finding",
+      engine: "test-quality@intelligence",
+      engineVersion: "m10.03",
+      projectId,
+      source: "brain_file+brain_import+bounded-source-content",
+      limitations: [
+        "Content heuristics do not measure runtime assertion effectiveness, branch coverage, mutation score, or flakiness.",
+        "Each file is measured with its language's vocabulary; observedAnchor names the observed token, never a hard-coded construct.",
+      ],
+      sampled: files.length > maxFiles,
+      unknowns: [
+        ...report.flatMap((file) => file.unsupported).filter((value, index, values) => values.indexOf(value) === index),
+        ...vocabularyUnknowns,
+        ...(nonCodeTestFiles > 0 ? [nonCodeUnknown(nonCodeTestFiles)!] : []),
+        ...(files.length === 0 ? [noEvidenceUnknown()] : []),
+      ],
+    }),
     summary: {
       filesWithContent: report.filter((r) => r.dimensions.some((d) => d.supported)).length,
       filesUnknown: report.filter((r) => r.overall === null).length,
       unsupportedDimensionCount: unsupportedCount,
-      // Rows this report carries and whether content work was cut. The HANDLER
-      // additionally bounds the rows it ships and overrides returned/truncated
-      // for the answer's page.
       returned: report.length,
       totalFiles: files.length,
       truncated: files.length > maxFiles,

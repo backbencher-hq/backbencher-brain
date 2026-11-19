@@ -1,0 +1,58 @@
+  ok: registry: executable modes are exactly [answer] ["answer"]
+  ok: registry: explain and feature are plannedModes (not executable) ["explain","feature"]
+  ok: registry: no `mode` input property (not mode-discriminated) mode property present
+  ok: registry: query is required
+  ok: registry: mutability is read + requiresIndex true
+  ok: registry: limit declares default 5 and range 1..100 in prose max results (default 5; whole number 1..100; values outside are refused, not clamped). A larger page also means a larger work budget.
+  ok: registry: limit carries machine-readable minimum/maximum min=1 max=100
+  ok: validation: empty query rejected Error: bb_ask requires a non-empty query
+  ok: validation: whitespace-only query rejected Error: bb_ask requires a non-empty query
+  ok: validation: mode=explain rejected as unknown option (not executable) [negative] Error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit
+  ok: validation: missing query rejected Error: bb_ask: missing required option: query
+  ok: validation: limit=0 refused by name, never clamped [negative] Error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 
+  ok: validation: limit=101 refused by name, never clamped [negative] Error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 
+  ok: validation: limit=-1 refused by name, never clamped [negative] Error: bb_ask: limit must be non-negative
+  ok: validation: limit=2.5 refused by name, never clamped [negative] Error: bb_ask: limit must be a whole number (got 2.5)
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [19:22:58] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [19:22:58] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [19:22:59] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 20ms [plan=linear largest-intermediate=1]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [19:22:59] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"9b1202e5","danglingSources":1,"totalRelationships":1}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 17ms
+        ⚠ 1 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [19:23:00] [project-health] project health computed {"projectId":"9b1202e5964ec99c7b728f660987a3b9bfd966ac","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(15ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: CLI (source entry): valid query returns an answer with provenance and bounds answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer th
+  ok: CLI (source entry): empty query rejected [negative] error: bb_ask requires a non-empty query
+Command failed: /home/ishaq2321/.nvm/versions/node/v22.22.1/bin/node /home/ishaq2321/mcp/backbenche
+  ok: CLI (source entry): mode=explain rejected as unknown option [negative] error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit
+Command failed: /home/ishaq2321/.nvm/versions/node/v22.2
+  ok: CLI (source entry): limit=0 refused with the page-size rule [negative] error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag
+  ok: CLI (source entry): limit=101 refused with the page-size rule [negative] error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag
+  ok: handler: limit=0 refused with the same sentence the door uses [negative] bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refu
+  ok: handler: limit=101 refused with the same sentence the door uses [negative] bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded page; refu
+  ok: MCP (source entry): valid query returns an answer with provenance and bounds answer: Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer th
+  ok: MCP (source entry): empty query rejected [negative] error: bb_ask requires a non-empty query
+  ok: MCP (source entry): mode=explain rejected as unknown option [negative] error: bb_ask: unknown or irrelevant options: mode — accepted options: query, limit
+  ok: MCP (source entry): limit=0 refused with the page-size rule [negative] error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag
+  ok: MCP (source entry): limit=101 refused with the page-size rule [negative] error: bb_ask: limit must be a whole number between 1 and 100 — 0 would return no matches (it is refused, not silently answered), and above 100 the answer stops being a bounded pag
+A1: VERIFIED (27/27 passed, 15 negatives)

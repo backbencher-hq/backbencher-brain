@@ -58,6 +58,10 @@ interface FlaggedRow {
   confidence: number
   bridge: string | null
   crossFile: number
+  /** P0-2 candidate basis (triage ISSUE-02 / L-1+L-2): a name-only cross-language
+   *  row is a CANDIDATE, never a structural edge. */
+  evidenceClass: string | null
+  bindingBasis: string | null
 }
 
 let tmpCounter = 0
@@ -96,7 +100,9 @@ function flaggedRows(dataDir: string): { dbPath: string; rows: FlaggedRow[]; lan
       const rows = db
         .prepare(
           `SELECT ss.name AS fromSym, ts.name AS toSym, sf.language AS srcLang, tf.language AS dstLang,
-                  r.relationship_type AS type, r.confidence, r.bridge_mechanism AS bridge, r.is_cross_file AS crossFile
+                  r.relationship_type AS type, r.confidence, r.bridge_mechanism AS bridge, r.is_cross_file AS crossFile,
+                  json_extract(r.metadata, '$.evidenceClass') AS evidenceClass,
+                  json_extract(r.metadata, '$.bindingBasis') AS bindingBasis
            FROM brain_relationship r
            JOIN brain_symbol ss ON ss.id = r.source_symbol_id
            JOIN brain_symbol ts ON ts.id = r.target_symbol_id
@@ -147,15 +153,38 @@ async function main(): Promise<void> {
     JSON.stringify(p2.rows),
   )
 
-  // --- P3: the real tier rule applies to the flagged rows --------------------
-  // The DECLARED rule (M55.T5: one classifier, src/lsp/evidence_tier.ts;
-  // W4 legend + M29.R5 amendment): instantiates at confidence >= 0.7 is
-  // STRUCTURAL (parser-deterministic), below the floor it is inferred.
+  // --- P3: the flagged rows are CANDIDATES, not structural edges -------------
+  // CONTRACT CORRECTION (approved by Lead; triage docs/bb-bettercap-triage/findings/
+  // ISSUE-02, LEAD-FINDINGS L-1/L-2): the M26 fixtures bridge real JVM / TS-JS
+  // interop, but the rows are still attached by NAME-RESOLUTION with no
+  // import-path/FFI/generated evidence. The P0-2 policy
+  // (src/ast/parallel-indexer.ts: P02_BINDING_POLICY / applyP02CrossLanguageDegrade)
+  // therefore keeps them as retained candidates: is_cross_language=1 +
+  // bridge=name-resolution survive, while confidence is floored to <= 0.5,
+  // evidenceClass is inferred and metadata.bindingBasis is "name-only". A
+  // name-only row must NEVER render structural/import_based — the old assertion
+  // (structural from the fixture's original 1.0 confidence) is the over-claim the
+  // triage proved. The tier RULE is still exercised below with explicit inputs.
   const cl = await import(pathToFileURL(join(ROOT, "src/lsp/cross_language_hover.ts")).href)
   const tierFor = (row: FlaggedRow): string =>
-    cl.tierForCrossLanguageEdge({ relationship_type: row.type, confidence: row.confidence, evidence_class: null })
-  check("P3: conf-1.0 calls derive structural via the real rule", p1.rows.filter((r) => r.type === "calls").every((r) => tierFor(r) === "structural"), p1.rows.map((r) => `${r.type}:${tierFor(r)}`).join(","))
-  check("P3: instantiates at conf >= 0.7 derives structural (W4 legend, M29.R5)", p1.rows.filter((r) => r.type === "instantiates").every((r) => tierFor(r) === "structural"), p1.rows.map((r) => `${r.type}:${tierFor(r)}`).join(","))
+    cl.tierForCrossLanguageEdge({
+      relationship_type: row.type,
+      confidence: row.confidence,
+      evidence_class: row.evidenceClass,
+      binding_basis: row.bindingBasis,
+    })
+  check(
+    "P3: flagged bridge rows are retained candidates (is_cross_language=1 + bridge=name-resolution)",
+    p1.rows.length === 3 && p2.rows.length === 2 && [...p1.rows, ...p2.rows].every((r) => r.bridge === "name-resolution"),
+    JSON.stringify([...p1.rows, ...p2.rows].map((r) => `${r.fromSym}->${r.toSym}:${r.type}/${r.bridge}`)),
+  )
+  check(
+    "P3: name-only rows are floored candidates (confidence <= 0.5, evidenceClass inferred, bindingBasis name-only) and derive inferred",
+    [...p1.rows, ...p2.rows].every(
+      (r) => Number(r.confidence) <= 0.5 && r.evidenceClass === "inferred" && r.bindingBasis === "name-only" && tierFor(r) === "inferred",
+    ),
+    JSON.stringify([...p1.rows, ...p2.rows].map((r) => `${r.type}:${r.confidence}:${r.evidenceClass}:${r.bindingBasis}:${tierFor(r)}`)),
+  )
   // Floor branch through the REAL rule function: below 0.7 the same kind is
   // inferred — the check discriminates the rule, not a hardcoded label.
   {

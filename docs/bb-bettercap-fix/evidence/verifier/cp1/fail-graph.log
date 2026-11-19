@@ -1,0 +1,73 @@
+[brain] preparing the parallel worker pool (4 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 19ms [plan=linear largest-intermediate=18]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 18 relationships (0 patterns) in 12ms
+        ⚠ 8 dangling sources, 2 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(8ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 0ms
+  ok: beta has callers (alpha)
+  ok: beta has callees (gamma)
+  ok: callee edge call site names the SOURCE file (this is NOT a line claim — see the recorded observation below)
+  ok: callee edge preserves relationship type
+  ok: callee edge preserves confidence
+  note (M59.A6): TypeScript's call site line is reported as 4 (call-site); the call is written on 4 — equal, so this analyzer's stored line is exact here
+  ok: java: call site is the line the call is WRITTEN on (gammaJ at 8, betaJ declared elsewhere)
+  ok: scala: call site is the line the call is WRITTEN on (gammaS at 6, betaS declared elsewhere)
+  ok: the java call row the control corrupts exists and stores the real line
+  ok: control A: a corrupted stored line (1) is CAUGHT by the same predicate
+  note (M59.A6): with the stored line NULL the tool reports 6 for a call written on 8 — a LABELLED substitute (the caller's own declaration) or an explicit unknown, never the call line; this control refuses a substitute presented AS the call site
+  ok: control B: an absent line is not presented as the call site
+  ok: control cleanup: restoring the real line makes the predicate pass again
+  ok: callers-only returns no callees
+  ok: callees-only returns no callers
+  ok: alpha transitively reaches gamma
+  ok: summary reports maxDepthReached >= 1
+  ok: self-recursive traversal terminates
+  ok: relationshipTypes filter excludes calls edges
+  ok: truncated flag present and false for small graph
+  ok: D5: a type-narrowed traversal is NOT reported as truncated
+  ok: D5: the filter declares itself in its OWN channel (filterNarrowed + filterReason)
+  ok: D5 negative control: an un-narrowed traversal claims no filter
+  ok: D6: maxEdges below edgeLimit bounds the answer (1 requested, 1 returned)
+  ok: D6: honoring that bound is DECLARED as a bound (not silent)
+  ok: D6: the un-asked-for case is unchanged (no maxEdges -> the default, not 1)
+  ok: D10: truncationReasons is a list whose join is exactly truncationReason
+  ok: D10: an unbounded answer reports an EMPTY list, never a placeholder reason
+  ok: D7: the DEFAULT asks for no clock bound (the applied budget is 0)
+  ok: D7: two identical default calls agree edge for edge (reproducible without asking)
+  ok: D7 negative control: the default is the SAME answer as asking for no bound explicitly
+  ok: D7: a ceiling the caller sets is published as asked, not silently raised
+  ok: D7: a walk that hits its ceiling DECLARES a sample (truncated + the reason)
+  ok: D7: a sampled answer is a SUBSET, never larger than the unbounded one
+  ok: door: a blank symbol is REFUSED instead of echoed back as a not-found scan
+  ok: door: a fractional maxDepth is refused, never floored
+  ok: door: a fractional maxEdges is refused, never floored
+  FAIL: D11: bb_graph edges expose the stored enrichment why (role/criticality + inferredAt) []
+  ok: door: an omitted maxDepth applies the DECLARED default (5) — the same default the engine uses
+  FAIL: graph session TypeError: Spread syntax requires ...iterable not be null or undefined
+    at /home/ishaq2321/mcp/backbencher-brain/script/verify-graph.ts:416:54
+    at processTicksAndRejections (native:7:39)
+
+GRAPH: 2 FAILURES
+
+[INFO] [23:43:59] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:43:59] [parallel-indexer] project index built {"ext":".ts","files":2,"types":1}
+[INFO] [23:44:00] [parallel-indexer] worker pool complete {"files":4,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:44:00] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"4a68c4a4","danglingSources":8,"totalRelationships":26}
+[INFO] [23:44:00] [project-health] project health computed {"projectId":"4a68c4a468b5a39eb90282f61ac64ddf27dabf71","complexityScore":94,"maintainabilityScore":88,"techDebtScore":100,"codeQualityScore":94,"languages":3,"bottlenecks":0}

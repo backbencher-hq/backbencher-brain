@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/visualize-owner-fold",
+  "command": [
+    "bun",
+    "run",
+    "script/m13/verify-visualize-owner-fold.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:55:56.127Z",
+  "endedAt": "2026-11-19T04:55:57.174Z",
+  "durationMs": 1047,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 119,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "[brain] preparing the parallel worker pool (1 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 13ms [plan=linear largest-intermediate=10]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 9 relationships (0 patterns) in 6ms\n        ⚠ 3 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 1ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(5ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 4ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 1ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\n",
+  "stderr": "[INFO] [23:55:56] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [23:55:56] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":1}\n[INFO] [23:55:57] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [23:55:57] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"0f9efc75\",\"danglingSources\":3,\"totalRelationships\":12}\n[INFO] [23:55:57] [project-health] project health computed {\"projectId\":\"0f9efc75ce20306ef10fccc9bbc925e90cb16c15\",\"complexityScore\":95,\"maintainabilityScore\":85,\"techDebtScore\":100,\"codeQualityScore\":93,\"languages\":1,\"bottlenecks\":0}\n[INFO] [23:55:57] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [23:55:57] [dependency-graph-visualizer] ✅ Graph Data Generated: 3 nodes, 2 links\n76 | const reply = async (args: Record<string, unknown>): Promise<string> =>\n77 |   (await handlers.bb_visualize(args, ctx)).content[0].text as string\n78 | const json = async (args: Record<string, unknown>): Promise<any> =>\n79 |   JSON.parse(await reply({ ...args, format: \"json\" }))\n80 | const byId = (r: any): Record<string, string> =>\n81 |   Object.fromEntries(r.nodes.map((n: any) => [n.id, `${n.name}:${n.type}`]))\n                            ^\nTypeError: undefined is not an object (evaluating 'r.nodes.map')\n      at byId (/home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-owner-fold.ts:81:24)\n      at /home/ishaq2321/mcp/backbencher-brain/script/m13/verify-visualize-owner-fold.ts:86:17\n\nBun v1.3.14 (Linux x64)\n",
+  "stdoutBytes": 954,
+  "stderrBytes": 1664,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T045557Z-cp1f-regress-visualize-owner-fold.json"
+}

@@ -1,0 +1,27 @@
+[INFO] [23:34:07] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [23:34:07] [ast-engine] language grammar allocated {"language":"go"}
+[INFO] [23:34:07] [ast-engine] language parser loaded {"language":"go","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-go.wasm"}
+files=26 identifier_usage rows: same-file=49 cross-file=40
+stored baseline on the bettercap index (ISSUE-04 triage census): identifier_usage 366 total, 366 anchored, 0 leaf, 0 cross-file
+
+registered callbacks now carrying a cross-file read row:
+  jsOnEventFunc: 1 row(s) session.go <- Start:336
+  jsEnvFunc: 1 row(s) session.go <- Start:330
+  jsRunFunc: 1 row(s) session.go <- Start:331
+  jsFileExistsFunc: 1 row(s) session.go <- Start:332
+  jsLoadJSONFunc: 1 row(s) session.go <- Start:333
+  jsSaveJSONFunc: 1 row(s) session.go <- Start:334
+  jsSaveToFileFunc: 1 row(s) session.go <- Start:335
+  jsRemoveEventListenerFunc: 1 row(s) session.go <- Start:337
+
+fabrication controls (import/predeclared/param names): 0 row(s) []
+
+sample cross-file rows:
+  module_param.go: MarshalJSON -> I @200
+  module_param_test.go: TestNewModuleParameter -> STRING @22
+  module_param_test.go: TestNewModuleParameter -> INT @30
+  module_param_test.go: TestNewStringParameter -> STRING @66
+  module_param_test.go: TestNewBoolParameter -> BOOL @77
+  module_param_test.go: TestNewIntParameter -> INT @88
+  module_param_test.go: TestNewDecimalParameter -> FLOAT @99
+  module_param_test.go: TestModuleParamValidate -> STRING @120

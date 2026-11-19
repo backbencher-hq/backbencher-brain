@@ -1,0 +1,235 @@
+[brain] preparing the parallel worker pool (7 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 26ms [plan=linear largest-intermediate=16]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 7 relationships (0 patterns) in 9ms
+        ⚠ 18 dangling sources, 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+  ✓ taint(1ms) + health(16ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: callers: is not an error {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mid",
+    "symbolType": "function",
+    "f
+  ok: callers: JSON answer {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mid",
+    "symbolType"
+  ok: callers: returns the fields it exists to return {"root":{"id":"ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2","name":"mid","symbolType":"function","file":"src/mid.ts","line":2,"lineEnd":2,"language":"typescript","complexity":1,"isExtern
+  ok: callers: carries the freshness envelope {"fresh":2,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: callees: is not an error {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mid",
+    "symbolType": "function",
+    "f
+  ok: callees: JSON answer {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mid",
+    "symbolType"
+  ok: callees: returns the fields it exists to return {"root":{"id":"ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2","name":"mid","symbolType":"function","file":"src/mid.ts","line":2,"lineEnd":2,"language":"typescript","complexity":1,"isExtern
+  ok: callees: carries the freshness envelope {"fresh":2,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: trace: is not an error {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mid",
+    "symbolType": "function",
+    "f
+  ok: trace: JSON answer {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mid",
+    "symbolType"
+  ok: trace: returns the fields it exists to return {"root":{"id":"ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2","name":"mid","symbolType":"function","file":"src/mid.ts","line":2,"lineEnd":2,"language":"typescript","complexity":1,"isExtern
+  ok: trace: carries the freshness envelope {"fresh":3,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: dependencies: is not an error {
+  "dependencies": [
+    {
+      "file": "src/mid.ts",
+      "fileId": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts",
+      "depend
+  ok: dependencies: JSON answer {
+  "dependencies": [
+    {
+      "file": "src/mid.ts",
+      "fileId": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mi
+  ok: dependencies: returns the fields it exists to return {"dependencies":[{"file":"src/mid.ts","fileId":"ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts","dependencies":[{"path":"src/leaf.ts","external":false,"resolution":"resolved","stale":false}],"dep
+  ok: dependencies: carries the freshness envelope {"fresh":7,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: stats: is not an error {
+  "files": 7,
+  "linesOfCode": 8,
+  "avgFileSize": 78.57142857142857,
+  "avgFileSizeUnit": "bytes",
+  "symbols": 7,
+  "symbolsWithComplexi
+  ok: stats: JSON answer {
+  "files": 7,
+  "linesOfCode": 8,
+  "avgFileSize": 78.57142857142857,
+  "avgFileSizeUnit": "bytes",
+  "symbols": 7,
+  
+  ok: stats: returns the fields it exists to return {"files":7,"linesOfCode":8,"avgFileSize":78.57142857142857,"avgFileSizeUnit":"bytes","symbols":7,"symbolsWithComplexity":7,"avgComplexity":1,"relationships":25,"callEdges":17,"couplingRelationshipType
+  ok: stats: carries the freshness envelope {"fresh":7,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: complexity: is not an error {
+  "target": "src",
+  "scope": "file",
+  "metrics": {
+    "cyclomaticAvg": {
+      "value": 1,
+      "available": true
+    },
+    "cyclomat
+  ok: complexity: JSON answer {
+  "target": "src",
+  "scope": "file",
+  "metrics": {
+    "cyclomaticAvg": {
+      "value": 1,
+      "available": true
+
+  ok: complexity: returns the fields it exists to return {"target":"src","scope":"file","metrics":{"cyclomaticAvg":{"value":1,"available":true},"cyclomaticTotal":{"value":7,"available":true},"linesOfCode":{"value":8,"available":true},"couplingEdges":{"value
+  ok: complexity: carries the freshness envelope {"fresh":5,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: impact: is not an error {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "target": "leaf",
+    "found": true,
+  ok: impact: JSON answer {
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "target": "leaf"
+  FAIL: impact: returns the fields it exists to return {"summary":{"truncated":false,"truncationReason":null,"truncationReasons":[],"target":"leaf","found":true,"depthCap":5,"nodeBudget":200,"depthReached":1,"totalSymbols":3,"totalSymbolsIfKnown":3,"direc
+  FAIL: impact: carries the freshness envelope none
+  ok: test_mapping: is not an error {
+  "entries": [
+    {
+      "symbolId": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/top.ts:top:2",
+      "name": "top",
+      "symbolType
+  ok: test_mapping: JSON answer {
+  "entries": [
+    {
+      "symbolId": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/top.ts:top:2",
+      "name": "top
+  ok: test_mapping: returns the fields it exists to return {"entries":[{"symbolId":"ace816d391eaee7337023e0e49e6e9921d1e5110:src/top.ts:top:2","name":"top","symbolType":"function","file":"src/top.ts","line":2,"complexity":1,"gravity":33,"links":[],"strongestE
+  ok: test_mapping: carries the freshness envelope {"fresh":5,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: test_gaps: is not an error {
+  "gaps": [
+    {
+      "symbolId": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+      "name": "mid",
+      "symbolType": 
+  ok: test_gaps: JSON answer {
+  "gaps": [
+    {
+      "symbolId": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+      "name": "mid",
+
+  ok: test_gaps: returns the fields it exists to return {"gaps":[{"symbolId":"ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2","name":"mid","symbolType":"function","file":"src/mid.ts","line":2,"category":"no_evidence","complexity":1,"gravity":73,
+  ok: test_gaps: carries the freshness envelope {"fresh":5,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: test_impact: is not an error {
+  "target": "leaf",
+  "found": true,
+  "directTests": [],
+  "indirectTests": [],
+  "affectedTestFiles": [],
+  "truncated": false,
+  "trunc
+  ok: test_impact: JSON answer {
+  "target": "leaf",
+  "found": true,
+  "directTests": [],
+  "indirectTests": [],
+  "affectedTestFiles": [],
+  "truncat
+  ok: test_impact: returns the fields it exists to return {"target":"leaf","found":true,"directTests":[],"indirectTests":[],"affectedTestFiles":[],"truncated":false,"truncationReason":null,"summary":{"returned":0,"total":0,"truncated":false,"truncationReason
+  ok: test_impact: carries the freshness envelope {"fresh":0,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: test_quality: is not an error {
+  "files": [
+    {
+      "relativePath": "spec/top.spec.ts",
+      "overall": 0.19999999999999998,
+      "dimensions": [
+        {
+       
+  ok: test_quality: JSON answer {
+  "files": [
+    {
+      "relativePath": "spec/top.spec.ts",
+      "overall": 0.19999999999999998,
+      "dimensions":
+  ok: test_quality: returns the fields it exists to return {"files":[{"relativePath":"spec/top.spec.ts","overall":0.19999999999999998,"dimensions":[{"id":"assertions","relevance":null,"evidenceStrength":0.3333333333333333,"penaltyPotential":0.6666666666666667
+  ok: test_quality: carries the freshness envelope {"fresh":2,"stale":0,"missing":0,"staleRatio":0,"mode":"complete","remediation":""}
+  ok: missing mode refused by validation, not by the dispatch fallback [negative] threw: bb_analyze: missing required option: mode
+  ok: unknown option is refused [negative] threw: bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases acc
+  ok: unknown option names the rule (unknown or irrelevant options) [negative] threw: bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases accepted: symbol, symbolName, query)
+  ok: unknown mode is refused [negative] threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, 
+  ok: unknown mode names the rule (mode must be one of) [negative] threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality
+  ok: blank mode is refused [negative] threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, 
+  ok: blank mode names the rule (mode must be one of) [negative] threw: bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality
+  ok: limit: 0 is refused [negative] bb_analyze dependencies: limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a rea
+  ok: limit: 0 names the rule (limit must be at least 1) [negative] bb_analyze dependencies: limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer
+  ok: limit over the graph ceiling is refused [negative] bb_analyze callers: limit must be between 1 and 5000 — refused rather than clamped, so a returned page always means the 
+  ok: limit over the graph ceiling names the rule (limit must be between 1 and 5000) [negative] bb_analyze callers: limit must be between 1 and 5000 — refused rather than clamped, so a returned page always means the page asked for. Above this the answer st
+  ok: limit over the collection ceiling is refused [negative] bb_analyze dependencies: limit must be between 1 and 2000 — refused rather than clamped, so a returned page always means
+  ok: limit over the collection ceiling names the rule (limit must be between 1 and 2000) [negative] bb_analyze dependencies: limit must be between 1 and 2000 — refused rather than clamped, so a returned page always means the page asked for. Above this the answ
+  ok: limit on a mode it does not bound is refused [negative] bb_analyze stats: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test
+  ok: limit on a mode it does not bound names the rule (limit does not apply to this mode) [negative] bb_analyze stats: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality) — refusing it ra
+  ok: target on a mode that has no target is refused [negative] bb_analyze stats: irrelevant options: target
+  ok: target on a mode that has no target names the rule (irrelevant options: target) [negative] bb_analyze stats: irrelevant options: target
+  ok: filePath on a mode that has no file scope is refused [negative] bb_analyze callers: irrelevant options: filePath
+  ok: filePath on a mode that has no file scope names the rule (irrelevant options: filePath) [negative] bb_analyze callers: irrelevant options: filePath
+  ok: blank target for a target mode is refused [negative] bb_analyze callers requires a non-empty target
+  ok: blank target for a target mode names the rule (requires a non-empty target) [negative] bb_analyze callers requires a non-empty target
+  ok: complexity refuses a symbol name is refused [negative] threw: complexity: no indexed file matches "mid" — pass a project-relative file path (e.g. src/core/engine.ts) or a dire
+  ok: complexity refuses a symbol name names the rule (no indexed file matches) [negative] threw: complexity: no indexed file matches "mid" — pass a project-relative file path (e.g. src/core/engine.ts) or a directory prefix (e.g. src/core). A symbol N
+  ok: negative limit is refused [negative] threw: bb_analyze: limit must be non-negative
+  ok: negative limit names the rule (non-negative) [negative] threw: bb_analyze: limit must be non-negative
+  ok: fractional limit is refused [negative] threw: bb_analyze: limit must be a whole number (got 2.5)
+  ok: fractional limit names the rule (whole number) [negative] threw: bb_analyze: limit must be a whole number (got 2.5)
+  ok: alias symbol= is accepted and identical {
+  "root": {
+    "id": "ace816d391eaee7337023e0e49e6e9921d1e5110:src/mid.ts:mid:2",
+    "name": "mi
+  ok: descriptor lists 11 modes 11
+  ok: descriptor registers mode callers missing
+  ok: descriptor registers mode callees missing
+  ok: descriptor registers mode trace missing
+  ok: descriptor registers mode dependencies missing
+  ok: descriptor registers mode stats missing
+  ok: descriptor registers mode complexity missing
+  ok: descriptor registers mode impact missing
+  ok: descriptor registers mode test_mapping missing
+  ok: descriptor registers mode test_gaps missing
+  ok: descriptor registers mode test_impact missing
+  ok: descriptor registers mode test_quality missing
+An1: KNOWN-GAP (82/84 passed, 27 negatives)
+
+[INFO] [23:48:04] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [23:48:04] [parallel-indexer] project index built {"ext":".ts","files":7,"types":1}
+[INFO] [23:48:04] [parallel-indexer] worker pool complete {"files":7,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[WARN] [23:48:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"ace816d3","danglingSources":18,"totalRelationships":25}
+[INFO] [23:48:04] [project-health] project health computed {"projectId":"ace816d391eaee7337023e0e49e6e9921d1e5110","complexityScore":95,"maintainabilityScore":100,"techDebtScore":100,"codeQualityScore":98,"languages":1,"bottlenecks":0}

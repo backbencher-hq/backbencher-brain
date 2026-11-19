@@ -1,0 +1,18 @@
+  FAIL: E4: setup — ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/7921d3e0eee7600b9b6344d8f8dd1
+node:fs:1370
+  const result = binding.mkdir(
+                         ^
+
+Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/f121368b0357e3824ab95332b3eef99eee3cf0b3'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async refactor (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m15/verify-edit-crossfile.ts:128:9)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/m15/verify-edit-crossfile.ts:146:15) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'mkdir',
+  path: '/home/ishaq2321/.bb/projects/f121368b0357e3824ab95332b3eef99eee3cf0b3'
+}
+
+Node.js v22.22.1

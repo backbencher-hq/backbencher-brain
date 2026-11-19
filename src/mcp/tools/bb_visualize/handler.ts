@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ToolHandler } from "../shared"
-import { textResult } from "../shared"
+import { boundedResult, textResult } from "../shared"
 import { resolveRowsFreshnessDetailed, buildStalenessEnvelope, FRESHNESS_REMEDIATION_MANUAL_ONLY } from "../../../brain/freshness"
 import { BrainDatabase } from "../../../brain/database"
 import { visualizeProject, formatVisualization, renderVisualizationStudio, type VisualizationRequest, type VisualizationScope, type VisualizationLayout, type VisualizationResult } from "../../../intelligence/visualization/visualization-engine"
@@ -189,9 +189,34 @@ export const handler: ToolHandler = async (args, { projectId }) => {
   const envelope = buildStalenessEnvelope(envelopeSource, envelopeScope)
 
   if (request.format === "json") {
+    // ONE bounded envelope, summary FIRST: a paged/filtered graph answer used to
+    // carry `truncation` at 99.9% of the payload, so a host cap removed exactly the
+    // declaration that the answer was a page (measured: 478,629 of 479,011 bytes).
     const parsed = JSON.parse(formatVisualization(result))
     parsed.freshness = envelope
-    return textResult(JSON.stringify(parsed, null, 2))
+    const page = result.considered?.page ?? null
+    const summary = {
+      truncated: result.truncation.truncated,
+      truncationReason: result.truncation.truncated ? (result.truncation.reason ?? "output limits") : null,
+      truncationReasons: result.truncation.truncated && result.truncation.reason ? [result.truncation.reason] : [],
+      scope: result.scope,
+      target: result.target ?? null,
+      view: result.view,
+      layout: result.layout,
+      declaredAbsent: result.declaredAbsent,
+      totalNodesAvailable: result.totalNodesAvailable,
+      originalNodes: result.truncation.originalNodes,
+      originalLinks: result.truncation.originalLinks,
+      returnedNodes: result.nodes.length,
+      returnedLinks: result.links.length,
+      maxNodes: result.truncation.maxNodes,
+      maxLinks: result.truncation.maxLinks,
+      offset: result.truncation.offset,
+      nextOffset: result.truncation.nextOffset,
+      page,
+      freshness: envelope,
+    }
+    return boundedResult(summary, parsed as unknown as Record<string, unknown>)
   }
   if (request.format === "html") {
     // The HTML payload carries the same freshness facts as the JSON envelope, so

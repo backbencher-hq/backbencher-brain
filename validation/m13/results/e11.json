@@ -43,12 +43,12 @@
     {
       "name": "honesty audit: no unjustified regex (every op has a justification)",
       "pass": true,
-      "detail": "L531:exec(line), L928:test(error.message), L1632:test(indent), L1819:test(newName)"
+      "detail": "L548:exec(line), L1025:test(error.message), L1758:test(indent), L1945:test(newName)"
     },
     {
       "name": "honesty audit: text slice/split ops are byte-offset manipulations (justified)",
       "pass": true,
-      "detail": "21 slice/split calls (all byte-range/line ops)"
+      "detail": "27 slice/split calls (all byte-range/line ops)"
     },
     {
       "name": "honesty audit: safety-primitives.ts has zero regex/text-scan in code (pure AST)",
@@ -76,5 +76,5 @@
   "limitations": [
     "A handful of justified regexes remain (identifier validation, whitespace checks, syntax-error filter) — each enumerated below."
   ],
-  "generatedAt": "2026-11-05T04:11:58.210Z"
+  "generatedAt": "2026-11-19T04:25:48.650Z"
 }

@@ -1,0 +1,7 @@
+  FAIL: test-quality session Error: ENOENT: no such file or directory, mkdir '/home/ishaq2321/.bb/projects/ef7fbdc06a7be87591ae019481d14ecc0288f307'
+    at mkdirSync (node:fs:1370:26)
+    at acquireIndexLock (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/index-lock.ts:447:9)
+    at async indexProjectParallel (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/src/ast/parallel-indexer.ts:7046:32)
+    at async <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/pre-fix/script/verify-test-quality.ts:55:3)
+
+TEST-QUALITY: 1 FAILURES

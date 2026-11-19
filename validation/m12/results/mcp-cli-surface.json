@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "name": "m12.47-mcp-cli-surface",
-  "passed": true,
-  "advertisedLanguages": 41,
-  "corpusFiles": 97,
-  "indexedFiles": 97,
-  "toolCount": 10,
+  "passed": false,
+  "advertisedLanguages": 45,
+  "corpusFiles": 120,
+  "indexedFiles": 120,
+  "toolCount": 16,
   "capabilities": [
     "indexed",
     "queried",
@@ -33,12 +33,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "c",
@@ -51,12 +54,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "clean",
@@ -69,12 +75,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "clojure",
@@ -87,12 +96,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "cpp",
@@ -105,12 +117,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "csharp",
@@ -123,12 +138,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "css",
@@ -141,30 +159,36 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "dart",
       "file": "dart/base.dart",
-      "symbol": "BaseService",
-      "line": 4,
+      "symbol": "base",
+      "line": 2,
       "capabilities": {
         "indexed": true,
         "queried": true,
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "elixir",
@@ -177,12 +201,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "erlang",
@@ -195,35 +222,20 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "fsharp",
       "file": "fsharp/Services.fs",
-      "symbol": "IDisposable",
-      "line": 3,
-      "capabilities": {
-        "indexed": true,
-        "queried": true,
-        "analyzed": true,
-        "documented": true,
-        "migrated": true,
-        "visualized": true,
-        "edited": true,
-        "cli": true,
-        "mcp": true
-      },
-      "errors": []
-    },
-    {
-      "language": "go",
-      "file": "go/service.go",
-      "symbol": "service",
+      "symbol": "Services",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -231,17 +243,20 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
-      "language": "graphql",
-      "file": "graphql/Schema.graphql",
-      "symbol": "User",
+      "language": "go",
+      "file": "go/service.go",
+      "symbol": "service",
       "line": 6,
       "capabilities": {
         "indexed": true,
@@ -249,12 +264,36 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
+    },
+    {
+      "language": "graphql",
+      "file": "graphql/Schema.graphql",
+      "symbol": "User",
+      "line": 9,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": false,
+        "edited": true,
+        "cli": true,
+        "mcp": false
+      },
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "groovy",
@@ -267,12 +306,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "haskell",
@@ -285,17 +327,20 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
-      "language": "hcl",
-      "file": "hcl/Infrastructure.tf",
-      "symbol": "terraform",
+      "language": "html",
+      "file": "html/Page.html",
+      "symbol": "Page",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -303,30 +348,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
-    },
-    {
-      "language": "html",
-      "file": "html/Page.html",
-      "symbol": "content",
-      "line": 21,
-      "capabilities": {
-        "indexed": true,
-        "queried": true,
-        "analyzed": true,
-        "documented": true,
-        "migrated": true,
-        "visualized": true,
-        "edited": true,
-        "cli": true,
-        "mcp": true
-      },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "java",
@@ -339,12 +369,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "javascript",
@@ -357,48 +390,57 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "json",
-      "file": "json/package.json",
-      "symbol": "package",
-      "line": 1,
+      "file": "json/Duplicate.json",
+      "symbol": "outer",
+      "line": 3,
       "capabilities": {
         "indexed": true,
         "queried": true,
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "kotlin",
       "file": "kotlin/Models.kt",
-      "symbol": "User",
-      "line": 5,
+      "symbol": "Repository",
+      "line": 7,
       "capabilities": {
         "indexed": true,
         "queried": true,
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "lua",
@@ -411,30 +453,36 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "make",
       "file": "make/Build.mk",
-      "symbol": "all",
-      "line": 20,
+      "symbol": "HELP",
+      "line": 10,
       "capabilities": {
         "indexed": true,
         "queried": true,
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "markdown",
@@ -447,35 +495,41 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
-      "language": "objective-c",
-      "file": "objective-c/UserService.m",
-      "symbol": "UserService",
-      "line": 7,
+      "language": "matlab",
+      "file": "matlab/Service.m",
+      "symbol": "Service",
+      "line": 3,
       "capabilities": {
         "indexed": true,
         "queried": true,
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
-      "language": "perl",
-      "file": "perl/Service.pm",
-      "symbol": "Service",
+      "language": "nim",
+      "file": "nim/helpers.nim",
+      "symbol": "helpers",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -483,12 +537,57 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
+    },
+    {
+      "language": "objective-c",
+      "file": "objective-c/UserService.h",
+      "symbol": "UserStore",
+      "line": 7,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": false,
+        "edited": true,
+        "cli": true,
+        "mcp": false
+      },
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
+    },
+    {
+      "language": "perl",
+      "file": "perl/BaseService.pm",
+      "symbol": "BaseService",
+      "line": 1,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": false,
+        "edited": true,
+        "cli": true,
+        "mcp": false
+      },
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "php",
@@ -501,12 +600,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "powershell",
@@ -519,12 +621,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "python",
@@ -537,12 +642,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "r",
@@ -555,12 +663,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "ruby",
@@ -573,12 +684,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "rust",
@@ -591,12 +705,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "scala",
@@ -609,12 +726,36 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
+    },
+    {
+      "language": "scss",
+      "file": "scss/Theme.scss",
+      "symbol": "t",
+      "line": 1,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": false,
+        "edited": true,
+        "cli": true,
+        "mcp": false
+      },
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "sql",
@@ -627,17 +768,20 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "svelte",
-      "file": "svelte/Card.svelte",
-      "symbol": "Card",
+      "file": "svelte/App.svelte",
+      "symbol": "App",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -645,12 +789,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": false,\n    \"truncationReason\": null,\n    \"truncationReasons\": [],\n    \"scope\": \"project\",\n    \"target\": null,\n    \"view\": \"graph\",\n    \"layout\": \"",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "swift",
@@ -663,12 +810,36 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
+    },
+    {
+      "language": "toml",
+      "file": "toml/Page.toml",
+      "symbol": "title",
+      "line": 7,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": false,
+        "edited": true,
+        "cli": true,
+        "mcp": false
+      },
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "typescript",
@@ -681,17 +852,20 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "vue",
-      "file": "vue/Button.vue",
-      "symbol": "Button",
+      "file": "vue/UserList.vue",
+      "symbol": "UserList",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -699,16 +873,19 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "xml",
-      "file": "xml/Doctype.xml",
+      "file": "xml/ConditionalSection.xml",
       "symbol": "catalog",
       "line": 2,
       "capabilities": {
@@ -717,12 +894,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "yaml",
@@ -735,17 +915,20 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     },
     {
       "language": "zig",
-      "file": "zig/geometry.zig",
-      "symbol": "Point",
+      "file": "zig/storage.zig",
+      "symbol": "RingBuffer",
       "line": 9,
       "capabilities": {
         "indexed": true,
@@ -753,17 +936,15 @@
         "analyzed": true,
         "documented": true,
         "migrated": true,
-        "visualized": true,
+        "visualized": false,
         "edited": true,
         "cli": true,
-        "mcp": true
+        "mcp": false
       },
-      "errors": []
+      "errors": [
+        "handler visualize: {\n  \"summary\": {\n    \"truncated\": true,\n    \"truncationReason\": \"output limits\",\n    \"truncationReasons\": [\n      \"output limits\"\n    ],\n    \"scope\": \"project\",\n    \"target\": null,",
+        "MCP search: No index found for /tmp/bb-m12-surface-1Jfe6m. Run: bb index \"/tmp/bb-m12-surface-1Jfe6m\"."
+      ]
     }
-  ],
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.940Z",
-    "contentSha256": "d50de0a5736ed2a5503f0c3452db46de2b2cebec148ae161e3aedbb2bb64d0cf"
-  }
+  ]
 }

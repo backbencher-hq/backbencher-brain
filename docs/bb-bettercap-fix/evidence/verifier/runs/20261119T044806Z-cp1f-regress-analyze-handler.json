@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "cp1f-regress/analyze-handler",
+  "command": [
+    "bun",
+    "run",
+    "script/m13/verify-analyze-handler.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain",
+  "startedAt": "2026-11-19T04:48:06.141Z",
+  "endedAt": "2026-11-19T04:48:06.767Z",
+  "durationMs": 625,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "gitDirtyFiles": 107,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/verifier/bbdata-cp1f",
+  "stdout": "  ok: bb_analyze is registered as a public tool found\n  ok: mutability is read read\n  ok: requiresIndex is true true\n  ok: modes are exactly the 11 the handler implements callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality\n  ok: freshnessModes cover every mode callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality\n  ok: required is exactly [mode] [\"mode\"]\n  ok: parameters are exactly filePath, limit, mode, target filePath,limit,mode,target\n  ok: mode enum equals the registered modes callers,callees,trace,dependencies,stats,complexity,impact,test_mapping,test_gaps,test_impact,test_quality\n  ok: limit is declared as a number number\n  ok: descriptor defaults name the real per-mode defaults {\"limit\":\"25 edges per direction (callers/callees/trace); 20 files (dependencies); 50 entries (test_mapping/test_gaps); 50 files (test_quality)\",\"target\":\"required for callers, callees, trace, impact, test_impact; optional file path or directory prefix for complexity\",\"filePath\":\"optional path prefix (or an exact file) for dependencies, test_mapping, test_gaps, test_quality\"}\n  ok: validation layer accepts the aliases the descriptor documents {\"symbol\":\"target\",\"symbolName\":\"target\",\"query\":\"target\"}\n  ok: validation requires mode bb_analyze: missing required option: mode\n  ok: validation rejects an unknown option bb_analyze: unknown or irrelevant options: verbose — accepted options: mode, target, filePath, limit (aliases accepted: symbol, symbolName, query)\n  ok: validation rejects an unknown mode bb_analyze: mode must be one of: callers, callees, trace, dependencies, stats, complexity, impact, test_mapping, test_gaps, test_impact, test_quality\n  ok: validation forgives symbol= as target accepted\n  ok: validation rejects conflicting alias and canonical bb_analyze: target and symbol are aliases with different values (\"a\" vs \"b\") — pass one\n  ok: handler registry answers bb_analyze function\n  ok: handler is not shared with another tool name [negative] distinct function\nAn2: VERIFIED (18/18 passed, 1 negative)\n",
+  "stderr": "",
+  "stdoutBytes": 2137,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/docs/bb-bettercap-fix/evidence/verifier/runs/20261119T044806Z-cp1f-regress-analyze-handler.json"
+}

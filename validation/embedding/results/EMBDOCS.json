@@ -1,0 +1,88 @@
+{
+  "issue": "EMB-DOCS",
+  "code": "EMBDOCS",
+  "status": "known-gap",
+  "checks": 57,
+  "passed": 55,
+  "failed": 2,
+  "negativeCases": 3,
+  "mutants": [
+    {
+      "name": "a documented knob is removed from the doc but kept in code (undocumented knob)",
+      "applied": true,
+      "caught": true,
+      "skipped": false
+    },
+    {
+      "name": "the stored local label regresses to the unversioned string",
+      "applied": true,
+      "caught": true,
+      "skipped": false
+    },
+    {
+      "name": "the false unconditional retry claim returns outside the quoted message",
+      "applied": false,
+      "caught": false,
+      "skipped": false
+    },
+    {
+      "name": "the doc stops saying where the primary's retry lives",
+      "applied": true,
+      "caught": true,
+      "skipped": false
+    }
+  ],
+  "currentCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "verifierCommand": "npx tsx script/verify-embedding-docs.ts",
+  "evidenceFile": "EMBDOCS.json",
+  "generatedAt": "2026-11-19T04:08:17.094Z",
+  "documentedKnobs": [
+    "BB_EMBEDDING_API_KEY",
+    "BB_EMBEDDING_BASE_URL",
+    "BB_EMBEDDING_BATCH_LIMIT",
+    "BB_EMBEDDING_CACHE_MAX",
+    "BB_EMBEDDING_CALL_TIMEOUT_MS",
+    "BB_EMBEDDING_DIMENSION",
+    "BB_EMBEDDING_DISABLED",
+    "BB_EMBEDDING_FALLBACK_API_KEY",
+    "BB_EMBEDDING_FALLBACK_BASE_URL",
+    "BB_EMBEDDING_FALLBACK_MODEL",
+    "BB_EMBEDDING_FALLBACK_RETRIES",
+    "BB_EMBEDDING_MAX_INPUTS",
+    "BB_EMBEDDING_MODEL",
+    "BB_EMBEDDING_QUEUE_LIMIT",
+    "BB_EMBEDDING_RETRY_BASE_MS",
+    "BB_EMBEDDING_RETRY_CAP_MS",
+    "BB_EMBEDDING_TIMEOUT_MS"
+  ],
+  "knobsReadBySrc": [
+    "BB_EMBEDDING_API_KEY",
+    "BB_EMBEDDING_BASE_URL",
+    "BB_EMBEDDING_BATCH_LIMIT",
+    "BB_EMBEDDING_CACHE_MAX",
+    "BB_EMBEDDING_CALL_TIMEOUT_MS",
+    "BB_EMBEDDING_DIMENSION",
+    "BB_EMBEDDING_DISABLED",
+    "BB_EMBEDDING_FALLBACK_API_KEY",
+    "BB_EMBEDDING_FALLBACK_BASE_URL",
+    "BB_EMBEDDING_FALLBACK_MODEL",
+    "BB_EMBEDDING_FALLBACK_RETRIES",
+    "BB_EMBEDDING_MAX_INPUTS",
+    "BB_EMBEDDING_MODEL",
+    "BB_EMBEDDING_QUEUE_LIMIT",
+    "BB_EMBEDDING_RETRY_BASE_MS",
+    "BB_EMBEDDING_RETRY_CAP_MS",
+    "BB_EMBEDDING_TIMEOUT_MS"
+  ],
+  "localModelLabel": "local-word-vectors-v3",
+  "problems": [
+    "mutant [the false unconditional retry claim returns outside the quoted message] applied — mutation produced no change — fix the mutant",
+    "mutant [the false unconditional retry claim returns outside the quoted message] caught by the contract — survived"
+  ],
+  "limitations": [
+    "The knob contract is a NAME contract: it proves each documented BB_EMBEDDING_* var is loaded in src/, and that each one's BEHAVIOUR is what the doc says. Behaviour is asserted separately, not re-derived from the doc here.",
+    "Precedence over env vs config file is covered by script/m40/verify-a8-config.ts; this gate only proves the three var names are read in src/config/config.ts.",
+    "Doc mutants mutate the doc text in memory and re-run the real contract against it. EMBEDDINGS.md is never modified by this verifier.",
+    "Mutants are SKIPPED (not counted as failures) when the contract already fails, because a mutant applied to an already-broken document proves nothing about the mutant."
+  ]
+}

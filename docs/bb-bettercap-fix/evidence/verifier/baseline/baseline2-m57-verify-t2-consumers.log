@@ -1,0 +1,2 @@
+  ok U5: the search demotion comparator equals the canonical predicate
+  -- U1-U4, U6, U7 (live consumer re-measurement) skipped: set BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir>
