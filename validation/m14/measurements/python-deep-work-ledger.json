@@ -212,6 +212,55 @@
       "residualRows": 0,
       "source": "script/m14/oracles/python-truth-diff.ts"
     },
+    "postClosureRelationshipAudit": {
+      "ansibleEndpoint500": {
+        "calls": {"resolved": 7830, "ambiguous": 7917, "external": 615, "unresolved": 5877, "unexplained": 0},
+        "uses": {"resolved": 4525, "ambiguous": 7875, "external": 85, "unresolved": 2696, "unexplained": 0},
+        "contains": {"resolved": 2455, "ambiguous": 3334, "unexplained": 0},
+        "imports": {"resolved": 118, "ambiguous": 13, "external": 3071, "unexplained": 0},
+        "references": {"resolved": 1053, "ambiguous": 460, "external": 936, "unresolved": 914, "unexplained": 0},
+        "exports": {"resolved": 26, "ambiguous": 1, "unexplained": 0},
+        "extends": {"resolved": 519, "ambiguous": 40, "external": 25, "unresolved": 140, "unexplained": 0},
+        "implements": {"resolved": 26, "ambiguous": 0, "external": 2, "unresolved": 11, "unexplained": 0},
+        "overrides": {"resolved": 532, "ambiguous": 900, "unexplained": 0},
+        "instantiates": {"resolved": 363, "ambiguous": 20, "unexplained": 0},
+        "decorates": {"resolved": 52, "ambiguous": 2, "external": 60, "unresolved": 622, "unexplained": 14}
+      },
+      "ansibleHeritage": {
+        "classes": 2081,
+        "clauses": 1820,
+        "covered": 1750,
+        "uncovered": 70,
+        "keywordArguments": 69,
+        "callBases": 1,
+        "source": "script/m14/python-heritage-probe.ts"
+      },
+      "constructSample": {
+        "filesParsed": 978,
+        "parseFailures": 0,
+        "moduleScopeAllAssignments": 34,
+        "moduleScopeLiteralExports": 33,
+        "listAll": 29,
+        "tupleAll": 4,
+        "setAll": 0,
+        "interfaceHeaders": 45,
+        "source": "script/m14/python-construct-probe.ts"
+      },
+      "ansibleEndpointDefects": {
+        "d1": 0,
+        "d2b": 0,
+        "d3": 0,
+        "d4": 0,
+        "d5UsesSelfLoops": 78,
+        "d6": 0,
+        "d7": 0,
+        "source": "script/m14/python-endpoint-defects.ts"
+      },
+      "overrideGuesses": {
+        "ansibleGuessedEdges": 0,
+        "source": "script/m14/python-guess-accuracy.ts"
+      }
+    },
     "heritageResidual": {
       "clauses": 23422,
       "covered": 23171,
