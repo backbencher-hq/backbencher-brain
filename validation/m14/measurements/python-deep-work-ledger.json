@@ -176,6 +176,34 @@
       "status": "identity fixes proven; remaining buckets require separate oracle-versus-analyzer adjudication",
       "source": "script/m14/oracles/python-truth-diff.ts"
     },
+    "postCommitDifferentialNormalizedRerun": {
+      "files": 2373,
+      "calls": {
+        "missing": 6,
+        "unexplained": 0,
+        "classification": "6 module/lambda scope-attribution candidates; no unexplained call edges after local-binding normalization"
+      },
+      "references": {
+        "missing": 211,
+        "unexplained": 117,
+        "classification": "nested/type-scope attribution residual; not yet classified as production defects"
+      },
+      "imports": {
+        "unexplained": 29,
+        "classification": "future-import source identity mismatch"
+      },
+      "decorates": {
+        "unexplained": 24,
+        "classification": "Cython/framework decorator source identity residual"
+      },
+      "contains": {
+        "missing": 1,
+        "unexplained": 0,
+        "classification": "branch-alternative duplicate class scope"
+      },
+      "residualRows": 388,
+      "source": "script/m14/oracles/python-truth-diff.ts"
+    },
     "heritageResidual": {
       "clauses": 23422,
       "covered": 23171,

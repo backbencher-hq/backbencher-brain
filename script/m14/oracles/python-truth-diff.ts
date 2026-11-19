@@ -252,7 +252,12 @@ for (const f of files) {
   for (const r of res.relationships ?? []) {
     const t = String(r.type)
     if (!TYPES.includes(t as any)) continue
-    const k = key(t, String(r.source), String(r.target), t === "contains" ? r.line_number : undefined)
+    let target = String(r.target)
+    if ((r.metadata as any)?.localBinding === true) {
+      const sep = target.indexOf("\u0000")
+      if (sep >= 0) target = target.slice(sep + 1)
+    }
+    const k = key(t, String(r.source), target, t === "contains" ? r.line_number : undefined)
     if ((r.metadata as any)?.reasonCode === "first-parent-guess") guessKeys.add(k)
     else { analyzerKeys.add(k); bump(analyzerCount, k) }
   }
