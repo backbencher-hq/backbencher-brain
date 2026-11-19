@@ -152,6 +152,30 @@
       "source": "script/m14/python-endpoint-resolution.ts",
       "artifact": "/tmp/python-endpoint-resolution-full.json"
     },
+    "postCommitDifferentialIdentityRerun": {
+      "files": 2373,
+      "repositories": [
+        "ansible",
+        "cython",
+        "requests"
+      ],
+      "contains": {
+        "missing": 1,
+        "unexplained": 0
+      },
+      "overrides": {
+        "missing": 0,
+        "unexplained": 0
+      },
+      "remainingCallMismatch": 1302,
+      "remainingCallUnexplained": 1299,
+      "remainingReferenceMismatch": 211,
+      "remainingReferenceUnexplained": 117,
+      "futureImportUnexplained": 29,
+      "decoratorUnexplained": 24,
+      "status": "identity fixes proven; remaining buckets require separate oracle-versus-analyzer adjudication",
+      "source": "script/m14/oracles/python-truth-diff.ts"
+    },
     "heritageResidual": {
       "clauses": 23422,
       "covered": 23171,

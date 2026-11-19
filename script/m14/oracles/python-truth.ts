@@ -234,6 +234,11 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     seen.add(k)
     edges.push({ type, from, to, line })
   }
+  const RESERVED_CONTAINS_ENDPOINTS = new Set([
+    "unknown", "SCSS_FILE_SCOPE", "window", "exports", "default", "GlobalScope",
+  ])
+  const containsTarget = (owner: string, name: string): string =>
+    RESERVED_CONTAINS_ENDPOINTS.has(name) ? `${owner}.${name}` : name
   /**
    * Add WITHOUT the line in the dedup key, for a relation the analyzer identifies by KIND
    * rather than by site.
@@ -353,7 +358,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // scripting-family contract, and it is a SEMANTIC choice about Python, not a
         // quirk of one analyzer.
         const top = stack[stack.length - 1]
-        if (top.kind === "class") add("contains", top.cls.name, name, cls.line)
+        if (top.kind === "class") add("contains", top.cls.name, containsTarget(top.cls.name, name), cls.line)
         stack.push({ kind: "class", cls })
         walkSkeleton(k)
         stack.pop()
@@ -364,7 +369,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const top = stack[stack.length - 1]
         if (top.kind === "class") {
           if (!top.cls.methods.has(name)) top.cls.methods.set(name, line)
-          add("contains", top.cls.name, name, line)
+          add("contains", top.cls.name, containsTarget(top.cls.name, name), line)
         } else if (top.kind === "func") {
           // A nested `def` is lexically inside the outer one, and Python scopes it
           // there. It is NOT a module- or class-level declaration, so it is
@@ -696,7 +701,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           ? undefined
           : classes.findLast((x) => x.name === b && x.line < c.line && x.name !== c.name)
         if (base && base.methods.has(m)) {
-          add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
+          add("overrides", `${c.name}.${m}`, m, line)
           // MRO-FIRST, and only the first. Python resolves an attribute to the FIRST base in
           // MRO order that declares it, so that is the one override that exists; every further
           // base that happens to declare the same name is SHADOWED, not overridden.
@@ -709,7 +714,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           // and the correct answer is `RemoteConfig` alone.
           break
         }
-        if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
+        if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, m, line)
       }
     }
   }
@@ -1150,7 +1155,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // PY-6 is about.
         if (attr && obj && (obj.text === "self" || obj.text === "cls") && !instanceAttrSeen.has(`${ownerClass}\u0000${attr.text}`)) {
           instanceAttrSeen.add(`${ownerClass}\u0000${attr.text}`)
-          add("contains", ownerClass, attr.text, n.startPosition.row + 1)
+          add("contains", ownerClass, containsTarget(ownerClass, attr.text), n.startPosition.row + 1)
         }
       }
     }
@@ -1271,14 +1276,14 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // exists and is not an identifier it is one of the container shapes `targetNameNodes`
         // knows, and each name in it is this class's member at its own line.
         for (const member of targetNameNodes(left)) {
-          add("contains", cls, member.text, member.startPosition.row + 1)
+          add("contains", cls, containsTarget(cls, member.text), member.startPosition.row + 1)
         }
       } else if (nameNode && nameNode.type === "identifier") {
         // PER-SITE, not per-name. `if c: X = A else: X = B` is two assignments in the
         // source and the analyzer publishes two per-site members, which is what lets a
         // `contains` edge resolve by name AND line. Deduplicating by name is right for an
         // INSTANCE attribute (`self.x` in three methods is one attribute) and wrong here.
-        add("contains", cls, nameNode.text, n.startPosition.row + 1)
+        add("contains", cls, containsTarget(cls, nameNode.text), n.startPosition.row + 1)
       }
     }
     // A BINDER STATEMENT IN A CLASS BODY DECLARES A MEMBER. Python's class body is a NAMESPACE,
@@ -1308,7 +1313,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       // rather than in meaning.
       if (target) {
         const targetLine = target.startPosition.row + 1
-        for (const nameNode of targetNameNodes(target)) add("contains", cls, nameNode.text, targetLine)
+        for (const nameNode of targetNameNodes(target)) add("contains", cls, containsTarget(cls, nameNode.text), targetLine)
       }
     }
     // A CALL AT CLASS SCOPE is a call made by the class, and the lane scopes it to the
