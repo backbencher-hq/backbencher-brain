@@ -296,4 +296,91 @@ export const CSHARP_MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).filter((x: any) => x.type !== "renders"),
     }),
   },
+  // ───────────────────────────────────────────────────────────────────────────────────────────
+  // DECORATES (P0-1, 2026-11-19). Three mutants, one per claim, because the value was ABSENT
+  // for the lane's whole history and a revert that silently restores that absence must fail.
+  //
+  // The first is the value-level revert (the emission is gone). The other two are the claims the
+  // fixture's controls exist for: the ATTRIBUTE KIND split (marker vs applied callable) and the
+  // LEAK refusal (a member inheriting its owner's attributes). A pass that got the value right but
+  // conflated the two kinds, or that sourced attributes from an ancestor, would satisfy a naive
+  // "does `decorates` fire" check while being wrong — and both are plausible implementations.
+  {
+    id: "csharp/drop-decorates-edges",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "P0-1 revert: drops every `decorates` relationship. C# attributes are APPLIED to declarations (`[Obsolete] class C` names the `Obsolete` callable and applies it to `C`), and the pinned grammar carries the construct as `attribute_list` > `attribute` (3 of the 239 named node types) — so the value's old 'ontological' ruling was falsified and the emission is now the contract. Caught by csharp/decorates-attribute, which requires five `decorates` edges; a revert that drops the value leaves the suite red. The corpus DOES exercise this one (7,769 attribute sites over 655 files), so the population and the fixture agree — unlike `renders`, whose proof is behavioural only.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "decorates"),
+    }),
+  },
+  {
+    id: "csharp/decorates-kind-conflated",
+    language: "csharp",
+    defectClass: "metadata-loss",
+    description:
+      "P0-1 regression: the ATTRIBUTE KIND split is dropped, so every `decorates` edge claims the same class. A bare marker (`[Flags]`) and an applied callable (`[Obsolete(\"x\")]`) are DIFFERENT claims, and the whole honesty of the ruling rests on being able to say how many of each there are — 7,769 attribute sites in the powershell corpus, of which 6,024 carry arguments. A pass that publishes the value but conflates the two would satisfy 'does decorates fire' while being wrong. Caught by csharp/decorates-attribute's `attributeKind` pins (`marker` for `[Flags]`, `applied_callable` for `[Obsolete(\"x\")]`).",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "decorates"
+          ? { ...x, metadata: { ...(x.metadata ?? {}), attributeKind: "applied_callable" } }
+          : x),
+    }),
+  },
+  {
+    id: "csharp/decorates-accessor-dropped",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "P0-1 regression: an ACCESSOR's attribute is dropped. `public int R { [Obsolete] get; set; }` writes the attribute on the `accessor_declaration`, and an accessor is NOT a symbol in this lane — so a pass that only looks at symbol hosts collects the site, finds no symbol named `get`, and discards it. That is exactly the first implementation of this pass: it was silent, and 24 accessor hosts in a 300-file draw would have lost their edges with no error. Caught by csharp/decorates-attribute's `R -> Obsolete` expectation (the source must be the PROPERTY that owns the accessor list).",
+    transform: (r: any) => {
+      // Simulate the defect at the result level: the accessor's edge is the one whose target is
+      // `Obsolete` and whose source is a property that ALSO carries an `Obsolete` edge from the
+      // class — indistinguishable by name, so the transform drops the edge whose line is the
+      // accessor's own line rather than the property's. Simpler and faithful: drop every
+      // `decorates` edge whose source is a property named R, i.e. the accessor-sourced one.
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter(
+          (x: any) => !(x.type === "decorates" && x.source === "R")),
+      }
+    },
+  },
+  {
+    id: "csharp/decorates-leaks-from-owner",
+    language: "csharp",
+    defectClass: "edge-fabrication",
+    description:
+      "P0-1 regression, the most plausible way this pass could be wrong: the attribute walk climbs to the nearest ATTRIBUTED ANCESTOR, so a member with no attribute of its own inherits its owner's. In `[Obsolete] class C { void M() {} }` that publishes `C -> Obsolete` AND `M -> Obsolete` — a fabricated edge for a declaration that carries no attribute. The `attribute_list` is a DIRECT child of its host, which is exactly what makes the correct implementation cheap and this one wrong. Caught by csharp/decorates-attribute's forbidRelationships (`M -> Obsolete` and `N -> Obsolete` must both be absent).",
+    transform: (r: any) => {
+      const out: any[] = []
+      const seen = new Set<string>()
+      for (const x of r.relationships ?? []) {
+        if (x.type !== "decorates") { out.push(x); continue }
+        const key = `${x.source}|${x.target}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push(x)
+      }
+      // For every decorates edge whose source is a MEMBER, also publish it from that member's
+      // owner — the shape a nearest-attributed-ancestor walk produces.
+      const ownerOf = new Map<string, string>()
+      for (const s of r.symbols ?? []) {
+        if (s?.name && s?.ownerName) ownerOf.set(s.name, s.ownerName)
+      }
+      for (const x of [...out]) {
+        if (x.type !== "decorates") continue
+        const owner = ownerOf.get(x.source)
+        if (!owner) continue
+        const key = `${owner}|${x.target}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push({ ...x, source: owner, metadata: { ...(x.metadata ?? {}), leakedFromOwner: true } })
+      }
+      return { ...r, relationships: out }
+    },
+  },
 ]

@@ -11,8 +11,8 @@
     { "name": "PlainAttributed", "kind": "class", "ownerName": "Probe" },
     { "name": "AliasAttributed", "kind": "class", "ownerName": "Probe", "comment": "the attribute is written `[global::System.Serializable]` here and plain on its twin — 95 rows of this position exist in the pinned corpora" },
     { "name": "Conversions", "kind": "class", "ownerName": "Probe" },
-    { "name": "implicit PlainQualified", "kind": "method", "ownerName": "Conversions", "meta.isConversionOperator": true },
-    { "name": "implicit Probe.PlainQualified", "kind": "method", "ownerName": "Conversions", "meta.isConversionOperator": true, "comment": "the qualified twin: pre-fix this SYMBOL name read `implicit global::Probe.PlainQualified` — no declared-type cleaning touches a symbol name" },
+    { "name": "implicit operator PlainQualified", "kind": "method", "ownerName": "Conversions", "meta.isConversionOperator": true },
+    { "name": "implicit operator Probe.PlainQualified", "kind": "method", "ownerName": "Conversions", "meta.isConversionOperator": true, "comment": "the qualified twin: pre-fix this SYMBOL name read `implicit global::Probe.PlainQualified` — no declared-type cleaning touches a symbol name" },
     { "name": "Bodies", "kind": "class", "ownerName": "Probe" },
     { "name": "QualifiedNew", "kind": "method", "ownerName": "Bodies" },
     { "name": "PlainNew", "kind": "method", "ownerName": "Bodies" },
@@ -60,7 +60,7 @@
     { "type": "references", "from": "Ret", "target": "Root", "line_number": 106, "note": "method return type written with the single-segment qualifier: also silent before the fix" },
     { "type": "references", "from": "GlobalShapes", "target": "Root", "line_number": 108, "note": "the INDEXER's return type, same fix (an indexer's dependency is attributed to the enclosing type, the family convention)" },
     { "type": "references", "from": "PlainRet", "target": "Root", "line_number": 110, "note": "its plain twin" },
-    { "type": "contains", "from": "Conversions", "target": "implicit Probe.PlainQualified", "note": "the conversion operator's SYMBOL name, qualifier-free" },
+    { "type": "contains", "from": "Conversions", "target": "implicit operator Probe.PlainQualified", "note": "the conversion operator's SYMBOL name, qualifier-free" },
     { "type": "uses", "from": "ReadGlobal", "target": "global", "line_number": 94, "note": "control: the identifier `global` is still published as `global` — a rule that keyed on the word instead of `::` would blank this" }
   ],
   "forbidRelationships": [

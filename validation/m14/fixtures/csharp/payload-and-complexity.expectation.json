@@ -2,7 +2,7 @@
   "fixtureId": "csharp/payload-and-complexity",
   "language": "csharp",
   "authoredBeforeAnalyzerRun": true,
-  "rationale": "Completeness sections B/C/D for csharp: pins every required relationship kind (contains, extends, implements, instantiates, calls, uses, overrides, references/imports), the #419-D evidence tiers on those edges (structural / usage_contextual / import_based / inferred), per-symbol complexity (csharp #264 wave), parameters + visibility payloads. Re-review wave (2026-09-04) adds: constructor-initializer calls (CSD8), null-conditional invocation (CSD4), clean primary-base targets (CSD9), operator identity names (CSD3), accessor-event symbols (CSD5), switch-expression arm complexity (CSD2), assignment-form target-typed new() (CSD11), interface-only external base lists + struct bases as implements (CSD12). A regression that drops any kind, tier, or payload fails this fixture. SCD1 (M37 #599 pre-wave): `this.Name = \"\"` / `this.Name += \"!\"` are assignment-LHS writes \u2014 Reset must emit no uses/calls to Name (csharp field-access pass now gates the LHS span). SOURCE-SPELLING CORRECTION 2026-10-02: the type-level edges are pinned with the BARE type name as the relationship source (`Widget`, `Shape`, `Qualified`), not the namespace-qualified one (`Pin.Widget`, `Acme.Domain.Shape`, `Probe.Qualified`) these rows used to name. The analyzer publishes the bare name, and the hand-audited truth agrees: validation/m12/ground-truth/csharp.json (truthSource=manual_audit) records type-level rows with bare sourceIds such as `BaseService -> BaseService {extends}` and `BaseService -> IRepository {implements}`. The qualified spelling was a pin that could never match, which is why this fixture was RED. Only the source LABEL changed: the edge type, target, line_number and every `meta.*` constraint are untouched, and the `forbid` rows that carried the qualified spelling were vacuous before (no edge ever had that source) and are now ACTIVE. Mutant csharp/drop-implements-edge and csharp/iface-base-extends-fabrication were unobservable for exactly this reason.",
+  "rationale": "Completeness sections B/C/D for csharp: pins every required relationship kind (contains, extends, implements, instantiates, calls, uses, overrides, references/imports), the #419-D evidence tiers on those edges (structural / usage_contextual / import_based / inferred), per-symbol complexity (csharp #264 wave), parameters + visibility payloads. Re-review wave (2026-09-04) adds: constructor-initializer calls (CSD8), null-conditional invocation (CSD4), clean primary-base targets (CSD9), operator identity names (CSD3), accessor-event symbols (CSD5), switch-expression arm complexity (CSD2), assignment-form target-typed new() (CSD11), interface-only external base lists + struct bases as implements (CSD12). A regression that drops any kind, tier, or payload fails this fixture. SCD1 (M37 #599 pre-wave): `this.Name = \"\"` / `this.Name += \"!\"` are assignment-LHS writes — Reset must emit no uses/calls to Name (csharp field-access pass now gates the LHS span). SOURCE-SPELLING CORRECTION 2026-10-02: the type-level edges are pinned with the BARE type name as the relationship source (`Widget`, `Shape`, `Qualified`), not the namespace-qualified one (`Pin.Widget`, `Acme.Domain.Shape`, `Probe.Qualified`) these rows used to name. The analyzer publishes the bare name, and the hand-audited truth agrees: validation/m12/ground-truth/csharp.json (truthSource=manual_audit) records type-level rows with bare sourceIds such as `BaseService -> BaseService {extends}` and `BaseService -> IRepository {implements}`. The qualified spelling was a pin that could never match, which is why this fixture was RED. Only the source LABEL changed: the edge type, target, line_number and every `meta.*` constraint are untouched, and the `forbid` rows that carried the qualified spelling were vacuous before (no edge ever had that source) and are now ACTIVE. Mutant csharp/drop-implements-edge and csharp/iface-base-extends-fabrication were unobservable for exactly this reason.",
   "expectSymbols": [
     {
       "name": "Shape",
@@ -26,10 +26,10 @@
       "comment": "CSD3: operator overloads are named by identity, never the collapsed literal 'operator'"
     },
     {
-      "name": "implicit int",
+      "name": "implicit operator int",
       "kind": "method",
       "ownerName": "F6Point",
-      "comment": "CSD3: conversion operator named by its conversion DIRECTION and target type. CORRECTED 2026-09-22 by the R1 round (fixture csharp/using-alias-and-operators): this pin used to read `operator int`, which was not the intended name but the DEAD-BRANCH name. `convMatch` was written as /operator\\s+(implicit|explicit)\\s+\u2026/ \u2014 the wrong token ORDER, so it could never match real C# (`implicit operator int`) and every conversion operator fell through to the generic operator fallback. The consequence was an IDENTITY COLLISION: `implicit operator int` and `explicit operator int` on one type are two distinct C# members, and both were published as `operator int`. The grammar's own `type` field plus the anonymous `implicit`/`explicit` child give the direction and the target without a text parse."
+      "comment": "CSD3: conversion operator named by its conversion DIRECTION and target type. CORRECTED 2026-09-22 by the R1 round (fixture csharp/using-alias-and-operators): this pin used to read `operator int`, which was not the intended name but the DEAD-BRANCH name. `convMatch` was written as /operator\\s+(implicit|explicit)\\s+…/ — the wrong token ORDER, so it could never match real C# (`implicit operator int`) and every conversion operator fell through to the generic operator fallback. The consequence was an IDENTITY COLLISION: `implicit operator int` and `explicit operator int` on one type are two distinct C# members, and both were published as `operator int`. The grammar's own `type` field plus the anonymous `implicit`/`explicit` child give the direction and the target without a text parse."
     },
     {
       "name": "Overflow",
@@ -199,14 +199,14 @@
       "source": "MakeCircle",
       "target": "Describe",
       "meta.relationshipType": "csharp_field_access",
-      "comment": "M37 TSD6-sweep: callee member_access must NEVER leak as a field-access use (dead `fn === node` skip class \u2014 object identity never matches wrappers)"
+      "comment": "M37 TSD6-sweep: callee member_access must NEVER leak as a field-access use (dead `fn === node` skip class — object identity never matches wrappers)"
     },
     {
       "type": "uses",
       "source": "Handle",
       "target": "Invoke",
       "meta.relationshipType": "csharp_field_access",
-      "comment": "M37 TSD6-sweep: null-conditional callee skip must fire \u2014 ?.Invoke() callee is a call, not a use"
+      "comment": "M37 TSD6-sweep: null-conditional callee skip must fire — ?.Invoke() callee is a call, not a use"
     },
     {
       "type": "uses",

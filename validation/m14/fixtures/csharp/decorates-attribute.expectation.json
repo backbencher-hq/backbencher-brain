@@ -1,0 +1,175 @@
+{
+  "fixtureId": "csharp/decorates-attribute",
+  "language": "csharp",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE `decorates` VALUE FOR C# (P0-1 of the 2026-11-19 close-out). The vocabulary contract (`src/ast/types.ts:120-143`) says a decorator is APPLIED TO a declaration, and the direction is the emitted one: source = the decorated declaration, target = the decorator's name. C# spells the construct with an ATTRIBUTE — `[Obsolete]` on a class — and the grammar carries it as `attribute_list` > `attribute` > name, all three of which are named node types in the pinned grammar (239 named / 533 ids, `validation/m14/measurements/csharp-grammar-nodes.json`). The lane previously published NOTHING and ruled the value ontological on the grounds that an attribute is 'passive metadata'; that ruling is falsified on two counts: the grammar HAS the construct, and the fleet already publishes the identical shape for Rust (`real-rust-analyzer.ts:2391`, `#[derive(...)]` as `builtin_directive` / `applied_callable_candidate`) and python (`real-python-analyzer.ts:6139`, `@deco`). WHY A FIXTURE IS THE ACCEPTANCE TEST: the edges exist only when the construct reaches the analyzer as a REAL NODE, and the population is large enough that a silent drop would be invisible (7,769 attribute sites over 655 files in the powershell corpus; 52,205 over 5,425 files across the whole admitted population). The SIX shapes are one claim each: MARKER (`[Flags]`, no argument list) and APPLIED (`[Obsolete(\"x\")]`, an argument list — the countable class the metadata records) are the two kinds; QUALIFIED pins that the dotted name is the target rather than its leaf; GENERIC pins that type arguments are DROPPED from the name (the lane's ONE canonical-name rule); MEMBER pins a non-type host. UNRELATED is the load-bearing control: a method with no attribute inside an ATTRIBUTED class must not inherit its owner's attributes, because the attribute_list is a DIRECT child of its host and an ancestor walk would leak. PARAMETER pins the refusal the symbol contract creates: a parameter carries an attribute_list but is not a symbol, so sourcing an edge from one would name a node nothing declares.",
+  "expectSymbols": [
+    {
+      "name": "E",
+      "kind": "enum"
+    },
+    {
+      "name": "Decorated",
+      "kind": "class"
+    },
+    {
+      "name": "Qualified",
+      "kind": "class"
+    },
+    {
+      "name": "Generic",
+      "kind": "class"
+    },
+    {
+      "name": "Plain",
+      "kind": "class"
+    },
+    {
+      "name": "P",
+      "kind": "property",
+      "ownerName": "Decorated"
+    },
+    {
+      "name": "M",
+      "kind": "method",
+      "ownerName": "Decorated"
+    },
+    {
+      "name": "N",
+      "kind": "method",
+      "ownerName": "Decorated"
+    },
+    {
+      "name": "R",
+      "kind": "property",
+      "ownerName": "Decorated"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "decorates",
+      "from": "E",
+      "target": "Flags",
+      "meta.attributeKind": "marker"
+    },
+    {
+      "type": "decorates",
+      "from": "Decorated",
+      "target": "Obsolete",
+      "meta.attributeKind": "applied_callable"
+    },
+    {
+      "type": "decorates",
+      "from": "P",
+      "target": "Required",
+      "meta.attributeKind": "marker"
+    },
+    {
+      "type": "decorates",
+      "from": "Qualified",
+      "target": "System.Obsolete",
+      "meta.attributeKind": "marker"
+    },
+    {
+      "type": "decorates",
+      "from": "Generic",
+      "target": "Marker",
+      "meta.attributeKind": "marker"
+    },
+    {
+      "type": "decorates",
+      "from": "R",
+      "target": "Obsolete",
+      "meta.attributeKind": "marker",
+      "note": "an ACCESSOR attribute: `[Obsolete]` is written on the getter, but an accessor is not a symbol, so the edge's source is the PROPERTY that owns the accessor list"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "decorates",
+      "from": "E",
+      "target": "Flags",
+      "equals": 1
+    },
+    {
+      "type": "decorates",
+      "from": "Decorated",
+      "target": "Obsolete",
+      "equals": 1
+    },
+    {
+      "type": "decorates",
+      "from": "P",
+      "target": "Required",
+      "equals": 1
+    },
+    {
+      "type": "decorates",
+      "from": "Qualified",
+      "target": "System.Obsolete",
+      "equals": 1
+    },
+    {
+      "type": "decorates",
+      "from": "Generic",
+      "target": "Marker",
+      "equals": 1
+    },
+    {
+      "type": "decorates",
+      "from": "R",
+      "target": "Obsolete",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "from": "Decorated",
+      "target": "Required",
+      "note": "a member's attribute must NOT be republished from its OWNER: `[Required] P` inside `[Obsolete] class Decorated` yields `P -> Required` only. Sourcing the attribute from the nearest attributed ancestor would also publish `Decorated -> Required`, which names an attribute the class does not carry"
+    },
+    {
+      "type": "decorates",
+      "from": "M",
+      "target": "Obsolete",
+      "note": "a method with no attribute of its own must NOT inherit the class's attribute: the attribute_list is a DIRECT child of its host, and an ancestor walk would leak every enclosing type's attributes onto its members"
+    },
+    {
+      "type": "decorates",
+      "from": "N",
+      "target": "Obsolete",
+      "note": "same control one level deeper, for a method inside an attributed class"
+    },
+    {
+      "type": "decorates",
+      "from": "Plain",
+      "target": "Flags",
+      "note": "a declaration with no attribute list emits NOTHING: a pass that sourced every declaration would fabricate an edge for every symbol in the file"
+    },
+    {
+      "type": "decorates",
+      "from": "Plain",
+      "target": "Obsolete",
+      "note": "and the same for the other attributed declarations in the file — an attribute is per-declaration, never per-file"
+    },
+    {
+      "type": "decorates",
+      "from": "N",
+      "target": "In",
+      "note": "a PARAMETER attribute must not source an edge: `[In] int a` carries an attribute_list but a parameter is not a symbol in this lane, so the edge would name a node nothing declares"
+    },
+    {
+      "type": "decorates",
+      "from": "Generic",
+      "target": "Marker<int>",
+      "note": "the type arguments are DROPPED from a symbol name — the same canonical-name rule heritage, creation and target-typed new() use; `Marker<int>` is a type EXPRESSION where the position publishes a NAME"
+    },
+    {
+      "type": "decorates",
+      "from": "Qualified",
+      "target": "Obsolete",
+      "note": "the target is the WRITTEN name with its qualifier (`System.Obsolete`), never the leaf alone — the leaf is what an unresolved-name fallback would produce"
+    }
+  ]
+}

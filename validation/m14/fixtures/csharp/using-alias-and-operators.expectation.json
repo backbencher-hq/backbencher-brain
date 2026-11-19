@@ -8,16 +8,16 @@
     { "name": "Box", "kind": "class", "ownerName": "R1Pin" },
     { "name": "Nick", "kind": "class", "ownerName": "R1Pin" },
     { "name": "Spaced", "kind": "class", "ownerName": "R1Pin" },
-    { "name": "implicit int", "kind": "method", "ownerName": "Nick" },
-    { "name": "explicit int", "kind": "method", "ownerName": "Nick" },
-    { "name": "explicit Box<Plain>", "kind": "method", "ownerName": "Nick" },
+    { "name": "implicit operator int", "kind": "method", "ownerName": "Nick" },
+    { "name": "explicit operator int", "kind": "method", "ownerName": "Nick" },
+    { "name": "explicit operator Box<Plain>", "kind": "method", "ownerName": "Nick" },
     { "name": "operator +", "kind": "method", "ownerName": "Nick" },
     { "name": "operator checked +", "kind": "method", "ownerName": "Nick" },
     { "name": "operator true", "kind": "method", "ownerName": "Nick" },
     { "name": "operator false", "kind": "method", "ownerName": "Nick" },
     { "name": "operator ==", "kind": "method", "ownerName": "Nick" },
     { "name": "operator !=", "kind": "method", "ownerName": "Nick" },
-    { "name": "implicit Box<Plain>", "kind": "method", "ownerName": "Spaced" }
+    { "name": "implicit operator Box<Plain>", "kind": "method", "ownerName": "Spaced" }
   ],
   "expectImports": [
     { "module": "System.Text", "comment": "plain dotted control: no alias form" },
@@ -33,8 +33,8 @@
     { "type": "references", "target": "Json", "line_number": 29, "note": "plain single-identifier using: no alias metadata may appear on it" },
     { "type": "references", "target": "System.Math", "line_number": 32 },
     { "type": "contains", "from": "Nick", "target": "operator checked +", "note": "a checked operator is a distinct member from its unchecked twin" },
-    { "type": "contains", "from": "Nick", "target": "implicit int", "note": "the IDENTITY COLLISION pin: `implicit operator int` and `explicit operator int` are two members of ONE type, and both published as the same name (`operator int`) while the conversion pattern was dead" },
-    { "type": "contains", "from": "Nick", "target": "explicit int", "note": "the twin that used to collide with it" },
+    { "type": "contains", "from": "Nick", "target": "implicit operator int", "note": "the IDENTITY COLLISION pin: `implicit operator int` and `explicit operator int` are two members of ONE type, and both published as the same name (`operator int`) while the conversion pattern was dead" },
+    { "type": "contains", "from": "Nick", "target": "explicit operator int", "note": "the twin that used to collide with it" },
     { "type": "contains", "from": "Nick", "target": "operator ==" },
     { "type": "contains", "from": "Nick", "target": "operator !=" }
   ],

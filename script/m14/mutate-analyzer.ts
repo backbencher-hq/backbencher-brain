@@ -14513,12 +14513,12 @@ export const MUTANTS: Mutant[] = [
     id: "csharp/conversion-operator-collapsed",
     language: "csharp",
     defectClass: "name-collision",
-    description: "M60.R1 regression: conversion operators go back to the DEAD-BRANCH name `operator <target>` (the old pattern expected `operator implicit …`, the wrong token order, so it never matched real C# and the implicit/explicit twins — two distinct members — collided). Simulated off the result's own symbols: an operator whose name starts with `implicit `/`explicit ` is rewritten to `operator <target>`. Caught by csharp/using-alias-and-operators (expects both twins AND forbids the collapsed name) and by csharp/payload-and-complexity's corrected `implicit int` pin.",
+    description: "M60.R1 regression: conversion operators go back to the DEAD-BRANCH name `operator <target>` (the old pattern expected `operator implicit …`, the wrong token order, so it never matched real C# and the implicit/explicit twins — two distinct members — collided). Simulated off the result's own symbols: an operator whose name carries `implicit operator `/`explicit operator ` is rewritten to `operator <target>`. Caught by csharp/using-alias-and-operators (expects both twins AND forbids the collapsed name) and by csharp/payload-and-complexity's `implicit operator int` pin. P1-1 (2026-11-19): the pattern moved WITH the published spelling. The name is now the source form `implicit operator int` instead of the synthesis `implicit int` (so `verify-csharp-symbols` can see the name written at its own range), and a pattern anchored on `^(implicit|explicit)\\s+` therefore stopped matching — the mutant SURVIVED until the pattern was updated, which is exactly what a mutant is for.",
     transform: r => ({
       ...r,
       symbols: (r.symbols ?? []).map((s: any) => {
         if (!(s.metadata ?? {}).isOperatorOverload || typeof s.name !== "string") return s
-        const m = /^(implicit|explicit)\s+(.+)$/.exec(s.name)
+        const m = /^(implicit|explicit)\s+operator\s+(.+)$/.exec(s.name)
         return m ? { ...s, name: `operator ${m[2]}` } : s
       }),
     }),
@@ -14527,16 +14527,16 @@ export const MUTANTS: Mutant[] = [
     id: "csharp/truncated-conversion-target",
     language: "csharp",
     defectClass: "name-truncation",
-    description: "M60.R1 regression: a conversion target goes back to being TRUNCATED at the first space — the old regex class `[^\\s(]+` stopped there, so `implicit operator Box < Plain > (…)` published `implicit Box`. Caught by csharp/using-alias-and-operators' expectSymbols (`implicit Box<Plain>`) and its forbidSymbols entry for the truncated spelling.",
+    description: "M60.R1 regression: a conversion target goes back to being TRUNCATED at the first delimiter — the old regex class `[^\\s(]+` stopped there, so `implicit operator Box < Plain > (…)` published `implicit Box`. Caught by csharp/using-alias-and-operators' expectSymbols (`implicit Box<Plain>`) and its forbidSymbols entry for the truncated spelling.",
     transform: r => ({
       ...r,
       symbols: (r.symbols ?? []).map((s: any) => {
         if (!(s.metadata ?? {}).isConversionOperator || typeof s.name !== "string") return s
-        const sp = s.name.indexOf(" ")
-        if (sp < 0) return s
-        const rest = s.name.slice(sp + 1)
-        const cut = rest.search(/[\s<\[]/)
-        return cut >= 0 ? { ...s, name: s.name.slice(0, sp + 1) + rest.slice(0, cut) } : s
+        const m = /^(implicit|explicit)\s+operator\s+(.*)$/.exec(s.name)
+        if (!m) return s
+        const cut = m[2].search(/[\s<\[(]/)
+        if (cut < 0) return s
+        return { ...s, name: `${m[1]} operator ${m[2].slice(0, cut)}` }
       }),
     }),
   },

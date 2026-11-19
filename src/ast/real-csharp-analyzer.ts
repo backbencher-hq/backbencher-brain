@@ -791,6 +791,72 @@ const CSHARP_BUILTIN_TYPE_SPELLINGS = new Set(["dynamic", "nint", "nuint", "var"
 const CSHARP_RENDER_HOSTS = new Set(["RenderComponent", "RenderChild"])
 
 /**
+ * THE DECLARATION NODE TYPES THAT CAN CARRY AN ATTRIBUTE LIST (DECORATES, P0-1).
+ *
+ * `attribute_list` is a DIRECT child of each of these in tree-sitter-c_sharp, so this set is
+ * exactly "the declarations an attribute can be written on" — verified against the grammar
+ * rather than guessed (probe `.scratch/attr-shape.ts`: `[A] class C`, `[A] enum E`, and the
+ * accessor/parameter forms all produce `attribute_list` under the host below).
+ *
+ * WHY A SET AND NOT A NODE-TYPE TEST FOR `attribute_list` ALONE. Walking for `attribute_list`
+ * and taking the nearest named ancestor would conflate a declaration's own attributes with an
+ * attribute written on a MEMBER inside it; naming the hosts is what makes the edge's source
+ * deterministic. A host added to the grammar without a line here loses its edges, which is why
+ * the `decorates` fixture covers every kind this set names.
+ */
+const CSHARP_ATTRIBUTE_HOSTS = new Set([
+  "class_declaration",
+  "struct_declaration",
+  "interface_declaration",
+  "record_declaration",
+  "enum_declaration",
+  "delegate_declaration",
+  "method_declaration",
+  "local_function_statement",
+  "constructor_declaration",
+  "destructor_declaration",
+  "operator_declaration",
+  "conversion_operator_declaration",
+  "property_declaration",
+  "event_declaration",
+  "event_field_declaration",
+  "field_declaration",
+  "indexer_declaration",
+  // An accessor carries its own attribute list (`public int P { [Required] get; set; }`). It is
+  // collected here and REDIRECTED to the owning declaration by `csharpAttributeAccessorOwner`,
+  // because an accessor is not a symbol and an edge sourced from `get` would name nothing.
+  "accessor_declaration",
+  "enum_member_declaration",
+  // `parameter` and `type_parameter` carry attributes, but NEITHER IS A SYMBOL in this lane, so
+  // their sites are collected and then dropped by the "must match a pushed symbol" rule. They are
+  // listed anyway because the collection is generic and a future symbolisation of parameters should
+  // not require editing this set — and because leaving them out would make the omission invisible.
+  "parameter",
+  "type_parameter",
+])
+
+/**
+ * ACCESSOR ATTRIBUTES BELONG TO THE DECLARATION THAT OWNS THEM.
+ *
+ * `public int P { [Required] get; set; }` writes the attribute on the `accessor_declaration`, and
+ * an accessor is not a symbol — so a pass that only looked at symbol hosts would drop the site
+ * silently. The correct source is the PROPERTY (or indexer/event) that owns the accessor list:
+ * the attribute applies to the accessor, and the accessor is part of that declaration.
+ *
+ * MEASURED before the fix (probe `.scratch/acc2.ts`): `class C { public int P { [Required] get; set; } }`
+ * published NO `decorates` edge and one property symbol, i.e. the attribute was invisible. Over the
+ * admitted corpus the shape is common — 24 `accessor_declaration` hosts in a 300-file draw.
+ */
+const csharpAttributeAccessorOwner = (n: Node | null): Node | null => {
+  let cur = n
+  while (cur) {
+    if (cur.type === "accessor_list") return cur.parent
+    cur = cur.parent
+  }
+  return null
+}
+
+/**
  * CITATION VOCABULARY — literal copy of `DOTNET_PLATFORM_LIBRARIES` from `script/m14/citations.ts`
  * (vocabulary id `dotnet-platform-libraries`, Lead-committed 2026-10-19). Analyzers must not import
  * `script/`, so the committed list is copied here; it is the SEVEN namespaces the csharp verdict arm
@@ -1188,6 +1254,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
     const overrideTasks: OverrideTask[] = []
+    // DECORATES (P0-1). Collected by a POST-PASS over the tree rather than at each of the
+    // eleven `symbols.push` sites: the declaration → name mapping is the same information the
+    // symbol walk computes, and a post-pass cannot be left out by the next declaration kind added
+    // to the walker. Keyed by the name the symbol is published under, so a declaration whose name
+    // no pushed symbol carries contributes NO edge (an unresolvable source would fabricate a
+    // class of rows the way a wrong `ownerName` does — the defect `verify-csharp-symbols` exists
+    // to convict).
+    const decoratesEmitted = new Set<string>()
     // C923 (#923): member-level interface implementation. `interfaceTasks` holds the
     // IMPLEMENTING declarations, `interfaceMembers` the CONTRACT each in-file interface declares
     // (keyed by both its FQN and its local name, so a base list written either way resolves).
@@ -1909,10 +1983,30 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `implicit operator global::Probe.PlainBase` published two names for one operator
         // shape (the qualified one was the only position that survived cleanTypeName, because
         // a symbol name never passes through it).
+        // P1-1 (2026-11-19 close-out): THE PUBLISHED NAME IS THE SOURCE SPELLING, and the reason is
+        // a gate, not a preference. `verify-csharp-symbols` asserts that a symbol's name is WRITTEN
+        // AT ITS OWN RANGE, and the old spelling was a SYNTHESIS — `${modifierKeyword.type} ${target}`
+        // produced `implicit NetworkCredential`, while the file writes `implicit operator
+        // NetworkCredential`. The name therefore named nothing a reader could find, and the gate
+        // convicted all 26 conversion operators in the admitted corpus (measured: 26 sites across
+        // 6 files — Credential.cs, MshObject.cs, MshCmdlet.cs, PSDataCollection.cs,
+        // WSManNativeAPI.cs, PSVersionInfo.cs — exactly the 26 rows).
+        //
+        // WHY NOT WEAKEN THE GATE. Exempting conversion operators would stop the gate convicting a
+        // real class, and the class is not hypothetical: the same synthesis produced `operator +`
+        // for a plain overload, which is equally not what the file writes. Naming both from the
+        // tree fixes one cause and keeps the gate able to fail.
+        //
+        // WHY NOT `op_Implicit` (the CIL spelling). That is a metadata name, not source text, so it
+        // is subject to the same objection — it just moves the failure to a spelling fewer readers
+        // recognise. The grammar gives both pieces (`implicit`/`explicit` as anonymous children,
+        // `operator` as an anonymous token), so the verbatim form costs nothing.
         const opName = modifierKeyword
-          ? `${modifierKeyword.type}${convTargetNode ? ` ${csharpTypeNameText(csharpTypeSpelling(convTargetNode.text))}` : ""}`
+          ? convTargetNode
+            ? `${modifierKeyword.type} operator ${csharpTypeNameText(csharpTypeSpelling(convTargetNode.text))}`
+            : `${modifierKeyword.type} operator`
           : opField
-            ? `operator ${checkedKeyword ? "checked " : ""}${opField.text}`
+            ? `operator${checkedKeyword ? " checked" : ""} ${opField.text}`
             : "operator"
         const visibility = this.extractVisibility(node)
         symbols.push({
@@ -2516,6 +2610,117 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // sanctioned index). No branch guesses an unknown external interface's member set.
     this.resolveInterfaceImplementations(interfaceTasks, classHierarchy, interfaceMembers, classMembers, relationships)
 
+    // ─────────────────────────────────────────────────────────────────────────────────────────
+    // DECORATES (P0-1 of the 2026-11-19 close-out).
+    //
+    // WHAT THE EDGE IS. A C# ATTRIBUTE is APPLIED TO a declaration: `[Serializable] class C`
+    // names the `Serializable` callable and applies it to `C`. That is the contract's shape —
+    // `src/ast/types.ts:120-143` — and the direction is the EMITTED one: source = the decorated
+    // declaration, target = the decorator's name.
+    //
+    // WHY THIS WAS NOT EMITTED BEFORE, AND WHY THE OLD REASON DOES NOT HOLD. The lane ruled
+    // `decorates` ontological on the grounds that a C# attribute is "passive metadata, published
+    // as symbol metadata `decorators`, not as an applied callable". Two things are wrong with
+    // that. (1) The GRAMMAR has the construct — `attribute`, `attribute_list` and
+    // `attribute_argument` are 3 of the 239 named node types
+    // (`validation/m14/measurements/csharp-grammar-nodes.json`), so a grammar-absence argument is
+    // unavailable. (2) The ONTOLOGICAL claim does not survive the comparison the fleet already
+    // made: `real-rust-analyzer.ts:2383-2400` publishes `decorates` for `#[derive(...)]` and
+    // splits `builtin_directive` / `applied_callable_candidate`; `real-python-analyzer.ts:6139`
+    // and `real-javascript-analyzer.ts` do the same for `@deco`. A C# attribute names a callable
+    // type and applies it to a declaration, exactly as those do. The `decorators` SYMBOL field
+    // and this EDGE are not alternatives — the field is the declaration's own payload, the edge
+    // is the relationship — and publishing one does not require dropping the other.
+    //
+    // THE POPULATION, measured (repo `powershell`, 1,181 .cs files): 7,769 attribute sites over
+    // 655 files, of which 6,024 carry arguments. The whole-admitted-population census
+    // (`csharp-emission-census-whole.json`) counts 52,205 attribute sites over 5,425 files / 20
+    // repos, of which 609 are attribute-argument CALLS. Either number is a real population, not a
+    // corner case.
+    //
+    // THE ATTRIBUTE IS THE CALLABLE. An attribute's name is a TYPE name, and an applied
+    // attribute is CONSTRUCTED by the runtime — so `attributeKind: "applied_callable"` is the
+    // countable class the Rust precedent keeps honest, and a bare marker (`[Flags]`) is published
+    // as `marker` rather than silently conflated with it. The split is a DIRECT-CHILD scan for
+    // `attribute_argument_list` (probe: `.scratch/attr-shape.ts`), so no text test and no regex.
+    //
+    // WHAT IS NOT CLAIMED. The edge does not say the attribute INHERITS anything, and it is not a
+    // `references` edge: the point is application, not mention (`types.ts:141`). A source whose
+    // declaration cannot be named is SKIPPED rather than pointed at the file sentinel, because an
+    // unresolvable source would fabricate a class of rows the way a wrong `ownerName` does.
+    //
+    // THE POST-PASS. For every declaration node the grammar can name, collect its attribute
+    // sites and bind them to the name the SYMBOL is published under. The name rule is the same
+    // one the symbol walk uses (`childForFieldName("name")` then an `identifier` child), so the
+    // key matches a pushed symbol or matches nothing — and a node that matches nothing is counted
+    // rather than pointed at the file sentinel.
+    const attributeSitesBySymbol = new Map<string, Array<{ name: string; nameNode: Node; hasArguments: boolean }>>()
+    const decoratesDeclarationsUnnamed: string[] = []
+    {
+      const stack: Node[] = [rootNode]
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (CSHARP_ATTRIBUTE_HOSTS.has(n.type)) {
+          const sites = this.csharpAttributeSites(n)
+          if (sites.length > 0) {
+            // AN ACCESSOR IS NOT A SYMBOL, SO ITS ATTRIBUTES BELONG TO THE DECLARATION THAT OWNS
+            // ITS ACCESSOR LIST. `public int P { [Required] get; set; }` writes the attribute on
+            // the accessor; the source that can name a symbol is the property. Without this
+            // redirect the site is collected against `get`/`set` — which match no symbol — and the
+            // attribute vanishes (measured: `.scratch/acc2.ts`, 0 edges before the fix).
+            const host = n.type === "accessor_declaration" ? csharpAttributeAccessorOwner(n) ?? n : n
+            const nameNode = host.childForFieldName("name") ?? this.findChild(host, (c) => c.type === "identifier")
+            const name = nameNode?.text?.trim() ?? ""
+            if (name.length > 0) {
+              const existing = attributeSitesBySymbol.get(name)
+              if (existing) existing.push(...sites)
+              else attributeSitesBySymbol.set(name, sites)
+            } else {
+              // A declaration carrying attributes whose name this walker cannot read. Counted,
+              // so a shape that silently loses its edges is visible rather than inferred.
+              decoratesDeclarationsUnnamed.push(n.type)
+            }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+      }
+    }
+    for (const sym of symbols) {
+      const sites = attributeSitesBySymbol.get(sym.name)
+      if (!sites || sites.length === 0) continue
+      for (const site of sites) {
+        const target = site.name
+        if (!target) continue
+        const key = `decorates|${sym.name}|${target}`
+        if (decoratesEmitted.has(key)) continue
+        decoratesEmitted.add(key)
+        relationships.push({
+          source: sym.name,
+          target,
+          type: ASTEngine.RelationshipType.Decorates,
+          // Both endpoints are read from the tree: the declaration's name node (the symbol the
+          // sites were collected against) and the attribute's own name node. The relation between
+          // them is structural — a sibling attribute_list on the declaration — so 1.0, the same
+          // confidence the Rust lane publishes for the same shape
+          // (`real-rust-analyzer.ts:2391-2394`).
+          confidence: 1.0,
+          // M59.A7: the line is where the TARGET is written — the attribute's own name node, not
+          // the declaration's line and not the attribute_list's.
+          line_number: this.nodeLine(site.nameNode),
+          metadata: {
+            relationshipType: "attribute_application",
+            // The COUNTABLE CLASS, and the reason it is here rather than inferred: a bare marker
+            // (`[Flags]`) and an applied callable (`[Obsolete("x")]`) are different claims, and
+            // the ruling's honesty depends on being able to say how many of each there are.
+            attributeKind: site.hasArguments ? "applied_callable" : "marker",
+            isCSharpAttribute: true,
+            // The decorated declaration's kind, so the edge's claim is readable without a join.
+            decoratesDeclarationKind: sym.kind,
+          },
+        })
+      }
+    }
+
     // Rewrite using-directive reference sources from "root" to the file's
     // primary type (first top-level type declared). Top-level types live
     // inside a namespace (block or file-scoped), so the owner may be a
@@ -2723,6 +2928,16 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         detectedFrameworks,
         frameworkPatterns,
         hasFrameworkIntelligence: true,
+        // DECORATES (P0-1): declarations that carried an attribute list this pass could not bind
+        // to a pushed symbol. Published rather than dropped silently, because an omission that
+        // cannot be counted is indistinguishable from a construct that does not exist — the
+        // defect this lane's D-rulings exist to prevent.
+        //
+        // MEASURED (150-file draw across the admitted corpus): 52, and ALL 52 are `parameter`
+        // attribute hosts. A parameter is not a symbol in this lane, so its attribute list has
+        // no symbol to source an edge from — that is the deliberate refusal `decorates-attribute`
+        // pins as a control, not a leak. Non-parameter unnamed hosts: 0.
+        decoratesUnnamedDeclarations: decoratesDeclarationsUnnamed.length,
         analysisVersion: "4.1.0-pure-ast-m12",
       },
     }
@@ -4626,6 +4841,58 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return attrs
+  }
+
+  /**
+   * THE ATTRIBUTE SITES of one declaration — the node, the published NAME, and which
+   * CLASS the attribute belongs to.
+   *
+   * WHY THIS EXISTS BESIDE `extractAttributes`, which already returns the names. A
+   * `decorates` edge needs three things a `string[]` cannot carry:
+   *
+   *   - the NODE, because the edge's line is the ATTRIBUTE's own line (M59.A7: the line
+   *     is where the TARGET is written, and the target is the attribute name),
+   *   - the ATTRIBUTE's own text shape, because `[Flags]` and `[Obsolete("x")]` are
+   *     different claims — one names a marker, the other applies a callable WITH an
+   *     argument — and that split is the ruling's countable class rather than a guess,
+   *   - and the name under ONE rule, so an edge target and the symbol's `decorators`
+   *     entry can never disagree: both go through `extractAttributes`' own
+   *     `csharpCleanTypeLeaf(csharpTypeNameText(...))`.
+   *
+   * THE SHAPES, read from the grammar rather than assumed (probe `.scratch/attr-shape.ts`,
+   * six forms):
+   *
+   *   `[Flags]`              -> attribute{ identifier }                       args=0
+   *   `[Obsolete("use B")]`  -> attribute{ identifier, attribute_argument_list } args=1
+   *   `[System.Obsolete]`    -> attribute{ qualified_name }                 args=0
+   *   `[Marker<int>]`        -> attribute{ generic_name }                   args=0
+   *   `[A][B]`               -> TWO attribute nodes inside ONE attribute_list
+   *
+   * `attribute_argument_list` is a DIRECT named child, so the marker/applied split is a
+   * child scan — no text test, no pattern. This lane has no regex anywhere
+   * (`verify-csharp-no-regex.ts` pins that), and this pass must not be the first.
+   */
+  private csharpAttributeSites(node: Node): Array<{ name: string; nameNode: Node; hasArguments: boolean }> {
+    const out: Array<{ name: string; nameNode: Node; hasArguments: boolean }> = []
+    const lists = this.findAllChildren(node, "attribute_list")
+    for (const list of lists) {
+      for (let i = 0; i < list.namedChildCount; i++) {
+        const attr = list.namedChild(i)
+        if (!attr || attr.type !== "attribute") continue
+        const nameNode = this.findChild(attr, (n) =>
+          n.type === "identifier" || n.type === "generic_name" ||
+          n.type === "qualified_name" || n.type === "alias_qualified_name")
+        if (!nameNode) continue
+        const name = csharpCleanTypeLeaf(csharpTypeNameText(csharpTypeSpelling(nameNode.text)))
+        if (!name) continue
+        // The argument list is a DIRECT child, so its presence is the applied-callable test.
+        // An EMPTY argument list (`[Attr()]`) still counts as applied: the attribute is
+        // written as a call, and C# treats `[Attr]` and `[Attr()]` identically.
+        const hasArguments = this.findChild(attr, (n) => n.type === "attribute_argument_list") !== null
+        out.push({ name, nameNode, hasArguments })
+      }
+    }
+    return out
   }
 
   /**
