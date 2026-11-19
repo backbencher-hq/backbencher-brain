@@ -102,6 +102,56 @@
       },
       "source": "script/m14/python-endpoint-resolution.ts + script/m14/python-endpoint-defects.ts"
     },
+    "postCommitWholeEndpointAudit": {
+      "admittedPopulation": "11,488-file heritage endpoint population",
+      "calls": {
+        "count": 535006,
+        "unexplained": 0
+      },
+      "uses": {
+        "count": 389972,
+        "unexplained": 0
+      },
+      "contains": {
+        "count": 135661,
+        "unexplained": 0
+      },
+      "imports": {
+        "count": 99821,
+        "unexplained": 0
+      },
+      "references": {
+        "count": 61955,
+        "unexplained": 0
+      },
+      "exports": {
+        "count": 3043,
+        "unexplained": 0
+      },
+      "extends": {
+        "count": 22804,
+        "unexplained": 0
+      },
+      "implements": {
+        "count": 363,
+        "unexplained": 0
+      },
+      "overrides": {
+        "count": 33497,
+        "unexplained": 0
+      },
+      "instantiates": {
+        "count": 13134,
+        "unexplained": 0
+      },
+      "decorates": {
+        "count": 32258,
+        "unexplained": 65,
+        "classification": "64 Django register.simple_tag/inclusion_tag receiver chains and 1 pytest.mark.filterwarnings chain; valid third-party decorator routes, not fabricated edges"
+      },
+      "source": "script/m14/python-endpoint-resolution.ts",
+      "artifact": "/tmp/python-endpoint-resolution-full.json"
+    },
     "heritageResidual": {
       "clauses": 23422,
       "covered": 23171,
