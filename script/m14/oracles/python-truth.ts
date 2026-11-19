@@ -746,8 +746,17 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // analyzer rows. The module is stated, the items are the node's dotted_name children.
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
-          if (!c || (c.type !== "dotted_name" && c.type !== "identifier")) continue
-          add("imports", moduleName ?? "", `__future__:${c.text}`, c.startPosition.row + 1)
+          if (!c) continue
+          let itemName: string | null = null
+          let itemNode: any = null
+          if (c.type === "dotted_name" || c.type === "identifier") {
+            itemName = c.text
+            itemNode = c
+          } else if (c.type === "aliased_import") {
+            const nm = c.childForFieldName("name") || c.namedChild(0)
+            if (nm) { itemName = nm.text; itemNode = nm }
+          }
+          if (itemName && itemNode) add("imports", moduleName ?? "", `__future__:${itemName}`, itemNode.startPosition.row + 1)
         }
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
@@ -784,6 +793,27 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
             // rather than object identity: web-tree-sitter hands back a fresh wrapper per access.
             modNodeId = (c as any).id
           }
+        }
+        if (mod === "__future__") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c || (modNodeId !== undefined && (c as any).id === modNodeId)) continue
+            let itemName: string | null = null
+            let itemNode: any = null
+            if (c.type === "dotted_name" || c.type === "identifier") {
+              itemName = c.text
+              itemNode = c
+            } else if (c.type === "aliased_import") {
+              const nm = c.childForFieldName("name") || c.namedChild(0)
+              if (nm) { itemName = nm.text; itemNode = nm }
+            }
+            if (itemName && itemNode) add("imports", moduleName ?? "", `__future__:${itemName}`, itemNode.startPosition.row + 1)
+          }
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) walkImports(c)
+          }
+          return
         }
         if (mod.length === 0) {
           for (let i = 0; i < n.namedChildCount; i++) { /* nothing to attribute */ }

@@ -189,8 +189,9 @@
         "classification": "nested/type-scope attribution residual; not yet classified as production defects"
       },
       "imports": {
-        "unexplained": 29,
-        "classification": "future-import source identity mismatch"
+        "preFixUnexplained": 29,
+        "postFixUnexplained": 0,
+        "classification": "future-import aliased node fixed; no unexplained imports remain"
       },
       "decorates": {
         "unexplained": 24,
@@ -201,7 +202,7 @@
         "unexplained": 0,
         "classification": "branch-alternative duplicate class scope"
       },
-      "residualRows": 388,
+      "residualRows": 359,
       "source": "script/m14/oracles/python-truth-diff.ts"
     },
     "heritageResidual": {
