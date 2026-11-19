@@ -186,7 +186,9 @@
       "references": {
         "missing": 211,
         "unexplained": 117,
-        "classification": "nested/type-scope attribution residual; not yet classified as production defects"
+        "postFixMissing": 0,
+        "postFixUnexplained": 0,
+        "classification": "nested/type-scope oracle replay fixed; 2373-file rerun closed 328 residual rows"
       },
       "imports": {
         "preFixUnexplained": 29,
@@ -202,7 +204,7 @@
         "unexplained": 0,
         "classification": "branch-alternative duplicate class scope"
       },
-      "residualRows": 359,
+      "residualRows": 31,
       "source": "script/m14/oracles/python-truth-diff.ts"
     },
     "heritageResidual": {

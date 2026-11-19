@@ -1000,16 +1000,27 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
     const emittedRefs = new Set<string>()
     const resolveSource = (start: any): string => {
-      let p: any = start.type === "function_definition" || start.type === "class_definition" ? start : start.parent
-      while (p) {
-        if (p.type === "function_definition" || p.type === "class_definition") {
-          for (let i = 0; i < p.namedChildCount; i++) {
-            const c = p.namedChild(i)
-            if (c && c.type === "identifier") return c.text
+      const chain: any[] = []
+      let p: any = start
+      while (p) { chain.push(p); p = p.parent }
+      let fn: string | undefined
+      let cls: string | undefined
+      for (let i = chain.length - 1; i >= 0; i--) {
+        const n = chain[i]
+        if (n.type === "class_definition") {
+          for (let j = 0; j < n.namedChildCount; j++) {
+            const c = n.namedChild(j)
+            if (c && c.type === "identifier") { cls = c.text; fn = undefined; break }
+          }
+        } else if (n.type === "function_definition" && fn === undefined) {
+          for (let j = 0; j < n.namedChildCount; j++) {
+            const c = n.namedChild(j)
+            if (c && c.type === "identifier") { fn = c.text; break }
           }
         }
-        p = p.parent
       }
+      if (fn !== undefined) return fn
+      if (cls !== undefined) return cls
       return moduleName ?? ""
     }
     const collectTypeNodes = (n: any, out: any[]): void => {
