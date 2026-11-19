@@ -1,0 +1,22 @@
+{
+  "fixtureId": "python/lambda-call-scope",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A lambda body is executable code. Module lambdas belong to the module scope; lambdas inside a function keep that enclosing function as their call source.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "outer",
+      "target": "module_helper",
+      "line_number": 6,
+      "meta.reasonCode": "bare-name-callee"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "lambda_call_scope",
+      "target": "exit"
+    }
+  ]
+}

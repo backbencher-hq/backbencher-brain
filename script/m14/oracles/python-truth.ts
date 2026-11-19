@@ -1399,6 +1399,14 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
    */
   const walkScopes = (n: any, scope: string | null, ownerClass: string | null, fnOwner: string | null = null): void => {
     if (n.type === "decorator") return
+    if (n.type === "lambda") {
+      const body = n.childForFieldName("body")
+      if (body && scope) {
+        const lambdaScope = scope
+        walkBody(body, lambdaScope, ownerClass, lambdaScope)
+      }
+      return
+    }
     if (n.type === "function_definition") {
       const nameNode = n.childForFieldName("name")
       const nm = nameNode ? nameNode.text : ""
@@ -1599,29 +1607,49 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
 
     // PASS 1 — every PUBLISHED declaration's line, per container (never inside a function body).
     const scanContainer = (body: any, container: string): void => {
+      const CONTROL_SCOPE_TYPES = new Set(["if_statement", "try_statement", "match_statement", "for_statement", "while_statement", "block", "case_clause"])
+      const scanScopeNode = (n: any, scopeContainer: string, inAlternative = false): void => {
+        if (!n) return
+        if (n.type === "decorated_definition") {
+          const def = definitionOf(n)
+          if (!def) return
+          if (def.type === "function_definition") {
+            const nm = def.childForFieldName("name")
+            if (nm && nm.text) noteDeclaration(scopeContainer, nm.text, def.startPosition.row + 1, inAlternative || declaresChain(n, nm.text))
+          } else if (def.type === "class_definition") {
+            const nm = def.childForFieldName("name")
+            const bodyNode = def.childForFieldName("body")
+            if (!nm || !nm.text) return
+            const line = def.startPosition.row + 1
+            noteDeclaration(scopeContainer, nm.text, line, inAlternative || declaresChain(n, nm.text))
+            if (bodyNode) scanContainer(bodyNode, containerKey(scopeContainer, nm.text, line))
+          }
+          return
+        }
+        if (n.type === "function_definition") {
+          const nm = n.childForFieldName("name")
+          if (nm && nm.text) noteDeclaration(scopeContainer, nm.text, n.startPosition.row + 1, false)
+          return
+        }
+        if (n.type === "class_definition") {
+          const nm = n.childForFieldName("name")
+          const bodyNode = n.childForFieldName("body")
+          if (!nm || !nm.text) return
+          const line = n.startPosition.row + 1
+          noteDeclaration(scopeContainer, nm.text, line, false)
+          if (bodyNode) scanContainer(bodyNode, containerKey(scopeContainer, nm.text, line))
+          return
+        }
+        if (n.type === "lambda") return
+        const childAlternative = inAlternative || CONTROL_SCOPE_TYPES.has(n.type)
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) scanScopeNode(c, scopeContainer, childAlternative)
+        }
+      }
       for (let i = 0; i < body.namedChildCount; i++) {
-        let stmt = body.namedChild(i)
-        if (!stmt) continue
-        let wrapper: any = null
-        if (stmt.type === "decorated_definition") {
-          wrapper = stmt
-          const def = definitionOf(stmt)
-          if (def) stmt = def
-          else continue
-        }
-        if (stmt.type === "function_definition") {
-          const nm = stmt.childForFieldName("name")
-          if (nm && nm.text) noteDeclaration(container, nm.text, stmt.startPosition.row + 1, wrapper !== null && declaresChain(wrapper, nm.text))
-          continue
-        }
-        if (stmt.type === "class_definition") {
-          const nm = stmt.childForFieldName("name")
-          const bodyNode = stmt.childForFieldName("body")
-          if (!nm || !nm.text) continue
-          const line = stmt.startPosition.row + 1
-          noteDeclaration(container, nm.text, line, wrapper !== null && declaresChain(wrapper, nm.text))
-          if (bodyNode) scanContainer(bodyNode, containerKey(container, nm.text, line))
-        }
+        const stmt = body.namedChild(i)
+        if (stmt) scanScopeNode(stmt, container)
       }
     }
     scanContainer(rootNode, "module")
@@ -1645,19 +1673,18 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       return null
     }
     const emitContainer = (body: any, container: string): void => {
-      for (let i = 0; i < body.namedChildCount; i++) {
-        const stmt = body.namedChild(i)
-        if (!stmt) continue
-        if (stmt.type === "decorated_definition") {
-          const def = definitionOf(stmt)
-          if (!def) continue
+      const emitScopeNode = (n: any, scopeContainer: string): void => {
+        if (!n) return
+        if (n.type === "decorated_definition") {
+          const def = definitionOf(n)
+          if (!def) return
           const nm = def.childForFieldName("name")
           const line = def.startPosition.row + 1
-          const info = nm && nm.text ? liveDeclLine.get(container)?.get(nm.text) : undefined
+          const info = nm && nm.text ? liveDeclLine.get(scopeContainer)?.get(nm.text) : undefined
           const live = info !== undefined && (info.chain || info.maxLine === line)
           if (nm && nm.text && live) {
-            for (let j = 0; j < stmt.namedChildCount; j++) {
-              const dec = stmt.namedChild(j)
+            for (let j = 0; j < n.namedChildCount; j++) {
+              const dec = n.namedChild(j)
               if (!dec || dec.type !== "decorator") continue
               const target = decoratorName(dec.namedChild(0))
               if (target) add("decorates", nm.text, target.name, target.line)
@@ -1665,15 +1692,26 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           }
           if (def.type === "class_definition" && nm && nm.text) {
             const cb = def.childForFieldName("body")
-            if (cb) emitContainer(cb, containerKey(container, nm.text, line))
+            if (cb) emitContainer(cb, containerKey(scopeContainer, nm.text, line))
           }
-          continue
+          return
         }
-        if (stmt.type === "class_definition") {
-          const nm = stmt.childForFieldName("name")
-          const cb = stmt.childForFieldName("body")
-          if (nm && nm.text && cb) emitContainer(cb, containerKey(container, nm.text, stmt.startPosition.row + 1))
+        if (n.type === "function_definition") return
+        if (n.type === "class_definition") {
+          const nm = n.childForFieldName("name")
+          const cb = n.childForFieldName("body")
+          if (nm && nm.text && cb) emitContainer(cb, containerKey(scopeContainer, nm.text, n.startPosition.row + 1))
+          return
         }
+        if (n.type === "lambda") return
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) emitScopeNode(c, scopeContainer)
+        }
+      }
+      for (let i = 0; i < body.namedChildCount; i++) {
+        const stmt = body.namedChild(i)
+        if (stmt) emitScopeNode(stmt, container)
       }
     }
     emitContainer(rootNode, "module")
