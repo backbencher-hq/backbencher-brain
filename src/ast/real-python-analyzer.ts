@@ -284,6 +284,8 @@ interface InterfaceBindings {
   collectionsAbcNames: Set<string>
   /** dotted roots this file imports, so `abc.ABC` is self-proving once `abc` is bound. */
   importRoots: Set<string>
+  /** namespace aliases, e.g. `import collections.abc as cabc` -> `cabc: collections.abc`. */
+  moduleAliases: Map<string, string>
   /**
    * The LINE each stdlib marker name was BOUND on, by bound name.
    *
@@ -399,6 +401,12 @@ interface PythonContext {
    * twice keeps the FIRST binding's shape, because that is the binding a reader reaches first.
    */
   moduleImportBindingShape: Map<string, "item" | "alias" | "namespace">
+  /**
+   * Names whose module-level import is conditional (inside `if`, `try`, `match`, or another
+   * runtime-selected block). Such a binding proves existence of the name, but it is not
+   * proof that every execution binds that name to the same specifier.
+   */
+  conditionalImportBindings: Set<string>
   /**
    * THE COMPLETE PROJECT INDEX'S ANSWER for one imported module: `project-local` (the repo ships
    * the module — resolve, never claim external), `third-party` (the complete index's `modules`
@@ -1092,6 +1100,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       importRoots: new Set(),
       moduleImportBindings: new Map(),
       moduleImportBindingShape: new Map(),
+      conditionalImportBindings: new Set(),
       functionScopes: [],
       seenRels: new Set(),
       instanceAttrs: new Set(),
@@ -1156,6 +1165,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const IMPORT_BINDINGS = this.collectModuleImportBindings(rootNode)
     ctx.moduleImportBindings = IMPORT_BINDINGS.bindings
     ctx.moduleImportBindingShape = IMPORT_BINDINGS.shapes
+    ctx.conditionalImportBindings = IMPORT_BINDINGS.conditional
     // A NAME THIS FILE REBINDS AT MODULE SCOPE IS NOT THE IMPORT'S ANY MORE. `import os` then
     // `os = build_client()` leaves the import statement in the file and the name bound to a VALUE —
     // the exact shape a rule keyed on the import list would certify. `collectGlobalWriteNames`
@@ -1551,6 +1561,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       protocolNames: new Set(),
       collectionsAbcNames: new Set(),
       importRoots: new Set(),
+      moduleAliases: new Map(),
       markerLines: new Map(),
       classDecls: [],
       localAbstractClasses: new Set(),
@@ -1580,7 +1591,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (n.type === "import_statement") {
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
-          if (c?.type === "dotted_name") out.importRoots.add(c.text.split(".")[0])
+          if (c?.type === "dotted_name") {
+            out.importRoots.add(c.text.split(".")[0])
+          } else if (c?.type === "aliased_import") {
+            const imported = c.childForFieldName("name")?.text
+            const alias = c.childForFieldName("alias")?.text
+            if (imported && alias) {
+              out.importRoots.add(alias)
+              out.moduleAliases.set(alias, imported)
+            }
+          }
         }
       } else if (n.type === "import_from_statement") {
         const modNode = n.childForFieldName("module_name")
@@ -1767,9 +1787,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (base.dotted) {
       const root = base.dotted.split(".")[0]
       if (!ib.importRoots.has(root)) return null
-      if (base.dotted === "abc.ABC" || base.dotted === "abc.ABCMeta") return "abc"
-      if (base.dotted === "typing.Protocol" || base.dotted === "typing_extensions.Protocol") return "typing"
-      if (root === "collections" && base.dotted.startsWith("collections.abc.")) return "collections.abc"
+      const module = ib.moduleAliases.get(root) ?? root
+      const qualified = `${module}${base.dotted.slice(root.length)}`
+      if (qualified === "abc.ABC" || qualified === "abc.ABCMeta") return "abc"
+      if (qualified === "typing.Protocol" || qualified === "typing_extensions.Protocol") return "typing"
+      if (qualified.startsWith("collections.abc.")) return "collections.abc"
       return null
     }
     const boundLine = ib.markerLines.get(base.leaf)
@@ -1909,13 +1931,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             const recvDotted = this.dottedTail(recv)
             const recvLeaf = this.baseClassLeaf(recv)
             if (recvDotted && ib.importRoots.has(recvDotted.split(".")[0])) {
-              if (recvDotted === "abc.Sequence" || recvDotted === "abc.Iterable" ||
-                  recvDotted === "abc.Container" || recvDotted === "abc.Hashable" ||
-                  recvDotted === "abc.Sized" || recvDotted === "abc.Mapping" ||
-                  recvDotted === "abc.Set") kind = "abc"
-              else if (recvDotted === "collections.abc.Sequence" || recvDotted === "collections.abc.Iterable" ||
-                       recvDotted === "collections.abc.Mapping" || recvDotted === "collections.abc.Set" ||
-                       recvDotted === "collections.abc.Hashable") kind = "collections.abc"
+              const root = recvDotted.split(".")[0]
+              const module = ib.moduleAliases.get(root) ?? root
+              const qualified = `${module}${recvDotted.slice(root.length)}`
+              if (qualified === "abc.Sequence" || qualified === "abc.Iterable" ||
+                  qualified === "abc.Container" || qualified === "abc.Hashable" ||
+                  qualified === "abc.Sized" || qualified === "abc.Mapping" ||
+                  qualified === "abc.Set") kind = "abc"
+              else if (qualified === "collections.abc.Sequence" || qualified === "collections.abc.Iterable" ||
+                       qualified === "collections.abc.Mapping" || qualified === "collections.abc.Set" ||
+                       qualified === "collections.abc.Hashable") kind = "collections.abc"
             } else if (recvLeaf) {
               if (ib.collectionsAbcNames.has(recvLeaf)) kind = "collections.abc"
               else if (ib.localAbstractClasses.has(recvLeaf)) kind = "declared-abstract-class"
@@ -1984,7 +2009,19 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // class is NOT the outer one, so a same-name extends edge is a
         // fabricated self-loop. Skip it (the leaf text is still recorded in
         // baseClasses metadata for payload honesty).
-        if (baseLeaf !== className) {
+        // A BARE same-name base is the self-rebind/PGO-shadow case and is suppressed.
+        // A QUALIFIED same-name base is a different declaration: `class ArgumentParser(argparse.ArgumentParser)`
+        // inherits the external ArgumentParser and must not become a self-loop merely because both
+        // spellings share a leaf. Qualified identity is retained as `metadata.qualified`.
+        const baseQualifierForCollision = ((): string | undefined => {
+          if (arg.type === "attribute") return arg.text
+          if (arg.type === "subscript") {
+            const head = arg.namedChild(0)
+            if (head && head.type === "attribute") return head.text
+          }
+          return undefined
+        })()
+        if (baseLeaf !== className || baseQualifierForCollision) {
           // `implements`, not `extends`, when this file proves the base is an interface.
           // RELABEL, not addition: one base, one edge, most specific true label. Publishing
           // both would put two rows for one syntactic fact into `brain_relationship` for
@@ -2921,13 +2958,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // class-member path below instead of being swallowed by this branch.
     if (name === "__all__" && !ctx.currentClass && !ctx.currentFunction) {
       // PY-14. Only a `list` was read, so `__all__ = ("a", "b")` published nothing —
-      // and the tuple spelling is ordinary older python. Measured over 400 pinned corpus
+      // and the tuple spelling is ordinary older python. Set literals are valid too.
+      // Measured over 400 pinned corpus
       // files: 16 `__all__` assignments, 13 lists, **3 tuples that produced no edge at
       // all**, so 19% of the module's declared public surface was invisible for a reason
       // that has nothing to do with the author. A list and a tuple are the same
       // declaration to every tool that reads `__all__`, including `from mod import *`.
       const right = node.childForFieldName("right") ?? node.namedChild(node.namedChildCount - 1)
-      // INCOMING_PY: `expression_list` is the THIRD spelling, and it was the one still
+      // INCOMING_PY: `expression_list` is another spelling, and it was the one still
       // missing. PY-14 added `tuple`; the grammar has a separate node for a bare
       // comma-separated RHS with no brackets at all:
       //
@@ -2948,7 +2986,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `__all__ = (a + b + [...])` — a concatenation — stays a declared boundary, as
       // does a comprehension: neither has a statically knowable member list.
       const dunderAllContainer = right
-        ? (right.type === "list" || right.type === "tuple" || right.type === "expression_list") ? right : undefined
+        ? (right.type === "list" || right.type === "tuple" || right.type === "set" || right.type === "expression_list") ? right : undefined
         : undefined
       if (dunderAllContainer) {
         const form = dunderAllContainer.type
@@ -4765,11 +4803,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectModuleImportBindings(rootNode: Node) {
     const out = new Map<string, string>()
     const shapes = new Map<string, "item" | "alias" | "namespace">()
+    const conditional = new Set<string>()
     const dataclasses = new Map<string, { kind: "item" | "module"; endIndex: number }>()
     const seenBindings = new Set<string>()
     let hasWildcard = false
-    const put = (bound: string, module: string, shape: "item" | "alias" | "namespace", statement: Node, item?: string): void => {
+    const put = (bound: string, module: string, shape: "item" | "alias" | "namespace", statement: Node, item?: string, isConditional = false): void => {
       if (bound.length === 0 || module.length === 0) return
+      if (isConditional) conditional.add(bound)
       if (!module.startsWith(".") && !out.has(bound)) { out.set(bound, module); shapes.set(bound, shape) }
       if (seenBindings.has(bound)) dataclasses.delete(bound)
       else if (statement.parent?.id === rootNode.id && module === "dataclasses" && (item === undefined || item === "dataclass")) {
@@ -4777,9 +4817,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       seenBindings.add(bound)
     }
-    const stack: Node[] = [rootNode]
+    const stack: Array<{ node: Node; conditional: boolean }> = [{ node: rootNode, conditional: false }]
     while (stack.length > 0) {
-      const n = stack.pop()!
+      const entry = stack.pop()!
+      const n = entry.node
+      const isConditional = entry.conditional ||
+        n.type === "if_statement" || n.type === "try_statement" || n.type === "match_statement" ||
+        n.type === "for_statement" || n.type === "while_statement"
       if (n.type === "function_definition" || n.type === "class_definition") {
         const name = n.childForFieldName("name")?.text
         if (name) { seenBindings.add(name); dataclasses.delete(name) }
@@ -4794,13 +4838,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c) continue
           if (c.type === "dotted_name") {
             const first = c.namedChild(0)
-            if (first?.type === "identifier") put(first.text, c.text, "namespace", n)
+            if (first?.type === "identifier") put(first.text, c.text, "namespace", n, undefined, isConditional)
           } else if (c.type === "aliased_import") {
             const nm = c.childForFieldName("name") ?? c.namedChild(0)
             const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
             const module = nm?.text ?? ""
             const bound = alias?.type === "identifier" ? alias.text : module.split(".")[0] ?? ""
-            if (module.length > 0 && bound.length > 0) put(bound, module, "alias", n)
+            if (module.length > 0 && bound.length > 0) put(bound, module, "alias", n, undefined, isConditional)
           }
         }
         continue
@@ -4831,13 +4875,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c) continue
           if (moduleId !== undefined && c.id === moduleId) continue
           if (c.type === "identifier" || c.type === "dotted_name") {
-            put(c.text, module, "item", n, c.text)
+            put(c.text, module, "item", n, c.text, isConditional)
           } else if (c.type === "aliased_import") {
             const nm = c.childForFieldName("name") ?? c.namedChild(0)
             const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
             const item = nm?.text ?? ""
             const bound = alias?.type === "identifier" ? alias.text : item
-            if (item.length > 0) put(bound, module, "alias", n, item)
+            if (item.length > 0) put(bound, module, "alias", n, item, isConditional)
           }
           if (c.type === "wildcard_import") hasWildcard = true
         }
@@ -4845,11 +4889,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) stack.push(c)
+        if (c) stack.push({ node: c, conditional: isConditional })
       }
     }
     if (hasWildcard) dataclasses.clear()
-    return { bindings: out, shapes, dataclasses }
+    return { bindings: out, shapes, dataclasses, conditional }
   }
 
   /**
@@ -5264,9 +5308,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private collectModuleRebindings(rootNode: Node): Set<string> {
     const out = new Set<string>()
-    const stack: Node[] = [rootNode]
+    const stack: Array<{ node: Node; conditional: boolean }> = [{ node: rootNode, conditional: false }]
     while (stack.length > 0) {
-      const n = stack.pop()!
+      const entry = stack.pop()!
+      const n = entry.node
+      const conditional = entry.conditional ||
+        n.type === "if_statement" || n.type === "try_statement" || n.type === "match_statement" ||
+        n.type === "for_statement" || n.type === "while_statement"
       if (n.type === "function_definition" || n.type === "class_definition" || n.type === "lambda" ||
           n.type === "list_comprehension" || n.type === "set_comprehension" ||
           n.type === "dictionary_comprehension" || n.type === "generator_expression") continue
@@ -5274,28 +5322,28 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "assignment":
         case "augmented_assignment": {
           const left = n.childForFieldName("left") ?? n.namedChild(0)
-          this.addPatternTargets(left, out)
+          if (!conditional) this.addPatternTargets(left, out)
           break
         }
         case "for_statement": {
           const left = n.childForFieldName("left") ?? n.namedChild(0)
-          this.addPatternTargets(left, out)
+          if (!conditional) this.addPatternTargets(left, out)
           break
         }
         case "with_item":
         case "except_clause": {
-          this.addPatternTargets(this.asBindingTarget(n), out)
+          if (!conditional) this.addPatternTargets(this.asBindingTarget(n), out)
           break
         }
         case "named_expression": {
           const target = n.childForFieldName("name") ?? n.namedChild(0)
-          this.addPatternTargets(target, out)
+          if (!conditional) this.addPatternTargets(target, out)
           break
         }
         case "delete_statement": {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
-            if (c?.type === "identifier") out.add(c.text)
+            if (!conditional && c?.type === "identifier") out.add(c.text)
           }
           break
         }
@@ -5304,7 +5352,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) stack.push(c)
+        if (c) stack.push({ node: c, conditional })
       }
     }
     for (const nm of this.collectGlobalWriteNames(rootNode).keys()) out.add(nm)
@@ -6585,6 +6633,9 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (im.module && im.isNamespaceImport) boundByImport.add(im.module.split(".")[0]!)
       if (!(im.items ?? []).includes("*")) {
         for (const it of im.items ?? []) if (it !== "*") boundByImport.add(it)
+        for (const binding of im.itemBindings ?? []) {
+          if (binding.as) boundByImport.add(String(binding.as))
+        }
       }
     }
     for (const r of ctx.relationships) {
@@ -6747,6 +6798,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (index.symbolNames?.has(target) === true) continue
       const specifier = ctx.moduleImportBindings.get(target)
       if (specifier === undefined || specifier.length === 0) continue
+      if (ctx.conditionalImportBindings.has(target)) continue
       if (specifier.startsWith(".")) continue
       // THE EVIDENCE SHAPE, AND IT IS THE REFUTATION CLASS. The arbiter verifies this claim against
       // the GATE's import-evidence map, which is built from the run's IMPORT EDGES: the key is the
@@ -7061,6 +7113,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (root.length > 0 && route.indexOf(".") > 0) {
         const specifier = bindings.get(root)
         if (!specifier) continue
+        if (ctx.conditionalImportBindings.has(root)) continue
         if (shadowedAt(line, root)) continue
         // THE PROJECT-INDEX SUPPRESSION. A claim of externality on this project's OWN code is
         // the one outcome the lane treats as a false statement, and only a complete index can
@@ -7076,6 +7129,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const specifier = bindings.get(tgt)
       if (!specifier) continue
+      if (ctx.conditionalImportBindings.has(tgt)) continue
       if (shadowedAt(line, tgt)) continue
       // The same suppression on the TARGET-BOUND shape (`from a.b import C` -> a read of `C`).
       if (ctx.projectModuleVerdict?.(specifier) === "project-local") continue

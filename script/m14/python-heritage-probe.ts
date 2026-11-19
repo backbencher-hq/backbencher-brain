@@ -269,7 +269,7 @@ async function main(): Promise<void> {
               bump(shape, "uncovered")
               bump(shape, "lookupMissed")
               uncoveredShapes.set(shape, (uncoveredShapes.get(shape) ?? 0) + 1)
-              if (uncoveredExamples.length < 20) {
+              if (uncoveredExamples.length < 100) {
                 uncoveredExamples.push(`${shape}: ${abs.replace(CORPUS_ROOT + "/", "")} :: ${clause.text?.slice(0, 80)}`)
               }
               continue
@@ -287,6 +287,9 @@ async function main(): Promise<void> {
               uncovered++
               bump(shape, "uncovered")
               uncoveredShapes.set(shape, (uncoveredShapes.get(shape) ?? 0) + 1)
+              if (uncoveredExamples.length < 100) {
+                uncoveredExamples.push(`${shape}: ${abs.replace(CORPUS_ROOT + "/", "")} :: ${className}(${leaf})`)
+              }
             }
           }
         }

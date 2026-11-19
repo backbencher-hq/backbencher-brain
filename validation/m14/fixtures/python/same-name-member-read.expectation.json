@@ -1,0 +1,14 @@
+{
+  "fixtureId": "python/same-name-member-read",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A same-named method/property member read is valid and must remain a uses edge; D5 is a structural coincidence, not a blanket false-edge rule.",
+  "expectRelationships": [
+    {
+      "type": "uses",
+      "from": "changed",
+      "target": "changed",
+      "meta.isMemberRead": true
+    }
+  ]
+}

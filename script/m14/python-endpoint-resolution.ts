@@ -60,7 +60,7 @@ import { starImportBindsOutOfView as starAxis } from "./python-star-axis"
 
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
-  "exports", "extends", "implements", "overrides", "instantiates",
+  "exports", "extends", "implements", "overrides", "instantiates", "decorates",
 ] as const
 type Type = (typeof ALL_TYPES)[number]
 

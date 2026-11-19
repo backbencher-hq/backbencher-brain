@@ -44,9 +44,11 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join } from "node:path"
 import { execFileSync } from "node:child_process"
 
-const REPO = process.env.BB_REPO ?? "<corpus-root>/backbencher-brain"
-const CORPUS_ROOT = process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
-const PY_CORPUS = process.env.BB_PY_CORPUS ?? join(CORPUS_ROOT, "python-corpus")
+const REPO = process.env.BB_REPO ?? process.cwd()
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
+const aggregateCorpus = join(CORPUS_ROOT, "python-corpus")
+const PY_CORPUS = process.env.BB_PY_CORPUS ??
+  (existsSync(aggregateCorpus) ? aggregateCorpus : CORPUS_ROOT)
 const BLIND = process.env.BB_BLIND === "1"
 
 /** Uppercase A-Z0-9 only, built with a char scan. NO REGEX (programme rule 1). */
@@ -67,7 +69,7 @@ if (arg && !LANGS.includes(alnumUpper(arg))) {
   process.exit(2)
 }
 
-const EXTS = [".py", ".pyi"]
+const EXTS = [".py", ".pyi", ".pyw"]
 // Code-bearing signals, declared per the v2 rule (data files lack declarations).
 // `.py` is matched on AST-declaration spelling, not prose.
 const SIGNALS_PY = ["def ", "class ", "import ", "from "]
@@ -229,7 +231,7 @@ for (const n of SIZES) {
   console.log(`\n--- NFILES=${n}: sampled ${sample.length} code-bearing files across the derived population of ${ALL.length}`)
   const r = await run(n, sample)
   runs.push(r)
-  console.log(`    ${r.fired.length}/10 types fired · parsed ${r.parsed}/${sample.length} (failed ${r.failed}) · imports[] ${r.imports} in ${r.filesWithImports} files`)
+  console.log(`    ${r.fired.length}/11 types fired · parsed ${r.parsed}/${sample.length} (failed ${r.failed}) · imports[] ${r.imports} in ${r.filesWithImports} files`)
   console.log(`    fired:  ${r.fired.join(" ") || "(none)"}`)
   console.log(`    silent: ${r.silent.join(" ") || "(all ten)"}`)
   if (r.offVocab.size) console.log(`    OFF-VOCABULARY emitted: ${[...r.offVocab].join(" ")}`)
@@ -240,7 +242,7 @@ for (const n of SIZES) {
 const biggest = runs.reduce((a, b) => (b.nfiles > a.nfiles ? b : a))
 console.log(`\n${LAYOUT("NFILES", 10)}${LAYOUT("types fired", 14)}${LAYOUT("parsed", 10)}imports[]  silent`)
 console.log("-".repeat(96))
-for (const r of runs) console.log(`${LAYOUT(String(r.nfiles), 10)}${LAYOUT(`${r.fired.length}/10`, 14)}${LAYOUT(`${r.parsed}/${r.nfiles}`, 10)}${String(r.imports).padEnd(10)}${r.silent.join(" ") || "-"}`)
+for (const r of runs) console.log(`${LAYOUT(String(r.nfiles), 10)}${LAYOUT(`${r.fired.length}/11`, 14)}${LAYOUT(`${r.parsed}/${r.nfiles}`, 10)}${String(r.imports).padEnd(10)}${r.silent.join(" ") || "-"}`)
 
 console.log(`\n=== VERDICT TABLE at NFILES=${biggest.nfiles} (population ${ALL.length} derived files) ===`)
 console.log(`${LAYOUT("type", 14)}${LAYOUT("verdict", 12)}count    files`)
@@ -250,5 +252,5 @@ for (const t of PROD) {
   const fs = [...(biggest.typeFiles.get(t) ?? [])]
   console.log(`${LAYOUT(t, 14)}${LAYOUT(n > 0 ? "EMITTED" : "NOT-EMITTED", 12)}${String(n).padEnd(8)}${n > 0 ? fs.slice(0, 2).join(", ") : "-"}`)
 }
-console.log(`\nverdict: ${biggest.fired.length}/10 production relationship types fired on the derived corpus at NFILES=${biggest.nfiles}.`)
+console.log(`\nverdict: ${biggest.fired.length}/11 production relationship types fired on the derived corpus at NFILES=${biggest.nfiles}.`)
 console.log(`Every count above is over ${biggest.parsed} parsed files drawn from a derived population of ${ALL.length}; the table prints both.`)

@@ -1,0 +1,7 @@
+{
+  "fixtureId": "python/from-import-alias-not-builtin",
+  "language": "python",
+  "expectRelationships": [
+    { "type": "references", "from": "use", "target": "dict", "meta.languageNamespace": null }
+  ]
+}

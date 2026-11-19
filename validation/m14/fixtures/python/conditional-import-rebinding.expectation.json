@@ -1,0 +1,28 @@
+{
+  "fixtureId": "python/conditional-import-rebinding",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A try/except import aliases the same name in mutually exclusive branches. The binding is real, but no one specifier is unconditional, so external/namespace claims must be withheld.",
+  "expectRelationships": [
+    {
+      "type": "imports",
+      "from": "conditional_import_rebinding",
+      "target": "first_module:*",
+      "meta.importedAs": "shared"
+    },
+    {
+      "type": "imports",
+      "from": "conditional_import_rebinding",
+      "target": "second_module:*",
+      "meta.importedAs": "shared"
+    },
+    {
+      "type": "calls",
+      "from": "conditional_import_rebinding",
+      "target": "run",
+      "meta.qualified": "shared.run",
+      "meta.isExternalTarget": null,
+      "meta.languageNamespace": null
+    }
+  ]
+}

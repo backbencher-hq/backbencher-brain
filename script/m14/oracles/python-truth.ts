@@ -407,6 +407,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // imported, or a class this file itself declares abstract by its HEADER.
   const iface = (() => {
     const importRoots = new Set<string>()
+    const moduleAliases = new Map<string, string>()
     const abcNames = new Set<string>()
     const protocolNames = new Set<string>()
     const collectionsAbcNames = new Set<string>()
@@ -416,11 +417,20 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const n = stack.pop()
       if (!n) continue
       if (n.type === "import_statement") {
-        // `import abc` binds the ROOT — and only an unaliased `import a.b` was ever
-        // spellable as a dotted base, which is why the dotted proof below keys on the root.
+        // `import abc` binds the ROOT. An aliased module import binds the alias instead,
+        // so `import collections.abc as cabc; class C(cabc.Mapping)` must be normalized
+        // before the interface marker is classified.
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (c && c.type === "dotted_name") importRoots.add(c.text.split(".")[0])
+          else if (c && c.type === "aliased_import") {
+            const imported = c.childForFieldName("name")?.text
+            const alias = c.childForFieldName("alias")?.text
+            if (imported && alias) {
+              importRoots.add(alias)
+              moduleAliases.set(alias, imported)
+            }
+          }
         }
       } else if (n.type === "import_from_statement") {
         const modNode = n.childForFieldName("module_name")
@@ -460,7 +470,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push(n.namedChild(i))
     }
-    return { importRoots, abcNames, protocolNames, collectionsAbcNames, markerLines }
+    return { importRoots, moduleAliases, abcNames, protocolNames, collectionsAbcNames, markerLines }
   })()
 
   /** The interface kind a base PROVES by this file's bindings, or null. */
@@ -470,9 +480,12 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       // `abc.ABC` unspellable as a user class, so no positional test is needed.
       const root = base.dotted.split(".")[0]
       if (!iface.importRoots.has(root)) return null
-      if (base.dotted === "abc.ABC" || base.dotted === "abc.ABCMeta") return "abc"
-      if (base.dotted === "typing.Protocol" || base.dotted === "typing_extensions.Protocol") return "typing"
-      if (root === "collections" && base.dotted.startsWith("collections.abc.")) return "collections.abc"
+      const module = iface.moduleAliases.get(root) ?? root
+      const qualified = `${module}${base.dotted.slice(root.length)}`
+      if (qualified === "abc.ABC" || qualified === "abc.ABCMeta") return "abc"
+      if (qualified === "typing.Protocol" || qualified === "typing_extensions.Protocol") return "typing"
+      if ((module === "collections" || module === "collections.abc") &&
+          qualified.startsWith("collections.abc.")) return "collections.abc"
       return null
     }
     // A BARE base is POSITIONAL: the name must be bound to the marker by an import at or
@@ -531,7 +544,10 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // analyzer does not, so mirroring the rule here is what makes the differential able to
     // see anything else in the column.
     for (const ref of c.baseRefs) {
-      if (ref.leaf === c.name) continue
+      // A BARE same-name base is the rebinding/PGO-shadow case and is not a self-heritage edge.
+      // A QUALIFIED same-name base names a different declaration: class ArgumentParser(argparse.ArgumentParser)
+      // must remain a real edge. Suppressing all same-leaf spellings hid this from the independent oracle.
+      if (ref.leaf === c.name && ref.dotted === null) continue
       const provenInterface = markerKindFor(ref, c.line) !== null ||
         classes.some((d) => d.name === ref.leaf && d.line < c.line && declaresInterface(ref.leaf, new Set()))
       add(provenInterface ? "implements" : "extends", c.name, ref.leaf, c.line)
@@ -598,9 +614,12 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
             const recv = fn.childForFieldName("object")
             const recvDotted = dottedOfExpr(recv)
             const recvLeaf = leafOfExpr(recv)
+            const canonicalRecvDotted = recvDotted
+              ? `${iface.moduleAliases.get(recvDotted.split(".")[0]) ?? recvDotted.split(".")[0]}${recvDotted.slice(recvDotted.split(".")[0].length)}`
+              : null
             let proven = false
             if (recvDotted && iface.importRoots.has(recvDotted.split(".")[0])) {
-              proven = ABC_REGISTRIES.has(recvDotted) || CAB_REGISTRIES.has(recvDotted)
+              proven = ABC_REGISTRIES.has(canonicalRecvDotted ?? "") || CAB_REGISTRIES.has(canonicalRecvDotted ?? "")
             } else if (recvLeaf) {
               proven = iface.collectionsAbcNames.has(recvLeaf) || localAbstract.has(recvLeaf)
             }
@@ -806,8 +825,8 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     walkImports(rootNode)
   }
 
-  // `exports` — 96 edges, the smallest relation, and the one whose whole content is a
-  // contract the author wrote down. `__all__` assigned a `list` or `tuple` LITERAL, one edge
+  // `exports` — the smallest relation, and the one whose whole content is a
+  // contract the author wrote down. `__all__` assigned a `list`, `tuple`, or `set` LITERAL, one edge
   // per string item.
   //
   // Only the literal form. A `NAME` inside the literal, a concatenation and `.extend()` are
@@ -864,7 +883,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const right = n.childForFieldName("right")
         if (left && left.type === "identifier" && left.text === "__all__" &&
             nested === 0 &&
-            right && (right.type === "list" || right.type === "tuple")) {
+            right && (right.type === "list" || right.type === "tuple" || right.type === "set")) {
           for (let i = 0; i < right.namedChildCount; i++) {
             const el = right.namedChild(i)
             if (el && el.type === "string") {

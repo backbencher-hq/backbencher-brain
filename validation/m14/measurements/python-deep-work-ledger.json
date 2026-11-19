@@ -1,0 +1,108 @@
+{
+  "lane": "python",
+  "status": "partially-certified",
+  "verificationKey": "evidence-is-the-answer",
+  "populations": {
+    "heritageAndEndpoint": {
+      "admittedFiles": 11488,
+      "trackedPaths": 14022,
+      "repos": 49,
+      "source": "script/m14/python-heritage-probe.ts"
+    },
+    "freshOntology": {
+      "admittedFiles": 11333,
+      "trackedPaths": 519643,
+      "source": "script/m14/ontology-coverage-gate.ts --fresh"
+    }
+  },
+  "production": {
+    "relationshipTypes": [
+      "calls",
+      "uses",
+      "contains",
+      "imports",
+      "references",
+      "exports",
+      "extends",
+      "implements",
+      "overrides",
+      "instantiates",
+      "decorates"
+    ],
+    "conditionalImports": "conservative"
+  },
+  "verified": {
+    "pythonFixtures": {
+      "pass": 72,
+      "fail": 0,
+      "command": "bun run script/m14/run-fixtures.ts --lang python"
+    },
+    "sourceTypecheck": {
+      "pass": true,
+      "command": "npm run typecheck"
+    },
+    "differentialOracle": {
+      "missing": 0,
+      "unexplained": 0,
+      "files": [
+        "conditional-import-rebinding.py",
+        "namespace-alias-interface.py",
+        "set-all-exports.py",
+        "from-import-alias-not-builtin.py",
+        "qualified-same-leaf-heritage.py",
+        "same-name-member-read.py"
+      ]
+    },
+    "oracleLabels": {
+      "populationCodeBearingFiles": 10463,
+      "sampleFiles": 40,
+      "declaredLabels": 11,
+      "observedLabels": 11
+    },
+    "freshOntology": {
+      "emitted": 11,
+      "ruledSound": 3,
+      "falsified": 0,
+      "ruledUnknown": 0,
+      "measuredFiles": 11333
+    },
+    "flatCorpusFiring": {
+      "derivedFiles": 11330,
+      "verifiedSampleFiles": 500,
+      "productionRelationshipTypes": 11,
+      "firedRelationshipTypes": 11,
+      "command": "BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories bun run script/m14/python-firing-check.mts"
+    },
+    "heritageResidual": {
+      "clauses": 23422,
+      "covered": 23171,
+      "uncovered": 251,
+      "qualifiedSameLeafFix": "post-fix",
+      "source": "script/m14/python-heritage-probe.ts"
+    },
+    "heritageQualifiedSameLeafFix": {
+      "ansibleBefore": {
+        "coveredButNoEdge": 8,
+        "uncovered": 78
+      },
+      "ansibleAfter": {
+        "coveredButNoEdge": 0,
+        "uncovered": 70,
+        "remainingKeywordArguments": 69,
+        "remainingCallBases": 1
+      }
+    },
+    "usesSelfLoops": {
+      "count": 750,
+      "files": 178,
+      "source": "script/m14/python-endpoint-defects.ts"
+    }
+  },
+  "remaining": [
+    "adjudicate remaining call/splat/comment/identical-name heritage shapes",
+    "adjudicate remaining uses self-loop clusters at full-population level",
+    "restore or replace missing historical evidence citations",
+    "reconcile remaining historical documentation counts and references",
+    "run the final repeated corpus, oracle, typecheck, mutant, and artifact matrix"
+  ]
+}

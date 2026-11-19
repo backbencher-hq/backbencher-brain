@@ -1,0 +1,8 @@
+{
+  "fixtureId": "python/set-all-exports",
+  "language": "python",
+  "expectRelationships": [
+    { "type": "exports", "from": "set_all_exports", "target": "public_function", "meta.dunderAllForm": "set" },
+    { "type": "exports", "from": "set_all_exports", "target": "_private_function", "meta.dunderAllForm": "set" }
+  ]
+}

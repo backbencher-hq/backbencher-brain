@@ -1,0 +1,33 @@
+{
+  "fixtureId": "python/qualified-same-leaf-heritage",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Qualified bases whose leaf equals the derived class name are external name collisions, not bare self-rebinds.",
+  "expectRelationships": [
+    {
+      "type": "extends",
+      "from": "ArgumentParser",
+      "target": "ArgumentParser",
+      "meta.qualified": "argparse.ArgumentParser"
+    },
+    {
+      "type": "extends",
+      "from": "HTTPRedirectHandler",
+      "target": "HTTPRedirectHandler",
+      "meta.qualified": "urllib.request.HTTPRedirectHandler"
+    },
+    {
+      "type": "extends",
+      "from": "_Profile",
+      "target": "_Profile",
+      "meta.qualified": "legacy._Profile"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "extends",
+      "from": "Rebind",
+      "target": "Rebind"
+    }
+  ]
+}

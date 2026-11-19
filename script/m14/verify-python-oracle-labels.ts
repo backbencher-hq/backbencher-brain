@@ -23,9 +23,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 
 const REPO = process.env.BB_REPO || process.cwd()
-const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories"
+const CORPUS = process.env.BB_CORPUS_ROOT ?? process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
 const NFILES = Number(process.argv[2] || 400)
-const EXTS = [".py", ".pyi"]
+const EXTS = [".py", ".pyi", ".pyw"]
 const SKIP_DIRS = new Set([
   "node_modules", ".git", "target", "build", "dist", ".tox", "vendor",
   "__pycache__", ".mypy_cache", ".venv", "venv", "htmlcov", ".eggs",

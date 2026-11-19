@@ -68,7 +68,7 @@ const filesOf = (dir: string): string[] => {
 // ---- the constructs under measurement -------------------------------------
 //
 // `exports` fires from a MODULE-SCOPE `__all__` assignment whose value is a
-// `list` or a `tuple` literal. The probe counts every shape it finds, split by
+// `list`, `tuple`, or `set` literal. The probe counts every shape it finds, split by
 // scope and by RHS type, so a zero in the analyzer's output can be attributed
 // to the construct being absent rather than to the filter being wrong.
 type DunderAllHit = { scope: string; rhs: string; items: number; file: string; line: number }
@@ -140,7 +140,7 @@ for (const root of roots) {
           const right = node.childForFieldName("right") ?? node.namedChild(node.namedChildCount - 1)
           let items = 0
           if (right && right.type === "list") for (let i = 0; i < right.namedChildCount; i++) if (right.namedChild(i)?.type === "string") items++
-          if (right && right.type === "tuple") for (let i = 0; i < right.namedChildCount; i++) if (right.namedChild(i)?.type === "string") items++
+          if (right && (right.type === "tuple" || right.type === "set")) for (let i = 0; i < right.namedChildCount; i++) if (right.namedChild(i)?.type === "string") items++
           dunderAll.push({ scope, rhs: right?.type ?? "none", items, file: abs, line: node.startPosition.row + 1 })
         }
       }
@@ -215,8 +215,8 @@ console.log(`\nfiles parsed ${filesParsed}, failed ${filesFailed}, with parse er
 console.log(`\n== INSTRUMENT B1: module-scope __all__ (what \`exports\` keys on) ==`)
 console.log(`  total __all__ assignments on the tree: ${dunderAll.length}`)
 for (const [k, v] of [...byScope.entries()].sort((a, b) => b[1] - a[1])) console.log(`  ${w(k, 26)} ${v}`)
-const moduleLiteral = dunderAll.filter((d) => d.scope === "module" && (d.rhs === "list" || d.rhs === "tuple"))
-console.log(`  MODULE-scope list/tuple __all__ (the only shape that fires exports): ${moduleLiteral.length}`)
+const moduleLiteral = dunderAll.filter((d) => d.scope === "module" && (d.rhs === "list" || d.rhs === "tuple" || d.rhs === "set"))
+console.log(`  MODULE-scope list/tuple/set __all__ (the only shapes that fire exports): ${moduleLiteral.length}`)
 for (const d of moduleLiteral.slice(0, 10)) console.log(`     ${d.file}:${d.line} ${d.rhs} items=${d.items}`)
 
 console.log(`\n== INSTRUMENT B2: interface-declaring class headers (what \`implements\` could key on) ==`)

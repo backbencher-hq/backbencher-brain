@@ -1,0 +1,13 @@
+{
+  "fixtureId": "python/namespace-alias-interface",
+  "language": "python",
+  "expectRelationships": [
+    { "type": "implements", "from": "AbstractThing", "target": "ABC", "meta.interfaceKind": "abc" },
+    { "type": "implements", "from": "MappingThing", "target": "Mapping", "meta.interfaceKind": "collections.abc" },
+    { "type": "implements", "from": "AbstractThing", "target": "Sequence", "meta.reasonCode": "virtual-registration" }
+  ],
+  "forbidRelationships": [
+    { "type": "extends", "from": "AbstractThing", "target": "ABC" },
+    { "type": "extends", "from": "MappingThing", "target": "Mapping" }
+  ]
+}

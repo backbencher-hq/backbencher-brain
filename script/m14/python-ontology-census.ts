@@ -92,6 +92,7 @@ const ALL_TYPES = [
   "implements",
   "overrides",
   "instantiates",
+  "decorates",
 ] as const
 type Type = (typeof ALL_TYPES)[number]
 

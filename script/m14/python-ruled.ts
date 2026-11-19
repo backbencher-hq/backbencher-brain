@@ -125,7 +125,7 @@ type Instrument = "A:grammar-inventory" | "B:parse-tree-count"
  * error only exists at an assignment site and this lane's table had no consumer before then.
  * The neighbouring `script/m14/zig-ruled.ts` declares the same union the same way.
  */
-type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates"
+type Type = "calls" | "uses" | "contains" | "imports" | "references" | "exports" | "extends" | "implements" | "overrides" | "instantiates" | "decorates" | "mixes_in" | "part_of" | "renders"
 
 /** Mirrors `ontology-coverage-gate.ts`'s `Ruled`. */
 export type Ruled = {
@@ -236,6 +236,34 @@ export const PYTHON_RULED: Ruled[] = [
       "instrument. A reader who thinks ABC/Protocol bases SHOULD be split out has the " +
       "71-edge number above and can register PYTHON_RULED_INSTRUMENT_B to make the gate " +
       "count it.",
+  },
+  {
+    type: "mixes_in",
+    instrument: "A:grammar-inventory",
+    nodeTypesThatWouldMeanIt: ["mixins", "mixin", "mixin_clause", "mixin_declaration", "trait", "trait_declaration", "mixin_specifier"],
+    spacesProbed: ["node-types", "attribute-keys"],
+    describe:
+      "RULED UNDECIDABLE — Python has no mixin clause or mixin semantics distinct from nominal inheritance. " +
+      "Multiple-inheritance bases are nominal supertypes and are already emitted as `extends`; the `with_statement` " +
+      "node is a context-manager statement, not a mixin clause.",
+  },
+  {
+    type: "part_of",
+    instrument: "A:grammar-inventory",
+    nodeTypesThatWouldMeanIt: ["part_directive", "part_of_directive", "part_spec", "include_directive", "library_directive"],
+    spacesProbed: ["node-types", "attribute-keys"],
+    describe:
+      "RULED UNDECIDABLE — Python has no Dart-style part directive or shared compile-unit scope. " +
+      "Python inclusion is an import, published under `imports`; the absence is structural, not a missing search.",
+  },
+  {
+    type: "renders",
+    instrument: "A:grammar-inventory",
+    nodeTypesThatWouldMeanIt: ["jsx_element", "jsx_self_closing_element", "jsx_fragment", "element", "self_closing_element", "component", "template_element"],
+    spacesProbed: ["node-types", "attribute-keys"],
+    describe:
+      "RULED UNDECIDABLE — Python has no JSX/component render-tree node. Python template syntax is string data " +
+      "and template-producing calls remain `calls`; no component-to-component render edge is expressible in the grammar.",
   },
 ]
 

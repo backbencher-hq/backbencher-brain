@@ -43,7 +43,7 @@ parser.setLanguage(await wts.Language.load(fs.readFileSync(path.join(ROOT, "wasm
 const engine: any = await import(path.join(ROOT, "src/ast/engine"))
 const { derivePythonTruth } = await import(path.join(ROOT, "script/m14/oracles/python-truth"))
 
-const TYPES = ["contains", "extends", "overrides", "calls", "instantiates", "uses", "references", "imports", "exports"] as const
+const TYPES = ["contains", "extends", "implements", "overrides", "calls", "instantiates", "uses", "references", "imports", "exports", "decorates"] as const
 const SHOW = 8
 
 const args = process.argv.slice(2)

@@ -32,11 +32,13 @@ import { execFileSync } from "node:child_process"
 
 interface CorpusFile { repo: string; rel: string; abs: string }
 
-const REPO = process.env.BB_REPO ?? "<corpus-root>/backbencher-brain"
-const CORPUS_ROOT = process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
-const PY_CORPUS = process.env.BB_PY_CORPUS ?? join(CORPUS_ROOT, "python-corpus")
+const REPO = process.env.BB_REPO ?? process.cwd()
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
+const aggregateCorpus = join(CORPUS_ROOT, "python-corpus")
+const PY_CORPUS = process.env.BB_PY_CORPUS ??
+  (existsSync(aggregateCorpus) ? aggregateCorpus : CORPUS_ROOT)
 const LIMIT = Number(process.env.LIMIT ?? 0) // 0 = whole derived population
-const EXTS = [".py", ".pyi"]
+const EXTS = [".py", ".pyi", ".pyw"]
 
 /**
  * The population, DERIVED, and this is where the second measurement defect of this

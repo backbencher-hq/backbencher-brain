@@ -96,7 +96,36 @@ const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 /** The lane is the first NON-FLAG argument: `--self-test` / `--coverage` must not be read as a lane
  *  name, or `gate --self-test` would look for a language called `--self-test` and exit 2. */
 const LANG = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "bash"
-const ALL_TYPES = ["calls", "uses", "contains", "imports", "references", "exports", "extends", "implements", "overrides", "instantiates"] as const
+/**
+ * THE ONTOLOGY, all FOURTEEN values of it — not ten.
+ *
+ * WHY THIS LIST WAS TEN FOR SO LONG, AND WHY THAT WAS A DEFECT. `src/ast/types.ts:91` has
+ * declared fourteen `RelationshipType` values since the four EXTENDED ones landed
+ * (`decorates`, `mixes_in`, `part_of`, `renders`). This list stopped at ten, and because it is
+ * used in all three places the gate reads a type — the edge counter (`if (!ALL_TYPES.includes(t))
+ * continue`), the un-emitted guard, and the row loop — a type absent from it was not "unruled".
+ * It was INVISIBLE: its edges were dropped before counting, it never reached the guard, and it
+ * never got a row. A lane could emit `part_of` on every file and this gate would report ten
+ * clean rows and say nothing.
+ *
+ * MEASURED CONSEQUENCE, before the fix. `ontology-coverage-gate.ts csharp` printed
+ * `emitted 10/10` while C# actually emits an eleventh type (`renders`, corpus-unexercised) and
+ * rules two more — and the two rulings lived in `script/m14/csharp-ruled.ts` where no row could
+ * ever read them. `clean` had the same hole with four entries. So the arbiter was structurally
+ * unable to certify or falsify the four types the vocabulary defines, for every lane.
+ *
+ * THE CHANGE IS ADDITIVE, and the blast radius was measured rather than assumed
+ * (`.scratch/widen-blast.ts`, 52 lanes): 155 new `RULED-UNJUSTIFIED` rows fleet-wide — decorates
+ * 34, mixes_in 42, part_of 45, renders 34. That is DEBT BEING EXPOSED, not a regression: every
+ * one is a lane that does not emit the type and has never ruled it out. The self-test passes
+ * 11/11 before and after. The base ten are unaffected — all 52 lanes already report them.
+ */
+const ALL_TYPES = [
+  "calls", "uses", "contains", "imports", "references", "exports",
+  "extends", "implements", "overrides", "instantiates",
+  // the four EXTENDED values (src/ast/types.ts:91)
+  "decorates", "mixes_in", "part_of", "renders",
+] as const
 /**
  * EXPORTED so lane ruling tables can import it instead of restating the shape.
  *
@@ -574,7 +603,7 @@ const RULED_BY_LANG: Record<string, Ruled[]> = {
   dart: DART_RULED,
   powershell: POWERSHELL_RULED,
   python: PYTHON_RULED,
-  csharp: CSHARP_RULED,
+  csharp: CSHARP_RULED as unknown as Ruled[],
   // THE THREE TABLES THE REGISTRATION GATE FOUND MISSING (2026-11-04): these lanes had
   // committed `script/m14/{html,javascript,svelte}-ruled.ts` but no line here, so the
   // arbiter could not see them and each lane read as unadjudicated — a ruling table that
@@ -606,34 +635,70 @@ const SIZE_CAP = 1024 * 1024
 const files: { repo: string; dir: string; rel: string; abs: string; text: string }[] = []
 const excluded = { tracked: 0, absent: 0, overCap: 0, wrongLanguage: 0 }
 let overCapLargest = 0
-for (const e of readdirSync(CR)) {
-  const dir = path.join(CR, e)
-  try { if (!statSync(dir).isDirectory()) continue; execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) } catch { continue }
-  let tracked: string[]
-  try { tracked = execFileSync("git", ["-C", dir, "ls-files", "-z"], { encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }).split("\0").filter(Boolean) } catch { continue }
-  for (const rel of tracked) {
-    const abs = path.join(dir, rel)
+const roots: Array<{ repo: string; dir: string; kind: "git" | "filesystem" }> = []
+const aggregate = path.join(CR, "python-corpus")
+if (LANG === "python" && existsSync(aggregate)) {
+  for (const e of readdirSync(aggregate, { withFileTypes: true })) {
+    if (!e.isDirectory() || e.name === ".git") continue
+    const dir = path.join(aggregate, e.name)
+    let isGit = false
+    try { execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }); isGit = true } catch {}
+    roots.push({ repo: e.name, dir, kind: isGit ? "git" : "filesystem" })
+  }
+} else {
+  for (const e of readdirSync(CR, { withFileTypes: true })) {
+    if (!e.isDirectory()) continue
+    const dir = path.join(CR, e.name)
+    try { execFileSync("git", ["-C", dir, "rev-parse", "--git-dir"], { stdio: "ignore" }) }
+    catch { continue }
+    roots.push({ repo: e.name, dir, kind: "git" })
+  }
+}
+
+for (const root of roots) {
+  let paths: string[] = []
+  if (root.kind === "git") {
+    try {
+      paths = execFileSync("git", ["-C", root.dir, "ls-files", "-z"], {
+        encoding: "utf8",
+        maxBuffer: 512 * 1024 * 1024,
+      }).split("\0").filter(Boolean)
+    } catch { continue }
+  } else {
+    const stack = [root.dir]
+    const skip = new Set([".git", "node_modules", "__pycache__", ".tox", ".mypy_cache"])
+    while (stack.length > 0) {
+      const d = stack.pop()!
+      let ents
+      try { ents = readdirSync(d, { withFileTypes: true }) } catch { continue }
+      for (const ent of ents) {
+        if (ent.isDirectory()) {
+          if (!skip.has(ent.name)) stack.push(path.join(d, ent.name))
+        } else {
+          paths.push(path.relative(root.dir, path.join(d, ent.name)))
+        }
+      }
+    }
+  }
+
+  for (const rel of paths) {
+    const abs = path.join(root.dir, rel)
     excluded.tracked++
     let text: string
     let size: number
     try {
       size = statSync(abs).size
       if (size > SIZE_CAP) {
-        // COUNTED IN THIS LANE'S TERMS, by name: the file is never read, so a content-based
-        // detection is impossible and reporting every language's bundles as this lane's
-        // exclusions would be a number about the corpus wearing this lane's label.
         if (detectLanguageFromPath(abs) === LANG) { excluded.overCap++; overCapLargest = Math.max(overCapLargest, size) }
         continue
       }
       text = readFileSync(abs, "utf8")
     } catch {
-      // `continue` here is a file git tracks and this process cannot read. Counted the same
-      // way, and for the same reason.
       if (detectLanguageFromPath(abs) === LANG) excluded.absent++
       continue
     }
     if (detectLanguageFromPath(abs, text) !== LANG) continue
-    files.push({ repo: e, dir, rel, abs, text })
+    files.push({ repo: root.repo, dir: root.dir, rel, abs, text })
   }
 }
 console.log(`ontology coverage gate — ${LANG}`)
@@ -1050,7 +1115,12 @@ const unjustified = rows.filter((r) => r.status === "RULED-UNJUSTIFIED")
 const unknown = rows.filter((r) => r.status === "RULED-UNKNOWN")
 const emitted = rows.filter((r) => r.status === "EMITTED")
 console.log("-".repeat(120))
-console.log(`emitted ${emitted.length}/10   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}   ruled-unknown ${unknown.length}`)
+// THE DENOMINATOR IS THE ONTOLOGY, not a literal. This line read `emitted N/10` while
+// `ALL_TYPES` had fourteen values after the EXTENDED widening, so a run that emitted eleven
+// types printed `emitted 10/10` — a correct-looking number about a smaller set, which is the
+// one defect this programme keeps paying for. `ALL_TYPES.length` cannot drift from the table
+// above because both come from the same list.
+console.log(`emitted ${emitted.length}/${ALL_TYPES.length}   ruled-sound ${rows.filter((r) => r.status === "RULED-SOUND").length}   FALSIFIED ${falsified.length}   ruled-without-justification ${unjustified.length}   ruled-unknown ${unknown.length}`)
 if (unknown.length) {
   // NOT a failure: an unmeasured row is work to do, not a defective ruling. It must never be read
   // as a certification, which is exactly why it is not RULED-SOUND.

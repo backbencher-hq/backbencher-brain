@@ -24,6 +24,13 @@
 - Language detection: extensions `.py` / `.pyi` / **`.pyw`** → `language-detection.ts:151` (`py: "python", pyw: "python", pyi: "python"`; `.pyx`/`.pxd` were REMOVED by a ruling because Cython is a different language and its files carry ERROR nodes at 85.6 %/95.5 % against `.py` at 2.3 %)
 - Wired in: `engine.ts getAnalyzer` → `RealPythonAnalyzer`
 
+> **Live reconciliation banner (2026-11-19).** The relationship vocabulary is now 11 emitted
+> types, including `decorates`; `mixes_in`, `part_of`, and `renders` are ruled absent.
+> The live fixture count is 72/72. Numbers in later sections from earlier rounds are historical
+> measurements, their populations are not interchangeable, and only the live ledger and reruns
+> named beside a command supersede them:
+> `validation/m14/measurements/python-deep-work-ledger.json`.
+
 ## Symbol contract
 
 | Field | Supported? | How extracted (AST node/field) |
@@ -45,10 +52,10 @@
 | --- | --- | --- | --- |
 | calls | ✅ | `call` → callee leaf (member expressions reduce to leaf: `self.store.get()` → `get`); source = enclosing function/method leaf name; builtins filtered (full `PYTHON_BUILTINS` set), dunders (`__x__`) filtered; `super()` filtered; nested functions (e.g. `wrapper` inside `logged`) and function locals (`store`, `service`) never change the call source. **PY-11:** an UPPERCASE callee not declared in this file is a `calls` edge, not a dropped one — measured 889 of 1,152 such callees (77.2%, 368 of them explicitly imported) produced NO relationship before the fix, and `module = AnsibleModule(...)` is the shape, once per file, across a corpus | 0.9 |
 | extends | ✅ | `class_definition` → base-class argument list (`Repository[User]` → leaf `Repository`); `Generic[T]` → `Generic`; dotted `a.b` → `b`; `Enum` bases detected for kind | 1.0 |
-| implements | ✅ | TWO mechanisms, both real nodes. (i) **BASE-LIST RELABEL** at `real-python-analyzer.ts:2038` — a base the FILE'S OWN IMPORT proves is an interface (`abc.ABC`, `typing.Protocol`) publishes `implements` instead of `extends`: ONE edge per base, the most specific true label (**PY-34**), with the inheritance fact still carried in `metadata.superTypes` for the store's MRO walk. (ii) **REGISTER TIER** at `:1928` — `ABC.register(C)` / `C.register(X)` publishes `implements` with `reasonCode: virtual-registration` and no base-list entry. Proof is the FILE'S OWN IMPORT, never the spelling (`ABC`/`Protocol` are legal class names: 27 `Protocol` base occurrences in the corpus are that, 24 inside CPython's own `typing.py`); `typing.Generic` is EXCLUDED at 291 base occurrences because it is a type-parameter marker, not an interface. Measured 333 edges / 97 files (2026-10-05 era population, 11,488 files): resolved 202, external 104, ambiguous 27, **UNRESOLVED 0** — an `implements` edge never names a target the graph cannot hold. By reasonCode: in-file-interface-base 189, stdlib-interface-marker 141, virtual-registration 3 | 1.0 base-list relabel / 0.9 register |
+| implements | ✅ | TWO mechanisms, both real nodes. (i) **BASE-LIST RELABEL** at `real-python-analyzer.ts:2038` — a base the FILE'S OWN IMPORT proves is an interface (`abc.ABC`, `typing.Protocol`) publishes `implements` instead of `extends`: ONE edge per base, the most specific true label (**PY-34**), with the inheritance fact still carried in `metadata.superTypes` for the store's MRO walk. Namespace imports and aliases are resolved too (`import collections.abc as cabc; class C(cabc.Mapping)`). (ii) **REGISTER TIER** at `:1928` — `ABC.register(C)` / `C.register(X)` publishes `implements` with `reasonCode: virtual-registration` and no base-list entry, including namespace aliases. Proof is the FILE'S OWN IMPORT, never the spelling (`ABC`/`Protocol` are legal class names: 27 `Protocol` base occurrences in the corpus are that, 24 inside CPython's own `typing.py`); `typing.Generic` is EXCLUDED at 291 base occurrences because it is a type-parameter marker, not an interface. Measured 333 edges / 97 files (2026-10-05 era population, 11,488 files): resolved 202, external 104, ambiguous 27, **UNRESOLVED 0** — an `implements` edge never names a target the graph cannot hold. By reasonCode: in-file-interface-base 189, stdlib-interface-marker 141, virtual-registration 3 | 1.0 base-list relabel / 0.9 register |
 | uses | ✅ | member **read** `self.x` → leaf, marked `isMemberRead`; assignment targets, call callees (`self.ping()` — the attribute IS the call) and call receivers (`self.svc.ping()` — `self.svc` is traversal) are excluded, so a read is only ever a read | 0.9 |
-| imports | ✅ | `import_statement` / `import_from_statement` → module leaf → `${modulePath}:${item}`; relative imports (`from .models import User`) → module leaf | 1.0 |
-| exports | ✅ | `__all__` assigned a `list` **or** `tuple` literal → each string item; module-level names. **PY-14:** tuple-only reading left 3 of 16 corpus `__all__` assignments (19%) publishing nothing. Each edge and each `exports` entry records the **declaring form** (`dunderAllForm` / `form`) — provenance, since `list` and `tuple` are one declaration to `from mod import *`. A `NAME` in the literal, a concatenation, and `.extend()` are declared boundaries (pinned as forbids) | 1.0 |
+| imports | ✅ | `import_statement` / `import_from_statement` → module leaf → `${modulePath}:${item}`; relative imports (`from .models import User`) → module leaf. Conditional imports (`if`/`try`/`match`/loop blocks) remain import observations, but their bound names are marked `conditionalImportBindings` and are withheld from unconditional external/namespace claims. | 1.0 |
+| exports | ✅ | `__all__` assigned a `list`, `tuple`, **or `set`** literal → each string item; module-level names. **PY-14:** tuple-only reading left 3 of 16 corpus `__all__` assignments (19%) publishing nothing. Each edge and each `exports` entry records the **declaring form** (`dunderAllForm` / `form`) — provenance, since these literal containers are one declaration to `from mod import *`. A `NAME` in the literal, a concatenation, and `.extend()` are declared boundaries (pinned as forbids) | 1.0 |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, enum members, record fields. Three boundaries, one rule read three ways, all confirmed against CPython's `vars()`: a class in a **class body** gets `ownerName` and IS a member (`Outer.Inner` resolves); a class in a **method or function body** does not (`Outer.Local` does not resolve); and a name bound inside a **lambda or comprehension** is that function's local, never a member | 1.0 |
 | references | ✅ | `references` is sourced to whoever WROTE the annotation, not to whoever is mentioned — python keeps type information in annotations, so `x: T` inside a function belongs to that function. `assignment` / `typed_parameter` / `typed_default_parameter` → `declared_type`; `function_definition` → `return_type`; `isinstance(x, T)` / `issubclass(a, B)` → `instanceof_check`. Dedupes per `(source, target, kind)`. Builtin scalars (`str int float complex bool bytes object None Any self cls`) excluded. Measured 21,028 edges over 5,365 corpus files. **This row previously read "— not emitted"; that was wrong and is corrected here** — the code emits it at `extractDeclaredTypeRefs`, the differential has audited it since it was written, and the same file's differential table below already credited 12,280 agreed edges to it | 0.95 |
 | overrides | ✅ | resolved against the class's **DECLARATION** (`name@startLine`), never its name — two `class C` declarations in one file are unrelated, and a name-keyed lookup gave a base-less class its namesake's bases. A base spelling the class's own name is excluded from both this derivation and `extends` (#299), so a rebind class overrides nothing and never overrides itself; method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
@@ -59,6 +66,42 @@
 | part_of | ❌ | **RULED UNDECIDABLE — not emitted**, rung named. 0 `RelationshipType.PartOf` sites. python's unit of inclusion is the IMPORT, and the semantics are opposite: a Dart `part` SHARES its library's scope while a python import CREATES a new one, so **R3** would hang the relation on a construct that contradicts it and the edge would assert something the language makes false. **R1/R2** are irrelevant for the same reason `mixes_in`'s are: there is no clause to find or add. Near-miss: `import_statement` / `import_from_statement`, ALREADY published as `imports` — 30,290 sites / 6,798 files, and **all 30,290 are covered** by the 100,237 `imports` edges. Ruling: `reviews/m60-01-python-extended-values.md:68` | — |
 
 `depends` is **not** a `RelationshipType` value — `src/ast/types.ts` has 0 occurrences of `Depends`, three divergent relationship enums notwithstanding — so it is not a register row and this table makes no claim about it. The analyzer emits nothing for it; dependency between modules is carried by `imports`.
+
+## Evidence integrity status
+
+The following historical evidence paths are **not present** in this checkout and must not be
+reported as verified:
+
+- `validation/m14/verification/PYTHON-D7-WALLS.md`
+- `validation/m14/verification/PYTHON-CLASSIFICATION-2026-10-21.md`
+- `validation/m14/verification/PYTHON-FIX.md`
+- `validation/m14/verification/PYTHON-STATE.md`
+- `validation/m14/verification/PYTHON-DEPTH-D7.md`
+- `validation/m14/measurements/python-cell-noindex-2026-10-21.txt`
+- `reviews/python/master-review.md`
+
+The live evidence ledger is
+`validation/m14/measurements/python-deep-work-ledger.json`. It separates 11,488-file
+heritage/endpoint populations from the 11,333-file fresh ontology population and keeps
+before/post-fix heritage counts distinct.
+
+## Conditional and residual evidence
+
+- **Conditional imports:** names imported from `if`, `try`, `match`, `for`, or `while` blocks are
+  recorded as conditional bindings. They remain observed import edges, but the analyzer withholds
+  unconditional `externalTarget`, namespace, and imported-name claims for those names.
+- **Heritage residual:** the 11,488-file corpus probe measured 23,422 base-list clauses: 21,284
+  covered and 2,138 uncovered before the qualified-same-leaf fix. The post-fix whole-corpus
+  rerun measured 23,171 covered and 251 uncovered. Qualified same-leaf bases now publish edges;
+  Ansible moved from 8 resolved-but-unemitted attribute bases to zero. Remaining clauses are
+  185 keyword arguments (including `metaclass`/`total`, not bases), 34 dictionary splats,
+  14 list splats, 9 call-shaped bases, 7 comments, and 2 intentional same-name identifiers.
+- **Uses self-loops:** the 11,488-file endpoint probe measured 750 `uses` self-loops across 178
+  files. This is a measured residual; no blanket rule removes them because a same-named function
+  and property/member read can be valid Python. The probe is pinned and no D5 edge is classified
+  as a deletion verdict. A same-named method/property read is pinned by
+  `validation/m14/fixtures/python/same-name-member-read.{py,expectation.json}`; blanket deletion
+  by `source === target` is forbidden.
 
 ## Supported constructs
 
@@ -71,15 +114,11 @@
 
 ## Grammar & corpus
 
-- **Grammar upgraded in M12.27** from the stale pre-0.25.0 pin to npm
-  `tree-sitter-python` 0.25.0. The corrected wasm comparison (fresh
-  subprocess per scan — the old in-process swap was silently invalid because
-  `_autoLoadWasm` caches registry bytes at module init, so both scans read
-  the pinned grammar) proves the upgrade: **9 → 7 error files** on the cython
-  corpus (fixes `test_tstring.py` + `test_templatelib.py`, Cython fused-type
-  template-string prefixes; **0 regressions**), and recovers the correct
-  `overrides` edge on generic-subscript bases (`Repository[User]`) that the
-  pinned grammar silently missed.
+- **Grammar provenance corrected.** The parser uses the checked-in vendored
+  `wasm/tree-sitter-python.wasm` build. `package.json` has no
+  `tree-sitter-python` dependency and there is no installed
+  `node_modules/tree-sitter-python` package, so **npm `0.25.0` provenance is
+  not supported** and must not be presented as the source of this artifact.
 - Shape-safe: **51/51** analyzer node-type refs live in the grammar's emitted
   types (4 remaining refs are anonymous keyword tokens `and`/`async`/`import`/
   `or`, confirmed via the anonymous-child scan).
@@ -1372,7 +1411,7 @@ instrument that agrees is evidence, and an instrument that disagrees on four row
 `src/ast/parallel-indexer.ts` itself (the r-lane's per-id clause-4 work) and in three analyzers, so the
 five source edits were stated as a script (`.tmp-py/apply-round18-edits.py`, apply/revert, every anchor
 asserted present exactly once) and applied to `git worktree add --detach /tmp/bb-r18 HEAD`. There:
-`npx tsc --noEmit` exit 0 · fixtures **53/0** · `import-bound-name-seam.mts` exit 0 with **A–G** (F and
+`npx tsc --noEmit` exit 0 · fixtures **72/0** · `import-bound-name-seam.mts` exit 0 with **A–G** (F and
 G are new: F asserts the store holds every item of two multi-item statements built in BOTH orders,
 G asserts the `__future__` row and the `clock:clock` edge through `indexProjectParallel`) ·
 `resolution-verdict-gate.ts` exit 0 with total incoming UNEXPLAINED **0** · `export-residual-gate.mts`

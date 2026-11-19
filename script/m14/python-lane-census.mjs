@@ -30,16 +30,21 @@
 // regex over source text matches comments and string literals.
 //
 // Usage:
-//   BB_CORPUS=<corpus-root>/bb_tests/repositories/python-corpus \
+//   BB_CORPUS_ROOT=<corpus-root>/bb_tests/repositories \
 //   NFILES=200 bun script/m14/python-lane-census.mjs
 //   NFILES=0 bun script/m14/python-lane-census.mjs            # whole corpus
 //   LANE=django NFILES=200 bun script/m14/python-lane-census.mjs   # one repo
 //   OUT=/tmp/x.json bun script/m14/python-lane-census.mjs      # machine-readable
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 
-const REPO = process.env.BB_REPO || "<corpus-root>/backbencher-brain"
-const CORPUS = process.env.BB_CORPUS || "<corpus-root>/bb_tests/repositories/python-corpus"
+const REPO = process.env.BB_REPO || process.cwd()
+const aggregateCorpus = join(process.env.BB_CORPUS_ROOT || "/home/ishaq2321/bb_tests/repositories", "python-corpus")
+const CORPUS = process.env.BB_PY_CORPUS ||
+  (existsSync(aggregateCorpus) ? aggregateCorpus :
+   (process.env.BB_CORPUS_ROOT || "/home/ishaq2321/bb_tests/repositories")) ||
+  process.env.BB_CORPUS ||
+  "<corpus-root>/bb_tests/repositories/python-corpus"
 const NFILES = Number(process.env.NFILES ?? "200")
 const LANE = process.env.LANE || ""
 const OUT = process.env.OUT || ""
@@ -65,7 +70,7 @@ function collectFiles(dir, exts, want, sigs) {
         // would blow up a census (vcs metadata and installed trees).
         if (e.name === "node_modules" || e.name === ".git") continue
         walk(p, depth + 1)
-      } else if (e.name.endsWith(exts)) {
+      } else if (exts.some((ext) => e.name.endsWith(ext))) {
         try {
           if (statSync(p).size >= MAX_BYTES) continue
           const src = readFileSync(p, "utf8")
@@ -129,7 +134,7 @@ const ALL_TYPES = PROD.slice()
 
 const dirs = LANE ? [join(CORPUS, LANE)] : [CORPUS]
 let files = []
-for (const d of dirs) files = files.concat(collectFiles(d, ".py", NFILES === 0 ? 1e9 : NFILES, SIGNAL))
+for (const d of dirs) files = files.concat(collectFiles(d, [".py", ".pyi", ".pyw"], NFILES === 0 ? 1e9 : NFILES, SIGNAL))
 if (MAX_PARSE_FILES) files = files.slice(0, MAX_PARSE_FILES)
 files.sort()
 
@@ -226,7 +231,7 @@ const offEnum = [...relTally.keys()].filter((t) => !PROD.includes(t))
 console.log(`\nparsed ${parsed}/${files.length}  failed=${failed}  symbols=${symbols}  errors=${errors} in ${filesWithErrors} files`)
 console.log(`imports[] channel: ${imports} imports in ${filesWithImports} files   exports[]: ${exports}`)
 console.log(`relationship channel: ${[...relTally.values()].reduce((a, b) => a + b, 0)} edges over ${relTally.size} types`)
-console.log(`\nVERDICT ${fired.length}/10 fired   silent: ${silent.join(" ") || "(none)"}`)
+console.log(`\nVERDICT ${fired.length}/${ALL_TYPES.length} fired   silent: ${silent.join(" ") || "(none)"}`)
 if (offEnum.length) console.log(`OFF-ENUM (not a production relationship type): ${offEnum.join(" ")}`)
 
 console.log(`\n--- per type: count | files | confidence x evidenceClass | endpoints resolve ---`)

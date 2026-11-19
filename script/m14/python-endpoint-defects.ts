@@ -72,7 +72,7 @@ import { parseFile, keepSymbol, filterNoiseRelationships } from "../../src/ast/p
 
 const ALL_TYPES = [
   "calls", "uses", "contains", "imports", "references",
-  "exports", "extends", "implements", "overrides", "instantiates",
+  "exports", "extends", "implements", "overrides", "instantiates", "decorates",
 ] as const
 type Type = (typeof ALL_TYPES)[number]
 

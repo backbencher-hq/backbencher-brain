@@ -33,12 +33,14 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs"
 import { join, basename } from "node:path"
 import { execFileSync } from "node:child_process"
 
-const REPO = process.env.BB_REPO ?? "<corpus-root>/backbencher-brain"
-const CORPUS_ROOT = process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
-const PY_CORPUS = process.env.BB_PY_CORPUS ?? join(CORPUS_ROOT, "python-corpus")
+const REPO = process.env.BB_REPO ?? process.cwd()
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? process.env.BB_CORPUS ?? "<corpus-root>/bb_tests/repositories"
+const aggregateCorpus = join(CORPUS_ROOT, "python-corpus")
+const PY_CORPUS = process.env.BB_PY_CORPUS ??
+  (existsSync(aggregateCorpus) ? aggregateCorpus : CORPUS_ROOT)
 const NFILES = Number(process.env.NFILES ?? 400)
 const BASELINE_REF = process.env.BASELINE_REF ?? "e73c3e58e"
-const EXTS = [".py", ".pyi"]
+const EXTS = [".py", ".pyi", ".pyw"]
 
 type N = any
 
