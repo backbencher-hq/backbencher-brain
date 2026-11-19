@@ -369,7 +369,17 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const top = stack[stack.length - 1]
         if (top.kind === "class") {
           if (!top.cls.methods.has(name)) top.cls.methods.set(name, line)
-          add("contains", top.cls.name, containsTarget(top.cls.name, name), line)
+          let shadowedByLater = false
+          let body: any = k.parent
+          if (body) {
+            for (let i = 0; i < body.namedChildCount; i++) {
+              const sibling = body.namedChild(i)
+              if (!sibling || sibling.type !== "function_definition" || sibling.startIndex <= k.startIndex) continue
+              const siblingName = sibling.childForFieldName("name")
+              if (siblingName && siblingName.text === name) { shadowedByLater = true; break }
+            }
+          }
+          if (!shadowedByLater) add("contains", top.cls.name, containsTarget(top.cls.name, name), line)
         } else if (top.kind === "func") {
           // A nested `def` is lexically inside the outer one, and Python scopes it
           // there. It is NOT a module- or class-level declaration, so it is

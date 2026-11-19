@@ -201,15 +201,15 @@
         "classification": "conditional/class/module decorator scope replay fixed"
       },
       "contains": {
-        "missing": 1,
+        "missing": 0,
         "unexplained": 0,
-        "classification": "branch-alternative duplicate class scope"
+        "classification": "duplicate class method last-declaration fix proven"
       },
       "callsPostFix": {
         "missing": 0,
         "unexplained": 0
       },
-      "residualRows": 1,
+      "residualRows": 0,
       "source": "script/m14/oracles/python-truth-diff.ts"
     },
     "heritageResidual": {
