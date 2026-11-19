@@ -23,7 +23,7 @@
  *   is graded against too and the divergence is REPORTED rather than hidden.
  * 4. **The code-bearing filter** (v2 DEFECT 1). Blind directory-order sampling drew
  *   encoding DATA tables for Ruby and scored it 1/10 at NFILES=25 where the same
- *   analyzer scored 8/10 at NFILES=200. `BB_BLIND=1` restores blind walk so the swing
+ *   analyzer scored 8/11 at NFILES=200. `BB_BLIND=1` restores blind walk so the swing
  *   is reproducible.
  *
  * ## What is added
@@ -233,7 +233,7 @@ for (const n of SIZES) {
   runs.push(r)
   console.log(`    ${r.fired.length}/11 types fired · parsed ${r.parsed}/${sample.length} (failed ${r.failed}) · imports[] ${r.imports} in ${r.filesWithImports} files`)
   console.log(`    fired:  ${r.fired.join(" ") || "(none)"}`)
-  console.log(`    silent: ${r.silent.join(" ") || "(all ten)"}`)
+  console.log(`    silent: ${r.silent.join(" ") || "(all eleven)"}`)
   if (r.offVocab.size) console.log(`    OFF-VOCABULARY emitted: ${[...r.offVocab].join(" ")}`)
   console.log(`    counts: ${[...r.relTally.entries()].sort((a, b) => b[1] - a[1]).map(([t, c]) => `${t}:${c}`).join("  ")}`)
   console.log(`    e.g. ${r.examples.join("  ")}`)

@@ -324,7 +324,7 @@ if (STDLIB) {
       if (SKIP_DIR_NAMES.has(e.name)) continue
       const abs = path.join(d, e.name)
       if (e.isDirectory()) { walk(abs, depth + 1); continue }
-      if (!(e.name.endsWith(".py") || e.name.endsWith(".pyi"))) continue
+      if (!(e.name.endsWith(".py") || e.name.endsWith(".pyi") || e.name.endsWith(".pyw"))) continue
       try { if (statSync(abs).size > MAX_BYTES) continue } catch { continue }
       all.push({ repo: "cpython-stdlib", dir: STDLIB_DIR, rel: path.relative(STDLIB_DIR, abs), abs })
     }
@@ -976,7 +976,7 @@ for (const t of ALL_TYPES) {
   console.log(`${w(t, 14)} ${sum} unresolved (${builtinNamed} name an interpreter builtin: ${PY_BUILTIN_NAMES.size} in dir(builtins))`)
   console.log(`${w("", 14)} top: ${top.map(([k, v]) => `${k}:${v}`).join("  ")}`)
 }
-console.log(`\nunresolved targets across all ten types: ${grandUnresolved} of ${totalRels.toLocaleString()} edges (${(100 * grandUnresolved / Math.max(1, totalRels)).toFixed(1)}%)`)
+console.log(`\nunresolved targets across all eleven emitted types: ${grandUnresolved} of ${totalRels.toLocaleString()} edges (${(100 * grandUnresolved / Math.max(1, totalRels)).toFixed(1)}%)`)
 
 // ---------------------------------------------------------------- verdict
 // THE PER-LABEL VERDICT, in BOTH directions. Outgoing first, because it is a one-line claim and
@@ -1003,8 +1003,8 @@ for (const t of ALL_TYPES) {
     for (const x of s.unexplainedExamples.slice(0, 6)) console.log(`${w("", 14)}      ${x}`)
   }
 }
-console.log(`\nlabels emitted ${emittedCount}/10   OUTGOING (source) UNRESOLVED across all ten: ${grandSrcUnresolved}`)
-console.log(`INCOMING (target) UNEXPLAINED across all ten: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, star-import-external, not-bound-in-file, shipped-submodule, stale-export, or an interpreter builtin`)
+console.log(`\nlabels emitted ${emittedCount}/11   OUTGOING (source) UNRESOLVED across all eleven: ${grandSrcUnresolved}`)
+console.log(`INCOMING (target) UNEXPLAINED across all eleven: ${grandUnexplained}  <- the only defect axis; every other unresolved target is declared-dynamic, declared-local, declared-external, qualified-external, star-import-external, not-bound-in-file, shipped-submodule, stale-export, or an interpreter builtin`)
 
 console.log("\n== confidence / evidenceClass / reasonCode / hygiene ==")
 for (const t of ALL_TYPES) {
@@ -1036,7 +1036,7 @@ for (const t of ALL_TYPES) {
   }
 }
 if (untyped.count) {
-  console.log(`\n!! ${untyped.count} relationships carried a type outside the ten: ` +
+  console.log(`\n!! ${untyped.count} relationships carried a type outside the eleven: ` +
     [...new Set(untyped.examples)].slice(0, 5).join(" | "))
 }
 

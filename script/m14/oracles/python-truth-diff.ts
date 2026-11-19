@@ -59,7 +59,7 @@ for (const a of args) {
       for (const e of fs.readdirSync(d, { withFileTypes: true })) {
         const p = path.join(d, e.name)
         if (e.isDirectory()) walk(p)
-        else if (e.name.endsWith(".py")) files.push(p)
+        else if (e.name.endsWith(".py") || e.name.endsWith(".pyi") || e.name.endsWith(".pyw")) files.push(p)
       }
     }
     walk(a)

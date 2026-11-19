@@ -56,7 +56,7 @@ const filesOf = (dir: string): string[] => {
       if (e.name === "test" || e.name === "tests" || e.name === "lib2to3" || e.name === "idlelib") continue
       const p = path.join(d, e.name)
       if (e.isDirectory()) { walk(p, depth + 1); continue }
-      if (!(e.name.endsWith(".py") || e.name.endsWith(".pyi"))) continue
+      if (!(e.name.endsWith(".py") || e.name.endsWith(".pyi") || e.name.endsWith(".pyw"))) continue
       try { if (statSync(p).size > MAX_BYTES) continue } catch { continue }
       out.push(p)
     }

@@ -77,7 +77,7 @@ if (STDLIB) {
       if (SKIP_DIR_NAMES.has(e.name)) continue
       const abs = path.join(d, e.name)
       if (e.isDirectory()) { walk(abs, depth + 1); continue }
-      if (!(e.name.endsWith(".py") || e.name.endsWith(".pyi"))) continue
+      if (!(e.name.endsWith(".py") || e.name.endsWith(".pyi") || e.name.endsWith(".pyw"))) continue
       try { if (statSync(abs).size > MAX_BYTES) continue } catch { continue }
       all.push({ repo: "cpython-stdlib", dir: STDLIB_DIR, rel: path.relative(STDLIB_DIR, abs), abs })
     }

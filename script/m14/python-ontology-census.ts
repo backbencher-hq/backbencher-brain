@@ -190,7 +190,7 @@ function walkDisk(dir: string, out: string[]) {
       walkDisk(p, out)
       continue
     }
-    if (!e.name.endsWith(".py") && !e.name.endsWith(".pyi")) continue
+    if (!e.name.endsWith(".py") && !e.name.endsWith(".pyi") && !e.name.endsWith(".pyw")) continue
     out.push(p)
   }
 }
@@ -200,7 +200,7 @@ function population(repos: Repo[], root: string): Population {
   const onDisk: string[] = []
   for (const r of repos) {
     for (const rel of r.tracked) {
-      if (!rel.endsWith(".py") && !rel.endsWith(".pyi")) continue
+      if (!rel.endsWith(".py") && !rel.endsWith(".pyi") && !rel.endsWith(".pyw")) continue
       files.push(path.join(r.dir, rel))
     }
     walkDisk(r.dir, onDisk)
@@ -291,7 +291,7 @@ interface FileTally {
   /** Symbol-level standing-rule counters, carried per file so a resumed run reports them too. */
   esn: number
   euk: number
-  /** Labels outside the ten ontology types, per file. */
+  /** Labels outside the eleven emitted ontology types, per file. */
   off: Record<string, number>
   /** type -> per-type counters */
   t: Record<string, Partial<TypeRow> & { ex?: string[] }>
@@ -727,7 +727,7 @@ const walkedPct = walkStats.total === 0 ? 0 : ((walkStats.walked + walkStats.alr
 if (!JSON_OUT) {
   console.log(`python ontology census`)
   console.log(`corpus root:   ${PY_CORPUS}`)
-  console.log(`checkouts:     ${repos.length}  (${repos.map((r) => `${r.name}=${r.tracked.filter((f) => f.endsWith(".py") || f.endsWith(".pyi")).length}`).join(" ")})`)
+  console.log(`checkouts:     ${repos.length}  (${repos.map((r) => `${r.name}=${r.tracked.filter((f) => f.endsWith(".py") || f.endsWith(".pyi") || f.endsWith(".pyw")).length}`).join(" ")})`)
   console.log(`POPULATION:    ${allFiles.length} tracked .py/.pyi in ${repos.length} checkouts  (${pop.untracked} on disk but untracked, excluded)`)
   for (const u of pop.unpinned) {
     console.log(`UNPINNED:      ${u.files.length} files in ${u.name}/ — NOT a git checkout, so NOT in the pinned population above. Measured separately below.`)

@@ -73,6 +73,35 @@
       "firedRelationshipTypes": 11,
       "command": "BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories bun run script/m14/python-firing-check.mts"
     },
+    "postCommitAnsibleEndpointAudit": {
+      "admittedFiles": 1860,
+      "parsedFiles": 1860,
+      "parseFailures": 0,
+      "symbols": 20222,
+      "relationships": 122229,
+      "outgoingUnresolved": 0,
+      "d5UsesSelfLoops": 78,
+      "d5Files": 28,
+      "d2bDefects": 0,
+      "d3EmptyEndpoints": 0,
+      "d4aInventedPlaceholders": 0,
+      "d4bPresentPlaceholders": 0,
+      "d6EmptySymbols": 0,
+      "d6PlaceholderSymbols": 0,
+      "d7DiscardedRelationships": 0,
+      "unresolvedTargets": 78804,
+      "unresolvedTargetsPercent": "64.5%",
+      "notBoundInFileSample": {
+        "count": 1,
+        "row": "ansible/lib/ansible/_internal/_wrapt.py __long__ -> long",
+        "classification": "Python-2 compatibility residual: long is absent on Python 3"
+      },
+      "decoratorUnexplainedSample": {
+        "count": 29,
+        "classification": "Valid property setter decorators; target names retain the written chain"
+      },
+      "source": "script/m14/python-endpoint-resolution.ts + script/m14/python-endpoint-defects.ts"
+    },
     "heritageResidual": {
       "clauses": 23422,
       "covered": 23171,
