@@ -1,0 +1,29 @@
+specimen copy: 2031 files, 50M
+indexing copy with: node bin/bb index /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap --force
+index exit=0 (log /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/full-proof/reindex.log)
+PASS  reindex exits 0
+project=39971043d202ba62c07d8c0abaf54cde0a0e6058 db=/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bbdata/projects/39971043d202ba62c07d8c0abaf54cde0a0e6058/brain.db
+symbols=55785 relationships=111786 imports=1948
+PASS  P0-2 no bound cross-language name-resolution imports/calls/instantiates
+PASS  P0-2 every name-resolution row is a <=0.5 candidate
+PASS  P1-2 cross-file value-read rows emitted (count=378, expect >=8 callbacks)
+PASS  P1-2 no fabricated function-type parameter-name uses rows
+PASS  P1-2 jsOnEventFunc is an indexed symbol
+main.go call sources: exitPrompt|function|101|3
+main|function|20|21
+PASS  P1-2 no call edges attributed to the package-main module symbol
+go.mod module path: github.com/bettercap/bettercap/v2
+PASS  P1-1 no same-module import marked external
+PASS  P1-1 internal Go imports classified internal (count=327)
+PASS  P1-1 non-Go code imports resolve to symbols (HTML/asset refs excluded by contract)
+docs/bb-bettercap-fix/tools/final-bettercap-reindex.sh: line 117: skip: command not found
+--- read surface: bb_analyze dependencies filePath=session
+internal=348 deps=[{'path': 'fmt', 'external': True}, {'path': 'testing', 'external': True}] keys=['dependencies', 'file', 'fileId', 'path', 'external', 'resolution', 'stale', 'dependents', 'dependenciesTotal', 'dependentsTotal', 'dependenciesTruncated', 'dependentsTruncated']
+PASS  P1-1 dependencies(session) shows internal deps and dependents
+--- read surface: bb_cross_language main (all facts must be candidates)
+facts=0
+no false cross-language facts for main
+PASS  P0-2 cross-language read surface: all facts candidate/inferred
+
+SUMMARY: 12 pass / 0 fail  (project 39971043d202ba62c07d8c0abaf54cde0a0e6058)
+evidence: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/full-proof

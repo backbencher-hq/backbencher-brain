@@ -6518,30 +6518,49 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     // (got lines 11,11)`, GREEN with eager resolution forced (`BB_TEST_FORCE_EDGE_RESOLVE=1`) —
     // i.e. the eager statement is right and the deferred pass was the defect. So the hint is
     // applied HERE too, before the name passes can claim a contains row by id order.
-    rawDb.run(`DROP TABLE IF EXISTS _res_contains_targets`)
-    rawDb.prepare(`
-      CREATE TEMP TABLE _res_contains_targets AS
-      SELECT rel_id, symbol_id FROM (
-        SELECT r.id AS rel_id, s.id AS symbol_id,
-               ROW_NUMBER() OVER (PARTITION BY r.id ORDER BY (s.file_id = rf.id) DESC,
-                                  (s.line_start = r.line_number) DESC,
-                                  COALESCE(s.is_declaration, 0) ASC, s.id) AS rn
+    // Bounded resolution (scaling defect fix). The previous form materialized
+    // `_res_contains_targets` with `ROW_NUMBER() OVER (PARTITION BY r.id ...)` over EVERY
+    // same-named symbol in the project — 20,991,769 candidate rows on the bettercap specimen —
+    // and failed the whole index with SQLITE_FULL. SQLite also refuses correlated references
+    // to the UPDATE target inside a scalar subquery's ORDER BY ("no such column"), so the
+    // ordering is applied here with the row context passed as BOUND PARAMETERS: the same
+    // ordering as the eager path (same file, then own line, then declaration, then id), with
+    // the project-wide fallback only when the edge's own file declares no such name.
+    type ContainsRow = { rel_id: string; project_id: string; source_symbol_id: string | null; target_external: string | null; line_number: number | null }
+    const containsRows = rawDb.prepare(`
+      SELECT r.id AS rel_id, r.project_id, r.source_symbol_id, r.target_external, r.line_number
         FROM brain_relationship r
-        JOIN brain_symbol rs ON rs.id = r.source_symbol_id
-        JOIN brain_file rf ON rf.id = rs.file_id
-        JOIN brain_symbol s ON s.project_id = r.project_id AND s.name = r.target_external
-        WHERE r.relationship_type = 'contains' AND r.target_symbol_id IS NULL
-          AND r.target_external IS NOT NULL AND r.line_number > 0 AND r.project_id = ?
-      ) WHERE rn = 1
-    `).run(projectId)
-    rawDb.run(`
-      UPDATE brain_relationship
-      SET target_symbol_id = (SELECT t.symbol_id FROM _res_contains_targets t WHERE t.rel_id = brain_relationship.id),
-          is_cross_file = 0
-      WHERE brain_relationship.id IN (SELECT rel_id FROM _res_contains_targets)
-        AND brain_relationship.target_symbol_id IS NULL
-    `)
-    rawDb.run(`DROP TABLE IF EXISTS _res_contains_targets`)
+       WHERE r.project_id = ? AND r.relationship_type = 'contains'
+         AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL
+         AND r.line_number > 0 AND r.source_symbol_id IS NOT NULL
+    `).all(projectId) as ContainsRow[]
+    if (containsRows.length > 0) {
+      const sourceFile = rawDb.prepare("SELECT file_id FROM brain_symbol WHERE id = ?")
+      const sameFileBest = rawDb.prepare(`
+        SELECT s.id FROM brain_symbol s
+         WHERE s.project_id = ? AND s.name = ? AND s.file_id = ?
+         ORDER BY (s.line_start = ?) DESC, COALESCE(s.is_declaration, 0) ASC, s.id LIMIT 1
+      `)
+      const projectBest = rawDb.prepare(`
+        SELECT s.id FROM brain_symbol s
+         WHERE s.project_id = ? AND s.name = ?
+         ORDER BY (s.line_start = ?) DESC, COALESCE(s.is_declaration, 0) ASC, s.id LIMIT 1
+      `)
+      const applyTarget = rawDb.prepare("UPDATE brain_relationship SET target_symbol_id = ?, is_cross_file = 0 WHERE id = ?")
+      // One transaction: the resolution is a single derived-data step, and per-row autocommit
+      // on ~20k rows is the difference between seconds and a minute.
+      const resolveAll = rawDb.transaction((rows: ContainsRow[]) => {
+        for (const row of rows) {
+          const fileRow = sourceFile.get(row.source_symbol_id) as { file_id: string } | undefined
+          let pick = fileRow?.file_id
+            ? (sameFileBest.get(row.project_id, row.target_external, fileRow.file_id, row.line_number) as { id: string } | undefined)
+            : undefined
+          if (!pick) pick = projectBest.get(row.project_id, row.target_external, row.line_number) as { id: string } | undefined
+          if (pick) applyTarget.run(pick.id, row.rel_id)
+        }
+      })
+      resolveAll(containsRows)
+    }
 
     // ── OWN-FILE PREFERENCE (M14 clause 4). Both lookup tables below collapse every name
     // and every dotted suffix to ONE global winner via `MIN(id)` — the lexicographically
@@ -8653,6 +8672,19 @@ export async function indexProjectParallel(
         skipped: backgroundEmbedMetrics.skipped,
         dropped: backgroundEmbedMetrics.dropped,
         invalid: backgroundEmbedMetrics.invalid,
+      }
+      // DURABLE last-run outcome (P2-3/P2-4 residual). The counters above live
+      // in memory and only reach the CLI that ran the index; a later
+      // `bb_health`/`bb_doctor` had no way to say "N dropped by the queue cap in
+      // the last run". Persist the same numbers (with the run timestamp) into
+      // `brain_project_meta`; the health provider reads that key.
+      try {
+        const metaRaw = await BrainDatabase.getRawInstance(projectId)
+        metaRaw.prepare(
+          "INSERT OR REPLACE INTO brain_project_meta (project_id, key, value, time_updated) VALUES (?, ?, ?, ?)",
+        ).run(projectId, "last_embed_outcome", JSON.stringify(stats.summary.embedOutcome), Date.now())
+      } catch (e: any) {
+        log.warn("could not persist last embedding-run outcome", { error: e?.message })
       }
     }
 

@@ -127,6 +127,26 @@ async function main(): Promise<void> {
   check("R11: embeddings line distinguishes library-wide from configured-space coverage",
     /library/i.test(embLine) && /configured/i.test(embLine), embLine)
 
+  // R12-R14: the last run's embedding outcome is DURABLE (queue-cap drops used to
+  // exist only in the CLI's memory for that run; a later health call could not see them).
+  raw.prepare("INSERT OR REPLACE INTO brain_project_meta (project_id, key, value, time_updated) VALUES (?, ?, ?, ?)")
+    .run(projectId, "last_embed_outcome", JSON.stringify({ queued: 23196, embedded: 23190, failed: 3, skipped: 0, dropped: 2, invalid: 1 }), Date.now())
+  const lastRunReport = await getUnifiedHealth(projectId, root, { freshness: "complete" })
+  const lastRunText = formatUnifiedHealth(lastRunReport)
+  const lastRunLine = lastRunText.split("\n").find((l) => l.startsWith("embeddings:")) ?? ""
+  const runWarn = lastRunReport.warnings.find((w) => w.code === "EMBEDDING_RUN_INCOMPLETE")
+  check("R12: durable last-run embedding outcome is read into the payload",
+    lastRunReport.embeddings.lastRun?.embedded === 23190 && lastRunReport.embeddings.lastRun?.dropped === 2 && lastRunReport.embeddings.lastRun?.failed === 3,
+    JSON.stringify(lastRunReport.embeddings.lastRun))
+  check("R13: an incomplete last run raises EMBEDDING_RUN_INCOMPLETE naming the drops",
+    !!runWarn && /dropped by the queue cap/.test(runWarn.message) && /3 failed/.test(runWarn.message),
+    runWarn?.message ?? "no EMBEDDING_RUN_INCOMPLETE warning")
+  check("R14: the embeddings line reports the last run's counters",
+    /last run:/.test(lastRunLine) && /dropped \(queue cap\)/.test(lastRunLine), lastRunLine)
+  // Control: a clean all-zero last run must not raise the warning (the fixture's own run wrote zeros).
+  const cleanRunWarn = clean.warnings.find((w) => w.code === "EMBEDDING_RUN_INCOMPLETE")
+  check("C4 (control): a complete last run does not raise EMBEDDING_RUN_INCOMPLETE", !cleanRunWarn, cleanRunWarn?.message ?? "")
+
   const configAfter = existsSync(homeConfig) ? createHash("sha256").update(readFileSync(homeConfig)).digest("hex") : null
   check("C3 (control): user embedding config was not mutated", configBefore === configAfter)
 }

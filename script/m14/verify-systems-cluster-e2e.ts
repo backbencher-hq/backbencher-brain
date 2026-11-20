@@ -17,7 +17,6 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
-import { createHash } from "crypto"
 import { createRequire } from "module"
 const require = createRequire(import.meta.url)
 const Database = require("better-sqlite3")
@@ -69,8 +68,14 @@ async function main() {
   writeProject()
   execSync("node bin/bb index " + TMP + " --force", { cwd: ROOT, stdio: "pipe" })
 
-  const sha = createHash("sha1").update(TMP).digest("hex")
-  const dbPath = path.join(process.env.HOME ?? "", ".bb", "projects", sha, "brain.db")
+  // Resolve the index through the SAME helpers the CLI uses, so the gate reads
+  // the DB the CLI actually wrote. The old form hard-coded `$HOME/.bb/projects/<sha1>`
+  // and therefore read a stale/nonexistent DB whenever BB_DATA_DIR redirected the
+  // CLI's store (read-only sandboxes especially) — measured: it silently graded an
+  // old index with line 11/11 while the fresh index was correct.
+  const { getProjectId } = await import("../../src/cli/index")
+  const { BrainDatabase } = await import("../../src/brain/database")
+  const dbPath = BrainDatabase.getDbPath(getProjectId(TMP))
   const db = new Database(dbPath, { readonly: true })
 
   const failures: string[] = []

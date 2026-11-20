@@ -8,8 +8,8 @@ equality); provider behavior was mocked with `BB_EMBEDDING_*` env + a loopback O
 
 Status: **GREEN** — both gates PASS, positive controls PASS, `npx tsc --noEmit` clean (whole repo,
 0 errors), `script/verify-semantic.ts` PASS, `script/verify-health.ts` PASS, and the user-visible
-bettercap symptom is reproduced as gone at source level. One sub-item is **PARTIAL**
-(`embedOutcome` durability — out-of-scope file, see §7).
+bettercap symptom is reproduced as gone at source level. The `embedOutcome` durability item that
+was PARTIAL at CP1 is now **FIXED** (see §7.1: durable `brain_project_meta` record + health surface + gate).
 
 ## 1. Defects fixed (from triage ISSUE-09 / ISSUE-11, PLAN P2-3 / P2-4)
 
@@ -28,7 +28,7 @@ bettercap symptom is reproduced as gone at source level. One sub-item is **PARTI
    `BACKFILL PENDING` when symbols remain.
 3. **Index-time local degradation was log.debug only.** Rows already record their model, so the
    degradation is now *reported* (per-space coverage + pending warning) instead of inferred as a
-   single percentage. (Writing a per-run outcome is PARTIAL — §7.)
+   single percentage. (The per-run outcome is now durable — §7.1.)
 4. **`status=complete` printed beside `indexedFiles<N — INCOMPLETE`.** Status is now DERIVED from
    every completion cause (`deriveIndexCompleteness` in the health provider): deliberate
    `skippedFiles` vs unexplained write/parse loss; a bare `status=complete` can no longer print beside
@@ -135,18 +135,19 @@ or declares 'backfill pending: 1/55,785 in configured space'" → **both**, see 
 PLAN P2-4: "`bb health bettercap` shows consistent status, per-language error attribution, two-space
 coverage" → **all three**, see §4.
 
-## 7. PARTIAL / deferred / risks
+## 7. Deferred / risks (PARTIAL items resolved)
 
-1. **PARTIAL — `embedOutcome` durability (P2-3/P2-4 residual).** The per-run
-   `queued/embedded/failed/skipped/dropped` counters live only in
-   `parallel-indexer.ts` in-memory `backgroundEmbedMetrics`/`stats.summary.embedOutcome`; persisting
-   them requires editing the off-limits `parallel-indexer.ts` (Lead scope decision: do NOT touch; may
-   open a hot-file window after P0-2). What this lane DID ship instead: durable per-space rows are
-   reported (`configured` coverage, `EMBEDDINGS_BACKFILL_PENDING`, queue-cap/drain facts remain
-   debug-only), so 42.9% is now explainable as library-wide vs configured-space + pending backfill,
-   but "N dropped by the queue cap in the last run" is not yet on a surface. Exact gap for a later
-   window: persist `embedOutcome` (and `backgroundEmbedMetrics.dropped`) into
-   `brain_index_status.performance_stats` at the existing reconcile/status write sites.
+1. **`embedOutcome` durability — FIXED (post-review completion).** Every index run now persists
+   `brain_project_meta.last_embed_outcome` (queued/embedded/failed/skipped/dropped/invalid + run time);
+   `bb_health` reads it into `embeddings.lastRun`, prints `· last run: N embedded[, N failed][, N
+   dropped (queue cap)]` on the `embeddings:` line, and raises `EMBEDDING_RUN_INCOMPLETE` when the
+   pass was incomplete (`EMBEDDING_RUN_HISTORY_UNREADABLE` when the record cannot be read, never
+   silent). Gate `script/verify-health-honesty.ts` pins it: R12 payload, R13 warning, R14 line, C4
+   control (clean run does not warn). Proven on the full bettercap index:
+   `{queued:23951, embedded:23951, failed:0, skipped:0, dropped:0, invalid:0}` and
+   `embeddings: … · last run: 23951 embedded` in `evidence/final/full-index/health.txt`.
+   (Historical gap:]
+
 2. **Pre-existing doc-gate failures (not this lane's change; verified against HEAD):**
    `script/verify-embedding-docs.ts` fails 2 mutant checks because the mutant anchor
    `/further batches are held off by a bounded[^.]*\./` does not exist in `docs/EMBEDDINGS.md` at HEAD

@@ -185,6 +185,13 @@ export interface UnifiedHealthReport {
      * call, because the join costs one EXISTS probe per indexed symbol.
      */
     byLanguage: Array<{ language: string; symbols: number; embedded: number; searchablePercent: number }>
+    /**
+     * The LAST index run's embedding-pass counters, read durably from
+     * `brain_project_meta.last_embed_outcome`. `null` when the project has no
+     * recorded run (a DB written before this key existed). The queue-cap
+     * `dropped` count only existed in the CLI's memory before this.
+     */
+    lastRun: { queued: number; embedded: number; failed: number; skipped: number; dropped: number; invalid: number; at: number | null } | null
   }
   schema: { version: number | null; migration: string | null; tables: number }
   runtime: { runtime: "bun" | "node"; version: string; database: string }
@@ -546,7 +553,7 @@ function emptyIndexReport(
       checked: 0, total: 0, fresh: 0, stale: 0, missing: 0, staleFiles: [], missingFiles: [], unresolved: 0, isComplete: true,
       reasons: { byKind: zeroReasons, freshVerifiedByContent: 0, freshVerifiedByMetadata: 0, isSample: false },
     },
-    embeddings: { total: 0, embeddedEntities: 0, symbolCoveragePercent: 0, library: { embedded: 0, symbols: 0, percent: 0 }, configured: null, spaces: [], models: [], embeddedByEntityType: [], unembeddedKinds: [], byLanguage: [] },
+    embeddings: { total: 0, embeddedEntities: 0, symbolCoveragePercent: 0, library: { embedded: 0, symbols: 0, percent: 0 }, configured: null, spaces: [], models: [], embeddedByEntityType: [], unembeddedKinds: [], byLanguage: [], lastRun: null },
     schema: { version: null, migration: null, tables: 0 },
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: "sqlite" },
     timing,
@@ -1395,6 +1402,46 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // covers everything the report describes.
   timing.totalMs = now() - startedCall
 
+  // Durable last-run outcome (see the indexer's persistence block). Read here,
+  // after the counts above, so the warning and the numbers come from one record.
+  let lastEmbedOutcome: UnifiedHealthReport["embeddings"]["lastRun"] = null
+  try {
+    const lastEmbedRow = raw
+      .prepare("SELECT value, time_updated FROM brain_project_meta WHERE project_id = ? AND key = 'last_embed_outcome'")
+      .get(projectId) as { value: string | null; time_updated: number | null } | undefined
+    if (lastEmbedRow?.value) {
+      const parsed = JSON.parse(lastEmbedRow.value) as Record<string, unknown>
+      lastEmbedOutcome = {
+        queued: Number(parsed.queued ?? 0),
+        embedded: Number(parsed.embedded ?? 0),
+        failed: Number(parsed.failed ?? 0),
+        skipped: Number(parsed.skipped ?? 0),
+        dropped: Number(parsed.dropped ?? 0),
+        invalid: Number(parsed.invalid ?? 0),
+        at: lastEmbedRow.time_updated ?? null,
+      }
+    }
+  } catch (error: any) {
+    // A DB written before the meta table exists, or a malformed record, must
+    // not fail health — but silence would hide it, so it is recorded.
+    warnings.push({
+      code: "EMBEDDING_RUN_HISTORY_UNREADABLE",
+      message: `the durable embedding-run record could not be read (${error?.message ?? String(error)}); last-run queue/drop counters are unavailable`,
+      severity: "warning",
+    })
+  }
+  if (lastEmbedOutcome && lastEmbedOutcome.failed + lastEmbedOutcome.invalid + lastEmbedOutcome.dropped > 0) {
+    const parts: string[] = []
+    if (lastEmbedOutcome.failed > 0) parts.push(`${lastEmbedOutcome.failed} failed`)
+    if (lastEmbedOutcome.invalid > 0) parts.push(`${lastEmbedOutcome.invalid} discarded as malformed`)
+    if (lastEmbedOutcome.dropped > 0) parts.push(`${lastEmbedOutcome.dropped} dropped by the queue cap`)
+    warnings.push({
+      code: "EMBEDDING_RUN_INCOMPLETE",
+      message: `the last index run's embedding pass was incomplete: ${parts.join(", ")} (${lastEmbedOutcome.queued} queued, ${lastEmbedOutcome.embedded} embedded). Semantic-search coverage may be below the indexed symbol count; re-run \`bb index\` or \`bb doctor\`.`,
+      severity: "warning",
+    })
+  }
+
   return {
     projectId, projectPath, timestamp: Date.now(),
     counts: { files, symbols, relationships, imports, syntaxErrors },
@@ -1460,6 +1507,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
           }
         : null,
       spaces: embeddingSpaces,
+      lastRun: lastEmbedOutcome,
       models: modelRows.map((row) => ({ model: row.model, count: Number(row.c), dimensions: String(row.dims ?? "").split(",").filter(Boolean).map(Number) })),
       // the percentage above is a ratio of two counts, and what it
       // measures is narrower than the label admits. On this repo: 4,569
@@ -1647,7 +1695,7 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // semantically). On a mixed-model index they diverge sharply, so printing one
     // percentage let a reader take 42.9% as "the configured model works" when its
     // space held 1/55,785 vectors. Pending backfill is declared here, not implied.
-    `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% of symbols (library-wide, ${e.library.embedded}/${e.library.symbols} across ${e.spaces.length} space(s))${e.configured ? ` · configured ${e.configured.model}: ${e.configured.percent}% (${e.configured.embedded}/${e.configured.symbols})${e.configured.pendingBackfill ? " — BACKFILL PENDING" : ""}` : ""}`,
+    `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% of symbols (library-wide, ${e.library.embedded}/${e.library.symbols} across ${e.spaces.length} space(s))${e.configured ? ` · configured ${e.configured.model}: ${e.configured.percent}% (${e.configured.embedded}/${e.configured.symbols})${e.configured.pendingBackfill ? " — BACKFILL PENDING" : ""}` : ""}${e.lastRun ? ` · last run: ${e.lastRun.embedded} embedded${e.lastRun.failed ? `, ${e.lastRun.failed} failed` : ""}${e.lastRun.invalid ? `, ${e.lastRun.invalid} invalid` : ""}${e.lastRun.dropped ? `, ${e.lastRun.dropped} dropped (queue cap)` : ""}` : ""}`,
     `models: ${e.models.map((model) => `${model.model}:${model.count}[${model.dimensions.join(",")}]`).join(" ") || "none"}`,
     `schema: ${report.schema.version ?? "unknown"} (${report.schema.migration ?? "no migration record"}), ${report.schema.tables} tables`,
     // `indexedFiles=0 errors=0` for a project with no status record is

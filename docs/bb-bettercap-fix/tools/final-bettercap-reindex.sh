@@ -37,6 +37,7 @@ echo '{}' > "$CONFIG"
 PASS=0; FAIL=0
 ok()  { PASS=$((PASS+1)); echo "PASS  $1"; }
 bad() { FAIL=$((FAIL+1)); echo "FAIL  $1  ${2:-}"; }
+skip() { echo "SKIP  $1  ${2:-}"; }
 SQL() { sqlite3 -readonly "$1" "$2" 2>/dev/null; }
 
 # ── 1. copy the specimen (never write to it) ────────────────────────────────

@@ -1,0 +1,14 @@
+project: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap
+projectId: 39971043d202ba62c07d8c0abaf54cde0a0e6058
+files=1972 symbols=55785 relationships=111786 imports=1948 syntaxErrors=24
+freshness: 200 fresh / 0 of 200 sampled stale (~0 of 1972 estimated) / 0 missing (200/1972 checked, sampled — SAMPLE, not a census)
+freshness why: 200 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh) — over the 200-file SAMPLE, not the project
+embeddings: 23925 rows / 23925 entities / 42.9% of symbols (library-wide, 23925/55785 across 1 space(s)) · last run: 23951 embedded
+models: local-word-vectors-v3:23925[50]
+schema: 1 (m13-universal-brain), 16 tables
+index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written (deliberate skip; force will not fix it) status=incomplete (recordedStatus=complete contradicts the counts) errors=0
+index run: schemaVersion=1 runs=2 latestWallMs=130479 (the last INDEX RUN, not this call)
+this call: total=72ms (freshness=9ms aggregates=32ms)
+runtime: node v22.22.1 / sqlite
+warning: [SYNTAX_ERRORS] 24 indexed files have syntax errors (less (CSS grammar): 16, scss (SCSS grammar): 8): modules/ui/ui/assets/fontawesome/less/_animated.less, modules/ui/ui/assets/fontawesome/less/_bordered-pulled.less, modules/ui/ui/assets/fontawesome/less/_core.less, modules/ui/ui/assets/fontawesome/less/_fixed-width.less, modules/ui/ui/assets/fontawesome/less/_icons.less, modules/ui/ui/assets/fontawesome/less/_larger.less, modules/ui/ui/assets/fontawesome/less/_list.less, modules/ui/ui/assets/fontawesome/less/_mixins.less, modules/ui/ui/assets/fontawesome/less/_rotated-flipped.less, modules/ui/ui/assets/fontawesome/less/_screen-reader.less, modules/ui/ui/assets/fontawesome/less/_shims.less, modules/ui/ui/assets/fontawesome/less/_stacked.less, modules/ui/ui/assets/fontawesome/less/_variables.less, modules/ui/ui/assets/fontawesome/less/brands.less, modules/ui/ui/assets/fontawesome/less/regular.less, modules/ui/ui/assets/fontawesome/less/solid.less, modules/ui/ui/assets/fontawesome/scss/_icons.scss, modules/ui/ui/assets/fontawesome/scss/_list.scss, modules/ui/ui/assets/fontawesome/scss/_mixins.scss, modules/ui/ui/assets/fontawesome/scss/_shims.scss, modules/ui/ui/assets/fontawesome/scss/_variables.scss, modules/ui/ui/assets/fontawesome/scss/brands.scss, modules/ui/ui/assets/fontawesome/scss/regular.scss, modules/ui/ui/assets/fontawesome/scss/solid.scss
+warning: [SKIPPED_FILES] the last index run found 1973 files and wrote 1972: 1 file(s) were deliberately SKIPPED by indexing rules (skippedFiles=1, errorFiles=0) — a file over the 5 MB size tier (>5MB) or an unchanged file on an incremental run. This is not a lost write, and a force=true rebuild will SKIP IT AGAIN. If such a file must be indexed, raise the size tier or split the file; otherwise the index correctly covers 1972/1973 discovered files.

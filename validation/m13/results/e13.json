@@ -241,12 +241,12 @@
     {
       "name": "rollback: the error is the VALIDATION failure, not the rollback's own",
       "pass": true,
-      "detail": "validation failed for /tmp/bb-e13-rollback-VnxI96/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node."
+      "detail": "validation failed for /tmp/bb-e13-rollback-7EV8xr/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node."
     },
     {
       "name": "rollback: no file is reported as unrestorable",
       "pass": true,
-      "detail": "validation failed for /tmp/bb-e13-rollback-VnxI96/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node."
+      "detail": "validation failed for /tmp/bb-e13-rollback-7EV8xr/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node."
     },
     {
       "name": "rollback: every file is byte-identical to its pre-edit bytes [negative]",
@@ -298,7 +298,7 @@
     {
       "name": "wire: the fan-out call is accepted and the edit lands",
       "pass": true,
-      "detail": "{\n  \"mode\": \"batch\",\n  \"dryRun\": false,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-e13-mcp-tnBltF/src/alpha.py\",\n      \"before\": \"def alpha():\\n    return 1\\n\",\n      \"after\": \"def alpha():\\n    retu"
+      "detail": "{\n  \"mode\": \"batch\",\n  \"dryRun\": false,\n  \"changes\": [\n    {\n      \"path\": \"/tmp/bb-e13-mcp-PxUy2t/src/alpha.py\",\n      \"before\": \"def alpha():\\n    return 1\\n\",\n      \"after\": \"def alpha():\\n    retu"
     },
     {
       "name": "wire: the answer carries the batch report and a committed envelope",
@@ -319,7 +319,7 @@
     {
       "name": "wire: the failed batch answers ok:false with rolledBack:true",
       "pass": true,
-      "detail": "{\n  \"ok\": false,\n  \"mode\": \"batch\",\n  \"error\": \"validation failed for /tmp/bb-e13-mcp-tnBltF/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node.\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": true,\n   "
+      "detail": "{\n  \"ok\": false,\n  \"mode\": \"batch\",\n  \"error\": \"validation failed for /tmp/bb-e13-mcp-PxUy2t/src/beta.py: Syntax ERROR detected. The Brain Engine is bypassing this broken node.\",\n  \"rolledBack\": true,\n  \"envelope\": {\n    \"atomic\": true,\n   "
     },
     {
       "name": "wire: the same answer carries the per-file envelope with every file restored",
@@ -358,5 +358,5 @@
     "The plan→commit window is narrowed, not closed: the pre-image check runs immediately before the write loop, and a concurrent writer landing between that check and the per-file `renameSync` is still not detected (the same residue E9 records for the single modes).",
     "The batch's result carries every target's before/after text, so a large batch is a large answer; the entry cap (`MAX_BATCH_EDITS`) is the only bound on that."
   ],
-  "generatedAt": "2026-11-19T04:26:32.537Z"
+  "generatedAt": "2026-11-20T22:55:24.741Z"
 }

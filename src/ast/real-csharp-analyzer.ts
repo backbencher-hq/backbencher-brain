@@ -2716,7 +2716,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
-        for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+        for (let i = 0; i < n.namedChildCount; i++) { const child = n.namedChild(i); if (child) stack.push(child) }
       }
     }
     for (const sym of symbols) {

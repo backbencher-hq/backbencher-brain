@@ -516,5 +516,5 @@
     "Some grammars name declaration identifiers with non-identifier node types (Bash 'word', Perl 'bareword', Erlang 'atom', Clojure 'sym_name'/'sym_lit', PowerShell 'function_name', PHP 'name') and Elixir 'def' names parse as call arguments — these names are not reference occurrences, so rename cannot see them. Tracked as reference-identification completeness.",
     "R function assignment (foo <- function()) parents the name under 'binary_operator' (ambiguous with arithmetic), so R binding names are not recognized. Tracked as."
   ],
-  "generatedAt": "2026-11-20T21:54:19.526Z"
+  "generatedAt": "2026-11-20T22:54:42.032Z"
 }

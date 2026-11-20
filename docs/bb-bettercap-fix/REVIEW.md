@@ -105,3 +105,15 @@ docs-truth gates PASS) and retrieval's R1 engine-level `fileId` identity (`ee45e
 48/48, edit family green, tsc/build/dist clean), plus CLI/dist E2E captures for both lanes and the
 old-index typed-refusal check on the CLI door. No lane-declared residual remains open; what remains is
 explicitly pre-existing or a declared design limitation (listed in `FINAL.md`).
+
+## Append: pre-existing defects closed
+
+The review left three pre-existing/off-limits items documented. All three are now fixed and proven:
+the full-index `_res_contains_targets` materialization (20,991,769 candidate rows -> `SQLITE_FULL`) is
+replaced by a bounded per-row resolution, and the **full bettercap-copy reindex now completes**
+(55,785 symbols / 111,786 relationships / `derived: full`; shipped harness 12/12; read-time checks
+38 pass / 0 fail / 2 deferred; health derives the deliberate 1-file skip honestly); `embedOutcome` is
+durable (`brain_project_meta.last_embed_outcome` -> health `embeddings.lastRun` + `last run:` line +
+`EMBEDDING_RUN_INCOMPLETE`, gate R12-R14); and the external C# typecheck error is fixed, so
+`npx tsc --noEmit` is clean repo-wide. Two design decisions remain documented (receiver-selector
+evidence fails closed; test_impact unchanged). Evidence: `evidence/final/FULL-INDEX-REINDEX.md`.

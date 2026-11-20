@@ -1,0 +1,86 @@
+note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup
+indexing /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap (project 39971043…)
+wiped 39971043 index in place (file kept)
+  index space: db 0.4 MB, wal 0.0 MB
+
+Indexing 1,973 files — this will take a few minutes
+
+[index] 0% 1/1,973 files elapsed=0s eta=…
+[brain] preparing the parallel worker pool (1972 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:50:54] [parallel-indexer] worker pool fork test passed — using parallel workers
+[WARN] [17:51:00] [parallel-indexer] parent event loop was blocked {"ms":1133,"stalledTotalMs":1133}
+[index] 5% 101/1,973 files elapsed=8s eta=2m 28s
+[WARN] [17:51:05] [parallel-indexer] parent event loop was blocked {"ms":1321,"stalledTotalMs":2454}
+[index] 10% 203/1,973 files elapsed=13s eta=1m 56s
+[index] 15% 297/1,973 files elapsed=16s eta=1m 28s
+[WARN] [17:51:14] [parallel-indexer] parent event loop was blocked {"ms":1488,"stalledTotalMs":3942}
+[index] 20% 395/1,973 files elapsed=22s eta=1m 26s
+[WARN] [17:51:22] [parallel-indexer] parent event loop was blocked {"ms":2426,"stalledTotalMs":6368}
+[WARN] [17:51:33] [parallel-indexer] parent event loop was blocked {"ms":10524,"stalledTotalMs":16892}
+[index] a quarter of the way in
+[index] 25% 502/1,973 files elapsed=41s eta=2m 0s
+[index] 30% 604/1,973 files elapsed=43s eta=1m 38s
+[index] 35% 706/1,973 files elapsed=44s eta=1m 19s
+[index] 40% 807/1,973 files elapsed=45s eta=1m 5s
+[index] 45% 905/1,973 files elapsed=46s eta=52s
+[index] past the halfway mark
+[index] 50% 998/1,973 files elapsed=46s eta=43s
+[index] 55% 1,088/1,973 files elapsed=47s eta=36s
+[index] 60% 1,188/1,973 files elapsed=47s eta=30s
+[WARN] [17:51:43] [parallel-indexer] parent event loop was blocked {"ms":1701,"stalledTotalMs":18593}
+[index] 65% 1,292/1,973 files elapsed=50s eta=24s
+[index] 71% 1,412/1,973 files elapsed=50s eta=18s
+[index] 75% 1,483/1,973 files elapsed=51s eta=15s
+[index] in the final stretch
+[index] 81% 1,603/1,973 files elapsed=52s eta=10s
+[index] 85% 1,683/1,973 files elapsed=52s eta=8s
+[index] 91% 1,803/1,973 files elapsed=53s eta=4s
+[index] almost there — finishing up
+[index] 95% 1,883/1,973 files elapsed=53s eta=2s
+[WARN] [17:51:54] [parallel-indexer] parent event loop was blocked {"ms":5796,"stalledTotalMs":24389}
+[WARN] [17:51:55] [parallel-indexer] parent event loop was blocked {"ms":1233,"stalledTotalMs":25622}
+[index] 100% 1,974/1,973 files elapsed=1m 2s eta=finishing
+[INFO] [17:51:55] [parallel-indexer] worker pool complete {"files":1972,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":25622}
+[INFO] [17:52:01] [parallel-indexer] override companion (javascript): 113 owners, 0 file(s) re-analyzed, 0 reapplied, 0 confirmed, 0 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 53864ms [plan=linear largest-intermediate=29104]
+        cross-language: 122 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [17:52:56] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"39971043","danglingSources":18865,"totalRelationships":111786}
+  enriching done 100%
+  ✅ Enriched 92,921 relationships (1,562 patterns) in 4692ms
+        patterns: factory_consumer 890 · event_handler 413 · callback 242 · observer 12 · delegate 4 · di_injection 1
+        ⚠ 18,865 dangling sources, 74,398 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 485ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:53:01] [project-health] project health computed {"projectId":"39971043d202ba62c07d8c0abaf54cde0a0e6058","complexityScore":79,"maintainabilityScore":76,"techDebtScore":0,"codeQualityScore":51,"languages":12,"bottlenecks":20}
+  ✓ taint(1ms) + health(60ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 1020ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Index Completeness: 1 of 1973 discovered files were never written (1972 of 1973 indexed), so the index does not cover the project — note the status field says "complete" while the counts say otherwise; the counts are the measurement.
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 23ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1431ms
+  index space: db 383.1 MB, wal 0.0 MB, 5% free
+  index: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bbdata/projects/39971043d202ba62c07d8c0abaf54cde0a0e6058/brain.db · remove with: rm -rf /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bbdata/projects/39971043d202ba62c07d8c0abaf54cde0a0e6058
+  ⚠️  index health (after embeddings): 92% — 1 warning(s) (run bb health for details)
+    ❌ Index Completeness: 1 of 1973 discovered files were never written (1972 of 1973 indexed), so the index does not cover the project — note the status field says "complete" while the counts say otherwise; the counts are the measurement.
+✓ indexed 1972 files, 55785 symbols, 111786 relationships, 23925 embeddings in 130.6s
+  stats: {"totalFiles":1973,"processed":1973,"errors":0}
+  graph: 122 cross-language edges · 92,921 relationships explained
+  patterns: factory_consumer 890 · event_handler 413 · callback 242 · observer 12 · delegate 4
+  run: 7 workers · 12 languages · discovery 418ms · parse 66.9s · derive 61.7s · total 130.6s
+  embeddings: local-word-vectors-v3 (50d)
+  AST analysis degraded for 4 file(s). Regex-derived graph edges are marked inferred.
+  breakdown: 1972 newly parsed | 1 unchanged | 0 skipped | 3 symbol-loss (parsed 0 symbols) | 0 errors | 0 timeouts
+  parsed with the worker pool
+  derived: full (derived data fully re-processed)
+  consistency: every internal relationship is attached to a symbol (external references are attached to an external identity, which is correct)

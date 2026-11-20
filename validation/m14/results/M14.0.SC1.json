@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "e6afd7a1f9751e1fe1d0d16f0eeee925ba1fa9eb5df71383aea95c8e8c2e06d3",
-    "sealedAt": "2026-11-05T16:51:20.000Z"
+    "contentSha256": "9ef00f8a312050c3b6e7b9ba7f9cb8d24a3370d3888ba7d85c6c16b6eaac76e6",
+    "sealedAt": "2026-11-20T22:28:10.000Z"
   },
   "checks": [
     {
@@ -12,8 +12,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
-  "committedAt": "2026-11-05T11:51:20-05:00",
+  "commit": "b33bb83f6c7ecb34718f65bc8157612b53c5a13b",
+  "committedAt": "2026-11-20T17:28:10-05:00",
   "data": {
     "failures": []
   },
@@ -27,8 +27,8 @@
       "description": "covers systems cluster (c, cpp, rust, go, zig); managed-OO/functional clusters still pending their gates"
     }
   ],
-  "regeneratedAt": "2026-11-05T11:51:20-05:00",
-  "regeneratedAtCommit": "9f055ece80622bb9d86b0e38ff0b1d5e8a09951f",
+  "regeneratedAt": "2026-11-20T17:28:10-05:00",
+  "regeneratedAtCommit": "b33bb83f6c7ecb34718f65bc8157612b53c5a13b",
   "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Systems-cluster e2e gate"
