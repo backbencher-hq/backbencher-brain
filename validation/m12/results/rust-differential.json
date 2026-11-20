@@ -907,11 +907,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:rust",
-      "wallTimeMs": 87.438797,
-      "userCpuMs": 255.765,
-      "systemCpuMs": 24.4,
-      "peakRssBytes": 299827200,
-      "rssDeltaBytes": 17936384,
+      "wallTimeMs": 189.028858,
+      "userCpuMs": 340.846,
+      "systemCpuMs": 36.399,
+      "peakRssBytes": 261148672,
+      "rssDeltaBytes": 20656128,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
