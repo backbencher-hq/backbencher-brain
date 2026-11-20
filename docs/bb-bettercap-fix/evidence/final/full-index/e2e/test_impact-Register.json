@@ -1,0 +1,57 @@
+{
+  "target": "Register",
+  "found": true,
+  "directTests": [],
+  "indirectTests": [
+    {
+      "testSymbol": "TestLoadModulesWithNilSession",
+      "testFile": "modules/modules_test.go",
+      "depth": 1,
+      "relationshipType": "calls",
+      "evidence": "direct_call",
+      "stale": false
+    }
+  ],
+  "affectedTestFiles": [
+    "modules/modules_test.go"
+  ],
+  "truncated": false,
+  "truncationReason": null,
+  "summary": {
+    "returned": 1,
+    "total": 1,
+    "truncated": false,
+    "truncationReason": null,
+    "timeBudgetMs": 2000,
+    "timeBudgetExhausted": false,
+    "depthCap": 4,
+    "unvalidatedLinks": 0,
+    "unvalidatedByReason": {}
+  },
+  "provenance": {
+    "truncated": false,
+    "sampled": false,
+    "unknowns": [
+      "runtime-coverage-unavailable"
+    ],
+    "evidenceClass": "inferred",
+    "engine": "test-impact@intelligence",
+    "engineVersion": "m10.02",
+    "projectId": "4a89b1b01085c8c7f77da25083391c7136b86941",
+    "source": "brain_relationship",
+    "limitations": [
+      "Static test impact does not prove runtime execution or coverage."
+    ]
+  },
+  "runtimeCoverage": {
+    "available": false
+  },
+  "freshness": {
+    "fresh": 1,
+    "stale": 0,
+    "missing": 0,
+    "staleRatio": 0,
+    "mode": "complete",
+    "remediation": ""
+  }
+}

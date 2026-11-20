@@ -2,7 +2,7 @@
   "dependencies": [
     {
       "file": "session/session.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go",
       "dependencies": [
         {
           "path": "errors",
@@ -91,18 +91,6 @@
           "stale": false
         },
         {
-          "path": "core/doc.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "core/options.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "core/banner.go",
           "external": false,
           "resolution": "resolved",
@@ -145,7 +133,25 @@
           "stale": false
         },
         {
+          "path": "core/doc.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "core/options.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "firewall/firewall.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "firewall/doc.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -181,12 +187,6 @@
           "stale": false
         },
         {
-          "path": "firewall/doc.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "log/doc.go",
           "external": false,
           "resolution": "resolved",
@@ -200,6 +200,18 @@
         },
         {
           "path": "log/log_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -247,31 +259,13 @@
           "stale": false
         },
         {
-          "path": "network/hid.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/hid_device.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/ble.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -289,31 +283,19 @@
           "stale": false
         },
         {
-          "path": "network/net_wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/can.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/lan.go",
+          "path": "network/net_wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
           "path": "network/net_windows.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/net.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -331,6 +313,18 @@
           "stale": false
         },
         {
+          "path": "network/hid_device.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/net.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "network/net_darwin.go",
           "external": false,
           "resolution": "resolved",
@@ -338,6 +332,12 @@
         },
         {
           "path": "network/net_gateway.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -367,19 +367,13 @@
           "stale": false
         },
         {
-          "path": "network/wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/lan_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/wifi_ap.go",
+          "path": "network/wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -392,6 +386,12 @@
         },
         {
           "path": "network/net_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -469,19 +469,7 @@
           "stale": false
         },
         {
-          "path": "packets/dot11_types_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "packets/mysql_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/dot11_wps.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -493,7 +481,7 @@
           "stale": false
         },
         {
-          "path": "packets/dot11_test.go",
+          "path": "packets/nbns_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -517,6 +505,48 @@
           "stale": false
         },
         {
+          "path": "packets/dot11_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_types.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_types_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_wps.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_wps_attrs.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/icmp6.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/ntlm.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "packets/udp_test.go",
           "external": false,
           "resolution": "resolved",
@@ -535,31 +565,7 @@
           "stale": false
         },
         {
-          "path": "packets/dot11_wps_attrs.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/icmp6.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/nbns_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/dot11_types.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/ntlm.go",
+          "path": "packets/icmp6_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -571,13 +577,7 @@
           "stale": false
         },
         {
-          "path": "packets/icmp6_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/krb5.go",
+          "path": "packets/queue.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -975,7 +975,7 @@
     },
     {
       "file": "session/session_json.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_json.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_json.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -1036,18 +1036,6 @@
           "stale": false
         },
         {
-          "path": "core/doc.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "core/options.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "core/banner.go",
           "external": false,
           "resolution": "resolved",
@@ -1085,6 +1073,30 @@
         },
         {
           "path": "core/core_windows.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "core/doc.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "core/options.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1132,31 +1144,13 @@
           "stale": false
         },
         {
-          "path": "network/hid.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/hid_device.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/ble.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1174,31 +1168,19 @@
           "stale": false
         },
         {
-          "path": "network/net_wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/can.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/lan.go",
+          "path": "network/net_wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
           "path": "network/net_windows.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/net.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1216,6 +1198,18 @@
           "stale": false
         },
         {
+          "path": "network/hid_device.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/net.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "network/net_darwin.go",
           "external": false,
           "resolution": "resolved",
@@ -1223,6 +1217,12 @@
         },
         {
           "path": "network/net_gateway.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1252,19 +1252,13 @@
           "stale": false
         },
         {
-          "path": "network/wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/lan_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/wifi_ap.go",
+          "path": "network/wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1277,6 +1271,12 @@
         },
         {
           "path": "network/net_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1354,19 +1354,7 @@
           "stale": false
         },
         {
-          "path": "packets/dot11_types_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "packets/mysql_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/dot11_wps.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1378,7 +1366,7 @@
           "stale": false
         },
         {
-          "path": "packets/dot11_test.go",
+          "path": "packets/nbns_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1402,6 +1390,48 @@
           "stale": false
         },
         {
+          "path": "packets/dot11_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_types.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_types_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_wps.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/dot11_wps_attrs.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/icmp6.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/ntlm.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "packets/udp_test.go",
           "external": false,
           "resolution": "resolved",
@@ -1420,31 +1450,7 @@
           "stale": false
         },
         {
-          "path": "packets/dot11_wps_attrs.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/icmp6.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/nbns_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/dot11_types.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/ntlm.go",
+          "path": "packets/icmp6_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1456,7 +1462,13 @@
           "stale": false
         },
         {
-          "path": "packets/icmp6_test.go",
+          "path": "packets/queue.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "packets/queue_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1474,13 +1486,7 @@
           "stale": false
         },
         {
-          "path": "packets/queue.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/queue_test.go",
+          "path": "packets/mdns.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1499,12 +1505,6 @@
         },
         {
           "path": "packets/tcp.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "packets/mdns.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -1914,7 +1914,7 @@
     },
     {
       "file": "session/session_core_handlers.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_core_handlers.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_core_handlers.go",
       "dependencies": [
         {
           "path": "bufio",
@@ -1955,18 +1955,6 @@
         {
           "path": "time",
           "external": true
-        },
-        {
-          "path": "core/doc.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "core/options.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
         },
         {
           "path": "core/banner.go",
@@ -2011,6 +1999,18 @@
           "stale": false
         },
         {
+          "path": "core/doc.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "core/options.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "log/doc.go",
           "external": false,
           "resolution": "resolved",
@@ -2024,6 +2024,18 @@
         },
         {
           "path": "log/log_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2071,31 +2083,13 @@
           "stale": false
         },
         {
-          "path": "network/hid.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/hid_device.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/ble.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2113,31 +2107,19 @@
           "stale": false
         },
         {
-          "path": "network/net_wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/can.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/lan.go",
+          "path": "network/net_wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
           "path": "network/net_windows.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/net.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2155,6 +2137,18 @@
           "stale": false
         },
         {
+          "path": "network/hid_device.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/net.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "network/net_darwin.go",
           "external": false,
           "resolution": "resolved",
@@ -2162,6 +2156,12 @@
         },
         {
           "path": "network/net_gateway.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2191,19 +2191,13 @@
           "stale": false
         },
         {
-          "path": "network/wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/lan_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/wifi_ap.go",
+          "path": "network/wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2216,6 +2210,12 @@
         },
         {
           "path": "network/net_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2653,11 +2653,23 @@
     },
     {
       "file": "session/session_routing.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_routing.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_routing.go",
       "dependencies": [
         {
           "path": "time",
           "external": true
+        },
+        {
+          "path": "network/meta.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
         },
         {
           "path": "network/can_device.go",
@@ -2702,31 +2714,13 @@
           "stale": false
         },
         {
-          "path": "network/hid.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/hid_device.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/ble.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2744,31 +2738,19 @@
           "stale": false
         },
         {
-          "path": "network/net_wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/can.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/lan.go",
+          "path": "network/net_wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
           "path": "network/net_windows.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/net.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2786,6 +2768,18 @@
           "stale": false
         },
         {
+          "path": "network/hid_device.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/net.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "network/net_darwin.go",
           "external": false,
           "resolution": "resolved",
@@ -2793,6 +2787,12 @@
         },
         {
           "path": "network/net_gateway.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2822,19 +2822,13 @@
           "stale": false
         },
         {
-          "path": "network/wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/lan_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/wifi_ap.go",
+          "path": "network/wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -2847,6 +2841,12 @@
         },
         {
           "path": "network/net_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -3318,11 +3318,23 @@
     },
     {
       "file": "session/session_completers.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_completers.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_completers.go",
       "dependencies": [
         {
           "path": "strings",
           "external": true
+        },
+        {
+          "path": "network/meta.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/meta_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
         },
         {
           "path": "network/can_device.go",
@@ -3367,31 +3379,13 @@
           "stale": false
         },
         {
-          "path": "network/hid.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/hid_device.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/meta_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/ble.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/hid.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -3409,31 +3403,19 @@
           "stale": false
         },
         {
-          "path": "network/net_wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/can.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/lan.go",
+          "path": "network/net_wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
           "path": "network/net_windows.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "network/net.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -3451,6 +3433,18 @@
           "stale": false
         },
         {
+          "path": "network/hid_device.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/net.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
           "path": "network/net_darwin.go",
           "external": false,
           "resolution": "resolved",
@@ -3458,6 +3452,12 @@
         },
         {
           "path": "network/net_gateway.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/lan.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -3487,19 +3487,13 @@
           "stale": false
         },
         {
-          "path": "network/wifi.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
           "path": "network/lan_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "network/wifi_ap.go",
+          "path": "network/wifi.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -3512,6 +3506,12 @@
         },
         {
           "path": "network/net_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "network/wifi_ap.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -3933,7 +3933,7 @@
     },
     {
       "file": "session/script.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/script.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/script.go",
       "dependencies": [
         {
           "path": "fmt",
@@ -4004,13 +4004,25 @@
           "stale": false
         },
         {
-          "path": "js/fs_test.go",
+          "path": "js/data.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "js/data.go",
+          "path": "js/data_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "js/fs.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "js/fs_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -4041,18 +4053,6 @@
         },
         {
           "path": "js/random_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "js/data_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "js/fs.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -4462,7 +4462,7 @@
     },
     {
       "file": "session/script_builtin_runtime.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/script_builtin_runtime.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/script_builtin_runtime.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -4491,13 +4491,25 @@
           "stale": false
         },
         {
-          "path": "js/fs_test.go",
+          "path": "js/data.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "js/data.go",
+          "path": "js/data_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "js/fs.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "js/fs_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -4528,18 +4540,6 @@
         },
         {
           "path": "js/random_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "js/data_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "js/fs.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -4949,7 +4949,7 @@
     },
     {
       "file": "session/script_builtin.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/script_builtin.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/script_builtin.go",
       "dependencies": [
         {
           "path": "js/crypto.go",
@@ -4958,13 +4958,25 @@
           "stale": false
         },
         {
-          "path": "js/fs_test.go",
+          "path": "js/data.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
         },
         {
-          "path": "js/data.go",
+          "path": "js/data_test.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "js/fs.go",
+          "external": false,
+          "resolution": "resolved",
+          "stale": false
+        },
+        {
+          "path": "js/fs_test.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -4995,18 +5007,6 @@
         },
         {
           "path": "js/random_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "js/data_test.go",
-          "external": false,
-          "resolution": "resolved",
-          "stale": false
-        },
-        {
-          "path": "js/fs.go",
           "external": false,
           "resolution": "resolved",
           "stale": false
@@ -5408,7 +5408,7 @@
     },
     {
       "file": "session/session_setup.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_setup.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_setup.go",
       "dependencies": [
         {
           "path": "fmt",
@@ -5881,7 +5881,7 @@
     },
     {
       "file": "session/command_handler_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/command_handler_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/command_handler_test.go",
       "dependencies": [
         {
           "path": "testing",
@@ -6280,7 +6280,7 @@
     },
     {
       "file": "session/command_handler.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/command_handler.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/command_handler.go",
       "dependencies": [
         {
           "path": "regexp",
@@ -6687,7 +6687,7 @@
     },
     {
       "file": "session/doc.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/doc.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/doc.go",
       "dependencies": [],
       "dependents": [
         {
@@ -7081,7 +7081,7 @@
     },
     {
       "file": "session/environment_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment_test.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -7496,7 +7496,7 @@
     },
     {
       "file": "session/environment.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -7919,7 +7919,7 @@
     },
     {
       "file": "session/events_ignore_list.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events_ignore_list.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events_ignore_list.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -8338,7 +8338,7 @@
     },
     {
       "file": "session/events_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events_test.go",
       "dependencies": [
         {
           "path": "sync",
@@ -8745,7 +8745,7 @@
     },
     {
       "file": "session/events.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go",
       "dependencies": [
         {
           "path": "fmt",
@@ -9168,7 +9168,7 @@
     },
     {
       "file": "session/module_handler_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/module_handler_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/module_handler_test.go",
       "dependencies": [
         {
           "path": "reflect",
@@ -9575,7 +9575,7 @@
     },
     {
       "file": "session/module_handler.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/module_handler.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/module_handler.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -10002,7 +10002,7 @@
     },
     {
       "file": "session/module_param_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/module_param_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/module_param_test.go",
       "dependencies": [
         {
           "path": "regexp",
@@ -10409,7 +10409,7 @@
     },
     {
       "file": "session/module_param.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/module_param.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/module_param.go",
       "dependencies": [
         {
           "path": "crypto/rand",
@@ -10836,7 +10836,7 @@
     },
     {
       "file": "session/module.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/module.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/module.go",
       "dependencies": [
         {
           "path": "encoding/json",
@@ -11267,7 +11267,7 @@
     },
     {
       "file": "session/prompt.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/prompt.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/prompt.go",
       "dependencies": [
         {
           "path": "fmt",
@@ -11678,7 +11678,7 @@
     },
     {
       "file": "session/session_parse.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_parse.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_parse.go",
       "dependencies": [
         {
           "path": "fmt",
@@ -12085,7 +12085,7 @@
     },
     {
       "file": "session/session_setup_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_setup_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_setup_test.go",
       "dependencies": [
         {
           "path": "testing",
@@ -12484,7 +12484,7 @@
     },
     {
       "file": "session/session_test.go",
-      "fileId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session_test.go",
+      "fileId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session_test.go",
       "dependencies": [
         {
           "path": "fmt",
@@ -12893,7 +12893,7 @@
     "evidenceClass": "inferred",
     "engine": "dependencies@intelligence",
     "engineVersion": "m10.04",
-    "projectId": "39971043d202ba62c07d8c0abaf54cde0a0e6058",
+    "projectId": "4a89b1b01085c8c7f77da25083391c7136b86941",
     "source": "brain_relationship+brain_import",
     "limitations": [
       "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",

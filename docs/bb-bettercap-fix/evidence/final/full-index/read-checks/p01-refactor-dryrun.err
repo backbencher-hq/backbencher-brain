@@ -1,3 +1,3 @@
-[INFO] [17:53:20] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
-[INFO] [17:53:20] [ast-engine] language grammar allocated {"language":"go"}
-[INFO] [17:53:20] [ast-engine] language parser loaded {"language":"go","wasmPath":"/tmp/bb-wasm_tree-sitter-go_tree-sitter-go.wasm_12_3emdf09nos"}
+[INFO] [18:48:41] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [18:48:41] [ast-engine] language grammar allocated {"language":"go"}
+[INFO] [18:48:41] [ast-engine] language parser loaded {"language":"go","wasmPath":"/tmp/bb-wasm_tree-sitter-go_tree-sitter-go.wasm_12_3fsr5kv9vj"}

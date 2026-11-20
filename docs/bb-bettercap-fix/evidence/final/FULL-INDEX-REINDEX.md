@@ -1,4 +1,7 @@
-# FULL-SPECIMEN reindex proof (previously blocked by the `_res_contains_targets` scaling defect)
+# FULL-SPECIMEN reindex proof — including receiver-type evidence and validated test_impact
+
+(Run with commit `560301bb9`: bounded contains resolution + durable embedding outcome + Go receiver evidence +
+validated test_impact.)
 
 Specimen: `/home/ishaq2321/bettercap` (read-only; the harness indexes a copy). Code: this tree with the
 bounded contains-target resolution, durable embedding-run outcome, and the C# guard. Harness:
@@ -6,6 +9,9 @@ bounded contains-target resolution, durable embedding-run outcome, and the C# gu
 
 ## Result — index completes (this failed with `SQLITE_FULL` before the fix)
 - `index exit=0`; 1,972 of 1,973 files written (1 deliberate >5 MB size-tier skip, declared in health)
+- **544 calls bound through a declared Go receiver type** (`bindingBasis=receiver-type`) — genuine
+  project-receiver selector calls that were previously unresolved and therefore invisible to
+  callers/impact/test evidence (sample: `f.sysCtlRead`, `f.enableParam`, `sess.Register`, `f.EnableForwarding`)
 - **55,785 symbols, 111,786 relationships, 1,948 imports, 23,925 embeddings**; `derived: full`
 - full run wall: 130.6 s; `last_embed_outcome` persisted: `{"queued":23951,"embedded":23951,"failed":0,"skipped":0,"dropped":0,"invalid":0}`
 - harness assertions: **12 pass / 0 fail** (P0-2 no bound cross-language name-resolution rows and all

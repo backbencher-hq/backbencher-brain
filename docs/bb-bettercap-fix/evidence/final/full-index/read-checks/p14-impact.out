@@ -14,7 +14,7 @@
       "maxDepth": 5,
       "totalScanCeiling": 50000,
       "totalExpansionCeiling": 2000,
-      "totalTimeCeilingMs": 2974,
+      "totalTimeCeilingMs": 2969,
       "walkTimeCeilingMs": 1500,
       "callDeadlineMs": 3000,
       "nodeBudgetMeans": "bounds the dependent NODES in data.impact[] — NOT the graph engine's caller rows (summary.traversal.engineCallerRows)"
@@ -56,7 +56,7 @@
       "mode": "complete",
       "remediation": ""
     },
-    "payloadBytes": 85200,
+    "payloadBytes": 85042,
     "payloadBudgetBytes": 262144,
     "droppedRows": 0,
     "droppedByArray": {},
@@ -65,10 +65,10 @@
   },
   "data": {
     "root": {
-      "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:New:155",
+      "id": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:New:155",
       "name": "New",
       "file": "session/session.go",
-      "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/session/session.go",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/session/session.go",
       "line": 155,
       "symbolType": "function",
       "language": "go"
@@ -95,16 +95,16 @@
     },
     "impact": [
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:main.go:main:20",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:main.go:main:20",
         "name": "main",
         "file": "main.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/main.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/main.go",
         "callSite": {
           "kind": "call-site",
           "file": "main.go",
           "line": 21
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:main.go:main:20:New:calls:21",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:main.go:main:20:New:calls:21",
         "declarationLine": 20,
         "symbolType": "function",
         "language": "go",
@@ -119,16 +119,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:createMockSession:18",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:createMockSession:18",
         "name": "createMockSession",
         "file": "modules/any_proxy/any_proxy_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/any_proxy/any_proxy_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/any_proxy/any_proxy_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/any_proxy/any_proxy_test.go",
           "line": 21
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:createMockSession:18:New:calls:21",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:createMockSession:18:New:calls:21",
         "declarationLine": 18,
         "symbolType": "function",
         "language": "go",
@@ -143,16 +143,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614",
         "name": "BenchmarkConfigure",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 615
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614:New:calls:615",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614:New:calls:615",
         "declarationLine": 614,
         "symbolType": "function",
         "language": "go",
@@ -167,16 +167,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602",
         "name": "BenchmarkIsTLS",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 603
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602:New:calls:603",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602:New:calls:603",
         "declarationLine": 602,
         "symbolType": "function",
         "language": "go",
@@ -191,16 +191,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593",
         "name": "BenchmarkNewRestAPI",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 594
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593:New:calls:594",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593:New:calls:594",
         "declarationLine": 593,
         "symbolType": "function",
         "language": "go",
@@ -215,16 +215,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:createMockSession:23",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:createMockSession:23",
         "name": "createMockSession",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 26
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:createMockSession:23:New:calls:26",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:createMockSession:23:New:calls:26",
         "declarationLine": 23,
         "symbolType": "function",
         "language": "go",
@@ -239,16 +239,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ble/ble_recon_test.go:createMockSession:19",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ble/ble_recon_test.go:createMockSession:19",
         "name": "createMockSession",
         "file": "modules/ble/ble_recon_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/ble/ble_recon_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/ble/ble_recon_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/ble/ble_recon_test.go",
           "line": 22
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ble/ble_recon_test.go:createMockSession:19:New:calls:22",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/ble/ble_recon_test.go:createMockSession:19:New:calls:22",
         "declarationLine": 19,
         "symbolType": "function",
         "language": "go",
@@ -263,16 +263,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkChannelSet:322",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkChannelSet:322",
         "name": "BenchmarkChannelSet",
         "file": "modules/c2/c2_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/c2/c2_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/c2/c2_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/c2/c2_test.go",
           "line": 323
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkChannelSet:322:New:calls:323",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkChannelSet:322:New:calls:323",
         "declarationLine": 322,
         "symbolType": "function",
         "language": "go",
@@ -287,16 +287,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkNewC2:313",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkNewC2:313",
         "name": "BenchmarkNewC2",
         "file": "modules/c2/c2_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/c2/c2_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/c2/c2_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/c2/c2_test.go",
           "line": 314
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkNewC2:313:New:calls:314",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkNewC2:313:New:calls:314",
         "declarationLine": 313,
         "symbolType": "function",
         "language": "go",
@@ -311,16 +311,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkTemplateSet:340",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkTemplateSet:340",
         "name": "BenchmarkTemplateSet",
         "file": "modules/c2/c2_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/c2/c2_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/c2/c2_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/c2/c2_test.go",
           "line": 341
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkTemplateSet:340:New:calls:341",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkTemplateSet:340:New:calls:341",
         "declarationLine": 340,
         "symbolType": "function",
         "language": "go",
@@ -335,16 +335,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:createMockSession:16",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:createMockSession:16",
         "name": "createMockSession",
         "file": "modules/c2/c2_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/c2/c2_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/c2/c2_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/c2/c2_test.go",
           "line": 19
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:createMockSession:16:New:calls:19",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:createMockSession:16:New:calls:19",
         "declarationLine": 16,
         "symbolType": "function",
         "language": "go",
@@ -359,16 +359,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:BenchmarkInjectHandler:390",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:BenchmarkInjectHandler:390",
         "name": "BenchmarkInjectHandler",
         "file": "modules/can/can_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/can/can_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/can/can_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/can/can_test.go",
           "line": 391
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:BenchmarkInjectHandler:390:New:calls:391",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:BenchmarkInjectHandler:390:New:calls:391",
         "declarationLine": 390,
         "symbolType": "function",
         "language": "go",
@@ -383,16 +383,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:BenchmarkNewCanModule:376",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:BenchmarkNewCanModule:376",
         "name": "BenchmarkNewCanModule",
         "file": "modules/can/can_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/can/can_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/can/can_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/can/can_test.go",
           "line": 377
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:BenchmarkNewCanModule:376:New:calls:377",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:BenchmarkNewCanModule:376:New:calls:377",
         "declarationLine": 376,
         "symbolType": "function",
         "language": "go",
@@ -407,16 +407,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:createMockSession:16",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:createMockSession:16",
         "name": "createMockSession",
         "file": "modules/can/can_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/can/can_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/can/can_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/can/can_test.go",
           "line": 19
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:createMockSession:16:New:calls:19",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:createMockSession:16:New:calls:19",
         "declarationLine": 16,
         "symbolType": "function",
         "language": "go",
@@ -431,16 +431,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374",
         "name": "BenchmarkTickerCreate",
         "file": "modules/ticker/ticker_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/ticker/ticker_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/ticker/ticker_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/ticker/ticker_test.go",
           "line": 379
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374:New:calls:379",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374:New:calls:379",
         "declarationLine": 374,
         "symbolType": "function",
         "language": "go",
@@ -455,16 +455,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393",
         "name": "BenchmarkTickerStartStop",
         "file": "modules/ticker/ticker_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/ticker/ticker_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/ticker/ticker_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/ticker/ticker_test.go",
           "line": 398
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393:New:calls:398",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393:New:calls:398",
         "declarationLine": 393,
         "symbolType": "function",
         "language": "go",
@@ -479,16 +479,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:createMockSession:16",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:createMockSession:16",
         "name": "createMockSession",
         "file": "modules/ticker/ticker_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/ticker/ticker_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/ticker/ticker_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/ticker/ticker_test.go",
           "line": 19
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:createMockSession:16:New:calls:19",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:createMockSession:16:New:calls:19",
         "declarationLine": 16,
         "symbolType": "function",
         "language": "go",
@@ -503,16 +503,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:BenchmarkVersionComparison:338",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:BenchmarkVersionComparison:338",
         "name": "BenchmarkVersionComparison",
         "file": "modules/update/update_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/update/update_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/update/update_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/update/update_test.go",
           "line": 339
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:BenchmarkVersionComparison:338:New:calls:339",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:BenchmarkVersionComparison:338:New:calls:339",
         "declarationLine": 338,
         "symbolType": "function",
         "language": "go",
@@ -527,16 +527,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:BenchmarkVersionToNum:319",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:BenchmarkVersionToNum:319",
         "name": "BenchmarkVersionToNum",
         "file": "modules/update/update_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/update/update_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/update/update_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/update/update_test.go",
           "line": 320
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:BenchmarkVersionToNum:319:New:calls:320",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:BenchmarkVersionToNum:319:New:calls:320",
         "declarationLine": 319,
         "symbolType": "function",
         "language": "go",
@@ -551,16 +551,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:createMockSession:15",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:createMockSession:15",
         "name": "createMockSession",
         "file": "modules/update/update_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/update/update_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/update/update_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/update/update_test.go",
           "line": 18
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:createMockSession:15:New:calls:18",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:createMockSession:15:New:calls:18",
         "declarationLine": 15,
         "symbolType": "function",
         "language": "go",
@@ -575,16 +575,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkParseFilter:416",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkParseFilter:416",
         "name": "BenchmarkParseFilter",
         "file": "modules/utils/view_selector_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/utils/view_selector_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/utils/view_selector_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/utils/view_selector_test.go",
           "line": 417
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkParseFilter:416:New:calls:417",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkParseFilter:416:New:calls:417",
         "declarationLine": 416,
         "symbolType": "function",
         "language": "go",
@@ -599,16 +599,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkParseSorting:429",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkParseSorting:429",
         "name": "BenchmarkParseSorting",
         "file": "modules/utils/view_selector_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/utils/view_selector_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/utils/view_selector_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/utils/view_selector_test.go",
           "line": 430
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkParseSorting:429:New:calls:430",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkParseSorting:429:New:calls:430",
         "declarationLine": 429,
         "symbolType": "function",
         "language": "go",
@@ -623,16 +623,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkUpdate:442",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkUpdate:442",
         "name": "BenchmarkUpdate",
         "file": "modules/utils/view_selector_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/utils/view_selector_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/utils/view_selector_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/utils/view_selector_test.go",
           "line": 443
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkUpdate:442:New:calls:443",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkUpdate:442:New:calls:443",
         "declarationLine": 442,
         "symbolType": "function",
         "language": "go",
@@ -647,16 +647,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:createMockSession:16",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:createMockSession:16",
         "name": "createMockSession",
         "file": "modules/utils/view_selector_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/utils/view_selector_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/utils/view_selector_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/utils/view_selector_test.go",
           "line": 19
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:createMockSession:16:New:calls:19",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:createMockSession:16:New:calls:19",
         "declarationLine": 16,
         "symbolType": "function",
         "language": "go",
@@ -671,16 +671,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wol/wol_test.go:createMockSession:17",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wol/wol_test.go:createMockSession:17",
         "name": "createMockSession",
         "file": "modules/wol/wol_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wol/wol_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wol/wol_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wol/wol_test.go",
           "line": 20
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wol/wol_test.go:createMockSession:17:New:calls:20",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wol/wol_test.go:createMockSession:17:New:calls:20",
         "declarationLine": 17,
         "symbolType": "function",
         "language": "go",
@@ -695,16 +695,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29",
         "name": "TestNewAnyProxy",
         "file": "modules/any_proxy/any_proxy_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/any_proxy/any_proxy_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/any_proxy/any_proxy_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/any_proxy/any_proxy_test.go",
           "line": 30
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29:createMockSession:calls:30",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29:createMockSession:calls:30",
         "declarationLine": 29,
         "symbolType": "function",
         "language": "go",
@@ -719,16 +719,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:TestStartStop:175",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:TestStartStop:175",
         "name": "TestStartStop",
         "file": "modules/any_proxy/any_proxy_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/any_proxy/any_proxy_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/any_proxy/any_proxy_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/any_proxy/any_proxy_test.go",
           "line": 176
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:TestStartStop:175:createMockSession:calls:176",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:TestStartStop:175:createMockSession:calls:176",
         "declarationLine": 175,
         "symbolType": "function",
         "language": "go",
@@ -743,16 +743,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestCheckAuthNoCredentials:652",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestCheckAuthNoCredentials:652",
         "name": "TestCheckAuthNoCredentials",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 653
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestCheckAuthNoCredentials:652:createMockSession:calls:653",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestCheckAuthNoCredentials:652:createMockSession:calls:653",
         "declarationLine": 652,
         "symbolType": "function",
         "language": "go",
@@ -767,16 +767,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestCheckAuthWithCredentials:664",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestCheckAuthWithCredentials:664",
         "name": "TestCheckAuthWithCredentials",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 665
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestCheckAuthWithCredentials:664:createMockSession:calls:665",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestCheckAuthWithCredentials:664:createMockSession:calls:665",
         "declarationLine": 664,
         "symbolType": "function",
         "language": "go",
@@ -791,16 +791,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestConfigureAlreadyRunning:544",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestConfigureAlreadyRunning:544",
         "name": "TestConfigureAlreadyRunning",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 545
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestConfigureAlreadyRunning:544:createMockSession:calls:545",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestConfigureAlreadyRunning:544:createMockSession:calls:545",
         "declarationLine": 544,
         "symbolType": "function",
         "language": "go",
@@ -815,16 +815,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestConfigureErrors:412",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestConfigureErrors:412",
         "name": "TestConfigureErrors",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 413
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestConfigureErrors:412:createMockSession:calls:413",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestConfigureErrors:412:createMockSession:calls:413",
         "declarationLine": 412,
         "symbolType": "function",
         "language": "go",
@@ -839,16 +839,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestCorsRoute:770",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestCorsRoute:770",
         "name": "TestCorsRoute",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 771
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestCorsRoute:770:createMockSession:calls:771",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestCorsRoute:770:createMockSession:calls:771",
         "declarationLine": 770,
         "symbolType": "function",
         "language": "go",
@@ -863,16 +863,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestDefaultValues:342",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestDefaultValues:342",
         "name": "TestDefaultValues",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 343
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestDefaultValues:342:createMockSession:calls:343",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestDefaultValues:342:createMockSession:calls:343",
         "declarationLine": 342,
         "symbolType": "function",
         "language": "go",
@@ -887,16 +887,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestGetEventsEmpty:693",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestGetEventsEmpty:693",
         "name": "TestGetEventsEmpty",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 700
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestGetEventsEmpty:693:createMockSession:calls:700",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestGetEventsEmpty:693:createMockSession:calls:700",
         "declarationLine": 693,
         "symbolType": "function",
         "language": "go",
@@ -911,16 +911,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestGetEventsWithLimit:713",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestGetEventsWithLimit:713",
         "name": "TestGetEventsWithLimit",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 715
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestGetEventsWithLimit:713:createMockSession:calls:715",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestGetEventsWithLimit:713:createMockSession:calls:715",
         "declarationLine": 713,
         "symbolType": "function",
         "language": "go",
@@ -935,16 +935,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestIsTLS:232",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestIsTLS:232",
         "name": "TestIsTLS",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 233
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestIsTLS:232:createMockSession:calls:233",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestIsTLS:232:createMockSession:calls:233",
         "declarationLine": 232,
         "symbolType": "function",
         "language": "go",
@@ -959,16 +959,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestNewRestAPI:34",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestNewRestAPI:34",
         "name": "TestNewRestAPI",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 35
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestNewRestAPI:34:createMockSession:calls:35",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestNewRestAPI:34:createMockSession:calls:35",
         "declarationLine": 34,
         "symbolType": "function",
         "language": "go",
@@ -983,16 +983,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestParameters:293",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestParameters:293",
         "name": "TestParameters",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 294
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestParameters:293:createMockSession:calls:294",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestParameters:293:createMockSession:calls:294",
         "declarationLine": 293,
         "symbolType": "function",
         "language": "go",
@@ -1007,16 +1007,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestQuitChannel:472",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestQuitChannel:472",
         "name": "TestQuitChannel",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 473
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestQuitChannel:472:createMockSession:calls:473",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestQuitChannel:472:createMockSession:calls:473",
         "declarationLine": 472,
         "symbolType": "function",
         "language": "go",
@@ -1031,16 +1031,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestRecordingState:380",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestRecordingState:380",
         "name": "TestRecordingState",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 381
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestRecordingState:380:createMockSession:calls:381",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestRecordingState:380:createMockSession:calls:381",
         "declarationLine": 380,
         "symbolType": "function",
         "language": "go",
@@ -1055,16 +1055,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestRecordWaitGroup:502",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestRecordWaitGroup:502",
         "name": "TestRecordWaitGroup",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 503
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestRecordWaitGroup:502:createMockSession:calls:503",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestRecordWaitGroup:502:createMockSession:calls:503",
         "declarationLine": 502,
         "symbolType": "function",
         "language": "go",
@@ -1079,16 +1079,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestReplayingState:396",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestReplayingState:396",
         "name": "TestReplayingState",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 397
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestReplayingState:396:createMockSession:calls:397",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestReplayingState:396:createMockSession:calls:397",
         "declarationLine": 396,
         "symbolType": "function",
         "language": "go",
@@ -1103,16 +1103,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestRunningState:368",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestRunningState:368",
         "name": "TestRunningState",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 369
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestRunningState:368:createMockSession:calls:369",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestRunningState:368:createMockSession:calls:369",
         "declarationLine": 368,
         "symbolType": "function",
         "language": "go",
@@ -1127,16 +1127,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestServerAddr:560",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestServerAddr:560",
         "name": "TestServerAddr",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 561
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestServerAddr:560:createMockSession:calls:561",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestServerAddr:560:createMockSession:calls:561",
         "declarationLine": 560,
         "symbolType": "function",
         "language": "go",
@@ -1151,16 +1151,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestServerConfiguration:448",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestServerConfiguration:448",
         "name": "TestServerConfiguration",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 449
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestServerConfiguration:448:createMockSession:calls:449",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestServerConfiguration:448:createMockSession:calls:449",
         "declarationLine": 448,
         "symbolType": "function",
         "language": "go",
@@ -1175,16 +1175,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestSetSecurityHeaders:742",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestSetSecurityHeaders:742",
         "name": "TestSetSecurityHeaders",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 743
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestSetSecurityHeaders:742:createMockSession:calls:743",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestSetSecurityHeaders:742:createMockSession:calls:743",
         "declarationLine": 742,
         "symbolType": "function",
         "language": "go",
@@ -1199,16 +1199,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestShowWiFiJSONContract:95",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestShowWiFiJSONContract:95",
         "name": "TestShowWiFiJSONContract",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 96
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestShowWiFiJSONContract:95:createMockSession:calls:96",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestShowWiFiJSONContract:95:createMockSession:calls:96",
         "declarationLine": 95,
         "symbolType": "function",
         "language": "go",
@@ -1223,16 +1223,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestStartErrors:532",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestStartErrors:532",
         "name": "TestStartErrors",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 533
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestStartErrors:532:createMockSession:calls:533",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestStartErrors:532:createMockSession:calls:533",
         "declarationLine": 532,
         "symbolType": "function",
         "language": "go",
@@ -1247,16 +1247,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestStateStore:266",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestStateStore:266",
         "name": "TestStateStore",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 267
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestStateStore:266:createMockSession:calls:267",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestStateStore:266:createMockSession:calls:267",
         "declarationLine": 266,
         "symbolType": "function",
         "language": "go",
@@ -1271,16 +1271,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestTLSConfiguration:577",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestTLSConfiguration:577",
         "name": "TestTLSConfiguration",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 578
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestTLSConfiguration:577:createMockSession:calls:578",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestTLSConfiguration:577:createMockSession:calls:578",
         "declarationLine": 577,
         "symbolType": "function",
         "language": "go",
@@ -1295,16 +1295,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestToJSON:784",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestToJSON:784",
         "name": "TestToJSON",
         "file": "modules/api_rest/api_rest_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/api_rest/api_rest_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/api_rest/api_rest_test.go",
           "line": 785
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:TestToJSON:784:createMockSession:calls:785",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:TestToJSON:784:createMockSession:calls:785",
         "declarationLine": 784,
         "symbolType": "function",
         "language": "go",
@@ -1319,16 +1319,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89",
         "name": "TestAssocHandlerAcceptsESSIDsAndWildcards",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 90
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89:createMockSession:calls:90",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89:createMockSession:calls:90",
         "declarationLine": 89,
         "symbolType": "function",
         "language": "go",
@@ -1343,16 +1343,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125",
         "name": "TestAssocTargetDescriptionIncludesESSIDSupport",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 126
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125:createMockSession:calls:126",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125:createMockSession:calls:126",
         "declarationLine": 125,
         "symbolType": "function",
         "language": "go",
@@ -1367,16 +1367,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102",
         "name": "TestDeauthHandlerAcceptsESSIDsAndWildcards",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 103
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102:createMockSession:calls:103",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102:createMockSession:calls:103",
         "declarationLine": 102,
         "symbolType": "function",
         "language": "go",
@@ -1391,16 +1391,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74",
         "name": "TestWiFiRSSISortContract",
         "file": "modules/wifi/wifi_show_contract_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_show_contract_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_show_contract_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_show_contract_test.go",
           "line": 75
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74:createMockSession:calls:75",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74:createMockSession:calls:75",
         "declarationLine": 74,
         "symbolType": "function",
         "language": "go",
@@ -1415,16 +1415,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45",
         "name": "TestWiFiSelectionFilterAndSortContract",
         "file": "modules/wifi/wifi_show_contract_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_show_contract_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_show_contract_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_show_contract_test.go",
           "line": 46
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45:createMockSession:calls:46",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45:createMockSession:calls:46",
         "declarationLine": 45,
         "symbolType": "function",
         "language": "go",
@@ -1439,16 +1439,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9",
         "name": "TestWiFiShowRowContract",
         "file": "modules/wifi/wifi_show_contract_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_show_contract_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_show_contract_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_show_contract_test.go",
           "line": 10
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9:createMockSession:calls:10",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9:createMockSession:calls:10",
         "declarationLine": 9,
         "symbolType": "function",
         "language": "go",
@@ -1463,16 +1463,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39",
         "name": "newWiFiExpressionTestModule",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 41
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39:createMockSession:calls:41",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39:createMockSession:calls:41",
         "declarationLine": 39,
         "symbolType": "function",
         "language": "go",
@@ -1487,16 +1487,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28",
         "name": "newWiFiTargetTestModule",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 30
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28:createMockSession:calls:30",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28:createMockSession:calls:30",
         "declarationLine": 28,
         "symbolType": "function",
         "language": "go",
@@ -1511,16 +1511,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210",
         "name": "TestLegacyWiFiTargetCommandSyntaxStillParses",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 211
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210:createMockSession:calls:211",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210:createMockSession:calls:211",
         "declarationLine": 210,
         "symbolType": "function",
         "language": "go",
@@ -1535,16 +1535,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61",
         "name": "TestWiFiSelectorKeepsLegacyMACPrecedence",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 62
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61:createMockSession:calls:62",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61:createMockSession:calls:62",
         "declarationLine": 61,
         "symbolType": "function",
         "language": "go",
@@ -1559,16 +1559,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178",
         "name": "TestWiFiTargetCommandResultsForEmptySelections",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 198
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178:createMockSession:calls:198",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178:createMockSession:calls:198",
         "declarationLine": 178,
         "symbolType": "function",
         "language": "go",
@@ -1583,16 +1583,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165",
         "name": "TestWiFiTargetHandlersRejectInvalidExpressions",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 166
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165:createMockSession:calls:166",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165:createMockSession:calls:166",
         "declarationLine": 165,
         "symbolType": "function",
         "language": "go",
@@ -1607,16 +1607,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106",
         "name": "TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 107
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106:newWiFiTargetTestModule:calls:107",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106:newWiFiTargetTestModule:calls:107",
         "declarationLine": 106,
         "symbolType": "function",
         "language": "go",
@@ -1631,16 +1631,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocESSIDCanSelectAPWithoutClients:69",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocESSIDCanSelectAPWithoutClients:69",
         "name": "TestAssocESSIDCanSelectAPWithoutClients",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 70
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocESSIDCanSelectAPWithoutClients:69:newWiFiTargetTestModule:calls:70",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocESSIDCanSelectAPWithoutClients:69:newWiFiTargetTestModule:calls:70",
         "declarationLine": 69,
         "symbolType": "function",
         "language": "go",
@@ -1655,16 +1655,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocESSIDWildcardIsCaseSensitive:61",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocESSIDWildcardIsCaseSensitive:61",
         "name": "TestAssocESSIDWildcardIsCaseSensitive",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 62
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocESSIDWildcardIsCaseSensitive:61:newWiFiTargetTestModule:calls:62",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocESSIDWildcardIsCaseSensitive:61:newWiFiTargetTestModule:calls:62",
         "declarationLine": 61,
         "symbolType": "function",
         "language": "go",
@@ -1679,16 +1679,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocExactESSIDSelectsEveryMatchingBSSID:54",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocExactESSIDSelectsEveryMatchingBSSID:54",
         "name": "TestAssocExactESSIDSelectsEveryMatchingBSSID",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 55
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocExactESSIDSelectsEveryMatchingBSSID:54:newWiFiTargetTestModule:calls:55",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocExactESSIDSelectsEveryMatchingBSSID:54:newWiFiTargetTestModule:calls:55",
         "declarationLine": 54,
         "symbolType": "function",
         "language": "go",
@@ -1703,16 +1703,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocLegacySelectors:35",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocLegacySelectors:35",
         "name": "TestAssocLegacySelectors",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 36
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocLegacySelectors:35:newWiFiTargetTestModule:calls:36",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocLegacySelectors:35:newWiFiTargetTestModule:calls:36",
         "declarationLine": 35,
         "symbolType": "function",
         "language": "go",
@@ -1727,16 +1727,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocSkipListStillWinsForESSIDTargets:74",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocSkipListStillWinsForESSIDTargets:74",
         "name": "TestAssocSkipListStillWinsForESSIDTargets",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 75
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocSkipListStillWinsForESSIDTargets:74:newWiFiTargetTestModule:calls:75",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocSkipListStillWinsForESSIDTargets:74:newWiFiTargetTestModule:calls:75",
         "declarationLine": 74,
         "symbolType": "function",
         "language": "go",
@@ -1751,16 +1751,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocUnknownESSIDHasNoTargets:84",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocUnknownESSIDHasNoTargets:84",
         "name": "TestAssocUnknownESSIDHasNoTargets",
         "file": "modules/wifi/wifi_assoc_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_assoc_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_assoc_test.go",
           "line": 85
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocUnknownESSIDHasNoTargets:84:newWiFiTargetTestModule:calls:85",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocUnknownESSIDHasNoTargets:84:newWiFiTargetTestModule:calls:85",
         "declarationLine": 84,
         "symbolType": "function",
         "language": "go",
@@ -1775,16 +1775,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthCompleterIncludesUniqueESSIDsAndAddresses:119",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthCompleterIncludesUniqueESSIDsAndAddresses:119",
         "name": "TestDeauthCompleterIncludesUniqueESSIDsAndAddresses",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 120
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthCompleterIncludesUniqueESSIDsAndAddresses:119:newWiFiTargetTestModule:calls:120",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthCompleterIncludesUniqueESSIDsAndAddresses:119:newWiFiTargetTestModule:calls:120",
         "declarationLine": 119,
         "symbolType": "function",
         "language": "go",
@@ -1799,16 +1799,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthESSIDWildcardIsCaseSensitive:65",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthESSIDWildcardIsCaseSensitive:65",
         "name": "TestDeauthESSIDWildcardIsCaseSensitive",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 66
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthESSIDWildcardIsCaseSensitive:65:newWiFiTargetTestModule:calls:66",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthESSIDWildcardIsCaseSensitive:65:newWiFiTargetTestModule:calls:66",
         "declarationLine": 65,
         "symbolType": "function",
         "language": "go",
@@ -1823,16 +1823,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthExactESSIDSelectsEveryMatchingBSSID:57",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthExactESSIDSelectsEveryMatchingBSSID:57",
         "name": "TestDeauthExactESSIDSelectsEveryMatchingBSSID",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 58
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthExactESSIDSelectsEveryMatchingBSSID:57:newWiFiTargetTestModule:calls:58",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthExactESSIDSelectsEveryMatchingBSSID:57:newWiFiTargetTestModule:calls:58",
         "declarationLine": 57,
         "symbolType": "function",
         "language": "go",
@@ -1847,16 +1847,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35",
         "name": "TestDeauthLegacySelectors",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 36
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35:newWiFiTargetTestModule:calls:36",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35:newWiFiTargetTestModule:calls:36",
         "declarationLine": 35,
         "symbolType": "function",
         "language": "go",
@@ -1871,16 +1871,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthSkipListStillWinsForESSIDTargets:75",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthSkipListStillWinsForESSIDTargets:75",
         "name": "TestDeauthSkipListStillWinsForESSIDTargets",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 76
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthSkipListStillWinsForESSIDTargets:75:newWiFiTargetTestModule:calls:76",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthSkipListStillWinsForESSIDTargets:75:newWiFiTargetTestModule:calls:76",
         "declarationLine": 75,
         "symbolType": "function",
         "language": "go",
@@ -1895,16 +1895,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthUnknownOrClientlessESSIDHasNoFlows:89",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthUnknownOrClientlessESSIDHasNoFlows:89",
         "name": "TestDeauthUnknownOrClientlessESSIDHasNoFlows",
         "file": "modules/wifi/wifi_deauth_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_deauth_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_deauth_test.go",
           "line": 90
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthUnknownOrClientlessESSIDHasNoFlows:89:newWiFiTargetTestModule:calls:90",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthUnknownOrClientlessESSIDHasNoFlows:89:newWiFiTargetTestModule:calls:90",
         "declarationLine": 89,
         "symbolType": "function",
         "language": "go",
@@ -1919,16 +1919,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetExpressionMatrix:82",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetExpressionMatrix:82",
         "name": "TestWiFiTargetExpressionMatrix",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 83
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetExpressionMatrix:82:newWiFiExpressionTestModule:calls:83",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetExpressionMatrix:82:newWiFiExpressionTestModule:calls:83",
         "declarationLine": 82,
         "symbolType": "function",
         "language": "go",
@@ -1943,16 +1943,16 @@
         "stale": false
       },
       {
-        "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates:249",
+        "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates:249",
         "name": "TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates",
         "file": "modules/wifi/wifi_targets_test.go",
-        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
+        "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/modules/wifi/wifi_targets_test.go",
         "callSite": {
           "kind": "call-site",
           "file": "modules/wifi/wifi_targets_test.go",
           "line": 250
         },
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:rel:39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates:249:newWiFiTargetTestModule:calls:250",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:rel:4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates:249:newWiFiTargetTestModule:calls:250",
         "declarationLine": 249,
         "symbolType": "function",
         "language": "go",

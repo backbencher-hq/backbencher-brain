@@ -10,10 +10,12 @@ up).
 | `npm run build` | exit 0 |
 | `npm run verify:dist` | exit 0 (156 JS chunks / 1069 references) |
 | retrieval contract | **48/48** (engine-level R1 assertions included) |
+| receiver evidence gate | **VERIFIED (11 checks)** — write-side receiver binding, read-side rejection of a simulated old-index misbinding, `test_impact` exclusion + declaration, stale-source control |
+| m57 P0-2 | **GREEN 18/18** (receiver-type basis accepted as proven; P4 asserts the declared receiver binds as receiver-type, never as a package binding) |
 | edit family / m71 / search-modes / m14 systems / m21 | all green (edit-batch E13 61/61, m71 23/23, search-modes S1 48/48, systems e2e pass, m21 R3 14/14) |
 | m73 payload | 78/78 |
 | m28 tool surfaces | 26/26 (2/2 mutants) |
-| m57 P0-2 | all assertions pass |
+
 | verify-analyze | PASS |
 | docs truth | m31 PASS 71/71 |
 | health honesty (R12-R14 durable last-run added) | PASS |

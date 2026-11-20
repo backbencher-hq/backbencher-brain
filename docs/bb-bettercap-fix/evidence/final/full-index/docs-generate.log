@@ -1,0 +1,5 @@
+
+> @backbencher/brain@0.1.6 docs:generate
+> bun run script/verify-tool-docs.ts --write
+
+Generated 18 canonical tool documentation artifacts.

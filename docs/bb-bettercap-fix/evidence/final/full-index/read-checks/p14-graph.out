@@ -1,7 +1,7 @@
 {
   "summary": {
-    "totalCallers": 69,
-    "totalCallees": 148,
+    "totalCallers": 71,
+    "totalCallees": 147,
     "maxDepthReached": 4,
     "maxDepth": 5,
     "crossLanguageEdges": 0,
@@ -41,19 +41,19 @@
     "exactCallees": 4,
     "cascadedCallees": 0,
     "deeperCallers": 93,
-    "deeperCallees": 251,
+    "deeperCallees": 245,
     "callerBudget": 50,
     "calleeBudget": 50,
     "callerBudgetExhausted": true,
     "calleeBudgetExhausted": true,
     "edgesInBothDirections": 0,
     "edgesByType": {
-      "calls": 154,
-      "uses": 59,
+      "calls": 153,
+      "uses": 58,
       "exports": 40,
       "instantiates": 10,
-      "references": 55,
-      "contains": 55,
+      "references": 53,
+      "contains": 53,
       "mixes_in": 2
     },
     "edgeKindPriority": [
@@ -73,7 +73,7 @@
       "part_of"
     ],
     "dedupedAtToolLayer": {
-      "cascadeRepeatsCollapsed": 45,
+      "cascadeRepeatsCollapsed": 54,
       "spellingVariantsCollapsed": 0
     },
     "scope": {
@@ -96,26 +96,26 @@
       ],
       "includeCrossLanguage": true
     },
-    "returnedEdges": 217,
+    "returnedEdges": 218,
     "nodes": 140,
-    "payloadBytes": 246727,
+    "payloadBytes": 247767,
     "payloadBudgetBytes": 262144,
-    "droppedRows": 158,
+    "droppedRows": 151,
     "droppedByArray": {
-      "callers": 51,
-      "callees": 107
+      "callers": 49,
+      "callees": 102
     },
     "byteBudgetRule": "payload-byte-budget-exhausted",
     "byteBudgetExhausted": true
   },
   "data": {
     "root": {
-      "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:New:155",
+      "id": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:New:155",
       "name": "New",
       "symbolType": "function",
       "file": "session/session.go",
       "line": 155,
-      "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap/session/session.go",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap/session/session.go",
       "candidates": 1,
       "match": "exact"
     },
@@ -129,7 +129,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "core→core",
@@ -147,7 +147,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:main.go:main:20:New:calls:21"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:main.go:main:20:New:calls:21"
       },
       {
         "direction": "caller",
@@ -158,7 +158,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -177,7 +177,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:createMockSession:18:New:calls:21"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:createMockSession:18:New:calls:21"
       },
       {
         "direction": "caller",
@@ -188,7 +188,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -207,7 +207,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:createMockSession:23:New:calls:26"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:createMockSession:23:New:calls:26"
       },
       {
         "direction": "caller",
@@ -218,7 +218,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -237,7 +237,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593:New:calls:594"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkNewRestAPI:593:New:calls:594"
       },
       {
         "direction": "caller",
@@ -248,7 +248,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -267,7 +267,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602:New:calls:603"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkIsTLS:602:New:calls:603"
       },
       {
         "direction": "caller",
@@ -278,7 +278,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -297,7 +297,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614:New:calls:615"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/api_rest/api_rest_test.go:BenchmarkConfigure:614:New:calls:615"
       },
       {
         "direction": "caller",
@@ -308,7 +308,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -327,7 +327,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ble/ble_recon_test.go:createMockSession:19:New:calls:22"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ble/ble_recon_test.go:createMockSession:19:New:calls:22"
       },
       {
         "direction": "caller",
@@ -338,7 +338,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -357,7 +357,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:createMockSession:16:New:calls:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:createMockSession:16:New:calls:19"
       },
       {
         "direction": "caller",
@@ -368,7 +368,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -387,7 +387,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkNewC2:313:New:calls:314"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkNewC2:313:New:calls:314"
       },
       {
         "direction": "caller",
@@ -398,7 +398,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -417,7 +417,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkChannelSet:322:New:calls:323"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkChannelSet:322:New:calls:323"
       },
       {
         "direction": "caller",
@@ -428,7 +428,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -447,7 +447,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/c2/c2_test.go:BenchmarkTemplateSet:340:New:calls:341"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/c2/c2_test.go:BenchmarkTemplateSet:340:New:calls:341"
       },
       {
         "direction": "caller",
@@ -458,7 +458,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -477,7 +477,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:createMockSession:16:New:calls:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:createMockSession:16:New:calls:19"
       },
       {
         "direction": "caller",
@@ -488,7 +488,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -507,7 +507,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:BenchmarkNewCanModule:376:New:calls:377"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:BenchmarkNewCanModule:376:New:calls:377"
       },
       {
         "direction": "caller",
@@ -518,7 +518,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -537,7 +537,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/can/can_test.go:BenchmarkInjectHandler:390:New:calls:391"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/can/can_test.go:BenchmarkInjectHandler:390:New:calls:391"
       },
       {
         "direction": "caller",
@@ -548,7 +548,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -567,7 +567,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:createMockSession:16:New:calls:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:createMockSession:16:New:calls:19"
       },
       {
         "direction": "caller",
@@ -578,7 +578,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -597,7 +597,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374:New:calls:379"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:BenchmarkTickerCreate:374:New:calls:379"
       },
       {
         "direction": "caller",
@@ -608,7 +608,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -627,7 +627,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393:New:calls:398"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker_test.go:BenchmarkTickerStartStop:393:New:calls:398"
       },
       {
         "direction": "caller",
@@ -638,7 +638,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -657,7 +657,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:createMockSession:15:New:calls:18"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:createMockSession:15:New:calls:18"
       },
       {
         "direction": "caller",
@@ -668,7 +668,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -687,7 +687,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:BenchmarkVersionToNum:319:New:calls:320"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:BenchmarkVersionToNum:319:New:calls:320"
       },
       {
         "direction": "caller",
@@ -698,7 +698,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -717,7 +717,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/update/update_test.go:BenchmarkVersionComparison:338:New:calls:339"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/update/update_test.go:BenchmarkVersionComparison:338:New:calls:339"
       },
       {
         "direction": "caller",
@@ -728,7 +728,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -747,7 +747,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:createMockSession:16:New:calls:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:createMockSession:16:New:calls:19"
       },
       {
         "direction": "caller",
@@ -758,7 +758,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -777,7 +777,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkParseFilter:416:New:calls:417"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkParseFilter:416:New:calls:417"
       },
       {
         "direction": "caller",
@@ -788,7 +788,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -807,7 +807,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkParseSorting:429:New:calls:430"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkParseSorting:429:New:calls:430"
       },
       {
         "direction": "caller",
@@ -818,7 +818,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -837,7 +837,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/utils/view_selector_test.go:BenchmarkUpdate:442:New:calls:443"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/utils/view_selector_test.go:BenchmarkUpdate:442:New:calls:443"
       },
       {
         "direction": "caller",
@@ -848,7 +848,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→core",
@@ -867,7 +867,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wol/wol_test.go:createMockSession:17:New:calls:20"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wol/wol_test.go:createMockSession:17:New:calls:20"
       },
       {
         "direction": "caller",
@@ -878,7 +878,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -895,7 +895,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/events_stream/events_view_gateway.go:viewGatewayEvent:12:New:uses:21"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/events_stream/events_view_gateway.go:viewGatewayEvent:12:New:uses:21"
       },
       {
         "direction": "caller",
@@ -906,7 +906,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "medium",
           "frequency": "one_of_27"
@@ -922,7 +922,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:session:1:New:exports:155"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:session:1:New:exports:155"
       },
       {
         "direction": "caller",
@@ -933,7 +933,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -952,7 +952,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29:createMockSession:calls:30"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:TestNewAnyProxy:29:createMockSession:calls:30"
       },
       {
         "direction": "caller",
@@ -963,7 +963,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -982,7 +982,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:TestStartStop:175:createMockSession:calls:176"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:TestStartStop:175:createMockSession:calls:176"
       },
       {
         "direction": "caller",
@@ -993,7 +993,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1012,7 +1012,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89:createMockSession:calls:90"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocHandlerAcceptsESSIDsAndWildcards:89:createMockSession:calls:90"
       },
       {
         "direction": "caller",
@@ -1023,7 +1023,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1042,7 +1042,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125:createMockSession:calls:126"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocTargetDescriptionIncludesESSIDSupport:125:createMockSession:calls:126"
       },
       {
         "direction": "caller",
@@ -1053,7 +1053,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1072,7 +1072,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102:createMockSession:calls:103"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthHandlerAcceptsESSIDsAndWildcards:102:createMockSession:calls:103"
       },
       {
         "direction": "caller",
@@ -1083,7 +1083,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1102,7 +1102,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9:createMockSession:calls:10"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiShowRowContract:9:createMockSession:calls:10"
       },
       {
         "direction": "caller",
@@ -1113,7 +1113,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1132,7 +1132,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45:createMockSession:calls:46"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiSelectionFilterAndSortContract:45:createMockSession:calls:46"
       },
       {
         "direction": "caller",
@@ -1143,7 +1143,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1162,7 +1162,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74:createMockSession:calls:75"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:TestWiFiRSSISortContract:74:createMockSession:calls:75"
       },
       {
         "direction": "caller",
@@ -1173,7 +1173,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1192,7 +1192,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28:createMockSession:calls:30"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:newWiFiTargetTestModule:28:createMockSession:calls:30"
       },
       {
         "direction": "caller",
@@ -1203,7 +1203,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1222,7 +1222,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39:createMockSession:calls:41"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:newWiFiExpressionTestModule:39:createMockSession:calls:41"
       },
       {
         "direction": "caller",
@@ -1233,7 +1233,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1252,7 +1252,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61:createMockSession:calls:62"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiSelectorKeepsLegacyMACPrecedence:61:createMockSession:calls:62"
       },
       {
         "direction": "caller",
@@ -1263,7 +1263,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1282,7 +1282,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165:createMockSession:calls:166"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetHandlersRejectInvalidExpressions:165:createMockSession:calls:166"
       },
       {
         "direction": "caller",
@@ -1293,7 +1293,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1312,7 +1312,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178:createMockSession:calls:198"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetCommandResultsForEmptySelections:178:createMockSession:calls:198"
       },
       {
         "direction": "caller",
@@ -1323,7 +1323,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1342,7 +1342,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210:createMockSession:calls:211"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestLegacyWiFiTargetCommandSyntaxStillParses:210:createMockSession:calls:211"
       },
       {
         "direction": "caller",
@@ -1353,7 +1353,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1370,7 +1370,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:any_proxy:1:TestNewAnyProxy:exports:29"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:any_proxy:1:TestNewAnyProxy:exports:29"
       },
       {
         "direction": "caller",
@@ -1381,7 +1381,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1398,7 +1398,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/any_proxy/any_proxy_test.go:any_proxy:1:TestStartStop:exports:175"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/any_proxy/any_proxy_test.go:any_proxy:1:TestStartStop:exports:175"
       },
       {
         "direction": "caller",
@@ -1409,7 +1409,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1426,7 +1426,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocHandlerAcceptsESSIDsAndWildcards:exports:89"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocHandlerAcceptsESSIDsAndWildcards:exports:89"
       },
       {
         "direction": "caller",
@@ -1437,7 +1437,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1454,7 +1454,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocTargetDescriptionIncludesESSIDSupport:exports:125"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocTargetDescriptionIncludesESSIDSupport:exports:125"
       },
       {
         "direction": "caller",
@@ -1465,7 +1465,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1482,7 +1482,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:wifi:1:TestDeauthHandlerAcceptsESSIDsAndWildcards:exports:102"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:wifi:1:TestDeauthHandlerAcceptsESSIDsAndWildcards:exports:102"
       },
       {
         "direction": "caller",
@@ -1493,7 +1493,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1510,7 +1510,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiShowRowContract:exports:9"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiShowRowContract:exports:9"
       },
       {
         "direction": "caller",
@@ -1521,7 +1521,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1538,7 +1538,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiSelectionFilterAndSortContract:exports:45"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiSelectionFilterAndSortContract:exports:45"
       },
       {
         "direction": "caller",
@@ -1549,7 +1549,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -1566,7 +1566,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiRSSISortContract:exports:74"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_show_contract_test.go:wifi:1:TestWiFiRSSISortContract:exports:74"
       },
       {
         "direction": "caller",
@@ -1577,7 +1577,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1596,7 +1596,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocLegacySelectors:35:newWiFiTargetTestModule:calls:36"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocLegacySelectors:35:newWiFiTargetTestModule:calls:36"
       },
       {
         "direction": "caller",
@@ -1607,7 +1607,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1626,7 +1626,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocExactESSIDSelectsEveryMatchingBSSID:54:newWiFiTargetTestModule:calls:55"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocExactESSIDSelectsEveryMatchingBSSID:54:newWiFiTargetTestModule:calls:55"
       },
       {
         "direction": "caller",
@@ -1637,7 +1637,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1656,7 +1656,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocESSIDWildcardIsCaseSensitive:61:newWiFiTargetTestModule:calls:62"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocESSIDWildcardIsCaseSensitive:61:newWiFiTargetTestModule:calls:62"
       },
       {
         "direction": "caller",
@@ -1667,7 +1667,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1686,7 +1686,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocESSIDCanSelectAPWithoutClients:69:newWiFiTargetTestModule:calls:70"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocESSIDCanSelectAPWithoutClients:69:newWiFiTargetTestModule:calls:70"
       },
       {
         "direction": "caller",
@@ -1697,7 +1697,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1716,7 +1716,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocSkipListStillWinsForESSIDTargets:74:newWiFiTargetTestModule:calls:75"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocSkipListStillWinsForESSIDTargets:74:newWiFiTargetTestModule:calls:75"
       },
       {
         "direction": "caller",
@@ -1727,7 +1727,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1746,7 +1746,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocUnknownESSIDHasNoTargets:84:newWiFiTargetTestModule:calls:85"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocUnknownESSIDHasNoTargets:84:newWiFiTargetTestModule:calls:85"
       },
       {
         "direction": "caller",
@@ -1757,7 +1757,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1776,7 +1776,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106:newWiFiTargetTestModule:calls:107"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106:newWiFiTargetTestModule:calls:107"
       },
       {
         "direction": "caller",
@@ -1787,7 +1787,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1806,7 +1806,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35:newWiFiTargetTestModule:calls:36"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35:newWiFiTargetTestModule:calls:36"
       },
       {
         "direction": "caller",
@@ -1817,7 +1817,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1836,7 +1836,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthExactESSIDSelectsEveryMatchingBSSID:57:newWiFiTargetTestModule:calls:58"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthExactESSIDSelectsEveryMatchingBSSID:57:newWiFiTargetTestModule:calls:58"
       },
       {
         "direction": "caller",
@@ -1847,7 +1847,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1866,7 +1866,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthESSIDWildcardIsCaseSensitive:65:newWiFiTargetTestModule:calls:66"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthESSIDWildcardIsCaseSensitive:65:newWiFiTargetTestModule:calls:66"
       },
       {
         "direction": "caller",
@@ -1877,7 +1877,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1896,7 +1896,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthSkipListStillWinsForESSIDTargets:75:newWiFiTargetTestModule:calls:76"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthSkipListStillWinsForESSIDTargets:75:newWiFiTargetTestModule:calls:76"
       },
       {
         "direction": "caller",
@@ -1907,7 +1907,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1926,7 +1926,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthUnknownOrClientlessESSIDHasNoFlows:89:newWiFiTargetTestModule:calls:90"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthUnknownOrClientlessESSIDHasNoFlows:89:newWiFiTargetTestModule:calls:90"
       },
       {
         "direction": "caller",
@@ -1937,7 +1937,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1956,7 +1956,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_deauth_test.go:TestDeauthCompleterIncludesUniqueESSIDsAndAddresses:119:newWiFiTargetTestModule:calls:120"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:TestDeauthCompleterIncludesUniqueESSIDsAndAddresses:119:newWiFiTargetTestModule:calls:120"
       },
       {
         "direction": "caller",
@@ -1967,7 +1967,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "test→test",
@@ -1986,7 +1986,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_targets_test.go:TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates:249:newWiFiTargetTestModule:calls:250"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_targets_test.go:TestWiFiTargetResolutionDoesNotDeadlockDuringReconUpdates:249:newWiFiTargetTestModule:calls:250"
       },
       {
         "direction": "caller",
@@ -1997,7 +1997,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -2014,7 +2014,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocLegacySelectors:exports:35"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocLegacySelectors:exports:35"
       },
       {
         "direction": "caller",
@@ -2025,7 +2025,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -2042,7 +2042,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocExactESSIDSelectsEveryMatchingBSSID:exports:54"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocExactESSIDSelectsEveryMatchingBSSID:exports:54"
       },
       {
         "direction": "caller",
@@ -2053,7 +2053,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -2070,7 +2070,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocESSIDWildcardIsCaseSensitive:exports:61"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocESSIDWildcardIsCaseSensitive:exports:61"
       },
       {
         "direction": "caller",
@@ -2081,7 +2081,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -2098,7 +2098,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocESSIDCanSelectAPWithoutClients:exports:69"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocESSIDCanSelectAPWithoutClients:exports:69"
       },
       {
         "direction": "caller",
@@ -2109,7 +2109,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -2126,7 +2126,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocSkipListStillWinsForESSIDTargets:exports:74"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocSkipListStillWinsForESSIDTargets:exports:74"
       },
       {
         "direction": "caller",
@@ -2137,7 +2137,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "test→test",
           "criticality": "low",
           "frequency": "one_of_1",
@@ -2154,7 +2154,63 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocUnknownESSIDHasNoTargets:exports:84"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocUnknownESSIDHasNoTargets:exports:84"
+      },
+      {
+        "direction": "caller",
+        "from": "modules/wifi/wifi_assoc_test.go:wifi:1",
+        "to": "modules/wifi/wifi_assoc_test.go:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:106",
+        "relationshipType": "exports",
+        "confidence": 1,
+        "tier": "structural",
+        "evidenceClass": "structural",
+        "enrichment": {
+          "inferredAt": 1795218496774,
+          "layerFlow": "test→test",
+          "criticality": "low",
+          "frequency": "one_of_1",
+          "isTestCode": true
+        },
+        "isCrossLanguage": false,
+        "bridgeMechanism": null,
+        "depth": 3,
+        "callSite": {
+          "kind": "call-site",
+          "file": "modules/wifi/wifi_assoc_test.go",
+          "line": 106
+        },
+        "match": "exact",
+        "matchedMember": null,
+        "targetBasis": "symbol",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_assoc_test.go:wifi:1:TestAssocCompleterIncludesUniqueESSIDsAndAPAddresses:exports:106"
+      },
+      {
+        "direction": "caller",
+        "from": "modules/wifi/wifi_deauth_test.go:wifi:1",
+        "to": "modules/wifi/wifi_deauth_test.go:TestDeauthLegacySelectors:35",
+        "relationshipType": "exports",
+        "confidence": 1,
+        "tier": "structural",
+        "evidenceClass": "structural",
+        "enrichment": {
+          "inferredAt": 1795218496774,
+          "layerFlow": "test→test",
+          "criticality": "low",
+          "frequency": "one_of_1",
+          "isTestCode": true
+        },
+        "isCrossLanguage": false,
+        "bridgeMechanism": null,
+        "depth": 3,
+        "callSite": {
+          "kind": "call-site",
+          "file": "modules/wifi/wifi_deauth_test.go",
+          "line": 35
+        },
+        "match": "exact",
+        "matchedMember": null,
+        "targetBasis": "symbol",
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/wifi/wifi_deauth_test.go:wifi:1:TestDeauthLegacySelectors:exports:35"
       }
     ],
     "callees": [
@@ -2167,7 +2223,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2184,7 +2240,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:New:155:ParseOptions:calls:156"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:New:155:ParseOptions:calls:156"
       },
       {
         "direction": "callee",
@@ -2195,7 +2251,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2212,7 +2268,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:New:155:WithOptions:calls:161"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:New:155:WithOptions:calls:161"
       },
       {
         "direction": "callee",
@@ -2223,7 +2279,7 @@
         "tier": "inferred",
         "evidenceClass": "inferred",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "producer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2240,7 +2296,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:New:155:WithOptions:instantiates:161"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:New:155:WithOptions:instantiates:161"
       },
       {
         "direction": "callee",
@@ -2251,7 +2307,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -2268,7 +2324,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:New:155:Session:references:155"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:New:155:Session:references:155"
       },
       {
         "direction": "callee",
@@ -2279,7 +2335,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -2296,7 +2352,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:StringVar:calls:29"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:StringVar:calls:29"
       },
       {
         "direction": "callee",
@@ -2307,7 +2363,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -2324,7 +2380,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:BoolVar:calls:33"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:BoolVar:calls:33"
       },
       {
         "direction": "callee",
@@ -2335,7 +2391,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -2352,7 +2408,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:IntVar:calls:44"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:IntVar:calls:44"
       },
       {
         "direction": "callee",
@@ -2363,7 +2419,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -2380,7 +2436,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Parse:calls:46"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Parse:calls:46"
       },
       {
         "direction": "callee",
@@ -2391,7 +2447,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2408,7 +2464,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:InterfaceName:uses:29"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:InterfaceName:uses:29"
       },
       {
         "direction": "callee",
@@ -2419,7 +2475,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -2436,7 +2492,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Gateway:uses:30"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Gateway:uses:30"
       },
       {
         "direction": "callee",
@@ -2447,7 +2503,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2464,7 +2520,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:AutoStart:uses:31"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:AutoStart:uses:31"
       },
       {
         "direction": "callee",
@@ -2475,7 +2531,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2492,7 +2548,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Caplet:uses:32"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Caplet:uses:32"
       },
       {
         "direction": "callee",
@@ -2503,11 +2559,11 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
-          "frequency": "one_of_18"
+          "frequency": "one_of_22"
         },
         "isCrossLanguage": false,
         "bridgeMechanism": null,
@@ -2520,7 +2576,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Debug:uses:33"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Debug:uses:33"
       },
       {
         "direction": "callee",
@@ -2531,7 +2587,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2548,7 +2604,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:PrintVersion:uses:34"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:PrintVersion:uses:34"
       },
       {
         "direction": "callee",
@@ -2559,7 +2615,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2576,7 +2632,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Silent:uses:35"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Silent:uses:35"
       },
       {
         "direction": "callee",
@@ -2587,7 +2643,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2604,7 +2660,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:NoColors:uses:36"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:NoColors:uses:36"
       },
       {
         "direction": "callee",
@@ -2615,7 +2671,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2632,7 +2688,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:NoHistory:uses:37"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:NoHistory:uses:37"
       },
       {
         "direction": "callee",
@@ -2643,7 +2699,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2660,7 +2716,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:EnvFile:uses:38"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:EnvFile:uses:38"
       },
       {
         "direction": "callee",
@@ -2671,7 +2727,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2688,7 +2744,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Commands:uses:39"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Commands:uses:39"
       },
       {
         "direction": "callee",
@@ -2699,7 +2755,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2716,7 +2772,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:CpuProfile:uses:40"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:CpuProfile:uses:40"
       },
       {
         "direction": "callee",
@@ -2727,7 +2783,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2744,7 +2800,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:MemProfile:uses:41"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:MemProfile:uses:41"
       },
       {
         "direction": "callee",
@@ -2755,7 +2811,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2772,7 +2828,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:CapletsPath:uses:42"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:CapletsPath:uses:42"
       },
       {
         "direction": "callee",
@@ -2783,7 +2839,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2800,7 +2856,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Script:uses:43"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Script:uses:43"
       },
       {
         "direction": "callee",
@@ -2811,7 +2867,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -2828,7 +2884,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:PcapBufSize:uses:44"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:PcapBufSize:uses:44"
       },
       {
         "direction": "callee",
@@ -2839,7 +2895,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -2856,7 +2912,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Options:references:26"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Options:references:26"
       },
       {
         "direction": "callee",
@@ -2867,7 +2923,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -2884,7 +2940,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:ParseOptions:26:Options:references:27"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:ParseOptions:26:Options:references:27"
       },
       {
         "direction": "callee",
@@ -2895,7 +2951,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -2911,7 +2967,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:InterfaceName:contains:8"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:InterfaceName:contains:8"
       },
       {
         "direction": "callee",
@@ -2922,7 +2978,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "medium",
           "frequency": "one_of_33"
@@ -2938,7 +2994,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:Gateway:contains:9"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:Gateway:contains:9"
       },
       {
         "direction": "callee",
@@ -2949,7 +3005,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_2"
@@ -2965,7 +3021,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:Caplet:contains:10"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:Caplet:contains:10"
       },
       {
         "direction": "callee",
@@ -2976,7 +3032,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -2992,7 +3048,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:AutoStart:contains:11"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:AutoStart:contains:11"
       },
       {
         "direction": "callee",
@@ -3003,10 +3059,10 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "medium",
-          "frequency": "one_of_18"
+          "frequency": "one_of_22"
         },
         "isCrossLanguage": false,
         "bridgeMechanism": null,
@@ -3019,7 +3075,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:Debug:contains:12"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:Debug:contains:12"
       },
       {
         "direction": "callee",
@@ -3030,7 +3086,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_4"
@@ -3046,7 +3102,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:Silent:contains:13"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:Silent:contains:13"
       },
       {
         "direction": "callee",
@@ -3057,7 +3113,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_4"
@@ -3073,7 +3129,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:NoColors:contains:14"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:NoColors:contains:14"
       },
       {
         "direction": "callee",
@@ -3084,7 +3140,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -3100,7 +3156,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:NoHistory:contains:15"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:NoHistory:contains:15"
       },
       {
         "direction": "callee",
@@ -3111,7 +3167,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_4"
@@ -3127,7 +3183,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:PrintVersion:contains:16"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:PrintVersion:contains:16"
       },
       {
         "direction": "callee",
@@ -3138,7 +3194,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_4"
@@ -3154,7 +3210,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:EnvFile:contains:17"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:EnvFile:contains:17"
       },
       {
         "direction": "callee",
@@ -3165,7 +3221,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_4"
@@ -3181,7 +3237,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:Commands:contains:18"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:Commands:contains:18"
       },
       {
         "direction": "callee",
@@ -3192,7 +3248,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_4"
@@ -3208,7 +3264,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:CpuProfile:contains:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:CpuProfile:contains:19"
       },
       {
         "direction": "callee",
@@ -3219,7 +3275,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -3235,7 +3291,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:MemProfile:contains:20"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:MemProfile:contains:20"
       },
       {
         "direction": "callee",
@@ -3246,7 +3302,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -3262,7 +3318,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:CapletsPath:contains:21"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:CapletsPath:contains:21"
       },
       {
         "direction": "callee",
@@ -3273,7 +3329,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_2"
@@ -3289,7 +3345,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:Script:contains:22"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:Script:contains:22"
       },
       {
         "direction": "callee",
@@ -3300,7 +3356,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -3316,7 +3372,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:core/options.go:Options:7:PcapBufSize:contains:23"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:core/options.go:Options:7:PcapBufSize:contains:23"
       },
       {
         "direction": "callee",
@@ -3327,7 +3383,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3344,7 +3400,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Effects:calls:101"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Effects:calls:101"
       },
       {
         "direction": "callee",
@@ -3355,7 +3411,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3372,7 +3428,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Disable:calls:102"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Disable:calls:102"
       },
       {
         "direction": "callee",
@@ -3383,7 +3439,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3400,7 +3456,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Create:calls:121"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Create:calls:121"
       },
       {
         "direction": "callee",
@@ -3411,7 +3467,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3428,7 +3484,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Close:calls:125"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Close:calls:125"
       },
       {
         "direction": "callee",
@@ -3439,7 +3495,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3456,7 +3512,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:StartCPUProfile:calls:126"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:StartCPUProfile:calls:126"
       },
       {
         "direction": "callee",
@@ -3467,7 +3523,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3484,7 +3540,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:NewUnsortedKV:calls:139"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:NewUnsortedKV:calls:139"
       },
       {
         "direction": "callee",
@@ -3495,7 +3551,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3512,7 +3568,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:registerCoreHandlers:calls:145"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:registerCoreHandlers:calls:145"
       },
       {
         "direction": "callee",
@@ -3523,7 +3579,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "core→core",
@@ -3541,7 +3597,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:NewEnvironment:calls:135"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:NewEnvironment:calls:135"
       },
       {
         "direction": "callee",
@@ -3552,7 +3608,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "core→core",
@@ -3570,7 +3626,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:NewEventPool:calls:143"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:NewEventPool:calls:143"
       },
       {
         "direction": "callee",
@@ -3581,7 +3637,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "core→core",
@@ -3599,7 +3655,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:NewEventsIgnoreList:calls:116"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:NewEventsIgnoreList:calls:116"
       },
       {
         "direction": "callee",
@@ -3610,7 +3666,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "factory_consumer",
           "layerFlow": "core→core",
@@ -3628,7 +3684,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:NewPrompt:calls:107"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:NewPrompt:calls:107"
       },
       {
         "direction": "callee",
@@ -3639,7 +3695,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "producer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -3656,7 +3712,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Session:instantiates:106"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Session:instantiates:106"
       },
       {
         "direction": "callee",
@@ -3667,7 +3723,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -3684,7 +3740,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:FlushOnEdit:uses:139"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:FlushOnEdit:uses:139"
       },
       {
         "direction": "callee",
@@ -3695,7 +3751,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3712,7 +3768,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:NoColors:uses:101"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:NoColors:uses:101"
       },
       {
         "direction": "callee",
@@ -3723,7 +3779,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3740,7 +3796,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:CpuProfile:uses:120"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:CpuProfile:uses:120"
       },
       {
         "direction": "callee",
@@ -3751,7 +3807,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3768,7 +3824,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:PcapBufSize:uses:131"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:PcapBufSize:uses:131"
       },
       {
         "direction": "callee",
@@ -3779,7 +3835,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3796,7 +3852,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:EnvFile:uses:135"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:EnvFile:uses:135"
       },
       {
         "direction": "callee",
@@ -3807,11 +3863,11 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
-          "frequency": "one_of_18"
+          "frequency": "one_of_22"
         },
         "isCrossLanguage": false,
         "bridgeMechanism": null,
@@ -3824,7 +3880,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Debug:uses:143"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Debug:uses:143"
       },
       {
         "direction": "callee",
@@ -3835,7 +3891,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3852,7 +3908,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Silent:uses:143"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Silent:uses:143"
       },
       {
         "direction": "callee",
@@ -3863,11 +3919,11 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
-          "criticality": "low",
-          "frequency": "one_of_2"
+          "criticality": "medium",
+          "frequency": "one_of_18"
         },
         "isCrossLanguage": false,
         "bridgeMechanism": null,
@@ -3880,7 +3936,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Log:uses:149"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Log:uses:149"
       },
       {
         "direction": "callee",
@@ -3891,7 +3947,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3908,7 +3964,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:CAPTURE_DEFAULTS:uses:132"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:CAPTURE_DEFAULTS:uses:132"
       },
       {
         "direction": "callee",
@@ -3919,7 +3975,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3936,7 +3992,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Options:uses:120"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Options:uses:120"
       },
       {
         "direction": "callee",
@@ -3947,7 +4003,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -3964,7 +4020,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:aliasesFileName:uses:139"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:aliasesFileName:uses:139"
       },
       {
         "direction": "callee",
@@ -3975,7 +4031,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -3992,7 +4048,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:I:uses:147"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:I:uses:147"
       },
       {
         "direction": "callee",
@@ -4003,7 +4059,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "high",
@@ -4020,7 +4076,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Events:uses:149"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Events:uses:149"
       },
       {
         "direction": "callee",
@@ -4031,7 +4087,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -4048,7 +4104,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:CommandHandler:references:113"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:CommandHandler:references:113"
       },
       {
         "direction": "callee",
@@ -4059,7 +4115,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -4076,7 +4132,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Options:references:100"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Options:references:100"
       },
       {
         "direction": "callee",
@@ -4087,7 +4143,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -4104,7 +4160,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Session:references:100"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Session:references:100"
       },
       {
         "direction": "callee",
@@ -4115,7 +4171,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -4132,7 +4188,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:WithOptions:100:Module:references:114"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:WithOptions:100:Module:references:114"
       },
       {
         "direction": "callee",
@@ -4143,7 +4199,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4160,7 +4216,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:NewEnvironment:22:Expand:calls:29"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:NewEnvironment:22:Expand:calls:29"
       },
       {
         "direction": "callee",
@@ -4171,7 +4227,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4188,7 +4244,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:NewEnvironment:22:Exists:calls:30"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:NewEnvironment:22:Exists:calls:30"
       },
       {
         "direction": "callee",
@@ -4199,7 +4255,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4216,7 +4272,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:NewEnvironment:22:Load:calls:31"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:NewEnvironment:22:Load:calls:31"
       },
       {
         "direction": "callee",
@@ -4227,7 +4283,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "producer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -4244,7 +4300,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:NewEnvironment:22:Environment:instantiates:23"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:NewEnvironment:22:Environment:instantiates:23"
       },
       {
         "direction": "callee",
@@ -4255,7 +4311,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -4272,7 +4328,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:NewEnvironment:22:Environment:references:22"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:NewEnvironment:22:Environment:references:22"
       },
       {
         "direction": "callee",
@@ -4283,7 +4339,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -4300,7 +4356,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:NewEnvironment:22:EnvironmentChangedCallback:references:25"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:NewEnvironment:22:EnvironmentChangedCallback:references:25"
       },
       {
         "direction": "callee",
@@ -4311,7 +4367,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4331,7 +4387,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Load:40:Lock:calls:41"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Load:40:Lock:calls:41"
       },
       {
         "direction": "callee",
@@ -4342,7 +4398,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4362,7 +4418,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Load:40:Unlock:calls:42"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Load:40:Unlock:calls:42"
       },
       {
         "direction": "callee",
@@ -4373,7 +4429,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4393,7 +4449,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Load:40:ReadFile:calls:44"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Load:40:ReadFile:calls:44"
       },
       {
         "direction": "callee",
@@ -4404,7 +4460,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4424,7 +4480,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Load:40:Unmarshal:calls:50"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Load:40:Unmarshal:calls:50"
       },
       {
         "direction": "callee",
@@ -4435,7 +4491,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4455,7 +4511,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Save:55:Lock:calls:56"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Save:55:Lock:calls:56"
       },
       {
         "direction": "callee",
@@ -4466,7 +4522,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4486,7 +4542,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Save:55:Unlock:calls:57"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Save:55:Unlock:calls:57"
       },
       {
         "direction": "callee",
@@ -4497,7 +4553,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4517,7 +4573,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Save:55:Marshal:calls:59"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Save:55:Marshal:calls:59"
       },
       {
         "direction": "callee",
@@ -4528,7 +4584,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4548,7 +4604,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Save:55:WriteFile:calls:64"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Save:55:WriteFile:calls:64"
       },
       {
         "direction": "callee",
@@ -4559,7 +4615,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4579,7 +4635,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Has:67:Lock:calls:68"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Has:67:Lock:calls:68"
       },
       {
         "direction": "callee",
@@ -4590,7 +4646,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4610,7 +4666,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Has:67:Unlock:calls:69"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Has:67:Unlock:calls:69"
       },
       {
         "direction": "callee",
@@ -4621,7 +4677,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4641,7 +4697,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:addCb:76:Lock:calls:77"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:addCb:76:Lock:calls:77"
       },
       {
         "direction": "callee",
@@ -4652,7 +4708,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4672,7 +4728,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:addCb:76:Unlock:calls:78"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:addCb:76:Unlock:calls:78"
       },
       {
         "direction": "callee",
@@ -4683,7 +4739,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "callback",
           "layerFlow": "core→unresolved",
@@ -4704,7 +4760,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:WithCallback:82:addCb:calls:83"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:WithCallback:82:addCb:calls:83"
       },
       {
         "direction": "callee",
@@ -4715,7 +4771,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "pattern": "callback",
           "layerFlow": "core→unresolved",
@@ -4736,7 +4792,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:WithCallback:82:Set:calls:84"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:WithCallback:82:Set:calls:84"
       },
       {
         "direction": "callee",
@@ -4747,7 +4803,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4767,7 +4823,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Set:88:Lock:calls:89"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Set:88:Lock:calls:89"
       },
       {
         "direction": "callee",
@@ -4778,7 +4834,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4798,7 +4854,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Set:88:Unlock:calls:94"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Set:88:Unlock:calls:94"
       },
       {
         "direction": "callee",
@@ -4809,7 +4865,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4829,7 +4885,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Get:110:Lock:calls:111"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Get:110:Lock:calls:111"
       },
       {
         "direction": "callee",
@@ -4840,7 +4896,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4860,7 +4916,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Get:110:Unlock:calls:112"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Get:110:Unlock:calls:112"
       },
       {
         "direction": "callee",
@@ -4871,7 +4927,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4891,7 +4947,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Get:110:GetUnlocked:calls:113"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Get:110:GetUnlocked:calls:113"
       },
       {
         "direction": "callee",
@@ -4902,7 +4958,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4922,7 +4978,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:GetInt:116:Get:calls:117"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:GetInt:116:Get:calls:117"
       },
       {
         "direction": "callee",
@@ -4933,7 +4989,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4953,7 +5009,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:GetInt:116:Atoi:calls:118"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:GetInt:116:Atoi:calls:118"
       },
       {
         "direction": "callee",
@@ -4964,7 +5020,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -4984,7 +5040,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:GetInt:116:Errorf:calls:125"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:GetInt:116:Errorf:calls:125"
       },
       {
         "direction": "callee",
@@ -4995,7 +5051,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -5015,7 +5071,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Sorted:128:Lock:calls:129"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Sorted:128:Lock:calls:129"
       },
       {
         "direction": "callee",
@@ -5026,7 +5082,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -5046,7 +5102,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Sorted:128:Unlock:calls:130"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Sorted:128:Unlock:calls:130"
       },
       {
         "direction": "callee",
@@ -5057,7 +5113,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -5077,7 +5133,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Sorted:128:Strings:calls:136"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Sorted:128:Strings:calls:136"
       },
       {
         "direction": "callee",
@@ -5088,7 +5144,7 @@
         "tier": "inferred",
         "evidenceClass": "inferred",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -5104,7 +5160,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Mutex:mixes_in:17"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Mutex:mixes_in:17"
       },
       {
         "direction": "callee",
@@ -5115,7 +5171,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5135,7 +5191,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Load:40:Data:uses:50"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Load:40:Data:uses:50"
       },
       {
         "direction": "callee",
@@ -5146,7 +5202,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5166,7 +5222,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Save:55:Data:uses:59"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Save:55:Data:uses:59"
       },
       {
         "direction": "callee",
@@ -5177,7 +5233,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5197,7 +5253,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Has:67:Data:uses:71"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Has:67:Data:uses:71"
       },
       {
         "direction": "callee",
@@ -5208,7 +5264,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5228,7 +5284,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:addCb:76:cbs:uses:79"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:addCb:76:cbs:uses:79"
       },
       {
         "direction": "callee",
@@ -5239,7 +5295,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5259,7 +5315,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Set:88:Data:uses:91"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Set:88:Data:uses:91"
       },
       {
         "direction": "callee",
@@ -5270,7 +5326,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5290,7 +5346,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Set:88:cbs:uses:96"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Set:88:cbs:uses:96"
       },
       {
         "direction": "callee",
@@ -5301,7 +5357,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5321,7 +5377,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:GetUnlocked:103:Data:uses:104"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:GetUnlocked:103:Data:uses:104"
       },
       {
         "direction": "callee",
@@ -5332,7 +5388,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5352,7 +5408,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Sorted:128:Data:uses:133"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Sorted:128:Data:uses:133"
       },
       {
         "direction": "callee",
@@ -5363,7 +5419,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5380,7 +5436,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Mutex:references:17"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Mutex:references:17"
       },
       {
         "direction": "callee",
@@ -5391,7 +5447,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5408,7 +5464,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:EnvironmentChangedCallback:references:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:EnvironmentChangedCallback:references:19"
       },
       {
         "direction": "callee",
@@ -5419,7 +5475,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5439,7 +5495,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Load:40:Environment:references:40"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Load:40:Environment:references:40"
       },
       {
         "direction": "callee",
@@ -5450,7 +5506,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5470,7 +5526,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Save:55:Environment:references:55"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Save:55:Environment:references:55"
       },
       {
         "direction": "callee",
@@ -5481,7 +5537,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5501,7 +5557,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Has:67:Environment:references:67"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Has:67:Environment:references:67"
       },
       {
         "direction": "callee",
@@ -5512,7 +5568,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5532,7 +5588,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:addCb:76:Environment:references:76"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:addCb:76:Environment:references:76"
       },
       {
         "direction": "callee",
@@ -5543,7 +5599,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5563,7 +5619,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:addCb:76:EnvironmentChangedCallback:references:76"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:addCb:76:EnvironmentChangedCallback:references:76"
       },
       {
         "direction": "callee",
@@ -5574,7 +5630,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5594,7 +5650,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:WithCallback:82:Environment:references:82"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:WithCallback:82:Environment:references:82"
       },
       {
         "direction": "callee",
@@ -5605,7 +5661,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -5625,7 +5681,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:WithCallback:82:EnvironmentChangedCallback:references:82"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:WithCallback:82:EnvironmentChangedCallback:references:82"
       },
       {
         "direction": "callee",
@@ -5636,7 +5692,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5656,7 +5712,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Set:88:Environment:references:88"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Set:88:Environment:references:88"
       },
       {
         "direction": "callee",
@@ -5667,7 +5723,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5687,7 +5743,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:GetUnlocked:103:Environment:references:103"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:GetUnlocked:103:Environment:references:103"
       },
       {
         "direction": "callee",
@@ -5698,7 +5754,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5718,7 +5774,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Get:110:Environment:references:110"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Get:110:Environment:references:110"
       },
       {
         "direction": "callee",
@@ -5729,7 +5785,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5749,7 +5805,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:GetInt:116:Environment:references:116"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:GetInt:116:Environment:references:116"
       },
       {
         "direction": "callee",
@@ -5760,7 +5816,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -5780,7 +5836,7 @@
           "file": "session/environment.go"
         },
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Sorted:128:Environment:references:128"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Sorted:128:Environment:references:128"
       },
       {
         "direction": "callee",
@@ -5791,7 +5847,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -5807,7 +5863,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Mutex:contains:17"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Mutex:contains:17"
       },
       {
         "direction": "callee",
@@ -5818,7 +5874,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_7"
@@ -5834,7 +5890,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Data:contains:18"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Data:contains:18"
       },
       {
         "direction": "callee",
@@ -5845,7 +5901,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_3"
@@ -5861,7 +5917,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:cbs:contains:19"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:cbs:contains:19"
       },
       {
         "direction": "callee",
@@ -5872,7 +5928,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -5888,7 +5944,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Load:contains:40"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Load:contains:40"
       },
       {
         "direction": "callee",
@@ -5899,7 +5955,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -5915,7 +5971,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Save:contains:55"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Save:contains:55"
       },
       {
         "direction": "callee",
@@ -5926,7 +5982,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -5942,7 +5998,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Has:contains:67"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Has:contains:67"
       },
       {
         "direction": "callee",
@@ -5953,7 +6009,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -5969,7 +6025,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:addCb:contains:76"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:addCb:contains:76"
       },
       {
         "direction": "callee",
@@ -5980,7 +6036,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -5996,7 +6052,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:WithCallback:contains:82"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:WithCallback:contains:82"
       },
       {
         "direction": "callee",
@@ -6007,7 +6063,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -6023,7 +6079,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Set:contains:88"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Set:contains:88"
       },
       {
         "direction": "callee",
@@ -6034,7 +6090,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -6050,7 +6106,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:GetUnlocked:contains:103"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:GetUnlocked:contains:103"
       },
       {
         "direction": "callee",
@@ -6061,7 +6117,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -6077,7 +6133,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Get:contains:110"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Get:contains:110"
       },
       {
         "direction": "callee",
@@ -6088,7 +6144,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -6104,7 +6160,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:GetInt:contains:116"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:GetInt:contains:116"
       },
       {
         "direction": "callee",
@@ -6115,7 +6171,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "layerFlow": "core→core",
           "criticality": "low",
           "frequency": "one_of_1"
@@ -6131,7 +6187,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/environment.go:Environment:16:Sorted:contains:128"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/environment.go:Environment:16:Sorted:contains:128"
       },
       {
         "direction": "callee",
@@ -6142,7 +6198,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "producer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -6159,7 +6215,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:NewEventPool:65:EventPool:instantiates:66"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:NewEventPool:65:EventPool:instantiates:66"
       },
       {
         "direction": "callee",
@@ -6170,7 +6226,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "producer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -6187,7 +6243,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:NewEventPool:65:Mutex:instantiates:67"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:NewEventPool:65:Mutex:instantiates:67"
       },
       {
         "direction": "callee",
@@ -6198,7 +6254,7 @@
         "tier": "structural",
         "evidenceClass": "structural",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "producer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -6215,7 +6271,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:NewEventPool:65:PrintWriter:instantiates:75"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:NewEventPool:65:PrintWriter:instantiates:75"
       },
       {
         "direction": "callee",
@@ -6226,7 +6282,7 @@
         "tier": "reference_qualified",
         "evidenceClass": "reference_qualified",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -6243,7 +6299,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:NewEventPool:65:EventPool:references:65"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:NewEventPool:65:EventPool:references:65"
       },
       {
         "direction": "callee",
@@ -6254,7 +6310,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "medium",
@@ -6271,7 +6327,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:NewEventPool:65:Event:references:70"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:NewEventPool:65:Event:references:70"
       },
       {
         "direction": "callee",
@@ -6282,7 +6338,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→core",
           "criticality": "low",
@@ -6299,7 +6355,7 @@
         "match": "exact",
         "matchedMember": null,
         "targetBasis": "symbol",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:NewEventPool:65:PrintCallback:references:72"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:NewEventPool:65:PrintCallback:references:72"
       },
       {
         "direction": "callee",
@@ -6310,7 +6366,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -6330,7 +6386,7 @@
           "file": "session/events.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:OnPrint:82:Lock:calls:83"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:OnPrint:82:Lock:calls:83"
       },
       {
         "direction": "callee",
@@ -6341,7 +6397,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -6361,7 +6417,7 @@
           "file": "session/events.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:OnPrint:82:Unlock:calls:84"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:OnPrint:82:Unlock:calls:84"
       },
       {
         "direction": "callee",
@@ -6372,7 +6428,7 @@
         "tier": "usage_contextual",
         "evidenceClass": "usage_contextual",
         "enrichment": {
-          "inferredAt": 1795215176074,
+          "inferredAt": 1795218496774,
           "role": "consumer",
           "layerFlow": "core→unresolved",
           "criticality": "low",
@@ -6392,38 +6448,7 @@
           "file": "session/events.go"
         },
         "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:Listen:88:Lock:calls:89"
-      },
-      {
-        "direction": "callee",
-        "from": "session/events.go:EventPool:53",
-        "to": "ext:Unlock",
-        "relationshipType": "calls",
-        "confidence": 0.8,
-        "tier": "usage_contextual",
-        "evidenceClass": "usage_contextual",
-        "enrichment": {
-          "inferredAt": 1795215176074,
-          "role": "consumer",
-          "layerFlow": "core→unresolved",
-          "criticality": "low",
-          "frequency": "one_of_0"
-        },
-        "isCrossLanguage": false,
-        "bridgeMechanism": null,
-        "depth": 3,
-        "callSite": {
-          "kind": "call-site",
-          "file": "session/events.go",
-          "line": 90
-        },
-        "match": "owner-cascade",
-        "matchedMember": {
-          "name": "Listen",
-          "file": "session/events.go"
-        },
-        "targetBasis": "unresolved",
-        "rowId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/events.go:Listen:88:Unlock:calls:90"
+        "rowId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/events.go:Listen:88:Lock:calls:89"
       }
     ],
     "nodes": {
@@ -7415,7 +7440,7 @@
       "evidenceClass": "inferred",
       "engine": "graph@intelligence",
       "engineVersion": "m10.02",
-      "projectId": "39971043d202ba62c07d8c0abaf54cde0a0e6058",
+      "projectId": "4a89b1b01085c8c7f77da25083391c7136b86941",
       "source": "brain_relationship",
       "limitations": [
         "Traversal is bounded and unresolved external nodes cannot be recursively traversed.",

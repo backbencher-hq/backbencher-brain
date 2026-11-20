@@ -1,6 +1,6 @@
 note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup
-indexing /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap (project 39971043…)
-wiped 39971043 index in place (file kept)
+indexing /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap (project 4a89b1b0…)
+wiped 4a89b1b0 index in place (file kept)
   index space: db 0.4 MB, wal 0.0 MB
 
 Indexing 1,973 files — this will take a few minutes
@@ -8,76 +8,82 @@ Indexing 1,973 files — this will take a few minutes
 [index] 0% 1/1,973 files elapsed=0s eta=…
 [brain] preparing the parallel worker pool (1972 files)…
 [brain] ✓ worker pool available — using 7 workers with 45s timeouts
-[INFO] [17:50:54] [parallel-indexer] worker pool fork test passed — using parallel workers
-[WARN] [17:51:00] [parallel-indexer] parent event loop was blocked {"ms":1133,"stalledTotalMs":1133}
-[index] 5% 101/1,973 files elapsed=8s eta=2m 28s
-[WARN] [17:51:05] [parallel-indexer] parent event loop was blocked {"ms":1321,"stalledTotalMs":2454}
-[index] 10% 203/1,973 files elapsed=13s eta=1m 56s
-[index] 15% 297/1,973 files elapsed=16s eta=1m 28s
-[WARN] [17:51:14] [parallel-indexer] parent event loop was blocked {"ms":1488,"stalledTotalMs":3942}
-[index] 20% 395/1,973 files elapsed=22s eta=1m 26s
-[WARN] [17:51:22] [parallel-indexer] parent event loop was blocked {"ms":2426,"stalledTotalMs":6368}
-[WARN] [17:51:33] [parallel-indexer] parent event loop was blocked {"ms":10524,"stalledTotalMs":16892}
+[INFO] [18:45:46] [parallel-indexer] worker pool fork test passed — using parallel workers
+[WARN] [18:45:51] [parallel-indexer] parent event loop was blocked {"ms":1183,"stalledTotalMs":1183}
+[WARN] [18:45:53] [parallel-indexer] parent event loop was blocked {"ms":1045,"stalledTotalMs":2228}
+[index] 5% 103/1,973 files elapsed=9s eta=2m 40s
+[WARN] [18:45:54] [parallel-indexer] parent event loop was blocked {"ms":1296,"stalledTotalMs":3524}
+[WARN] [18:45:58] [parallel-indexer] parent event loop was blocked {"ms":1283,"stalledTotalMs":4807}
+[WARN] [18:46:00] [parallel-indexer] parent event loop was blocked {"ms":1244,"stalledTotalMs":6051}
+[index] 10% 204/1,973 files elapsed=15s eta=2m 12s
+[index] 15% 299/1,973 files elapsed=19s eta=1m 44s
+[WARN] [18:46:11] [parallel-indexer] parent event loop was blocked {"ms":1840,"stalledTotalMs":7891}
+[index] 20% 396/1,973 files elapsed=26s eta=1m 44s
+[WARN] [18:46:14] [parallel-indexer] parent event loop was blocked {"ms":1595,"stalledTotalMs":9486}
+[WARN] [18:46:17] [parallel-indexer] parent event loop was blocked {"ms":1294,"stalledTotalMs":10780}
 [index] a quarter of the way in
-[index] 25% 502/1,973 files elapsed=41s eta=2m 0s
-[index] 30% 604/1,973 files elapsed=43s eta=1m 38s
-[index] 35% 706/1,973 files elapsed=44s eta=1m 19s
-[index] 40% 807/1,973 files elapsed=45s eta=1m 5s
-[index] 45% 905/1,973 files elapsed=46s eta=52s
+[index] 25% 502/1,973 files elapsed=33s eta=1m 37s
+[WARN] [18:46:35] [parallel-indexer] parent event loop was blocked {"ms":16639,"stalledTotalMs":27419}
+[index] 30% 604/1,973 files elapsed=52s eta=1m 57s
+[index] 35% 691/1,973 files elapsed=55s eta=1m 41s
+[WARN] [18:46:42] [parallel-indexer] parent event loop was blocked {"ms":1067,"stalledTotalMs":28486}
+[index] 40% 797/1,973 files elapsed=57s eta=1m 21s
+[index] 46% 917/1,973 files elapsed=58s eta=1m 2s
 [index] past the halfway mark
-[index] 50% 998/1,973 files elapsed=46s eta=43s
-[index] 55% 1,088/1,973 files elapsed=47s eta=36s
-[index] 60% 1,188/1,973 files elapsed=47s eta=30s
-[WARN] [17:51:43] [parallel-indexer] parent event loop was blocked {"ms":1701,"stalledTotalMs":18593}
-[index] 65% 1,292/1,973 files elapsed=50s eta=24s
-[index] 71% 1,412/1,973 files elapsed=50s eta=18s
-[index] 75% 1,483/1,973 files elapsed=51s eta=15s
+[index] 51% 1,007/1,973 files elapsed=58s eta=52s
+[index] 55% 1,097/1,973 files elapsed=59s eta=42s
+[index] 60% 1,187/1,973 files elapsed=59s eta=35s
+[index] 66% 1,307/1,973 files elapsed=1m 0s eta=26s
+[WARN] [18:46:47] [parallel-indexer] parent event loop was blocked {"ms":1882,"stalledTotalMs":30368}
+[index] 71% 1,402/1,973 files elapsed=1m 2s eta=22s
+[index] 75% 1,490/1,973 files elapsed=1m 3s eta=17s
+[WARN] [18:46:50] [parallel-indexer] parent event loop was blocked {"ms":1415,"stalledTotalMs":31783}
 [index] in the final stretch
-[index] 81% 1,603/1,973 files elapsed=52s eta=10s
-[index] 85% 1,683/1,973 files elapsed=52s eta=8s
-[index] 91% 1,803/1,973 files elapsed=53s eta=4s
+[index] 80% 1,591/1,973 files elapsed=1m 5s eta=13s
+[index] 85% 1,682/1,973 files elapsed=1m 5s eta=9s
+[index] 90% 1,783/1,973 files elapsed=1m 7s eta=5s
+[WARN] [18:46:58] [parallel-indexer] parent event loop was blocked {"ms":6283,"stalledTotalMs":38066}
 [index] almost there — finishing up
-[index] 95% 1,883/1,973 files elapsed=53s eta=2s
-[WARN] [17:51:54] [parallel-indexer] parent event loop was blocked {"ms":5796,"stalledTotalMs":24389}
-[WARN] [17:51:55] [parallel-indexer] parent event loop was blocked {"ms":1233,"stalledTotalMs":25622}
-[index] 100% 1,974/1,973 files elapsed=1m 2s eta=finishing
-[INFO] [17:51:55] [parallel-indexer] worker pool complete {"files":1972,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":25622}
-[INFO] [17:52:01] [parallel-indexer] override companion (javascript): 113 owners, 0 file(s) re-analyzed, 0 reapplied, 0 confirmed, 0 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+[index] 95% 1,884/1,973 files elapsed=1m 13s eta=2s
+[WARN] [18:47:01] [parallel-indexer] parent event loop was blocked {"ms":1187,"stalledTotalMs":39253}
+[index] 100% 1,974/1,973 files elapsed=1m 17s eta=finishing
+[INFO] [18:47:03] [parallel-indexer] worker pool complete {"files":1972,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":39253}
+[INFO] [18:47:10] [parallel-indexer] override companion (javascript): 113 owners, 0 file(s) re-analyzed, 0 reapplied, 0 confirmed, 0 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
   [1/8] resolving cross-file relationships…
-  ✓ resolved in 53864ms [plan=linear largest-intermediate=29104]
+  ✓ resolved in 64548ms [plan=linear largest-intermediate=29104]
         cross-language: 122 edges
   [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
   enriching reading 0%
   enriching counting 0%
-[WARN] [17:52:56] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"39971043","danglingSources":18865,"totalRelationships":111786}
+[WARN] [18:48:16] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"4a89b1b0","danglingSources":18865,"totalRelationships":111786}
   enriching done 100%
-  ✅ Enriched 92,921 relationships (1,562 patterns) in 4692ms
-        patterns: factory_consumer 890 · event_handler 413 · callback 242 · observer 12 · delegate 4 · di_injection 1
-        ⚠ 18,865 dangling sources, 74,398 unresolved targets — declared, not hidden
+  ✅ Enriched 92,921 relationships (1,603 patterns) in 6036ms
+        patterns: factory_consumer 908 · event_handler 413 · callback 240 · observer 32 · delegate 9 · di_injection 1
+        ⚠ 18,865 dangling sources, 73,854 unresolved targets — declared, not hidden
   [3/8] computing gravity scores…
-  ✓ gravity in 485ms
+  ✓ gravity in 630ms
   [4/8] analyzing taint flows & security…
         security leads: 0 (tier leads; not findings)
   [5/8] computing project health…
-[INFO] [17:53:01] [project-health] project health computed {"projectId":"39971043d202ba62c07d8c0abaf54cde0a0e6058","complexityScore":79,"maintainabilityScore":76,"techDebtScore":0,"codeQualityScore":51,"languages":12,"bottlenecks":20}
-  ✓ taint(1ms) + health(60ms)
+[INFO] [18:48:23] [project-health] project health computed {"projectId":"4a89b1b01085c8c7f77da25083391c7136b86941","complexityScore":79,"maintainabilityScore":76,"techDebtScore":0,"codeQualityScore":51,"languages":12,"bottlenecks":20}
+  ✓ taint(1ms) + health(89ms)
   [6/8] integrity & freshness…
-  ✓ health check in 1020ms
+  ✓ health check in 1006ms
   ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
     ❌ Index Completeness: 1 of 1973 discovered files were never written (1972 of 1973 indexed), so the index does not cover the project — note the status field says "complete" while the counts say otherwise; the counts are the measurement.
   [7/8] vector blobs…
-  ✓ vector blobs: 0/0 promoted in 23ms
+  ✓ vector blobs: 0/0 promoted in 46ms
   [8/8] planner stats (ANALYZE)…
-  ✓ planner stats (ANALYZE) in 1431ms
-  index space: db 383.1 MB, wal 0.0 MB, 5% free
-  index: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bbdata/projects/39971043d202ba62c07d8c0abaf54cde0a0e6058/brain.db · remove with: rm -rf /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bbdata/projects/39971043d202ba62c07d8c0abaf54cde0a0e6058
+  ✓ planner stats (ANALYZE) in 1029ms
+  index space: db 383.6 MB, wal 0.0 MB, 5% free
+  index: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bbdata/projects/4a89b1b01085c8c7f77da25083391c7136b86941/brain.db · remove with: rm -rf /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bbdata/projects/4a89b1b01085c8c7f77da25083391c7136b86941
   ⚠️  index health (after embeddings): 92% — 1 warning(s) (run bb health for details)
     ❌ Index Completeness: 1 of 1973 discovered files were never written (1972 of 1973 indexed), so the index does not cover the project — note the status field says "complete" while the counts say otherwise; the counts are the measurement.
-✓ indexed 1972 files, 55785 symbols, 111786 relationships, 23925 embeddings in 130.6s
+✓ indexed 1972 files, 55785 symbols, 111786 relationships, 23925 embeddings in 160.7s
   stats: {"totalFiles":1973,"processed":1973,"errors":0}
   graph: 122 cross-language edges · 92,921 relationships explained
-  patterns: factory_consumer 890 · event_handler 413 · callback 242 · observer 12 · delegate 4
-  run: 7 workers · 12 languages · discovery 418ms · parse 66.9s · derive 61.7s · total 130.6s
+  patterns: factory_consumer 908 · event_handler 413 · callback 240 · observer 32 · delegate 9
+  run: 7 workers · 12 languages · discovery 492ms · parse 84.4s · derive 73.7s · total 160.7s
   embeddings: local-word-vectors-v3 (50d)
   AST analysis degraded for 4 file(s). Regex-derived graph edges are marked inferred.
   breakdown: 1972 newly parsed | 1 unchanged | 0 skipped | 3 symbol-loss (parsed 0 symbols) | 0 errors | 0 timeouts

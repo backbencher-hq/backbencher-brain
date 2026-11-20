@@ -24,7 +24,7 @@ PASS  P2-2 symbol mode returns source (or a declared unavailable reason)
 PASS  P2-2 symbol fileId is a projectId:path id (never an absolute path)
 PASS  P2-2 symbol mode keeps absolutePath separate when present
 PASS  P2-3 ask declares fallback/flavour/model state
-SKIP  P2-3 keyword fallback names the pending backfill  answer may be vector now — inspect /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/full-proof/read-checks/p23-ask.out
+SKIP  P2-3 keyword fallback names the pending backfill  answer may be vector now — inspect /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/full-proof2/read-checks/p23-ask.out
 PASS  P2-4 status=complete never printed beside the shortfall
 PASS  P2-4 shortfall cause names the size-tier skip
 PASS  P2-4 embeddings line declares configured/local space coverage (no under-covered configured space on this local-only config)
@@ -40,4 +40,4 @@ PASS  P1-2 fresh index: no calls attributed to package-main module symbol
 PASS  P1-1 fresh index: internal Go imports classified internal (count=327)
 
 SUMMARY: 38 pass / 0 fail / 2 deferred-or-skipped
-evidence: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/full-proof/read-checks
+evidence: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/full-proof2/read-checks

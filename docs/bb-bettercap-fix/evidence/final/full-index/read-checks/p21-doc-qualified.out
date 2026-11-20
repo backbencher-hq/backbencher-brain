@@ -288,7 +288,7 @@
       "kind": "symbol",
       "path": "session/session.go",
       "symbol": "Session",
-      "symbolId": "39971043d202ba62c07d8c0abaf54cde0a0e6058:session/session.go:Session:72",
+      "symbolId": "4a89b1b01085c8c7f77da25083391c7136b86941:session/session.go:Session:72",
       "lineStart": 72,
       "lineEnd": 98,
       "evidence": "Indexed struct Session",
@@ -551,7 +551,7 @@
     },
     "budget": {
       "passed": true,
-      "estimatedTokens": 5054,
+      "estimatedTokens": 5053,
       "maxTokens": 8000
     },
     "bounds": {
@@ -599,10 +599,10 @@
     ]
   },
   "reference": {
-    "projectId": "39971043d202ba62c07d8c0abaf54cde0a0e6058",
-    "projectPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap",
+    "projectId": "4a89b1b01085c8c7f77da25083391c7136b86941",
+    "projectPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap",
     "snapshotId": "19c43df39d20653a26b9e9dccefd1838",
-    "generatedAt": "2026-11-20T22:53:37.795Z",
+    "generatedAt": "2026-11-20T23:49:01.278Z",
     "indexVersion": "v1.0.0",
     "schemaVersion": 1,
     "sourceLanguage": "go",

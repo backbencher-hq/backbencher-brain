@@ -6,7 +6,7 @@
   ],
   "copies": [
     {
-      "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:main_test.go:main:1",
+      "id": "4a89b1b01085c8c7f77da25083391c7136b86941:main_test.go:main:1",
       "symbol": "main",
       "file": "main_test.go",
       "language": "go",
@@ -14,7 +14,7 @@
       "crossRowCount": 0
     },
     {
-      "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:main.go:main:1",
+      "id": "4a89b1b01085c8c7f77da25083391c7136b86941:main.go:main:1",
       "symbol": "main",
       "file": "main.go",
       "language": "go",
@@ -22,7 +22,7 @@
       "crossRowCount": 0
     },
     {
-      "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:main.go:main:20",
+      "id": "4a89b1b01085c8c7f77da25083391c7136b86941:main.go:main:20",
       "symbol": "main",
       "file": "main.go",
       "language": "go",
@@ -30,7 +30,7 @@
       "crossRowCount": 0
     },
     {
-      "id": "39971043d202ba62c07d8c0abaf54cde0a0e6058:modules/ticker/ticker.go:main:20",
+      "id": "4a89b1b01085c8c7f77da25083391c7136b86941:modules/ticker/ticker.go:main:20",
       "symbol": "main",
       "file": "modules/ticker/ticker.go",
       "language": "go",

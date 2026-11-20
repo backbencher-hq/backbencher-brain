@@ -121,7 +121,9 @@ fixed and proven on the full specimen, and the lane's last two declared limitati
   `external-stdlib-leaf`. At index time the same evidence BINDS genuine project-receiver calls with
   `bindingBasis=receiver-type` (visible to every caller/impact read) and the P0-2 gates carve that
   basis out like `import-path`. Gate: `script/m-fix/verify-receiver-evidence.ts` (11 checks: write
-  binding, read rejection, stale-source control).
+  binding, read rejection, stale-source control). Measured on the full bettercap copy: **544 calls bound
+  via a declared receiver type**, session test mapping rises from 18 tested/127 links to **21/133** with
+  0 unvalidated.
 - **`test_impact` — RESOLVED.** It validates every caller edge with the same test-link contract and
   counts/excludes failures as `summary.unvalidatedLinks`/`unvalidatedByReason` +
   `provenance.unknowns` (`unvalidated-test-links`), so a false selector edge can no longer be

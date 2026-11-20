@@ -1,8 +1,9 @@
+copying specimen -> /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap
 specimen copy: 2031 files, 50M
-indexing copy with: node bin/bb index /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bettercap --force
-index exit=0 (log /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/full-proof/reindex.log)
+indexing copy with: node bin/bb index /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bettercap --force
+index exit=0 (log /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/full-proof2/reindex.log)
 PASS  reindex exits 0
-project=39971043d202ba62c07d8c0abaf54cde0a0e6058 db=/home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/final/bbdata/projects/39971043d202ba62c07d8c0abaf54cde0a0e6058/brain.db
+project=4a89b1b01085c8c7f77da25083391c7136b86941 db=/home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/final/bbdata/projects/4a89b1b01085c8c7f77da25083391c7136b86941/brain.db
 symbols=55785 relationships=111786 imports=1948
 PASS  P0-2 no bound cross-language name-resolution imports/calls/instantiates
 PASS  P0-2 every name-resolution row is a <=0.5 candidate
@@ -16,7 +17,7 @@ go.mod module path: github.com/bettercap/bettercap/v2
 PASS  P1-1 no same-module import marked external
 PASS  P1-1 internal Go imports classified internal (count=327)
 PASS  P1-1 non-Go code imports resolve to symbols (HTML/asset refs excluded by contract)
-docs/bb-bettercap-fix/tools/final-bettercap-reindex.sh: line 117: skip: command not found
+SKIP  P1-1 Go single-symbol resolution  Go imports resolve to PACKAGES (files) — proven by the dependencies surface (returnedInternalDependencies>0)
 --- read surface: bb_analyze dependencies filePath=session
 internal=348 deps=[{'path': 'fmt', 'external': True}, {'path': 'testing', 'external': True}] keys=['dependencies', 'file', 'fileId', 'path', 'external', 'resolution', 'stale', 'dependents', 'dependenciesTotal', 'dependentsTotal', 'dependenciesTruncated', 'dependentsTruncated']
 PASS  P1-1 dependencies(session) shows internal deps and dependents
@@ -25,5 +26,5 @@ facts=0
 no false cross-language facts for main
 PASS  P0-2 cross-language read surface: all facts candidate/inferred
 
-SUMMARY: 12 pass / 0 fail  (project 39971043d202ba62c07d8c0abaf54cde0a0e6058)
-evidence: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-complete/.tools/full-proof
+SUMMARY: 12 pass / 0 fail  (project 4a89b1b01085c8c7f77da25083391c7136b86941)
+evidence: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-final4/.tools/full-proof2
