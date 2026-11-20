@@ -272,6 +272,43 @@ at HEAD, and this is the correction rather than a silent edit:
 The 2026-10-23 numbers are kept in the table above as the declaration's own
 record; the 2026-11-19 numbers are the ones a fresh checkout can verify.
 
+### Master-review re-measurement (2026-11-20) — identical, and now with a symbol census
+
+The 2026-11-20 master review re-ran the arm a third time, at HEAD `f9224678a`
+with the analyzer at `sha256:a9b988bd…`, and took an **independent symbol census**
+over the same 2,532 files through the production path
+(`.tmp-mr/sym-census.mts` in that session):
+
+| quantity | value |
+| --- | ---: |
+| admitted files | 2,532 |
+| symbols | **40,492** |
+| relationships | **326,092** |
+| files carrying a parse-error tree | 525 |
+| macro-argument reads (0.6 class) | 2,326 |
+| refused edges (counted, not silent) | **2,238** (0.686% of edges) |
+
+**Symbols by kind:** function 10,175 (25.1%) · method 8,422 (20.8%) · property
+7,892 (19.5%) · enum_member 3,918 (9.7%) · impl 3,256 (8.0%) · struct 2,283 (5.6%) ·
+module 2,125 (5.2%) · enum 1,025 (2.5%) · variable 615 (1.5%) · type 606 (1.5%) ·
+macro 104 (0.3%) · trait 71 (0.2%).
+
+**Visibility:** private 28,040 (69.2%) · public 11,717 (28.9%) · crate 682 (1.7%) ·
+super 53 (0.1%). Rust's default-private rule is doing real work: **69.2%** of symbols
+are private, which is the honest shape for a language with no `public` default.
+
+**Refusals, by class** (the honesty contract's "an omission is a decision" column):
+`uses:identifier_read` 1,223 · `calls:macro_invocation` 475 ·
+`decorates:unnamed_declaration` 265 · `decorates:inner_attribute` 202 ·
+`calls:call_expression` 63 · `uses:field_expression` 9 ·
+`part_of:include_non_literal` 1.
+
+**The whole-population TABLE 1 is byte-identical to the 2026-11-19 run on every
+one of the fourteen types and on the total.** The two `renders` emitter defects
+found and fixed in this same review (see "Two defects the master review found in
+`renders`") did **not** move it: 0 renders edges before, 0 after, because the
+corpus carries no render macro.
+
 ### Historical M12 pass (2026-08-28) — 400 tracked `.rs` files
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `cargo@94faf917`
