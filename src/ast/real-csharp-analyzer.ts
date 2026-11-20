@@ -3,18 +3,39 @@
 // What this file is: parses the pinned tree-sitter-c_sharp grammar and publishes
 // the M12 contract's symbols (namespace/class/interface/struct/record/enum/
 // member/delegate/event/method/constructor/property; NO locals, parameters or
-// accessor scopes) and ELEVEN of the live FOURTEEN-value relationship vocabulary:
+// accessor scopes) and TWELVE of the live FOURTEEN-value relationship vocabulary:
 // contains, extends, implements, calls, instantiates, overrides, uses, references,
-// imports, exports and renders.
-// THE OTHER THREE VALUES - decorates, mixes_in, part_of - are NOT emitted here, and
-// this header does not claim them. Each is RULED for C# with a cited, measured basis
-// (the pinned grammar's own node-type inventory + the whole-population construct
-// counts): C# has no decorator-application construct (its ATTRIBUTE is passive
-// metadata, published as symbol metadata `decorators`, not as an applied callable -
-// an ONTOLOGICAL ruling), no mixin construct (C#'s only supertype composition is the
-// base list, already extends/implements), and no part-of (compilation-unit inclusion)
-// directive - the `partial` MODIFIER is a DECLARATION SPLIT of ONE type, which merges
-// into one symbol and is not a part-of edge (an INFORMATIONAL ruling).
+// imports, exports, renders and decorates.
+//
+// THE TWO VALUES NOT EMITTED HERE - mixes_in and part_of - and NEITHER is a grammar
+// claim. Both are ONTOLOGICAL, and each rests on what C# can SAY rather than on
+// which node types the pinned grammar happens to expose:
+//   mixes_in - C#'s ONLY supertype mechanism is the base list, and it is already
+//     published as extends (first entry, when it is a class) plus implements (every
+//     remaining entry). A mixin is composed INTO the supertype chain, so mixes_in
+//     would need a composition that is NEITHER of those, and C# has no such
+//     construct. The two shapes that look like mixins are not: `with_expression`
+//     (673 sites) produces a modified INSTANCE, not a subtype relationship, and an
+//     extension method (3,312 sites) is resolved at the CALL SITE and never
+//     inherited into the supertype chain. Either would duplicate an edge that
+//     already exists under a more specific label.
+//   part_of - the contract's rule is "source is always the file carrying the
+//     directive, target is what it names", so the test is whether a file NAMES
+//     ANOTHER FILE. C# has no such statement: 0 #include/#import directives across
+//     the 1,181 admitted .cs files, and no part_* node type. The `partial` MODIFIER
+//     is real composition - 66 of 136 partial types in the admitted corpus span more
+//     than one file - but every declaration says only `partial class X`; no file
+//     names the other, so the compiler joins them while the source never states the
+//     relation. A row built from it would read X -> X.
+// Both rulings are registered in script/m14/csharp-ruled.ts with their falsifiers,
+// so the ontology-coverage gate can test them rather than take them on trust.
+//
+// `decorates` IS emitted (P0-1, 2026-11-19): a C# ATTRIBUTE is APPLIED TO a
+// declaration, which is the contract's shape (src/ast/types.ts:120-143). The
+// attribute_list is a DIRECT child of its host, so the pass is structural; the
+// ATTRIBUTE is the callable (its name is a type name, and an applied attribute is
+// constructed by the runtime). See the DECORATES block in analyze() for the
+// accessor redirect and the marker/applied_callable split.
 // `renders` IS emitted: the C# component-render construct is the DYNAMIC RENDER HOST
 // (`builder.RenderComponent<Widget>()`, or the non-generic `RenderComponent(typeof(X))`),
 // which the existing `invocation_expression` node type carries (rung R3 of the remedy
@@ -23,23 +44,34 @@
 // CORPUS-UNEXERCISED and its proof is the behavioural FIXTURE
 // validation/m14/fixtures/csharp/render-host-component.cs (the edge exists only when
 // the construct reaches the analyzer as a REAL NODE).
-// Evidence: validation/m14/verification/CSHARP-VERDICT-2026-10-21.md (the four
-// cells + the D7 dispositions), validation/m14/measurements/csharp-grammar-inventory.json
-// (the positive grammar inventory) and csharp-emission-census-whole.json (the
-// whole-population counts).
+// Evidence (2026-11-19: the earlier list cited five files that were never committed -
+// CSHARP-VERDICT-2026-10-21.md, CSHARP-FIX.md, CSHARP-D7.md,
+// csharp-grammar-inventory.json, csharp-emission-census-whole.json - so every ruling
+// that pointed at them was unfalsifiable from this checkout. Each claim now names an
+// artifact a reader can open, or the command that regenerates it):
+//   validation/m14/measurements/csharp-grammar-nodes.json
+//       the served build's own 239 named node types over 533 ids. Regenerate with
+//       `bun script/m14/grammar-node-inventory.ts csharp`.
+//   script/m14/csharp-ruled.ts
+//       the mixes_in / part_of / renders rulings, with their falsifiers, registered
+//       in RULED_BY_LANG so the arbiter tests them.
+//   validation/m14/reviews/csharp-closeout-priorities-2026-11-19.md
+//       the close-out's measurements and the reasoning that reversed `decorates`.
+//   the whole-corpus counts: `ontology-coverage-gate.ts csharp --fresh` (emitted
+//       edges per type) and `differential.ts --lang csharp` (resolution).
 // Base lists are kind-resolved through the optional type-kind companion (first
 // base = extends, remaining = implements; unknown externals follow the C# rule) -
 // the same harness pre-pass that builds the override companion.
 // Grammar: wasm/tree-sitter-c_sharp.wasm (sha256 6f69e1cae44e1c32...).
 // Docs / spec / fixtures / validations: docs/analyzers/csharp.md ·
 // script/m14/spec/csharp-completeness.json · validation/m14/fixtures/csharp/** ·
-// validation/m14/verification/CSHARP-FIX.md · validation/m14/verification/CSHARP-D7.md ·
-// validation/m14/verification/CSHARP-VERDICT-2026-10-21.md.
+// script/m14/csharp-ruled.ts · script/m14/csharp-mutants.ts ·
+// script/m14/csharp-truth.ts (the exports/imports/overrides oracles).
 // CO-EDIT LIST - when this file changes, review in the SAME pass: those docs, the
-// spec and fixtures above, src/ast/override-context.ts (the companion this file
-// imports) and its pre-pass producer, CSHARP-FIX.md, CSHARP-D7.md and the lane's
-// own instruments script/m14/csharp-*.ts (census, grammar inventory, wall
-// classifier). Registration: src/ast/engine.ts (getAnalyzer) and routing:
+// spec, the fixtures and the ruling table above, src/ast/override-context.ts (the
+// companion this file imports) and its pre-pass producer, and the lane's own
+// instruments script/m14/csharp-*.ts (truth, mutants, census, grammar inventory).
+// Registration: src/ast/engine.ts (getAnalyzer) and routing:
 // src/ast/language-detection.ts.
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
@@ -2632,11 +2664,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // and this EDGE are not alternatives — the field is the declaration's own payload, the edge
     // is the relationship — and publishing one does not require dropping the other.
     //
-    // THE POPULATION, measured (repo `powershell`, 1,181 .cs files): 7,769 attribute sites over
-    // 655 files, of which 6,024 carry arguments. The whole-admitted-population census
-    // (`csharp-emission-census-whole.json`) counts 52,205 attribute sites over 5,425 files / 20
-    // repos, of which 609 are attribute-argument CALLS. Either number is a real population, not a
-    // corner case.
+    // THE POPULATION, measured two ways and both from artifacts a reader can open.
+    //   Repo `powershell` (1,181 .cs files): 7,769 attribute sites over 655 files, of
+    //     which 6,024 carry arguments.
+    //   Whole admitted corpus: `ontology-coverage-gate.ts csharp --fresh` reports the
+    //     emitted `decorates` row (39,782 edges over 14,415 files after this change;
+    //     0 before it).
+    // Either number is a real population, not a corner case.
     //
     // THE ATTRIBUTE IS THE CALLABLE. An attribute's name is a TYPE name, and an applied
     // attribute is CONSTRUCTED by the runtime — so `attributeKind: "applied_callable"` is the

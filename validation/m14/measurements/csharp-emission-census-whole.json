@@ -1,0 +1,636 @@
+{
+ "lane": "csharp",
+ "instrument": "script/m14/csharp-emission-census.ts",
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "population": {
+  "admitted": 14424,
+  "pathsTracked": 14424,
+  "distinctFiles": 14424,
+  "repos": 22,
+  "absent": 255,
+  "overCap": 1,
+  "overCapLargest": 12224833,
+  "strideCap": 0,
+  "rule": "git ls-files -z per git checkout under BB_CORPUS_ROOT . symlinks followed (statSync) . .cs/.csx only . size cap 1 MB (the engine's FULL_AST_LIMIT)",
+  "perRepoPaths": {
+   "Bolero": 5,
+   "Deedle": 6,
+   "FSharp.Data": 3,
+   "FSharp.Formatting": 30,
+   "FSharpPlus": 1,
+   "FSharpx.Extras": 22,
+   "Fabulous": 3,
+   "Fake": 78,
+   "FsAutoComplete": 2,
+   "FsCheck": 21,
+   "Grace": 9,
+   "PSScriptAnalyzer": 210,
+   "Paket": 214,
+   "ansible": 18,
+   "core": 35,
+   "expecto": 1,
+   "fsharp": 243,
+   "gql-graphql-dotnet": 1111,
+   "gql-graphql-platform": 11134,
+   "pb-grpc": 1,
+   "powershell": 1275,
+   "sqlite": 2
+  },
+  "perRepoDistinctFiles": {
+   "Bolero": 5,
+   "Deedle": 6,
+   "FSharp.Data": 3,
+   "FSharp.Formatting": 30,
+   "FSharpPlus": 1,
+   "FSharpx.Extras": 22,
+   "Fabulous": 3,
+   "Fake": 78,
+   "FsAutoComplete": 2,
+   "FsCheck": 21,
+   "Grace": 9,
+   "PSScriptAnalyzer": 210,
+   "Paket": 214,
+   "ansible": 18,
+   "core": 35,
+   "expecto": 1,
+   "fsharp": 243,
+   "gql-graphql-dotnet": 1111,
+   "gql-graphql-platform": 11134,
+   "pb-grpc": 1,
+   "powershell": 1275,
+   "sqlite": 2
+  },
+  "onDisk": {
+   "paths": 14426,
+   "distinctFiles": 14426,
+   "repos": 199,
+   "symlinkedDirectoriesFollowed": 182,
+   "rule": "filesystem walk of BB_CORPUS_ROOT, symlinks FOLLOWED | .cs/.csx only | NOT git-tracked | no size cap"
+  }
+ },
+ "parse": {
+  "parsed": 14424,
+  "failed": 0,
+  "degraded": 0,
+  "constructWalked": 14424,
+  "constructSkips": {
+   "overCap": 0,
+   "parseFailed": 0,
+   "noTree": 0
+  }
+ },
+ "build": {
+  "wasm": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-c_sharp.wasm",
+  "wasmSha256": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40",
+  "pathSha256": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40",
+  "fixtureSuiteSha256": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40",
+  "pathAndBytesAgree": true,
+  "productionAndFixturesAgree": true,
+  "citationRule": "the sha256 of the BYTES THE REGISTRY SERVES - never a path, never a log line (L-2026-10-21-11, corrected)",
+  "nodeTypeIds": 533,
+  "namedNodeTypes": 239,
+  "positiveControl": {
+   "presentMustBe": [
+    "class_declaration",
+    "attribute_list",
+    "attribute",
+    "modifier"
+   ],
+   "presentChecked": [
+    {
+     "type": "class_declaration",
+     "present": true
+    },
+    {
+     "type": "attribute_list",
+     "present": true
+    },
+    {
+     "type": "attribute",
+     "present": true
+    },
+    {
+     "type": "modifier",
+     "present": true
+    }
+   ],
+   "absentMustBe": [
+    "decorator",
+    "decorated_definition",
+    "mixin_declaration",
+    "part_directive",
+    "partial_declaration"
+   ],
+   "absentChecked": [
+    {
+     "type": "decorator",
+     "present": false
+    },
+    {
+     "type": "decorated_definition",
+     "present": false
+    },
+    {
+     "type": "mixin_declaration",
+     "present": false
+    },
+    {
+     "type": "part_directive",
+     "present": false
+    },
+    {
+     "type": "partial_declaration",
+     "present": false
+    }
+   ]
+  }
+ },
+ "perf": {
+  "unit": "milliseconds per file, PRODUCTION path (getParser -> parse -> analyze), single process",
+  "files": 14424,
+  "meanMs": 27.34,
+  "medianMs": 7.65,
+  "p90Ms": 58.67,
+  "maxMs": 2336.47,
+  "totalWallSeconds": 394.4
+ },
+ "parity": null,
+ "perType": {
+  "calls": {
+   "edges": 415786,
+   "files": 10862,
+   "repos": 22
+  },
+  "uses": {
+   "edges": 260071,
+   "files": 10370,
+   "repos": 22
+  },
+  "contains": {
+   "edges": 197539,
+   "files": 14210,
+   "repos": 22
+  },
+  "imports": {
+   "edges": 39763,
+   "files": 10783,
+   "repos": 21
+  },
+  "references": {
+   "edges": 223848,
+   "files": 12686,
+   "repos": 22
+  },
+  "exports": {
+   "edges": 13081,
+   "files": 10101,
+   "repos": 21
+  },
+  "extends": {
+   "edges": 8672,
+   "files": 5632,
+   "repos": 15
+  },
+  "implements": {
+   "edges": 5070,
+   "files": 3078,
+   "repos": 15
+  },
+  "overrides": {
+   "edges": 14543,
+   "files": 3653,
+   "repos": 17
+  },
+  "instantiates": {
+   "edges": 86855,
+   "files": 7981,
+   "repos": 22
+  },
+  "decorates": {
+   "edges": 39788,
+   "files": 4732,
+   "repos": 18
+  },
+  "renders": {
+   "edges": 0,
+   "files": 0,
+   "repos": 0
+  },
+  "mixes_in": {
+   "edges": 0,
+   "files": 0,
+   "repos": 0
+  },
+  "part_of": {
+   "edges": 0,
+   "files": 0,
+   "repos": 0
+  }
+ },
+ "perMarker": {
+  "using_import": {
+   "edges": 39762,
+   "files": 10783,
+   "repos": 21
+  },
+  "csharp_field_access": {
+   "edges": 203825,
+   "files": 9868,
+   "repos": 21
+  },
+  "identifier_usage": {
+   "edges": 56246,
+   "files": 5265,
+   "repos": 20
+  },
+  "return_type": {
+   "edges": 48112,
+   "files": 7529,
+   "repos": 19
+  },
+  "declared_type": {
+   "edges": 135926,
+   "files": 10729,
+   "repos": 22
+  },
+  "method_override": {
+   "edges": 10086,
+   "files": 3126,
+   "repos": 16
+  },
+  "attribute_application": {
+   "edges": 39788,
+   "files": 4732,
+   "repos": 18
+  },
+  "assembly_public_surface": {
+   "edges": 13081,
+   "files": 10101,
+   "repos": 21
+  },
+  "property_override": {
+   "edges": 2541,
+   "files": 862,
+   "repos": 10
+  },
+  "interface_member_implementation": {
+   "edges": 1883,
+   "files": 480,
+   "repos": 8
+  },
+  "using_type_argument": {
+   "edges": 48,
+   "files": 20,
+   "repos": 3
+  },
+  "extern_alias_import": {
+   "edges": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "indexer_override": {
+   "edges": 5,
+   "files": 4,
+   "repos": 1
+  },
+  "event_override": {
+   "edges": 28,
+   "files": 16,
+   "repos": 1
+  }
+ },
+ "perMarkerType": {
+  "imports | using_import": {
+   "edges": 39762,
+   "files": 10783,
+   "repos": 21
+  },
+  "uses | csharp_field_access": {
+   "edges": 203825,
+   "files": 9868,
+   "repos": 21
+  },
+  "uses | identifier_usage": {
+   "edges": 56246,
+   "files": 5265,
+   "repos": 20
+  },
+  "references | return_type": {
+   "edges": 48112,
+   "files": 7529,
+   "repos": 19
+  },
+  "references | declared_type": {
+   "edges": 135926,
+   "files": 10729,
+   "repos": 22
+  },
+  "overrides | method_override": {
+   "edges": 10086,
+   "files": 3126,
+   "repos": 16
+  },
+  "decorates | attribute_application": {
+   "edges": 39788,
+   "files": 4732,
+   "repos": 18
+  },
+  "exports | assembly_public_surface": {
+   "edges": 13081,
+   "files": 10101,
+   "repos": 21
+  },
+  "overrides | property_override": {
+   "edges": 2541,
+   "files": 862,
+   "repos": 10
+  },
+  "overrides | interface_member_implementation": {
+   "edges": 1883,
+   "files": 480,
+   "repos": 8
+  },
+  "references | using_type_argument": {
+   "edges": 48,
+   "files": 20,
+   "repos": 3
+  },
+  "imports | extern_alias_import": {
+   "edges": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "overrides | indexer_override": {
+   "edges": 5,
+   "files": 4,
+   "repos": 1
+  },
+  "overrides | event_override": {
+   "edges": 28,
+   "files": 16,
+   "repos": 1
+  }
+ },
+ "constructs": {
+  "cs.using_directive": {
+   "sites": 39762,
+   "files": 10783,
+   "repos": 21
+  },
+  "cs.attribute_list": {
+   "sites": 50609,
+   "files": 5282,
+   "repos": 19
+  },
+  "cs.attribute": {
+   "sites": 52205,
+   "files": 5425,
+   "repos": 20
+  },
+  "cs.attribute_argument": {
+   "sites": 39708,
+   "files": 3338,
+   "repos": 16
+  },
+  "cs.extension_method": {
+   "sites": 3312,
+   "files": 875,
+   "repos": 10
+  },
+  "cs.partial_class_declaration": {
+   "sites": 1198,
+   "files": 677,
+   "repos": 9
+  },
+  "cs.with_expression": {
+   "sites": 274,
+   "files": 88,
+   "repos": 3
+  },
+  "cs.with_initializer": {
+   "sites": 399,
+   "files": 86,
+   "repos": 3
+  },
+  "cs.partial_property_declaration": {
+   "sites": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "cs.partial_method_declaration": {
+   "sites": 447,
+   "files": 166,
+   "repos": 3
+  },
+  "cs.partial_constructor_declaration": {
+   "sites": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "cs.attribute_argument_call": {
+   "sites": 609,
+   "files": 274,
+   "repos": 3
+  },
+  "cs.render_host_call": {
+   "sites": 298,
+   "files": 85,
+   "repos": 2
+  },
+  "cs.partial_struct_declaration": {
+   "sites": 14,
+   "files": 14,
+   "repos": 2
+  },
+  "cs.partial_interface_declaration": {
+   "sites": 212,
+   "files": 22,
+   "repos": 2
+  }
+ },
+ "attributeDecoratedDeclarationKind": {
+  "property_declaration": {
+   "sites": 6120,
+   "files": 750,
+   "repos": 8
+  },
+  "method_declaration": {
+   "sites": 36331,
+   "files": 3311,
+   "repos": 16
+  },
+  "parameter": {
+   "sites": 2081,
+   "files": 774,
+   "repos": 8
+  },
+  "class_declaration": {
+   "sites": 3522,
+   "files": 1593,
+   "repos": 15
+  },
+  "preproc_if_in_attribute_list": {
+   "sites": 134,
+   "files": 94,
+   "repos": 4
+  },
+  "enum_declaration": {
+   "sites": 262,
+   "files": 143,
+   "repos": 6
+  },
+  "enum_member_declaration": {
+   "sites": 135,
+   "files": 25,
+   "repos": 5
+  },
+  "constructor_declaration": {
+   "sites": 338,
+   "files": 248,
+   "repos": 7
+  },
+  "struct_declaration": {
+   "sites": 239,
+   "files": 80,
+   "repos": 6
+  },
+  "field_declaration": {
+   "sites": 429,
+   "files": 128,
+   "repos": 8
+  },
+  "record_declaration": {
+   "sites": 92,
+   "files": 32,
+   "repos": 2
+  },
+  "interface_declaration": {
+   "sites": 399,
+   "files": 74,
+   "repos": 5
+  },
+  "ERROR": {
+   "sites": 11,
+   "files": 6,
+   "repos": 3
+  },
+  "local_function_statement": {
+   "sites": 86,
+   "files": 16,
+   "repos": 4
+  },
+  "accessor_declaration": {
+   "sites": 111,
+   "files": 15,
+   "repos": 3
+  },
+  "event_field_declaration": {
+   "sites": 4,
+   "files": 3,
+   "repos": 2
+  },
+  "type_parameter": {
+   "sites": 223,
+   "files": 65,
+   "repos": 2
+  },
+  "preproc_else": {
+   "sites": 27,
+   "files": 7,
+   "repos": 2
+  },
+  "conversion_operator_declaration": {
+   "sites": 9,
+   "files": 3,
+   "repos": 2
+  },
+  "operator_declaration": {
+   "sites": 30,
+   "files": 3,
+   "repos": 1
+  },
+  "parameter_list": {
+   "sites": 11,
+   "files": 3,
+   "repos": 1
+  },
+  "delegate_declaration": {
+   "sites": 13,
+   "files": 6,
+   "repos": 2
+  },
+  "lambda_expression": {
+   "sites": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "indexer_declaration": {
+   "sites": 1,
+   "files": 1,
+   "repos": 1
+  }
+ },
+ "partialByDeclarationKind": {
+  "class_declaration": {
+   "sites": 1198,
+   "files": 677,
+   "repos": 9
+  },
+  "property_declaration": {
+   "sites": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "method_declaration": {
+   "sites": 447,
+   "files": 166,
+   "repos": 3
+  },
+  "constructor_declaration": {
+   "sites": 1,
+   "files": 1,
+   "repos": 1
+  },
+  "struct_declaration": {
+   "sites": 14,
+   "files": 14,
+   "repos": 2
+  },
+  "interface_declaration": {
+   "sites": 212,
+   "files": 22,
+   "repos": 2
+  }
+ },
+ "partialSplit": {
+  "types": 300,
+  "files": 1067,
+  "examples": [
+   "App: 4 files (Fabulous/src/maui/FSharp.Maui.WinUICompat/Platforms/Windows/App.xaml.cs, Paket/integrationtests/scenarios/i001260-csharp-wpf-project/before/WpfApplication/App.xaml.cs...)",
+   "Program: 2 files (Grace/src/Grace.Aspire.AppHost/Program.Aspire.AppHost.cs, gql-graphql-platform/src/Mocha/src/Examples/MediatorShowcase/Generated/Microsoft.AspNetCore.App.SourceGenerators/Microsoft.AspNetCore.SourceGenerators.PublicProgramSourceGenerator/PublicTopLevelProgram.Generated.g.cs...)",
+   "MainWindow: 3 files (Paket/integrationtests/scenarios/i001260-csharp-wpf-project/before/WpfApplication/MainWindow.xaml.cs, Paket/integrationtests/scenarios/i004278-net90-windows-fails/before/PaketTest/MainWindow.xaml.cs...)",
+   "TestHelper: 2 files (Paket/tests/Paket.Bootstrapper.Tests/TestHelper.cs, gql-graphql-platform/src/HotChocolate/Core/test/Types.Analyzers.Tests/TestHelper.cs...)",
+   "ProjectNode: 3 files (fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectNode.CopyPaste.cs, fsharp/vsintegration/src/FSharp.ProjectSystem.Base/ProjectNode.Events.cs...)"
+  ]
+ },
+ "withForms": {
+  "with_expression": {
+   "sites": 274,
+   "files": 88,
+   "repos": 3
+  },
+  "with_initializer": {
+   "sites": 399,
+   "files": 86,
+   "repos": 3
+  }
+ },
+ "keyspace": {
+  "path": "/home/ishaq2321/mcp/backbencher-brain/.tmp-csharp/csharp-keyspace.jsonl",
+  "entries": 212565
+ },
+ "rows": {
+  "path": "/home/ishaq2321/mcp/backbencher-brain/.tmp-csharp/csharp-rows.jsonl",
+  "count": 1305016
+ }
+}

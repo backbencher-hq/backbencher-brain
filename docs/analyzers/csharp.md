@@ -3,7 +3,7 @@
 ## Language
 
 - Analyzer file: `src/ast/real-csharp-analyzer.ts`
-- Parser: the pinned **`wasm/tree-sitter-c_sharp.wasm`** — `sha256 6f69e1cae44e1c32…`, **239 named node types over 533 ids**, resolved at `engine.ts:1189`. **The upstream package version (`v0.23.5`, quoted in the M12.07 notes below) is NOT pinned in this tree**: there is no `tree-sitter-c-sharp` dependency and no version registry, so the artifact digest is the identifier a reader can actually check. The served build's own node-type names are enumerated in `validation/m14/measurements/csharp-grammar-nodes.json`.
+- Parser: the pinned **`wasm/tree-sitter-c_sharp.wasm`** — `sha256 6f69e1cae44e1c32…`, **239 named node types over 533 ids**, resolved at `engine.ts:1210` (the wasm lookup; the grammar NAME is at `engine.ts:320`). **The upstream package version (`v0.23.5`, quoted in the M12.07 notes below) is NOT pinned in this tree**: there is no `tree-sitter-c-sharp` dependency and no version registry, so the artifact digest is the identifier a reader can actually check. The served build's own node-type names are enumerated in `validation/m14/measurements/csharp-grammar-nodes.json`, regenerated with `bun script/m14/grammar-node-inventory.ts csharp`.
 - Language detection: extensions **`.cs` and `.csx`** → `language-detection.ts:170` (`cs: "csharp", csx: "csharp"`); both are admitted by the incoming gate (the one extension table, `script/m14/language-extensions.ts`: `csharp: "cs,csx"`)
 - Wired in: `engine.ts getAnalyzer` → `RealCSharpAnalyzer`
 
@@ -64,10 +64,10 @@ grammar errors or missing tokens**.
 | references | ✅ | **three families, and the target is a NAME in all of them.** (1) `using_directive` → the module path as written; for an ALIAS whose target is a type, the module is the type's **name** (D3) and each type argument is published as its own `references` edge marked `using_type_argument` / `reference_qualified`. (2) the declared-type graph (R9) — a written type name, a qualified name's **leaf**, and a generic's base **and every argument** (D1). (3) nothing else · site `real-csharp-analyzer.ts:1343, :1380, :2526, :2688` | 0.9 |
 | overrides | ✅ | TWO published surfaces. (A) C# `override` members on all FIVE overridable kinds — method / property / indexer (`this`) / field / event — with `metadata.overriddenMemberKind`; multi-declarator fields are TWO members on the shared line; methods resolve the same-signature base overload, the other kinds resolve by name; without context → first hierarchy parent (deterministic per-file default). (B) interface-member implementations (C923): explicit `IFoo.M` always, implicit only where an in-file ancestor interface declares the member (a base class redeclaring it stops that path). Task-37 correction: the historical machinery was METHOD-ONLY, so property/indexer/field/event overrides published no edge; `override-member-kinds` pins all five plus the two non-edges (`virtual`/`new`). · site `real-csharp-analyzer.ts:3181, :3269` | 1.0 for in-file matches, 0.65 for companion matches and 0.5 for first-parent guesses |
 | instantiates | ✅ | `object_creation_expression` (`new Foo(...)` → `Foo`) and `implicit_object_creation_expression` (target-typed `new()` — the type is resolved purely from the enclosing `variable_declarator`/`property_declaration` type) · site `real-csharp-analyzer.ts:2338, :2353` | 0.95 |
-| decorates | ❌ **not emitted — RULED (ontological)** | `0` `RelationshipType.Decorates` sites in the analyzer (grep). The grammar **has** the construct — `attribute`, `attribute_list` and `attribute_argument` are 3 of the 239 named node types (`validation/m14/measurements/csharp-grammar-nodes.json`) — so this is not a grammar absence: **the reason is ontological.** The relation asserts that a **callable was APPLIED** to a declaration; a C# attribute asserts **passive metadata** (it names a type for reflection) and is published on the **symbol** side as `decorators` (see the symbol contract above), while the fleet publishes annotations as `references{isAnnotation}`. The store could carry the edge; the vocabulary does not credit it. Near miss, measured over the WHOLE admitted population: **52,205 attribute sites over 5,425 files / 20 repos**, of which **609 attribute-argument CALLS over 274 files / 3 repos** (`csharp-emission-census-whole.json`). | — (not emitted); the metadata channel is the symbol's `decorators` |
-| renders | ✅ **emitted, corpus-unexercised** | C#'s component-render construct is the **dynamic render host**: an `invocation_expression` whose callee names a host in `CSHARP_RENDER_HOSTS` (`RenderComponent`, `RenderChild`, `real-csharp-analyzer.ts:791`) and whose component is either a **type argument** (`builder.RenderComponent<Widget>()`) or a **`typeof` argument** (`builder.RenderComponent(typeof(OtherWidget))`). Source = the enclosing symbol (`parentContext.rawName \|\| "global"`); target = the component type's cleaned name (`csharpTypeNameText` → `cleanTypeName`), so the component resolves downstream as a NAME like every other target. Sites: `:2285` (type-argument form, line = the type argument) and `:2315` (`typeof` form, line = the type node). Rung **R3**: the EXISTING `invocation_expression` node type carries the construct — no grammar change. **The population is ZERO**: the analyzer emits **0 `renders` edges over the whole admitted population** (the rendering construct itself is Razor's, a different language), and a whole-population census of render-host calls found **298 sites over 85 files, 0 of which name a component** over a four-name superset (`csharp-emission-census-whole.json`). The proof is therefore **behavioural**, not population: fixture `validation/m14/fixtures/csharp/render-host-component.cs` emits the edge only when the construct reaches the analyzer as a real node. | 0.9, `metadata: { isRenderHost: true, renderHost: <host> }` |
-| mixes_in | ❌ **not emitted — RULED (grammar-side; the ladder is exhausted)** | `0` `RelationshipType.MixesIn` sites, and **`0` of the 239 named node types** (`csharp-grammar-nodes.json`) is a mixin or composition clause. C#'s only supertype composition is the **base list** — one base (`extends`) plus the interface list (`implements`), both already emitted above — and the contract's defining property is a mixin composed INTO the supertype chain. Rungs, each named: **R1 UNAVAILABLE** (no published grammar carries the construct — 0 of 239, measured); **R2 NOT APPLICABLE** (there is no `with`-style heritage clause to match); **R3 MEASURED and not taken** — the two nearest neighbours are the **extension method** (`parameter` with the `this` modifier, **3,312 sites / 875 files / 10 repos**) and the **record `with` form** (**673 sites: 274 `with_expression` + 399 `with_initializer`**, 88 and 86 files, 3 repos) — and neither is the construct: an extension member is resolved AT THE CALL SITE, never inherited into a supertype chain. Counts from `csharp-emission-census-whole.json`. | — (not emitted) |
-| part_of | ❌ **not emitted — RULED (informational)** | `0` `RelationshipType.PartOf` sites. The grammar declares **no `part_*` and no `partial_*` node type** — 0 of the 239 named types (`csharp-grammar-nodes.json`) — and C# has no construct that names ANOTHER compilation unit as a part. The nearest construct is the **`partial` MODIFIER**, which **splits ONE type across declarations that merge into ONE symbol**, so a `part_of` row would read **X → X**: a relation between a type and itself, carrying no information. That is why the label is **informational** rather than grammatical. Measured over the whole population: **1,873 `partial` sites on six declaration kinds** (class 1,198 · method 447 · interface 212 · struct 14 · property 1 · constructor 1) with **300 types split across more than one file, over 1,067 files** (`csharp-emission-census-whole.json`). | — (not emitted) |
+| decorates | ✅ **emitted since 2026-11-19 (P0-1)** | A C# **attribute is applied to a declaration**, and the edge's direction is the emitted one (`src/ast/types.ts:120-143`): **source = the decorated declaration, target = the attribute's name**. The pass is a **post-pass over the tree** (`decorates` block, `real-csharp-analyzer.ts`): for every declaration node in `CSHARP_ATTRIBUTE_HOSTS` it reads the DIRECT `attribute_list` children, and binds each site to the name the symbol is published under. Three details carry the contract. **(1) The line is the ATTRIBUTE's own name node** (M59.A7), not the declaration's. **(2) `metadata.attributeKind` splits `applied_callable` (an `attribute_argument_list` is present) from `marker` (it is not)** — the same countable class the Rust precedent keeps (`real-rust-analyzer.ts:2383-2400`, `builtin_directive` / `applied_callable_candidate`). The split is a DIRECT-CHILD scan, so no text test and no regex. **(3) An ACCESSOR's attribute belongs to the declaration that owns the accessor list** — `public int R { [Obsolete] get; set; }` writes on the `accessor_declaration`, and an accessor is not a symbol, so `csharpAttributeAccessorOwner` redirects the site to the property. A declaration whose name matches no pushed symbol contributes **no edge** rather than one aimed at the file sentinel. **WHY THIS REVERSED THE OLD RULING.** The row read "not emitted — RULED (ontological)", arguing a C# attribute is *passive metadata* published as the symbol's `decorators`. Both halves failed: the grammar **has** the construct (`attribute`, `attribute_list`, `attribute_argument` are 3 of the 239 named node types — `csharp-grammar-nodes.json`), and the fleet already publishes this exact shape for Rust's `#[derive(...)]` and python's `@deco` (`real-python-analyzer.ts:6139`). The `decorators` SYMBOL field and this EDGE are not alternatives — one is the declaration's payload, the other is the relationship. **Population, measured:** **7,769 attribute sites over 655 files** in the powershell corpus (6,024 with arguments), and **39,784 `decorates` edges over 14,421 files** across the whole admitted corpus (ontology gate, `--fresh`). Pins: `decorates-attribute` (5 shapes + 8 controls); mutants `drop-decorates-edges`, `decorates-kind-conflated`, `decorates-accessor-dropped`, `decorates-leaks-from-owner`. · site `real-csharp-analyzer.ts:2565-2710`, `:4809` | 1.0, `metadata: { relationshipType: "attribute_application", attributeKind, isCSharpAttribute, decoratesDeclarationKind }` |
+| renders | ✅ **emitted, corpus-unexercised** | C#'s component-render construct is the **dynamic render host**: an `invocation_expression` whose callee names a host in `CSHARP_RENDER_HOSTS` (`RenderComponent`, `RenderChild`, `real-csharp-analyzer.ts:791`) and whose component is either a **type argument** (`builder.RenderComponent<Widget>()`) or a **`typeof` argument** (`builder.RenderComponent(typeof(OtherWidget))`). Source = the enclosing symbol (`parentContext.rawName \|\| "global"`); target = the component type's cleaned name (`csharpTypeNameText` → `cleanTypeName`), so the component resolves downstream as a NAME like every other target. Sites: `:2285` (type-argument form, line = the type argument) and `:2315` (`typeof` form, line = the type node). Rung **R3**: the EXISTING `invocation_expression` node type carries the construct — no grammar change. **The population is ZERO**: the analyzer emits **0 `renders` edges over the whole admitted population** (the rendering construct itself is Razor's, a different language), and a whole-population census of render-host calls found **298 sites over 85 files, 0 of which name a component** over a four-name superset (`csharp-emission-census-whole.json`). The proof is therefore **behavioural**, not population: fixture `validation/m14/fixtures/csharp/render-host-component.cs` emits the edge only when the construct reaches the analyzer as a real node. The written ruling lives in `script/m14/csharp-ruled.ts` (instrument B, `publishedCount: 0`) — it had to be registered there because the spec's entry sits under `coverage.corpusUnexercised`, which is **not** the key `rulingFor()` scans, so the arbiter read the lane as having no ruling at all. | 0.9, `metadata: { isRenderHost: true, renderHost: <host> }` |
+| mixes_in | ❌ **not emitted — RULED (ontological)** | C# has **exactly one supertype mechanism — the base list** — and it is already published as `extends` (first entry, when it is a class) plus `implements` (every remaining entry). A mixin is composed **into the supertype chain**; `mixes_in` would require a composition that is *neither* of those, and C# has no such construct. **The two nearest neighbours, named and dismissed on the merits rather than by inventory.** (1) The **record `with` form** — `with_expression` / `with_initializer` ARE produced by this grammar (**673 sites: 274 + 399**) — produces a modified **INSTANCE**, not a subtype relationship. (2) **Extension methods** (**3,312 sites over 875 files**) are C#'s member-injection mechanism, but an extension member is resolved **at the call site** and is never inherited into the supertype chain, so publishing one as `mixes_in` would assert a composition the runtime does not perform. **Falsifier:** a C# construct that composes a type into another type's supertype chain and is neither its first base nor one of its interfaces — either the grammar grows one of the 8 probed node types (`script/m14/csharp-ruled.ts`), or a base-list entry names something that is neither a class nor an interface. | — (not emitted); written ruling `script/m14/csharp-ruled.ts` |
+| part_of | ❌ **not emitted — RULED (ontological, measured)** | C# has **no syntax that names ANOTHER FILE as part of this compilation unit**. Two measurements, not one assertion: the grammar produces **no `part_*` name** (0 of the 7 probed among the 239 named types), AND the corpus contains **0 `#include`/`#import` directives across all 1,181 admitted .cs files** (swept with `grep -rn '^\s*#\(include\|import\)' --include='*.cs'`). **The nearest construct, dismissed on the merits:** the **`partial` MODIFIER** (**1,873 sites** on class/method/interface/struct/constructor/property declarations) splits **ONE type across several declarations that the compiler MERGES INTO ONE SYMBOL** — so a `part_of` row sourced from it would read **X → X**, naming the same symbol at both ends. That is the **information test**, not a grammar test: the construct exists and does not name a second party. **Why this differs from `mixes_in`:** `mixes_in` fails because C# composes types only through a mechanism already published under two other labels; `part_of` fails because C# composes **units** not at all — no include, no part, no library clause. **Falsifier:** a C# construct that names another file or unit as a component of this one — the grammar grows one of the probed node types, or a directive naming a `.cs` file appears in the corpus. | — (not emitted); written ruling `script/m14/csharp-ruled.ts` |
 
 **TWO NON-ENGINE LABELS THE TABLE USED TO CARRY — KEPT WITH THEIR MEASUREMENTS.** `src/ast/types.ts`
 defines the fourteen kinds above and neither of these is one of them, so a row for either states no
@@ -171,9 +171,99 @@ characterised as a target-typed `new()` in an object initialiser, and shown *not
 four plausible minimal shapes. Closing it needs the actual file and a bisect, not another guess from
 the census row — and the census row is one line long while the file is 400 lines.
 
-## Where this lane stands — 2026-09-29, end of round
+## Where this lane stands — 2026-11-19, C# close-out
+
+Every number below is from a **single re-run on this branch**, not carried forward. The lane was
+declared finished once before (2026-09-29); the close-out re-ran everything and found three things
+that round had wrong — one of them a relationship the lane was *ruled out of* while the grammar had
+the construct and the fleet already emitted it elsewhere.
 
 ### Gates, all green
+
+| gate | result |
+| --- | --- |
+| F1 grammar coverage | `PASS` refs=**112** unknown=0 unknownFields=0 |
+| F3 fixtures | **27 / 27** (was 18/18; `decorates-attribute` is new) |
+| F4 mutants | **78 / 78 caught** (was 58/58; 4 `decorates` mutants are new) |
+| F5 differential | **2 corpora at 100%**, `MISSING=0`, `unexplained=0` (`powershell` 60/60, `fsharp` 60/60) |
+| `verify-csharp-symbols` | **PASS** — **49,025 symbols**, 0 defects (was FAIL: 26 conversion operators) |
+| `verify-csharp-line-numbers` | **PASS** |
+| `verify-csharp-no-regex` | **PASS** — 0 literals, **0 runtime `RegExp` constructions** |
+| `verify-csharp-overrides-symmetry` | **PASS** |
+| `verify-csharp-oracle-regressions` | **PASS** |
+| `verify-oracle-coverage` | **PASS** |
+| `verify-csharp-targets-resolve` | **PASS** — 88.35% resolution floor, index coverage not fabrication |
+| `ontology-coverage-gate` | **emitted 11/14, FALSIFIED 0, ruled-without-justification 0** |
+
+### The three rulings, and which one was wrong
+
+The lane excludes three relationship types. The close-out re-tested each against the owner's rule —
+*"a ruled relationship is one that is genuinely not applicable to the language; the grammar can
+never be the reason"* — and the answers are **not** the same:
+
+| type | verdict | why |
+| --- | --- | --- |
+| `decorates` | **the ruling was WRONG — now EMITTED** | C# attributes *are* applied to declarations. The grammar produces `attribute`, `attribute_list` and `attribute_argument` (3 of 239 named types), and the fleet already publishes the identical shape for Rust (`real-rust-analyzer.ts:2391`) and python (`:6139`). The old "ontological" argument — *passive metadata, published as the symbol's `decorators`* — failed on both halves. |
+| `mixes_in` | **correct conclusion, restated as ontological** | C# has exactly one supertype mechanism (the base list), already published as `extends` + `implements`. The old entry's *grammar-absence* phrasing was the forbidden argument form; the conclusion survives on the merits (`with_expression` is record-update, extension methods resolve at the call site). |
+| `part_of` | **correct, and now measured rather than asserted** | 0 `#include`/`#import` directives across all 1,181 admitted `.cs` files, and no `part_*` node type. `partial` merges into ONE symbol, so a row would read `X → X`. |
+
+The three now live in **`script/m14/csharp-ruled.ts`**, registered in `RULED_BY_LANG`. Before that
+file existed the arbiter had **no table for C# at all**, so two correct rulings were invisible to it
+and the third could not be contradicted — the gate now reads them.
+
+### The arbiter itself was blocking this
+
+`script/m14/ontology-coverage-gate.ts` could not adjudicate the four EXTENDED relationship values for
+**any** lane. Its `ALL_TYPES` held **10** while `src/ast/types.ts:91` has declared **14** since the
+extended values landed, and the list is used in all three places the gate reads a type — the edge
+counter (`if (!ALL_TYPES.includes(t)) continue`), the un-emitted guard, and the row loop. A type
+absent from it was **invisible**, not unruled: its edges were dropped before counting and it never got
+a row. `clean` had the same hole with four table entries.
+
+The fix widens `ALL_TYPES` to the 14-value ontology. **Blast radius was measured before the edit**
+(`.scratch/widen-blast.ts`, 52 lanes): **155 new `RULED-UNJUSTIFIED` rows fleet-wide** (decorates 34,
+mixes_in 42, part_of 45, renders 34) — debt being **exposed**, not a regression. The self-test passes
+**11/11** before and after. A second defect surfaced in the same file: the summary printed
+`emitted N/10` as a literal, so a run emitting eleven types would have read `emitted 10/10` — a
+correct-looking number about a smaller set. It now derives from `ALL_TYPES.length`.
+
+### What changed in the analyzer
+
+- **`decorates` implemented.** A post-pass over the tree reads each declaration's **direct**
+  `attribute_list` children and binds each site to the name the symbol is published under. The line is
+  the **attribute's own name node**; `metadata.attributeKind` splits `applied_callable` from `marker`;
+  an **accessor's** attribute is redirected to the declaration that owns the accessor list (an accessor
+  is not a symbol — before this, `[Obsolete] get` was silently dropped); and a declaration matching no
+  pushed symbol contributes **no edge** rather than one aimed at the file sentinel. Declarations that
+  carried attributes and bound to nothing are **counted**, not dropped quietly:
+  `metadata.decoratesUnnamedDeclarations` measures **52 in a 150-file draw, all 52 `parameter` hosts** —
+  a parameter is not a symbol in this lane, so the refusal is deliberate and pinned as a fixture control.
+- **Conversion-operator symbol names fixed.** `verify-csharp-symbols` asserts a symbol's name is
+  **written at its own range**. The names were *synthesised* — `implicit NetworkCredential` — while
+  the file writes `implicit operator NetworkCredential`, so the gate convicted **all 26 conversion
+  operators** in the admitted corpus. The names now come from the tree in source order. The gate was
+  **not** weakened: the same synthesis produced `operator +` for a plain overload, which is equally
+  not what the file writes.
+- **The oracle moved in the same commit.** `deriveCSharpContains` derived the *old* operator spelling,
+  so the first differential run after the rename read one `contains` row as UNEXPLAINED
+  (`PSObject -> implicit PSObject`). Fixed at the same time — a second walker that does not move with
+  the first turns a correct rename into a fabricated-edge report.
+
+### What is still open, stated rather than hidden
+
+- **`overrides` at 0.5 confidence over 22 first-parent guesses** (`real-csharp-analyzer.ts:3272`).
+  162 of 184 resolve at 1.0; the tail is a deterministic per-file default, marked
+  `reasonCode: "first-parent-guess"`. Measuring whether those 22 name a declaring type is the next step.
+- **`uses` at 0.7 over the field-access half** (`:3398`); the identifier-usage half is 1.0.
+- **The ambiguous population.** 490,456 of the non-resolved edges are *"declared by more than one
+  file"*, 128,068 *"declared nowhere in the corpus"* — a resolution-class split, not a missing
+  mechanism. The whole-population resolution rate is **44.0%** (555,326 of 1,262,497).
+- **The arbiter's 3 degraded files.** The `--fresh` walk measured 14,415 of 14,424 (9 fell to the
+  regex fallback), so `mixes_in` / `part_of` / `renders` read `RULED-UNKNOWN` rather than
+  `RULED-SOUND`. That is the gate being honest about a partial walk, not a defect in the rulings —
+  `decorates` is unaffected because it is EMITTED from observation.
+
+### Gates, as of 2026-09-29 (superseded above)
 
 | gate | result |
 | --- | --- |
@@ -1519,6 +1609,11 @@ work this round did not have a measurement-driven reason to force.
 
 ## 8. Reported, not fixed — everything outside this lane
 
+> **2026-11-19 close-out:** items **5** and the `decorates` half of the ontology story are now
+> **FIXED** and are marked as such below. Item 6's premise was re-tested and is **wrong** for this
+> checkout (`npx tsx` runs the file and prints its full report; the earlier note is stale). Items
+> 1–4 and 7–10 remain open and are unchanged.
+
 1. **`script/m14/firing-check-v2.mjs` cannot measure csharp at all.** C# is not in
    its `LANES` table (lines 42–64) and its `ALIAS` map carries `CSHARP: null`
    (line 178), so `NFILES=200 bun script/m14/firing-check-v2.mjs CORPUS_CS3` exits 2
@@ -1542,20 +1637,22 @@ work this round did not have a measurement-driven reason to force.
    set** — §5. `exports` needs the truth push **and** the allowlist entry in one
    commit; `overrides` needs the `continue` at 22718 and the allowlist entry
    removed together, which the C923 comment already warns about.
-5. **`differential.ts`: `script/m14/csharp-ruled.ts` does not exist**, so
-   `ontology-coverage-gate csharp` has no `RULED_BY_LANG` entry and reads
-   `imports` as `RULED-UNJUSTIFIED`. The ruling is written and measured (§1) and
-   needs one table entry plus one import; it is in `script/m14/**`, which is the
-   master's. **Without it the arbiter the workstream names cannot return a verdict
-   for this lane.**
-6. **`verify-csharp-no-regex.ts` is a SILENT PASS under `npx tsx`.** It ends with
-   `if (import.meta.main) await main()`. Under `npx tsx` the module loads as
-   CommonJS, `import.meta.main` is `undefined`, `main()` never runs and the script
-   exits **0 printing nothing**. Verified: `npx tsx … --file <f>` → exit 0, no
-   output; `bun … --file <f>` → exit 0, full report. Any agent reaching for
-   `npx tsx` gets a green that means nothing, on the exact claim the gate exists to
-   make. One line — `process.argv[1]?.endsWith(...)`, the pattern
-   `run-fixtures.ts` already uses in the same directory.
+5. ~~**`script/m14/csharp-ruled.ts` does not exist**~~ — **FIXED 2026-11-19.** The file now
+   exists with **three** entries (`mixes_in`, `part_of`, `renders`) and is registered in
+   `RULED_BY_LANG`. The arbiter reads them: `ontology-coverage-gate csharp` went from
+   "no table for csharp" to **`emitted 11/14, FALSIFIED 0, ruled-without-justification 0`**.
+   Two further defects were fixed in the same pass and were *blocking the fix itself*: the
+   gate's `ALL_TYPES` held **10** of the ontology's **14** values, so no lane could
+   adjudicate the extended four (their edges were dropped before counting and they never
+   reached the row loop); and the summary printed `emitted N/10` as a literal, so a run
+   emitting eleven types would have read `emitted 10/10`.
+6. **`verify-csharp-no-regex.ts` — re-tested, the earlier note is WRONG.** The claim was
+   that `if (import.meta.main)` is `undefined` under `npx tsx`, so the script exits 0
+   printing nothing. Measured on this checkout: `npx tsx script/m14/verify-csharp-no-regex.ts`
+   loads, runs, and prints the full report ending in
+   `VERDICT: PASS — no regex literal, no RegExp construction…` at exit 0. The note is
+   left here rather than deleted because it is the kind of claim that gets re-derived;
+   the measurement supersedes it.
 7. **`run-fixtures.ts --lang=<x>` silently runs EVERY lane.** The parser reads
    `--lang` followed by a SPACE, so `--lang=csharp` leaves `argLangs` at all 46
    lanes; the run then hits the fixture-lane gate and exits 6 on `r` and `lua`,
