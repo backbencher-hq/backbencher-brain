@@ -70,17 +70,3 @@ class RealChild(Real):
     @property
     def decorated(self):
         return 4
-
-
-class RealGrandparent:
-    def mro_target(self):
-        return 1
-
-
-class RealIntermediate(RealGrandparent):
-    pass
-
-
-class RealMroChild(RealIntermediate):
-    def mro_target(self):
-        return 2

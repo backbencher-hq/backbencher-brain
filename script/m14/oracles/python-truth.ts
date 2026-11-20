@@ -728,20 +728,6 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // which is the number a reader can actually act on.
   for (const c of classes) {
     for (const [m, line] of c.methods) {
-      const findDeclaredBaseMethod = (baseName: string, methodName: string, seen: Set<string>): string | null => {
-        if (seen.has(baseName)) return null
-        seen.add(baseName)
-        const base = c.qualifiedBases.has(baseName)
-          ? undefined
-          : classes.findLast((x) => x.name === baseName && x.line < c.line && x.name !== c.name)
-        if (!base) return null
-        if (base.methods.has(methodName)) return base.name
-        for (const ancestor of base.bases) {
-          const found = findDeclaredBaseMethod(ancestor, methodName, new Set(seen))
-          if (found) return found
-        }
-        return null
-      }
       for (const b of c.bases) {
         // A BASE NAME RESOLVES TO THE BINDING VISIBLE AT THE CLASS STATEMENT, which for a
         // file declaring the same class name more than once is the nearest PRECEDING
@@ -772,10 +758,10 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         //
         // `findLast` over declarations strictly before this one is the lexical rule Python
         // itself applies when it evaluates the base list: the name must already be bound.
-        const baseName = c.qualifiedBases.has(b)
-          ? null
-          : findDeclaredBaseMethod(b, m, new Set<string>())
-        if (baseName) {
+        const base = c.qualifiedBases.has(b)
+          ? undefined
+          : classes.findLast((x) => x.name === b && x.line < c.line && x.name !== c.name)
+        if (base && base.methods.has(m)) {
           add("overrides", `${c.name}.${m}`, m, line)
           // MRO-FIRST, and only the first. Python resolves an attribute to the FIRST base in
           // MRO order that declares it, so that is the one override that exists; every further
@@ -789,7 +775,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           // and the correct answer is `RemoteConfig` alone.
           break
         }
-        if (!baseName && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, m, line)
+        if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, m, line)
       }
     }
   }
