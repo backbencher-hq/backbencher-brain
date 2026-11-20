@@ -1,12 +1,12 @@
 {
   "status": "uncapped-clustered",
-  "population": "11,306-file stable post-fix differential",
-  "dump": "/tmp/python-whole-diff-multiplicity-final.jsonl",
-  "total": 601,
+  "population": "11,306-file post-direct-shadow differential",
+  "dump": "/tmp/python-whole-diff-post-directshadow.jsonl",
+  "total": 598,
   "byType": {
-    "calls": 575,
-    "overrides": 23,
-    "extends": 3
+    "calls": 574,
+    "overrides": 22,
+    "extends": 2
   },
   "byRepository": {
     "sqlalchemy": 321,
@@ -14,11 +14,10 @@
     "gql-saleor": 13,
     "kong": 10,
     "wagtail": 8,
-    "cython": 4,
+    "cython": 2,
     "ansible": 3,
     "otp": 1,
-    "redis": 1,
-    "hasura-engine": 1
+    "redis": 1
   },
   "callDelta": {
     "analyzerMinusTruth": {
@@ -34,14 +33,14 @@
       "plus16": 1,
       "plus21": 1,
       "plus14": 2,
-      "minus1": 7,
+      "minus1": 6,
       "minus2": 2
     }
   },
   "verdict": {
-    "calls": "Mostly repeated real call sites and chained-call multiplicity; 575 pairs remain uncapped until every source/target pair is classified.",
-    "overrides": "Repeated declaration or MRO guess multiplicity across SQLAlchemy and Cython; 23 pairs remain.",
-    "extends": "Duplicate or same-name inheritance spelling multiplicity; 3 pairs remain."
+    "calls": "Mostly repeated real call sites and chained-call multiplicity; 574 pairs remain uncapped.",
+    "overrides": "Repeated declaration or MRO guess multiplicity across SQLAlchemy and Cython; 22 pairs remain.",
+    "extends": "Duplicate or same-name inheritance spelling multiplicity; 2 pairs remain."
   },
   "rule": "Multiplicity disagreement is not a missing or unexplained edge. It requires exact truth/analyzer count and a source-site reason."
 }

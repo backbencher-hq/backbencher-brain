@@ -1,22 +1,14 @@
 {
   "status": "uncapped-clustered",
-  "population": "11,306-file stable post-fix differential",
-  "dump": "/tmp/python-whole-diff-stable-restored.jsonl",
-  "total": 21,
+  "population": "11,306-file post-direct-shadow differential",
+  "dump": "/tmp/python-whole-diff-post-directshadow.jsonl",
+  "total": 7,
   "missing": {
     "contains": {
-      "count": 8,
-      "files": [
-        "cython/tests/run/class_redefine.py",
-        "hasura-engine/server/tests-py/test_remote_relationships.py"
-      ],
-      "cause": "Cython live-last duplicate class plus hasura same-name class/call scope"
+      "count": 0
     },
     "calls": {
-      "count": 6,
-      "file": "hasura-engine/server/tests-py/test_remote_relationships.py",
-      "targets": ["v1q_f", "check_query_f", "_check_no_remote_relationships"],
-      "cause": "Production call emitter does not publish all live method calls"
+      "count": 0
     }
   },
   "unexplained": {
