@@ -1,31 +1,31 @@
 [brain] preparing the parallel worker pool (6 files)…
 [brain] ✓ worker pool available — using 7 workers with 45s timeouts
-[INFO] [19:49:00] [parallel-indexer] worker pool fork test passed — using parallel workers
-[INFO] [19:49:00] [parallel-indexer] project index built {"ext":".ts","files":6,"types":3}
-[INFO] [19:49:03] [parallel-indexer] worker pool complete {"files":6,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+[INFO] [16:42:36] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [16:42:36] [parallel-indexer] project index built {"ext":".ts","files":6,"types":3}
+[INFO] [16:42:39] [parallel-indexer] worker pool complete {"files":6,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
   [1/8] resolving cross-file relationships…
-  ✓ resolved in 26ms [plan=linear largest-intermediate=10]
+  ✓ resolved in 37ms [plan=linear largest-intermediate=10]
   [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
   enriching reading 0%
   enriching counting 0%
-[WARN] [19:49:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"e7049861","danglingSources":7,"totalRelationships":12}
+[WARN] [16:42:40] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"a808a2b4","danglingSources":7,"totalRelationships":12}
   enriching done 100%
-  ✅ Enriched 5 relationships (0 patterns) in 24ms
+  ✅ Enriched 5 relationships (0 patterns) in 34ms
         ⚠ 7 dangling sources — declared, not hidden
   [3/8] computing gravity scores…
-  ✓ gravity in 4ms
+  ✓ gravity in 7ms
   [4/8] analyzing taint flows & security…
         security leads: 0 (tier leads; not findings)
   [5/8] computing project health…
-[INFO] [19:49:04] [project-health] project health computed {"projectId":"e70498617f2d7faecf287c2a8a20ce50ddad761c","complexityScore":95,"maintainabilityScore":78,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
-  ✓ taint(1ms) + health(28ms)
+[INFO] [16:42:40] [project-health] project health computed {"projectId":"a808a2b49382618c61144bfd90c62e9b0f6f5b5f","complexityScore":95,"maintainabilityScore":78,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(27ms)
   [6/8] integrity & freshness…
-  ✓ health check in 14ms
+  ✓ health check in 13ms
   ✅ Index health: 100% — all checks passed
   [7/8] vector blobs…
-  ✓ vector blobs: 0/0 promoted in 5ms
+  ✓ vector blobs: 0/0 promoted in 6ms
   [8/8] planner stats (ANALYZE)…
-  ✓ planner stats (ANALYZE) in 4ms
+  ✓ planner stats (ANALYZE) in 5ms
   ok: fixture: one declaration-kind Session row
   ok: fixture: at least one property Session row
   ok: fixture: unique function row exists

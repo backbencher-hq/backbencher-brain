@@ -1,0 +1,163 @@
+{
+  "Session_default": {
+    "title": "symbol: Session",
+    "summary": "Subject: struct Session in session/session.go:72 (selected from 5 indexed symbols of that name; declaration preferred over fields/variables sharing the name). 1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 67 source(s).",
+    "scope": {
+      "declared": "single",
+      "passed": true,
+      "subjects": 1,
+      "copies": 5,
+      "resolvedBy": "declaration-kind"
+    },
+    "passed": true,
+    "api": [
+      "struct Session is defined in session/session.go at lines 72-98.",
+      "Session is declared public."
+    ],
+    "symbolCitations": [
+      "session/session.go:72 Session"
+    ]
+  },
+  "Session_limit1": {
+    "title": "symbol: Session",
+    "summary": "Subject: struct Session in session/session.go:72 (selected from 5 indexed symbols of that name; declaration preferred over fields/variables sharing the name). 1 file(s) and 1 symbol(s) in scope, 5 cited claim(s) across 5 section(s) from 67 source(s).",
+    "scope": {
+      "declared": "single",
+      "passed": true,
+      "subjects": 1,
+      "copies": 5,
+      "resolvedBy": "declaration-kind"
+    },
+    "passed": true,
+    "api": [
+      "struct Session is defined in session/session.go at lines 72-98."
+    ],
+    "symbolCitations": [
+      "session/session.go:72 Session"
+    ]
+  },
+  "Session_qualified": {
+    "title": "symbol: session.Session",
+    "summary": "Subject: struct Session in session/session.go:72 (selected from 5 indexed symbols of that name; matched by namespace path). 1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 67 source(s).",
+    "scope": {
+      "declared": "single",
+      "passed": true,
+      "subjects": 1,
+      "copies": 5,
+      "resolvedBy": "qualified-path"
+    },
+    "passed": true,
+    "api": [
+      "struct Session is defined in session/session.go at lines 72-98.",
+      "Session is declared public."
+    ],
+    "symbolCitations": [
+      "session/session.go:72 Session"
+    ]
+  },
+  "New_default": {
+    "title": "symbol: New",
+    "summary": "Subject: function New in session/session.go:155 (selected from 2 indexed symbols of that name; declaration preferred over fields/variables sharing the name). 1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 67 source(s).",
+    "scope": {
+      "declared": "single",
+      "passed": true,
+      "subjects": 1,
+      "copies": 2,
+      "resolvedBy": "declaration-kind"
+    },
+    "passed": true,
+    "api": [
+      "function New(): (*Session, error) is defined in session/session.go at lines 155-162; the index records no parameter list for it, so its arguments are not described here.",
+      "New is declared public."
+    ],
+    "symbolCitations": [
+      "session/session.go:155 New"
+    ]
+  },
+  "LoadModules_unique": {
+    "title": "symbol: LoadModules",
+    "summary": "1 file(s) and 1 symbol(s) in scope, 26 cited claim(s) across 5 section(s) from 77 source(s).",
+    "scope": {
+      "declared": "single",
+      "passed": true,
+      "subjects": 1,
+      "copies": 1,
+      "resolvedBy": "single-name"
+    },
+    "passed": true,
+    "api": [
+      "function LoadModules(sess: *session.Session) is defined in modules/modules.go at lines 42-78.",
+      "LoadModules is declared public."
+    ],
+    "symbolCitations": [
+      "modules/modules.go:42 LoadModules"
+    ]
+  },
+  "Session_limit1_markdown_head": [
+    "# symbol: Session",
+    "- passed: true",
+    "- scope: single (1 subject(s) of 5 indexed symbol(s), resolved by declaration-kind; passed: true)"
+  ],
+  "search_symbol_Session": [
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go:Session:46",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go",
+      "absolutePath": "/home/ishaq2321/bettercap/modules/c2/c2.go",
+      "symbolType": "property",
+      "relativePath": "modules/c2/c2.go",
+      "sourceHead": "Session",
+      "sourceLength": 7,
+      "sourceTruncated": false
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go:Session:35",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/module.go",
+      "absolutePath": "/home/ishaq2321/bettercap/session/module.go",
+      "symbolType": "property",
+      "relativePath": "session/module.go",
+      "sourceHead": "Session",
+      "sourceLength": 7,
+      "sourceTruncated": false
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go:Session:110",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go",
+      "absolutePath": "/home/ishaq2321/bettercap/modules/arp_spoof/arp_spoof_test.go",
+      "symbolType": "property",
+      "relativePath": "modules/arp_spoof/arp_spoof_test.go",
+      "sourceHead": "session.Session",
+      "sourceLength": 15,
+      "sourceTruncated": false
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go:Session:67",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/net_probe/net_probe_test.go",
+      "absolutePath": "/home/ishaq2321/bettercap/modules/net_probe/net_probe_test.go",
+      "symbolType": "property",
+      "relativePath": "modules/net_probe/net_probe_test.go",
+      "sourceHead": "session.Session",
+      "sourceLength": 15,
+      "sourceTruncated": false
+    },
+    {
+      "id": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go:Session:72",
+      "fileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go",
+      "absolutePath": "/home/ishaq2321/bettercap/session/session.go",
+      "symbolType": "struct",
+      "relativePath": "session/session.go",
+      "sourceHead": "Session struct {\n\tOptions   core.Options\n\tInterface *network",
+      "sourceLength": 637,
+      "sourceTruncated": false
+    }
+  ],
+  "identity": {
+    "symbolFileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/c2/c2.go",
+    "contentFileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:modules/arp_spoof/arp_spoof_test.go",
+    "contentFile": "modules/arp_spoof/arp_spoof_test.go",
+    "fileModeFileId": "4c7590f1cba319aac298a50453c0ec440f2dc857:session/session.go",
+    "fileModeFile": "session/session.go"
+  },
+  "ghcli_config_Options": {
+    "error": "CANNOT-VERIFY: SchemaIncompatibleError: bb index schema incompatible: /home/ishaq2321/.bb/projects/572ba87116ee20d7b4e5e9b529675e01d9b287bd/brain.db was written by an older bb build (detected schema v1/m13-universal-brain; this build requir"
+  }
+}
