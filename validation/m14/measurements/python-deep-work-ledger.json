@@ -3,6 +3,7 @@
   "status": "partially-certified",
   "verificationKey": "evidence-is-the-answer",
   "freshPostCommitManifest": "validation/m14/measurements/fresh-python/python-fresh-manifest.json",
+  "finalResidualManifest": "validation/m14/measurements/fresh-python/python-final-residuals.json",
   "populations": {
     "heritageAndEndpoint": {
       "admittedFiles": 11488,

@@ -1,0 +1,32 @@
+{
+  "status": "measured-residual",
+  "commit": "925f82684",
+  "wholeDifferential": {
+    "files": 11334,
+    "missingCalls": 78,
+    "missingCallsClass": "OTP/ASN.1 testdata or Python-invalid .py lookalikes",
+    "missingInstantiates": 0,
+    "missingUses": 2,
+    "missingUsesClass": "duplicate-def shadowed body z/y oracle residual",
+    "missingContains": 0,
+    "unexplainedOverrides": 7,
+    "unexplainedDecorator": 0,
+    "unexplainedReferences": 0,
+    "unexplainedImports": 0,
+    "multiplicityDisagreements": 619
+  },
+  "selectedDifferential": {
+    "files": 2373,
+    "containsMissing": 2,
+    "containsUnexplained": 0,
+    "callsMissing": 0,
+    "callsUnexplained": 0,
+    "referencesMissing": 0,
+    "referencesUnexplained": 0,
+    "importsMissing": 0,
+    "importsUnexplained": 0,
+    "decoratesMissing": 0,
+    "decoratesUnexplained": 0
+  },
+  "rule": "No residual row is marked fixed unless production and oracle are rerun together. OTP/ASN.1 and duplicate-def rows are named evidence classes, not silently absorbed."
+}
