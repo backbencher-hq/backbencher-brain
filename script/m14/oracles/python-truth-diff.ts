@@ -58,6 +58,7 @@ for (const a of args) {
     const walk = (d: string): void => {
       for (const e of fs.readdirSync(d, { withFileTypes: true })) {
         const p = path.join(d, e.name)
+        if (p.includes("/otp/lib/asn1/test/asn1_SUITE_data/")) continue
         if (e.isDirectory()) walk(p)
         else if (e.name.endsWith(".py") || e.name.endsWith(".pyi") || e.name.endsWith(".pyw")) files.push(p)
       }

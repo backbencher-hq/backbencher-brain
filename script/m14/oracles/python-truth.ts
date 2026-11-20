@@ -964,6 +964,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   {
     const walkUses = (n: any, inFn: string | null, parent: any): void => {
       let nextFn = inFn
+      if (n.type === "function_definition") {
+        const nameNode = n.childForFieldName("name")
+        const name = nameNode ? String(nameNode.text ?? "") : ""
+        let block: any = n.parent
+        while (block && block.type !== "block" && block.type !== "module") block = block.parent
+        if (name && block) {
+          for (let i = 0; i < block.namedChildCount; i++) {
+            const sibling = block.namedChild(i)
+            if (!sibling || sibling.type !== "function_definition") continue
+            if (sibling.startIndex <= n.startIndex) continue
+            const siblingName = sibling.childForFieldName("name")
+            if (siblingName && siblingName.text === name) return
+          }
+        }
+      }
       if (n.type === "function_definition" && !inFn) {
         const nameNode = n.childForFieldName("name")
         nextFn = nameNode ? nameNode.text : inFn
@@ -1083,6 +1098,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       }
     }
     const walkRefs = (n: any): void => {
+      if (n.type === "function_definition") {
+        const nameNode = n.childForFieldName("name")
+        const name = nameNode ? String(nameNode.text ?? "") : ""
+        let block: any = n.parent
+        while (block && block.type !== "block" && block.type !== "module") block = block.parent
+        if (name && block) {
+          for (let i = 0; i < block.namedChildCount; i++) {
+            const sibling = block.namedChild(i)
+            if (!sibling || sibling.type !== "function_definition") continue
+            if (sibling.startIndex <= n.startIndex) continue
+            const siblingName = sibling.childForFieldName("name")
+            if (siblingName && siblingName.text === name) return
+          }
+        }
+      }
       if (n.type === "assignment") {
         emitRefs(resolveSource(n), [typeClauseOf(n)], "declared_type")
       } else if (n.type === "typed_parameter" || n.type === "typed_default_parameter") {
@@ -1415,6 +1445,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
    */
   const walkScopes = (n: any, scope: string | null, ownerClass: string | null, fnOwner: string | null = null): void => {
     if (n.type === "decorator") return
+    if (n.type === "function_definition") {
+      const nameNode = n.childForFieldName("name")
+      const name = nameNode ? String(nameNode.text ?? "") : ""
+      let parent: any = n.parent
+      while (parent && parent.type !== "block" && parent.type !== "module") parent = parent.parent
+      if (name && parent) {
+        for (let i = 0; i < parent.namedChildCount; i++) {
+          const sibling = parent.namedChild(i)
+          if (!sibling || sibling.type !== "function_definition") continue
+          if (sibling.startIndex <= n.startIndex) continue
+          const siblingName = sibling.childForFieldName("name")
+          if (siblingName && siblingName.text === name) return
+        }
+      }
+    }
     if (n.type === "lambda") {
       const body = n.childForFieldName("body")
       if (body && scope && fnOwner && scope === fnOwner && ownerClass !== scope) {
