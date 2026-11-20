@@ -289,6 +289,7 @@
     }
   },
   "remaining": [
+    "37 exact 2373-file residual rows remain: 30 reference, 4 uses, 2 duplicate-class contains, 1 call",
     "78 OTP/ASN.1-style calls are corpus-invalid residuals, not Python call defects",
     "2 duplicate-def uses and 1 duplicate-def call remain oracle residuals",
     "7 override candidates remain a policy/evidence residual pending external-base adjudication",
