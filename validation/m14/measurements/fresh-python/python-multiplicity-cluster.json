@@ -1,15 +1,15 @@
 {
   "status": "uncapped-clustered",
-  "population": "11,306-file post-direct-shadow differential",
-  "dump": "/tmp/python-whole-diff-post-directshadow.jsonl",
-  "total": 598,
+  "population": "11,306-file post-exact-override differential",
+  "dump": "/tmp/python-whole-diff-post-narrow-key.jsonl",
+  "total": 596,
   "byType": {
     "calls": 574,
-    "overrides": 22,
+    "overrides": 20,
     "extends": 2
   },
   "byRepository": {
-    "sqlalchemy": 321,
+    "sqlalchemy": 319,
     "duckdb": 239,
     "gql-saleor": 13,
     "kong": 10,
@@ -39,7 +39,7 @@
   },
   "verdict": {
     "calls": "Mostly repeated real call sites and chained-call multiplicity; 574 pairs remain uncapped.",
-    "overrides": "Repeated declaration or MRO guess multiplicity across SQLAlchemy and Cython; 22 pairs remain.",
+    "overrides": "Repeated declaration or MRO guess multiplicity across SQLAlchemy and Cython; 20 pairs remain.",
     "extends": "Duplicate or same-name inheritance spelling multiplicity; 2 pairs remain."
   },
   "rule": "Multiplicity disagreement is not a missing or unexplained edge. It requires exact truth/analyzer count and a source-site reason."

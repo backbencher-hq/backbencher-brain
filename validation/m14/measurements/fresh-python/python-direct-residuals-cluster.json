@@ -1,36 +1,14 @@
 {
   "status": "uncapped-clustered",
-  "population": "11,306-file post-direct-shadow differential",
-  "dump": "/tmp/python-whole-diff-post-directshadow.jsonl",
-  "total": 7,
+  "population": "11,306-file post-exact-override differential",
+  "dump": "/tmp/python-whole-diff-post-narrow-key.jsonl",
+  "total": 0,
   "missing": {
-    "contains": {
-      "count": 0
-    },
-    "calls": {
-      "count": 0
-    }
+    "contains": {"count": 0},
+    "calls": {"count": 0}
   },
   "unexplained": {
-    "overrides": {
-      "count": 7,
-      "files": [
-        "sqlalchemy/test/orm/inheritance/test_assorted_poly.py",
-        "sqlalchemy/test/orm/inheritance/test_basic.py",
-        "sqlalchemy/test/orm/declarative/test_mixin.py",
-        "sqlalchemy/test/base/test_utils.py"
-      ],
-      "rows": [
-        "Employee.__init__ -> __init__",
-        "Sub.data -> data",
-        "MyOtherModel.__declare_first__ -> __declare_first__",
-        "MyOtherModel.__declare_last__ -> __declare_last__",
-        "MyModel.__table_args__ -> __table_args__",
-        "MyModel.__tablename__ -> __tablename__",
-        "Bat.bar -> bar"
-      ],
-      "cause": "Nested/local class identity, class-variable, and MRO resolution candidates"
-    }
+    "overrides": {"count": 0}
   },
   "rule": "No direct residual is fixed by count reduction alone; production and independent oracle reruns must agree."
 }
