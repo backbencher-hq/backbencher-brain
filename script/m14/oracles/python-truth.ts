@@ -331,6 +331,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     return false
   }
 
+  const isShadowedTopLevelClass = (n: any): boolean => {
+    if (!n || n.type !== "class_definition") return false
+    const nameNode = n.childForFieldName("name")
+    const name = nameNode ? nameNode.text : ""
+    if (!name) return false
+    for (let i = 0; i < rootNode.namedChildCount; i++) {
+      const sibling = rootNode.namedChild(i)
+      if (!sibling || sibling.type !== "class_definition") continue
+      if (sibling.startIndex <= n.startIndex) continue
+      const siblingName = sibling.childForFieldName("name")
+      if (siblingName && siblingName.text === name) return true
+    }
+    return false
+  }
+
   const walkSkeleton = (n: any): void => {
     const kids: any[] = []
     for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
@@ -338,6 +353,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       if (k.type === "class_definition") {
         const nameNode = k.childForFieldName("name")
         const name = nameNode ? nameNode.text : ""
+        if (isShadowedTopLevelClass(k)) continue
         const supNode = k.childForFieldName("superclasses")
         // `bases` holds the LEAF — that is the spelling the relationship contract uses
         // and the spelling the analyzer publishes, so the two can be compared. The
@@ -1496,6 +1512,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
    */
   const walkScopes = (n: any, scope: string | null, ownerClass: string | null, fnOwner: string | null = null): void => {
     if (n.type === "decorator") return
+    if (isShadowedTopLevelClass(n)) return
     if (n.type === "function_definition") {
       const nameNode = n.childForFieldName("name")
       const name = nameNode ? String(nameNode.text ?? "") : ""
