@@ -78,7 +78,7 @@ from typing import overload
 
 
 @overload
-def chained(value: int) -> int: ...
+def chained(value: DeadType) -> DeadType: ...
 
 
 @overload

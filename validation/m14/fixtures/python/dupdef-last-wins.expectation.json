@@ -31,6 +31,7 @@
     { "complexity": 2, "comment": "base 1 + the LIVE `if alt_flag` on line 109. The shadowed module-level body's own `if phantom_marker()` on line 45 is NOT a decision point: a body that cannot run cannot raise the file's cyclomatic count. Keep-both reads 3, which is why the mutant injects 3 and not 2 — the file has to contain a live branch for this pin to have anything to compare against." }
   ],
   "expectRelationships": [
+    { "type": "references", "from": "chained", "target": "DeadType", "line_number": 81, "note": "both overload parameter and return annotations remain live declaration-chain references" },
     { "type": "calls", "from": "top", "target": "winner_marker", "line_number": 50, "note": "the surviving module-level def's call" },
     { "type": "calls", "from": "foo", "target": "winner_marker", "line_number": 60, "note": "the surviving class-body def's call" },
     { "type": "uses", "from": "foo", "target": "d_read", "line_number": 65, "note": "D.foo's OWN body was walked: a sibling container is a different container, so C's duplicate never reaches it — and the phantom skip does not spill past C either. (`calls foo -> winner_marker` cannot pin this: pushRel dedupes by type/source/target with no line component, so D.foo's identical call collapses onto C's under the same source NAME.)" },

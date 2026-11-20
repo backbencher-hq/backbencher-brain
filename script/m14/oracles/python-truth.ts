@@ -280,6 +280,47 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     { kind: "module" },
   ]
 
+  const declarationHasChainDecorator = (n: any): boolean => {
+    if (!n || typeof n.namedChildCount !== "number") return false
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c || c.type !== "decorator") continue
+      const text = c.text.trim()
+      if (text === "@overload" || text.endsWith(".overload")) return true
+      if (text === "@property" || text.endsWith(".property")) return true
+      if (text.includes(".setter") || text.endsWith(".setter")) return true
+      if (text.includes(".getter") || text.endsWith(".getter")) return true
+      if (text.includes(".deleter") || text.endsWith(".deleter")) return true
+    }
+    return false
+  }
+
+  const sameBlockDeclarationChain = (n: any, name: string): boolean => {
+    let declaration: any = n
+    if (n?.parent?.type === "decorated_definition") declaration = n.parent
+    if (declarationHasChainDecorator(declaration)) return true
+    let block: any = declaration?.parent
+    if (!block) return false
+    for (let i = 0; i < block.namedChildCount; i++) {
+      const sibling = block.namedChild(i)
+      if (!sibling) continue
+      let siblingFn: any = null
+      if (sibling.type === "function_definition") siblingFn = sibling
+      else if (sibling.type === "decorated_definition") {
+        for (let j = 0; j < sibling.namedChildCount; j++) {
+          const c = sibling.namedChild(j)
+          if (c?.type === "function_definition") { siblingFn = c; break }
+        }
+      }
+      if (!siblingFn) continue
+      if (siblingFn.startIndex <= declaration.startIndex) continue
+      const siblingName = siblingFn.childForFieldName("name")
+      if (siblingName && siblingName.text === name &&
+          (declarationHasChainDecorator(sibling) || declarationHasChainDecorator(siblingFn))) return true
+    }
+    return false
+  }
+
   const walkSkeleton = (n: any): void => {
     const kids: any[] = []
     for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
@@ -371,7 +412,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           if (!top.cls.methods.has(name)) top.cls.methods.set(name, line)
           let shadowedByLater = false
           let body: any = k.parent
-          if (body) {
+          if (!sameBlockDeclarationChain(k, name) && body) {
             for (let i = 0; i < body.namedChildCount; i++) {
               const sibling = body.namedChild(i)
               if (!sibling || sibling.type !== "function_definition" || sibling.startIndex <= k.startIndex) continue
@@ -969,7 +1010,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const name = nameNode ? String(nameNode.text ?? "") : ""
         let block: any = n.parent
         while (block && block.type !== "block" && block.type !== "module") block = block.parent
-        if (name && block) {
+        if (name && block && !sameBlockDeclarationChain(n, name)) {
           for (let i = 0; i < block.namedChildCount; i++) {
             const sibling = block.namedChild(i)
             if (!sibling || sibling.type !== "function_definition") continue
@@ -1103,7 +1144,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const name = nameNode ? String(nameNode.text ?? "") : ""
         let block: any = n.parent
         while (block && block.type !== "block" && block.type !== "module") block = block.parent
-        if (name && block) {
+        if (name && block && !sameBlockDeclarationChain(n, name)) {
           for (let i = 0; i < block.namedChildCount; i++) {
             const sibling = block.namedChild(i)
             if (!sibling || sibling.type !== "function_definition") continue
@@ -1450,7 +1491,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const name = nameNode ? String(nameNode.text ?? "") : ""
       let parent: any = n.parent
       while (parent && parent.type !== "block" && parent.type !== "module") parent = parent.parent
-      if (name && parent) {
+      if (name && parent && !sameBlockDeclarationChain(n, name)) {
         for (let i = 0; i < parent.namedChildCount; i++) {
           const sibling = parent.namedChild(i)
           if (!sibling || sibling.type !== "function_definition") continue
