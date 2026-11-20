@@ -288,8 +288,11 @@
     }
   },
   "remaining": [
-    "adjudicate remaining call/splat/comment/identical-name heritage shapes",
-    "adjudicate remaining uses self-loop clusters at full-population level",
+    "78 OTP/ASN.1-style calls are corpus-invalid residuals, not Python call defects",
+    "2 duplicate-def uses and 1 duplicate-def call remain oracle residuals",
+    "7 override candidates remain a policy/evidence residual pending external-base adjudication",
+    "250+ heritage shape residuals remain, mostly keyword arguments, splats, comments, and dynamic/call bases",
+    "750 uses self-loops remain measured and unclassified",
     "restore or replace missing historical evidence citations",
     "reconcile remaining historical documentation counts and references",
     "run the final repeated corpus, oracle, typecheck, mutant, and artifact matrix"
