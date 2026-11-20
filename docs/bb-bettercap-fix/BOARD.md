@@ -38,3 +38,10 @@ Checkpoints: CP1 = wave-1 integrated (typecheck+build+gates+verifier+commit). CP
 - REMAINING: 4 more legacy gates regressed by envelope access paths (visualize-owner-fold, visualize-target-literals, m35 s3-graph-migrate, m48 p3-agreement) → payload-honesty bounded gate-side window open; verifier will re-run those 4 then finalize VERIFICATION-CP1.md. No rebuild needed.
 - Pre-existing REDs (not regressions): m48-p1/p2, m57-t5/closure/gate-selftest/governance, m13 visualize-options/honesty, m12-surface (cmd typo in one run excluded).
 - DoD gaps: lane status pages for go-imports/go-testintel/retrieval would be nice; Lead to write consolidated STATUS if lanes stay cut.
+
+## FINAL closure (2026-11-20)
+- Wave-1 CP1 commit `380a7e473` (verified CLEAN by verifier: VERIFICATION-CP1).
+- Wave-2 commit `9de770006` landed on main as `9caaebdde`: Go import identity phase 2 (go.mod module path persisted + isExternal + dependency-engine Go branch + package-main span attribution), P0-2 write-side package-scoped binding (applyP02PackageScopedBinding + rule-2 carve-out), P2-6 typed BB_SCHEMA_INCOMPATIBLE old-index refusal through CLI/MCP doors, P2-7 dist-integrity gate + self-test + OPS protocol.
+- VERIFICATION-FINAL: **FINAL PASS** — 46-run suite 38 exit 0, zero regressions vs CP1, 7 pre-existing REDs + 1 env-only doc-surface failure documented, symptom script 34/0/5, tsc clean, dist integrity clean.
+- Write-side real-source proof (fresh 393-file bettercap Go subset index, derived: full): refactor dry-run 3 files/3 sites incl modules_test.go; main.go:47 bound with bindingBasis=import-path (504 import-path bindings); modules_test.go:16 bound; func main 21 calls/module 0; imports 326 internal/0 same-module external; cross name-resolution structural 0; GO1 378/0 fabricated; deps(session) internal 348/dependents 2470.
+- Pre-existing caveats recorded: full-specimen reindex blocked by the unmodified `_res_contains_targets` 21M-row SQLITE_FULL scaling defect; embedOutcome/queue-drop durability PARTIAL (off-limits reconcile section); old-index write floors need the next index run (read surfaces are retro-honest).

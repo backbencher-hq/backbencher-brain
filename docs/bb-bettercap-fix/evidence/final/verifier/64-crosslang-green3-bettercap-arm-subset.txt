@@ -1,0 +1,8 @@
+=== cross-lang GREEN3 gate vs Lead's REAL-source subset index (db 2026-11-20T06:07:58Z, derived:full)
+  -- P2 bettercap copy: package-scoped bound=504 refused=0
+  -- P2 bettercap copy: unbound=0 degraded=114
+  ok: P2 bettercap copy: cross-language name-resolution imports/calls == 0
+  ok: P2 bettercap copy: session.New callers from UNVERIFIED qualified leaves == 0
+  ok: P2 bettercap copy: internal qualified + same-package LoadModules bind (>=2)
+P0-2 gate: 21/21 assertions passed
+GREEN: all P0-2 assertions pass

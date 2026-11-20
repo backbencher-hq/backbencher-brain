@@ -1,0 +1,20 @@
+{
+  "filesMentioned": [
+    "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/subset/modules/modules.go",
+    "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/subset/main.go",
+    "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/subset/modules/modules_test.go",
+    "modules/modules.go",
+    "main.go",
+    "modules/modules_test.go"
+  ],
+  "reparsed": true,
+  "unresolvedEmpty": true,
+  "threeSiteClaim": [
+    "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/subset/modules/modules.go",
+    "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/subset/main.go",
+    "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/subset/modules/modules_test.go",
+    "modules/modules.go",
+    "main.go",
+    "modules/modules_test.go"
+  ]
+}
