@@ -86,3 +86,14 @@ reference copy under `.tools/handler-incident/`, gitignored); the file was then 
 (`sha256 82a71896…`). `npx tsc --noEmit` now reports only the pre-existing external C# error
 (`src/ast/real-csharp-analyzer.ts`, another lane's committed change); `git status` for the file is
 clean, and no unique work was lost (the WIP was a stale snapshot, not new edits).
+
+## Append: lane close-outs (the completion call was premature)
+
+At the time the goal was first marked complete, two lanes had never delivered their closing message or
+lane status page: `go-testintel` (P1-3) and `retrieval` (P2-1/P2-2) — both had been cut repeatedly by
+harness failures, and the Lead's compiled `STATUS-WAVE1.md` substitute was not their required
+close-out. Both lanes were reopened and have now delivered their own pages and final replies; the Lead
+re-ran their gates on the landed tree (`verify-test-intel` PASS 24 checks, `verify-test-quality` PASS
+56 checks, `verify-retrieval-contract` 45/45) and verified their E2E/probe evidence numbers against
+the committed JSON. Pages committed as `41dc91ecc` (go-testintel) and `f3ce5b57a` (retrieval).
+Remaining items are the lanes' declared follow-ups, listed in `FINAL.md` §"Post-review correction".

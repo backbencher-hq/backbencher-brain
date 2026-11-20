@@ -54,11 +54,36 @@ out-of-scope (not introduced or worsened by this campaign) and their evidence re
 - Read surfaces are retro-honest on old indexes; write-side floors require the next index run.
 - Full-specimen reindex stays blocked by pre-existing defect (1) until fixed separately.
 
+## Post-review correction (lane close-outs — this section corrects the record)
+
+The completion statement above was written while **two lanes had never delivered their closing
+message or lane status page**: `go-testintel` (P1-3) and `retrieval` (P2-1/P2-2). Their turns had been
+cut repeatedly by harness failures; the Lead compiled a substitute status in `STATUS-WAVE1.md` and
+then marked the campaign complete. **That was premature: a Lead-compiled summary is not the lane's own
+required close-out, and completion was called before the campaign's Definition of Done was met.**
+
+Remediation: both lanes were reopened and delivered their own status pages and final replies, and the
+Lead independently re-ran their gates on the landed tree:
+
+| lane | delivered | Lead re-run on landed tree |
+|---|---|---|
+| `go-testintel` | `docs/bb-bettercap-fix/go-testintel.md` + `GREEN-final-*` evidence; E2E: mapping tested 18 / links 127 / 137 declared-unvalidated with per-reason counts, Lock/Unlock 0 links, quality aggregate 0.322222→0.488095, assertions 0→0.857, `%s` proxy removed; corrected `session.New` answer (20 genuine module-test links, caplets/js false rows gone) | `verify-test-intel` **PASS (24 checks)**, `verify-test-quality` **PASS (56 checks)** |
+| `retrieval` | `docs/bb-bettercap-fix/retrieval.md` + `RETRIEVAL-R1-engine-fileid.md`; real-specimen probe (Session → single subject `struct session/session.go:72`, copies 5, declaration-kind, unchanged at `limit:1`; `session.Session` qualified-path; New function; LoadModules byte-compatible) | `verify-retrieval-contract` **45/45** (RED was 16/42) |
+
+The two pages are committed (`41dc91ecc`, `f3ce5b57a`). With them present, the campaign's close-out
+requirements are now met; the completion statement is accurate **as of these close-outs**, not as of
+the earlier commit. Remaining items are the lanes' declared follow-ups, not missing close-outs:
+go-testintel: rewrite `docs/BB_TEST_INTEL.md`/`BB_TEST_QUALITY.md` for the new five reasons and
+language vocabularies; receiver-selector evidence fails closed by design; `test_impact` untouched.
+retrieval: engine-level absolute `fileId` (R1, cross-lane with edit-engine); CLI-dist E2E needs the
+coordinator rebuild; gh-cli source check blocked by its old index schema (P2-6 scope). Pre-existing and
+unrelated: full-specimen reindex blocked by the `_res_contains_targets` scaling defect; `embedOutcome`
+durability PARTIAL; external C# typecheck error on main.
+
 ## Artifacts
 - Branch `fix-campaign-wave2` (this worktree), wave-1 commit `380a7e473` on `main`.
 - Status/verification: `VERIFICATION-CP1.md`, `VERIFICATION-FINAL.md`, `BOARD.md`, `STATUS-WAVE1.md`,
-  per-lane pages (`edit-safety.md`, `cross-lang.md`, `go-imports.md`, `go-testintel.md` (see
-  STATUS-WAVE1), `payload-honesty.md`, `retrieval.md` (see STATUS-WAVE1), `embeddings-health.md`,
+  per-lane pages (`edit-safety.md`, `cross-lang.md`, `go-imports.md`, `go-testintel.md`, `payload-honesty.md`, `retrieval.md`, `embeddings-health.md`,
   `verifier.md`, `OPS.md`).
 - Evidence: `evidence/{edit-safety,cross-lang,go-imports,go-testintel,payload-honesty,retrieval,
   embeddings-health,verifier,lead,final}/`.
