@@ -404,6 +404,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const cls: Klass = { name, line: k.startPosition.row + 1, bases, qualifiedBases, baseRefs, namesAbcMeta, methods: new Map() }
         classes.push(cls)
         if (name) classNames.add(name)
+        const top = stack[stack.length - 1]
         // A class is contained by whatever encloses it. Python has no module
         // declaration, so a module-level class is contained by nothing — that is the
         // scripting-family contract, and it is a SEMANTIC choice about Python, not a
