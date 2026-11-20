@@ -265,7 +265,10 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
           found = scopedPath && !scopedFile ? { matches: [] } : await ASTEngine.findSymbol(
             projectId, String(args.symbolName ?? args.query ?? "").trim(), scopedFile?.path ?? filePath,
           )
-          if (scopedFile) found.matches = found.matches.filter(match => match.fileId === scopedFile.path)
+          // R1: the engine row's identity is `<projectId>:<relativePath>` and its
+          // filesystem path is `absolutePath`; a filePath-scoped lookup compares
+          // the path, never the id.
+          if (scopedFile) found.matches = found.matches.filter(match => String(match.absolutePath ?? match.fileId) === scopedFile.path)
           if (scopedFile) scopeRows.push({ filePath: scopedFile.path })
           else if (scopedPath) scopeRows.push({ filePath: scopedPath })
         } catch (error: any) {
@@ -274,8 +277,8 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
           // or loader message reach the caller as a "successful" answer.
           return { envelope: `bb_search mode=symbol: ${error?.message ?? String(error)}` }
         }
-        // Per-match stale flag + envelope block. findSymbol rows alias
-        // fileId to the file PATH, so the resolver gets filePath rows.
+        // Per-match stale flag + envelope block. The engine row carries the
+        // filesystem path as `absolutePath` (R1); the resolver is given that.
         //
         // Paging (D12): a symbol name can legitimately be declared in many files
         // (a common method name), and the complete set can be enormous. With no
@@ -290,13 +293,13 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
         const pageLimit = args.limit === undefined ? null : Number(args.limit)
         const pageOffset = Number(args.offset ?? 0)
         const page = pageLimit === null ? matches : matches.slice(pageOffset, pageOffset + pageLimit)
-        const rows = [...scopeRows, ...page.map((m: any) => ({ filePath: m.fileId }))]
+        const rows = [...scopeRows, ...page.map((m: any) => ({ filePath: String(m.absolutePath ?? m.fileId ?? "") }))]
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, rows)
         for (const m of page) {
-          const absolute = String(m.fileId ?? "")
-          // Freshness is resolved against the absolute path the engine returns;
-          // the wire identity is remapped AFTER that resolution.
-          m.stale = detail.statuses.get(m.fileId) !== "fresh"
+          const absolute = String(m.absolutePath ?? m.fileId ?? "")
+          // Freshness is resolved against the filesystem path; the wire identity
+          // (`fileId`) is normalised from the project id + relative path.
+          m.stale = detail.statuses.get(absolute) !== "fresh"
           const relativeSymbolPath = String(m.relativePath ?? "").split("\\").join("/").replace(/^\/+/, "")
           // P2-2 identity gate: every mode reports a file the same way, as the
           // indexed file row id `<projectId>:<relativePath>` (content and file

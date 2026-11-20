@@ -25,13 +25,14 @@
 // RUN — BB_DATA_DIR=$PWD/.tools/triage-fix/retrieval/bbdata npx tsx script/verify-retrieval-contract.ts
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { createToolHandlers } from "../src/mcp/tool-handlers"
+import { ASTEngine } from "../src/ast/engine"
 import { descriptor as searchDescriptor } from "../src/mcp/tools/bb_search/descriptor"
 
 let checks = 0
@@ -183,6 +184,14 @@ try {
   const fileMode = await search({ mode: "file", filePath: "src/unique.ts" })
   check("B3: file mode agrees on the fileId", fileMode.fileId === expectedFileId, fileMode.fileId)
   check("B3: no search-mode fileId is an absolute path", (content.results ?? []).every((r: any) => !String(r.fileId).startsWith("/")) && !String(fileMode.fileId).startsWith("/"), "")
+  // R1: the projection itself (not just the bb_search wire remap) must report the
+  // project-scoped identity, with the machine path in absolutePath. A direct
+  // future consumer of ASTEngine.findSymbol gets the same contract.
+  const engineFound: any = await ASTEngine.findSymbol(projectId, "UniqueThing")
+  const engineRow = (engineFound?.matches ?? [])[0]
+  check("B3 engine: findSymbol fileId is <projectId>:<relativePath>", engineRow?.fileId === expectedFileId, String(engineRow?.fileId))
+  check("B3 engine: findSymbol absolutePath is the on-disk path", !!engineRow?.absolutePath && path.isAbsolute(String(engineRow.absolutePath)) && existsSync(String(engineRow.absolutePath)), String(engineRow?.absolutePath))
+  check("B3 engine: findSymbol keeps relativePath", engineRow?.relativePath === "src/unique.ts", String(engineRow?.relativePath))
 
   // B4: control — the sibling modes still answer.
   const symbolsText = await handler.bb_search({ mode: "symbols", query: "UniqueThing" }, { projectPath: root, projectId } as any)

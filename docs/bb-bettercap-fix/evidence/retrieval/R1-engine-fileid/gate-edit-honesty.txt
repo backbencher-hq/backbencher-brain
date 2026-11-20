@@ -1,0 +1,11 @@
+  ok: rename path: no identifierOffsets text-scan function remains removed
+  ok: rename path: uses parseForSafety occurrences (AST identity) no AST occurrence usage in refactor path
+  ok: rename path: occurrences come from parseForSafety (tree-sitter), not a regex extractIdentifierOccurrences is not AST-derived
+  ok: mask path: no JS-only codeMask function remains codeMask still present
+  ok: mask path: uses tree-sitter buildSyntaxMask (language-aware) buildSyntaxMask missing
+  ok: honesty audit: every remaining regex is enumerated found 4 regex ops
+  ok: honesty audit: no unjustified regex (every op has a justification) L548:exec(line), L1042:test(error.message), L1775:test(indent), L1962:test(newName)
+  ok: honesty audit: text slice/split ops are byte-offset manipulations (justified) 27 slice/split calls (all byte-range/line ops)
+  ok: honesty audit: safety-primitives.ts has zero regex/text-scan in code (pure AST) safety-primitives contains regex/text ops in code
+  ok: honesty audit: no identifierOffsets/raw text scan anywhere in the edit path [negative] identifierOffsets text scan present
+E11: VERIFIED (10/10 passed, 1 negative)

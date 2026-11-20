@@ -1,0 +1,228 @@
+── G1 go: package-qualified caller modules.LoadModules (report shape)
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:19] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:21] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 42ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 5 relationships (0 patterns) in 44ms
+        ⚠ 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 8ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:22] [project-health] project health computed {"projectId":"7b9bcda08e963c0f0a2034b6da835c4ae875ce21","complexityScore":95,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(2ms) + health(26ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 10ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[INFO] [17:02:22] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [17:02:22] [ast-engine] language grammar allocated {"language":"go"}
+[INFO] [17:02:22] [ast-engine] language parser loaded {"language":"go","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/wt-r1/wasm/tree-sitter-go.wasm"}
+  PASS G1 files planned
+  PASS G1 main.go in plan — present
+  PASS G1 main.go qualified site renamed
+  PASS G1 main.go old qualified name gone
+  PASS G1 CONTROL same-package unqualified call renamed — present
+  PASS G1 control text
+  PASS G1 declaration renamed
+── G2 go: package-main attribution (module/function name collision)
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:24] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:27] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 23ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 5 relationships (0 patterns) in 6ms
+        ⚠ 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 4ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:27] [project-health] project health computed {"projectId":"7d9031c2f7cb9791bf26aaf2db105baa9338128e","complexityScore":95,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(5ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 11ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 6ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  PASS G2 main.go caller file planned despite module-symbol attribution — present
+  PASS G2 both qualified call sites renamed
+  PASS G2 old qualified name gone
+── G3 ts: namespace import (import * as m; m.target())
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:29] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:29] [parallel-indexer] project index built {"ext":".ts","files":2,"types":0}
+[INFO] [17:02:32] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 30ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [17:02:32] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"88924e1d","danglingSources":4,"totalRelationships":4}
+  enriching done 100%
+  ✅ Enriched 0 relationships (0 patterns) in 5ms
+        ⚠ 4 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:32] [project-health] project health computed {"projectId":"88924e1d241b121f9d150150f5bc8e02294659aa","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(6ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[INFO] [17:02:32] [ast-engine] language grammar allocated {"language":"typescript"}
+[INFO] [17:02:32] [ast-engine] language parser loaded {"language":"typescript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/.tools/wt-r1/wasm/tree-sitter-typescript.wasm"}
+  PASS G3 namespace-import caller planned — present
+  PASS G3 qualified site renamed
+  PASS G3 old member name gone
+── G4 CONTROL: value-receiver member obj.target() must NOT be renamed
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:34] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:34] [parallel-indexer] project index built {"ext":".ts","files":3,"types":1}
+[INFO] [17:02:36] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 28ms [plan=linear largest-intermediate=8]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [17:02:37] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"d8aa391f","danglingSources":8,"totalRelationships":9}
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 7ms
+        ⚠ 8 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 8ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:37] [project-health] project health computed {"projectId":"d8aa391f028fadefb9d8b52f292bdd463e1b5472","complexityScore":95,"maintainabilityScore":80,"techDebtScore":100,"codeQualityScore":92,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(5ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 7ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 4ms
+  PASS G4 CONTROL unrelated member file untouched — unchanged
+  PASS G4 CONTROL named-import call renamed — present
+  PASS G4 control text
+── G6 caller-evidenced file with ZERO sites must refuse
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:39] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:41] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 32ms [plan=linear largest-intermediate=5]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 3 relationships (0 patterns) in 8ms
+        ⚠ 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 9ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:41] [project-health] project health computed {"projectId":"5ae372f3baa05bff5cc18669d950c25f6146b949","complexityScore":95,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(9ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 6ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 7ms
+  PASS G6 outcome is a refusal (or an explicitly-named survivor)
+  PASS G6 refusal names the evidence file
+── G7 plan→apply→`go build ./...`: the plan must be build-complete (compile verdict)
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:44] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:46] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 29ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 3 relationships (0 patterns) in 8ms
+        ⚠ 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:47] [project-health] project health computed {"projectId":"734bce5e2ad613ab34c09a84af1b9543007bb14c","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(5ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 8ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 11ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  PASS G7 plan includes the qualified caller file — ["/tmp/bb-refactor-safety-g7plan-XM1fzC/modules/modules.go","/tmp/bb-refactor-safety-g7plan-XM1fzC/main.go"]
+  PASS G7 plan-applied tree compiles — go build ./... exit 0
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:02:56] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:02:58] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 31ms [plan=linear largest-intermediate=3]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 3 relationships (0 patterns) in 8ms
+        ⚠ 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 9ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [17:02:59] [project-health] project health computed {"projectId":"59fee6505db6fe9cf8604e6b45bc82e3030daa78","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(6ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 12ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [17:03:09] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [17:03:11] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  bounded: resolved 4 relationship row(s) in changed files or their importers
+[INFO] [17:03:11] [project-health] project health computed {"projectId":"59fee6505db6fe9cf8604e6b45bc82e3030daa78","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  PASS G7 commit succeeds on a build-complete plan — committed
+  PASS G7 verification declared — {"reparsed":"passed","unresolvedReferences":[],"build":{"attempted":true,"tool":"go","command":"go build ./...","ok":true,"baseline":"passed"}}
+  PASS G7 post-commit `go build ./...` — exit 0
+
+23 passed, 0 failed

@@ -777,7 +777,24 @@ async function staleDeclarationFile(projectId: string, match: SymbolMatch): Prom
 }
 
 function matchesOf(found: any): SymbolMatch[] {
-  return (found?.matches ?? []).filter((m: any) => m.byteStart != null && m.byteEnd != null)
+  return (found?.matches ?? [])
+    .filter((m: any) => m.byteStart != null && m.byteEnd != null)
+    // R1: ASTEngine.findSymbol's `fileId` is the project-scoped identity
+    // (`<projectId>:<relativePath>`); every edit helper below treats
+    // `match.fileId` as a filesystem path (read the pre-image, parse it, resolve
+    // it inside the project, check its hash), so the internal match keeps the
+    // engine's explicit `absolutePath` in that field. The `?? fileId` fallback
+    // keeps a row from an older/foreign producer readable rather than silently
+    // pathing on an id.
+    .map((m: any): SymbolMatch => ({
+      id: String(m.id ?? ""),
+      name: String(m.name ?? ""),
+      byteStart: Number(m.byteStart),
+      byteEnd: Number(m.byteEnd),
+      lineStart: m.lineStart == null ? undefined : Number(m.lineStart),
+      symbolType: m.symbolType == null ? undefined : String(m.symbolType),
+      fileId: String(m.absolutePath ?? m.fileId ?? ""),
+    }))
 }
 
 /**

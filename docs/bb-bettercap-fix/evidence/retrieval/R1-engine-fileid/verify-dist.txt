@@ -1,0 +1,6 @@
+
+> @backbencher/brain@0.1.6 verify:dist
+> node_modules/.bin/tsx script/verify-dist-integrity.ts
+
+dist integrity: 156 JS chunk(s), 1069 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-r1/dist
+  ✓ every relative chunk reference resolves; entry exists

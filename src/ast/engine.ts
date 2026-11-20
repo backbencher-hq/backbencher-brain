@@ -2818,7 +2818,16 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
     // value happened to be `any`.
     type SymbolRow = {
       id: string
+      /** The project-scoped file identity `<projectId>:<relativePath>` — the
+       *  same key every other read surface (bb_search content/file modes,
+       *  bb_doc citations) reports. R1: this used to be the filesystem path,
+       *  which leaked a machine path into a field other surfaces treat as a
+       *  portable id. */
       fileId: string
+      /** The filesystem path. Anything that must READ or EDIT the file (the
+       *  byte-offset repair below, an edit-engine caller) uses THIS — `fileId`
+       *  and `relativePath` do not resolve on disk. */
+      absolutePath: string
       name: string
       symbolType: string
       lineStart: number | null
@@ -2826,14 +2835,14 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       byteEnd: number | null
       language: string | null
       /** The project-relative path. Noise rules are relative-path rules; the
-       *  absolute `fileId` must not be used for them (see the filter below). */
+       *  absolute path must not be used for them (see the filter below). */
       relativePath: string
     }
 
-    const results: SymbolRow[] = await db
+    const selectedRows = await db
       .select({
         id: BrainSymbolTable.id,
-        fileId: BrainFileTable.path,
+        absolutePath: BrainFileTable.path,
         name: BrainSymbolTable.name,
         symbolType: BrainSymbolTable.symbol_type,
         lineStart: BrainSymbolTable.line_start,
@@ -2850,11 +2859,18 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
       .where(and(...conditions))
       .all()
+    // R1: the wire identity is derived explicitly from the project id and the
+    // relative path, not aliased from `brain_file.path`. Keeping `absolutePath`
+    // in the row is what lets the repair and edit callers still open the file.
+    const results: SymbolRow[] = selectedRows.map((row: any) => ({
+      ...row,
+      fileId: `${String(projectId)}:${String(row.relativePath)}`,
+    }))
 
 
     // Auto-fill missing byte offsets from file content
     for (const r of results) {
-      if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.fileId && r.lineStart != null) {
+      if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.absolutePath && r.lineStart != null) {
         try {
           const fs = require("fs")
           // Decoded the same way the indexer decodes, or the offsets computed here
@@ -2862,7 +2878,7 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
           // UTF-16 file's offsets would be measured against NUL-interleaved text
           // while the tree was built from the transcoded text, and every symbol in
           // the file would be misplaced. See src/util/source-text.ts.
-          const content = decodeSourceText(fs.readFileSync(r.fileId)).text
+          const content = decodeSourceText(fs.readFileSync(r.absolutePath)).text
           const lines = content.split("\n")
           let offset = 0
           for (let i = 0; i < Math.min(r.lineStart, lines.length); i++) {
@@ -2914,7 +2930,7 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
     // prefix and this mode returned `matches: []` for every symbol it asked
     // about, while `mode:"symbols"` found the same symbol.
     const { isHardNoisePath } = await import("./analysis-exclusions")
-    matches = matches.filter((m: SymbolRow) => !isHardNoisePath(m.relativePath ?? m.fileId ?? ""))
+    matches = matches.filter((m: SymbolRow) => !isHardNoisePath(m.relativePath))
 
     // If multiple matches at the exact same file, prefer class/interface over constructor/function
     if (matches.length > 1 && filePath) {
