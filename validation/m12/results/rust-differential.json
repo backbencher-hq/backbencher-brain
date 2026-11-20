@@ -40,8 +40,8 @@
         "bytes": 53169
       },
       "src/ast/engine.ts": {
-        "sha256": "ed3651c040319e1d5d94d19b080b007912c92719efe2712d48f6a65273889d4c",
-        "bytes": 143040
+        "sha256": "9befd93a7fc84d9ba19ae8ded7319164b433c6d081bab7a6f2c006ebc76cab91",
+        "bytes": 144001
       },
       "src/ast/file-claim.ts": {
         "sha256": "8fbb422d15fc7ba6a54db5336c5e1f71b15781d8cce244622e9f34c8f3f94153",
@@ -62,6 +62,10 @@
       "src/ast/go-module.ts": {
         "sha256": "2bda194f671bb6ea508b15142f0020a2ab34cfe5e59f734f4c8eb6b818914ff0",
         "bytes": 7888
+      },
+      "src/ast/go-receiver-types.ts": {
+        "sha256": "3abf54e2edba6a81c4d1508e3b1dc5565045640a7cbeba57b90415ca28d042c2",
+        "bytes": 6483
       },
       "src/ast/import-resolution.ts": {
         "sha256": "2582f9655292312480c37cb7ab4c2bf638f58a46bfc571d60e9a2d61e18065dc",
@@ -116,8 +120,8 @@
         "bytes": 7852
       },
       "src/ast/parallel-indexer.ts": {
-        "sha256": "c09d27b18f7ed5d477c08a2bc2a6481039cc10ae5b2f7069b87cc4d8877148be",
-        "bytes": 552960
+        "sha256": "38e02204d2d8074fa8609a60bee5c5fa4ebfeb88d9c4c01b81d97256c21b01c5",
+        "bytes": 562962
       },
       "src/ast/php-function-resolution.ts": {
         "sha256": "0086273ff0038229d20ca140be70dd2cc53f4592650c598565c8987f4d88c9e1",
@@ -176,8 +180,8 @@
         "bytes": 6400
       },
       "src/ast/real-rust-analyzer.ts": {
-        "sha256": "a9b988bdc479cabf13e120c5b0f8174ab66ad383a8e99747ef80c5930e0a0869",
-        "bytes": 236152
+        "sha256": "84bfae281d6d099fd3cb45b16c115572898dd754507e3550fd27a373fcb4982d",
+        "bytes": 239752
       },
       "src/ast/scoped-path.ts": {
         "sha256": "8e54ddcf083dcfe07a10ff621981232f555ac2681a2fd2cfe2dde458cf16c842",
@@ -280,8 +284,8 @@
         "bytes": 3854
       },
       "src/intelligence/contracts.ts": {
-        "sha256": "917b21e90ccc2512e93ee55106dc844ed516d92652f6b51114d8494e5adc84b4",
-        "bytes": 49335
+        "sha256": "8fc417450613cf011bf06cd2c90c5f16c7661728f36c9d0c3453b49b4f48aba8",
+        "bytes": 49577
       },
       "src/intelligence/evidence.ts": {
         "sha256": "84249c5c943eedba23357b8dcbcca454fdf01387f39ca9dd990732107ccaa23a",
@@ -536,7 +540,7 @@
         "bytes": 55492
       }
     },
-    "digest": "9cafc48a11f5ad5353f54f91f571a45c5354171295b8ec0bdd075567e79d5f70",
+    "digest": "5d3e1d7bc55e68be1cbc48f1f17702f380173f30e8ee7aa9cab32158aca7c34b",
     "parser": null,
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
@@ -560,8 +564,8 @@
         "bytes": 421224
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "da9db9452279ae819f8aef4f0a91e496f4880c9d7448dc6184ed2c2a8a361731",
-        "bytes": 267524
+        "sha256": "5037e598391e93f13c849b500904f87ac42b369267d5030f6fe5a8ffad88fd72",
+        "bytes": 267560
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "665e3f152ed1c8e035df4d2db37bdf82711e2fad5411e2c66fbe608efd2675ad",
@@ -668,8 +672,8 @@
         "bytes": 102632
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "bb7fab0f7ddfb43826310afed25d93e2cefbf1ee4433a4a3a9657ee5dca08a18",
-        "bytes": 414120
+        "sha256": "45cb91c86db9cc52efb77a5a897098a66e0857a3f8a3961e49885ea5c8138519",
+        "bytes": 414906
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "0137f93ff8e197e2e7898c715ab6a2decb629b12b3bc5e87a81ee3aa7041b9b1",
@@ -907,11 +911,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:rust",
-      "wallTimeMs": 189.028858,
-      "userCpuMs": 340.846,
-      "systemCpuMs": 36.399,
-      "peakRssBytes": 261148672,
-      "rssDeltaBytes": 20656128,
+      "wallTimeMs": 81.17342,
+      "userCpuMs": 255.503,
+      "systemCpuMs": 22.52,
+      "peakRssBytes": 297709568,
+      "rssDeltaBytes": 12161024,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
