@@ -288,6 +288,44 @@
       "source": "script/m14/python-endpoint-defects.ts"
     }
   },
+  "freshDefinitiveVerification": {
+    "timestamp": "2026-11-20",
+    "selectedDifferential": {
+      "files": 2373,
+      "missing": {"contains": 2},
+      "unexplained": {"calls": 1, "uses": 4, "references": 30},
+      "multiplicityDisagreements": 13,
+      "dump": "/tmp/python-whole-diff-final.jsonl"
+    },
+    "wholeDifferential": {
+      "files": 11306,
+      "directDisagreements": 557,
+      "missing": {"contains": 8, "calls": 6},
+      "unexplained": {"contains": 5, "overrides": 7, "calls": 51, "instantiates": 2, "uses": 61, "references": 417},
+      "multiplicityDisagreements": 879,
+      "dump": "/tmp/python-whole-diff-11334.jsonl"
+    },
+    "heritage": {
+      "classes": 25934,
+      "clauses": 23422,
+      "covered": 23171,
+      "uncovered": 251,
+      "dump": "/tmp/python-heritage-final.json"
+    },
+    "endpointDefects": {
+      "admittedFiles": 11488,
+      "parsedFiles": 11488,
+      "parseFailures": 0,
+      "D1": 0,
+      "D2b": 0,
+      "D3": 0,
+      "D4": 0,
+      "D5_usesSelfLoops": 750,
+      "D6": 0,
+      "D7": 0,
+      "dump": "/tmp/python-endpoint-defects-final.json"
+    }
+  },
   "remaining": [
     "37 exact 2373-file residual rows remain: 30 reference, 4 uses, 2 duplicate-class contains, 1 call",
     "78 OTP/ASN.1-style calls are corpus-invalid residuals, not Python call defects",

@@ -28,5 +28,32 @@
     "decoratesMissing": 0,
     "decoratesUnexplained": 0
   },
+  "freshDefinitiveDifferential": {
+    "command": "BB_ORACLE_DUMP=/tmp/python-whole-diff-11334.jsonl bun run script/m14/oracles/python-truth-diff.ts /home/ishaq2321/bb_tests/repositories",
+    "admittedFiles": 11306,
+    "dump": "/tmp/python-whole-diff-11334.jsonl",
+    "directDisagreements": 557,
+    "missing": {
+      "contains": 8,
+      "calls": 6
+    },
+    "unexplained": {
+      "contains": 5,
+      "overrides": 7,
+      "calls": 51,
+      "instantiates": 2,
+      "uses": 61,
+      "references": 417
+    },
+    "multiplicityDisagreements": 879,
+    "multiplicityByType": {
+      "uses": 122,
+      "references": 43,
+      "calls": 676,
+      "extends": 3,
+      "overrides": 23,
+      "instantiates": 12
+    }
+  },
   "rule": "No residual row is marked fixed unless production and oracle are rerun together. OTP/ASN.1 and duplicate-def rows are named evidence classes, not silently absorbed."
 }
