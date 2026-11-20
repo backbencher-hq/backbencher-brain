@@ -328,12 +328,32 @@ afterthought.
 
 ### What is still open, stated rather than hidden
 
-- **`overrides` at 0.5 confidence over 22 first-parent guesses** (`real-csharp-analyzer.ts:3522`).
-  162 of 184 resolve at 1.0; the tail is a deterministic per-file default, marked
-  `reasonCode: "first-parent-guess"`. Measuring whether those 22 name a declaring type is the next step.
+- **`overrides` — the 0.5 tail, measured.** The lane has carried "162 of 184 at 1.0; the tail is 22"
+  for a long time. That number is **stale**, and the real one is larger. Measured over the whole
+  corpus with `bun script/m14/csharp-overrides-tail.ts`: **11,428 `overrides` edges rest on the 0.5
+  first-parent guess**, out of 11,428 tail-eligible edges — i.e. the tail is the *majority* path, not a
+  remainder. What the 0.5 means is the real question, and it is checkable: the pass takes
+  `ownerHierarchy[0]` as the declaring type, so the claim is "the first hierarchy parent declares this
+  member." Verifying that against the base class's own declaration gives **10,787 of 11,428 confirmed
+  (94.39%)**, 218 unresolved because the owner's declaration is not in the same file, and **100
+  contradicted by the probe's chain resolution**. Hand-checking the contradictions shows they are
+  **probe limits, not analyzer defects**: `ProjectNode` is a `partial` class across four files with
+  `ProjectNode : HierarchyNode`, and `MenuCommandId` is declared by `HierarchyNode` in a third file —
+  the analyzer's guess is correct and the probe simply did not follow the base chain across the partial
+  split. So the honest statement is: **the 0.5 is a confidence discount on an edge that is right in the
+  overwhelming majority of cases**, and the residue is a *measurement* problem (cross-file partial
+  hierarchies) rather than an accuracy problem. What is NOT claimed: that every one of the 11,428 is
+  correct — 100 were not confirmed by this method and deserve per-edge review if the number ever
+  matters for a consumer.
 - **`uses` at 0.7 over the field-access half** (`real-csharp-analyzer.ts:3651`); the
   identifier-usage half is 1.0. The 0.7 is `metadata.relationshipType: "csharp_field_access"` and it is
-  the *larger* half by volume — 203,825 of 260,071 `uses` edges.
+  the *larger* half by volume — **203,825 of 260,071** `uses` edges. The 0.7 is not a guess: both
+  endpoints are read from the tree (the member access and the field it names) and the relation is
+  structural. It is discounted because a field read is **context-dependent evidence** — `obj.Name`
+  may be this class's field, a base's, or another type's — which is exactly the tier `uses` carries
+  fleet-wide for member reads. Raising it to 1.0 would assert a resolution the lane cannot prove;
+  leaving the *identifier-usage* half at 1.0 is correct because a bare name binds through the lexical
+  frame, which is deterministic.
 - **The ambiguous population.** 490,456 of the non-resolved edges are *"declared by more than one
   file"*, 128,068 *"declared nowhere in the corpus"* — a resolution-class split, not a missing
   mechanism.
