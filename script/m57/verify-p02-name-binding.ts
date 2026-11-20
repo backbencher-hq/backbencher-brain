@@ -207,7 +207,7 @@ function forbiddenBindings(db: any, labels: Record<string, string>): void {
        AND (json_extract(r.metadata,'$.isStdlib') = 1
             OR json_extract(r.metadata,'$.isExternalTarget') = 1
             OR (json_extract(r.metadata,'$.isPackageQualified') = 1
-                AND COALESCE(json_extract(r.metadata,'$.bindingBasis'),'') <> 'import-path'))`,
+                AND COALESCE(json_extract(r.metadata,'$.bindingBasis'),'') NOT IN ('import-path','receiver-type')))`,
   )
   check(labels.e, ext === 0, `external-claim rows bound = ${ext}`)
 }
@@ -257,7 +257,8 @@ async function main(): Promise<void> {
   // P4: PACKAGE-SCOPED Go binding (go-imports contract; write-side regression gate).
   // A same-language qualified call into an internal package MUST bind; a same-package
   // unqualified call MUST bind; a variable receiver (`s.Save()`) must NOT be
-  // package-bound. This is what the blanket isPackageQualified gate broke.
+  // PACKAGE-bound — with a receiver type declared in the same function it IS bound,
+  // as `receiver-type` evidence (P1-3 completion), never as a package binding.
   {
     const callRows = () =>
       fxDb
@@ -283,7 +284,8 @@ async function main(): Promise<void> {
     check("P4 qualified internal package call records import-path basis", !!pkgF && pkgF.bb === "import-path", JSON.stringify(pkgF?.bb ?? null))
     check("P4 same-package unqualified call binds (LocalHelper)", !!local && local.tfile === "helper.go" && local.tn === "LocalHelper", JSON.stringify(local ?? null))
     check("P4 second internal package call binds (util.Helper)", !!utilH && utilH.tfile === "internal/util/util.go", JSON.stringify(utilH ?? null))
-    check("P4 variable receiver is NOT package-bound (s.Save)", !!save && save.tn === null, JSON.stringify(save ?? null))
+    check("P4 variable receiver is not PACKAGE-bound; the declared receiver type binds it as receiver-type evidence (s.Save)",
+      !!save && save.bb !== "import-path" && save.tn === "Save" && save.bb === "receiver-type", JSON.stringify(save ?? null))
   }
 
   // PC3: same-language relative import still resolves.
