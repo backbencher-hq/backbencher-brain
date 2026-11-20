@@ -1,0 +1,37 @@
+{
+  "status": "uncapped-clustered",
+  "population": "11,488-file heritage population",
+  "classes": 25934,
+  "clauses": 23422,
+  "covered": 23171,
+  "uncovered": 251,
+  "dump": "/tmp/python-heritage-uncovered-251.jsonl",
+  "byShape": {
+    "keyword_argument": 185,
+    "dictionary_splat": 34,
+    "list_splat": 14,
+    "call": 9,
+    "comment": 7,
+    "identifier": 2
+  },
+  "byVerdict": {
+    "lookupMissed": 249,
+    "coveredButNoEdge": 2
+  },
+  "byRepository": {
+    "sqlalchemy": 117,
+    "ansible": 70,
+    "cython": 21,
+    "gql-graphql-core": 21,
+    "wagtail": 13,
+    "requests": 5,
+    "pb-grpc": 2,
+    "gql-saleor": 1,
+    "ohmyzsh": 1
+  },
+  "coveredButNoEdge": [
+    "cython/Cython/Build/IpythonMagic.py :: _build_ext(_build_ext)",
+    "ohmyzsh/.github/workflows/dependencies/updater.py :: Exception(Exception)"
+  ],
+  "verdict": "251 are non-base/dynamic or same-name rebind policy rows. Attribute and subscript heritage has 100% coverage; ordinary identifier heritage has only 2 intentional same-name suppressed rows."
+}

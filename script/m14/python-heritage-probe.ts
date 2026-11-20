@@ -170,6 +170,8 @@ async function main(): Promise<void> {
   const OUT = OUT_INDEX === -1 ? "" : argv[OUT_INDEX + 1]
   const REPO_INDEX = argv.indexOf("--repo")
   const REPO_ONLY = REPO_INDEX === -1 ? "" : argv[REPO_INDEX + 1]
+  const DUMP_INDEX = argv.indexOf("--dump-uncovered")
+  const DUMP_UNCOVERED = DUMP_INDEX === -1 ? "" : argv[DUMP_INDEX + 1]
 
   const pop = discover()
   console.log("PYTHON HERITAGE BLIND-SPOT PROBE — the lane's own instrument")
@@ -197,6 +199,7 @@ async function main(): Promise<void> {
   const uncoveredShapes = new Map<string, number>()
   const uncoveredExamples: string[] = []
   const coveredExamples: string[] = []
+  const uncoveredRows: any[] = []
 
   const bump = (shape: string, kind: "total" | "covered" | "uncovered" | "lookupMissed") => {
     let row = byShape.get(shape)
@@ -272,6 +275,14 @@ async function main(): Promise<void> {
               if (uncoveredExamples.length < 100) {
                 uncoveredExamples.push(`${shape}: ${abs.replace(CORPUS_ROOT + "/", "")} :: ${clause.text?.slice(0, 80)}`)
               }
+              if (DUMP_UNCOVERED) uncoveredRows.push({
+                file: abs,
+                repo: repoOf(abs, pop),
+                className,
+                shape,
+                clause: clause.text ?? "",
+                verdict: "lookup-missed",
+              })
               continue
             }
             if (emitted.has(`${className} ${leaf}`)) {
@@ -290,6 +301,15 @@ async function main(): Promise<void> {
               if (uncoveredExamples.length < 100) {
                 uncoveredExamples.push(`${shape}: ${abs.replace(CORPUS_ROOT + "/", "")} :: ${className}(${leaf})`)
               }
+              if (DUMP_UNCOVERED) uncoveredRows.push({
+                file: abs,
+                repo: repoOf(abs, pop),
+                className,
+                shape,
+                clause: clause.text ?? "",
+                leaf,
+                verdict: "covered-but-no-edge",
+              })
             }
           }
         }
@@ -372,6 +392,10 @@ async function main(): Promise<void> {
     writeFileSync(OUT, JSON.stringify(artifact, null, 2) + "\n")
     console.log("")
     console.log(`wrote ${OUT}`)
+  }
+  if (DUMP_UNCOVERED) {
+    writeFileSync(DUMP_UNCOVERED, uncoveredRows.map((row) => JSON.stringify(row)).join("\n") + "\n")
+    console.log(`wrote ${uncoveredRows.length} uncovered heritage rows to ${DUMP_UNCOVERED}`)
   }
   // THE FALSIFIER: an uncovered clause whose SHAPE the analyzer's lookup names is a defect in
   // the EMITTER; an uncovered clause whose shape the lookup does NOT name is a fact about the
