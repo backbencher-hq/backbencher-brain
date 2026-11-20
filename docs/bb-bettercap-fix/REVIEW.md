@@ -61,3 +61,28 @@ every campaign gate GREEN on the landed tree, both bettercap verification arms (
 write-side subset) pass with the landed build, and the specimen and its index are untouched. The two
 items worth the owner's attention are the disclosed history scope leak (1) and the external C#
 typecheck error (2); neither affects the campaign's fixes.
+
+## Append: `bb_analyze/handler.ts` working-tree incident (diagnosed + repaired)
+
+**Symptom:** the shared checkout's working tree had `src/mcp/tools/bb_analyze/handler.ts`
+syntactically broken (15 `TS1005/TS1434` errors) while the committed file was fine.
+
+**Diagnosis (evidence-backed):**
+- The working-tree file was an **uncommitted, very stale copy**: after removing 2 stray lines it is
+  byte-identical to the file as of commit `b6d615184` (2026-11-01, "TOOLS CAMPAIGN"), i.e. it had
+  lost both `19411d627` (2026-11-16) and the wave-1 CP1 fix `380a7e473` (envelope for
+  `bb_analyze mode=impact`, dependency-scope fix, walk-bound fields).
+- Two lines had been spliced into a comment block: a leaked instruction fragment
+  ("…While the owners work, the remaining Lead infrastructure: the regex policy gate the user asked
+  for (AST-based, no text scanning, with an allowlist that requires edge-case tests).") followed by an
+  **uncommented** continuation `is the locator; resolve it to a row id here, once.` — the latter is
+  parsed as code, which is what produced the syntax errors.
+- Root cause: a concurrent session's editor wrote a stale (Nov-1) buffer over the file — a lost
+  update — and an instruction sentence was pasted into the comment. The corrupted content never
+  reached git (`git status` showed it as modified only; the committed HEAD version is correct).
+
+**Repair:** the corrupted WIP was archived first (`git diff HEAD` patch + full file + the Nov-1
+reference copy under `.tools/handler-incident/`, gitignored); the file was then restored from HEAD
+(`sha256 82a71896…`). `npx tsc --noEmit` now reports only the pre-existing external C# error
+(`src/ast/real-csharp-analyzer.ts`, another lane's committed change); `git status` for the file is
+clean, and no unique work was lost (the WIP was a stale snapshot, not new edits).
