@@ -398,6 +398,7 @@
     }
   },
   "remaining": [
+    "Cython live-last duplicate class: class_redefine.py has two top-level set declarations; truth/production reconciliation remains open for __init__/x/X and multiplicity",
     "Associationproxy call multiplicity: test_join_separate_attr and test_join_single_attr each have two real join call sites; line identity is required, not two identical relationship truths",
     "Experimental wrapped/decorated-class and top-level duplicate guards were reversed after proving collateral fixture regressions; no speculative production patch remains",
     "Hasura AST adjudication: TestDeleteRemoteRelationship exists at L82 in a decorated_definition and at L274 at module scope; the same-name classes are separate scopes, not one same-block rebinding",
