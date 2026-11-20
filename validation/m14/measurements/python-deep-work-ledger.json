@@ -303,6 +303,30 @@
       "dump": "/tmp/python-whole-diff-post-nested.jsonl",
       "fixtureGate": {"pass": 76, "fail": 0}
     },
+    "oracleLabels": {
+      "populationCodeBearingFiles": 10463,
+      "sampleFiles": 400,
+      "declaredLabels": 11,
+      "observedLabels": 11,
+      "counts": {
+        "calls": 21489,
+        "contains": 5447,
+        "decorates": 1151,
+        "exports": 163,
+        "extends": 930,
+        "implements": 42,
+        "imports": 3774,
+        "instantiates": 757,
+        "overrides": 75,
+        "references": 1463,
+        "uses": 13469
+      },
+      "status": "pass"
+    },
+    "mutationSuite": {
+      "pythonMutantsCaught": 30,
+      "status": "pass"
+    },
     "selectedDifferential": {
       "files": 2373,
       "missing": {"contains": 2},
@@ -340,11 +364,13 @@
     }
   },
   "remaining": [
-    "37 exact 2373-file residual rows remain: 30 reference, 4 uses, 2 duplicate-class contains, 1 call",
-    "78 OTP/ASN.1-style calls are corpus-invalid residuals, not Python call defects",
-    "2 duplicate-def uses and 1 duplicate-def call remain oracle residuals",
-    "7 override candidates remain a policy/evidence residual pending external-base adjudication",
-    "250+ heritage shape residuals remain, mostly keyword arguments, splats, comments, and dynamic/call bases",
+    "Post-fix whole differential: 21 direct residual rows remain (8 contains missing, 6 calls missing, 7 overrides unexplained)",
+    "The 8 missing contains and 6 missing calls are localized to Cython class_redefine and hasura-engine test_remote_relationships",
+    "The 7 unexplained overrides are SQLAlchemy nested/local test classes and remain external-base or oracle-policy residuals",
+    "601 multiplicity disagreements remain: 575 calls, 23 overrides, 3 extends",
+    "OTP/ASN.1 call-lookalike population is resolved by the pinned file rule",
+    "Duplicate-def and nested-def scope work is pinned; residual multiplicity is not the same as a missing edge",
+    "251 heritage shape residuals remain, mostly keyword arguments, splats, comments, and dynamic/call bases",
     "750 uses self-loops remain measured and unclassified",
     "restore or replace missing historical evidence citations",
     "reconcile remaining historical documentation counts and references",
