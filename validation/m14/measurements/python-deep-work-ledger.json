@@ -2,6 +2,7 @@
   "lane": "python",
   "status": "partially-certified",
   "verificationKey": "evidence-is-the-answer",
+  "freshPostCommitManifest": "validation/m14/measurements/fresh-python/python-fresh-manifest.json",
   "populations": {
     "heritageAndEndpoint": {
       "admittedFiles": 11488,

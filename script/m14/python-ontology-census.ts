@@ -66,7 +66,7 @@
  *   bun run script/m14/python-ontology-census.ts --fresh          # re-walk
  */
 import { execFileSync } from "node:child_process"
-import { appendFileSync, readFileSync, readdirSync, statSync, unlinkSync, type Dirent } from "node:fs"
+import { appendFileSync, existsSync, readFileSync, readdirSync, statSync, unlinkSync, type Dirent } from "node:fs"
 import * as path from "node:path"
 import { parseFile } from "../../src/ast/pool-worker"
 
@@ -134,14 +134,15 @@ function trackedFiles(dir: string): string[] {
 
 function discover(): Repo[] {
   const out: Repo[] = []
+  const discoveryRoot = existsSync(PY_CORPUS) ? PY_CORPUS : CR
   let names: string[]
   try {
-    names = readdirSync(PY_CORPUS).sort()
+    names = readdirSync(discoveryRoot).sort()
   } catch {
     return out
   }
   for (const name of names) {
-    const dir = path.join(PY_CORPUS, name)
+    const dir = path.join(discoveryRoot, name)
     let st
     try {
       st = statSync(dir)
@@ -226,7 +227,8 @@ function population(repos: Repo[], root: string): Population {
 }
 
 const repos = discover()
-const pop = population(repos, PY_CORPUS)
+const discoveryRoot = existsSync(PY_CORPUS) ? PY_CORPUS : CR
+const pop = population(repos, discoveryRoot)
 const allFiles = pop.files
 const unpinnedFiles = pop.unpinned.flatMap((u) => u.files)
 
@@ -412,7 +414,7 @@ function absorb(row: FileTally) {
     // holds every row and the aggregate is rebuilt from it on each run.
     if ((v.edges ?? 0) > 0) {
       fileSets.get(t as Type)!.add(row.f)
-      const rel = row.f.replace(PY_CORPUS + "/", "")
+      const rel = row.f.replace(discoveryRoot + "/", "")
       if (!r.files_seen) r.files_seen = []
       if (r.files_seen.length < 3) r.files_seen.push(rel)
     }
@@ -634,7 +636,7 @@ async function measureFile(file: string): Promise<FileTally> {
     }
     const row = per[t] as any
     if (!row.ex) row.ex = []
-    if (row.ex.length < 3) row.ex.push(`${file.replace(PY_CORPUS + "/", "")}:${e?.line_number ?? "?"} ${src} -> ${tgt}`)
+    if (row.ex.length < 3) row.ex.push(`${file.replace(discoveryRoot + "/", "")}:${e?.line_number ?? "?"} ${src} -> ${tgt}`)
   }
 
   return {
@@ -776,7 +778,7 @@ if (!JSON_OUT) {
   console.log(`\n  total distinct: ${grammarNodeTypes.size}`)
 } else {
   const out: Record<string, any> = {
-    corpusRoot: PY_CORPUS,
+    corpusRoot: discoveryRoot,
     checkouts: repos.map((r) => r.name),
     populationTracked: allFiles.length,
     populationUntrackedOnDisk: pop.untracked,

@@ -1,0 +1,64 @@
+ansible: 600 .py files, 600 parsed
+cython: 356 .py files, 356 parsed
+requests: 22 .py files, 22 parsed
+
+files parsed 978, failed 0, with parse errors 6
+
+== INSTRUMENT B1: module-scope __all__ (what `exports` keys on) ==
+  total __all__ assignments on the tree: 34
+  module/list                29
+  module/tuple               4
+  class/list                 1
+  MODULE-scope list/tuple/set __all__ (the only shapes that fire exports): 33
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/context.py:21 tuple items=1
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/inventory/host.py:33 list items=1
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/vars/hostvars.py:32 list items=2
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/utils/encrypt.py:45 list items=1
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/utils/unsafe_proxy.py:15 list items=2
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/utils/path.py:26 list items=2
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/utils/listify.py:25 list items=1
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/utils/unicode.py:23 tuple items=1
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/module_utils/common/sys_info.py:13 tuple items=3
+     /home/ishaq2321/bb_tests/repositories/ansible/lib/ansible/executor/task_executor.py:61 list items=1
+
+== INSTRUMENT B2: interface-declaring class headers (what `implements` could key on) ==
+  base-Protocol              15
+  metaclass-ABCMeta          15
+  base-TypedDict             9
+  base-ABC                   6
+     base-TypedDict ansible/lib/ansible/galaxy/collection/__init__.py:84 FilesManifestType(TypedDict)
+     base-Protocol ansible/lib/ansible/utils/collection_loader/__init__.py:13 _EncryptedStringProtocol(Protocol)
+     metaclass-ABCMeta ansible/lib/ansible/utils/_junit_xml.py:19 TestResult
+     base-Protocol ansible/lib/ansible/config/manager.py:63 _EncryptedStringProtocol(Protocol)
+     base-TypedDict ansible/lib/ansible/module_utils/urls.py:1133 _Part(TypedDict)
+     base-Protocol ansible/lib/ansible/module_utils/urls.py:1100 MultipartProtocol(Protocol)
+     base-TypedDict ansible/lib/ansible/module_utils/urls.py:1027 _MultipartField(TypedDict)
+     metaclass-ABCMeta ansible/lib/ansible/module_utils/yumdnf.py:56 YumDnf
+     metaclass-ABCMeta ansible/lib/ansible/module_utils/facts/packages.py:22 PkgMgr
+     base-TypedDict ansible/lib/ansible/module_utils/distro/_distro.py:71 InfoDict(TypedDict)
+     base-TypedDict ansible/lib/ansible/module_utils/distro/_distro.py:65 VersionDict(TypedDict)
+     base-Protocol ansible/lib/ansible/module_utils/_internal/_plugin_info.py:8 HasPluginInfo(Protocol)
+     base-ABC ansible/lib/ansible/module_utils/_internal/_patches/__init__.py:16 CallablePatch(ABC)
+     base-Protocol ansible/lib/ansible/module_utils/_internal/_patches/__init__.py:10 PatchedTarget(Protocol)
+     base-Protocol ansible/lib/ansible/module_utils/_internal/_datatag/__init__.py:539 CollectionWithMro(Collection,Protocol)
+     metaclass-ABCMeta ansible/lib/ansible/module_utils/_internal/_datatag/__init__.py:411 AnsibleDatatagBase
+     metaclass-ABCMeta ansible/lib/ansible/module_utils/_internal/_datatag/__init__.py:361 AnsibleSerializableDataclass
+     metaclass-ABCMeta ansible/lib/ansible/module_utils/_internal/_datatag/__init__.py:299 AnsibleSerializableWrapper
+     base-Protocol ansible/lib/ansible/executor/module_common.py:1105 _ProcessResult(Protocol)
+     base-Protocol ansible/lib/ansible/executor/module_common.py:1097 _GetCommandArgs(Protocol)
+
+== INSTRUMENT A: grammar inventory ==
+  distinct node types the grammar PRODUCED over this corpus: 118
+  implements_clause          absent
+  extends_clause             absent
+  superclass                 absent
+  interface_declaration      absent
+  interface_body             absent
+  base_class_clause          absent
+  inheritance_specifier      absent
+  type_implements            absent
+  interface_type             absent
+  type_inheritance_clause    absent
+  class_heritage             absent
+  protocol_declaration       absent
+  class_definition's base-list field: superclasses (ONE field, ONE argument_list) — see extractClass

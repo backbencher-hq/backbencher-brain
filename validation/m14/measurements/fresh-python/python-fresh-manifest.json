@@ -1,0 +1,116 @@
+{
+  "status": "fresh-post-commit",
+  "commit": "93c24e9f154c2e37b102d79a0dca97a246efdeb1",
+  "analyzerObject": "38bac6943fd2f3aadac482fd85252bb3b48ed6e3",
+  "grammarSha256": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "populations": {
+    "endpointDefectHeritage": {
+      "admittedFiles": 11488,
+      "repos": 49,
+      "trackedPaths": 14022,
+      "rule": "git ls-files tracked .py/.pyi/.pyw paths at or below 1 MiB"
+    },
+    "ontologyFlat": {
+      "parsedFiles": 11489,
+      "trackedPaths": 14022,
+      "untrackedOnDisk": 84,
+      "rule": "flat corpus discovery, git-tracked files plus 84 on-disk untracked Python files"
+    }
+  },
+  "endpointRelationshipCounts": {
+    "calls": 535006,
+    "uses": 389972,
+    "contains": 135661,
+    "imports": 99821,
+    "references": 61955,
+    "exports": 3043,
+    "extends": 22804,
+    "implements": 363,
+    "overrides": 33497,
+    "instantiates": 13134,
+    "decorates": 32258
+  },
+  "endpointPopulationTotal": {
+    "symbols": 206952,
+    "relationships": 1327514
+  },
+  "ontologyCounts": {
+    "parsedFiles": 11489,
+    "symbols": 207331,
+    "relationships": 1327662,
+    "calls": 535154,
+    "uses": 389972,
+    "contains": 135661,
+    "imports": 99821,
+    "references": 61955,
+    "exports": 3043,
+    "extends": 22804,
+    "implements": 363,
+    "overrides": 33497,
+    "instantiates": 13134,
+    "decorates": 32258
+  },
+  "defects": {
+    "D1_deletedSymbolEndpoint": 0,
+    "D2_builtinReferenceFromTypePosition": 7687,
+    "D2b_referenceFromUndeclaredPosition": 0,
+    "D3_emptyEndpoint": 0,
+    "D4a_placeholderInvented": 0,
+    "D4b_placeholderInSource": 0,
+    "D5_usesSelfLoop": 750,
+    "D5_usesSelfLoopFiles": 178,
+    "D6a_emptySymbolName": 0,
+    "D6b_placeholderSymbolName": 0,
+    "D7_relationshipDiscarded": 0
+  },
+  "heritage": {
+    "classes": 25934,
+    "clauses": 23422,
+    "covered": 23171,
+    "uncovered": 251,
+    "lookupMissed": 249,
+    "coveredButNoEdge": 2,
+    "byShape": {
+      "identifier": {"total": 15828, "covered": 15826, "uncovered": 2},
+      "attribute": {"total": 6378, "covered": 6378, "uncovered": 0},
+      "subscript": {"total": 967, "covered": 967, "uncovered": 0},
+      "keyword_argument": {"total": 185, "covered": 0, "uncovered": 185},
+      "dictionary_splat": {"total": 34, "covered": 0, "uncovered": 34},
+      "list_splat": {"total": 14, "covered": 0, "uncovered": 14},
+      "call": {"total": 9, "covered": 0, "uncovered": 9},
+      "comment": {"total": 7, "covered": 0, "uncovered": 7}
+    }
+  },
+  "constructSample": {
+    "filesParsed": 978,
+    "parseFailures": 0,
+    "parseErrorFiles": 6,
+    "moduleScopeAllAssignments": 34,
+    "moduleScopeLiteralExports": 33,
+    "listAll": 29,
+    "tupleAll": 4,
+    "setAll": 0,
+    "baseProtocol": 15,
+    "metaclassABCMeta": 15,
+    "baseTypedDict": 9,
+    "baseABC": 6
+  },
+  "rule": "Fresh numbers are population-specific and are not to be averaged or blended. The 11,488-file endpoint and defect totals, 11,489-file ontology totals, and 978-file construct sample are separately declared.",
+  "artifacts": {
+    "endpointResolution": "validation/m14/measurements/fresh-python/python-endpoint-resolution.json",
+    "endpointDefects": "validation/m14/measurements/fresh-python/python-endpoint-defects.json",
+    "heritage": "validation/m14/measurements/fresh-python/python-heritage.json",
+    "ontology": "validation/m14/measurements/fresh-python/python-ontology-census.json",
+    "constructText": "validation/m14/measurements/fresh-python/python-construct-probe.txt",
+    "notBoundEndpointRows": "validation/m14/measurements/fresh-python/not-bound-in-file.rows.txt",
+    "unexplainedEndpointRows": "validation/m14/measurements/fresh-python/python-unexplained.tsv"
+  },
+  "artifactSha256": {
+    "endpointResolution": "3d2a08a0e60afe5a8903f508ca771e9e4a617ff92e484fa230266abb36b4f8c5",
+    "endpointDefects": "33b1a820d8a8f6c0c2c906ba9742dd63092955fde256eacfbfec7cdcd44eceb5",
+    "heritage": "ea969f698a2cbf387b9152b426f521c252db918fc4f247bce76532b0b804939",
+    "ontology": "54190bd4291b8339fa850f9e468c6de3a445aa98b06644585989af9d038caa8f",
+    "constructText": "dc24f59932cdb48ebaa38b101703f2aafc0bc607e300e5b5aa87690d77a7a14a"
+  }
+}
