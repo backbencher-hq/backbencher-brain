@@ -331,6 +331,40 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     return false
   }
 
+  const directModuleClassDecl = (n: any): any => {
+    if (!n) return null
+    if (n.type === "class_definition") {
+      if (n.parent?.type === "module") return n
+      if (n.parent?.type === "decorated_definition" &&
+          n.parent.parent?.startIndex === rootNode.startIndex &&
+          n.parent.parent.endIndex === rootNode.endIndex) return n
+    }
+    return null
+  }
+
+  const isShadowedDirectModuleClass = (n: any): boolean => {
+    const cls = directModuleClassDecl(n)
+    if (!cls) return false
+    const nameNode = cls.childForFieldName("name")
+    const name = nameNode ? nameNode.text : ""
+    if (!name) return false
+    for (let i = 0; i < rootNode.namedChildCount; i++) {
+      const sibling = rootNode.namedChild(i)
+      let siblingCls: any = null
+      if (sibling?.type === "class_definition") siblingCls = sibling
+      else if (sibling?.type === "decorated_definition") {
+        for (let j = 0; j < sibling.namedChildCount; j++) {
+          const c = sibling.namedChild(j)
+          if (c?.type === "class_definition") { siblingCls = c; break }
+        }
+      }
+      if (!siblingCls || siblingCls.startIndex <= cls.startIndex) continue
+      const siblingName = siblingCls.childForFieldName("name")
+      if (siblingName && siblingName.text === name) return true
+    }
+    return false
+  }
+
   const walkSkeleton = (n: any): void => {
     const kids: any[] = []
     for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
@@ -338,6 +372,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       if (k.type === "class_definition") {
         const nameNode = k.childForFieldName("name")
         const name = nameNode ? nameNode.text : ""
+        if (isShadowedDirectModuleClass(k)) continue
         const supNode = k.childForFieldName("superclasses")
         // `bases` holds the LEAF — that is the spelling the relationship contract uses
         // and the spelling the analyzer publishes, so the two can be compared. The
@@ -1496,6 +1531,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
    */
   const walkScopes = (n: any, scope: string | null, ownerClass: string | null, fnOwner: string | null = null): void => {
     if (n.type === "decorator") return
+    if (isShadowedDirectModuleClass(n)) return
     if (n.type === "function_definition") {
       const nameNode = n.childForFieldName("name")
       const name = nameNode ? String(nameNode.text ?? "") : ""
