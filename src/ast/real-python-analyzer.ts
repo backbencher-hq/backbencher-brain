@@ -3866,9 +3866,26 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // at class level, so `Cython/Compiler/Nodes.py` has `code_object = None` in
         // `FuncDefNode` at L1996 and a `code_object` property in `CFuncDefNode` — which is how
         // this surfaced, as 20 fabricated verified edges concentrated in one file.
+        const ownerLine = s.ownerClassKey
+          ? Number(s.ownerClassKey.slice(s.ownerClassKey.lastIndexOf("@") + 1))
+          : 0
+        const exactBaseKey = (base: string): string | undefined => {
+          let best: { key: string; line: number } | undefined
+          for (const key of ctx.basesByClassKey.keys()) {
+            const at = key.lastIndexOf("@")
+            if (at < 0 || key.slice(0, at) !== base) continue
+            const line = Number(key.slice(at + 1))
+            if (!Number.isFinite(line) || (ownerLine > 0 && line >= ownerLine)) continue
+            if (!best || line > best.line) best = { key, line }
+          }
+          return best?.key
+        }
         const declaring = bases.find((b) => {
+          const baseKey = exactBaseKey(b)
           const inFile = byName.get(s.name)?.some(
-            (bm) => bm.ownerName === b && bm.kind === ASTEngine.SymbolKind.Method,
+            (bm) => bm.ownerName === b &&
+              bm.ownerClassKey === baseKey &&
+              bm.kind === ASTEngine.SymbolKind.Method,
           ) ?? false
           return inFile || !!overrideCompanion?.get(b)?.has(s.name)
         })
