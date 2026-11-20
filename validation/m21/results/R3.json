@@ -16,7 +16,7 @@
   "measured": {
     "fixtureIndexableFiles": 81,
     "interrupt": {
-      "abortedAt": 8,
+      "abortedAt": 9,
       "processedFiles": 70,
       "totalFiles": 81,
       "storedFiles": 70,
@@ -27,7 +27,7 @@
       "skippedFiles": 70,
       "errorFiles": 0,
       "totalFiles": 81,
-      "wallMs": 4363,
+      "wallMs": 5622,
       "failed": 0
     },
     "final": {
@@ -48,5 +48,5 @@
     "A resume that parses every file again (skippedFiles < storedBeforeInterrupt) fails the 'continued' check."
   ],
   "verifierCommand": "npx tsx script/m21/verify-index-resume.ts",
-  "generatedAt": "2026-11-20T22:56:31.248Z"
+  "generatedAt": "2026-11-20T23:52:49.667Z"
 }
