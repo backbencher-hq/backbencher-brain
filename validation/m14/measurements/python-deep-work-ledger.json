@@ -398,6 +398,7 @@
     }
   },
   "remaining": [
+    "Hasura AST adjudication: TestDeleteRemoteRelationship exists at L82 in a decorated_definition and at L274 at module scope; the same-name classes are separate scopes, not one same-block rebinding",
     "Post-fix whole differential: 21 direct residual rows remain (8 contains missing, 6 calls missing, 7 overrides unexplained)",
     "The 8 missing contains and 6 missing calls are localized to Cython class_redefine and hasura-engine test_remote_relationships",
     "The 7 unexplained overrides are SQLAlchemy nested/local test classes and remain external-base or oracle-policy residuals",
