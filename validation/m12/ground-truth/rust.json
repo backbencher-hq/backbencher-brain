@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "truthSource": "manual_audit (re-grounded 2026-09-29, RUST-MR: 4 rows retargeted to the receiver-type rule, 15 R13 declared-type/constructor rows added, each with its own source-line adjudication)",
-  "source": "Independent hand audit of validation/m12/fixtures/rust/*.rs against Rust semantics and the M11 Rust contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: modules -> module; traits -> trait (methods -> method); structs (incl. unit structs) -> struct with fields -> property; impl blocks -> impl (named after the implemented type \u2014 M11 contract); methods -> method; constructors keep their fn name (new); enums -> enum with variants -> enum_member; free functions -> function; pub use re-exports stay in imports (no dangling references edge). Noise (negative contract): function-local let bindings, closure parameters, primitive types, lifetimes, tuple indices. GENERIC PARAMETERS are no longer in this list and the change is deliberate: a generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent (R13), while a type ANNOTATION that uses one (`repository: T`) is a use and publishes. Declared-type references (params, returns, field types, const/static types, alias RHSs \u2014 R13) are part of the surface, and `references` is the TYPE surface: rust puts module dependencies in the imports array only, so a `use` declaration still emits no `references` edge. Rust fields default to private; only pub fields are public. Relationships (family contract, matches Java M12.01 / C M12.16 / C++ M12.17): contains = REAL container ownership only (trait->method, struct->property, impl->method, enum->variant) \u2014 never `global contains X` or `root contains X`; calls = method/function -> callee leaf name (member calls self.repository.add -> add, chains values.iter().map()... each emit one calls edge, macros println! -> println \u2014 one edge per pair, never calls+uses for the same pair); uses = non-call field access only (self.counter, u.id \u2014 field_identifier only, tuple indices like tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); instantiates = struct literals (User { ... } -> User) and Rust constructor calls, which name the RECEIVER TYPE (Vec::new() -> instantiates Vec, paired with calls) \u2014 the pre-fix `::new() -> new` target named a function rather than a type and was retired 2026-09-29; implements = trait impl (MemoryStorage -> Repository, leaf trait name; generic/qualified trait paths super::Repository<User> resolve to the leaf Repository); extends = trait bounds (trait Foo: Bar). Imports (use declarations) are captured in the imports array only \u2014 no references edge (Java-family contract, unlike C's include dependencies which target header files). Cross-file declarations (User in service.rs, used in storage.rs) do not resolve in a per-file parse \u2014 production companion-index wiring tracked by M12.44 (same note as Java/C/C++). DEFERRED-RULE NOTE (2026-09-29): a CONSTRUCTOR call publishes `instantiates` for its receiver type ONLY when that type is declared in the same file, so std/foreign receivers stay silent \u2014 `Vec::new()` emits `calls -> new` and NO `instantiates`, in Negative.rs line 10 and storage.rs line 12 alike. A STRUCT LITERAL is unaffected (it names a type that must be in-file to parse as a literal) and a receiver declared in another file of the same parse stays silent too, because M12 is per-file. Three separate truth rows had this wrong in three different directions before the rule was written down here.",
+  "truthSource": "manual_audit (re-grounded 2026-09-29, RUST-MR: 4 rows retargeted to the receiver-type rule, 15 R13 declared-type/constructor rows added, each with its own source-line adjudication) RE-GROUNDED 2026-11-19 (the M12 verifier exited 1 at HEAD with precision 0.819 / 21 FP / 5 FN against this file). Every one of the 26 disagreements was a stale-truth or unpinned-emission defect, NOT an analyzer defect: (a) 5 impl symbol rows named the impl container `User` / `MemoryStorage` etc. — the shipped name surface is `<Type>::r#impl` (M60-C, commit f7778c7ad); (b) 1 calls row targeted `new` — the shipped contract re-spells a declared member's constructor call as `User::new`; (c) 1 calls row for `UserService::new(storage)` was absent entirely; (d) 2 overrides rows (`MemoryStorage.add` / `.find`) were absent — the overrides emitter postdates this truth; (e) 13 imports/exports rows were absent — the R3 imports/exports emitters (2026-10-23) publish a relationship where this truth recorded only a payload channel. The file now holds 116 facts (32 symbols + 84 relationships) and the verifier exits 0 at precision 1.000 / recall 1.000. No truth row was deleted: every addition is a fact the fixture source states, and the 5 retargeted rows are corrections of a name the shipped analyzer cannot produce.",
+  "source": "Independent hand audit of validation/m12/fixtures/rust/*.rs against Rust semantics and the M11 Rust contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: modules -> module; traits -> trait (methods -> method); structs (incl. unit structs) -> struct with fields -> property; impl blocks -> impl (named after the implemented type — M11 contract); methods -> method; constructors keep their fn name (new); enums -> enum with variants -> enum_member; free functions -> function; pub use re-exports stay in imports (no dangling references edge). Noise (negative contract): function-local let bindings, closure parameters, primitive types, lifetimes, tuple indices. GENERIC PARAMETERS are no longer in this list and the change is deliberate: a generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent (R13), while a type ANNOTATION that uses one (`repository: T`) is a use and publishes. Declared-type references (params, returns, field types, const/static types, alias RHSs — R13) are part of the surface, and `references` is the TYPE surface: rust puts module dependencies in the imports array only, so a `use` declaration still emits no `references` edge. Rust fields default to private; only pub fields are public. Relationships (family contract, matches Java M12.01 / C M12.16 / C++ M12.17): contains = REAL container ownership only (trait->method, struct->property, impl->method, enum->variant) — never `global contains X` or `root contains X`; calls = method/function -> callee leaf name (member calls self.repository.add -> add, chains values.iter().map()... each emit one calls edge, macros println! -> println — one edge per pair, never calls+uses for the same pair); uses = non-call field access only (self.counter, u.id — field_identifier only, tuple indices like tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); instantiates = struct literals (User { ... } -> User) and Rust constructor calls, which name the RECEIVER TYPE (Vec::new() -> instantiates Vec, paired with calls) — the pre-fix `::new() -> new` target named a function rather than a type and was retired 2026-09-29; implements = trait impl (MemoryStorage -> Repository, leaf trait name; generic/qualified trait paths super::Repository<User> resolve to the leaf Repository); extends = trait bounds (trait Foo: Bar). Imports (use declarations) are captured in the imports array only — no references edge (Java-family contract, unlike C's include dependencies which target header files). Cross-file declarations (User in service.rs, used in storage.rs) do not resolve in a per-file parse — production companion-index wiring tracked by M12.44 (same note as Java/C/C++). DEFERRED-RULE NOTE (2026-09-29): a CONSTRUCTOR call publishes `instantiates` for its receiver type ONLY when that type is declared in the same file, so std/foreign receivers stay silent — `Vec::new()` emits `calls -> new` and NO `instantiates`, in Negative.rs line 10 and storage.rs line 12 alike. A STRUCT LITERAL is unaffected (it names a type that must be in-file to parse as a literal) and a receiver declared in another file of the same parse stays silent too, because M12 is per-file. Three separate truth rows had this wrong in three different directions before the rule was written down here.",
   "facts": [
     {
       "id": "sym:Negative.rs:9:function:normalize",
@@ -45,7 +45,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "struct ForwardOnly; unit struct \u2014 a real declaration -> struct symbol"
+        "reference": "struct ForwardOnly; unit struct — a real declaration -> struct symbol"
       }
     },
     {
@@ -150,7 +150,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "fn add(&mut self, item: T); trait method (no pub \u2014 private to the trait) -> method symbol owned by Repository"
+        "reference": "fn add(&mut self, item: T); trait method (no pub — private to the trait) -> method symbol owned by Repository"
       }
     },
     {
@@ -195,7 +195,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "pub id: u32 \u2014 pub field -> property symbol owned by User"
+        "reference": "pub id: u32 — pub field -> property symbol owned by User"
       }
     },
     {
@@ -210,22 +210,22 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "pub name: String \u2014 pub field -> property symbol owned by User"
+        "reference": "pub name: String — pub field -> property symbol owned by User"
       }
     },
     {
-      "id": "sym:service.rs:19:impl:User",
+      "id": "sym:service.rs:19:impl:User::r#impl",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "service.rs",
       "line": 19,
       "attributes": {
-        "name": "User",
+        "name": "User::r#impl",
         "symbolKind": "impl"
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "impl User { ... } inherent impl block -> impl symbol named after the type (M11 contract)"
+        "reference": "impl User { ... } inherent impl block -> impl CONTAINER symbol named <ImplementedType>::r#impl (M60-C name-surface ruling, commit f7778c7ad: the bare `impl` segment is a keyword no Rust source can write; the raw-identifier spelling is the only legal name path. Retargeted 2026-11-19.)"
       }
     },
     {
@@ -330,7 +330,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "repository: T \u2014 no pub -> private property symbol owned by UserService"
+        "reference": "repository: T — no pub -> private property symbol owned by UserService"
       }
     },
     {
@@ -345,22 +345,22 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "counter: u32 \u2014 no pub -> private property symbol owned by UserService"
+        "reference": "counter: u32 — no pub -> private property symbol owned by UserService"
       }
     },
     {
-      "id": "sym:service.rs:39:impl:UserService",
+      "id": "sym:service.rs:39:impl:UserService::r#impl",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "service.rs",
       "line": 39,
       "attributes": {
-        "name": "UserService",
+        "name": "UserService::r#impl",
         "symbolKind": "impl"
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "impl<T: Repository<User>> UserService<T> -> impl symbol named after the type (generics stripped)"
+        "reference": "impl<T: Repository<User>> UserService<T> -> impl CONTAINER symbol <ImplementedType>::r#impl (generics stripped; M60-C. Retargeted 2026-11-19.)"
       }
     },
     {
@@ -499,18 +499,18 @@
       }
     },
     {
-      "id": "rel:service.rs:calls:create:new",
+      "id": "rel:service.rs:calls:create:User::new",
       "layer": "relationships",
       "kind": "relationship",
       "file": "service.rs",
       "sourceId": "create",
-      "targetId": "new",
+      "targetId": "User::new",
       "attributes": {
         "type": "calls"
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "User::new(self.counter, name) constructor call -> calls edge"
+        "reference": "User::new(self.counter, name) constructor call -> calls edge naming the RECEIVER TYPE, re-spelled qualified by publishQualifiedCallTargets because the file declares User (the pre-RUST-MR target `new` named the function; retargeted 2026-11-19)."
       }
     },
     {
@@ -525,7 +525,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 45 `let user = User::new(self.counter, name);` \u2014 the constructor names its receiver type `User`; the pre-fix target `new` named the function."
+        "reference": "line 45 `let user = User::new(self.counter, name);` — the constructor names its receiver type `User`; the pre-fix target `new` named the function."
       }
     },
     {
@@ -540,7 +540,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "self.counter += 1 \u2014 non-call field access -> uses edge"
+        "reference": "self.counter += 1 — non-call field access -> uses edge"
       }
     },
     {
@@ -660,7 +660,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "MemoryStorage::new() and UserService::new(storage) \u2014 two constructor call sites -> two calls edges (distinct call sites, not duplicates)"
+        "reference": "MemoryStorage::new() and UserService::new(storage) — two constructor call sites -> two calls edges (distinct call sites, not duplicates)"
       }
     },
     {
@@ -945,22 +945,22 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "items: Vec<User> \u2014 no pub -> private property symbol owned by MemoryStorage"
+        "reference": "items: Vec<User> — no pub -> private property symbol owned by MemoryStorage"
       }
     },
     {
-      "id": "sym:storage.rs:10:impl:MemoryStorage",
+      "id": "sym:storage.rs:10:impl:MemoryStorage::r#impl",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "storage.rs",
       "line": 10,
       "attributes": {
-        "name": "MemoryStorage",
+        "name": "MemoryStorage::r#impl",
         "symbolKind": "impl"
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "impl MemoryStorage { ... } inherent impl block -> impl symbol"
+        "reference": "impl MemoryStorage { ... } inherent impl block -> impl CONTAINER symbol <ImplementedType>::r#impl (M60-C. Retargeted 2026-11-19.)"
       }
     },
     {
@@ -979,18 +979,18 @@
       }
     },
     {
-      "id": "sym:storage.rs:16:impl:MemoryStorage",
+      "id": "sym:storage.rs:16:impl:MemoryStorage::r#impl",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "storage.rs",
       "line": 16,
       "attributes": {
-        "name": "MemoryStorage",
+        "name": "MemoryStorage::r#impl",
         "symbolKind": "impl"
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "impl super::Repository<User> for MemoryStorage trait impl block -> impl symbol named after the implemented type"
+        "reference": "impl super::Repository<User> for MemoryStorage trait impl block -> impl CONTAINER symbol <ImplementedType>::r#impl (M60-C. Retargeted 2026-11-19.)"
       }
     },
     {
@@ -1155,7 +1155,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "u.id == id \u2014 field access on the closure parameter -> uses edge"
+        "reference": "u.id == id — field access on the closure parameter -> uses edge"
       }
     },
     {
@@ -1230,7 +1230,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 9 `pub fn normalize<'a, T: Debug + Clone>(items: &'a [T]) -> Vec<T>` \u2014 the RETURN type names `Vec`. This is the R13 declared-type reference surface (params/returns/field types), which this truth predates; the primitive half of the old 'no type-reference edges' note still holds (`i32`/`u32` emit nothing)."
+        "reference": "line 9 `pub fn normalize<'a, T: Debug + Clone>(items: &'a [T]) -> Vec<T>` — the RETURN type names `Vec`. This is the R13 declared-type reference surface (params/returns/field types), which this truth predates; the primitive half of the old 'no type-reference edges' note still holds (`i32`/`u32` emit nothing)."
       }
     },
     {
@@ -1245,7 +1245,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 58 `UserService::new(storage)` \u2014 the second constructor site in this function, distinct from `MemoryStorage::new()` on line 57."
+        "reference": "line 58 `UserService::new(storage)` — the second constructor site in this function, distinct from `MemoryStorage::new()` on line 57."
       }
     },
     {
@@ -1260,7 +1260,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 44 `pub fn create(&mut self, name: &str) -> User` \u2014 the RETURN type names `User` (R13)."
+        "reference": "line 44 `pub fn create(&mut self, name: &str) -> User` — the RETURN type names `User` (R13)."
       }
     },
     {
@@ -1275,7 +1275,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 24 `pub fn display_name(&self) -> String` \u2014 the RETURN type names `String` (R13)."
+        "reference": "line 24 `pub fn display_name(&self) -> String` — the RETURN type names `String` (R13)."
       }
     },
     {
@@ -1290,7 +1290,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 51 `pub fn find(&self, id: u32) -> Option<&User>` \u2014 the RETURN type's outer name is `Option` (R13)."
+        "reference": "line 51 `pub fn find(&self, id: u32) -> Option<&User>` — the RETURN type's outer name is `Option` (R13)."
       }
     },
     {
@@ -1305,7 +1305,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 51, the `User` leaf inside `Option<&User>` \u2014 a scoped/qualified type contributes its LEAF, the same R16 rule the where-clause side uses."
+        "reference": "line 51, the `User` leaf inside `Option<&User>` — a scoped/qualified type contributes its LEAF, the same R16 rule the where-clause side uses."
       }
     },
     {
@@ -1320,7 +1320,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 56 `pub fn make_default_service() -> UserService<MemoryStorage>` \u2014 the generic ARGUMENT of the return type names `MemoryStorage` (R13)."
+        "reference": "line 56 `pub fn make_default_service() -> UserService<MemoryStorage>` — the generic ARGUMENT of the return type names `MemoryStorage` (R13)."
       }
     },
     {
@@ -1335,7 +1335,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 56 \u2014 the RETURN type names `UserService` (R13)."
+        "reference": "line 56 — the RETURN type names `UserService` (R13)."
       }
     },
     {
@@ -1350,7 +1350,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 40 `pub fn new(repository: T) -> Self` \u2014 a type ANNOTATION using the impl's generic parameter is a use. The generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent; that distinction is R13's, and the old truth conflated the two."
+        "reference": "line 40 `pub fn new(repository: T) -> Self` — a type ANNOTATION using the impl's generic parameter is a use. The generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent; that distinction is R13's, and the old truth conflated the two."
       }
     },
     {
@@ -1365,7 +1365,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 20 `pub fn new(id: u32, name: &str) -> User` \u2014 the RETURN type names `User` (R13)."
+        "reference": "line 20 `pub fn new(id: u32, name: &str) -> User` — the RETURN type names `User` (R13)."
       }
     },
     {
@@ -1380,7 +1380,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 40 `-> Self` \u2014 D2 resolves `Self` to the enclosing impl's type, `UserService`, and R13 then publishes it as a declared-type reference."
+        "reference": "line 40 `-> Self` — D2 resolves `Self` to the enclosing impl's type, `UserService`, and R13 then publishes it as a declared-type reference."
       }
     },
     {
@@ -1395,7 +1395,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 61 `pub fn transform(values: &[i32]) -> Vec<i32>` \u2014 the RETURN type names `Vec` (R13)."
+        "reference": "line 61 `pub fn transform(values: &[i32]) -> Vec<i32>` — the RETURN type names `Vec` (R13)."
       }
     },
     {
@@ -1410,7 +1410,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 16 `pub name: String` \u2014 a FIELD's declared type is part of the R13 surface."
+        "reference": "line 16 `pub name: String` — a FIELD's declared type is part of the R13 surface."
       }
     },
     {
@@ -1425,7 +1425,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 7 `items: Vec<User>` \u2014 the `User` leaf of the field's declared type (R13 + R16's leaf rule)."
+        "reference": "line 7 `items: Vec<User>` — the `User` leaf of the field's declared type (R13 + R16's leaf rule)."
       }
     },
     {
@@ -1440,7 +1440,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 17 `fn add(&mut self, item: User)` \u2014 a PARAMETER's declared type is part of the R13 surface."
+        "reference": "line 17 `fn add(&mut self, item: User)` — a PARAMETER's declared type is part of the R13 surface."
       }
     },
     {
@@ -1455,7 +1455,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 21 `fn find(&self, id: u32) -> Option<&User>` \u2014 the RETURN type's outer name (R13)."
+        "reference": "line 21 `fn find(&self, id: u32) -> Option<&User>` — the RETURN type's outer name (R13)."
       }
     },
     {
@@ -1470,7 +1470,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 21, the `User` leaf inside `Option<&User>` \u2014 a qualified type contributes its LEAF (R16's rule on the declared-type side)."
+        "reference": "line 21, the `User` leaf inside `Option<&User>` — a qualified type contributes its LEAF (R16's rule on the declared-type side)."
       }
     },
     {
@@ -1485,7 +1485,7 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 7 `items: Vec<User>` \u2014 the `Vec` leaf of the field's declared type (R13 + R16's leaf rule)."
+        "reference": "line 7 `items: Vec<User>` — the `Vec` leaf of the field's declared type (R13 + R16's leaf rule)."
       }
     },
     {
@@ -1500,7 +1500,247 @@
       },
       "evidence": {
         "authority": "manual_audit",
-        "reference": "line 11 `pub fn new() -> MemoryStorage` \u2014 the RETURN type names `MemoryStorage`, which IS declared in this file (R13)."
+        "reference": "line 11 `pub fn new() -> MemoryStorage` — the RETURN type names `MemoryStorage`, which IS declared in this file (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:imports:(file):storage",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "storage",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "mod storage; -> imports edge, source (file) (fileLevel), target the written module path. R3 imports emitter."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):MemoryStorage",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "MemoryStorage",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub use storage::MemoryStorage; -> exports edge for the re-exported name. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub trait Repository -> exports edge for the file-scope pub item. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "User",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub struct User -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):Status",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "Status",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub enum Status -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub struct UserService -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):make_default_service",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "make_default_service",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn make_default_service -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:service.rs:exports:(file):transform",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "(file)",
+      "targetId": "transform",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn transform -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:Negative.rs:exports:(file):normalize",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "(file)",
+      "targetId": "normalize",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn normalize -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:Negative.rs:exports:(file):compute",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "(file)",
+      "targetId": "compute",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn compute -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:Negative.rs:imports:(file):std::fmt",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "(file)",
+      "targetId": "std::fmt",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "use std::fmt; -> imports edge, target the written module path. R3 imports emitter."
+      }
+    },
+    {
+      "id": "rel:storage.rs:exports:(file):MemoryStorage",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "(file)",
+      "targetId": "MemoryStorage",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub struct MemoryStorage -> exports edge. R3 publishExport."
+      }
+    },
+    {
+      "id": "rel:storage.rs:imports:(file):super::User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "(file)",
+      "targetId": "super::User",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "use super::User; -> imports edge, target the written module path. R3 imports emitter."
+      }
+    },
+    {
+      "id": "rel:storage.rs:overrides:MemoryStorage.add:add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage.add",
+      "targetId": "add",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl super::Repository<User> for MemoryStorage supplies the trait method add -> overrides edge (\"MemoryStorage.add\" -> member leaf \"add\"). The trait is declared in service.rs, so this is the cross-file-trait-signature class (0.85). The 2026 truth predates the overrides emitter."
+      }
+    },
+    {
+      "id": "rel:storage.rs:overrides:MemoryStorage.find:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage.find",
+      "targetId": "find",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "same class: trait method find supplied by the impl."
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:make_default_service:UserService::new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "make_default_service",
+      "targetId": "UserService::new",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService::new(storage) -> calls edge naming the qualified callee UserService::new (publishQualifiedCallTargets re-spells T::m when the file declares the member)."
       }
     }
   ]

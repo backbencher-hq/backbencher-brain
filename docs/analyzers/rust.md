@@ -184,14 +184,32 @@ post-loop is one pass over the symbol list. No O(n²) or per-symbol O(n) scans.
 - Ground truth: `validation/m12/ground-truth/rust.json`
   (authority: `manual_audit` — every fact verified against fixture source and
   the M11 Rust contract (M11.10, symbols-only 1.000/1.000) extended with the
-  Java-family relationship ontology; 84 facts: 32 symbols (10 method, 4 impl,
-  4 struct, 4 function, 5 property, 2 enum_member, 1 module, 1 trait, 1 enum)
-  + 52 relationships (21 calls, 17 contains, 7 instantiates, 6 uses,
-  1 implements))
+  Java-family relationship ontology; **116 facts at HEAD 2026-11-19**: 32
+  symbols (10 method, 4 impl, 4 struct, 4 function, 5 property, 2 enum_member,
+  1 module, 1 trait, 1 enum) + **84 relationships** (21 calls + 1 qualified
+  call, 17 contains, 7 instantiates, 6 uses, 1 implements, 2 overrides, 13
+  imports/exports). **RE-GROUNDED 2026-11-19** — see the note below.)
 - Result: `validation/m12/results/rust-differential.json`
 - Precision 1.000 / recall 1.000 / FP 0 / FN 0 / unknown 0, `passed: true`,
   `earliestFailingLayer: none`, `parseErrors: 0` — verified both before and
   after the grammar upgrade (node shapes unchanged for the contract)
+- **CORRECTED 2026-11-19 — this bullet used to be true of the analyzer and
+  false of the artifact.** The verifier exited **1** at HEAD with precision
+  **0.819**, 21 false positives and 5 false negatives, because the truth file
+  had not followed two contract changes and three emitters. Every one of the 26
+  disagreements was re-diagnosed individually: **0 were analyzer defects.**
+  The 5 false negatives were 4 impl-symbol rows still naming the container
+  `<Type>` (the shipped surface is `<Type>::r#impl`, M60-C / `f7778c7ad`,
+  measured at 1,375 symbols + 35 `contains` targets) and 1 calls row still
+  targeting the bare `new`. Of the 21 false positives, 13 were `imports` /
+  `exports` relationships the R3 emitters (2026-10-23) publish while the 2026
+  truth recorded only the payload channel, 2 were `overrides` (an emitter that
+  postdates the truth), 2 were the qualified-callee spelling `UserService::new`
+  / `User::new`, and 4 were `exports` rows for `pub use` / `pub` items. The
+  truth was re-grounded — 5 rows retargeted, 16 rows added, **none deleted** —
+  and the verifier now exits 0 at 1.000 / 1.000. This is the second time this
+  page has quoted a number the committed artifact contradicted; the lesson
+  recorded in `validation/m14/verification/RUST-STATE.md` §5 applies to both.
 - **Current wire (2026-11-03).** The M14 differential's rust arm now pushes
   independently derived truth for `calls`, `uses`, `declared-type references`,
   `where-bound references`, `contains`, `imports`, `exports`, `overrides`, and
