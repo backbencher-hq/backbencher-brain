@@ -294,6 +294,7 @@
       "commitOverload": "f1d947b89",
       "commitNestedOracle": "1f5702835",
       "commitNestedProduction": "7bccb5b61",
+      "commitMultiplicityDump": "9cf08d590",
       "files": 11306,
       "directDisagreements": 21,
       "missing": {"contains": 8, "calls": 6},
@@ -302,6 +303,26 @@
       "multiplicityByType": {"calls": 575, "extends": 3, "overrides": 23},
       "dump": "/tmp/python-whole-diff-post-nested.jsonl",
       "fixtureGate": {"pass": 76, "fail": 0}
+    },
+    "uncappedMultiplicityAudit": {
+      "dump": "/tmp/python-whole-diff-multiplicity-final.jsonl",
+      "totalRows": 622,
+      "missing": {"contains": 8, "calls": 6},
+      "unexplained": {"overrides": 7},
+      "multiplicity": {"calls": 575, "overrides": 23, "extends": 3},
+      "multiplicityRepos": {
+        "sqlalchemy": 321,
+        "duckdb": 239,
+        "gql-saleor": 13,
+        "kong": 10,
+        "wagtail": 8,
+        "cython": 4,
+        "ansible": 3,
+        "otp": 1,
+        "redis": 1,
+        "hasura-engine": 1
+      },
+      "status": "uncapped-clustered"
     },
     "oracleLabels": {
       "populationCodeBearingFiles": 10463,
