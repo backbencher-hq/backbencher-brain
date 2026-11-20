@@ -9667,16 +9667,31 @@ export function deriveCSharpContains(root: any): { label: string; from: string; 
       // CSD3/M60.R1: an operator member's name is NOT written anywhere in the file as a name —
       // the grammar carries the token in the FIELD `operator` and a conversion's target in the
       // FIELD `type`, with `implicit`/`explicit`/`checked` as ANONYMOUS siblings. The analyzer
-      // spells them `operator +`, `operator checked +`, `implicit int`; so does this, and a 120-file
-      // draw that omitted them read 6 UNEXPLAINED `contains` rows (`LinePosition -> operator ==`)
-      // before the omission was found here. Same convention, same grammar fields, one spelling.
+      // spells them `operator +`, `operator checked +`, `implicit operator int`; so does this, and
+      // a 120-file draw that omitted them read 6 UNEXPLAINED `contains` rows
+      // (`LinePosition -> operator ==`) before the omission was found here. Same convention, same
+      // grammar fields, one spelling.
+      //
+      // P1-1 (2026-11-19): the conversion branch moved WITH the analyzer. The published name is
+      // now the SOURCE SPELLING (`implicit operator int`), because `verify-csharp-symbols` requires
+      // a symbol's name to be written at its own range and the old synthesis (`implicit int`) is
+      // written nowhere. This truth is a SECOND WALKER, so it has to move in the same commit or
+      // every conversion operator reads as a `contains` the analyzer invented — which is exactly
+      // what the first run after the rename showed (`PSObject -> implicit PSObject`, one
+      // UNEXPLAINED row on powershell). The rule is unchanged: read the grammar's own fields.
       const conv = n.type === "conversion_operator_declaration" ? n.childForFieldName?.("type") : null
       const anon = (want: string): any => {
         for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c && !c.isNamed && c.type === want) return c }
         return null
       }
       const mod = anon("implicit") ?? anon("explicit")
-      if (conv) return `${mod ? mod.type : "conversion"}${typeof conv.text === "string" ? ` ${conv.text}` : ""}`
+      if (conv) {
+        const target = typeof conv.text === "string" ? conv.text : ""
+        // The head is `implicit operator ` / `explicit operator `; the target follows it. A
+        // conversion with no readable target still publishes the head, so a malformed node is
+        // countable rather than a crash.
+        return `${mod ? mod.type : "conversion"} operator${target.length > 0 ? ` ${target}` : ""}`
+      }
       const op = n.childForFieldName?.("operator")
       if (op && typeof op.text === "string") return `operator ${anon("checked") ? "checked " : ""}${op.text}`
       return "operator"

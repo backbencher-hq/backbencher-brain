@@ -40,8 +40,27 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs"
 import { resolve, dirname } from "node:path"
 import { createHash } from "node:crypto"
+import { fileURLToPath } from "node:url"
 
-const ROOT = resolve(import.meta.dir, "../..")
+// PORTABLE ROOT (P3-1, 2026-11-19). This read `resolve(import.meta.dir, "../..")`, and
+// `import.meta.dir` is a BUN builtin that is `undefined` under `tsx`/Node — so
+// `resolve(undefined, ...)` threw `ERR_INVALID_ARG_TYPE` before any language was inventoried.
+// The script is the CITED INSTRUMENT for every C# ruling, and every other script in this
+// directory runs under `npx tsx`, so the documented runner could not run it: a reproducibility
+// defect, not a preference. `fileURLToPath(import.meta.url)` is standard ESM and gives the same
+// path under both. Verified: `tsx` and `bun` now write a byte-identical artifact.
+const HERE = (() => {
+  try {
+    // Bun supplies `import.meta.dir`; prefer it so the two runners agree on the same string.
+    const dir = (import.meta as { dir?: string }).dir
+    if (typeof dir === "string" && dir.length > 0) return dir
+  } catch {
+    // not Bun — fall through to the standard resolution
+  }
+  return dirname(fileURLToPath(import.meta.url))
+})()
+
+const ROOT = resolve(HERE, "../..")
 const OUT_DIR = resolve(ROOT, "validation/m14/measurements")
 const BINDINGS = resolve(ROOT, "validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md")
 
