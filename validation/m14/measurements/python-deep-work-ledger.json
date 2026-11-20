@@ -398,6 +398,7 @@
     }
   },
   "remaining": [
+    "Uncapped cluster artifacts now exist for direct residuals, 601 multiplicity pairs, 750 uses self-loops, and 251 heritage clauses",
     "Rejected override exact-key experiment 0e93519ea: whole differential rose to 859 unexplained overrides; reverted by a74444e29",
     "nvim-treesitter duplicate-def proof: tests/indent/python/return_dedent.py has 0 missing, 0 unexplained, and 0 multiplicity disagreements",
     "MRO override attempt 4a28b12e4 was proven unsafe and reverted as 388e28f69: it raised missing overrides from 0 to 40 and changed multiplicity",
