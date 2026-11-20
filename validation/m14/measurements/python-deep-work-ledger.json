@@ -398,6 +398,7 @@
     }
   },
   "remaining": [
+    "Post-direct-shadow override candidates: Employee.__init__ (nested object/MRO identity), Sub.data (base-without-data false candidate ruled), MyOtherModel.__declare_first__, MyOtherModel.__declare_last__, MyModel.__table_args__, MyModel.__tablename__ (nested declarative/mixin class identities), and Bat.bar (nested MRO oracle gap)",
     "Post-direct-shadow whole differential: 7 direct residuals, all unexplained overrides; 598 multiplicity residuals (574 calls, 22 overrides, 2 extends)",
     "Uncapped cluster artifacts now exist for direct residuals, 601 multiplicity pairs, 750 uses self-loops, and 251 heritage clauses",
     "Rejected override exact-key experiment 0e93519ea: whole differential rose to 859 unexplained overrides; reverted by a74444e29",
