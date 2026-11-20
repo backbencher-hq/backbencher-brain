@@ -3866,12 +3866,43 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // at class level, so `Cython/Compiler/Nodes.py` has `code_object = None` in
         // `FuncDefNode` at L1996 and a `code_object` property in `CFuncDefNode` — which is how
         // this surfaced, as 20 fabricated verified edges concentrated in one file.
-        const declaring = bases.find((b) => {
-          const inFile = byName.get(s.name)?.some(
-            (bm) => bm.ownerName === b && bm.kind === ASTEngine.SymbolKind.Method,
-          ) ?? false
-          return inFile || !!overrideCompanion?.get(b)?.has(s.name)
-        })
+        const derivedLine = s.ownerClassKey
+          ? Number(s.ownerClassKey.slice(s.ownerClassKey.lastIndexOf("@") + 1))
+          : 0
+        const resolveExactClassKey = (name: string): string | undefined => {
+          let best: { key: string; line: number } | undefined
+          for (const key of ctx.basesByClassKey.keys()) {
+            const at = key.lastIndexOf("@")
+            if (at < 0 || key.slice(0, at) !== name) continue
+            const line = Number(key.slice(at + 1))
+            if (!Number.isFinite(line) || (derivedLine > 0 && line >= derivedLine)) continue
+            if (!best || line > best.line) best = { key, line }
+          }
+          return best?.key
+        }
+        const findExactDeclaring = (base: string, seen: Set<string>): string | null => {
+          if (seen.has(base)) return null
+          seen.add(base)
+          const baseKey = resolveExactClassKey(base)
+          if (baseKey) {
+            const inFile = byName.get(s.name)?.some(
+              (bm) => bm.ownerClassKey === baseKey &&
+                bm.ownerName === base &&
+                bm.kind === ASTEngine.SymbolKind.Method,
+            ) ?? false
+            if (inFile) return base
+            for (const ancestor of ctx.basesByClassKey.get(baseKey) ?? []) {
+              const found = findExactDeclaring(ancestor, new Set(seen))
+              if (found) return found
+            }
+          } else if (overrideCompanion?.get(base)?.has(s.name)) {
+            return base
+          }
+          return null
+        }
+        const declaring = bases
+          .map((base) => findExactDeclaring(base, new Set<string>()))
+          .find((base): base is string => !!base)
         if (declaring) {
           // INCOMING_PY / M14 §4: 0.95 is below 1.0, so this edge owes a reason code
           // like every other one, and the reason it carries is the strongest claim the
