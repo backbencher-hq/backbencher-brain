@@ -398,6 +398,7 @@
     }
   },
   "remaining": [
+    "MRO override attempt 4a28b12e4 was proven unsafe and reverted as 388e28f69: it raised missing overrides from 0 to 40 and changed multiplicity",
     "Cython live-last duplicate class: class_redefine.py has two top-level set declarations; truth/production reconciliation remains open for __init__/x/X and multiplicity",
     "Associationproxy call multiplicity: test_join_separate_attr and test_join_single_attr each have two real join call sites; line identity is required, not two identical relationship truths",
     "Experimental wrapped/decorated-class and top-level duplicate guards were reversed after proving collateral fixture regressions; no speculative production patch remains",
