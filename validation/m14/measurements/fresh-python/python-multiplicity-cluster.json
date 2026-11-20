@@ -1,0 +1,47 @@
+{
+  "status": "uncapped-clustered",
+  "population": "11,306-file stable post-fix differential",
+  "dump": "/tmp/python-whole-diff-multiplicity-final.jsonl",
+  "total": 601,
+  "byType": {
+    "calls": 575,
+    "overrides": 23,
+    "extends": 3
+  },
+  "byRepository": {
+    "sqlalchemy": 321,
+    "duckdb": 239,
+    "gql-saleor": 13,
+    "kong": 10,
+    "wagtail": 8,
+    "cython": 4,
+    "ansible": 3,
+    "otp": 1,
+    "redis": 1,
+    "hasura-engine": 1
+  },
+  "callDelta": {
+    "analyzerMinusTruth": {
+      "plus1": 335,
+      "plus2": 141,
+      "plus3": 45,
+      "plus4": 17,
+      "plus5": 12,
+      "plus6": 7,
+      "plus7": 2,
+      "plus8": 2,
+      "plus10": 1,
+      "plus16": 1,
+      "plus21": 1,
+      "plus14": 2,
+      "minus1": 7,
+      "minus2": 2
+    }
+  },
+  "verdict": {
+    "calls": "Mostly repeated real call sites and chained-call multiplicity; 575 pairs remain uncapped until every source/target pair is classified.",
+    "overrides": "Repeated declaration or MRO guess multiplicity across SQLAlchemy and Cython; 23 pairs remain.",
+    "extends": "Duplicate or same-name inheritance spelling multiplicity; 3 pairs remain."
+  },
+  "rule": "Multiplicity disagreement is not a missing or unexplained edge. It requires exact truth/analyzer count and a source-site reason."
+}
