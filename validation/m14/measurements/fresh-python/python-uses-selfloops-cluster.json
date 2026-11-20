@@ -1,0 +1,56 @@
+{
+  "status": "uncapped-clustered",
+  "population": "11,488-file endpoint/defect population",
+  "count": 750,
+  "files": 178,
+  "dump": "/tmp/python-uses-selfloops-750.jsonl",
+  "byRepository": {
+    "sqlalchemy": 348,
+    "hasura-engine": 145,
+    "ansible": 78,
+    "wagtail": 71,
+    "gql-graphql-core": 39,
+    "cython": 28,
+    "gql-saleor": 17,
+    "dart-sdk": 13,
+    "Grace": 5,
+    "nim": 2,
+    "duckdb": 2,
+    "dark": 2
+  },
+  "byTarget": {
+    "from_dict": 145,
+    "_from_objects": 23,
+    "type": 19,
+    "media": 16,
+    "info": 12,
+    "description": 10,
+    "formatted": 10,
+    "name": 9,
+    "is_active": 6,
+    "connect": 5,
+    "rollback": 5,
+    "commit": 5,
+    "entity_namespace": 5,
+    "columns": 5,
+    "header_more_buttons": 5
+  },
+  "shapeClasses": {
+    "propertyAndMethodMembers": {
+      "count": 592,
+      "evidence": "The source and target name matches a method/property in the same function scope or qualified member receiver",
+      "verdict": "valid same-named member reads require per-row fixture proof"
+    },
+    "qualifiedMemberReads": {
+      "count": 152,
+      "evidence": "Self-loop source/target is a qualified member read such as cls.template or self.environment",
+      "verdict": "requires owner/receiver review"
+    },
+    "unclassified": {
+      "count": 6,
+      "evidence": "Exact site syntax did not match a method/property or qualified member pattern",
+      "verdict": "unresolved"
+    }
+  },
+  "rule": "A uses self-loop is not automatically a defect. It is unresolved until the source contains a same-named real member or the owner channel proves the read is fabricated."
+}

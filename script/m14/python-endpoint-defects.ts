@@ -79,6 +79,7 @@ type Type = (typeof ALL_TYPES)[number]
 const argv = process.argv.slice(2)
 const argOf = (f: string): string | undefined => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined }
 const OUT = argOf("--out")
+const DUMP_SELF_LOOPS = argOf("--dump-self-loops")
 const CR = process.env.BB_CORPUS_ROOT ?? "<corpus-root>/bb_tests/repositories"
 const REPO_FILTER = argOf("--repo")
 const LIMIT = Number(argOf("--limit") ?? "0")
@@ -174,6 +175,7 @@ const admitted = LIMIT ? all.slice(0, LIMIT) : all
 type Defect = { count: number; files: Set<string>; byType: Map<string, number>; byName: Map<string, number>; samples: string[] }
 const mk = (): Defect => ({ count: 0, files: new Set(), byType: new Map(), byName: new Map(), samples: [] })
 const D1 = mk(), D2 = mk(), D2b = mk(), D3 = mk(), D4invented = mk(), D4present = mk(), D5 = mk(), D6empty = mk(), D6placeholder = mk(), D7 = mk()
+const D5_ROWS: Array<{ file: string; source: string; target: string; line: number | null }> = []
 
 const hit = (d: Defect, label: string, type: string, name: string, sample: string, cap = 8) => {
   d.count++
@@ -278,6 +280,12 @@ const worker = async (): Promise<void> => {
       // D5 — a member read whose leaf is the reading function's own name.
       if (t === "uses" && src !== "" && src === tgt) {
         hit(D5, label, t, tgt, `${label} uses ${src} -> ${tgt} line ${rel.line_number ?? "none"}`)
+        if (DUMP_SELF_LOOPS) D5_ROWS.push({
+          file: label,
+          source: src,
+          target: tgt,
+          line: typeof rel.line_number === "number" ? rel.line_number : null,
+        })
       }
     }
   }
@@ -337,4 +345,8 @@ if (OUT) {
     D7_discardedByProductionPath: ser(D7),
   }, null, 2))
   console.log(`\nwrote ${OUT}`)
+}
+if (DUMP_SELF_LOOPS) {
+  writeFileSync(DUMP_SELF_LOOPS, D5_ROWS.map((row) => JSON.stringify(row)).join("\n") + "\n")
+  console.log(`wrote ${D5_ROWS.length} D5 uses-self-loop rows to ${DUMP_SELF_LOOPS}`)
 }
