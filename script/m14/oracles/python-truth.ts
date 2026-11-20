@@ -321,6 +321,16 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     return false
   }
 
+  const isNestedFunctionDef = (n: any): boolean => {
+    let p: any = n?.parent
+    while (p) {
+      if (p.type === "function_definition" || p.type === "lambda") return true
+      if (p.type === "module" || p.type === "class_definition") return false
+      p = p.parent
+    }
+    return false
+  }
+
   const walkSkeleton = (n: any): void => {
     const kids: any[] = []
     for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
@@ -1010,7 +1020,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const name = nameNode ? String(nameNode.text ?? "") : ""
         let block: any = n.parent
         while (block && block.type !== "block" && block.type !== "module") block = block.parent
-        if (name && block && !sameBlockDeclarationChain(n, name)) {
+        if (name && block && !isNestedFunctionDef(n) && !sameBlockDeclarationChain(n, name)) {
           for (let i = 0; i < block.namedChildCount; i++) {
             const sibling = block.namedChild(i)
             if (!sibling || sibling.type !== "function_definition") continue
@@ -1144,7 +1154,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const name = nameNode ? String(nameNode.text ?? "") : ""
         let block: any = n.parent
         while (block && block.type !== "block" && block.type !== "module") block = block.parent
-        if (name && block && !sameBlockDeclarationChain(n, name)) {
+        if (name && block && !isNestedFunctionDef(n) && !sameBlockDeclarationChain(n, name)) {
           for (let i = 0; i < block.namedChildCount; i++) {
             const sibling = block.namedChild(i)
             if (!sibling || sibling.type !== "function_definition") continue
@@ -1491,7 +1501,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const name = nameNode ? String(nameNode.text ?? "") : ""
       let parent: any = n.parent
       while (parent && parent.type !== "block" && parent.type !== "module") parent = parent.parent
-      if (name && parent && !sameBlockDeclarationChain(n, name)) {
+      if (name && parent && !isNestedFunctionDef(n) && !sameBlockDeclarationChain(n, name)) {
         for (let i = 0; i < parent.namedChildCount; i++) {
           const sibling = parent.namedChild(i)
           if (!sibling || sibling.type !== "function_definition") continue
