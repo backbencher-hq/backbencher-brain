@@ -1311,7 +1311,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             // NOT a symbol, and its body's calls attribute to the enclosing
             // function (JS-family contract: locals/params/lambda-params are
             // not symbols; inner bodies keep the outer call source).
-            if (ctx.currentFunction) break
+            if (ctx.currentFunction) {
+              // A def inside a def is a lexical local, not a published symbol.
+              // Descend through its body and signature for calls, uses, and
+              // references, while preserving the enclosing function as source.
+              for (let i = node.namedChildCount - 1; i >= 0; i--) {
+                const child = node.namedChild(i)
+                if (child) stack.push({ node: child })
+              }
+              break
+            }
             if (ctx.currentClass) {
               this.extractMethod(node, ctx.currentClass, ctx)
             } else {
