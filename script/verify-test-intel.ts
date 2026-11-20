@@ -103,6 +103,48 @@ function validationGate(): void {
   })
   check("MUST-REJECT: embedded sync.Mutex `m.Lock()` is not evidence for session.Lock", rejected("receiver-selector-unresolved")(mutexLock) || rejected("qualified-call-target-is-a-leaf")(mutexLock), JSON.stringify(mutexLock))
 
+  // P1-3 completion: when the CALLING FILE's own declarations prove the receiver
+  // (hash-gated at mapping time), selector calls are decided instead of failing
+  // closed. `receiver` is the pure evidence shape the mapping passes in.
+  const projectReceiver = validate({
+    relationshipType: "calls",
+    targetExternal: "Lock",
+    targetName: "Lock",
+    targetFile: "session/session.go",
+    testFile: "session/session_test.go",
+    language: "go",
+    metadata: { relationshipType: "go_function_call", callExpression: "s.Lock", isPackageQualified: true },
+    testImports: ["testing"],
+    receiver: { kind: "project", typeName: "Session", ownerHasMethod: true },
+  })
+  check("RECEIVER: a declared project receiver whose type declares the method is ACCEPTED", accepted(projectReceiver), JSON.stringify(projectReceiver))
+
+  const externalReceiver = validate({
+    relationshipType: "calls",
+    targetExternal: "Lock",
+    targetName: "Lock",
+    targetFile: "session/session.go",
+    testFile: "modules/arp_spoof/arp_spoof_test.go",
+    language: "go",
+    metadata: { relationshipType: "go_function_call", callExpression: "m.Lock", isPackageQualified: true },
+    testImports: ["sync", "testing"],
+    receiver: { kind: "external", typeName: "sync.Mutex" },
+  })
+  check("RECEIVER: a PROVEN external receiver is REJECTED as external-stdlib-leaf", rejected("external-stdlib-leaf")(externalReceiver), JSON.stringify(externalReceiver))
+
+  const unprovenReceiver = validate({
+    relationshipType: "calls",
+    targetExternal: "Lock",
+    targetName: "Lock",
+    targetFile: "session/session.go",
+    testFile: "modules/wifi/wifi_targets_test.go",
+    language: "go",
+    metadata: { relationshipType: "go_function_call", callExpression: "mod.StatusLock.Lock", isPackageQualified: true },
+    testImports: ["sync", "testing"],
+    receiver: { kind: "project", typeName: "WiFi", ownerHasMethod: false },
+  })
+  check("RECEIVER: a project type that does NOT declare the method still fails closed", rejected("receiver-selector-unresolved")(unprovenReceiver), JSON.stringify(unprovenReceiver))
+
   // Same-named call in another package, unqualified: caplets_test calls New() but
   // the only indexed `New` is session.New.
   const crossPackageBare = validate({

@@ -7,7 +7,7 @@ const require = createRequire(import.meta.url)
 import { cpus } from "os"
 import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
-import { realpathSync } from "fs"
+import { readFileSync, realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
 import {
   resolvePoolWorkerForkSafe,
@@ -17,6 +17,7 @@ import {
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { resolveScopedProjectFile } from "./scoped-path"
+import { inferGoReceiverEvidence } from "./go-receiver-types"
 import { isIndexArtifactName, isIndexArtifactNameStrict, NON_CODE_LANGUAGES } from "./analysis-exclusions"
 import { decideWatchdog, WATCHDOG_MIN_STALL_MS, WATCHDOG_TICK_MS } from "./watchdog-policy"
 import { isTestFileCandidate } from "./test-classification"
@@ -3758,7 +3759,7 @@ export function applyP02BindingGates(
        AND (json_extract(metadata, '$.isStdlib') = 1
             OR json_extract(metadata, '$.isExternalTarget') = 1
             OR (json_extract(metadata, '$.isPackageQualified') = 1
-                AND COALESCE(json_extract(metadata, '$.bindingBasis'), '') <> 'import-path')
+                AND COALESCE(json_extract(metadata, '$.bindingBasis'), '') NOT IN ('import-path', 'receiver-type'))
             OR json_extract(metadata, '$.isFieldAccess') = 1)`,
     // 3. An import of a bare module name must not cross a language boundary
     //    (L-2: a Go import of "os" cannot be satisfied by a YAML key). Same-
@@ -3973,6 +3974,10 @@ export function applyP02PackageScopedBinding(
     "AND (json_extract(r.metadata,'$.isStdlib') IS NOT 1) " +
     "AND (json_extract(r.metadata,'$.isExternalTarget') IS NOT 1) " +
     "AND (json_extract(r.metadata,'$.isFieldAccess') IS NOT 1) " +
+    // A receiver-typed binding was proven from the calling file's declarations;
+    // the package-qualified pass has no business re-deciding it (its qualifier
+    // is a VARIABLE, not a package).
+    "AND COALESCE(json_extract(r.metadata,'$.bindingBasis'),'') <> 'receiver-type' " +
     (qualified
       ? "AND json_extract(r.metadata,'$.callExpression') IS NOT NULL AND instr(json_extract(r.metadata,'$.callExpression'),'.') > 0"
       : "AND r.target_symbol_id IS NULL AND r.relationship_type = 'calls' AND (json_extract(r.metadata,'$.callExpression') IS NULL OR instr(json_extract(r.metadata,'$.callExpression'),'.') = 0)")
@@ -6562,6 +6567,17 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       resolveAll(containsRows)
     }
 
+    // P1-3 completion: bind Go selector calls whose RECEIVER type is declared in
+    // the calling file (project types only). Runs BEFORE the name passes so a
+    // genuine project receiver is decided by its declared type, not by the leaf
+    // name; external receivers stay unresolved and are rejected read-side.
+    try {
+      const receiverBound = bindGoReceiverCalls(rawDb, projectId)
+      if (receiverBound > 0) log.debug("bound Go receiver-typed calls", { count: receiverBound })
+    } catch (e: any) {
+      log.warn("Go receiver binding failed (resolution continues without it)", { error: e?.message })
+    }
+
     // ── OWN-FILE PREFERENCE (M14 clause 4). Both lookup tables below collapse every name
     // and every dotted suffix to ONE global winner via `MIN(id)` — the lexicographically
     // smallest symbol id in the PROJECT. File paths sort, so an edge written in
@@ -7458,6 +7474,143 @@ async function measureUnresolvedRelationships(projectId: ProjectID): Promise<num
     log.warn("could not measure unresolved relationships", { error: e?.message })
     return undefined
   }
+}
+
+
+/**
+ * Write-side receiver binding (P1-3 completion): a Go selector call
+ * (`w.Run()`, `h.W.Run()`) is left unresolved by name resolution when the
+ * qualifier is a value receiver, so a genuine project call never became test
+ * evidence. When the CALLING FILE itself declares the receiver's type (unique
+ * var/param/composite-literal, unique struct-field chain), bind the call to the
+ * project type's method. External/stdlib receivers are NOT bound — the
+ * read-side validation then declares them `external-stdlib-leaf` rather than
+ * this pass inventing an edge. Unknown evidence changes nothing.
+ */
+function bindGoReceiverCalls(rawDb: any, projectId: ProjectID): number {
+  const rows = rawDb.prepare(`
+    SELECT r.id AS relId, r.line_number AS line, r.metadata AS metadata,
+           ts.file_id AS sourceFileId, f.relative_path AS sourceRel, f.path AS sourcePath, f.language AS language
+      FROM brain_relationship r
+      JOIN brain_symbol ts ON ts.id = r.source_symbol_id
+      JOIN brain_file f ON f.id = ts.file_id
+     WHERE r.project_id = ? AND r.relationship_type = 'calls' AND r.target_symbol_id IS NULL
+       AND json_extract(r.metadata, '$.callExpression') LIKE '%.%'
+  `).all(projectId) as Array<{ relId: string; line: number | null; metadata: string | null; sourceFileId: string; sourceRel: string; sourcePath: string; language: string | null }>
+  if (rows.length === 0) return 0
+  const textCache = new Map<string, string | null>()
+  const importsCache = new Map<string, string[]>()
+  const typeRowsCache = new Map<string, Array<{ id: string; fileId: string }>>()
+  const relOfFileCache = new Map<string, string | null>()
+  const pathOfRelCache = new Map<string, string | null>()
+  const ownerCache = new Map<string, boolean>()
+  const methodCache = new Map<string, Array<{ id: string; fileId: string }>>()
+
+  const readSource = (rel: string): string | null => {
+    if (textCache.has(rel)) return textCache.get(rel) ?? null
+    let text: string | null = null
+    try { text = readFileSync(relPathToAbs(rel), "utf8") } catch { text = null }
+    textCache.set(rel, text)
+    return text
+  }
+  const relPathToAbs = (rel: string): string => {
+    if (pathOfRelCache.has(rel)) return pathOfRelCache.get(rel) ?? rel
+    const row = rawDb.prepare("SELECT path FROM brain_file WHERE project_id = ? AND relative_path = ? LIMIT 1").get(projectId, rel) as { path: string } | undefined
+    const abs = row?.path ?? rel
+    pathOfRelCache.set(rel, abs)
+    return abs
+  }
+  const importsOf = (rel: string): string[] => {
+    const hit = importsCache.get(rel)
+    if (hit) return hit
+    const arr = (rawDb.prepare(
+      "SELECT COALESCE(i.import_path,'') AS target FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
+        "WHERE f.project_id = ? AND f.relative_path = ?",
+    ).all(projectId, rel) as Array<{ target: string }>).map((r) => r.target).filter(Boolean)
+    importsCache.set(rel, arr)
+    return arr
+  }
+  const projectTypes = (name: string): Array<{ id: string; fileId: string }> => {
+    const hit = typeRowsCache.get(name)
+    if (hit) return hit
+    const rows2 = rawDb.prepare(
+      "SELECT id, file_id AS fileId FROM brain_symbol WHERE project_id = ? AND name = ? " +
+        "AND symbol_type NOT IN ('function','method','module','property','variable','parameter','field') LIMIT 4",
+    ).all(projectId, name) as Array<{ id: string; fileId: string }>
+    typeRowsCache.set(name, rows2)
+    return rows2
+  }
+  const relOfFile = (fileId: string): string | null => {
+    if (relOfFileCache.has(fileId)) return relOfFileCache.get(fileId) ?? null
+    const row = rawDb.prepare("SELECT relative_path AS rel FROM brain_file WHERE id = ?").get(fileId) as { rel: string } | undefined
+    const rel = row?.rel ?? null
+    relOfFileCache.set(fileId, rel)
+    return rel
+  }
+  const ownerHasMethod = (typeId: string, method: string): boolean => {
+    const key = `${typeId}|${method}`
+    const hit = ownerCache.get(key)
+    if (hit !== undefined) return hit
+    const row = rawDb.prepare(
+      "SELECT COUNT(*) c FROM brain_symbol WHERE project_id = ? AND name = ? AND symbol_type = 'method' AND owner_symbol_id = ?",
+    ).get(projectId, method, typeId) as { c: number }
+    const ok = Number(row?.c ?? 0) > 0
+    ownerCache.set(key, ok)
+    return ok
+  }
+  const methodRows = (typeId: string, method: string): Array<{ id: string; fileId: string }> => {
+    const key = `${typeId}|${method}`
+    const hit = methodCache.get(key)
+    if (hit) return hit
+    const arr = rawDb.prepare(
+      "SELECT id, file_id AS fileId FROM brain_symbol WHERE project_id = ? AND name = ? AND symbol_type = 'method' AND owner_symbol_id = ? LIMIT 2",
+    ).all(projectId, method, typeId) as Array<{ id: string; fileId: string }>
+    methodCache.set(key, arr)
+    return arr
+  }
+  const update = rawDb.prepare(`
+    UPDATE brain_relationship
+       SET target_symbol_id = ?,
+           is_cross_file = ?,
+           metadata = json_set(COALESCE(metadata, '{}'),
+                               '$.receiverType', ?,
+                               '$.bindingBasis', 'receiver-type',
+                               '$.reasonCode', 'receiver_type_declared_in_calling_file')
+     WHERE id = ? AND target_symbol_id IS NULL
+  `)
+  let bound = 0
+  const run = rawDb.transaction((list: typeof rows) => {
+    for (const row of list) {
+      let meta: Record<string, unknown> | null = null
+      try { meta = row.metadata ? (JSON.parse(row.metadata) as Record<string, unknown>) : null } catch { meta = null }
+      const callExpression = String(meta?.callExpression ?? "")
+      if (!callExpression.includes(".")) continue
+      const targetMethod = callExpression.split(".").filter(Boolean).pop() ?? ""
+      if (!targetMethod) continue
+      const text = readSource(row.sourceRel)
+      if (!text) continue
+      const evidence = inferGoReceiverEvidence({
+        text,
+        language: row.language,
+        imports: importsOf(row.sourceRel),
+        callExpression,
+        targetMethod,
+        projectTypes,
+        readSource,
+        relativePathOfFile: relOfFile,
+        ownerHasMethod,
+      })
+      if (!evidence || evidence.kind !== "project" || evidence.ownerHasMethod !== true || !evidence.typeId) continue
+      const methods = methodRows(evidence.typeId, targetMethod)
+      if (methods.length !== 1) continue
+      const targetFileRel = relOfFile(methods[0].fileId)
+      const crossFile = targetFileRel && targetFileRel !== row.sourceRel ? 1 : 0
+      const res = update.run(methods[0].id, crossFile, evidence.typeName, row.relId)
+      if (res.changes > 0) bound++
+    }
+  })
+  run(rows)
+  return bound
 }
 
 export async function indexProjectParallel(

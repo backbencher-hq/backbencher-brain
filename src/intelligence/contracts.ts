@@ -973,6 +973,10 @@ export interface TestImpactReport {
     timeBudgetMs: number
     timeBudgetExhausted: boolean
     depthCap: number
+    /** P1-3 completion: caller edges from test files that FAILED the test-link
+     *  contract are counted per reason and excluded from test impact. */
+    unvalidatedLinks?: number
+    unvalidatedByReason?: Partial<Record<string, number>>
   }
   truncationReason?: string | null
   provenance: EvidenceProvenance

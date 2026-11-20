@@ -166,6 +166,17 @@ export type TestLinkRejection =
   | "receiver-selector-unresolved"
   | "cross-package-unreachable"
 
+/** Receiver evidence proven from the TEST FILE's own declarations (index-time
+ *  metadata does not carry Go types). `external` means the receiver's declared
+ *  type is a non-project/stdlib package member: the call cannot be evidence for
+ *  a project symbol. `project` means the receiver's declared type is an indexed
+ *  project type; `ownerHasMethod` says that type declares the called method. */
+export type ReceiverEvidence = {
+  kind: "project" | "external"
+  typeName: string
+  ownerHasMethod?: boolean
+}
+
 export interface TestLinkValidationInput {
   relationshipType: string
   /** the stored target name (leaf) */
@@ -182,6 +193,8 @@ export interface TestLinkValidationInput {
   metadata: Record<string, unknown> | null
   /** brain_import import_path values for the test file */
   testImports: string[]
+  /** Proven receiver evidence for selector calls (see inferReceiverEvidence). */
+  receiver?: ReceiverEvidence
 }
 
 export type TestLinkValidation = { ok: true } | { ok: false; reason: TestLinkRejection }
@@ -238,6 +251,190 @@ function goPackageNameFor(file: string): string {
   return posixBase(posixDir(file))
 }
 
+
+// ── RECEIVER EVIDENCE (P1-3 completion) ──────────────────────────────────────
+// The index carries no Go receiver types, so selector calls used to fail closed
+// (`receiver-selector-unresolved`) even when the test file itself declares the
+// receiver. These helpers prove the receiver from the test file's own
+// declarations — never from a guess — and are hash-gated: if the file on disk no
+// longer matches the indexed hash, the evidence is UNKNOWN and the caller keeps
+// the old fail-closed behaviour.
+type ReceiverCaches = {
+  fileRows: Map<string, { path: string; fileHash: string | null } | null>
+  texts: Map<string, string | null>
+  typeRows: Map<string, Array<{ id: string; fileId: string; name: string }>>
+  ownerMethod: Map<string, boolean>
+}
+
+export function newReceiverCaches(): ReceiverCaches {
+  return { fileRows: new Map(), texts: new Map(), typeRows: new Map(), ownerMethod: new Map() }
+}
+
+function stripTypeText(text: string): string {
+  return text.replace(/[\[\]\s*]/g, "")
+}
+
+async function freshTestSource(raw: any, projectId: ProjectID, rel: string, caches: ReceiverCaches): Promise<string | null> {
+  if (caches.texts.has(rel)) return caches.texts.get(rel) ?? null
+  let row = caches.fileRows.get(rel)
+  if (row === undefined) {
+    row = (raw.prepare("SELECT path, file_hash AS fileHash FROM brain_file WHERE project_id = ? AND relative_path = ? LIMIT 1")
+      .get(projectId, rel) as { path: string; fileHash: string | null } | undefined) ?? null
+    caches.fileRows.set(rel, row)
+  }
+  if (!row?.path) { caches.texts.set(rel, null); return null }
+  let text: string | null = null
+  try {
+    const [{ readFileSync }, { createHash }, fsMod] = await Promise.all([import("node:fs"), import("node:crypto"), import("node:path")])
+    void fsMod
+    text = readFileSync(row.path, "utf8")
+    // Hash-gate: stale source must never produce evidence. brain_file.file_hash is
+    // stored as a 16-char sha256 prefix on the incremental path (and as the full
+    // digest on some older rows), so compare at the stored precision instead of
+    // assuming one width.
+    if (row.fileHash) {
+      const hash = createHash("sha256").update(text).digest("hex")
+      if (hash !== row.fileHash && hash.slice(0, row.fileHash.length) !== row.fileHash) text = null
+    }
+  } catch {
+    text = null
+  }
+  caches.texts.set(rel, text)
+  return text
+}
+
+function declarationsOfType(text: string, root: string): string[] {
+  const out: string[] = []
+  const esc = root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const patterns = [
+    new RegExp(`\\bvar\\s+${esc}\\s+([*\\[\\]]?[A-Za-z_][\\w.]*)`, "g"),
+    new RegExp(`\\b${esc}\\s*:=\\s*&?\\s*([A-Za-z_][\\w.]*)\\s*\\{`, "g"),
+    new RegExp(`\\b${esc}\\s*:=\\s*new\\(\\s*([A-Za-z_][\\w.]*)\\s*\\)`, "g"),
+    // function parameters: `func x(a *T, b T)` — name followed by a type.
+    new RegExp(`\\b${esc}\\s+([*\\[\\]]?[A-Za-z_][\\w.]*)`, "g"),
+  ]
+  for (const re of patterns) {
+    for (const m of text.matchAll(re)) if (m[1]) out.push(stripTypeText(m[1]))
+  }
+  return Array.from(new Set(out.filter((t) => t.length > 0 && t !== root)))
+}
+
+function projectTypeRows(raw: any, projectId: ProjectID, name: string, caches: ReceiverCaches) {
+  const hit = caches.typeRows.get(name)
+  if (hit) return hit
+  const rows = raw.prepare(
+    "SELECT id, file_id AS fileId, name FROM brain_symbol WHERE project_id = ? AND name = ? " +
+      "AND symbol_type NOT IN ('function','method','module','property','variable','parameter','field') LIMIT 4",
+  ).all(projectId, name) as Array<{ id: string; fileId: string; name: string }>
+  caches.typeRows.set(name, rows)
+  return rows
+}
+
+function fieldTypeOf(text: string, field: string): string[] {
+  const esc = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const out: string[] = []
+  for (const m of text.matchAll(new RegExp(`\\b${esc}\\s+([*\\[\\]]?[A-Za-z_][\\w.]*)`, "g"))) {
+    if (m[1]) out.push(stripTypeText(m[1]))
+  }
+  return Array.from(new Set(out))
+}
+
+function importIsStdlibPackage(imports: string[], pkg: string): boolean {
+  for (const spec of imports) {
+    const segs = spec.split("/").filter(Boolean)
+    const last = segs[segs.length - 1] ?? ""
+    if (last !== pkg) continue
+    // Go stdlib import paths have no dot in their first segment; module paths do.
+    return !segs[0].includes(".")
+  }
+  return false
+}
+
+function importIsNonStdlibPackage(imports: string[], pkg: string): boolean {
+  for (const spec of imports) {
+    const segs = spec.split("/").filter(Boolean)
+    const last = segs[segs.length - 1] ?? ""
+    if (last === pkg && segs[0].includes(".")) return true
+  }
+  return false
+}
+
+async function ownerHasMethod(raw: any, projectId: ProjectID, typeId: string, methodName: string, caches: ReceiverCaches): Promise<boolean> {
+  const key = `${typeId}|${methodName}`
+  const hit = caches.ownerMethod.get(key)
+  if (hit !== undefined) return hit
+  const row = raw.prepare(
+    "SELECT COUNT(*) c FROM brain_symbol WHERE project_id = ? AND name = ? AND symbol_type = 'method' AND owner_symbol_id = ?",
+  ).get(projectId, methodName, typeId) as { c: number }
+  const ok = Number(row?.c ?? 0) > 0
+  caches.ownerMethod.set(key, ok)
+  return ok
+}
+
+/** Prove a selector call's receiver from the TEST FILE's declarations. Returns
+ *  `null` when the evidence is not conclusive (unknown/multiple declarations,
+ *  stale source, unresolvable field chain) — the caller then keeps failing closed. */
+export async function inferReceiverEvidence(
+  raw: any,
+  projectId: ProjectID,
+  testFileRel: string,
+  language: string | null,
+  testImports: string[],
+  callExpression: string,
+  targetName: string,
+  caches: ReceiverCaches,
+): Promise<ReceiverEvidence | null> {
+  if (String(language ?? "").toLowerCase() !== "go") return null
+  const segments = callExpression.split(".").filter((seg) => seg.length > 0)
+  if (segments.length < 2) return null
+  const text = await freshTestSource(raw, projectId, testFileRel, caches)
+  if (!text) return null
+  const root = segments[0]
+  const declared = declarationsOfType(text, root)
+  // `pkg.Fn` where pkg is the TARGET's package is existing package evidence, not
+  // receiver evidence: leaving it unresolved keeps the package rule in charge.
+  if (declared.length === 0) return null
+  if (declared.length > 1) return null
+  let current: { kind: "project" | "external"; typeName: string; typeId?: string } | null = null
+  const classifyType = (typeText: string): { kind: "project" | "external"; typeName: string; typeId?: string } | null => {
+    const dot = typeText.lastIndexOf(".")
+    const base = dot >= 0 ? typeText.slice(dot + 1) : typeText
+    const pkg = dot >= 0 ? typeText.slice(0, dot) : ""
+    if (pkg) {
+      if (importIsStdlibPackage(testImports, pkg)) return { kind: "external", typeName: typeText }
+      if (importIsNonStdlibPackage(testImports, pkg)) {
+        const rows = projectTypeRows(raw, projectId, base, caches)
+        return rows.length === 1 ? { kind: "project", typeName: base, typeId: rows[0].id } : null
+      }
+      return null
+    }
+    const rows = projectTypeRows(raw, projectId, base, caches)
+    return rows.length === 1 ? { kind: "project", typeName: base, typeId: rows[0].id } : null
+  }
+  current = classifyType(declared[0])
+  if (!current) return null
+  // Resolve intermediate selectors (`mod.StatusLock.Lock`): each field type is
+  // read from the project type's own declaration; a non-unique field stays unknown.
+  for (const field of segments.slice(1, segments.length - 1)) {
+    if (current.kind !== "project" || !current.typeId) return null
+    const rows = projectTypeRows(raw, projectId, current.typeName, caches)
+    if (rows.length !== 1) return null
+    const typeFileRow = (raw.prepare("SELECT relative_path AS rel FROM brain_file WHERE id = ?").get(rows[0].fileId) as { rel: string } | undefined)
+    if (!typeFileRow?.rel) return null
+    const typeText = await freshTestSource(raw, projectId, typeFileRow.rel, caches)
+    if (!typeText) return null
+    const fieldTypes = fieldTypeOf(typeText, field)
+    if (fieldTypes.length !== 1) return null
+    const next = classifyType(fieldTypes[0].startsWith(current.typeName + ".") ? fieldTypes[0].slice(current.typeName.length + 1) : fieldTypes[0])
+    if (!next) return null
+    current = next
+  }
+  if (current.kind === "external") return { kind: "external", typeName: current.typeName }
+  if (!current.typeId) return { kind: "project", typeName: current.typeName, ownerHasMethod: false }
+  const has = await ownerHasMethod(raw, projectId, current.typeId, targetName, caches)
+  return { kind: "project", typeName: current.typeName, ownerHasMethod: has }
+}
+
 /** Validate one candidate test-evidence row. Pure — exported for the gate. */
 export function validateTestLink(input: TestLinkValidationInput): TestLinkValidation {
   const language = String(input.language ?? "").toLowerCase()
@@ -265,6 +462,17 @@ export function validateTestLink(input: TestLinkValidationInput): TestLinkValida
   if (leaf !== input.targetName) return { ok: false, reason: "target-name-mismatch" }
 
   if (segments.length > 1) {
+    // PROVEN receiver evidence first: it is derived from the test file's own
+    // declarations, so a selector that used to fail closed can now be decided
+    // honestly — a project-type receiver whose type declares the method is real
+    // evidence; a stdlib/external receiver is NOT evidence for a project symbol.
+    if (input.receiver) {
+      if (input.receiver.kind === "external") return { ok: false, reason: "external-stdlib-leaf" }
+      if (input.receiver.kind === "project") {
+        if (input.receiver.ownerHasMethod === true) return reachable ? { ok: true } : { ok: false, reason: "cross-package-unreachable" }
+        return { ok: false, reason: "receiver-selector-unresolved" }
+      }
+    }
     // Receiver/package selector. A member chain (`mod.Session.Lock`) cannot be
     // resolved without receiver types; a two-segment `pkg.Fn` is proven only when
     // the qualifier names the TARGET's package AND the test file imports it.
@@ -433,6 +641,7 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
   // would be a different defect).
   const rejectedLinks: Partial<Record<TestLinkRejection, number>> = {}
   let rejectedTotal = 0
+  const receiverCaches = newReceiverCaches()
   const testEdges: TestEdgeRow[] = []
   for (const edge of rawEdges) {
     // Only rows the classifier can name were ever candidate evidence; validating
@@ -452,6 +661,18 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
         metadata = null
       }
     }
+    // P1-3 completion: selector calls carry no receiver type in the index, so
+    // prove the receiver from the test file's own declarations (hash-gated);
+    // unknown evidence keeps the fail-closed path in validateTestLink.
+    let receiver: ReceiverEvidence | undefined
+    const callExpr = String((metadata?.callExpression ?? metadata?.selectorExpression ?? "") || "")
+    if (callExpr.split(".").filter((seg) => seg.length > 0).length > 1) {
+      try {
+        receiver = (await inferReceiverEvidence(raw, projectId, edge.testFile, edge.testLanguage, testImportsByFile.get(edge.testFile) ?? [], callExpr, edge.targetName, receiverCaches)) ?? undefined
+      } catch {
+        receiver = undefined
+      }
+    }
     const verdict = validateTestLink({
       relationshipType: edge.relType,
       targetExternal: edge.targetName,
@@ -461,6 +682,7 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
       language: edge.testLanguage,
       metadata,
       testImports: testImportsByFile.get(edge.testFile) ?? [],
+      receiver,
     })
     if (verdict.ok) {
       testEdges.push(edge)
@@ -756,6 +978,43 @@ export async function testImpact(
   const direct: TestImpactReport["directTests"] = []
   const indirect: TestImpactReport["indirectTests"] = []
   const affected = new Set<string>()
+  // P1-3 completion: test_impact walked the graph's caller edges without asking
+  // whether the edge IS test evidence, so a name-resolved row (`m.Lock()` on a
+  // sync.Mutex bound to a project method) was published as a test impact. Each
+  // edge is now validated with the SAME contract test_mapping uses; unvalidated
+  // edges are counted per reason and excluded, never silently dropped.
+  const rejectedLinks: Partial<Record<TestLinkRejection, number>> = {}
+  let rejectedTotal = 0
+  const receiverCaches = newReceiverCaches()
+  const languageByFile = new Map<string, string | null>()
+  for (const r of raw.prepare("SELECT relative_path AS rel, language FROM brain_file WHERE project_id=?").all(projectId) as Array<{ rel: string; language: string | null }>) {
+    languageByFile.set(r.rel, r.language)
+  }
+  const nameAndFile = new Map<string, { name: string; file: string | null }>()
+  for (const r of raw.prepare("SELECT s.id AS id, s.name AS name, f.relative_path AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id=?").all(projectId) as Array<{ id: string; name: string; file: string | null }>) {
+    nameAndFile.set(r.id, { name: r.name, file: r.file })
+  }
+  const importsByFile = new Map<string, string[]>()
+  for (const r of raw.prepare(
+    "SELECT f.relative_path AS file, COALESCE(i.import_path,'') AS target FROM brain_file f JOIN brain_import i ON i.file_id=f.id AND i.project_id=f.project_id WHERE f.project_id=? AND COALESCE(f.is_test_file,0)=1",
+  ).all(projectId) as Array<{ file: string; target: string }>) {
+    if (!r.target) continue
+    const arr = importsByFile.get(r.file) ?? []
+    arr.push(r.target)
+    importsByFile.set(r.file, arr)
+  }
+  const edgeMeta = new Map<string, string | null>()
+  const metadataFor = (sourceId: string, targetId: string, relType: string): Record<string, unknown> | null => {
+    const key = `${sourceId}|${targetId}|${relType}`
+    if (!edgeMeta.has(key)) {
+      const row = raw.prepare("SELECT metadata FROM brain_relationship WHERE project_id=? AND source_symbol_id=? AND target_symbol_id=? AND relationship_type=? LIMIT 1")
+        .get(projectId, sourceId, targetId, relType) as { metadata: string | null } | undefined
+      edgeMeta.set(key, row?.metadata ?? null)
+    }
+    const rawMeta = edgeMeta.get(key)
+    if (!rawMeta) return null
+    try { return JSON.parse(rawMeta) as Record<string, unknown> } catch { return null }
+  }
 
   for (const edge of graph.callers) {
     const node = graph.nodes[edge.from]
@@ -769,6 +1028,32 @@ export async function testImpact(
     // guessed from the depth.
     const kind = classify(String(edge.relationshipType))
     if (!kind) continue
+    const targetMeta = nameAndFile.get(String(edge.to))
+    if (!targetMeta?.file) { rejectedLinks["target-name-mismatch"] = (rejectedLinks["target-name-mismatch"] ?? 0) + 1; rejectedTotal++; continue }
+    const metadata = metadataFor(node.id, String(edge.to), String(edge.relationshipType))
+    let receiver: ReceiverEvidence | undefined
+    const callExpr = String((metadata?.callExpression ?? metadata?.selectorExpression ?? "") || "")
+    if (callExpr.split(".").filter((seg) => seg.length > 0).length > 1) {
+      try {
+        receiver = (await inferReceiverEvidence(raw, projectId, testFile, languageByFile.get(testFile) ?? node.language ?? null, importsByFile.get(testFile) ?? [], callExpr, targetMeta.name, receiverCaches)) ?? undefined
+      } catch { receiver = undefined }
+    }
+    const verdict = validateTestLink({
+      relationshipType: String(edge.relationshipType),
+      targetExternal: targetMeta.name,
+      targetName: targetMeta.name,
+      targetFile: targetMeta.file,
+      testFile,
+      language: languageByFile.get(testFile) ?? node.language ?? null,
+      metadata,
+      testImports: importsByFile.get(testFile) ?? [],
+      receiver,
+    })
+    if (!verdict.ok) {
+      rejectedLinks[verdict.reason] = (rejectedLinks[verdict.reason] ?? 0) + 1
+      rejectedTotal++
+      continue
+    }
     affected.add(testFile)
     const entry = {
       testSymbol: node.name,
@@ -790,6 +1075,10 @@ export async function testImpact(
     raw.prepare("SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND COALESCE(f.is_test_file,0) = 1").get(projectId) as { c: number }
   ).c
   const unknowns = ["runtime-coverage-unavailable"]
+  if (rejectedTotal > 0) {
+    const reasons = Object.entries(rejectedLinks).map(([reason, count]) => `${reason}=${count}`).join(", ")
+    unknowns.unshift(`unvalidated-test-links: ${rejectedTotal} caller edge(s) from test files did not prove a test link and are NOT test impact (${reasons})`)
+  }
   if (testSymbols === 0) unknowns.unshift(NO_EVIDENCE_UNKNOWN)
   const walk: any = graph.summary
   const truncationReason: string | null = walk.truncationReason ?? (Array.isArray(walk.truncationReasons) && walk.truncationReasons.length ? walk.truncationReasons.join("+") : null)
@@ -813,6 +1102,11 @@ export async function testImpact(
       timeBudgetMs,
       timeBudgetExhausted: walk.timeBudgetExhausted === true,
       depthCap: graph.summary.maxDepth,
+      // P1-3 completion: caller edges that FAILED the test-link contract are
+      // counted per reason and declared, exactly as test_mapping does — they are
+      // NOT test impact and must never be published as such.
+      unvalidatedLinks: rejectedTotal,
+      unvalidatedByReason: rejectedLinks,
     },
     provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns }),
     runtimeCoverage: { available: false },

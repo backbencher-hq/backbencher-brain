@@ -53,13 +53,25 @@ dropped. The five reasons:
 | --- | --- |
 | `external-stdlib-leaf` | the row's metadata marks the callee as a stdlib/external package member (`isStdlib: true`) |
 | `qualified-call-target-is-a-leaf` | a two-segment `pkg.Fn` spelling was stored as a bare leaf and the qualifier does not prove the target's package |
-| `receiver-selector-unresolved` | a receiver/member chain (`m.Lock`, `mod.Session.Lock`); no receiver type is available |
+| `receiver-selector-unresolved` | a receiver/member chain (`m.Lock`, `mod.Session.Lock`) whose receiver type is not proven by the calling file's declarations — unknown evidence fails closed |
 | `cross-package-unreachable` | the target is not in the test's package/module and no test-file import reaches it |
 | `target-name-mismatch` | the call's leaf does not name the resolved target symbol, or the stored target symbol/file no longer exists |
 
 A rejected row gets **zero confidence evidence**: it is not published in `links[]` at all,
 `strongestEvidence`/`testedSymbols` are computed from validated links only, and the reason
 counts are declared by both report modes (see below).
+
+**Receiver evidence (P1-3 completion).** Selector calls carry no Go type in the store, so the mapping
+proves the receiver from the TEST FILE ITSELF — hash-gated: if the current file no longer matches
+`brain_file.file_hash`, no evidence is produced and the row keeps failing closed. It handles unique
+`var x T`, `x := &T{…}`/`T{…}`, `x := new(T)`, function parameters `x T`, and one-or-more struct-field
+chains (`h.M.Lock`, `h.W.Run`) resolved from the project type's own declaration. A proven
+project-type receiver whose type declares the method is ACCEPTED evidence; a proven stdlib/external
+receiver is rejected as `external-stdlib-leaf`. At index time the same evidence BINDS genuine
+project-receiver calls (`bindingBasis=receiver-type`), while unresolved receivers stay unresolved.
+`test_impact` validates every caller edge with this same contract and declares excluded rows as
+`summary.unvalidatedLinks`/`unvalidatedByReason` + `provenance.unknowns` (`unvalidated-test-links`).
+Gate: `npx tsx script/m-fix/verify-receiver-evidence.ts`.
 
 ## Evidence kinds & confidence (for validated links)
 

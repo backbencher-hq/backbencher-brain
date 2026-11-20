@@ -112,10 +112,24 @@ closed and verified:
   `bb index --post` remedy on the CLI door too (evidence under `evidence/verifier/p2/DIST-E2E-*`).
 
 With the post-review completion above, every pre-existing defect recorded during verification is now
-fixed and proven on the full specimen. What remains are two **design decisions**, not unfinished work:
-`receiver-selector-unresolved` evidence fails closed (honest without receiver-type resolution) and
-`test_impact` keeps the graph-engine's caller traversal (validated test links are a `test_mapping`
-property; changing test_impact would be a different feature).
+fixed and proven on the full specimen, and the lane's last two declared limitations are also closed:
+
+- **Receiver-selector evidence — RESOLVED.** The mapping proves a selector call's receiver from the
+  TEST FILE's own declarations (`var x T`, `x := &T{…}`/`T{…}`, `x := new(T)`, parameters, and
+  struct-field chains), hash-gated against `brain_file.file_hash`; a proven project-type receiver whose
+  type declares the method is validated, a proven stdlib/external receiver is rejected as
+  `external-stdlib-leaf`. At index time the same evidence BINDS genuine project-receiver calls with
+  `bindingBasis=receiver-type` (visible to every caller/impact read) and the P0-2 gates carve that
+  basis out like `import-path`. Gate: `script/m-fix/verify-receiver-evidence.ts` (11 checks: write
+  binding, read rejection, stale-source control).
+- **`test_impact` — RESOLVED.** It validates every caller edge with the same test-link contract and
+  counts/excludes failures as `summary.unvalidatedLinks`/`unvalidatedByReason` +
+  `provenance.unknowns` (`unvalidated-test-links`), so a false selector edge can no longer be
+  published as test impact.
+
+One honest limitation remains by construction, not work: a receiver whose type is not declared in the
+calling file (e.g. returned by a call whose signature the store does not carry) still fails closed as
+`receiver-selector-unresolved`.
 
 ## Artifacts
 - Branch `fix-campaign-wave2` (this worktree), wave-1 commit `380a7e473` on `main`.

@@ -117,3 +117,13 @@ durable (`brain_project_meta.last_embed_outcome` -> health `embeddings.lastRun` 
 `EMBEDDING_RUN_INCOMPLETE`, gate R12-R14); and the external C# typecheck error is fixed, so
 `npx tsc --noEmit` is clean repo-wide. Two design decisions remain documented (receiver-selector
 evidence fails closed; test_impact unchanged). Evidence: `evidence/final/FULL-INDEX-REINDEX.md`.
+
+## Append: the last two lane limitations closed
+
+`receiver-selector-unresolved` no longer fails closed for provable receivers: the mapping proves the
+receiver from the calling file's declarations (hash-gated) and the indexer binds genuine
+project-receiver selector calls with `bindingBasis=receiver-type`; and `test_impact` now validates
+every caller edge with the same test-link contract, declaring excluded rows per reason. Gate
+`script/m-fix/verify-receiver-evidence.ts` covers write-side binding, stale/name-bound read-side
+rejection, `test_impact` exclusion and the stale-source control (11 checks). What remains is the
+declared construction limit: a receiver type not declared in the calling file still fails closed.
