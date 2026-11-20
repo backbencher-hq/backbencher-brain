@@ -1,6 +1,6 @@
 # [retrieval] R1 — engine-level `findSymbol` `fileId` is still an absolute path (next round)
 
-Lane: retrieval. Status: OPEN (not fixed in wave 1; deliberately out of this lane's owned scope).
+Lane: retrieval. Status: **FIXED** (commit `ee45e176d`, verified; see "Resolution" below).
 Landed wave-1 fix: commit `380a7e473`. Related: triage `docs/bb-bettercap-triage/findings/ISSUE-08-search-symbol-mode.md`.
 
 ## Observed
@@ -30,3 +30,22 @@ Extend `script/verify-retrieval-contract.ts` with a direct `ASTEngine.findSymbol
 engine changes: for a fixture file, every returned row must satisfy
 `fileId === ${projectId}:${relativePath}` and `absolutePath`/`path` must be the on-disk path; and any
 direct consumer of the engine rows (edit-engine rename plan) must still read source successfully.
+
+
+## Resolution (2026-11-20, commit `ee45e176d`)
+
+`ASTEngine.findSymbol` now returns `fileId = <projectId>:<relativePath>` (the portable identity the
+other read surfaces use) and carries the filesystem path in a new `absolutePath` field; the internal
+`SymbolRow` type documents both. `edit-engine`'s `matchesOf()` maps `absolutePath` into the internal
+`SymbolMatch.fileId` that its read/edit/stale helpers actually path with (`?? fileId` fallback keeps an
+older/foreign producer readable). `bb_search` symbol mode resolves the scope filter, freshness and the
+bounded source via `absolutePath` and publishes the project-scoped id on the wire.
+
+Verification: `script/verify-retrieval-contract.ts` gained three engine-level assertions (identity,
+`absolutePath` exists on disk, `relativePath` preserved) → **48/48**; edit family green (rename E2
+92/92, crossfile E4/E5/E8, freshness E5 14/14, honesty E11 10/10, batch E13 61/61); m71 23/23;
+search-modes S1 48/48; `npx tsc --noEmit` clean except the external `real-csharp-analyzer.ts` error;
+build + `verify:dist` clean. CLI/dist E2E: `bb_doc Session` single subject; `bb_search symbol Session`
+publishes `<projectId>:<path>` + `absolutePath` + bounded source. Evidence:
+`docs/bb-bettercap-fix/evidence/retrieval/R1-engine-fileid/` and
+`.../evidence/retrieval/DIST-E2E-*.json`.

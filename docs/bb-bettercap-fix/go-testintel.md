@@ -108,9 +108,19 @@ Command: `node_modules/.bin/tsx .tools/triage-fix/go-testintel/e2e-bettercap.ts`
 
 `evidence/go-testintel/tsc-noemit.txt` (captured at GREEN): repo-wide `npx tsc --noEmit` had **8 errors, all in files being edited by other lanes at the time** — `src/intelligence/health/health-provider.ts` (embeddings-health) and `src/lsp/cross_language_hover.ts` (cross-lang), both `git status: M` WIP. **0 errors attributable to this lane's files** (grep filter count 0); the two lane gates execute the changed modules end-to-end and pass. The Lead's integration checkpoint is the authority for a clean repo-wide tsc.
 
+## 7b. CLI/dist E2E (final build, bettercap specimen — read-only)
+
+- `bb_analyze test_mapping filePath=session` → `testedSymbols=18`, `evidenceLinks=127`,
+  `unvalidatedLinks=137` with `{qualified-call-target-is-a-leaf:127, external-stdlib-leaf:3,
+  receiver-selector-unresolved:7}`; `unvalidated-test-links: 137 …` declared in `provenance.unknowns`
+  (`DIST-E2E-test_mapping-session.json`).
+- `bb_analyze test_quality filePath=session` → aggregate `0.488095` (assertions `0.8571`, docs
+  `0.8810`, error_handling `0.3333`, parameterization `0.6667`, fixtures `0`); per-file anchors are the
+  observed tokens (`t.Fatalf × 49, t.Fatal × 7` …) (`DIST-E2E-test_quality-session.json`).
+
 ## 8. Residuals / open items
 
-1. **Docs pages not yet rewritten** (lane-owned, follow-up): `docs/BB_TEST_INTEL.md` and `docs/BB_TEST_QUALITY.md` still describe the old single generic classifier table and do not document `validateTestLink`'s five reasons or the `unvalidated-test-links` unknown. The payload already carries the new fields; docs must be updated in a follow-up edit (this closing turn was bounded to the status page + gates).
+1. **Docs pages — FIXED (commit `39f69b4b5`).** `docs/BB_TEST_INTEL.md` and `docs/BB_TEST_QUALITY.md` were rewritten to the landed validation contract (five reasons, `unvalidatedLinks`/`unvalidatedByReason`, scope-relative counts, `test_impact` not validated) and the language-aware model (vocabularies/anchors/penalty/anchor invariant/dual projection); docs-truth gates PASS (m31 71/71; tool docs 16 tools/18 artifacts).
 2. **Receiver-selector evidence fails closed.** Genuine `s.Lock()` on a `*session.Session` is indistinguishable from `sync.Mutex.Lock()` without receiver-type resolution, so it is declared `receiver-selector-unresolved` (7 rows in scope) rather than published; Lock/Unlock are therefore 0 links. That is the honest answer for this engine; full coverage needs type resolution (out of lane scope).
 3. **Rejection counts are scope-relative.** Scoped `filePath=session` reports 137 rejects for session's production population; a project-wide mapping run reports the larger corpus-wide set. The payload states the count and reasons, and the scoping rule is documented in the code comment.
 4. **`test_impact` is unchanged**: it walks the graph engine's caller traversal (P0-2 / issue 4 domain) and is not validated by this lane.

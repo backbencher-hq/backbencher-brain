@@ -97,3 +97,11 @@ re-ran their gates on the landed tree (`verify-test-intel` PASS 24 checks, `veri
 56 checks, `verify-retrieval-contract` 45/45) and verified their E2E/probe evidence numbers against
 the committed JSON. Pages committed as `41dc91ecc` (go-testintel) and `f3ce5b57a` (retrieval).
 Remaining items are the lanes' declared follow-ups, listed in `FINAL.md` §"Post-review correction".
+
+## Append: residual closure
+
+The lane close-outs' declared residuals were then closed: go-testintel's docs rewrite (`39f69b4b5`,
+docs-truth gates PASS) and retrieval's R1 engine-level `fileId` identity (`ee45e176d`, retrieval gate
+48/48, edit family green, tsc/build/dist clean), plus CLI/dist E2E captures for both lanes and the
+old-index typed-refusal check on the CLI door. No lane-declared residual remains open; what remains is
+explicitly pre-existing or a declared design limitation (listed in `FINAL.md`).

@@ -154,9 +154,8 @@ Evidence: `tsc-noemit.txt` (+ `.meta.txt`).
 
 ## Residuals / follow-ups
 
-- **R1 — engine-level `fileId` is still absolute for direct consumers.** `src/ast/engine.ts:2836`
-  projects `fileId: BrainFileTable.path` (absolute). The fix remaps at the `bb_search` wire boundary
-  (the owned surface); `ASTEngine.findSymbol` is also consumed by
+- **R1 — engine-level `fileId` — FIXED in `ee45e176d` (was: absolute for direct consumers).** `src/ast/engine.ts:2836`
+  projects `fileId: BrainFileTable.path` (absolute). The fix now also changes the engine projection (`fileId = <projectId>:<relativePath>`, `absolutePath` carries the machine path; edit-engine `matchesOf` paths via `absolutePath`); the gate gained engine-level assertions → 48/48. The historical handler-boundary remap remains the wire contract; `ASTEngine.findSymbol` is also consumed by
   `src/intelligence/edit/edit-engine.ts:814,857`, which expects a filesystem path, so changing the
   engine projection is a cross-lane change (engine + edit-safety audit + any direct callers), not a
   lone `bb_search` fix. If a future tool exposes `findSymbol` rows directly, it must remap the same
@@ -177,6 +176,20 @@ Evidence: `tsc-noemit.txt` (+ `.meta.txt`).
   transient S5 `KNOWN-GAP`, resolved to `VERIFIED` once the aggregates were regenerated.
 - **R5 — resolution cap is a declared bound at 200 copies**; a future target exceeding it gets an
   `output-budget` unknown, not a silent partial union (gate does not exercise >200 copies).
+
+## CLI/dist E2E (final build, bettercap specimen — read-only)
+
+Captured after the R1 fix with `node bin/bb` built from the final tree:
+
+- `bb tool bb_doc --args '{"mode":"symbol","target":"Session","format":"json"}'` → `symbol: Session`,
+  `quality.scope {declared:"single", passed:true, subjects:1, copies:5, resolvedBy:"declaration-kind"}`
+  — same at `limit:1` (`DIST-E2E-bb_doc-Session.json`).
+- `bb tool bb_search --args '{"mode":"symbol","query":"Session"}'` → 5 matches, every `fileId` is
+  `<projectId>:<relativePath>`, `absolutePath` present, bounded `source` + `sourceTruncated`
+  (`DIST-E2E-bb_search-Session.json`).
+- Old-index doors (gh-cli 2026-10-17 index): `bb_graph`/`bb_impact`/`bb_visualize`/`bb_security` emit
+  the typed `BB_SCHEMA_INCOMPATIBLE` + `bb index --post` remedy, no raw SQLite and no partial answer
+  (`../verifier/p2/DIST-E2E-old-index-refusal-*.txt`).
 
 ## Evidence index (`docs/bb-bettercap-fix/evidence/retrieval/`)
 

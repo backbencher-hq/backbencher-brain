@@ -70,15 +70,24 @@ Lead independently re-ran their gates on the landed tree:
 | `go-testintel` | `docs/bb-bettercap-fix/go-testintel.md` + `GREEN-final-*` evidence; E2E: mapping tested 18 / links 127 / 137 declared-unvalidated with per-reason counts, Lock/Unlock 0 links, quality aggregate 0.322222→0.488095, assertions 0→0.857, `%s` proxy removed; corrected `session.New` answer (20 genuine module-test links, caplets/js false rows gone) | `verify-test-intel` **PASS (24 checks)**, `verify-test-quality` **PASS (56 checks)** |
 | `retrieval` | `docs/bb-bettercap-fix/retrieval.md` + `RETRIEVAL-R1-engine-fileid.md`; real-specimen probe (Session → single subject `struct session/session.go:72`, copies 5, declaration-kind, unchanged at `limit:1`; `session.Session` qualified-path; New function; LoadModules byte-compatible) | `verify-retrieval-contract` **45/45** (RED was 16/42) |
 
-The two pages are committed (`41dc91ecc`, `f3ce5b57a`). With them present, the campaign's close-out
-requirements are now met; the completion statement is accurate **as of these close-outs**, not as of
-the earlier commit. Remaining items are the lanes' declared follow-ups, not missing close-outs:
-go-testintel: rewrite `docs/BB_TEST_INTEL.md`/`BB_TEST_QUALITY.md` for the new five reasons and
-language vocabularies; receiver-selector evidence fails closed by design; `test_impact` untouched.
-retrieval: engine-level absolute `fileId` (R1, cross-lane with edit-engine); CLI-dist E2E needs the
-coordinator rebuild; gh-cli source check blocked by its old index schema (P2-6 scope). Pre-existing and
-unrelated: full-specimen reindex blocked by the `_res_contains_targets` scaling defect; `embedOutcome`
-durability PARTIAL; external C# typecheck error on main.
+The two pages are committed (`41dc91ecc`, `f3ce5b57a`); the lane-declared follow-ups have since been
+closed and verified:
+- go-testintel docs rewrite — `39f69b4b5` (`BB_TEST_INTEL.md`/`BB_TEST_QUALITY.md` rewritten to the
+  landed contracts; docs-truth gates m31 71/71, tool docs 16/16).
+- retrieval R1 engine identity — `ee45e176d`: `findSymbol` returns `fileId=<projectId>:<relativePath>`
+  with `absolutePath` carrying the machine path (edit-engine paths via it, bb_search resolves
+  freshness/source via it); gate **48/48** (three engine-level assertions), edit family/m71/search-modes
+  green, tsc/build/dist clean.
+- CLI/dist E2E — captured on the final build for both lanes (`DIST-E2E-*` under their evidence dirs):
+  bb_doc single subject; bb_search projectId:path + absolutePath + bounded source; test_mapping
+  18/127/137 with per-reason counts; test_quality aggregate 0.488095.
+- gh-cli old-index check — the four read doors now return the typed `BB_SCHEMA_INCOMPATIBLE` with the
+  `bb index --post` remedy on the CLI door too (evidence under `evidence/verifier/p2/DIST-E2E-*`).
+
+Remaining are genuinely out-of-lane/pre-existing items, explicitly not claimed as fixed here:
+design decisions (`receiver-selector-unresolved` fails closed; `test_impact` unchanged) and
+pre-existing defects (full-specimen reindex blocked by the `_res_contains_targets` scaling defect;
+`embedOutcome` durability PARTIAL; external C# typecheck error on main).
 
 ## Artifacts
 - Branch `fix-campaign-wave2` (this worktree), wave-1 commit `380a7e473` on `main`.
