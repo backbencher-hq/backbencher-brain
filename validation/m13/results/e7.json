@@ -222,7 +222,7 @@
       "name": "format truth: the hang is bounded by the budget, not by the formatter [negative]",
       "pass": true,
       "negative": true,
-      "detail": "took 1516ms"
+      "detail": "took 1519ms"
     },
     {
       "name": "format truth: not installed → ran:false, tool named, reason names both search paths",
@@ -253,7 +253,7 @@
       "name": "format truth: a file name cannot execute (execFile argv, no shell) [negative]",
       "pass": true,
       "negative": true,
-      "detail": "marker /tmp/bb-e7-format-truth-PCTU27/pwned exists — a marker means the NAME was expanded"
+      "detail": "marker /tmp/bb-e7-format-truth-oUx6Zp/pwned exists — a marker means the NAME was expanded"
     },
     {
       "name": "format truth: the hostile-named file is still formatted through argv",
@@ -268,13 +268,13 @@
     {
       "name": "format truth: a CRLF file hands prettier an explicit crlf line ending",
       "pass": true,
-      "detail": "[\"--write\",\"--end-of-line\",\"crlf\",\"/tmp/bb-e7-format-truth-PCTU27/crlf.ts\"]"
+      "detail": "[\"--write\",\"--end-of-line\",\"crlf\",\"/tmp/bb-e7-format-truth-oUx6Zp/crlf.ts\"]"
     },
     {
       "name": "format truth: an LF file is NOT passed a line-ending override [negative]",
       "pass": true,
       "negative": true,
-      "detail": "[\"--write\",\"/tmp/bb-e7-format-truth-PCTU27/lf.ts\"]"
+      "detail": "[\"--write\",\"/tmp/bb-e7-format-truth-oUx6Zp/lf.ts\"]"
     },
     {
       "name": "format truth: multi-file refactor is formatted:false when ANY file's formatter failed",
@@ -305,23 +305,23 @@
       "name": "no-index: update names the missing INDEX instead of claiming the symbol is absent [negative]",
       "pass": true,
       "negative": true,
-      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-A1NCvS\". bb_edit write mode does not need an index and w"
+      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-6HfcUq\". bb_edit write mode does not need an index and w"
     },
     {
       "name": "no-index: and the refusal says which mode still works",
       "pass": true,
-      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-A1NCvS\". bb_edit write mode does not need an index and works now; update, in"
+      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-6HfcUq\". bb_edit write mode does not need an index and works now; update, in"
     },
     {
       "name": "no-index: delete takes the same path (one shared resolver, not four messages) [negative]",
       "pass": true,
       "negative": true,
-      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-A1NCvS\". bb_edit"
+      "detail": "symbol freshFn could not be resolved: this project has no index (0 files indexed), so the name cannot be found in it — index it first: bb index \"/tmp/bb-e7-noindex-6HfcUq\". bb_edit"
     },
     {
       "name": "no-index: write succeeds on a project the indexer has never run over",
       "pass": true,
-      "detail": "[\"/tmp/bb-e7-noindex-A1NCvS/src/app.ts\"]"
+      "detail": "[\"/tmp/bb-e7-noindex-6HfcUq/src/app.ts\"]"
     },
     {
       "name": "no-index: and reports reindexed:true",
@@ -588,5 +588,5 @@
     "Comprehensive cross-language rename classification is proven in E2 (65 checks); E7 adds only the per-mode and adversarial-fixture gaps.",
     "The formatter branches use a fake node_modules/.bin/prettier written by the gate, so they are deterministic whether or not a formatter is installed (and command resolution is PATH-scrubbed where it matters); the rewrite proof uses that fake's own output bytes."
   ],
-  "generatedAt": "2026-11-19T05:04:08.916Z"
+  "generatedAt": "2026-11-20T05:51:44.583Z"
 }

@@ -1,0 +1,65 @@
+=== FINAL build facts (Lead-built in worktree)
+ESM dist/chunk-FBO4KZEX.js                         16.04 KB
+ESM dist/chunk-MLKGABMK.js                         191.00 B
+ESM dist/chunk-6MHJMHXQ.js                         31.24 KB
+ESM dist/real-c-analyzer-LJPIIWHN.js               245.75 KB
+ESM dist/chunk-IEKOOU7B.js                         677.97 KB
+ESM ⚡️ Build success in 1548ms
+
+=== dist inventory after final build
+156
+8.9M	dist
+22141f3641390eaeb6ffa83a385ab6aea65b81d46e7bf3cde71c5312ff9537dd  -
+
+=== tsc-final (Lead)
+0 .tools/final/tsc-final.log
+
+=== frozen status (Lead snapshot)
+ M docs/BB_ANALYZE.md
+ M docs/analyzers/go.md
+ M docs/bb-bettercap-fix/tools/cp1-bettercap-checks.sh
+ M docs/bb-bettercap-fix/verifier.md
+ M package.json
+ M script/verify-analyze.ts
+ M script/verify-dist-integrity.ts
+ M src/ast/parallel-indexer.ts
+ M src/ast/pool-worker.ts
+ M src/ast/real-go-analyzer.ts
+ M src/brain/database.ts
+ M src/brain/schema-ddl.ts
+ M src/cli/index.ts
+ M src/intelligence/analysis/dependencies.ts
+ M src/mcp/server.ts
+ M validation/m13/results/an1.json
+?? docs/bb-bettercap-fix/OPS.md
+?? docs/bb-bettercap-fix/STATUS-WAVE1.md
+?? docs/bb-bettercap-fix/evidence/final-red/
+?? docs/bb-bettercap-fix/evidence/final/
+?? docs/bb-bettercap-fix/evidence/go-imports/phase2/
+?? docs/bb-bettercap-fix/evidence/verifier/p2/
+?? docs/bb-bettercap-fix/go-imports.md
+?? docs/bb-bettercap-fix/tools/final-bettercap-reindex.sh
+?? script/m-fix/verify-old-index-compat.ts
+?? src/ast/go-module.ts
+
+=== reindex-final (Lead, in progress)
+specimen copy: 2031 files, 50M
+indexing copy with: node bin/bb index /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/bettercap --force
+index exit=1 (log docs/bb-bettercap-fix/evidence/final/reindex.log)
+PASS  reindex exits 0 or declares the known partial cause (exit=1: 1972/1973 size-tier skip)
+project=c6d3120b70c4833f2c086165a57cdc78edb6bb4a db=/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/bbdata/projects/c6d3120b70c4833f2c086165a57cdc78edb6bb4a/brain.db
+symbols=55785 relationships=111786 imports=1948
+PASS  P0-2 no bound cross-language name-resolution imports/calls/instantiates
+PASS  P0-2 every name-resolution row is a <=0.5 candidate
+PASS  P1-2 cross-file value-read rows emitted (count=378, expect >=8 callbacks)
+PASS  P1-2 no fabricated function-type parameter-name uses rows
+PASS  P1-2 jsOnEventFunc is an indexed symbol
+main.go call sources: exitPrompt|function|101|3
+main|function|20|21
+PASS  P1-2 no call edges attributed to the package-main module symbol
+go.mod module path: github.com/bettercap/bettercap/v2
+PASS  P1-1 no same-module import marked external
+PASS  P1-1 internal Go imports classified internal (count=327)
+FAIL  P1-1 imports resolve to symbols  count=0
+--- read surface: bb_analyze dependencies filePath=session
+internal=348 deps=[{'path': 'fmt', 'external': True}, {'path': 'testing', 'external': True}] keys=['dependencies', 'file', 'fileId', 'path', 'external', 'resolution', 'stale', 'dependents', 'dependenciesTotal', 'dependentsTotal', 'dependenciesTruncated', 'dependentsTruncated']

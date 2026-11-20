@@ -311,75 +311,13 @@ const GO_PREDECLARED_BUILTINS = new Set<string>([
 ])
 
 /**
- * Go import identity — PURE. `modulePath` is the `module` line of the project's go.mod, or `null`
- * when the caller does not know it (phase 1: the analyzer receives no project context; phase 2
- * injects it). Returns `true` = outside this project (stdlib or third-party), `false` = the
- * project's own package, `null` = undecidable at this information level (a domain-shaped specifier
- * when the module path is unknown: it may be this project's own module).
- *
- * WHY A PURE FUNCTION. The defect behind the bettercap dependency graph (ISSUE-03) is that the Go
- * analyzer never DECLARED externality, so a shared JS-shaped fallback ("a bare specifier is
- * external") classified every Go import external — stdlib, third-party AND same-module — and the
- * file-dependency engine then never attempted internal resolution. The decision is three rules and
- * is unit-testable without a project; keeping it pure is what lets the indexer inject the module
- * path in phase 2 without moving the rule.
+ * P1-1 phase 2: the module-identity decision lives in `src/ast/go-module.ts` — ONE home for
+ * the pure `goImportExternality` rule, the bounded `readGoModulePath`/`readGoModuleInfo`
+ * readers and the cached `moduleInfoForProject`. It is re-exported here so the existing
+ * import sites (the analyzer's own import pass, `script/verify-analyze.ts`) keep one
+ * spelling, and so the rule cannot drift into a second copy.
  */
-export function goImportExternality(importPath: string, modulePath: string | null): boolean | null {
-  const specifier = importPath.trim()
-  if (specifier.length === 0) return null
-  if (modulePath !== null && modulePath.length > 0) {
-    if (specifier === modulePath) return false
-    if (specifier.startsWith(modulePath + "/")) return false
-  }
-  const firstSegment = specifier.split("/")[0]
-  // No dot in the first segment: Go's own package naming (stdlib has no domain; a GOPATH-era
-  // import has no domain either) — outside the project.
-  if (!stringIncludes(firstSegment, ".")) return true
-  // A domain-shaped specifier when the project's own module path is unknown: it may be the
-  // project itself. Undecidable rather than guessed.
-  return modulePath === null ? null : true
-}
-
-/**
- * Read the `module` line from `<projectRoot>/go.mod` — the one input phase 2 needs to make
- * `goImportExternality` decidable for same-module imports. Pure I/O, no parsing library: go.mod's
- * module directive is a single line, and a project without a readable go.mod answers `null` (never
- * a guessed module path).
- *
- * PHASE-2 PROPOSAL (injection): the indexer calls this once per project (the project root is
- * already known there), persists the value with the project, and passes it to the Go analyzer per
- * file (analyzer context option) and/or to the file-dependency engine. The analyzer itself must
- * NOT read go.mod per file: it is a per-file entry point and the read would pay N times for the
- * same bytes.
- */
-export function readGoModulePath(projectRoot: string): string | null {
-  let text: string
-  try {
-    text = readFileSync(joinPath(projectRoot, "go.mod"), "utf8")
-  } catch {
-    return null
-  }
-  for (const rawLine of text.split("\n")) {
-    const line = rawLine.trim()
-    if (!line.startsWith("module")) continue
-    const rest = line.slice(6)
-    // `module` must be followed by whitespace or the line is not the directive (`moduleX` is a
-    // different token). No regex: the no-regex policy holds here too.
-    if (rest.length > 0 && rest[0] !== " " && rest[0] !== "\t") continue
-    let token = ""
-    for (const ch of rest.trim()) {
-      if (ch === " " || ch === "\t") break
-      token += ch
-    }
-    if (token.length === 0) return null
-    // A quoted module path is legal (`module "example.com/m"`).
-    if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("`") && token.endsWith("`"))) {
-      token = token.slice(1, -1)
-    }
-    return token.length > 0 ? token : null
-  }
-  return null
-}
+export { goImportExternality, readGoModulePath } from "./go-module"
 
 /**
  * GO26 (round 5): the ONE Go framework vocabulary for this analyzer.
@@ -543,8 +481,7 @@ function getUniqueStrings(arr: string[]): string[] {
 // AST analysis for Go language
 
 import type { Node } from "web-tree-sitter"
-import { readFileSync } from "node:fs"
-import { join as joinPath } from "node:path"
+import { goImportExternality } from "./go-module"
 import { ASTEngine } from "./engine"
 
 export interface GoContext {
@@ -615,8 +552,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private goSignatures = new Map<number, string>()
 
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  /** P1-1 phase 2: the project's Go module path, supplied per file through the analyzer
+   *  context (the analyzer must NOT read go.mod itself — it is a per-file entry point).
+   *  `null` when the caller supplied none (fixtures, direct analyzer calls) and then the
+   *  analyzer publishes no externality claim at all, leaving the store's existing behaviour
+   *  untouched. Reset at the top of every `analyze()` from the context, like the maps above. */
+  private goModulePath: string | null = null
+
+  analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const ctx: GoContext = { filePath, content }
+    this.goModulePath = typeof (context as any)?.goModulePath === "string" ? String((context as any).goModulePath) : null
     this.goCallSites = new Map()
     this.goBoundNames = new Map()
     this.goSignatures = new Map()
@@ -733,7 +678,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // call can only be PROVED a stdlib call by the `encoding/json` import written in this same
     // file). `processGoImports` only fills `imports`; the import EDGES are still pushed below, so
     // emission order is unchanged.
-    this.processGoImports(rootNode, imports)
+    this.processGoImports(rootNode, imports, this.goModulePath)
     // One map for every surface: qualifier spelling -> stdlib import path, proved from this file's
     // own import list. Empty means no claim is attached anywhere (never a shape guess).
     const stdlibQualifiers = this.collectGoStdlibQualifiers(imports)
@@ -5664,7 +5609,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Go Import Processing
    * Handles Go module paths, vendor imports, and package resolution
    */
-  private processGoImports(rootNode: Node, imports: ASTEngine.ImportInfo[]) {
+  private processGoImports(rootNode: Node, imports: ASTEngine.ImportInfo[], modulePath: string | null) {
     const stack = [rootNode]
     while (stack.length > 0) {
       const node = stack.pop()!
@@ -5689,7 +5634,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // itself had no oracle at all before this round.
       let claimed = false
       if (node.type === "import_spec") {
-        this.processGoImportSpec(node, imports)
+        this.processGoImportSpec(node, imports, modulePath)
         claimed = true
       } else if (node.type === "import_declaration") {
         // `extractGoImportStatement` already collects every spec beneath this node,
@@ -5698,7 +5643,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // above, invisible to the differential (the harness dedupes the analyzer
         // side by label|target) and caught only by re-dumping a fixture that had
         // passed the same check a moment earlier.
-        this.extractGoImportStatement(node, imports)
+        this.extractGoImportStatement(node, imports, modulePath)
         claimed = true
       }
       if (!claimed) {
@@ -5713,7 +5658,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Go import statement with proper module path handling
    */
-  private extractGoImportStatement(node: Node, imports: ASTEngine.ImportInfo[]) {
+  private extractGoImportStatement(node: Node, imports: ASTEngine.ImportInfo[], modulePath: string | null) {
     const specs: Node[] = []
 
     const stack = [node]
@@ -5730,14 +5675,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     for (const spec of specs) {
-      this.processGoImportSpec(spec, imports)
+      this.processGoImportSpec(spec, imports, modulePath)
     }
   }
 
   /**
    * Process individual Go import specification
    */
-  private processGoImportSpec(spec: Node, imports: ASTEngine.ImportInfo[]) {
+  private processGoImportSpec(spec: Node, imports: ASTEngine.ImportInfo[], modulePath: string | null) {
     const pathNode = spec.childForFieldName("path")
     const aliasNode = spec.childForFieldName("name")
 
@@ -5748,6 +5693,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       const alias = aliasNode?.text
       const packageName = this.getGoPackageName(importPath)
       const framework = this.detectFrameworkFromGoImport(importPath)
+      // P1-1 phase 2 — THE ANALYZER DECLARES THE IMPORT'S IDENTITY.
+      //
+      // Pre-fix the analyzer published no externality at all (only stdlib/third-party
+      // METADATA), so the shared store fallback — the JS/TS idiom "a bare specifier is
+      // external" — classified every Go import external: stdlib, third-party AND the
+      // project's own packages. The file-dependency engine only resolves `!external`
+      // rows, so no Go file ever got an internal dependency or a dependent (ISSUE-03).
+      //
+      // `goImportExternality` is the same pure rule the indexer store phase uses as its
+      // fallback; with `modulePath` from the analyzer context the same-module answer is
+      // `false`. When the module path is unknown the answer is `null` for a domain-shaped
+      // specifier — undecidable — and NOTHING is published here rather than guessed, so
+      // the store's previous behaviour stands byte for byte.
+      const declaredExternal = goImportExternality(importPath, modulePath)
 
       imports.push({
         module: importPath,
@@ -5755,12 +5714,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         alias,
         items: [packageName],
         range: this.nodeToRange(spec),
+        ...(declaredExternal === null ? {} : { isExternal: declaredExternal }),
         metadata: {
           isGoImport: true,
           packageName,
           framework,
           isStandardLibrary: this.isGoStandardLibrary(importPath),
           isThirdParty: this.isGoThirdPartyPackage(importPath),
+          ...(declaredExternal === null ? {} : { isExternal: declaredExternal }),
         },
       })
     }

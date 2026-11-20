@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/m57-t1-classifier",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m57/verify-t1-classifier.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:31:03.712Z",
+  "endedAt": "2026-11-20T05:31:12.460Z",
+  "durationMs": 8747,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 49,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "[brain] preparing the parallel worker pool (5 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  ok C1: /spec/*.json data fixture is NOT flagged\n  ok C2a: src/x.test.ts IS flagged\n  ok C2b: tests/helper.py IS flagged\n  ok C3: plain production source is NOT flagged\n  ok C4: indexer flag == canonical predicate on every fixture file\n  -- C5 (real-DB re-index proof) skipped: set BB_M57_REAL_DB=1 after re-index\n",
+  "stderr": "[INFO] [00:31:07] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:31:07] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":0}\n[INFO] [00:31:08] [parallel-indexer] project index built {\"ext\":\".py\",\"files\":1,\"types\":0}\n[INFO] [00:31:11] [parallel-indexer] worker pool complete {\"files\":5,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n",
+  "stdoutBytes": 443,
+  "stderrBytes": 415,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053112Z-final-wave1-m57-t1-classifier.json"
+}

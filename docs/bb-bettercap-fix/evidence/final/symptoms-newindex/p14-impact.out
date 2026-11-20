@@ -1,0 +1,96 @@
+{
+  "summary": {
+    "truncated": false,
+    "truncationReason": null,
+    "truncationReasons": [],
+    "symbol": "New",
+    "shownCount": 0,
+    "directCount": 0,
+    "totalCountIfKnown": 0,
+    "budget": {
+      "maxNodes": 200,
+      "maxDepth": 5,
+      "totalScanCeiling": 50000,
+      "totalExpansionCeiling": 2000,
+      "totalTimeCeilingMs": 2992,
+      "walkTimeCeilingMs": 1500,
+      "callDeadlineMs": 3000,
+      "nodeBudgetMeans": "bounds the dependent NODES in data.impact[] — NOT the graph engine's caller rows (summary.traversal.engineCallerRows)"
+    },
+    "traversal": {
+      "depthReached": 0,
+      "engineTruncated": false,
+      "engineTruncationReason": null,
+      "edgeLimit": 200,
+      "cappedQueries": 0,
+      "callersIfUncapped": null,
+      "walkTimeBudgetMs": 1500,
+      "walkTimeExhausted": false,
+      "totalsAreLowerBounds": false,
+      "dedupedAtToolLayer": {
+        "cascadeRepeatsCollapsed": 0,
+        "spellingVariantsCollapsed": 0
+      },
+      "engineCallerRows": 0
+    },
+    "cascade": {
+      "exact": 0,
+      "member": 0,
+      "rangeFolded": 0
+    },
+    "countVerification": {
+      "ran": false,
+      "skipped": false,
+      "timedOut": false,
+      "boundarySuspect": false,
+      "complete": null
+    },
+    "reproducible": true,
+    "freshness": {
+      "fresh": 1,
+      "stale": 0,
+      "missing": 0,
+      "staleRatio": 0,
+      "mode": "complete",
+      "remediation": ""
+    },
+    "payloadBytes": 2777,
+    "payloadBudgetBytes": 262144,
+    "droppedRows": 0,
+    "droppedByArray": {},
+    "byteBudgetRule": "payload-byte-budget-exhausted",
+    "byteBudgetExhausted": false
+  },
+  "data": {
+    "root": {
+      "id": "c6d3120b70c4833f2c086165a57cdc78edb6bb4a:session/session.go:New:155",
+      "name": "New",
+      "file": "session/session.go",
+      "filePath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/bettercap/session/session.go",
+      "line": 155,
+      "symbolType": "function",
+      "language": "go"
+    },
+    "rootStale": false,
+    "rootMatch": {
+      "requested": "New",
+      "via": "exact",
+      "nameMatches": 2
+    },
+    "resolution": {
+      "through": "direct"
+    },
+    "rule": {
+      "relationshipTypes": [
+        "calls",
+        "instantiates",
+        "extends",
+        "implements"
+      ],
+      "cascade": "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
+      "noisePolicy": "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+      "maxDepth": 5
+    },
+    "impact": []
+  }
+}

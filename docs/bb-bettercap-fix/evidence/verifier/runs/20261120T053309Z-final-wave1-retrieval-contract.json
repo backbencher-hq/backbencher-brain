@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/retrieval-contract",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-retrieval-contract.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:33:01.854Z",
+  "endedAt": "2026-11-20T05:33:09.709Z",
+  "durationMs": 7855,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 59,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "[brain] preparing the parallel worker pool (6 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 30ms [plan=linear largest-intermediate=10]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 5 relationships (0 patterns) in 31ms\n        ⚠ 7 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(0ms) + health(17ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 8ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 3ms\n  ok: fixture: one declaration-kind Session row\n  ok: fixture: at least one property Session row\n  ok: fixture: unique function row exists\n  ok: fixture: two Dup declaration rows\n  ok: fixture: property precedes declaration in line order (defect trigger)\n  ok: A1 control: unique symbol title is `symbol: UniqueThing`\n  ok: A1 control: unique symbol quality.passed\n  ok: A1 control: unique symbol cites exactly its own declaration\n  ok: A1 control: unique symbol declares single scope\n  ok: A2: ambiguous name documents a DECLARED scope\n  ok: A2: declaration preferred over the property\n  ok: A2: subject is the single declaration (not a silent union)\n  ok: A2: summary states the resolved subject\n  ok: A3: limit:1 keeps the SAME subject as the default call\n  ok: A3: limit:1 still documents the declaration, not the first line-ordered property\n  ok: A3: limit:1 does not silently document a property\n  ok: A4a: qualified target resolves exactly one subject\n  ok: A4a: qualified target documents the qualified declaration only\n  ok: A4b: qualified target on a bare-name corpus shape resolves exactly one subject\n  ok: A4b: bare-name qualified resolution uses the namespace path\n  ok: A4b: bare-name qualified target documents the declaration only\n  ok: A5: two declarations produce a DECLARED union in the title\n  ok: A5: declared union scope\n  ok: A5: union documents both declarations\n  ok: A6: a declared union its citations cannot cover does not pass\n  ok: A7: markdown heading declares the union\n  ok: B1: symbol mode finds the unique symbol\n  ok: B1: symbol-mode fileId is <projectId>:<relativePath>\n  ok: B1: symbol-mode fileId is never an absolute machine path\n  ok: B1: absolute path moved to absolutePath\n  ok: B1: symbol mode returns the source slice (descriptor promise)\n  ok: B1: source declares its bound (sourceTruncated)\n  ok: B2: long symbol source is bounded\n  ok: B2: long symbol source is flagged truncated\n  ok: B3: content mode agrees on the fileId\n  ok: B3: file mode agrees on the fileId\n  ok: B3: no search-mode fileId is an absolute path\n  ok: B4 control: symbols mode still lists the name\n  ok: B4 control: file mode still returns source content\n  ok: C1: descriptor still promises exact symbol source and documents the bound\n  ok: C1: symbol-mode descriptor no longer claims byte bounds without source\n  ok: C2: BB_SEARCH.md documents <projectId>:<relativePath> fileId\n  ok: C2: BB_SEARCH.md documents the symbol source fields\n  ok: C3: BB_DOC.md documents quality.scope and the union title\n  ok: C4: generated bb_search page documents the source fields\n\nRETRIEVAL CONTRACT: 45/45 checks passed\n",
+  "stderr": "[INFO] [00:33:07] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:33:07] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":6,\"types\":3}\n[INFO] [00:33:09] [parallel-indexer] worker pool complete {\"files\":6,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:33:09] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"80f64b20\",\"danglingSources\":7,\"totalRelationships\":12}\n[INFO] [00:33:09] [project-health] project health computed {\"projectId\":\"80f64b2026f52d59449478ba934466edc81945e8\",\"complexityScore\":95,\"maintainabilityScore\":78,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 3580,
+  "stderrBytes": 738,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053309Z-final-wave1-retrieval-contract.json"
+}

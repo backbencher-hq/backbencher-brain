@@ -1,0 +1,32 @@
+=== P2-7 against FINAL dist (sha 22141f3641390eae)
+--- npm run verify:dist
+
+dist integrity: 156 JS chunk(s), 1069 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ every relative chunk reference resolves; entry exists
+verify_dist_exit=0
+--- --json
+{
+  "mode": "check",
+  "ok": true,
+  "distDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist",
+  "files": 156,
+  "references": 1069,
+  "entryPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist/cli/index.js",
+  "entryExists": true,
+  "missing": [],
+  "reasons": []
+}
+--- --self-test
+dist-integrity self-test against a copy of /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ control: an exact copy of dist passes
+  ✓ corruption 1: dangling chunk reference (database-HE6EE3VA class) detected
+  ✓ corruption 2: missing packaged entry detected
+  ✓ corruption 3: deleted-but-referenced chunk detected
+  ✓ detector proven: clean copy passes, all corruptions caught
+self_test_exit=0
+--- corrupt copy (real dist untouched)
+ls: write error: Broken pipe
+dist integrity: 156 JS chunk(s), 1070 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/p2/final-corrupt-dist
+  ✗ 1 broken reference(s) — the packaged build cannot load every chunk:
+      analysis-exclusions-PRLWHQB4.js -> database-HE6EE3VA.js
+corrupt_copy_exit=1

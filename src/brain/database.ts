@@ -12,7 +12,7 @@ import * as BrainSchema from "./brain.sql"
 // of the other -- dropping either would leave a column/index unensured at open.
 //   local:  ensureSymbolSupertypesColumn   (symbol.supertypes)
 //   remote: ensureSymbolSourceTextColumn, ensureQueryShapeIndexes
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn, ensureRelationshipEvidenceClassColumn } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn, ensureRelationshipEvidenceClassColumn, ensureSecurityFlowTable, SCHEMA_VERSION, SCHEMA_MIGRATION_NAME } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -49,6 +49,154 @@ function evictStaleRawHandle(cacheKey: string): void {
 
 function resolveDbPath(projectId: string): string {
   return pathOverrides.get(projectId) ?? BrainDatabase.getDbPath(projectId)
+}
+
+// ── P2-6: READ-SURFACE SCHEMA COMPATIBILITY (the old-index incident) ─────────
+//
+// A read tool opens the index through the byte-read-only path, which by design
+// runs NO migrations (that path must not move the WAL just because somebody
+// asked a question). An index written by an OLDER bb build therefore lacks
+// columns/tables this build's read queries reference, and the first such query
+// used to fail with a raw SQLite error (`no such column: r.target_basis`) — or,
+// worse, a tool whose query happened to avoid the new column answered a PARTIAL
+// result from the stale schema (measured on the 2026-10-17 gql-gqlgen index:
+// bb_visualize and bb_security answered, bb_graph and bb_impact raised the raw
+// SQLite text).
+//
+// WHAT THIS DOES — before the read path returns a handle, it proves the index
+// carries the current READ schema for the tables every read tool touches. If it
+// does not, it refuses with ONE declared, typed error naming the DB, the detected
+// schema, the missing table/column(s) (bounded) and the single-command remedy.
+// It never tries to migrate a read-only connection and never answers partially.
+//
+// WHY THE WRITE PATH IS THE REMEDY — `bb index` / `bb index --post` opens the DB
+// read-write; its open path (`ensureSchemaIfNew` below) runs the additive
+// migrations (ensureRelationshipTargetBasisColumn / ensureRelationshipEvidenceClassColumn
+// / migrateSchemaColumns / …), which is exactly what the refusal asks the user to run.
+//
+// SCOPE OF THE CHECK — the five tables every read tool joins over. Additive
+// tables/columns outside this set (analysis/embedding/security stores) are left
+// to their own owners: requiring them here would make a refusal the write-path
+// migrations cannot clear, i.e. an unfixable error, which is worse than the
+// original one.
+const READ_SCHEMA_REQUIRED_TABLES = [
+  "brain_file",
+  "brain_symbol",
+  "brain_relationship",
+  "brain_import",
+  "brain_index_status",
+] as const
+
+const READ_SCHEMA_REMEDIATION = "bb index --post <project-dir>  (or: bb index <project-dir>)"
+
+export interface SchemaIncompatibleDetails {
+  projectId: string
+  dbPath: string
+  detectedSchemaVersion: number | null
+  detectedMigrationName: string | null
+  expectedSchemaVersion: number
+  expectedMigrationName: string
+  missing: string[]
+  missingTotal: number
+  remediation: string
+}
+
+/** Declared refusal for a read-only index written by an older bb build. */
+export class SchemaIncompatibleError extends Error {
+  readonly code = "BB_SCHEMA_INCOMPATIBLE"
+  readonly details: SchemaIncompatibleDetails
+  constructor(details: SchemaIncompatibleDetails) {
+    const shown = details.missing.slice(0, 8).join(", ")
+    const more = details.missingTotal > 8 ? ` (+${details.missingTotal - 8} more)` : ""
+    super(
+      `bb index schema incompatible: ${details.dbPath} was written by an older bb build ` +
+        `(detected schema v${details.detectedSchemaVersion ?? "?"}/${details.detectedMigrationName ?? "unknown"}; ` +
+        `this build requires v${details.expectedSchemaVersion}/${details.expectedMigrationName}). ` +
+        `Missing from the index: ${shown}${more}. Read tools cannot migrate a read-only index. ` +
+        `Remedy: run \`${details.remediation}\` to migrate it in place, then retry.`,
+    )
+    this.name = "SchemaIncompatibleError"
+    this.details = details
+  }
+}
+
+let readSchemaReference: Map<string, string[]> | null = null
+
+function collectTableColumns(raw: CoreDatabase): Map<string, string[]> {
+  const tables = raw
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+    .all() as Array<{ name: string }>
+  const out = new Map<string, string[]>()
+  for (const { name } of tables) {
+    if (!/^[A-Za-z0-9_]+$/.test(name)) continue
+    // table_xinfo, not table_info: VIRTUAL GENERATED columns (target_basis /
+    // evidence_class) are hidden from table_info and are exactly what an old
+    // index is missing.
+    const columns = (raw.prepare(`PRAGMA table_xinfo("${name}")`).all() as Array<{ name: string }>).map((c) => c.name)
+    out.set(name, columns)
+  }
+  return out
+}
+
+/** Columns of a freshly-ensured CURRENT schema, built once per process in memory. */
+function readSchemaReferenceColumns(): Map<string, string[]> {
+  if (readSchemaReference) return readSchemaReference
+  const memory = openDatabase(":memory:")
+  try {
+    ensureSchema(memory)
+    readSchemaReference = collectTableColumns(memory)
+    return readSchemaReference
+  } finally {
+    try { memory.close() } catch {}
+  }
+}
+
+function detectedSchema(raw: CoreDatabase): { version: number | null; migrationName: string | null } {
+  try {
+    const row = raw
+      .prepare("SELECT version, migration_name AS migrationName FROM brain_schema_version ORDER BY version DESC LIMIT 1")
+      .get() as { version?: number; migrationName?: string } | undefined
+    return {
+      version: typeof row?.version === "number" ? row.version : null,
+      migrationName: row?.migrationName ?? null,
+    }
+  } catch {
+    return { version: null, migrationName: null }
+  }
+}
+
+/**
+ * Throws SchemaIncompatibleError when an open read-only index does not carry the
+ * current read schema. Bounded: introspection of five tables, once per cold open.
+ */
+export function assertReadSchemaCompatible(raw: CoreDatabase, projectId: string, dbPath: string): void {
+  const reference = readSchemaReferenceColumns()
+  const actual = collectTableColumns(raw)
+  const missing: string[] = []
+  for (const table of READ_SCHEMA_REQUIRED_TABLES) {
+    const requiredColumns = reference.get(table)
+    if (!requiredColumns) continue
+    const present = actual.get(table)
+    if (!present) {
+      missing.push(`${table} (table)`)
+      continue
+    }
+    const presentSet = new Set(present)
+    for (const column of requiredColumns) if (!presentSet.has(column)) missing.push(`${table}.${column}`)
+  }
+  if (missing.length === 0) return
+  const schema = detectedSchema(raw)
+  throw new SchemaIncompatibleError({
+    projectId,
+    dbPath,
+    detectedSchemaVersion: schema.version,
+    detectedMigrationName: schema.migrationName,
+    expectedSchemaVersion: SCHEMA_VERSION,
+    expectedMigrationName: SCHEMA_MIGRATION_NAME,
+    missing,
+    missingTotal: missing.length,
+    remediation: READ_SCHEMA_REMEDIATION,
+  })
 }
 
 function isBun(): boolean {
@@ -137,6 +285,11 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // bb_visualize sorted all 40,595 symbols on every call (570.6 ms, min of 6);
       // 2.8 ms with it, and the temp B-tree sort disappears from the plan.
       ensureQueryShapeIndexes(raw)
+      // P2-6 remedy completeness: the security lead store is read by bb_security
+      // on the read path; an index written before this table existed must be
+      // repairable by `bb index --post` (the remedy the read refusal names), so
+      // the write-path open ensures it exactly like every other additive object.
+      ensureSecurityFlowTable(raw)
     }
   }
 
@@ -252,6 +405,15 @@ export namespace BrainDatabase {
       if (!hasFile) {
         try { ro.close() } catch {}
         throw new Error(`index not initialised for project ${projectId}: ${dbPath} — run: bb index <project>`)
+      }
+      // P2-6: an index written by an older bb build must be REFUSED here with a
+      // declared, remediated error — never handed to a query that would surface a
+      // raw `no such column` (or answer partially from a stale schema).
+      try {
+        assertReadSchemaCompatible(ro, projectId, dbPath)
+      } catch (error) {
+        try { ro.close() } catch {}
+        throw error
       }
       rawInstances.set(roKey, ro)
       return ro

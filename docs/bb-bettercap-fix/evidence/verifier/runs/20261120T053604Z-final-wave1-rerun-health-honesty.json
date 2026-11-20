@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1-rerun/health-honesty",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-health-honesty.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:36:00.259Z",
+  "endedAt": "2026-11-20T05:36:04.626Z",
+  "durationMs": 4366,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 103,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 22ms [plan=linear largest-intermediate=3]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 1 relationships (1 patterns) in 23ms\n        patterns: observer 1\n        ⚠ 2 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(2ms) + health(20ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 10ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 2ms\n  ok: C1 (control): a genuinely complete run still reports status=complete\n  ok: C2 (control): no INCOMPLETE_INDEX on a complete run\n  (index line: index: version=v1.0.0 indexedFiles=1972/1973 — INCOMPLETE, 1 file(s) found by the walk were never written (deliberate skip; force will not fix it) status=incomplete (recordedStatus=complete contradicts the counts) errors=0)\n  (embeddings line: embeddings: 2 rows / 2 entities / 100% of symbols (library-wide, 2/2 across 1 space(s)) · configured test/configured-embed: 0% (0/2) — BACKFILL PENDING)\n  (warning codes: SYNTAX_ERRORS,SKIPPED_FILES,EMBEDDINGS_BACKFILL_PENDING)\n  ok: R1: shortfall is still detected on the line\n  ok: R2: bare `status=complete` never prints beside the shortfall\n  ok: R3: the derived status names the shortfall\n  ok: R4: no `force=true to rebuild from scratch` remedy on a deliberate-skip shortfall\n  ok: R5: a warning explains the skip (size tier / deliberate skip), so force is not implied to fix it\n  ok: R6: incomplete/skip warning names the skipped count\n  ok: R7: syntax warning groups attribution by language\n  ok: R8: syntax grouping states a count per language\n  ok: R9: embeddings line names the configured model and its coverage\n  ok: R10: backfill-pending state is declared for the under-covered configured space\n  ok: R11: embeddings line distinguishes library-wide from configured-space coverage\n  ok: C3 (control): user embedding config was not mutated\n\nHEALTH HONESTY: PASS\n",
+  "stderr": "[INFO] [00:36:02] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:36:02] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":0}\n[INFO] [00:36:04] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:36:04] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"b16bd9f0\",\"danglingSources\":2,\"totalRelationships\":3}\n[INFO] [00:36:04] [project-health] project health computed {\"projectId\":\"b16bd9f0b90f95d6758f0451dc645826b22d6380\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2455,
+  "stderrBytes": 737,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053604Z-final-wave1-rerun-health-honesty.json"
+}

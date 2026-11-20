@@ -1,0 +1,59 @@
+
+SCOPED run (go of 50 lanes): results are printed here and NO evidence is written — the canonical validation/m14/results/M14.0.F3.json is NOT touched, and --update-baseline is refused, because either would shrink the milestone's claim to the lanes this run covered.
+PASS  go/bare-value-reads
+PASS  go/builtin-type-arguments
+PASS  go/callable-var
+PASS  go/callee-ownership
+PASS  go/callsite-lines-825
+PASS  go/closure-channel-read
+PASS  go/closure-package-scope
+PASS  go/composite-literal-wrapper-types
+PASS  go/const-inherit-type
+PASS  go/cross-file-call-visibility
+PASS  go/cross-file-value-read
+PASS  go/dot-import-calls
+PASS  go/embedding-halves
+PASS  go/error-recovery-empty-type
+PASS  go/error-region-callee-descend-799
+PASS  go/explanation-complete
+PASS  go/exports-contract
+PASS  go/exports-package-scope
+PASS  go/exports-spec
+PASS  go/for-scope-shadow
+PASS  go/framework-detection
+PASS  go/generic-construction
+PASS  go/generic-instantiation-recovery
+PASS  go/grammar-error-not-a-construction-889
+PASS  go/grouped-and-embedded-fields-889
+PASS  go/implements-params
+PASS  go/implements-signature-914
+PASS  go/imports-contract
+PASS  go/imports-empty-path
+PASS  go/imports-recovered
+PASS  go/incoming-resolve-outgoing-only
+PASS  go/instantiates-callee-shape
+PASS  go/line-conventions-2
+PASS  go/local-type-declaration
+PASS  go/local-type-scope
+PASS  go/override-promotion
+PASS  go/overrides-promotion
+PASS  go/overrides-qualified-embed
+PASS  go/package-main
+PASS  go/package-var-func-type-source
+PASS  go/r7-empty-endpoints
+PASS  go/receiver-owner-scope
+PASS  go/relationship-and-payloads
+PASS  go/renders-template-execution
+PASS  go/return-type-shapes
+PASS  go/round5-surfaces
+PASS  go/stdlib-multisegment-claim
+PASS  go/sub-unit-reason-codes
+PASS  go/type-argument-uses
+PASS  go/type-parameter-explained
+PASS  go/type-usage-graph
+
+summary: {"go":{"pass":51,"fail":0}}
+(baseline gate covers only the 1 lane(s) this scoped run selected; a full run is the milestone's gate)
+fixture baseline gate: no regressions
+
+all fixtures pass

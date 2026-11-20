@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/m48-p3",
+  "command": [
+    "bun",
+    "run",
+    "script/m48/verify-p3-agreement.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:34:09.293Z",
+  "endedAt": "2026-11-20T05:34:11.230Z",
+  "durationMs": 1937,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 87,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "[brain] preparing the parallel worker pool (4 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 20ms [plan=linear largest-intermediate=19]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 9 relationships (0 patterns) in 9ms\n        ⚠ 11 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 2ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(0ms) + health(12ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 8ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\nM48 P3 AGREEMENT: PASS (30 passed, 0 failed, 5 negatives)\n",
+  "stderr": "[INFO] [00:34:10] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:34:10] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":4,\"types\":1}\n[INFO] [00:34:10] [parallel-indexer] worker pool complete {\"files\":4,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:34:10] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"241f9e4c\",\"danglingSources\":11,\"totalRelationships\":20}\n[INFO] [00:34:11] [project-health] project health computed {\"projectId\":\"241f9e4c032c201af6387c359560d652b40d9c6d\",\"complexityScore\":95,\"maintainabilityScore\":95,\"techDebtScore\":100,\"codeQualityScore\":97,\"languages\":1,\"bottlenecks\":0}\n[INFO] [00:34:11] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:34:11] [dependency-graph-visualizer] ✅ Graph Data Generated: 1 nodes, 0 links\n[INFO] [00:34:11] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:34:11] [dependency-graph-visualizer] ✅ Graph Data Generated: 0 nodes, 0 links\n",
+  "stdoutBytes": 1014,
+  "stderrBytes": 1117,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053411Z-final-wave1-m48-p3.json"
+}

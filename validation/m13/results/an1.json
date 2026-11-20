@@ -13,17 +13,17 @@
     {
       "name": "callers: is not an error",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
     },
     {
       "name": "callers: JSON answer",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
     },
     {
       "name": "callers: returns the fields it exists to return",
       "pass": true,
-      "detail": "{\"root\":{\"id\":\"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
+      "detail": "{\"root\":{\"id\":\"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
     },
     {
       "name": "callers: carries the freshness envelope",
@@ -33,17 +33,17 @@
     {
       "name": "callees: is not an error",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
     },
     {
       "name": "callees: JSON answer",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
     },
     {
       "name": "callees: returns the fields it exists to return",
       "pass": true,
-      "detail": "{\"root\":{\"id\":\"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
+      "detail": "{\"root\":{\"id\":\"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
     },
     {
       "name": "callees: carries the freshness envelope",
@@ -53,17 +53,17 @@
     {
       "name": "trace: is not an error",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\": \"function\",\n    \"f"
     },
     {
       "name": "trace: JSON answer",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mid\",\n    \"symbolType\""
     },
     {
       "name": "trace: returns the fields it exists to return",
       "pass": true,
-      "detail": "{\"root\":{\"id\":\"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
+      "detail": "{\"root\":{\"id\":\"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"lineEnd\":2,\"language\":\"typescript\",\"complexity\":1,\"isExtern"
     },
     {
       "name": "trace: carries the freshness envelope",
@@ -73,17 +73,17 @@
     {
       "name": "dependencies: is not an error",
       "pass": true,
-      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/mid.ts\",\n      \"fileId\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts\",\n      \"depend"
+      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/mid.ts\",\n      \"fileId\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts\",\n      \"depend"
     },
     {
       "name": "dependencies: JSON answer",
       "pass": true,
-      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/mid.ts\",\n      \"fileId\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mi"
+      "detail": "{\n  \"dependencies\": [\n    {\n      \"file\": \"src/mid.ts\",\n      \"fileId\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mi"
     },
     {
       "name": "dependencies: returns the fields it exists to return",
       "pass": true,
-      "detail": "{\"dependencies\":[{\"file\":\"src/mid.ts\",\"fileId\":\"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts\",\"dependencies\":[{\"path\":\"src/leaf.ts\",\"external\":false,\"resolution\":\"resolved\",\"stale\":false}],\"dep"
+      "detail": "{\"dependencies\":[{\"file\":\"src/mid.ts\",\"fileId\":\"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts\",\"dependencies\":[{\"path\":\"src/leaf.ts\",\"external\":false,\"resolution\":\"resolved\",\"stale\":false}],\"dep"
     },
     {
       "name": "dependencies: carries the freshness envelope",
@@ -153,17 +153,17 @@
     {
       "name": "test_mapping: is not an error",
       "pass": true,
-      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/top.ts:top:2\",\n      \"name\": \"top\",\n      \"symbolType"
+      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/top.ts:top:2\",\n      \"name\": \"top\",\n      \"symbolType"
     },
     {
       "name": "test_mapping: JSON answer",
       "pass": true,
-      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/top.ts:top:2\",\n      \"name\": \"top"
+      "detail": "{\n  \"entries\": [\n    {\n      \"symbolId\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/top.ts:top:2\",\n      \"name\": \"top"
     },
     {
       "name": "test_mapping: returns the fields it exists to return",
       "pass": true,
-      "detail": "{\"entries\":[{\"symbolId\":\"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/top.ts:top:2\",\"name\":\"top\",\"symbolType\":\"function\",\"file\":\"src/top.ts\",\"line\":2,\"complexity\":1,\"gravity\":33,\"links\":[],\"strongestE"
+      "detail": "{\"entries\":[{\"symbolId\":\"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/top.ts:top:2\",\"name\":\"top\",\"symbolType\":\"function\",\"file\":\"src/top.ts\",\"line\":2,\"complexity\":1,\"gravity\":33,\"links\":[],\"strongestE"
     },
     {
       "name": "test_mapping: carries the freshness envelope",
@@ -173,17 +173,17 @@
     {
       "name": "test_gaps: is not an error",
       "pass": true,
-      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n      \"name\": \"mid\",\n      \"symbolType\": "
+      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n      \"name\": \"mid\",\n      \"symbolType\": "
     },
     {
       "name": "test_gaps: JSON answer",
       "pass": true,
-      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n      \"name\": \"mid\",\n"
+      "detail": "{\n  \"gaps\": [\n    {\n      \"symbolId\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n      \"name\": \"mid\",\n"
     },
     {
       "name": "test_gaps: returns the fields it exists to return",
       "pass": true,
-      "detail": "{\"gaps\":[{\"symbolId\":\"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"category\":\"no_evidence\",\"complexity\":1,\"gravity\":73,"
+      "detail": "{\"gaps\":[{\"symbolId\":\"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\"name\":\"mid\",\"symbolType\":\"function\",\"file\":\"src/mid.ts\",\"line\":2,\"category\":\"no_evidence\",\"complexity\":1,\"gravity\":73,"
     },
     {
       "name": "test_gaps: carries the freshness envelope",
@@ -395,7 +395,7 @@
     {
       "name": "alias symbol= is accepted and identical",
       "pass": true,
-      "detail": "{\n  \"root\": {\n    \"id\": \"d51a51cc88e3a8a6c850c7c5049fd16f0598908c:src/mid.ts:mid:2\",\n    \"name\": \"mi"
+      "detail": "{\n  \"root\": {\n    \"id\": \"ea59b8796b62eb605299cf5da7093271cf6b5ef1:src/mid.ts:mid:2\",\n    \"name\": \"mi"
     },
     {
       "name": "descriptor lists 11 modes",
@@ -471,5 +471,5 @@
   "limitations": [
     "Synthetic fixture; the reference-index latency leg lives in validation/tools/bb_analyze/LATENCY.json."
   ],
-  "generatedAt": "2026-11-19T05:15:54.286Z"
+  "generatedAt": "2026-11-20T06:00:37.535Z"
 }

@@ -1,0 +1,8 @@
+# pre-fix script behaviour with the gate's command (--self-test):
+dist integrity: 0 JS chunk(s), 0 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/--self-test
+  ✗ entry missing: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/--self-test/cli/index.js
+pre_fix_self_test_exit=1
+
+# pre-fix package.json has no verify:dist script:
+verify:dist = undefined
+prepublishOnly = npm run build && node_modules/.bin/tsx script/verify-dist-integrity.ts

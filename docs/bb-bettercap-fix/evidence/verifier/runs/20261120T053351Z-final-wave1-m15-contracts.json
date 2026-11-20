@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/m15-contracts",
+  "command": [
+    "bun",
+    "run",
+    "script/m15/verify-contracts.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:33:50.457Z",
+  "endedAt": "2026-11-20T05:33:51.299Z",
+  "durationMs": 842,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 79,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "  Parsed 69 exported names from contracts.ts\n  Import map has 53 names imported\n\nC1: VERIFIED (40/39 passed, 1 negatives)\n",
+  "stderr": "",
+  "stdoutBytes": 122,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053351Z-final-wave1-m15-contracts.json"
+}

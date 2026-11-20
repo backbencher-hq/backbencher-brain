@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/m57-t3-scope-all",
+  "command": [
+    "bun",
+    "run",
+    "script/m57/verify-t3-scope-all.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:58:24.795Z",
+  "endedAt": "2026-11-20T05:58:25.927Z",
+  "durationMs": 1132,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 149,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  ok K2: candidatesTotal equals the independent census\n  ok K1a: page is bounded (findings == min(candidates, 5))\n  ok K1b: candidates exceed the page (bounding is real here)\n  ok K1c: page is comparator-ordered (conf desc, file asc)\n  ok NEGATIVE a page that ignores the ask\n  ok NEGATIVE an off-by-one census\n  ok K3a: SQL count == JS derivation (parity)\n  ok K3b: the 8-param function is found\n  ok K3c: the 7-param function is NOT found (boundary)\n  ok K3d: the count in the finding text is the true arity (8)\n  ok K4: an array with >7 elements has minimum length 17\n  ok K5a: byType equals the independent census\n  ok K5b: averageConfidence equals the census mean\n  ok K5c: scan.candidatesEvaluated == candidates + rule findings\n  ok NEGATIVE a double-counted aggregate\n  ok K6: the dist bundle contains the SQLite-counted parameters query\n  ok K6b: dist is NEWER than rules.ts (the shipped surface was rebuilt)\n",
+  "stderr": "[INFO] [00:58:25] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:58:25] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":0}\n[INFO] [00:58:25] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n",
+  "stdoutBytes": 1045,
+  "stderrBytes": 324,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055825Z-final2-m57-t3-scope-all.json"
+}

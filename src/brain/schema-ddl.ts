@@ -592,6 +592,36 @@ export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
     END;
   `
 
+/**
+ * P1-1 PHASE 2 (Go lane) — project-scoped identity metadata, additive and idempotent.
+ *
+ * WHY A TABLE rather than a brain_index_status column: the first consumer is the Go
+ * module identity (`go_module_path` / `go_module_dir`), which the INDEXER writes and the
+ * file-dependency engine READS without a project path in hand. The identity is a project
+ * fact, not an index-run fact, and new project-level facts should not each require a
+ * column migration on a table whose writers live in another lane. Key/value keeps the
+ * migration to one CREATE TABLE IF NOT EXISTS on every open (the annotation-table
+ * pattern immediately above): pre-existing databases get it on first open, fresh ones in
+ * the base DDL, and no reader crashes on a missing column.
+ */
+export const PROJECT_META_DDL = `
+    CREATE TABLE IF NOT EXISTS brain_project_meta (
+      project_id TEXT NOT NULL,
+      key TEXT NOT NULL,
+      value TEXT,
+      time_updated INTEGER NOT NULL,
+      PRIMARY KEY (project_id, key)
+    );
+    CREATE INDEX IF NOT EXISTS brain_project_meta_key_idx ON brain_project_meta(project_id, key);
+`
+
+/** Additive + idempotent: runs for freshly-created databases too (see ensureAnnotationTable). */
+export function ensureProjectMetaTable(raw: any): void {
+  try {
+    raw.exec(PROJECT_META_DDL)
+  } catch {}
+}
+
 /** Idempotent, additive-only annotation migration. Safe to call repeatedly. */
 export function ensureAnnotationTable(raw: any): void {
   try {
@@ -1143,6 +1173,8 @@ export function ensureSchema(raw: any): void {
   migrateSchemaColumns(raw)
   // M28.A1: annotation store is additive + idempotent, every open.
   ensureAnnotationTable(raw)
+  // P1-1 phase 2: project-scoped identity metadata, additive + idempotent, every open.
+  ensureProjectMetaTable(raw)
   raw.exec(`
     CREATE TABLE IF NOT EXISTS brain_analysis_run (
       id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, kind TEXT NOT NULL,

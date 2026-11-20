@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/m57-gate-selftest",
+  "command": [
+    "bun",
+    "run",
+    "script/m57/verify-gate-selftest.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:34:46.551Z",
+  "endedAt": "2026-11-20T05:34:56.880Z",
+  "durationMs": 10329,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 98,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "  ok T1: control PASS, mutation FAILS, restored byte-identical\n  ok T2: control PASS, mutation FAILS, restored byte-identical\n  (mutation setup error for T3: mutation anchor not found in src/intelligence/patterns/orphans.ts)\nFAIL T3: control=PASS mutation-rejected=NO\nFAIL T4: control=FAIL mutation-rejected=yes\n  (mutation setup error for T5: mutation anchor not found in src/ast/analysis-exclusions.ts)\nFAIL T5: control=FAIL mutation-rejected=NO\n\nG2 self-test: 2 passed, 3 failed\n",
+  "stderr": "",
+  "stdoutBytes": 482,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053456Z-final-wave1-m57-gate-selftest.json"
+}

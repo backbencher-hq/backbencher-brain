@@ -1,0 +1,5 @@
+=== P2-7 gate on a deliberately corrupted COPY of dist (.tools/, real dist untouched)
+dist integrity: 155 JS chunk(s), 1059 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/p2/corrupt-dist
+  ✗ 1 broken reference(s) — the packaged build cannot load every chunk:
+      analysis-exclusions-PRLWHQB4.js -> database-HE6EE3VA.js
+corrupt_copy_exit=1

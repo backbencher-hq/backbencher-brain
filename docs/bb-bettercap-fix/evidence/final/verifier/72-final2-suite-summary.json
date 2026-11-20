@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "kind": "bb-fix-campaign-final2-suite",
+  "generatedAt": "2026-11-20T06:01:21.991Z",
+  "frozenTree": {
+    "head": "380a7e4735b083fad2b153df92a1c519767fd98c",
+    "srcSha": "ab0176b98ba42374b4f90c9cafe46480ba61807afba709e13206cd7dcbf909dd",
+    "distSha": "c2ea3fb2bb2c9b30df4c82b0c7edb7327c5fc31056235f075d9170104af406ef",
+    "distChunks": 156,
+    "build": "Lead-built FINAL2 in wave-2 worktree, tsup exit 0 'Build success in 566ms'",
+    "tsc": "exit 0"
+  },
+  "counts": {
+    "runs": 46,
+    "exit0": 38,
+    "preExistingRed": 7,
+    "envOnly": 1
+  },
+  "gates": [
+    {
+      "gate": "edit-rename",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 26347,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-unit",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 87721,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-freshness",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 22073,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-crossfile",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 142184,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-classification",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 3626,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "analyze",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 14619,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "test-intel",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 9714,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "test-quality",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 8774,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "search-modes",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 11159,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "ask-contract",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 26037,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "health",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 5778,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "doc",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4926,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "doc-surface",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 973,
+      "ok": false,
+      "classification": "environment-only: worktree lacks untracked website/src/data/tools.generated.ts (CP1 PASS documented env-dependent)"
+    },
+    {
+      "gate": "m57-t1-classifier",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4548,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t2-consumers",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1131,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t4-corpus-identity",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 619,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m71-refactor-safety",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 39653,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "p02-name-binding",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 11633,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "payload-envelope",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 5532,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "retrieval-contract",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 6770,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "embedding-lifecycle",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4525,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "health-honesty",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4582,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m26-polyglot-tsx",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 9362,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m28-mcp-tools-tsx",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 6626,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "graph",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1813,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m65-graph-blindspots",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 5870,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "analyze-modes",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1213,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-views",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1139,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-options",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 1179,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "visualize-owner-fold",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1098,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-target-literals",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1186,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-fidelity",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1037,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m15-contracts",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 552,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m35-envelope-contract",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1199,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m35-s3-graph-migrate",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1582,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m48-p1",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 3902,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m48-p2",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 1728,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m48-p3",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1196,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t3-scope-all",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1132,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t5-predicate-unity",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 285,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m57-closure",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 21360,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m57-gate-selftest",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 5228,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m57-governance",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 12916,
+      "ok": false,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "p26-old-index",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 8983,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "crosslang-green3-fixtures",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 9208,
+      "ok": true,
+      "classification": "PASS"
+    },
+    {
+      "gate": "crosslang-green3-mutant",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 8998,
+      "ok": true,
+      "classification": "PASS"
+    }
+  ],
+  "regressionsVsCp1": []
+}

@@ -15,6 +15,7 @@ import { detectLanguageFromPath } from "./language-detection"
 // hard-coded its own copy would drift from the spelling the analyzers write — the "one spelling, two
 // places" hazard this programme keeps paying for.
 import { BINDING_SEP } from "./types"
+import { moduleInfoForProject } from "./go-module"
 
 const require = createRequire(import.meta.url)
 
@@ -1403,6 +1404,17 @@ const SNIPPET_KINDS = new Set(["function", "class", "method", "interface", "impl
 let engineModule: any = null
 
 export async function parseFile(filePath: string, projectPath: string, context?: ASTEngine.AnalyzeContext) {
+  // P1-1 PHASE 2 (Go lane) — MODULE IDENTITY ON EVERY ANALYZER CONTEXT.
+  //
+  // This is the ONE place both production entry paths converge (the worker's parse_batch
+  // and the direct single-file call in parallel-indexer), so it is where the project's Go
+  // module path is attached. The reader is bounded and cached per project (`go-module.ts`);
+  // a project without go.mod attaches nothing and every analyzer behaves as before. The
+  // Go analyzer only PUBLISHES on the value — it never reads go.mod itself (per-file entry
+  // point: N reads for one project fact).
+  const goModulePath = typeof projectPath === "string" && projectPath.length > 0 ? moduleInfoForProject(projectPath)?.modulePath ?? undefined : undefined
+  const effectiveContext: ASTEngine.AnalyzeContext | undefined =
+    goModulePath === undefined ? context : { ...(context ?? {}), goModulePath }
   const stat = await import("fs/promises").then((fs) => fs.stat(filePath))
   const sizeBytes = stat.size
   const lastModified = stat.mtimeMs
@@ -1457,7 +1469,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     if (!engineModule) {
       engineModule = await import("./engine")
     }
-    const parsed = await engineModule.ASTEngine.parseFile(filePath, content, context)
+    const parsed = await engineModule.ASTEngine.parseFile(filePath, content, effectiveContext)
 
     // Log when engine returns 0 symbols (silent failure — no exception thrown)
     if ((parsed?.symbols?.length || 0) === 0 && (parsed?.errors?.length || 0) > 0) {

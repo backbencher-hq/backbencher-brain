@@ -166,3 +166,62 @@ For each wave-1 lane, in this order, with the harness recording every run:
 | `evidence/verifier/runs/` | harness verdict JSON records + `index.ndjson` |
 | `.tools/verifier/pre-fix/` | pre-fix byte copy for RED replay (scratch, gitignored) |
 | `.tools/verifier/bbdata/` | `BB_DATA_DIR` scratch for fixture-index gates (gitignored) |
+
+## 6. Wave 2 — P2-6 old-index compatibility + P2-7 dist integrity (task-19, worktree `.tools/wt-wave2`)
+
+Status: **P2-6 PASS · P2-7 PASS** (RED-first; exact outputs in `evidence/verifier/p2/`).
+
+### P2-6 — a read tool must refuse an index written by an older build, never leak raw SQLite
+
+- **RED (pre-fix, real 2026-10-17 gql-gqlgen index):** `bb_graph` → `no such column: r.target_basis`;
+  `bb_impact` → same raw error; `bb_visualize` and `bb_security` answered a **partial** result from the
+  stale schema; both doors masked the cause. Evidence: `p2/RED-old-index-repro.txt`,
+  `p2/RED-gate-old-index-compat.txt` (gate RED: 9 failures).
+- **Fix (owned files):** `src/brain/database.ts` — the byte-read-only open now validates the CURRENT
+  read schema (reference from an in-memory `ensureSchema`, compared via `PRAGMA table_xinfo` so
+  generated columns are visible) before returning a handle; an incompatible index throws the declared
+  typed **`SchemaIncompatibleError` (`BB_SCHEMA_INCOMPATIBLE`)** naming DB path, detected schema
+  v/migration, missing table/column(s), and the remedy `bb index --post <project-dir>`
+  (`bb index <project-dir>`). The write path is unchanged and remains the remedy (it runs the additive
+  migrations; `ensureSchemaIfNew` additionally ensures `brain_security_flow` so the remedy is complete).
+  Two **Lead-approved** ~4-line guards rethrow the declared error through the door pre-checks instead
+  of masking it as "No index found": `src/mcp/server.ts` `ensureIndexed()`, `src/cli/index.ts` `cmdTool()`.
+  No payload-handler payload code touched; no partial answer path remains.
+- **GREEN gate (`script/m-fix/verify-old-index-compat.ts`, verifier-owned):** proves (1) the shared open
+  throws the typed error with `target_basis`/`evidence_class` missing, DB path, detected vs expected
+  schema, remediation; (2) all four tools refuse at handler level; (3) the **CLI door** throws the
+  declared error (not "No index found"); (4) the **MCP stdio door** returns `isError:true` with the
+  declared text for all four tools (live JSON-RPC `tools/call`); (5) the **remedy heals**: a write-path
+  open migrates the old copy in place and `bb_graph` then answers; (6) control: a current-schema DB
+  built by the real indexer opens/answers. Result: `P2-6 OLD-INDEX COMPAT: PASS` (exit 0).
+- Environment note: the fixture is the real old DB at
+  `/home/ishaq2321/.bb/projects/3cc41674…/brain.db` (copied into `.tools/`, read-only source); if it is
+  ever absent the gate builds a synthetic v(N-1) by stripping the additive relationship columns.
+
+### P2-7 — the packaged build's chunk graph must be provably self-consistent
+
+- **RED (pre-fix):** `script/verify-dist-integrity.ts` had no `--self-test`/`--json`, no
+  `verify:dist` script, and no proof that its detector has ever caught anything (running it with
+  `--self-test` treated the flag as a dist path). Evidence: `p2/RED-p27-dist-integrity.txt`.
+- **Fix (owned files):** `script/verify-dist-integrity.ts` now exports `checkDistTree()` (chunk graph +
+  packaged entry) and `selfTestDistIntegrity()`; adds `--json` and `--self-test` (copies the real dist
+  to `.tools/verify-dist-integrity-selftest/`, corrupts the COPY three ways — dangling chunk reference
+  = the `database-HE6EE3VA.js` class, missing packaged entry, deleted-but-referenced chunk — and asserts
+  each is caught while the clean copy passes; the real `dist/` is never touched). Wired into the build
+  list: new `npm run verify:dist`, and `prepublishOnly`/`prepack` now run the clean check **and**
+  `--self-test`. `docs/bb-bettercap-fix/OPS.md` documents the single-builder rebuild protocol and the
+  MCP/editor restart requirement after every rebuild.
+- **GREEN:** clean dist → exit 0 (155 chunks / 1058 refs / entry present); `--json` `ok:true`;
+  `--self-test` → all 4 checks ✓ (clean copy passes, 3 corruption classes caught); a deliberately
+  corrupted COPY under `.tools/` → exit 1 naming `analysis-exclusions-PRLWHQB4.js -> database-HE6EE3VA.js`;
+  `npm run verify:dist` → exit 0; real dist re-verified untouched. Evidence:
+  `p2/GREEN-p27-dist-integrity.txt`, `p2/GREEN-p27-corrupt-copy.txt`.
+
+### Wave-2 files changed (worktree, uncommitted — Lead builds/commits after both lanes report)
+
+`src/brain/database.ts` (P2-6 core), `src/mcp/server.ts` + `src/cli/index.ts` (approved door-rethrow
+guards), `script/verify-dist-integrity.ts` (P2-7 gate), `script/m-fix/verify-old-index-compat.ts` (new
+verifier-owned P2-6 gate), `package.json` (verify:dist + prepublish/prepack wiring),
+`docs/bb-bettercap-fix/OPS.md` (new), `docs/bb-bettercap-fix/verifier.md` (this section),
+`docs/bb-bettercap-fix/evidence/verifier/p2/**` (RED→GREEN evidence). **No build run** (Lead runs the
+single FINAL build); `npx tsc --noEmit` exit 0 after the changes (`p2/GREEN-tsc.log`).

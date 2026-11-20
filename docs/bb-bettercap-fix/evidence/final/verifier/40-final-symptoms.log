@@ -1,0 +1,42 @@
+PASS  P0-1 dry-run plans main.go and >=3 files/sites
+PASS  P0-1 plan exposes verification status (declared, never silent)
+PASS  P0-1 raw plan body mentions main.go
+PASS  P0-2 every cross-language fact is declared a candidate (inferred/name-only/<=0.5)
+PASS  P0-2 read text marks candidate rows
+PASS  P1-3 session mapping has no caplets/ or js/ links
+PASS  P1-3 session.New links are only validated reachable tests (no caplets/js) — both checked above; legitimate modules callers allowed
+PASS  P1-3 Lock/Unlock not mapped to unrelated module tests
+PASS  P1-3 Go test files score real assertions (>0 evidence)
+PASS  P1-3 parameterization is not the JS it.each anchor
+PASS  P1-3 fixtures anchor is not the testing stdlib import
+PASS  P1-4 impact first top-level key is summary
+PASS  P1-4 impact summary carries payloadBytes/payloadBudgetBytes/truncated/engineCallerRows/nodeBudgetMeans
+PASS  P1-4 impact envelope declares payloadBytes honestly (vs raw answer bytes)
+PASS  P1-4 impact bounds reachable inside head -c 4096
+PASS  P1-4 graph first top-level key is summary
+PASS  P1-4 graph answer fits the 256KB payload budget or declares byte truncation
+PASS  P1-4 graph bounds reachable inside head -c 4096
+PASS  P2-1 doc declares subject scope (quality.scope with subjects)
+PASS  P2-1 doc quality exposes resolvedBy basis
+PASS  P2-1 doc JSON names the subject/union decision
+PASS  P2-1 qualified target resolves one subject
+PASS  P2-2 symbol mode returns source (or a declared unavailable reason)
+PASS  P2-2 symbol fileId is a projectId:path id (never an absolute path)
+PASS  P2-2 symbol mode keeps absolutePath separate when present
+PASS  P2-3 ask declares fallback/flavour/model state
+SKIP  P2-3 keyword fallback names the pending backfill  answer may be vector now — inspect /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/final/symptoms/p23-ask.out
+PASS  P2-4 status=complete never printed beside the shortfall
+PASS  P2-4 shortfall cause names the size-tier skip
+PASS  P2-4 embeddings line names pending backfill
+PASS  P2-4 syntax attribution splits less vs scss
+PASS  P2-5 security labels the registry census as lead-tier analyzers
+PASS  P2-5 security no longer prints the unlabelled '39 leads'
+PASS  P2-5 visualize drops the whole-project claim on a scoped/truncated page
+PASS  P2-5 visualize states page completeness honestly
+SKIP  P2-5 security history surface present  inspect
+SKIP  P1-1 Go internal import/dependents (index-time)  set BB_DATA_DIR to the FINAL reindex data dir
+SKIP  P1-2 package-main attribution + cross-file uses (index-time)  set BB_DATA_DIR to the FINAL reindex data dir
+SKIP  P0-2 index-time binding gates  set BB_DATA_DIR to the FINAL reindex data dir
+
+SUMMARY: 34 pass / 0 fail / 5 deferred-or-skipped
+evidence: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/final/symptoms

@@ -1953,3 +1953,44 @@ is reported, not made.
 Closes M12.22 (GitHub issue #161). Relationship-type ontology round: `exports` and `overrides`
 closed as GAPs with fixtures and mutants; R7 empty-name defect fixed; `keepSymbol` collision
 reported.
+
+## P1-1 phase 2 — module identity, import externality, source attribution
+
+Status: landed in the fix campaign (wave 2), head of branch `fix-campaign-wave2`. Evidence:
+`docs/bb-bettercap-fix/evidence/go-imports/phase2/**`, gate `script/verify-analyze.ts` (Go
+phase-2 block), status page `docs/bb-bettercap-fix/go-imports.md`.
+
+Three coupled defects in the bettercap report (ISSUE-03, ISSUE-04) shared one root: the Go
+analyzer published no project identity, so no consumer could tell the project's own packages
+from third-party ones, and a repeated name in one file was resolved by emission order.
+
+1. **Module identity is a project fact, read once.** `src/ast/go-module.ts` (new) owns the
+   bounded `readGoModulePath` / `readGoModuleInfo` readers, the per-process
+   `moduleInfoForProject` cache, the pure `goImportExternality` decision and
+   `goPackageDirForSpecifier`. `real-go-analyzer.ts` re-exports the two phase-1 helpers, so the
+   module rule has exactly one implementation. `pool-worker.ts parseFile` attaches
+   `goModulePath` to the analyzer context — the single place both production entry paths
+   converge — so a per-file analyzer never reads go.mod itself. `storeResults` persists the
+   identity as `brain_project_meta` keys `go_module_path` / `go_module_dir` (the indexer's
+   write side; the file-dependency engine has no project path and reads it from the DB).
+2. **The analyzer declares each import's identity.** `processGoImportSpec` publishes
+   `isExternal` from `goImportExternality(importPath, modulePath)`: `false` for the module
+   itself and any path under it, `true` for stdlib and third-party, and NOTHING when the
+   module path is unknown (undecidable, never a guess). The store's Go import-classification
+   section applies the same pure rule as a fallback, so the JS/TS bare-specifier idiom can never
+   classify a Go row again. `brain_import.is_external` for a same-module import is 0.
+3. **A repeated name is a containment question.** The store's source lookup (`nameToSymbol`) is
+   first-wins, and `package main`'s module symbol is emitted before `func main`, so every call
+   inside func main was stored against the 12-byte module symbol (bettercap: 44/44 on
+   `main.go:main:1`, 0 on `func main:20`). For Go, non-`contains` rows with a repeated source
+   name now pick the innermost same-named symbol whose declared extent covers the row's site
+   line; no candidate covering the site keeps the historical choice. Module-level rows (imports,
+   exports) keep the module symbol — pinned as a control.
+
+Downstream: the file-dependency engine resolves a Go import by stripping the module path to the
+package directory and emitting `resolution:"resolved"` edges to every indexed `.go` file in that
+directory (a Go import names a package, not a file), with dependents populated; an external Go
+row carries `external:true` and NO `resolution` claim (previously every row said
+`resolution:"unresolved"` for a resolution that was never attempted — the ISSUE-03
+"contradiction"). The page provenance now states the Go classification basis, so a project with
+no recorded module path reads as a classification limit rather than as zero coupling.

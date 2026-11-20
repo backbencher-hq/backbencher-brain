@@ -1,0 +1,6 @@
+== LoadModules rows after package-scoped pass
+{"sf":"main.go","te":"LoadModules","tn":"LoadModules","tf":"modules/modules.go","pq":1,"bb":"import-path","xf":1}
+{"sf":"modules/modules_test.go","te":"LoadModules","tn":"LoadModules","tf":"modules/modules.go","pq":0,"bb":"import-path","xf":1}
+cross-language rows left {"n":0}
+cross name-resolution imports/calls {"n":0}
+session.New unverified qualified callers {"n":0}

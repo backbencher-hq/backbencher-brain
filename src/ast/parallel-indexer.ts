@@ -30,6 +30,7 @@ import { readdir, stat, open } from "fs/promises"
 import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
 import { detectLanguageFromPath } from "./language-detection"
+import { goImportExternality, goPackageDirForSpecifier, moduleInfoForProject } from "./go-module"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { checkpointWal } from "./index-space"
@@ -3756,7 +3757,8 @@ export function applyP02BindingGates(
      WHERE project_id = '${projectId}' AND target_symbol_id IS NOT NULL
        AND (json_extract(metadata, '$.isStdlib') = 1
             OR json_extract(metadata, '$.isExternalTarget') = 1
-            OR json_extract(metadata, '$.isPackageQualified') = 1
+            OR (json_extract(metadata, '$.isPackageQualified') = 1
+                AND COALESCE(json_extract(metadata, '$.bindingBasis'), '') <> 'import-path')
             OR json_extract(metadata, '$.isFieldAccess') = 1)`,
     // 3. An import of a bare module name must not cross a language boundary
     //    (L-2: a Go import of "os" cannot be satisfied by a YAML key). Same-
@@ -3843,6 +3845,184 @@ export function applyP02CrossLanguageDegrade(
   return { degraded: Number(result?.changes ?? 0) }
 }
 
+/**
+ * P0-2 write-side fix — PACKAGE-SCOPED binding for Go rows (the go-imports contract).
+ *
+ * The binding gates refuse a `metadata.isPackageQualified` row because the L-1 defect was a
+ * name coincidence (errors.New -> session.New). But Go's analyzer sets that flag for ANY
+ * selector call, including a SAME-MODULE, SAME-LANGUAGE call that is provably bindable:
+ * `modules.LoadModules()` in package main. Blanket refusal nulled those too (measured on a
+ * fresh bettercap copy: main.go:47 and modules_test.go:16 both NULL while the OLD index bound
+ * both — the refactor gate then missed modules_test.go).
+ *
+ * This pass runs AFTER every name strategy and BEFORE the gates at BOTH marker sites, so it
+ * has the final say for Go rows. Contract (verified by go-imports against a fresh phase-2 DB):
+ *   - qualifier = metadata.callExpression's first segment; it is a PACKAGE only when exactly
+ *     one FILE-LOCAL brain_import row satisfies
+ *     COALESCE(NULLIF(imported_as,''), imported_name) = qualifier AND is_external = 0.
+ *     No such row => variable receiver (`s.Save()`) => never package-bind.
+ *   - qualified: packageDir = goPackageDirForSpecifier(import_path, module identity from
+ *     brain_project_meta); candidates are symbols name=leaf in GO files DIRECTLY in that dir,
+ *     symbol_type function/variable (never 'module'), prefer function; exactly one or NULL;
+ *     cross-package requires an EXPORTED leaf (uppercase).
+ *   - bare callExpression (no dot): same-package dir = dirname(source file); same-file wins,
+ *     else exactly one; never bind 'module'.
+ * A binding records metadata.bindingBasis='import-path' so the gates know it is
+ * evidence-backed; a refusal records metadata.bindingPolicy=<reason>.
+ */
+export function applyP02PackageScopedBinding(
+  rawDb: {
+    prepare(sql: string): { all(...params: unknown[]): unknown[]; get(...params: unknown[]): unknown; run(...params: unknown[]): { changes?: number } }
+    run(sql: string): { changes?: number } | undefined
+  },
+  projectId: string,
+): { bound: number; refused: number } {
+  if (!P02_BINDING_POLICY.enabled) return { bound: 0, refused: 0 }
+  const metaRows = rawDb
+    .prepare("SELECT key, value FROM brain_project_meta WHERE project_id = ? AND key IN ('go_module_path','go_module_dir')")
+    .all(projectId) as Array<{ key: string; value: string }>
+  const modulePath = metaRows.find((r) => r.key === "go_module_path")?.value ?? ""
+  const moduleDir = metaRows.find((r) => r.key === "go_module_dir")?.value ?? ""
+  if (modulePath.length === 0) return { bound: 0, refused: 0 }
+
+  const dirname = (rel: string): string => {
+    const i = rel.lastIndexOf("/")
+    return i < 0 ? "" : rel.slice(0, i)
+  }
+  const goFiles = rawDb
+    .prepare("SELECT id, relative_path FROM brain_file WHERE project_id = ? AND lower(COALESCE(language,'')) = 'go'")
+    .all(projectId) as Array<{ id: string; relative_path: string }>
+  const filesByDir = new Map<string, Array<{ id: string; rel: string }>>()
+  for (const f of goFiles) {
+    const dir = dirname(f.relative_path)
+    const list = filesByDir.get(dir) ?? []
+    list.push({ id: f.id, rel: f.relative_path })
+    filesByDir.set(dir, list)
+  }
+  const importsByFile = new Map<string, Map<string, string[]>>()
+  const importsFor = (fileId: string): Map<string, string[]> => {
+    let m = importsByFile.get(fileId)
+    if (m) return m
+    m = new Map()
+    const rows = rawDb
+      .prepare(
+        "SELECT import_path, COALESCE(NULLIF(imported_as,''), imported_name) AS qualifier FROM brain_import WHERE file_id = ? AND is_external = 0",
+      )
+      .all(fileId) as Array<{ import_path: string; qualifier: string }>
+    for (const r of rows) {
+      const q = r.qualifier
+      if (!q) continue
+      const list = m.get(q) ?? []
+      list.push(r.import_path)
+      m.set(q, list)
+    }
+    importsByFile.set(fileId, m)
+    return m
+  }
+  const symCache = new Map<string, Array<{ id: string; type: string; rel: string }>>()
+  const symbolsNamed = (leaf: string): Array<{ id: string; type: string; rel: string }> => {
+    const cached = symCache.get(leaf)
+    if (cached) return cached
+    const rows = rawDb
+      .prepare(
+        "SELECT s.id, s.symbol_type, f.relative_path AS rel FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
+          "WHERE s.project_id = ? AND s.name = ? AND lower(COALESCE(f.language,'')) = 'go'",
+      )
+      .all(projectId, leaf) as Array<{ id: string; symbol_type: string; rel: string }>
+    const out = rows.map((r) => ({ id: r.id, type: r.symbol_type, rel: r.rel }))
+    symCache.set(leaf, out)
+    return out
+  }
+  const pickCandidate = (
+    candidates: Array<{ id: string; type: string; rel: string }>,
+    sameFileRel?: string,
+  ): { pick: { id: string; rel: string } | null; reason: string } => {
+    // The package clause pseudo-symbol is never a call target; only callables are.
+    const callable = candidates.filter((c) => c.type === "function" || c.type === "variable")
+    if (callable.length === 0) return { pick: null, reason: "no-callable-candidate" }
+    if (sameFileRel) {
+      const sameFile = callable.find((c) => c.rel === sameFileRel)
+      if (sameFile) return { pick: sameFile, reason: "" }
+    }
+    const functions = callable.filter((c) => c.type === "function")
+    const pool = functions.length > 0 ? functions : callable
+    if (pool.length !== 1) return { pick: null, reason: "ambiguous-candidates" }
+    return { pick: pool[0]!, reason: "" }
+  }
+  const bindStmt = rawDb.prepare(
+    "UPDATE brain_relationship SET target_symbol_id = ?, is_cross_file = ?, is_cross_language = 0, " +
+      "metadata = json_set(COALESCE(metadata,'{}'), '$.bindingBasis', 'import-path') WHERE id = ?",
+  )
+  const refuseStmt = rawDb.prepare(
+    "UPDATE brain_relationship SET target_symbol_id = NULL, is_cross_file = 0, is_cross_language = 0, " +
+      "metadata = json_set(COALESCE(metadata,'{}'), '$.bindingPolicy', ?) WHERE id = ?",
+  )
+  let bound = 0
+  let refused = 0
+  const rowSql = (qualified: boolean): string =>
+    "SELECT r.id AS rel_id, r.target_external AS leaf, r.target_symbol_id AS current_target, " +
+    "json_extract(r.metadata, '$.callExpression') AS call_expr, " +
+    "s.file_id AS src_file_id, f.relative_path AS src_rel " +
+    "FROM brain_relationship r " +
+    "JOIN brain_symbol s ON s.id = r.source_symbol_id " +
+    "JOIN brain_file f ON f.id = s.file_id " +
+    "WHERE r.project_id = ? AND r.relationship_type IN ('calls','uses','instantiates','references') " +
+    "AND r.target_external IS NOT NULL AND r.target_external <> '' " +
+    "AND instr(r.target_external,'.') = 0 AND instr(r.target_external,'/') = 0 AND instr(r.target_external,':') = 0 " +
+    "AND lower(COALESCE(f.language,'')) = 'go' " +
+    "AND (json_extract(r.metadata,'$.isStdlib') IS NOT 1) " +
+    "AND (json_extract(r.metadata,'$.isExternalTarget') IS NOT 1) " +
+    "AND (json_extract(r.metadata,'$.isFieldAccess') IS NOT 1) " +
+    (qualified
+      ? "AND json_extract(r.metadata,'$.callExpression') IS NOT NULL AND instr(json_extract(r.metadata,'$.callExpression'),'.') > 0"
+      : "AND r.target_symbol_id IS NULL AND r.relationship_type = 'calls' AND (json_extract(r.metadata,'$.callExpression') IS NULL OR instr(json_extract(r.metadata,'$.callExpression'),'.') = 0)")
+  for (const row of rawDb.prepare(rowSql(true)).all(projectId) as any[]) {
+    const call = typeof row.call_expr === "string" ? row.call_expr.trim() : ""
+    const dot = call.indexOf(".")
+    if (dot <= 0) continue
+    const qualifier = call.slice(0, dot).trim()
+    // Exactly one segment: chains (`a.b.C`) are not a package reference this pass decides.
+    if (qualifier.length === 0 || qualifier.includes(".") || qualifier.includes("*")) continue
+    const leaf = String(row.leaf)
+    const imports = importsFor(String(row.src_file_id)).get(qualifier) ?? []
+    if (imports.length !== 1) {
+      if (row.current_target) { refuseStmt.run("refused-unvalidated-qualifier", row.rel_id); refused++ }
+      continue
+    }
+    const pkgDir = goPackageDirForSpecifier(imports[0]!, { modulePath, moduleDir })
+    if (pkgDir === null) {
+      if (row.current_target) { refuseStmt.run("refused-specifier-outside-project", row.rel_id); refused++ }
+      continue
+    }
+    const srcDir = dirname(String(row.src_rel))
+    const crossPackage = srcDir !== pkgDir
+    if (crossPackage && !/^[A-Z]/.test(leaf)) {
+      if (row.current_target) { refuseStmt.run("refused-unexported-target", row.rel_id); refused++ }
+      continue
+    }
+    const inDir = symbolsNamed(leaf).filter((c) => dirname(c.rel) === pkgDir)
+    const { pick, reason } = pickCandidate(inDir)
+    if (!pick) {
+      if (row.current_target) { refuseStmt.run("refused-" + reason, row.rel_id); refused++ }
+      continue
+    }
+    bindStmt.run(pick.id, pick.rel === String(row.src_rel) ? 0 : 1, row.rel_id)
+    bound++
+  }
+  for (const row of rawDb.prepare(rowSql(false)).all(projectId) as any[]) {
+    const leaf = String(row.leaf)
+    const srcRel = String(row.src_rel)
+    const dir = dirname(srcRel)
+    const inDir = symbolsNamed(leaf).filter((c) => dirname(c.rel) === dir)
+    const { pick } = pickCandidate(inDir, srcRel)
+    if (!pick) continue
+    bindStmt.run(pick.id, pick.rel === srcRel ? 0 : 1, row.rel_id)
+    bound++
+  }
+  void filesByDir
+  return { bound, refused }
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -3907,6 +4087,24 @@ export async function storeResults(
   // stack-wide (open AND store) for legacy-posture tooling.
   try {
    const now = Date.now()
+ 
+   // P1-1 PHASE 2 — GO MODULE IDENTITY, PERSISTED ONCE PER STORE CALL.
+   //
+   // The go.mod `module` directive is a PROJECT fact and the file-dependency engine has no
+   // project path in hand (it opens by projectId), so the identity is written to
+   // `brain_project_meta` here — the same place the READ side looks for it. The reader is
+   // bounded and cached (`go-module.ts`), so this is one small read per index run, not per
+   // file. A project with no go.mod writes nothing and every consumer degrades honestly.
+   const projectGoModule = moduleInfoForProject(projectPath)
+   if (projectGoModule) {
+     const upsertProjectMeta = rawDb.prepare(
+       "INSERT INTO brain_project_meta (project_id, key, value, time_updated) VALUES (?, ?, ?, ?) " +
+         "ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value, time_updated = excluded.time_updated",
+     )
+     const metaNow = Date.now()
+     upsertProjectMeta.run(projectId, "go_module_path", projectGoModule.modulePath, metaNow)
+     upsertProjectMeta.run(projectId, "go_module_dir", projectGoModule.moduleDir, metaNow)
+   }
  
    const semanticBatch: any[] = []
  
@@ -5276,8 +5474,26 @@ export async function storeResults(
              // The analyzer's own classification is the evidence; an
              // undeclared dependency stays 0 (unknown ≠ external).
              const impMeta = (imp.metadata ?? {}) as Record<string, any>
+             // P1-1 PHASE 2: Go decides its own identity. The analyzer publishes
+             // `isExternal` from the threaded module path (false = the project's own
+             // package). This store-side rule covers every producer (a direct `analyze()`
+             // call, or a context that carried no module path) using the SAME pure rule, so
+             // the JS/TS bare-specifier idiom can never decide a Go row again.
+             // `goImportExternality` answers `null` for an undecidable specifier
+             // (domain-shaped with no module path) — then the historical rule below stands,
+             // byte for byte, exactly as for every non-Go language.
+             const declaredGoExternal =
+               fileLang === "go"
+                 ? goImportExternality(String(imp.path || moduleName), projectGoModule?.modulePath ?? null)
+                 : null
              const impIsExternal =
-               imp.isExternal === true || impMeta.isExternal === true ||               impMeta.isSystemInclude === true ? 1 : 0
+               declaredGoExternal !== null
+                 ? declaredGoExternal
+                   ? 1
+                   : 0
+                 : imp.isExternal === true || impMeta.isExternal === true || impMeta.isSystemInclude === true
+                   ? 1
+                   : 0
              // M60/#910: the row's LINE was always 0 for every import that
              // arrived in the worker's BasicImport shape (`{name, path, type,
              // isExternal, line}`) — the worker carried the line, this read
@@ -5433,6 +5649,34 @@ export async function storeResults(
                    if (s.qualifiedName && sourceName.endsWith(`:${s.qualifiedName}`)) { sourceSymbol = s; break }
                    if (s.qualifiedName && s.qualifiedName.endsWith(`.${sourceLeaf}`)) { sourceSymbol = s; break }
                  }
+               }
+             }
+             // P1-1 PHASE 2 (Go lane) — A REPEATED NAME IS A CONTAINMENT QUESTION.
+             //
+             // `nameToSymbol` is FIRST-WINS by construction (see its note above), and Go's
+             // `package main` module symbol is emitted before `func main` — so every `calls`
+             // row written inside func main was stored against the 12-byte module symbol
+             // (bettercap measured 44/44 on `main.go:main:1`, 0 on `func main:20`; RED proof
+             // in docs/bb-bettercap-fix/evidence/go-imports/RED-probe-phase1.txt).
+             //
+             // The edge carries its own site line, and a name that repeats in one file is
+             // only ambiguous to an ORDERING rule. Among the candidates of that exact name,
+             // the symbol whose declared extent covers the site is the one the row can be
+             // about; the innermost such candidate wins (nested declarations). No candidate
+             // covers the site ⇒ keep the historical choice (never invent an owner).
+             // Narrow by construction: Go only — every other lane's first-wins behaviour is
+             // byte-identical — and never `contains`, which already has its own span rule.
+             if (sourceSymbol && fileLang === "go" && relType !== "contains" && relLine !== null) {
+               const named = result.symbols.filter((s: any) => s.name === sourceName || s.name === sourceLeaf)
+               if (named.length > 1) {
+                 let best: any = null
+                 for (const cand of named) {
+                   const start = typeof cand.startLine === "number" ? cand.startLine : null
+                   const end = typeof cand.endLine === "number" ? cand.endLine : null
+                   if (start === null || end === null || start > relLine || relLine > end) continue
+                   if (!best || start > best.startLine) best = cand
+                 }
+                 if (best) sourceSymbol = best
                }
              }
  
@@ -6053,6 +6297,7 @@ export async function storeResults(
          // P0-2 (triage L-1/L-2, ISSUE-02): refuse name-coincidence bindings
          // BEFORE the marker certifies them. This is the insert-time resolve
          // arm; the deferred arm gets the same call in resolveRelationships.
+         applyP02PackageScopedBinding(rawDb as any, projectId)
          applyP02BindingGates(rawDb as any, projectId)
 
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
@@ -6935,6 +7180,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
 
     // P0-2: the deferred arm must obey the same binding gates as the insert-time
     // arm BEFORE this marker certifies a name coincidence as cross-language.
+    applyP02PackageScopedBinding(rawDb as any, projectId)
     applyP02BindingGates(rawDb as any, projectId)
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):

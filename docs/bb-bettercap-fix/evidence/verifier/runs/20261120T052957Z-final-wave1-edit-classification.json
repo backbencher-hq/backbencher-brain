@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/edit-classification",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m15/verify-edit-classification.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:29:55.345Z",
+  "endedAt": "2026-11-20T05:29:57.529Z",
+  "durationMs": 2183,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 37,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "\nE1: VERIFIED (37/37 passed, 2 negatives)\n",
+  "stderr": "[INFO] [00:29:57] [ast-engine] tree-sitter core initialized {\"wasmFile\":\"/tmp/bb-ts-core.wasm\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"rust\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"rust\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm_4491_2sfhy2kx1y\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"java\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"java\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-java_tree-sitter-java.wasm_4491_2sfhyevbqj\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"cpp\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"cpp\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-cpp_tree-sitter-cpp.wasm_4491_2sfhykfrkp\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"scala\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"scala\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-scala_tree-sitter-scala.wasm_4491_2sfhyuik1e\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"typescript\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"typescript\",\"wasmPath\":\"/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/wasm/tree-sitter-typescript.wasm\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"dart\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"dart\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-dart_tree-sitter-dart.wasm_4491_2sfhzit6kb\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"ruby\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"ruby\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm_4491_2sfhzpsoaz\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"haskell\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"haskell\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm_4491_2sfi00khz2\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"go\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"go\",\"wasmPath\":\"/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/wasm/tree-sitter-go.wasm\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"fsharp\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"fsharp\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-fsharp_tree-sitter-fsharp.wasm_4491_2sfi0hcgq6\"}\n[INFO] [00:29:57] [ast-engine] language grammar allocated {\"language\":\"python\"}\n[INFO] [00:29:57] [ast-engine] language parser loaded {\"language\":\"python\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-python_tree-sitter-python.wasm_4491_2sfi1c97wu\"}\n",
+  "stdoutBytes": 42,
+  "stderrBytes": 2725,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T052957Z-final-wave1-edit-classification.json"
+}

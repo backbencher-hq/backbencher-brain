@@ -18,6 +18,7 @@ import type { ProjectID } from "../../project/schema"
 import type { FileDependency } from "../contracts"
 import type { EvidenceProvenance } from "../evidence"
 import { makeProvenance } from "../evidence"
+import { goPackageDirForSpecifier } from "../../ast/go-module"
 
 /** Cap on the per-file dependent / dependency lists inside one row.
  *
@@ -31,7 +32,7 @@ const MAX_ROW_ENTRIES = 100
 
 
 
-type FileRow = { id: string; relativePath: string }
+type FileRow = { id: string; relativePath: string; language: string }
 type ImportRow = {
   fileId: string
   importPath: string
@@ -162,6 +163,7 @@ export function dependencyProvenance(projectId: string): EvidenceProvenance {
       "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
       "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
       "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut.",
+      "GO CLASSIFICATION BASIS: a Go import is internal when it equals the project's go.mod module path or starts with it; the specifier then names a PACKAGE (every .go file in one directory). The module path is read from go.mod at index time and persisted per project. When a project has no recorded module path, a domain-shaped Go specifier cannot be classified internal and is reported external with no resolution claim \u2014 the page cannot then claim Go coupling, and that absence is a classification limit, not a measurement of zero coupling.",
     ],
   })
 }
@@ -216,8 +218,31 @@ export async function getFileDependencies(
   const limit = options.limit ?? 50
 
   const fileById = new Map<string, string>()
-  for (const row of raw.prepare("SELECT id, relative_path AS relativePath FROM brain_file WHERE project_id = ?").all(projectId) as FileRow[]) {
+  const languageById = new Map<string, string>()
+  for (const row of raw
+    .prepare("SELECT id, relative_path AS relativePath, COALESCE(language, '') AS language FROM brain_file WHERE project_id = ?")
+    .all(projectId) as FileRow[]) {
     fileById.set(row.id, row.relativePath)
+    languageById.set(row.id, row.language)
+  }
+
+  // P1-1 PHASE 2 — the project's Go module identity, if the indexer recorded one.
+  //
+  // The indexer writes these two keys once per project (`brain_project_meta`); a project
+  // with no go.mod (or a database indexed before this wave) has none and every Go
+  // specifier below degrades to the pre-existing behaviour. This engine has no project
+  // path in hand, so the PERSISTED identity is the only route to the module boundary.
+  let goModule: { modulePath: string; moduleDir: string } | null = null
+  try {
+    const metaRows = raw
+      .prepare("SELECT key, value FROM brain_project_meta WHERE project_id = ? AND key IN ('go_module_path', 'go_module_dir')")
+      .all(projectId) as Array<{ key: string; value: string | null }>
+    const modulePath = metaRows.find((r) => r.key === "go_module_path")?.value ?? null
+    if (modulePath) goModule = { modulePath, moduleDir: metaRows.find((r) => r.key === "go_module_dir")?.value ?? "" }
+  } catch {
+    // A database that predates `brain_project_meta` has no Go module identity; the
+    // engine must not fail to answer because of an additive table it never wrote.
+    goModule = null
   }
 
   // The file->file edges are derived in SQL (importEdges joins both symbols), so
@@ -268,18 +293,46 @@ export async function getFileDependencies(
 
   const rawDepsByFile = new Map<
     string,
-    Array<{ path: string; fileId?: string; external: boolean; resolution: Resolution }>
+    Array<{ path: string; fileId?: string; external: boolean; resolution?: Resolution }>
   >()
   for (const imp of allImports) {
     const external = !!imp.isExternal
     if (external && !includeExternal) continue
-    let targetFileId: string | undefined
+    const importerLanguage = languageById.get(imp.fileId) ?? ""
+    // Targets this specifier resolves to. A RELATIVE specifier names at most one file;
+    // a GO MODULE specifier names a PACKAGE, so it can name every `.go` file in one
+    // directory — the set is the honest unit, and each member gets its own edge.
+    const resolvedTargets: string[] = []
     let resolution: Resolution = "unresolved"
     if (!external) {
-      const resolved = resolveInternalSpecifier(fileById.get(imp.fileId) ?? "", imp.importPath, filesByPath)
-      resolution = resolved.resolution
-      targetFileId = resolved.fileId === imp.fileId ? undefined : resolved.fileId
-      if (targetFileId) {
+      let handledByLanguage = false
+      if (importerLanguage === "go" && goModule) {
+        // P1-1 PHASE 2 — Go module-path resolution. This engine's generic resolver
+        // understands `./x`, `../x` and a project-relative suffix match; a Go module path
+        // (`github.com/bettercap/bettercap/v2/session`) is none of those and matched no
+        // brain_file path, so 100% of Go internal imports stayed unresolved (ISSUE-03).
+        // The Go rule is different in kind: strip the project's module path to get the
+        // PACKAGE DIRECTORY, then the package is every indexed `.go` file directly in it.
+        const packageDir = goPackageDirForSpecifier(imp.importPath, goModule)
+        if (packageDir !== null) {
+          handledByLanguage = true
+          const prefix = packageDir.length > 0 ? packageDir + "/" : ""
+          for (const [rel, targetId] of filesByPath) {
+            if (!rel.endsWith(".go")) continue
+            if (rel === packageDir) continue // a directory is not a file
+            const inPackage = prefix.length === 0 ? rel.indexOf("/") === -1 : rel.startsWith(prefix) && rel.slice(prefix.length).indexOf("/") === -1
+            if (inPackage && targetId !== imp.fileId) resolvedTargets.push(targetId)
+          }
+          if (resolvedTargets.length > 0) resolution = "resolved"
+        }
+      }
+      if (!handledByLanguage) {
+        const resolved = resolveInternalSpecifier(fileById.get(imp.fileId) ?? "", imp.importPath, filesByPath)
+        resolution = resolved.resolution
+        const targetFileId = resolved.fileId === imp.fileId ? undefined : resolved.fileId
+        if (targetFileId) resolvedTargets.push(targetFileId)
+      }
+      for (const targetFileId of resolvedTargets) {
         if (!dependentsByFile.has(targetFileId)) dependentsByFile.set(targetFileId, new Set())
         dependentsByFile.get(targetFileId)!.add(imp.fileId)
         if (!depsByFile.has(imp.fileId)) depsByFile.set(imp.fileId, new Set())
@@ -288,12 +341,26 @@ export async function getFileDependencies(
     }
     if (!rawDepsByFile.has(imp.fileId)) rawDepsByFile.set(imp.fileId, [])
     const list = rawDepsByFile.get(imp.fileId)!
-    const reportedPath = targetFileId ? fileById.get(targetFileId) ?? imp.importPath : imp.importPath
+    // An EXTERNAL Go package is a declared fact, not a resolution attempt: the engine
+    // cannot resolve stdlib/third-party code and labelling that absence "unresolved"
+    // conflated "we tried and failed" with "outside the project" (the reported
+    // contradiction). Go rows carry no resolution claim at all; the external flag is the
+    // claim. Other languages keep their historical shape.
+    const reportResolution = external && importerLanguage === "go"
+    const reportedPaths = resolvedTargets.length > 0
+      ? resolvedTargets.map((id) => fileById.get(id) ?? imp.importPath)
+      : [imp.importPath]
     // Two specifiers that resolve to the same file are one edge; two that stay
     // unresolved are two edges and both are listed, because dropping one would
     // hide a real import.
-    if (!list.some((d) => d.path === reportedPath && d.external === external)) {
-      list.push({ path: reportedPath, fileId: targetFileId, external, resolution })
+    for (const reportedPath of reportedPaths) {
+      const targetFileId = resolvedTargets.length > 0 && reportedPaths.length === 1 ? resolvedTargets[0] : resolvedTargets.find((id) => (fileById.get(id) ?? "") === reportedPath)
+      if (list.some((d) => d.path === reportedPath && d.external === external)) continue
+      list.push(
+        reportResolution
+          ? { path: reportedPath, fileId: targetFileId, external, resolution: undefined }
+          : { path: reportedPath, fileId: targetFileId, external, resolution },
+      )
     }
   }
 

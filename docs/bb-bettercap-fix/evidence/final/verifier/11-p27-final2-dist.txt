@@ -1,0 +1,16 @@
+=== P2-7 FINAL2 dist (sha c2ea3fb2bb2c9b30)
+dist integrity: 156 JS chunk(s), 1069 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ every relative chunk reference resolves; entry exists
+verify_dist_exit=0
+dist-integrity self-test against a copy of /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ control: an exact copy of dist passes
+  ✓ corruption 1: dangling chunk reference (database-HE6EE3VA class) detected
+  ✓ corruption 2: missing packaged entry detected
+  ✓ corruption 3: deleted-but-referenced chunk detected
+  ✓ detector proven: clean copy passes, all corruptions caught
+self_test_exit=0
+ls: write error: Broken pipe
+dist integrity: 156 JS chunk(s), 1070 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/p2/final2-corrupt-dist
+  ✗ 1 broken reference(s) — the packaged build cannot load every chunk:
+      analysis-exclusions-PRLWHQB4.js -> database-HE6EE3VA.js
+corrupt_copy_exit=0

@@ -220,8 +220,20 @@ Resolution is a real filesystem resolution, not a basename match:
    file's own directory, trying an ordered extension list and `/index`;
 2. a **directory-anchored suffix match** (`util/format` → `src/util/format.ts`)
    is next, and is labelled `suffix-match`;
-3. anything else is reported with the specifier the caller wrote, `fileId`
+3. a **Go module specifier** is resolved by its project's `go.mod` module path
+   (read once at index time and persisted): the specifier is stripped to its
+   package directory, and a Go import names a PACKAGE, so the edge resolves to
+   every indexed `.go` file directly in that directory (`resolved`);
+4. anything else is reported with the specifier the caller wrote, `fileId`
    absent, `resolution: "unresolved"`.
+
+**External rows and `resolution`.** Resolution is a claim about an INTERNAL
+specifier. An external Go import (stdlib/third-party/frontier) carries
+`external: true` and **no `resolution` field** — `unresolved` would conflate
+"we tried and failed" with "outside the project, never attempted". Other
+languages keep their historical shape. The report `provenance` states the Go
+classification basis (module path vs. no recorded module path), so a Go project
+can never read as zero internal coupling without that limit being stated.
 
 Two files named `format.ts` is not an edge case — it is `index.ts` and
 `types.ts` in every real codebase. The previous implementation keyed on the

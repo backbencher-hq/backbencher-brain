@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/embedding-lifecycle",
+  "command": [
+    "npx",
+    "tsx",
+    "script/verify-embedding-lifecycle.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:33:10.772Z",
+  "endedAt": "2026-11-20T05:33:11.787Z",
+  "durationMs": 1015,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 60,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "",
+  "stderr": "node:fs:3054\n  return binding.mkdtemp(prefix, options.encoding);\n                 ^\n\nError: ENOENT: no such file or directory, mkdtemp '/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/triage-fix/embeddings-health/gate-XXXXXX'\n    at mkdtempSync (node:fs:3054:18)\n    at <anonymous> (/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/script/verify-embedding-lifecycle.ts:37:17)\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {\n  errno: -2,\n  code: 'ENOENT',\n  syscall: 'mkdtemp',\n  path: '/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/triage-fix/embeddings-health/gate-XXXXXX'\n}\n\nNode.js v22.22.1\n",
+  "stdoutBytes": 0,
+  "stderrBytes": 819,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053311Z-final-wave1-embedding-lifecycle.json"
+}

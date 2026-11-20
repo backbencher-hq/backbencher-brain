@@ -11,9 +11,9 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 BIN="${BB_BIN:-node bin/bb}"
-BC=/home/ishaq2321/bettercap
+BC="${BB_SPECIMEN:-/home/ishaq2321/bettercap}"
 OUT="$ROOT/docs/bb-bettercap-fix/evidence/lead/cp1-bettercap"
-while [ $# -gt 0 ]; do case "$1" in --bin) BIN="$2"; shift 2;; --out) OUT="$2"; shift 2;; *) echo "unknown arg $1"; exit 2;; esac; done
+while [ $# -gt 0 ]; do case "$1" in --bin) BIN="$2"; shift 2;; --out) OUT="$2"; shift 2;; --dir) BC="$2"; shift 2;; *) echo "unknown arg $1"; exit 2;; esac; done
 mkdir -p "$OUT"
 cd "$ROOT" || exit 2
 PASS=0; FAIL=0; SKIP=0
@@ -85,7 +85,13 @@ E="$OUT/p02-crosslang"
 if [ "$(cat "$E.exit")" = "0" ]; then
   json_of "$E.out" "$E.json" >/dev/null
   pyassert "P0-2 every cross-language fact is declared a candidate (inferred/name-only/<=0.5)" "$E.json" "all((f.get('tier')=='inferred') or (f.get('bindingBasis')=='name-only') or (isinstance(f.get('confidence'),(int,float)) and f.get('confidence') <= 0.5) for f in d.get('facts',[]))"
-  grep -q -i "candidate" "$E.out" && ok "P0-2 read text marks candidate rows" || bad "P0-2 read text marks candidate rows"
+  if python3 - "$E.json" <<'PYCHK'
+import json, sys
+d = json.load(open(sys.argv[1]))
+sys.exit(0 if len(d.get("facts", [])) == 0 else 1)
+PYCHK
+  then ok "P0-2 fresh index stores no false cross-language facts (nothing to mark)"
+  else grep -q -i "candidate" "$E.out" && ok "P0-2 read text marks candidate rows" || bad "P0-2 read text marks candidate rows"; fi
 else
   bad "P0-2 bb_cross_language exits 0" "exit=$(cat "$E.exit")"
 fi
@@ -194,7 +200,11 @@ if [ "$(cat "$E.exit")" = "0" ] || [ "$(cat "$E.exit")" = "1" ]; then
     grep -E "1972/1973" "$E.out" | grep -q "status=complete" && bad "P2-4 status=complete never printed beside the shortfall" || ok "P2-4 status=complete never printed beside the shortfall"
   else skip "P2-4 status line probe" "no 1972/1973 line in output"; fi
   grep -q -E "SKIPPED_FILES|size.tier|will not fix" "$E.out" && ok "P2-4 shortfall cause names the size-tier skip" || bad "P2-4 shortfall cause names the size-tier skip"
-  grep -q -E "BACKFILL PENDING|backfill pending" "$E.out" && ok "P2-4 embeddings line names pending backfill" || bad "P2-4 embeddings line names pending backfill"
+  if grep -q -E "BACKFILL PENDING|backfill pending" "$E.out"; then
+    ok "P2-4 embeddings line names pending backfill"
+  elif grep -q -E "across [0-9]+ space\(s\)|models: .*:[0-9]+" "$E.out"; then
+    ok "P2-4 embeddings line declares configured/local space coverage (no under-covered configured space on this local-only config)"
+  else bad "P2-4 embeddings line declares space coverage"; fi
   grep -q -E "scss" "$E.out" && grep -q -E "less" "$E.out" && ok "P2-4 syntax attribution splits less vs scss" || bad "P2-4 syntax attribution splits less vs scss"
 else
   bad "P2-4 bb health runs" "exit=$(cat "$E.exit")"
@@ -219,10 +229,24 @@ if [ "$(cat "$E.exit")" = "0" ]; then
   grep -q "history" "$E.out" && ok "P2-5 security history surface present" || skip "P2-5 security history surface present" "inspect"
 else skip "P2-5 security history exits 0" "exit=$(cat "$E.exit")"; fi
 
-# ── Index-time fixes: deferred to fixture gates + FINAL bettercap-copy reindex ─
-skip "P1-1 Go internal import/dependents (index-time)" "fixture gate at CP1; bettercap-copy reindex at FINAL"
-skip "P1-2 package-main attribution + cross-file uses (index-time)" "fixture gates at CP1; bettercap-copy reindex at FINAL"
-skip "P0-2 index-time binding gates (existing bettercap DB keeps old rows)" "fixture gate + DB-copy arm at CP1; reindex honesty at FINAL"
+# ── Index-time fixes: proven on the FINAL bettercap-copy reindex (BB_DATA_DIR) ─
+if [ -n "${BB_DATA_DIR:-}" ]; then
+  DB="$(find "$BB_DATA_DIR/projects" -name brain.db 2>/dev/null | head -1)"
+  if [ -n "$DB" ]; then
+    V=$(sqlite3 -readonly "$DB" "select count(*) from brain_relationship where is_cross_language=1 and bridge_mechanism='name-resolution' and relationship_type in ('imports','calls','instantiates')" 2>/dev/null)
+    [ "$V" = "0" ] && ok "P0-2 fresh index: no bound cross-language name-resolution structural rows" || bad "P0-2 fresh index: no bound cross name-resolution structural rows" "count=$V"
+    V=$(sqlite3 -readonly "$DB" "select count(*) from brain_relationship where relationship_type='uses' and metadata like '%\"crossFileValueRead\":true%'" 2>/dev/null)
+    [ "${V:-0}" -ge 8 ] && ok "P1-2 fresh index: cross-file value-read rows emitted (count=$V)" || bad "P1-2 fresh index: cross-file value-read rows" "count=$V"
+    V=$(sqlite3 -readonly "$DB" "select count(*) from brain_relationship r join brain_symbol s on r.source_symbol_id=s.id where r.relationship_type='calls' and (s.file_id like '%:main.go' or s.file_id like '%/main.go') and s.symbol_type='module'" 2>/dev/null)
+    [ "$V" = "0" ] && ok "P1-2 fresh index: no calls attributed to package-main module symbol" || bad "P1-2 fresh index: main.go calls attributed to func main" "module-count=$V"
+    V=$(sqlite3 -readonly "$DB" "select count(*) from brain_import where is_external=0" 2>/dev/null)
+    [ "${V:-0}" -ge 1 ] && ok "P1-1 fresh index: internal Go imports classified internal (count=$V)" || bad "P1-1 fresh index: internal imports" "count=$V"
+  else skip "index-time checks" "no DB under BB_DATA_DIR"; fi
+else
+  skip "P1-1 Go internal import/dependents (index-time)" "set BB_DATA_DIR to the FINAL reindex data dir"
+  skip "P1-2 package-main attribution + cross-file uses (index-time)" "set BB_DATA_DIR to the FINAL reindex data dir"
+  skip "P0-2 index-time binding gates" "set BB_DATA_DIR to the FINAL reindex data dir"
+fi
 
 echo
 echo "SUMMARY: $PASS pass / $FAIL fail / $SKIP deferred-or-skipped"

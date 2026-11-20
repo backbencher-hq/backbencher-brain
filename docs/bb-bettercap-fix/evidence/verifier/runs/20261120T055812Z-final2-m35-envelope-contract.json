@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/m35-envelope-contract",
+  "command": [
+    "bun",
+    "run",
+    "script/m35/verify-envelope-contract.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:58:11.465Z",
+  "endedAt": "2026-11-20T05:58:12.664Z",
+  "durationMs": 1199,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 144,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\nM35 ENVELOPE CONTRACT: PASS (37/37, negatives=8)\n",
+  "stderr": "[INFO] [00:58:12] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:58:12] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":0}\n[INFO] [00:58:12] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n",
+  "stdoutBytes": 177,
+  "stderrBytes": 324,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055812Z-final2-m35-envelope-contract.json"
+}

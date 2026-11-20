@@ -137,5 +137,5 @@
     "No fixture file can contain a backslash on every platform, so the backslash case is asserted as a non-match that does not throw or widen.",
     "Case-folding of targets and the rejection of unknown languages/relationship types (F6/F7) are the next batch."
   ],
-  "generatedAt": "2026-11-19T05:15:33.650Z"
+  "generatedAt": "2026-11-20T05:58:08.095Z"
 }

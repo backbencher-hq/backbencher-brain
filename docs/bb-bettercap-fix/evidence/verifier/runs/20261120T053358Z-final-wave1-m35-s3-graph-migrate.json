@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final-wave1/m35-s3-graph-migrate",
+  "command": [
+    "bun",
+    "run",
+    "script/m35/verify-s3-graph-migrate.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:33:55.780Z",
+  "endedAt": "2026-11-20T05:33:58.724Z",
+  "durationMs": 2943,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 82,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final",
+  "stdout": "[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 35ms [plan=linear largest-intermediate=7]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 6 relationships (2 patterns) in 18ms\n        patterns: callback 2\n        ⚠ 4 dangling sources, 3 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(2ms) + health(48ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 12ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\nM35 S3 GRAPH+MIGRATE: PASS (23/23, negatives=4)\n",
+  "stderr": "[INFO] [00:33:56] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:33:57] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":2,\"types\":0}\n[INFO] [00:33:58] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:33:58] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"5acda1bd\",\"danglingSources\":4,\"totalRelationships\":10}\n[INFO] [00:33:58] [project-health] project health computed {\"projectId\":\"5acda1bdd011cbe9445fc64ca36d84fdc9bbd629\",\"complexityScore\":95,\"maintainabilityScore\":77,\"techDebtScore\":100,\"codeQualityScore\":91,\"languages\":1,\"bottlenecks\":0}\n[INFO] [00:33:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:33:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 3 nodes, 3 links\n[INFO] [00:33:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:33:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 3 nodes, 3 links\n[INFO] [00:33:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:33:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 2 nodes, 0 links\n[INFO] [00:33:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:33:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 0 nodes, 0 links\n[INFO] [00:33:58] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...\n[INFO] [00:33:58] [dependency-graph-visualizer] ✅ Graph Data Generated: 0 nodes, 0 links\n",
+  "stdoutBytes": 1055,
+  "stderrBytes": 1683,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T053358Z-final-wave1-m35-s3-graph-migrate.json"
+}

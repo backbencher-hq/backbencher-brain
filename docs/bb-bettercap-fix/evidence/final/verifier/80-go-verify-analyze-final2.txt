@@ -1,0 +1,157 @@
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [01:00:19] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [01:00:19] [parallel-indexer] project index built {"ext":".ts","files":3,"types":2}
+[INFO] [01:00:22] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 27ms [plan=linear largest-intermediate=15]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [01:00:22] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"81b5d880","danglingSources":6,"totalRelationships":18}
+  enriching done 100%
+  ✅ Enriched 12 relationships (0 patterns) in 41ms
+        ⚠ 6 dangling sources, 1 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [01:00:22] [project-health] project health computed {"projectId":"81b5d880ed901431bf3ba4c1377dfe1ed8c2f0ad","complexityScore":95,"maintainabilityScore":83,"techDebtScore":100,"codeQualityScore":93,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(17ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 9ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 4ms
+  ok: coupling returns class entries
+  ok: coupling incoming and outgoing can differ (bug fixed)
+  ok: coupling score equals incoming + outgoing
+  ok: coupling entries have file paths
+  ok: dependencies return entries
+  ok: dependency paths are strings, not raw file IDs
+  ok: dependents carry a PATH, never a raw file id
+  ok: service.ts has a dependent (consumer.ts)
+  ok: project complexity has symbolCount > 0
+  ok: no complexity metric is NaN
+  ok: depthOfInheritance is marked unavailable (not fabricated)
+  ok: project LOC available and finite
+  ok: function scope resolves alpha
+  ok: function scope LOC is symbol-span based (>= 0)
+  ok: empty scope reports symbolCount 0
+  ok: empty scope marks cyclomaticAvg unavailable
+  ok: empty scope has no NaN
+  ok: impact found for gamma
+  ok: direct impact has direct symbols
+  ok: impact riskLevel is a valid label
+  ok: transitive impact >= direct impact files
+  ok: impact not-found returns found:false, low risk
+  ok: impact never claims test coverage
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [01:00:24] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [01:00:26] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 22ms [plan=linear largest-intermediate=7]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 3 relationships (0 patterns) in 7ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 6ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [01:00:26] [project-health] project health computed {"projectId":"6bd5913919ce8246e54551a16e4c76aa1cd0576f","complexityScore":95,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(9ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 11ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 6ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 6ms
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [01:00:28] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [01:00:30] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 33ms [plan=linear largest-intermediate=2]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 1 relationships (0 patterns) in 5ms
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [01:00:31] [project-health] project health computed {"projectId":"4b2639017326920524d6b0148c6612ff8e49a2d8","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(4ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 2ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: GO1 cross-file value read publishes a uses row
+  ok: GO1 cross-file row carries the out-of-scope reason code
+  ok: GO1 control: same-file value read still publishes
+  ok: Go import identity: same-module specifier is internal
+  ok: Go import identity: stdlib specifier is external
+  ok: Go import identity: third-party specifier is external
+  ok: Go import identity: module-path lookalike is NOT same-module
+  ok: Go import identity: unknown module path stays undecided (phase-2 boundary)
+  ok: readGoModulePath reads the module line
+  ok: readGoModulePath returns null when there is no go.mod
+  ok: package-main control: call inside func main publishes with its call-site line
+[brain] preparing the parallel worker pool (3 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [01:00:33] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [01:00:34] [parallel-indexer] worker pool complete {"files":3,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 19ms [plan=linear largest-intermediate=6]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+  enriching done 100%
+  ✅ Enriched 8 relationships (0 patterns) in 5ms
+        ⚠ 4 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 6ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [01:00:34] [project-health] project health computed {"projectId":"64891ff2a841989cc1cdfe7afcddb89d1f201008","complexityScore":95,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":91,"languages":1,"bottlenecks":0}
+  ✓ taint(0ms) + health(3ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 4ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  ok: P2: go.mod module path persisted as project metadata
+  ok: P2: project module-relative dir persisted (project root == module root)
+  ok: P2: no same-module import row is marked external
+  ok: P2: same-module import stored as internal (is_external = 0)
+  ok: P2 control: third-party Go import stays external
+  ok: P2: Go internal dependency resolved to the package's files
+  ok: P2: Go external dependency is external and carries no resolution claim
+  ok: P2: Go dependents populated (lib/lib.go <- app/app.go)
+  ok: P2: returned internal dependencies > 0 on a real Go module project
+  ok: P2: readGoModuleInfo finds the governing go.mod and its module-relative dir
+  ok: P2: cached moduleInfoForProject agrees
+  ok: P2: module specifier maps to the package directory
+  ok: P2: project indexed at a module SUBDIRECTORY strips its own dir
+  ok: P2: a third-party specifier maps to no project package dir
+  ok: P2: call inside func main is attributed to func main
+  ok: P2 control: the module symbol does NOT own the func main call row
+  ok: P2 control: module-level import rows keep the module symbol
+
+ANALYZE: PASS

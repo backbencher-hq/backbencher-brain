@@ -1,0 +1,2 @@
+Doc-surface FAIL cause: worktree has no website/src/data/tools.generated.ts (untracked generated artifact, present only in main checkout at CP1). CP1's PASS was documented as partly environment (verifier.md/VERIFICATION-CP1 §6). Not a wave-2 regression.
+embedding/health FAIL cause: mkdtemp parent .tools/triage-fix/embeddings-health absent in fresh worktree (gitignored artifact). Pre-created now; re-run below.

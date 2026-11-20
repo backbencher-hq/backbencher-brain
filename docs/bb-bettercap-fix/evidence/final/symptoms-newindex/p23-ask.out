@@ -1,0 +1,26 @@
+answer: Note: only 23,925 of 55,785 indexed symbols (43%) have embeddings in the space this query was compared in, so a symbol matching your question may be absent from this list entirely.
+
+Closest matches from the AST index for your query (search results, not a verified answer):
+
+--- File: modules/hid/hid.go (Line 161) ---
+[method] Description — similarity 0.504
+```
+func (mod HIDRecon) Description() string {
+	return "A scanner and frames injection module for HID devices on the 2.4Ghz spectrum, using Nordic Semiconductor nRF24LU1+ based USB dongles and Bastille Research RFStorm firmware."
+}
+```
+
+
+— Use bb_search for precise symbol lookup: "bb_search(query='how does bettercap discover and load modules at startup')".
+— Use bb_search with mode="file" to read any indexed file.
+
+confidence: 0.5 (mean of the returned similarities, bounded 0.2–0.85)
+
+1. modules/hid/hid.go:161
+   Description
+
+[retrieval: method=vector, queryModel=local-word-vectors-v3, indexModel=local-word-vectors-v3, dimension=50, embeddingCoverage=43% (23925/55785 symbols embedded in this model space), libraryCoverage=43% (23925/55785 across all models), scanned=20000/20000 (cap reached), filtered=20000, candidates=1]
+
+[bounds: returned=1, totalMatches=1, truncated=true, truncationReason=scan cap 20000 reached; candidates are a deterministic prefix of the embedding table (ordered by entity_id)]
+
+[provenance: semantic_candidate via quick-answer@intelligence (retrieval); truncated: the candidate scan was capped; unknowns: The natural-language query is matched by similarity, not parsed for intent.]

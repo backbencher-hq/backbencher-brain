@@ -1,0 +1,348 @@
+{
+  "schemaVersion": 1,
+  "kind": "bb-fix-campaign-final-wave1-suite",
+  "generatedAt": "2026-11-20T05:37:19.879Z",
+  "frozenTree": {
+    "head": "380a7e4735b083fad2b153df92a1c519767fd98c",
+    "srcSha": "323928a18fd1f9efd8db64cf667b960cadc1e677667823b92ec3282eeb89e59b",
+    "distSha": "22141f3641390eaeb6ffa83a385ab6aea65b81d46e7bf3cde71c5312ff9537dd",
+    "distChunks": 156,
+    "build": "Lead-built in wave-2 worktree, tsup exit 0 'Build success in 1548ms'",
+    "tsc": "exit 0"
+  },
+  "env": {
+    "BB_DATA_DIR": ".tools/verifier/bbdata-final",
+    "BB_M57_DATA_DIR": ".tools/verifier/bbdata-final"
+  },
+  "note": "FINAL verdict PENDING per Lead: fresh-index reindex exposed a WRITE-SIDE P0-2 binding regression being fixed; this suite is the read-surface wave-1 gate suite on the FINAL build.",
+  "counts": {
+    "runs": 43,
+    "exit0": 33,
+    "envOnly": 1,
+    "preExistingRed": 7,
+    "rerunPass": 2,
+    "effectivePass": 35
+  },
+  "gates": [
+    {
+      "gate": "edit-rename",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 30125,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-unit",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 85015,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-freshness",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 18062,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-crossfile",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 66964,
+      "classification": "PASS"
+    },
+    {
+      "gate": "edit-classification",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 2183,
+      "classification": "PASS"
+    },
+    {
+      "gate": "analyze",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 9881,
+      "classification": "PASS"
+    },
+    {
+      "gate": "test-intel",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4577,
+      "classification": "PASS"
+    },
+    {
+      "gate": "test-quality",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 5051,
+      "classification": "PASS"
+    },
+    {
+      "gate": "search-modes",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 7657,
+      "classification": "PASS"
+    },
+    {
+      "gate": "ask-contract",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 16777,
+      "classification": "PASS"
+    },
+    {
+      "gate": "health",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 6739,
+      "classification": "PASS"
+    },
+    {
+      "gate": "doc",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 6292,
+      "classification": "PASS"
+    },
+    {
+      "gate": "doc-surface",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 1123,
+      "classification": "environment-only (worktree lacks untracked website/ generated artifact; CP1 PASS was documented as env-dependent)"
+    },
+    {
+      "gate": "m57-t1-classifier",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 8747,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t2-consumers",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 2951,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t4-corpus-identity",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 2304,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m71-refactor-safety",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 70549,
+      "classification": "PASS"
+    },
+    {
+      "gate": "p02-name-binding",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 18807,
+      "classification": "PASS"
+    },
+    {
+      "gate": "payload-envelope",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 5902,
+      "classification": "PASS"
+    },
+    {
+      "gate": "retrieval-contract",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 7855,
+      "classification": "PASS"
+    },
+    {
+      "gate": "embedding-lifecycle",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 7618,
+      "classification": "PASS"
+    },
+    {
+      "gate": "health-honesty",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4366,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m26-polyglot-tsx",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 7122,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m28-mcp-tools-tsx",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 6487,
+      "classification": "PASS"
+    },
+    {
+      "gate": "graph",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1715,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m65-graph-blindspots",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 4697,
+      "classification": "PASS"
+    },
+    {
+      "gate": "analyze-modes",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1474,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-views",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1376,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-options",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 1445,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "visualize-owner-fold",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1931,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-target-literals",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1486,
+      "classification": "PASS"
+    },
+    {
+      "gate": "visualize-fidelity",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1284,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m15-contracts",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 842,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m35-envelope-contract",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 2001,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m35-s3-graph-migrate",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 2943,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m48-p1",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 5499,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m48-p2",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 1756,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m48-p3",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1937,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t3-scope-all",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "durationMs": 1854,
+      "classification": "PASS"
+    },
+    {
+      "gate": "m57-t5-predicate-unity",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 344,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m57-closure",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 28681,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m57-gate-selftest",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 10329,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    },
+    {
+      "gate": "m57-governance",
+      "verdict": "FAIL",
+      "exitCode": 1,
+      "durationMs": 1132,
+      "classification": "pre-existing RED (unchanged from CP1)"
+    }
+  ],
+  "reruns": [
+    {
+      "gate": "embedding-lifecycle",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "note": "re-run after pre-creating gitignored .tools/triage-fix scratch dirs (fresh worktree artifact, not a regression)"
+    },
+    {
+      "gate": "health-honesty",
+      "verdict": "PASS",
+      "exitCode": 0,
+      "note": "re-run after pre-creating gitignored .tools/triage-fix scratch dirs (fresh worktree artifact, not a regression)"
+    }
+  ],
+  "cp1Reference": {
+    "cp1FinalRuns": 44,
+    "cp1bClosed": 10
+  },
+  "regressionsVsCp1": []
+}

@@ -86,7 +86,7 @@
       "name": "exact: and it is NOT marked as folded [negative]",
       "pass": true,
       "negative": true,
-      "detail": "{\"source\":\"31715e1b1ebeace7181081d784f63f99d70a8a12:src/core/service.ts:run:2\",\"target\":\"31715e1b1ebeace7181081d784f63f99d70a8a12:src/core/s"
+      "detail": "{\"source\":\"c45452647c120f6d2cd7695a37b6882e7d4622a4:src/core/service.ts:run:2\",\"target\":\"c45452647c120f6d2cd7695a37b6882e7d4622a4:src/core/s"
     },
     {
       "name": "exact: no edge claims a fold without naming the member [negative]",
@@ -181,5 +181,5 @@
     "One fixture shape (a TypeScript class with method members); the fold's cap (`capped`) is not driven to its limit here.",
     "The fold is asserted through the handler, which is the door a caller uses; the engine's own helper is not called directly."
   ],
-  "generatedAt": "2026-11-19T05:15:29.181Z"
+  "generatedAt": "2026-11-20T05:58:06.317Z"
 }

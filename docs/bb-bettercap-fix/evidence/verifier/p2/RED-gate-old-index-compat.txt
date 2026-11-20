@@ -1,0 +1,75 @@
+P2-6 old-index compatibility gate
+
+[brain] preparing the parallel worker pool (1 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:08:25] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [00:08:25] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [00:08:26] [parallel-indexer] worker pool complete {"files":1,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 15ms [plan=linear largest-intermediate=4]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:08:27] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"9e6d84ee","danglingSources":2,"totalRelationships":5}
+  enriching done 100%
+  ✅ Enriched 3 relationships (0 patterns) in 31ms
+        ⚠ 2 dangling sources — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 3ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:08:27] [project-health] project health computed {"projectId":"9e6d84ee60bd2971c1c408232b22fb67dc4f2110","complexityScore":95,"maintainabilityScore":76,"techDebtScore":100,"codeQualityScore":90,"languages":1,"bottlenecks":0}
+  ✓ taint(1ms) + health(14ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 6ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1ms
+  ok: control: current-schema DB opens read-only without refusal
+  ok: control: current-schema DB answers bb_graph
+
+[v(N-1) fixture] real old index: /home/ishaq2321/.bb/projects/3cc416747a0082a80b42b89928cb8c909e09e371/brain.db
+  FAIL: shared read open throws SchemaIncompatibleError — no error thrown
+  ok: bb_graph: refuses with isError
+  FAIL: bb_graph: refusal is declared (schema incompatible + remediation) — bb_graph: no such column: r.target_basis
+  FAIL: bb_graph: no raw sqlite error — bb_graph: no such column: r.target_basis
+  ok: bb_impact: refuses with isError
+  FAIL: bb_impact: refusal is declared (schema incompatible + remediation) — bb_impact: no such column: r.target_basis
+  FAIL: bb_impact: no raw sqlite error — bb_impact: no such column: r.target_basis
+[INFO] [00:08:27] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [00:08:27] [dependency-graph-visualizer] ✅ Graph Data Generated: 38 nodes, 74 links
+  FAIL: bb_visualize: refuses with isError — {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": "regions",
+    "declared
+  FAIL: bb_visualize: refusal is declared (schema incompatible + remediation) — {
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": "regions",
+    "declared
+  ok: bb_visualize: no raw sqlite error
+  FAIL: bb_security: refuses with isError — ⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING
+tiers (analyzer registry census, project-independent): 0 scan / 39 lead-tier analyzers / 14 unsupported (of 53 analyzer specs) — unsupported languages are NOT scan
+  FAIL: bb_security: refusal is declared (schema incompatible + remediation) — ⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING
+tiers (analyzer registry census, project-independent): 0 scan / 39 lead-tier analyzers / 14 unsupported (of 53 analyzer specs) — unsupported languages are NOT scan
+  ok: bb_security: no raw sqlite error
+
+P2-6 OLD-INDEX COMPAT: FAIL (9 failure(s))

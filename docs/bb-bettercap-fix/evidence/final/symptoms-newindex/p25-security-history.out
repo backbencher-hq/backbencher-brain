@@ -1,0 +1,22 @@
+{
+  "runs": [],
+  "findings": [],
+  "findingsTotal": 0,
+  "findingsShown": 0,
+  "findingsTruncated": 0,
+  "summary": {
+    "open": 0,
+    "resolved": 0,
+    "suppressed": 0,
+    "reopened": 0,
+    "mitigated": 0,
+    "stale": 0
+  },
+  "census": {
+    "runsTotal": 0,
+    "runLimit": 5,
+    "findingsTotal": 0,
+    "findingsShown": 0,
+    "findingsBeyondCap": 0
+  }
+}

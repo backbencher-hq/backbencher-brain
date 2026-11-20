@@ -49,8 +49,8 @@
     "verify:suite": "tsx script/m62/verify-suite.mts",
     "test": "npx tsx script/verify-engine.ts && npx tsx script/verify-schema.ts && npx tsx script/verify-tool-registry.ts && npx tsx script/verify-public-surface.ts && npx tsx script/verify-skills-if-present.ts && npx tsx script/verify-grammar-licenses.ts && npx tsx script/m30/verify-embedding-setup.ts && npx tsx script/m30/verify-embedding-progress.ts && npx tsx script/m30/verify-embedding-reconcile.ts",
     "verify:fast": "npx tsx script/m30/verify-governance.ts && npx tsx script/m30/verify-setup.ts && npx tsx script/m30/verify-first-run-hook.ts && npx tsx script/m30/verify-key-validation.ts && npx tsx script/m30/verify-rate-limit.ts && npx tsx script/m30/verify-honesty-docs.ts && npx tsx script/m32/verify-governance.ts && npx tsx script/m32/verify-smoke.ts && npx tsx script/m32/verify-setup-show.ts && npx tsx script/m32/verify-doctor.ts && npx tsx script/m32/verify-doctor-fix.ts && npx tsx script/m32/verify-honesty-docs.ts && npx tsx script/m33/verify-governance.ts && npx tsx script/m33/verify-version.ts && npx tsx script/m33/verify-unknown-command.ts && npx tsx script/m33/verify-man-page.ts && npx tsx script/m33/verify-help-parity.ts && npx tsx script/m33/verify-honesty-docs.ts && npx tsx script/m34/verify-governance.ts && npx tsx script/m34/verify-install-smoke.ts && npx tsx script/m34/verify-script-gate.ts && npx tsx script/m29/verify-wave-protocol.ts && npx tsx script/m29/verify-precision-ledger.ts && npx tsx script/m56/verify-governance.ts && npx tsx script/m15/verify-security-regressions.ts && npx tsx script/m15/verify-security-precision.ts && npx tsx script/verify-security.ts && npx tsx script/m20/verify-security-flow-boundary.ts && npx tsx script/m20/verify-security-adversarial.ts && npx tsx script/m20/verify-security-history.ts && npx tsx script/m15/verify-security-deep.ts",
-    "prepublishOnly": "npm run build && node_modules/.bin/tsx script/verify-dist-integrity.ts",
-    "prepack": "npm run typecheck 1>&2 && npm run build 1>&2 && node_modules/.bin/tsx script/verify-dist-integrity.ts 1>&2",
+    "prepublishOnly": "npm run build && npm run verify:dist && node_modules/.bin/tsx script/verify-dist-integrity.ts --self-test",
+    "prepack": "npm run typecheck 1>&2 && npm run build 1>&2 && node_modules/.bin/tsx script/verify-dist-integrity.ts 1>&2 && node_modules/.bin/tsx script/verify-dist-integrity.ts --self-test 1>&2",
     "docs:generate": "bun run script/verify-tool-docs.ts --write",
     "verify:viz-browser": "bun run script/m13/verify-visualize-browser.ts",
     "docs:verify": "bun run script/verify-tool-docs.ts && bun run script/verify-integration-docs.ts && bun run script/verify-doc-tool-surface.ts && bun run script/m31/verify-governance.ts && bun run script/m31/verify-gate-selftest.ts && bun run script/m31/tool-mode-corpus.ts --check && bun run script/m31/verify-tool-docs-deep.ts && bun run script/m31/verify-bb-docs-truth.ts && bun run script/m31/verify-tools-overview.ts && bun run script/m31/verify-closure.ts && bun run script/m31/wave2/verify-governance.ts",
@@ -134,7 +134,8 @@
     "verify:health-deep": "bun run script/m64/verify-sample-coverage.ts && bun run script/m64/verify-refresh-integrity.ts && bun run script/m64/verify-coverage-and-partial.ts && bun run script/m64/verify-freshness-reasons.ts && bun run script/m64/verify-actionability.ts && bun run script/m64/verify-unindexed.ts && bun run script/m64/verify-paths.ts && bun run script/m64/verify-embed-scan.ts && bun run script/m64/verify-wire.ts && bun run script/m64/verify-health-deep.ts && bun run script/m64/verify-evidence.ts",
     "verify:tools": "bun run script/verify-tools.ts",
     "verify:language-matrix": "bun run script/verify-language-tool-matrix.ts",
-    "verify:doc-surface": "bun run script/verify-doc-tool-surface.ts"
+    "verify:doc-surface": "bun run script/verify-doc-tool-surface.ts",
+    "verify:dist": "node_modules/.bin/tsx script/verify-dist-integrity.ts"
   },
   "dependencies": {
     "@backbencher/brain": "^0.1.5",

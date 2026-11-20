@@ -1,0 +1,32 @@
+=== P2-7 GREEN: clean dist check
+dist integrity: 155 JS chunk(s), 1058 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ every relative chunk reference resolves; entry exists
+clean_exit=0
+
+=== P2-7 GREEN: --json verdict
+{
+  "mode": "check",
+  "ok": true,
+  "distDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist",
+  "files": 155,
+  "references": 1058,
+  "entryPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist/cli/index.js",
+  "entryExists": true,
+  "missing": [],
+  "reasons": []
+}
+
+=== P2-7 GREEN: --self-test (corrupts only a COPY under .tools/)
+dist-integrity self-test against a copy of /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ control: an exact copy of dist passes
+  ✓ corruption 1: dangling chunk reference (database-HE6EE3VA class) detected
+  ✓ corruption 2: missing packaged entry detected
+  ✓ corruption 3: deleted-but-referenced chunk detected
+  ✓ detector proven: clean copy passes, all corruptions caught
+self_test_exit=0
+
+=== P2-7 GREEN: wiring via npm run verify:dist
+
+dist integrity: 155 JS chunk(s), 1058 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ every relative chunk reference resolves; entry exists
+npm_verify_dist_exit=0

@@ -14,7 +14,7 @@
     {
       "name": "fresh caller: refactor succeeds",
       "pass": true,
-      "detail": "[\"/tmp/bb-e5-fresh-6ELZHL/src/target.ts\",\"/tmp/bb-e5-fresh-6ELZHL/src/caller.ts\"]"
+      "detail": "[\"/tmp/bb-e5-fresh-ytel4I/src/target.ts\",\"/tmp/bb-e5-fresh-ytel4I/src/caller.ts\"]"
     },
     {
       "name": "fresh caller: declaration renamed",
@@ -102,5 +102,5 @@
     "allowStaleIndex only bypasses the declaration file's freshness gate; caller freshness is always enforced (safer, never a silent partial rename).",
     "Cross-file import specifiers are not renamed (imports live in brain_import, not calls/references) — unchanged from E2, tracked separately."
   ],
-  "generatedAt": "2026-11-19T05:04:23.838Z"
+  "generatedAt": "2026-11-20T05:52:07.675Z"
 }

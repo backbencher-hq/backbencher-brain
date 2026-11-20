@@ -1,0 +1,8 @@
+--- GREEN3 mutant
+  ok: PC2 ts+js bridge rows survive: bridges are evidence-bearing
+  -- P2 bettercap arm skipped: set BB_P02_BETTERCAP_DB=<read-only db path> to run it
+  ok: MUTANT: disabling the policy makes the P1 assertions fail (gate is load-bearing)
+
+P0-2 gate: 12/19 assertions passed
+GREEN (mutant): the gate caught the disabled policy
+mutant_exit=0

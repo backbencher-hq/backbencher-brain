@@ -188,3 +188,48 @@ BB_P02_BETTERCAP_DB=/home/ishaq2321/.bb/projects/4c7590f1cba319aac298a50453c0ec4
   BB_DATA_DIR=$PWD/.tools/triage-fix/cross-lang/bbdata npx tsx script/m57/verify-p02-name-binding.ts
 npx tsc --noEmit
 ```
+
+## GREEN3 — write-side regression fix: package-scoped Go binding (worktree `.tools/wt-wave2`)
+
+**Regression (Lead FINAL verification, fresh bettercap copy):** P0-2 rule 2 blanket-unbound every
+`metadata.isPackageQualified=1` row, which is Go's flag for ANY selector call — including the
+same-module, same-language `modules.LoadModules(sess)` (main.go:47). The defer/refactor gate then
+missed `modules/modules_test.go:16`, and graph/impact under-reported. The L-1 defect was a
+cross-language name coincidence (`errors.New`→`session.New`), not internal qualified resolution.
+
+**Fix (owned files only, worktree):**
+- `src/ast/parallel-indexer.ts` — new exported `applyP02PackageScopedBinding()` implementing the
+  go-imports verified contract, run at BOTH marker sites immediately BEFORE `applyP02BindingGates`:
+  - qualifier = `metadata.callExpression` first segment; it is a PACKAGE only with exactly one
+    file-local `brain_import` row where `COALESCE(NULLIF(imported_as,''), imported_name)=qualifier`
+    AND `is_external=0`; otherwise a variable receiver (`s.Save()`) is never package-bound.
+  - qualified: `packageDir = goPackageDirForSpecifier(import_path, brain_project_meta go_module_*)`;
+    candidates = `name=leaf` in GO files directly in that dir, `symbol_type IN (function,variable)`
+    (never `module`), prefer function, exactly one else NULL; cross-package requires uppercase leaf.
+  - bare callExpression: same-package dir; same-file wins, else exactly one.
+  - binding records `metadata.bindingBasis='import-path'`; refusals record `bindingPolicy=<reason>`
+    (`refused-unvalidated-qualifier`, `-specifier-outside-project`, `-unexported-target`,
+    `-no-callable-candidate`, `-ambiguous-candidates`).
+  - rule 2 carve-out: `isStdlib`/`isExternalTarget`/`isFieldAccess` remain blanket refusals; the
+    `isPackageQualified` refusal applies only when the row is NOT evidence-backed
+    (`bindingBasis != 'import-path'`).
+- `script/m57/verify-p02-name-binding.ts` — fixture now contains a real 2-file Go package
+  (`pkg/pkg.go` + `helper.go` same-package) with `pkg.F()`, `LocalHelper()`, `util.Helper()` and a
+  variable-receiver control `s.Save()`; assertions added P4 (qualified binds + import-path basis,
+  same-package binds, variable receiver NOT package-bound) and P1e now treats evidence-backed
+  package bindings as legitimate; bettercap arm runs the package pass and asserts LoadModules binds.
+
+**GREEN3 evidence** (`evidence/cross-lang/`):
+- `GREEN3-gate.txt`: **21/21 assertions**, exit 0. Bettercap arm on the FINAL reindexed DB copy:
+  package-scoped `bound=1677`, `unbound=12464`, cross-language name-resolution imports/calls == 0,
+  session.New unverified qualified callers == 0, internal qualified + same-package LoadModules bind.
+- `GREEN3-bettercap-rows.txt` (rows after the pass): `main.go → modules/modules.go:LoadModules`,
+  `modules_test.go → modules/modules.go:LoadModules`, both `bindingBasis=import-path`,
+  `is_cross_file=1`; cross-language rows left 0.
+- `GREEN3-mutant.txt`: policy disabled → 7 assertions fail again (incl. P4) → mutant caught, exit 0.
+- `GREEN3-m26.txt`: **A1 VERIFIED (12/12 passed, 1 mutant)**, exit 0.
+- `GREEN3-tsc.txt`: `npx tsc --noEmit` exit 0.
+
+**Reindex handshake:** Lead rebuild + reindex the bettercap copy, then run
+`BB_P02_BETTERCAP_DB=<fresh db> BB_DATA_DIR=$PWD/.tools/triage-fix/cross-lang/bbdata npx tsx script/m57/verify-p02-name-binding.ts`
+and the P0-1 refactor dry-run (expected target: 3 files / 3 sites incl. `modules/modules_test.go`).

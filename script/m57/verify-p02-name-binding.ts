@@ -72,6 +72,7 @@ function makeCollisionFixture(): string {
   mkdirSync(join(dir, ".github/workflows"), { recursive: true })
   mkdirSync(join(dir, "assets"), { recursive: true })
   mkdirSync(join(dir, "internal/util"), { recursive: true })
+  mkdirSync(join(dir, "pkg"), { recursive: true })
   mkdirSync(join(dir, "web"), { recursive: true })
   writeFileSync(join(dir, "go.mod"), "module example.com/fx\n\ngo 1.21\n")
   writeFileSync(
@@ -84,17 +85,28 @@ import (
 	"os"
 
 	"example.com/fx/internal/util"
+	"example.com/fx/pkg"
 )
+
+type S struct{}
+
+func (s S) Save() {}
 
 func main() {
 	fmt.Println("x")
 	_ = os.Stdout
 	_ = io.EOF
 	util.Helper()
+	_ = pkg.F()
+	_ = LocalHelper()
+	var s S
+	s.Save()
 }
 `,
   )
   writeFileSync(join(dir, "internal/util/util.go"), "package util\n\nfunc Helper() int { return 1 }\n")
+  writeFileSync(join(dir, "pkg/pkg.go"), "package pkg\n\nfunc F() int { return 1 }\n")
+  writeFileSync(join(dir, "helper.go"), "package main\n\nfunc LocalHelper() int { return 2 }\n")
   writeFileSync(
     join(dir, ".github/workflows/release.yaml"),
     "name: Release\n\njobs:\n  build:\n    strategy:\n      matrix:\n        os:\n          - linux\n        arch:\n          - amd64\n",
@@ -194,7 +206,8 @@ function forbiddenBindings(db: any, labels: Record<string, string>): void {
      WHERE r.target_symbol_id IS NOT NULL
        AND (json_extract(r.metadata,'$.isStdlib') = 1
             OR json_extract(r.metadata,'$.isExternalTarget') = 1
-            OR json_extract(r.metadata,'$.isPackageQualified') = 1)`,
+            OR (json_extract(r.metadata,'$.isPackageQualified') = 1
+                AND COALESCE(json_extract(r.metadata,'$.bindingBasis'),'') <> 'import-path'))`,
   )
   check(labels.e, ext === 0, `external-claim rows bound = ${ext}`)
 }
@@ -240,6 +253,38 @@ async function main(): Promise<void> {
     d: "P1d collision fixture: no bound isFieldAccess row",
     e: "P1e collision fixture: no bound external-claim row",
   })
+
+  // P4: PACKAGE-SCOPED Go binding (go-imports contract; write-side regression gate).
+  // A same-language qualified call into an internal package MUST bind; a same-package
+  // unqualified call MUST bind; a variable receiver (`s.Save()`) must NOT be
+  // package-bound. This is what the blanket isPackageQualified gate broke.
+  {
+    const callRows = () =>
+      fxDb
+        .prepare(
+          `SELECT r.target_external AS te, t.name AS tn, tf.relative_path AS tfile,
+                  json_extract(r.metadata,'$.callExpression') AS call_expr,
+                  json_extract(r.metadata,'$.bindingBasis') AS bb
+           FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file sf ON sf.id = s.file_id
+           LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id
+           LEFT JOIN brain_file tf ON tf.id = t.file_id
+           WHERE sf.relative_path = 'main.go' AND r.relationship_type = 'calls'`,
+        )
+        .all() as Array<{ te: string; tn: string | null; tfile: string | null; call_expr: string | null; bb: string | null }>
+    const rows = callRows()
+    const byCall = (call: string) => rows.find((r) => r.call_expr === call)
+    const pkgF = byCall("pkg.F")
+    const local = byCall("LocalHelper")
+    const utilH = byCall("util.Helper")
+    const save = byCall("s.Save")
+    check("P4 qualified internal package call binds (pkg.F)", !!pkgF && pkgF.tfile === "pkg/pkg.go" && pkgF.tn === "F", JSON.stringify(pkgF ?? null))
+    check("P4 qualified internal package call records import-path basis", !!pkgF && pkgF.bb === "import-path", JSON.stringify(pkgF?.bb ?? null))
+    check("P4 same-package unqualified call binds (LocalHelper)", !!local && local.tfile === "helper.go" && local.tn === "LocalHelper", JSON.stringify(local ?? null))
+    check("P4 second internal package call binds (util.Helper)", !!utilH && utilH.tfile === "internal/util/util.go", JSON.stringify(utilH ?? null))
+    check("P4 variable receiver is NOT package-bound (s.Save)", !!save && save.tn === null, JSON.stringify(save ?? null))
+  }
 
   // PC3: same-language relative import still resolves.
   const jsImport = fxDb
@@ -330,6 +375,15 @@ async function main(): Promise<void> {
       // The product rawDb exposes .run(sql); the gate provides that shape around
       // better-sqlite3 so the EXACT production pass runs on the copy.
       const raw = { run: (sql: string) => db.prepare(sql).run(), prepare: (sql: string) => db.prepare(sql) }
+      const applyPackage = (indexer as any).applyP02PackageScopedBinding as
+        | ((r: typeof raw, p: string) => { bound: number; refused: number })
+        | undefined
+      if (typeof applyPackage === "function") {
+        const p = applyPackage(raw, pid)
+        info(`P2 bettercap copy: package-scoped bound=${p.bound} refused=${p.refused}`)
+      } else {
+        info("P2 bettercap copy: package-scoped pass absent")
+      }
       const g = applyGates(raw, pid)
       const d = applyDegrade(raw, pid)
       info(`P2 bettercap copy: unbound=${g.unbound} degraded=${d.degraded}`)
@@ -345,9 +399,26 @@ async function main(): Promise<void> {
          JOIN brain_symbol ts ON ts.id = r.target_symbol_id
          WHERE r.relationship_type = 'calls' AND ts.name = 'New'
            AND ts.id LIKE '%session/session.go%'
-           AND json_extract(r.metadata,'$.isPackageQualified') = 1`,
+           AND json_extract(r.metadata,'$.isPackageQualified') = 1
+           AND COALESCE(json_extract(r.metadata,'$.bindingBasis'),'') <> 'import-path'`,
       )
-      check("P2 bettercap copy: session.New callers from qualified leaves == 0", qualifiedCallers === 0, `n=${qualifiedCallers}`)
+      check(
+        "P2 bettercap copy: session.New callers from UNVERIFIED qualified leaves == 0",
+        qualifiedCallers === 0,
+        `n=${qualifiedCallers}`,
+      )
+      const loadModules = n(
+        `SELECT COUNT(*) AS n FROM brain_relationship r
+         JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+         JOIN brain_file tf ON tf.id = ts.file_id
+         WHERE r.relationship_type = 'calls' AND r.target_external = 'LoadModules'
+           AND tf.relative_path = 'modules/modules.go'`,
+      )
+      check(
+        "P2 bettercap copy: internal qualified + same-package LoadModules bind (>=2)",
+        loadModules >= 2,
+        `n=${loadModules}`,
+      )
       db.close()
     }
   } else {

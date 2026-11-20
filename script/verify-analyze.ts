@@ -6,6 +6,7 @@ import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { goImportExternality, readGoModulePath } from "../src/ast/real-go-analyzer"
+import { goPackageDirForSpecifier, moduleInfoForProject, readGoModuleInfo } from "../src/ast/go-module"
 import { getCoupling } from "../src/intelligence/analysis/coupling"
 import { getFileDependencies } from "../src/intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../src/intelligence/analysis/complexity"
@@ -196,6 +197,156 @@ try {
   rmSync(goMainRoot, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(goProjectId)), { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(goMainProjectId)), { recursive: true, force: true })
+}
+
+
+// ── Go phase-2 gates (P1-1): module identity, isExternal, internal deps, attribution ──
+//
+// RED pre-fix, all four facts measured: (1) `brain_project_meta` carries no module
+// path (the table is created by this phase's schema migration; before it, the concept
+// did not exist); (2) a same-module import (`example.com/m/lib`) is stored
+// is_external=1 because the Go analyzer declares no externality and the pool-worker
+// fallback is the JS bare-specifier rule; (3) the file-dependency engine therefore
+// reports the internal edge unresolved with no dependents; (4) calls inside `func main`
+// bind to the `package main` module symbol, not the function (nameToSymbol first-wins).
+// Controls: a third-party import stays external; a module-level import row keeps the
+// module symbol; the JS/TS checks above must keep passing.
+const goModuleRoot = mkdtempSync(path.join(tmpdir(), "bb-analyze-gomod-"))
+const goModuleProjectId = getProjectId(goModuleRoot)
+try {
+  writeFileSync(path.join(goModuleRoot, "go.mod"), "module example.com/m\n\ngo 1.25.0\n")
+  mkdirSync(path.join(goModuleRoot, "lib"), { recursive: true })
+  mkdirSync(path.join(goModuleRoot, "app"), { recursive: true })
+  writeFileSync(path.join(goModuleRoot, "lib", "lib.go"), "package lib\n\nfunc Lib() int { return 1 }\n")
+  writeFileSync(
+    path.join(goModuleRoot, "app", "app.go"),
+    'package app\n\nimport (\n\t"fmt"\n\n\t"example.com/m/lib"\n\t"github.com/x/y"\n)\n\nfunc Run() int {\n\tfmt.Println(lib.Lib())\n\treturn lib.Lib()\n}\n',
+  )
+  // package-main lives in the SAME phase-2 project: the phase-1 project's DB is removed
+  // by its own finally before this block runs, so attribution is asserted here.
+  writeFileSync(path.join(goModuleRoot, "main.go"), "package main\n\nfunc main() {\n\thelper()\n}\n\nfunc helper() {}\n")
+  await indexProjectParallel(goModuleProjectId, goModuleRoot, {})
+  const goMetaRaw = await BrainDatabase.getRawInstance(goModuleProjectId)
+
+  // (1) persisted Go module identity — the input every later phase needs
+  const metaRows = goMetaRaw
+    .prepare("SELECT key, value FROM brain_project_meta WHERE project_id = ? ORDER BY key")
+    .all(goModuleProjectId) as any[]
+  check(
+    "P2: go.mod module path persisted as project metadata",
+    metaRows.some((r) => r.key === "go_module_path" && r.value === "example.com/m"),
+    JSON.stringify(metaRows),
+  )
+  check(
+    "P2: project module-relative dir persisted (project root == module root)",
+    metaRows.some((r) => r.key === "go_module_dir" && r.value === ""),
+    JSON.stringify(metaRows),
+  )
+
+  // (2) post-index invariant: no same-module import row may be external
+  const sameModuleExternal = goMetaRaw
+    .prepare(
+      "SELECT i.import_path AS p, f.relative_path AS f FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
+        "WHERE f.language = 'go' AND (i.import_path = 'example.com/m' OR i.import_path LIKE 'example.com/m/%') AND i.is_external = 1",
+    )
+    .all() as any[]
+  check("P2: no same-module import row is marked external", sameModuleExternal.length === 0, JSON.stringify(sameModuleExternal))
+  const sameModuleInternal = goMetaRaw
+    .prepare(
+      "SELECT COUNT(*) AS c FROM brain_import i JOIN brain_file f ON f.id = i.file_id WHERE f.language = 'go' AND i.import_path = 'example.com/m/lib' AND i.is_external = 0",
+    )
+    .get() as any
+  check("P2: same-module import stored as internal (is_external = 0)", Number(sameModuleInternal.c) >= 1, JSON.stringify(sameModuleInternal))
+  const thirdPartyExternal = goMetaRaw
+    .prepare(
+      "SELECT i.is_external AS e FROM brain_import i JOIN brain_file f ON f.id = i.file_id WHERE f.language = 'go' AND i.import_path = 'github.com/x/y'",
+    )
+    .get() as any
+  check("P2 control: third-party Go import stays external", !!thirdPartyExternal && Number(thirdPartyExternal.e) === 1, JSON.stringify(thirdPartyExternal))
+
+  // (3) dependency engine: the internal edge resolves and the reverse edge exists
+  const goDeps = await getFileDependencies(goModuleProjectId, {})
+  const appRow = goDeps.find((d) => d.file === "app/app.go")
+  const libDep = appRow?.dependencies.find((x) => x.path === "lib/lib.go")
+  check(
+    "P2: Go internal dependency resolved to the package's files",
+    !!libDep && libDep.external === false && libDep.resolution === "resolved",
+    JSON.stringify(appRow?.dependencies ?? []),
+  )
+  check(
+    "P2: Go external dependency is external and carries no resolution claim",
+    !!appRow && appRow.dependencies.some((x) => x.path === "fmt" && x.external === true && x.resolution === undefined),
+    JSON.stringify(appRow?.dependencies ?? []),
+  )
+  const libRow = goDeps.find((d) => d.file === "lib/lib.go")
+  check(
+    "P2: Go dependents populated (lib/lib.go <- app/app.go)",
+    !!libRow && libRow.dependents.some((x) => x.path === "app/app.go"),
+    JSON.stringify(libRow?.dependents ?? []),
+  )
+  check(
+    "P2: returned internal dependencies > 0 on a real Go module project",
+    goDeps.reduce((n, d) => n + d.dependencies.filter((x) => !x.external).length, 0) >= 1,
+  )
+
+  // (3b) the module-identity helper itself (pure; the analyzer/store/engine all call it)
+  const moduleInfo = readGoModuleInfo(goModuleRoot)
+  check(
+    "P2: readGoModuleInfo finds the governing go.mod and its module-relative dir",
+    !!moduleInfo && moduleInfo.modulePath === "example.com/m" && moduleInfo.moduleDir === "",
+    JSON.stringify(moduleInfo),
+  )
+  check(
+    "P2: cached moduleInfoForProject agrees",
+    moduleInfoForProject(goModuleRoot)?.modulePath === "example.com/m",
+    JSON.stringify(moduleInfoForProject(goModuleRoot)),
+  )
+  check(
+    "P2: module specifier maps to the package directory",
+    goPackageDirForSpecifier("example.com/m/lib", { modulePath: "example.com/m", moduleDir: "" }) === "lib",
+    String(goPackageDirForSpecifier("example.com/m/lib", { modulePath: "example.com/m", moduleDir: "" })),
+  )
+  check(
+    "P2: project indexed at a module SUBDIRECTORY strips its own dir",
+    goPackageDirForSpecifier("github.com/cli/cli/v2/internal/x", { modulePath: "github.com/cli/cli/v2", moduleDir: "internal" }) === "x",
+    String(goPackageDirForSpecifier("github.com/cli/cli/v2/internal/x", { modulePath: "github.com/cli/cli/v2", moduleDir: "internal" })),
+  )
+  check(
+    "P2: a third-party specifier maps to no project package dir",
+    goPackageDirForSpecifier("github.com/x/y", { modulePath: "example.com/m", moduleDir: "" }) === null,
+  )
+
+  // (4) package-main source attribution (the phase-1 RED DB proof, now asserted)
+  const mainCall = goMetaRaw
+    .prepare(
+      "SELECT SM.symbol_type AS st, SM.line_start AS ls FROM brain_relationship r LEFT JOIN brain_symbol SM ON SM.id = r.source_symbol_id " +
+        "WHERE r.project_id = ? AND r.relationship_type = 'calls' AND r.target_external = 'helper'",
+    )
+    .get(goModuleProjectId) as any
+  check(
+    "P2: call inside func main is attributed to func main",
+    !!mainCall && String(mainCall.st) === "function" && Number(mainCall.ls) > 1,
+    JSON.stringify(mainCall),
+  )
+  check(
+    "P2 control: the module symbol does NOT own the func main call row",
+    !!mainCall && String(mainCall.st) !== "module",
+    JSON.stringify(mainCall),
+  )
+  // MODULE-LEVEL CONTROL: an import edge's source is the package scope, which IS the
+  // module symbol — the tie-break must not steal module-level rows.
+  const importSource = goMetaRaw
+    .prepare(
+      "SELECT SM.symbol_type AS st, SM.name AS nm FROM brain_relationship r LEFT JOIN brain_symbol SM ON SM.id = r.source_symbol_id " +
+        "WHERE r.project_id = ? AND r.relationship_type = 'imports' AND SM.name = 'app' LIMIT 1",
+    )
+    .get(goModuleProjectId) as any
+  check("P2 control: module-level import rows keep the module symbol", !!importSource && String(importSource.st) === "module", JSON.stringify(importSource))
+} catch (error) {
+  check("go phase-2 session", false, error instanceof Error ? (error.stack ?? error.message) : String(error))
+} finally {
+  rmSync(goModuleRoot, { recursive: true, force: true })
+  rmSync(path.dirname(BrainDatabase.getDbPath(goModuleProjectId)), { recursive: true, force: true })
 }
 
 console.log(failures === 0 ? "\nANALYZE: PASS" : "\nANALYZE: " + failures + " FAILURES")

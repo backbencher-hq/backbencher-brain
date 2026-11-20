@@ -1,0 +1,10 @@
+dist integrity: 156 JS chunk(s), 1069 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ every relative chunk reference resolves; entry exists
+clean_exit=0
+dist-integrity self-test against a copy of /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ control: an exact copy of dist passes
+  ✓ corruption 1: dangling chunk reference (database-HE6EE3VA class) detected
+  ✓ corruption 2: missing packaged entry detected
+  ✓ corruption 3: deleted-but-referenced chunk detected
+  ✓ detector proven: clean copy passes, all corruptions caught
+self_test_exit=0

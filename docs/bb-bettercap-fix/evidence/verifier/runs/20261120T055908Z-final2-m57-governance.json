@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/m57-governance",
+  "command": [
+    "bun",
+    "run",
+    "script/m57/verify-governance.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:58:55.661Z",
+  "endedAt": "2026-11-20T05:59:08.578Z",
+  "durationMs": 12916,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 153,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "  ok G1.1a: milestone is M57 / GitHub #57\n  ok G1.1b: issue numbers match the registered set\n  ok G1.1c: every non-infra gate declares a mutation\n  ok G1.1d: script exists for G1\n  ok G1.1d: script exists for G2\n  ok G1.1d: script exists for T1\n  ok G1.1d: script exists for T2\n  ok G1.1d: script exists for T3\n  ok G1.1d: script exists for T4\n  ok G1.1d: script exists for T5\n  ok G1.1d: script exists for X1\n  ok G1.2a: verify-governance.ts is in the npm verify chain\n  ok G1.2b: verify-governance.ts is in verify:m57\n  ok G1.2a: verify-gate-selftest.ts is in the npm verify chain\n  ok G1.2b: verify-gate-selftest.ts is in verify:m57\n  ok G1.2a: verify-t1-classifier.ts is in the npm verify chain\n  ok G1.2b: verify-t1-classifier.ts is in verify:m57\n  ok G1.2a: verify-t2-consumers.ts is in the npm verify chain\n  ok G1.2b: verify-t2-consumers.ts is in verify:m57\n  ok G1.2a: verify-t3-scope-all.ts is in the npm verify chain\n  ok G1.2b: verify-t3-scope-all.ts is in verify:m57\n  ok G1.2a: verify-t4-corpus-identity.ts is in the npm verify chain\n  ok G1.2b: verify-t4-corpus-identity.ts is in verify:m57\n  ok G1.2a: verify-t5-predicate-unity.ts is in the npm verify chain\n  ok G1.2b: verify-t5-predicate-unity.ts is in verify:m57\n  ok G1.2a: verify-closure.ts is in the npm verify chain\n  ok G1.2b: verify-closure.ts is in verify:m57\n  ok G1.3a: the PLAN states the milestone invariant\n  ok G1.3b: the PLAN lists all six issue numbers\nFAIL G1.4: all six issues are registered under the M57 milestone on GitHub :: missing=[789,790,791,792,793,794]\n  ok G1.5a: the canonical module exports the shared vocabulary\n  ok G1.5b: api-coverage-analyzer imports the ONE definition\n  ok G1.5c: relationship-enrichment imports the ONE definition\n  ok G1.5d: test-intel imports the shared vocabulary\n\nG1 governance: 33 passed, 1 failed\n",
+  "stderr": "",
+  "stdoutBytes": 1825,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055908Z-final2-m57-governance.json"
+}

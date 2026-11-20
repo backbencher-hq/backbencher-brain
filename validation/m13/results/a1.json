@@ -177,5 +177,5 @@
     "The gate drives the SOURCE CLI/MCP entries (dist/ is a build artifact, rebuilt centrally).",
     "The corpus leg lives in verify-ask-e2e-corpus; this gate is a small fixture by design."
   ],
-  "generatedAt": "2026-11-19T05:06:03.664Z"
+  "generatedAt": "2026-11-20T05:55:51.819Z"
 }

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/m48-p2",
+  "command": [
+    "bun",
+    "run",
+    "script/m48/verify-p2-honesty-fields.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:58:20.613Z",
+  "endedAt": "2026-11-20T05:58:22.341Z",
+  "durationMs": 1728,
+  "timedOut": false,
+  "exitCode": 1,
+  "signal": null,
+  "verdict": "FAIL",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 147,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "FAIL: P1 evidence verified (proves truncated can be true on a real fixture)\n[brain] preparing the parallel worker pool (1 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 35ms [plan=linear largest-intermediate=1]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 0 relationships (0 patterns) in 12ms\n        ⚠ 1 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(2ms) + health(16ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 10ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 1ms\nFAIL: missing P1 evidence would fail the cross-ref [negative] — P1.json missing or not verified\nM48 P2 HONESTY FIELDS: FAIL (19 passed, 2 failed, 7 negatives)\n",
+  "stderr": "[INFO] [00:58:21] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:58:21] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":0}\n[INFO] [00:58:22] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:58:22] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"e8db0441\",\"danglingSources\":1,\"totalRelationships\":1}\n[INFO] [00:58:22] [project-health] project health computed {\"projectId\":\"e8db0441a98b79311542191108f5a0cb9b66f9b2\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 1193,
+  "stderrBytes": 737,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055822Z-final2-m48-p2.json"
+}

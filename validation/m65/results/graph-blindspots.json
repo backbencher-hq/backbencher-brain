@@ -1,7 +1,7 @@
 {
   "gate": "M65.graph-blindspots",
-  "at": "2026-11-19T05:15:52.173Z",
-  "atCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "at": "2026-11-20T05:57:59.402Z",
+  "atCommit": "380a7e4735b083fad2b153df92a1c519767fd98c",
   "command": "bun run script/m65/verify-graph-blindspots.ts",
   "status": "pass",
   "checks": [
@@ -44,7 +44,7 @@
     {
       "name": "cross-language-state-is-seedable",
       "passed": true,
-      "detail": "call row 8c9e0080e36cbf70ab66ef35e47cae7c8f9a3777:rel:8c9e0080e36cbf70ab66ef35e47cae7c8f9a3777:src/caller.ts:realCallerTs:2:blindTargetTs:calls:3:site:91 flagged as cross-language for the measurement",
+      "detail": "call row bd865968fee5e12b351fee097a8bcfc4813774d5:rel:bd865968fee5e12b351fee097a8bcfc4813774d5:src/caller.ts:realCallerTs:2:blindTargetTs:calls:3:site:91 flagged as cross-language for the measurement",
       "negative": false
     },
     {
@@ -137,10 +137,10 @@
   ],
   "contract": "bb_graph publishes the two filters it applies (noiseFiltered, crossLanguageExcluded) and counts the rows its JOIN cannot reach (unattributed, per direction, null when not counted) — measured through the real MCP door",
   "before": "noise fixture answered callers: 0 · truncated: false with only a prose provenance note; includeCrossLanguage: false dropped 29 of 270 edges uncounted; the unattributed class had no field at all (11.0% of this repo's stored rows)",
-  "note": "store: /tmp/m65-graph-blindspots-AX4Avb",
+  "note": "store: /tmp/m65-graph-blindspots-bWY0hd",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-19T05:15:52.178Z",
-    "contentSha256": "7547d949e4b4bc14746b628988a582ead6c2cc49fc04d5e70b9a3c5b97023103"
+    "sealedAt": "2026-11-20T05:57:59.417Z",
+    "contentSha256": "00829fce66ce4003b91f89902f935f09300e9041f725c720b82f9d4c8e0049d2"
   }
 }

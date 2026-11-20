@@ -1148,7 +1148,11 @@ async function cmdTool(name: string, opts: { dir?: string; args?: string }): Pro
       const { BrainDatabase } = await import("../brain/database")
       try {
         await BrainDatabase.getRawInstance(getProjectId(projectPath), { readonly: true })
-      } catch {
+      } catch (error: any) {
+        // P2-6: preserve the declared old-index refusal (DB path, detected
+        // schema, missing columns, `bb index --post` remedy). The generic
+        // "No index found" wording below is for a genuinely missing index.
+        if (error?.code === "BB_SCHEMA_INCOMPATIBLE") throw error
         throw new Error(`No index found for ${projectPath}. Run: bb index "${projectPath}" (or restart bb mcp after indexing).`)
       }
     }

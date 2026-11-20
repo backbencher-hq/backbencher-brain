@@ -1,0 +1,113 @@
+P0-2 name-binding precision gate
+
+[brain] preparing the parallel worker pool (10 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:40:44] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [00:40:47] [parallel-indexer] worker pool complete {"files":10,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 42ms [plan=linear largest-intermediate=24]
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:40:47] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"acf25cd8","danglingSources":5,"totalRelationships":47}
+  enriching done 100%
+  ✅ Enriched 42 relationships (0 patterns) in 52ms
+        ⚠ 5 dangling sources, 28 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 8ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:40:47] [project-health] project health computed {"projectId":"acf25cd8cee5d6bf0782c43aeec776cfd0f40853","complexityScore":95,"maintainabilityScore":86,"techDebtScore":100,"codeQualityScore":94,"languages":4,"bottlenecks":0}
+  ✓ taint(2ms) + health(28ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 16ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 5ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 9ms
+  -- collision fixture languages: go,javascript,make,yaml
+  ok: P1a collision fixture: no cross-language imports/calls/instantiates
+  ok: P1b collision fixture: no bound non-code-language target
+  ok: P1c collision fixture: no bare-name import binding
+  ok: P1d collision fixture: no bound isFieldAccess row
+  ok: P1e collision fixture: no bound external-claim row
+  ok: P4 qualified internal package call binds (pkg.F)
+  ok: P4 qualified internal package call records import-path basis
+  ok: P4 same-package unqualified call binds (LocalHelper)
+  ok: P4 second internal package call binds (util.Helper)
+  ok: P4 variable receiver is NOT package-bound (s.Save)
+  ok: PC3 same-language JS relative import resolves
+  ok: PC3 same-language JS relative import is not cross-language
+  ok: P0 old-row shape: name-resolution bridge derives inferred (never import_based/structural)
+  ok: P0 old-row shape: facts expose bridgeMechanism + candidate:true
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:40:49] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [00:40:50] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 24ms [plan=linear largest-intermediate=8]
+        cross-language: 3 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:40:50] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"0f0a6f9d","danglingSources":2,"totalRelationships":15}
+  enriching done 100%
+  ✅ Enriched 13 relationships (0 patterns) in 6ms
+        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 5ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:40:50] [project-health] project health computed {"projectId":"0f0a6f9dad42196a506e6faf74e09d941b234ed3","complexityScore":95,"maintainabilityScore":75,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+  ✓ taint(0ms) + health(5ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 5ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 3ms
+  ok: PC1 java+scala bridge rows survive (expected 3)
+  ok: PC1 java+scala bridge rows survive: bridges are evidence-bearing
+[brain] preparing the parallel worker pool (2 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:40:51] [parallel-indexer] worker pool fork test passed — using parallel workers
+[INFO] [00:40:51] [parallel-indexer] project index built {"ext":".ts","files":1,"types":0}
+[INFO] [00:40:52] [parallel-indexer] worker pool complete {"files":2,"workers":1,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":0}
+  [1/8] resolving cross-file relationships…
+  ✓ resolved in 22ms [plan=linear largest-intermediate=7]
+        cross-language: 2 edges
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:40:52] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"6f9afae2","danglingSources":5,"totalRelationships":11}
+  enriching done 100%
+  ✅ Enriched 6 relationships (0 patterns) in 7ms
+        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 7ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:40:52] [project-health] project health computed {"projectId":"6f9afae24c3cccbc6bb86afc62bb1f5a0d7cf21b","complexityScore":93,"maintainabilityScore":77,"techDebtScore":100,"codeQualityScore":90,"languages":2,"bottlenecks":0}
+  ✓ taint(1ms) + health(6ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 12ms
+  ✅ Index health: 100% — all checks passed
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 3ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+  ok: PC2 ts+js bridge rows survive (expected 2)
+  ok: PC2 ts+js bridge rows survive: bridges are evidence-bearing
+  -- P2 bettercap copy: package-scoped bound=1677 refused=0
+  -- P2 bettercap copy: unbound=12464 degraded=0
+  ok: P2 bettercap copy: cross-language name-resolution imports/calls == 0
+  ok: P2 bettercap copy: session.New callers from UNVERIFIED qualified leaves == 0
+  ok: P2 bettercap copy: internal qualified + same-package LoadModules bind (>=2)
+
+P0-2 gate: 21/21 assertions passed
+GREEN: all P0-2 assertions pass

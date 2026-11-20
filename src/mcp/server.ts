@@ -47,7 +47,13 @@ async function ensureIndexed(context: ToolContext): Promise<string | null> {
       return `No index found for ${context.projectPath}. Run: bb index "${context.projectPath}" (or restart bb mcp after indexing).`
     }
     return null
-  } catch {
+  } catch (error: any) {
+    // P2-6: an index written by an older bb build is a DECLARED, remediated
+    // refusal (SchemaIncompatibleError names the DB, schema version, missing
+    // columns and `bb index --post`). Collapsing it into "No index found" would
+    // tell the user to re-index a project that is indexed — the wrong cause and
+    // the wrong remedy. Every other error keeps the existing generic wording.
+    if (error?.code === "BB_SCHEMA_INCOMPATIBLE") throw error
     return `No index found for ${context.projectPath}. Run: bb index "${context.projectPath}".`
   }
 }

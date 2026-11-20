@@ -1,0 +1,4 @@
+corrupt_copy_exit=1
+dist integrity: 156 JS chunk(s), 1070 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/p2/final2-corrupt-dist
+  ✗ 1 broken reference(s) — the packaged build cannot load every chunk:
+      analysis-exclusions-PRLWHQB4.js -> database-HE6EE3VA.js

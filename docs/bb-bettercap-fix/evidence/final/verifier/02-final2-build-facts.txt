@@ -1,0 +1,19 @@
+=== FINAL2 build facts 2026-11-20T05:46:29Z
+HEAD 380a7e4735b083fad2b153df92a1c519767fd98c
+src_sha ab0176b98ba42374b4f90c9cafe46480ba61807afba709e13206cd7dcbf909dd
+dist_sha c2ea3fb2bb2c9b30df4c82b0c7edb7327c5fc31056235f075d9170104af406ef
+dist_chunks 156
+ESM dist/chunk-47WOZ4SD.js                         677.97 KB
+ESM ⚡️ Build success in 566ms
+
+=== Lead dist-integrity-final2
+
+> @backbencher/brain@0.1.6 verify:dist
+> node_modules/.bin/tsx script/verify-dist-integrity.ts
+
+dist integrity: 156 JS chunk(s), 1069 relative reference(s) in /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/dist
+  ✓ every relative chunk reference resolves; entry exists
+
+=== tsc-final2 (Lead)
+-rw-rw-r-- 1 ishaq2321 ishaq2321 0 Nov 20 00:43 .tools/final/tsc-final2.log
+-rw-rw-r-- 1 ishaq2321 ishaq2321 0 Nov 20 00:21 .tools/final/tsc-final.log

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/p26-old-index",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m-fix/verify-old-index-compat.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:59:09.331Z",
+  "endedAt": "2026-11-20T05:59:18.314Z",
+  "durationMs": 8983,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 154,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "P2-6 old-index compatibility gate\n\n[brain] preparing the parallel worker pool (1 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 22ms [plan=linear largest-intermediate=4]\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 3 relationships (0 patterns) in 19ms\n        ⚠ 2 dangling sources — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(14ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 11ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 4ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 2ms\n  ok: control: current-schema DB opens read-only without refusal\n  ok: control: current-schema DB answers bb_graph\n\n[v(N-1) fixture] real old index: /home/ishaq2321/.bb/projects/3cc416747a0082a80b42b89928cb8c909e09e371/brain.db\n  ok: shared read open throws SchemaIncompatibleError\n  ok: declared error lists missing target_basis/evidence_class\n  ok: declared error names DB path + detected/expected schema + remediation\n  ok: bb_graph: refuses with isError OR the typed declared error\n  ok: bb_graph: refusal names DB path + detected schema + remediation\n  ok: bb_graph: no raw sqlite error and no partial answer\n  ok: bb_impact: refuses with isError OR the typed declared error\n  ok: bb_impact: refusal names DB path + detected schema + remediation\n  ok: bb_impact: no raw sqlite error and no partial answer\n  ok: bb_visualize: refuses with isError OR the typed declared error\n  ok: bb_visualize: refusal names DB path + detected schema + remediation\n  ok: bb_visualize: no raw sqlite error and no partial answer\n  ok: bb_security: refuses with isError OR the typed declared error\n  ok: bb_security: refusal names DB path + detected schema + remediation\n  ok: bb_security: no raw sqlite error and no partial answer\n  ok: CLI door: throws the typed declared schema error\n  ok: CLI door: error is the declared refusal, not the generic 'No index found'\n  ok: MCP door: server answers initialize\n  ok: MCP door bb_graph: isError answer\n  ok: MCP door bb_graph: declared refusal with remediation\n  ok: MCP door bb_graph: no raw sqlite error / no partial answer\n  ok: MCP door bb_impact: isError answer\n  ok: MCP door bb_impact: declared refusal with remediation\n  ok: MCP door bb_impact: no raw sqlite error / no partial answer\n  ok: MCP door bb_visualize: isError answer\n  ok: MCP door bb_visualize: declared refusal with remediation\n  ok: MCP door bb_visualize: no raw sqlite error / no partial answer\n  ok: MCP door bb_security: isError answer\n  ok: MCP door bb_security: declared refusal with remediation\n  ok: MCP door bb_security: no raw sqlite error / no partial answer\n  ok: remedy: write-path open migrates the index; read-only open then succeeds\n  ok: remedy: bb_graph answers after the migration (no refusal)\n\nP2-6 OLD-INDEX COMPAT: PASS\n",
+  "stderr": "[INFO] [00:59:12] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:59:12] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":0}\n[INFO] [00:59:13] [parallel-indexer] worker pool complete {\"files\":1,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:59:14] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"9e6d84ee\",\"danglingSources\":2,\"totalRelationships\":5}\n[INFO] [00:59:14] [project-health] project health computed {\"projectId\":\"9e6d84ee60bd2971c1c408232b22fb67dc4f2110\",\"complexityScore\":95,\"maintainabilityScore\":76,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":1,\"bottlenecks\":0}\n",
+  "stdoutBytes": 3237,
+  "stderrBytes": 737,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055918Z-final2-p26-old-index.json"
+}

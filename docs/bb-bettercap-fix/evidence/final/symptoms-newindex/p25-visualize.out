@@ -1,0 +1,15 @@
+graph: 200 nodes, 0 links
+scope: module (session)
+view: graph — the force-directed dependency map — nodes are symbols, sized by the index's own gravity
+layout: regions — nodes grouped into the DIRECTORY they live in, each region anchored, outlined and named, and an edge between two regions summarised as one dotted region link per pair (the reader can switch this at runtime in the generated page)
+available: 495 symbol(s) match, 385 reached the projection, 200 returned — limits 200 nodes / 5000 links
+page: symbols 1-200 (offset 0, limit 200, page 1; 495 symbol(s) match this scope) — next page: offset=200
+edges: 0 relationship(s) connect the selected symbols — complete for this node set
+node selection: every symbol under the module directory, in source order
+returned kinds: method 71, property 66, function 30, struct 18, module 9, type 5, interface 1 — no kind filter was passed, so this is the composition the index's own ranking produced
+returned languages: go 200
+annotations: none on the returned symbols — the index's agent notes were read, and none matches this page
+excluded: nothing — no symbol was filtered as build/VCS noise (test sources included)
+completeness: this module page holds 200 of 495 matching symbol(s) — not the whole project
+truncated: yes — 385 nodes and 0 links reached the projection, the limits kept fewer
+provenance: stored-symbol-and-relationship-rows links-omitted-by-node-cut=0 links-omitted-by-budget=0

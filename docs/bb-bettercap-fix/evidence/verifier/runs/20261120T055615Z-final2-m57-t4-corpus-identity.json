@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/m57-t4-corpus-identity",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m57/verify-t4-corpus-identity.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:56:14.437Z",
+  "endedAt": "2026-11-20T05:56:15.057Z",
+  "durationMs": 619,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 126,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "  ok M4: the identity comparator rejects a different corpus\n  ok M4: the identity comparator accepts an identical corpus\n  -- M1-M3 (live corpus comparison) skipped: set BB_M57_REAL_DB=1 BB_M57_DATA_DIR=<data dir> after the re-index\n",
+  "stderr": "",
+  "stdoutBytes": 233,
+  "stderrBytes": 0,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055615Z-final2-m57-t4-corpus-identity.json"
+}

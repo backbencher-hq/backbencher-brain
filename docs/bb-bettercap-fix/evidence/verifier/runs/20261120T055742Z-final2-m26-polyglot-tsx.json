@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "label": "final2/m26-polyglot-tsx",
+  "command": [
+    "npx",
+    "tsx",
+    "script/m26/verify-polyglot-e2e.ts"
+  ],
+  "shell": false,
+  "cwd": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2",
+  "startedAt": "2026-11-20T05:57:33.303Z",
+  "endedAt": "2026-11-20T05:57:42.665Z",
+  "durationMs": 9362,
+  "timedOut": false,
+  "exitCode": 0,
+  "signal": null,
+  "verdict": "PASS",
+  "expectRed": false,
+  "gitHead": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "gitDirtyFiles": 133,
+  "bbDataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/bbdata-final2",
+  "stdout": "M26.A1 polyglot end-to-end verifier\n\n[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 28ms [plan=linear largest-intermediate=8]\n        cross-language: 3 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 13 relationships (0 patterns) in 12ms\n        ⚠ 2 dangling sources, 3 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 5ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(1ms) + health(18ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 7ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 3ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 2ms\n[brain] preparing the parallel worker pool (2 files)…\n[brain] ✓ worker pool available — using 7 workers with 45s timeouts\n  [1/8] resolving cross-file relationships…\n  ✓ resolved in 16ms [plan=linear largest-intermediate=7]\n        cross-language: 2 edges\n  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…\n  enriching reading 0%\n  enriching counting 0%\n  enriching done 100%\n  ✅ Enriched 6 relationships (0 patterns) in 5ms\n        ⚠ 5 dangling sources, 4 unresolved targets — declared, not hidden\n  [3/8] computing gravity scores…\n  ✓ gravity in 4ms\n  [4/8] analyzing taint flows & security…\n        security leads: 0 (tier leads; not findings)\n  [5/8] computing project health…\n  ✓ taint(0ms) + health(5ms)\n  [6/8] integrity & freshness…\n  ✓ health check in 4ms\n  ✅ Index health: 100% — all checks passed\n  [7/8] vector blobs…\n  ✓ vector blobs: 0/0 promoted in 2ms\n  [8/8] planner stats (ANALYZE)…\n  ✓ planner stats (ANALYZE) in 2ms\n\nA1: VERIFIED (12/12 passed, 1 mutant)\n",
+  "stderr": "[INFO] [00:57:37] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:57:38] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:57:39] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"222d28f2\",\"danglingSources\":2,\"totalRelationships\":15}\n[INFO] [00:57:39] [project-health] project health computed {\"projectId\":\"222d28f20db193b490cf1aba9a09e2c61ebb62c2\",\"complexityScore\":95,\"maintainabilityScore\":75,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n[INFO] [00:57:40] [parallel-indexer] worker pool fork test passed — using parallel workers\n[INFO] [00:57:40] [parallel-indexer] project index built {\"ext\":\".ts\",\"files\":1,\"types\":0}\n[INFO] [00:57:41] [parallel-indexer] worker pool complete {\"files\":2,\"workers\":1,\"workerKills\":0,\"watchdogDeferrals\":0,\"parentStalledMs\":0}\n[WARN] [00:57:41] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {\"projectId\":\"d60b18f9\",\"danglingSources\":5,\"totalRelationships\":11}\n[INFO] [00:57:41] [project-health] project health computed {\"projectId\":\"d60b18f9f1a19883b6512dded7940ae3fa7002c0\",\"complexityScore\":93,\"maintainabilityScore\":77,\"techDebtScore\":100,\"codeQualityScore\":90,\"languages\":2,\"bottlenecks\":0}\n",
+  "stdoutBytes": 2093,
+  "stderrBytes": 1385,
+  "stdoutTruncated": false,
+  "stderrTruncated": false,
+  "recordPath": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/docs/bb-bettercap-fix/evidence/verifier/runs/20261120T055742Z-final2-m26-polyglot-tsx.json"
+}

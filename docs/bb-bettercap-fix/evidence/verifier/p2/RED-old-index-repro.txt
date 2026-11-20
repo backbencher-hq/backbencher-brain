@@ -1,0 +1,39 @@
+{
+ "projectId": "3cc416747a0082a80b42b89928cb8c909e09e371",
+ "dataDir": "/home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/verifier/p2/bbdata-repro",
+ "oldDb": "/home/ishaq2321/.bb/projects/3cc416747a0082a80b42b89928cb8c909e09e371/brain.db",
+ "projectRoot": "/home/ishaq2321/bb_tests/repositories/gql-gqlgen/graphql"
+}
+
+### bb_graph: isError=true bytes=40
+bb_graph: no such column: r.target_basis
+
+### bb_impact: isError=true bytes=41
+bb_impact: no such column: r.target_basis
+[INFO] [00:04:18] [dependency-graph-visualizer] 🌐 Generating Polyglot Dependency Graph Data...
+[INFO] [00:04:18] [dependency-graph-visualizer] ✅ Graph Data Generated: 38 nodes, 74 links
+
+### bb_visualize: isError=false bytes=24377
+{
+  "summary": {
+    "truncated": true,
+    "truncationReason": "output limits",
+    "truncationReasons": [
+      "output limits"
+    ],
+    "scope": "project",
+    "target": null,
+    "view": "graph",
+    "layout": "regions",
+    "declaredAbsent": false,
+    "totalNodesAvailable": 1806,
+    "originalNodes": 38,
+    "originalLinks": 74,
+    "returnedNodes": 20,
+    "returnedLinks": 14,
+    "maxNod
+
+### bb_security: isError=false bytes=621
+⚠️  LEXICAL TOKEN CO-OCCURRENCE — NOT DATA FLOW; NOT A VULNERABILITY FINDING
+tiers (analyzer registry census, project-independent): 0 scan / 39 lead-tier analyzers / 14 unsupported (of 53 analyzer specs) — unsupported languages are NOT scanned by bb_security; analyzer specs require manual validation, and this project's stored leads are counted below, not here
+not scanned by bb_security (no executa

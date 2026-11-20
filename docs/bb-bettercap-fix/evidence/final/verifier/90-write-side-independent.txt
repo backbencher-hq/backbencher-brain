@@ -1,0 +1,27 @@
+=== independent write-side verification on Lead's subset index (2026-11-20T20:14:29Z)
+db=.tools/final/subset-data/projects/ddaf987f4b9b474f1446b1f28ee529e3c8c965d3/brain.db
+--- refactor dry-run JSON (Lead artifact, verifier re-reads it)
+<anonymous_script>:1
+[INFO] [15:13:14] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+ ^
+
+SyntaxError: Unexpected token 'I', "[INFO] [15:"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at [eval]:3:14
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_string:74:3
+
+Node.js v22.22.1
+--- DB binding queries (read-only)
+--- counts
+import_path_bindings|504
+cross_lang_name_resolution_bound|0
+func_main_calls|44
+module_calls|11
+--- pre-existing statement unmodified by campaign?
+0

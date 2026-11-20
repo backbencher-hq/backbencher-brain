@@ -1,0 +1,8 @@
+--- GREEN3 m26
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 4ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 2ms
+
+A1: VERIFIED (12/12 passed, 1 mutant)
+m26_exit=0

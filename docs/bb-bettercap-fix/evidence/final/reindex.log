@@ -1,0 +1,98 @@
+note: no embedding key — semantic search will use local vectors (weaker). Setup: bb setup
+indexing /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/bettercap (project c6d3120b…)
+wiped c6d3120b index in place (file kept)
+  index space: db 0.4 MB, wal 0.0 MB
+
+Indexing 1,973 files — this will take a few minutes
+
+[index] 0% 1/1,973 files elapsed=0s eta=…
+[brain] preparing the parallel worker pool (1972 files)…
+[brain] ✓ worker pool available — using 7 workers with 45s timeouts
+[INFO] [00:52:46] [parallel-indexer] worker pool fork test passed — using parallel workers
+[index] 5% 100/1,973 files elapsed=5s eta=1m 34s
+[WARN] [00:52:52] [parallel-indexer] parent event loop was blocked {"ms":1108,"stalledTotalMs":1108}
+[WARN] [00:52:54] [parallel-indexer] parent event loop was blocked {"ms":1671,"stalledTotalMs":2779}
+[index] 10% 205/1,973 files elapsed=12s eta=1m 42s
+[index] 15% 297/1,973 files elapsed=15s eta=1m 27s
+[WARN] [00:53:03] [parallel-indexer] parent event loop was blocked {"ms":1509,"stalledTotalMs":4288}
+[WARN] [00:53:06] [parallel-indexer] parent event loop was blocked {"ms":1358,"stalledTotalMs":5646}
+[WARN] [00:53:10] [parallel-indexer] parent event loop was blocked {"ms":3095,"stalledTotalMs":8741}
+[index] 20% 399/1,973 files elapsed=25s eta=1m 38s
+[WARN] [00:53:12] [parallel-indexer] parent event loop was blocked {"ms":1017,"stalledTotalMs":9758}
+[WARN] [00:53:16] [parallel-indexer] parent event loop was blocked {"ms":1657,"stalledTotalMs":11415}
+[index] a quarter of the way in
+[index] 25% 500/1,973 files elapsed=32s eta=1m 35s
+[WARN] [00:53:39] [parallel-indexer] parent event loop was blocked {"ms":20384,"stalledTotalMs":31799}
+[WARN] [00:53:41] [parallel-indexer] parent event loop was blocked {"ms":1089,"stalledTotalMs":32888}
+[WARN] [00:53:42] [parallel-indexer] parent event loop was blocked {"ms":1408,"stalledTotalMs":34296}
+[WARN] [00:53:44] [parallel-indexer] parent event loop was blocked {"ms":1139,"stalledTotalMs":35435}
+[index] 30% 596/1,973 files elapsed=58s eta=2m 58s
+[index] 35% 706/1,973 files elapsed=1m 0s eta=2m 13s
+[index] 40% 806/1,973 files elapsed=1m 1s eta=1m 47s
+[index] 45% 904/1,973 files elapsed=1m 3s eta=1m 25s
+[index] past the halfway mark
+[index] 50% 1,003/1,973 files elapsed=1m 5s eta=1m 7s
+[index] 55% 1,098/1,973 files elapsed=1m 5s eta=54s
+[WARN] [00:53:55] [parallel-indexer] parent event loop was blocked {"ms":2052,"stalledTotalMs":37487}
+[index] 60% 1,192/1,973 files elapsed=1m 9s eta=43s
+[index] 65% 1,292/1,973 files elapsed=1m 10s eta=33s
+[index] 70% 1,391/1,973 files elapsed=1m 11s eta=26s
+[WARN] [00:53:58] [parallel-indexer] parent event loop was blocked {"ms":1430,"stalledTotalMs":38917}
+[index] 75% 1,483/1,973 files elapsed=1m 13s eta=20s
+[index] in the final stretch
+[index] 80% 1,584/1,973 files elapsed=1m 23s eta=10s
+[WARN] [00:54:09] [parallel-indexer] parent event loop was blocked {"ms":10140,"stalledTotalMs":49057}
+[index] 85% 1,684/1,973 files elapsed=1m 25s eta=7s
+[index] 90% 1,784/1,973 files elapsed=1m 26s eta=4s
+[index] almost there — finishing up
+[index] 95% 1,885/1,973 files elapsed=1m 27s eta=2s
+[WARN] [00:54:15] [parallel-indexer] parent event loop was blocked {"ms":1080,"stalledTotalMs":50137}
+[index] 100% 1,974/1,973 files elapsed=1m 33s eta=finishing
+[INFO] [00:54:19] [parallel-indexer] worker pool complete {"files":1972,"workers":7,"workerKills":0,"watchdogDeferrals":0,"parentStalledMs":50137}
+[INFO] [00:54:34] [parallel-indexer] override companion (javascript): 113 owners, 0 file(s) re-analyzed, 0 reapplied, 0 confirmed, 0 still a guess, 0 failed, 0 id(s) computed, 0 without one, 0 collapsed onto an id another row already claimed, 0 new in the re-parse, 0 unconfirmed id(s)
+  [1/8] resolving cross-file relationships…
+[WARN] [00:55:50] [parallel-indexer] relationship resolution failed {"error":{"code":"SQLITE_FULL"}}
+[WARN] [00:55:50] [parallel-indexer] relationship resolution failed {"error":"database or disk is full"}
+  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…
+  enriching reading 0%
+  enriching counting 0%
+[WARN] [00:55:51] [relationship-enrichment] relationship enrichment: dangling source edges cannot be enriched {"projectId":"c6d3120b","danglingSources":18865,"totalRelationships":111786}
+  enriching done 100%
+  ✅ Enriched 92,921 relationships (666 patterns) in 10584ms
+        patterns: event_handler 391 · callback 275
+        ⚠ 18,865 dangling sources, 80,233 unresolved targets — declared, not hidden
+  [3/8] computing gravity scores…
+  ✓ gravity in 863ms
+  [4/8] analyzing taint flows & security…
+        security leads: 0 (tier leads; not findings)
+  [5/8] computing project health…
+[INFO] [00:56:02] [project-health] project health computed {"projectId":"c6d3120b70c4833f2c086165a57cdc78edb6bb4a","complexityScore":79,"maintainabilityScore":76,"techDebtScore":0,"codeQualityScore":51,"languages":12,"bottlenecks":20}
+  ✓ taint(1ms) + health(154ms)
+  [6/8] integrity & freshness…
+  ✓ health check in 999ms
+  ⚠️  Index health: 92% — 1 warnings (run bb_health(integrity=true) for details)
+    ❌ Index Completeness: 1 of 1973 discovered files were never written (1972 of 1973 indexed), so the index does not cover the project — note the status field says "complete" while the counts say otherwise; the counts are the measurement.
+  [7/8] vector blobs…
+  ✓ vector blobs: 0/0 promoted in 44ms
+  [8/8] planner stats (ANALYZE)…
+  ✓ planner stats (ANALYZE) in 1578ms
+  ⚠ index marked partial: a post-processing phase failed
+  index space: db 353.2 MB, wal 0.0 MB
+  index: /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/bbdata/projects/c6d3120b70c4833f2c086165a57cdc78edb6bb4a/brain.db · remove with: rm -rf /home/ishaq2321/mcp/backbencher-brain/.tools/wt-wave2/.tools/final/bbdata/projects/c6d3120b70c4833f2c086165a57cdc78edb6bb4a
+  ⚠️  index health (after embeddings): 92% — 1 warning(s) (run bb health for details)
+    ❌ Index Completeness: 1 of 1973 discovered files were never written (1972 of 1973 indexed), so the index does not cover the project — note the status field says "complete" while the counts say otherwise; the counts are the measurement.
+✓ indexed 1972 files, 55785 symbols, 111786 relationships, 23925 embeddings in 199.7s
+  stats: {"totalFiles":1973,"processed":1973,"errors":0}
+  graph: 92,921 relationships explained
+  patterns: event_handler 391 · callback 275
+  run: 7 workers · 12 languages · discovery 324ms · parse 107.9s · derive 89.0s · total 199.7s
+  embeddings: local-word-vectors-v3 (50d)
+
+Took 3m 20s.
+If this is slower than usual for your project, tell us: support@backbencher.cc
+  AST analysis degraded for 4 file(s). Regex-derived graph edges are marked inferred.
+  breakdown: 1972 newly parsed | 1 unchanged | 0 skipped | 3 symbol-loss (parsed 0 symbols) | 0 errors | 0 timeouts
+  parsed with the worker pool
+  derived: partial (at least one derived phase FAILED, so the derived data is incomplete)
+  ✗ a derived phase failed — index marked partial. Run: bb index --post
+  consistency: every internal relationship is attached to a symbol (external references are attached to an external identity, which is correct)

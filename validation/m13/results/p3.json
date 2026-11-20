@@ -141,5 +141,5 @@
   "limitations": [
     "Orphan detection is static index evidence; dynamic dispatch/reflection remains a documented limitation of the detector itself."
   ],
-  "generatedAt": "2026-11-19T05:08:48.597Z"
+  "generatedAt": "2026-11-20T05:58:42.545Z"
 }
