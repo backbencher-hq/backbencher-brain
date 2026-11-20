@@ -24,6 +24,13 @@
       "target": "decorated",
       "line_number": 71,
       "note": "a `@property` overriding a `@property`. A decorated definition is `decorated_definition` in the tree rather than `function_definition`, so a fix that unwraps decorators must reach both sides of the pair, not one"
+    },
+    {
+      "type": "overrides",
+      "from": "RealMroChild.mro_target",
+      "target": "mro_target",
+      "line_number": 85,
+      "note": "MRO traversal must reach a real method on a grandparent through a pass-through intermediate base"
     }
   ],
   "forbidRelationships": [

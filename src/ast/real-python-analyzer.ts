@@ -3866,12 +3866,23 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // at class level, so `Cython/Compiler/Nodes.py` has `code_object = None` in
         // `FuncDefNode` at L1996 and a `code_object` property in `CFuncDefNode` — which is how
         // this surfaced, as 20 fabricated verified edges concentrated in one file.
-        const declaring = bases.find((b) => {
+        const findMroDeclaring = (base: string, seen: Set<string>): string | null => {
+          if (seen.has(base)) return null
+          seen.add(base)
           const inFile = byName.get(s.name)?.some(
-            (bm) => bm.ownerName === b && bm.kind === ASTEngine.SymbolKind.Method,
+            (bm) => bm.ownerName === base && bm.kind === ASTEngine.SymbolKind.Method,
           ) ?? false
-          return inFile || !!overrideCompanion?.get(b)?.has(s.name)
-        })
+          if (inFile || !!overrideCompanion?.get(base)?.has(s.name)) return base
+          const ancestors = basesByClass.get(base) ?? []
+          for (const ancestor of ancestors) {
+            const found = findMroDeclaring(ancestor, new Set(seen))
+            if (found) return found
+          }
+          return null
+        }
+        const declaring = bases
+          .map((base) => findMroDeclaring(base, new Set<string>()))
+          .find((base): base is string => !!base)
         if (declaring) {
           // INCOMING_PY / M14 §4: 0.95 is below 1.0, so this edge owes a reason code
           // like every other one, and the reason it carries is the strongest claim the
