@@ -290,6 +290,19 @@
   },
   "freshDefinitiveVerification": {
     "timestamp": "2026-11-20",
+    "postFixOverloadAndNestedScope": {
+      "commitOverload": "f1d947b89",
+      "commitNestedOracle": "1f5702835",
+      "commitNestedProduction": "7bccb5b61",
+      "files": 11306,
+      "directDisagreements": 21,
+      "missing": {"contains": 8, "calls": 6},
+      "unexplained": {"overrides": 7},
+      "multiplicityDisagreements": 601,
+      "multiplicityByType": {"calls": 575, "extends": 3, "overrides": 23},
+      "dump": "/tmp/python-whole-diff-post-nested.jsonl",
+      "fixtureGate": {"pass": 76, "fail": 0}
+    },
     "selectedDifferential": {
       "files": 2373,
       "missing": {"contains": 2},

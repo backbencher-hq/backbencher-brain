@@ -55,5 +55,17 @@
       "instantiates": 12
     }
   },
+  "postFixOverloadAndNestedScope": {
+    "commitOverload": "f1d947b89",
+    "commitNestedOracle": "1f5702835",
+    "commitNestedProduction": "7bccb5b61",
+    "admittedFiles": 11306,
+    "directDisagreements": 21,
+    "missing": {"contains": 8, "calls": 6},
+    "unexplained": {"overrides": 7},
+    "multiplicityDisagreements": 601,
+    "multiplicityByType": {"calls": 575, "extends": 3, "overrides": 23},
+    "dump": "/tmp/python-whole-diff-post-nested.jsonl"
+  },
   "rule": "No residual row is marked fixed unless production and oracle are rerun together. OTP/ASN.1 and duplicate-def rows are named evidence classes, not silently absorbed."
 }
