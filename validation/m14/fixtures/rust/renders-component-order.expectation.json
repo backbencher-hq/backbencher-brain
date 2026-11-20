@@ -1,0 +1,37 @@
+{
+  "fixtureId": "rust/renders-component-order",
+  "language": "rust",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "PINS the two defects the 2026-11-20 master review found and fixed in rust's renders emission. (1) THE BARE-HTML TEST LOWERCASED THE TAG: `BARE_HTML.has(tag.toLowerCase())` refused every component whose PascalCase name lowercases to an HTML tag — Button, Form, Label, Header, Main, Section, Nav, Select, Option, Template, Canvas, Table, Path, Input, Footer, Article, Aside — so `view! { <Button/> }` published NO renders row. The guard's real impostor class is lowercase in every UI framework (`<div>`, `<span>`); Rust components are PascalCase. The test now reads the written spelling. (2) THE COMPONENT TEST RAN DURING THE WALK: 'does this file declare the tag?' was asked at the render site, so a component declared BELOW its use was not in the symbol table yet and emission silently depended on declaration order — same program, different output. It is now deferred until the symbol table is complete, the shape pendingInstantiations already uses. This file declares Button AFTER App's render site (the order that used to emit nothing) and Form BEFORE it (the order that already worked), so the fixture fails if either half regresses. The two must-nots stay pinned at equals:0: a BARE HTML TAG (div) renders a value, not a component; an UNDECLARED tag (Other) has no same-file symbol behind it.",
+  "expectSymbols": [
+    { "name": "App", "kind": "function" },
+    { "name": "Button", "kind": "struct" },
+    { "name": "Form", "kind": "struct" },
+    { "name": "not_a_render", "kind": "function" }
+  ],
+  "expectRelationshipCount": [
+    { "type": "renders", "equals": 2 },
+    { "type": "renders", "from": "App", "target": "Button", "equals": 1 },
+    { "type": "renders", "from": "App", "target": "Form", "equals": 1 },
+    { "type": "renders", "target": "div", "equals": 0 },
+    { "type": "renders", "target": "Other", "equals": 0 },
+    { "type": "renders", "from": "not_a_render", "equals": 0 }
+  ],
+  "expectRelationships": [
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Button",
+      "meta.renderMacro": "view",
+      "meta.isComponentTag": true,
+      "meta.corpusUnexercised": true
+    },
+    {
+      "type": "renders",
+      "from": "App",
+      "target": "Form",
+      "meta.renderMacro": "view",
+      "meta.isComponentTag": true
+    }
+  ]
+}

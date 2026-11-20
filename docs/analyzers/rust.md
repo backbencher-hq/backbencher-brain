@@ -632,6 +632,12 @@ The two counts that GROW are current at HEAD 2026-11-03: the rust fixture suite 
 `bun script/m14/run-fixtures.ts --lang rust`), not 25; and
 `script/m14/mutate-analyzer.ts` registers **45** rust mutants, not 10.
 
+**UPDATED 2026-11-20 (master review): 35 fixtures, 47 mutants.** The suite gained
+`rust/renders-component-order` and the registry gained two mutants, one per defect
+the review found in the `renders` emitter (§"Two defects the master review found").
+`bun script/m14/run-fixtures.ts --lang rust` → 35 pass / 0 fail;
+`npx tsx script/m14/mutate-analyzer.ts --lang rust` → all 47 caught.
+
 The 1 remaining MISSING row is an **oracle** defect, not an analyzer one: an
 impl-level `type Err = Error;` puts `Err` into the oracle's in-file declared-type
 set, after which every bare `Err(...)` — the prelude's `Result::Err` — derives a
@@ -678,6 +684,44 @@ so the ruling is falsifiable.
 | `perf.ts` | payload/latency: two arms in separate processes, per-file minimum over N passes, arm order switchable |
 | `derivation.ts` | this lane's DERIVATION debt, read with `rel-type-coverage-gate.ts`'s own `runGate()` without writing its artifact |
 | `direction.ts` | the store-level INCOMING/OUTGOING arm counts (currently blocked — §3) |
+
+## Two defects the master review found in `renders` (2026-11-20)
+
+The 2026-11-20 master review tested the `renders` emitter against a **real leptos-shaped component**
+rather than only the lane's synthetic fixture. The fixture passed; the real shape produced **no
+`renders` row at all**. Two independent defects, both in
+`src/ast/real-rust-analyzer.ts`, both now fixed and pinned.
+
+**DEFECT 1 — the bare-HTML test lowercased the tag.** The guard read
+`BARE_HTML.has(tag.toLowerCase())`. That refused every component whose PascalCase name lowercases to
+an HTML tag: `Button`, `Form`, `Label`, `Header`, `Main`, `Section`, `Nav`, `Select`, `Option`,
+`Template`, `Canvas`, `Table`, `Path`, `Input`, `Footer`, `Article`, `Aside`. The guard's real
+impostor class is **lowercase in every UI framework's grammar** (`<div>`, `<span>`, `<my-element>`),
+because that is how HTML spells; Rust components are PascalCase by convention and snake_case at
+worst. The test now reads the **written spelling**, so `div` is still refused and `Button` is not.
+Measured before the fix: `view! { <Button/> }` with `struct Button;` in the same file → 0 renders
+edges. After: 1.
+
+**DEFECT 2 — the component test ran during the walk.** "Does this file declare the tag?" was asked at
+the render site, so a component declared **below** its use was not yet in `ctx.symbols`. Measured
+before the fix: `fn App() { view!{ <Button/> } }` followed by `struct Button;` → 0 renders edges,
+while `struct Button;` followed by `fn App() { ... }` → 1. **Same program, different output
+depending on where the author put the declaration.** The test is now **deferred** until the symbol
+table is complete — the same shape `pendingInstantiations` already uses for constructor targets —
+carrying the candidate's source, target, macro name and 1-based line.
+
+**What the fix does NOT change.** The whole-population re-measurement after both fixes is
+**byte-identical**: 2,532 files, **326,092 edges**, **0 renders edges**, 0 render files. The corpus
+carries no render macro (see `renders` above), so this is a correctness fix to an emission the corpus
+cannot reach, not a population change. Both are pinned: `rust/renders-component-order` declares
+`Button` after its use and `Form` before it, so it fails if either half regresses; the impostor
+must-nots stay pinned (`<div/>` refused, `<Other/>` refused).
+
+**Two mutants, one per defect**, are registered in `script/m14/mutate-analyzer.ts`:
+`rust/renders-lowercase-html-collision` and `rust/renders-order-dependent`. Both are caught by
+`rust/renders-component-order`; the battery is **47 mutants, all caught**.
+
+---
 
 ## The import file claim — the arbiter's `importProjectFile` (M14 residual, 2026-10-17)
 

@@ -793,6 +793,16 @@ interface RustContext {
   // node that NAMES the type it constructs — the edge is emitted in a deferred
   // pass (after the symbol table exists), long after the node is in hand.
   pendingInstantiations: Array<{ source: string; target: string; qualified: string; line?: number; bareSpelling?: boolean; callScope?: string[] }>
+  // M14 RUST renders: an angle-tag candidate found in a render-macro token_tree,
+  // DEFERRED for the same reason pendingInstantiations is. The component test is
+  // "does this file DECLARE the tag name?", and a walk cannot answer it while it
+  // is still inside the render site — a component declared BELOW its use is in
+  // the symbol table only after the walk has passed it. Resolving at the site
+  // made emission order-dependent (measured 2026-11-20: `struct Button` before
+  // `fn App` emitted renders; after it, did not), which is a coin flip on where
+  // the author put the declaration. The candidate carries the 1-based line of the
+  // macro invocation and the enclosing scope's name; the deferred pass decides.
+  pendingRenders: Array<{ source: string; target: string; macroName: string; line?: number }>
   // startIndex of call_expression / macro_invocation nodes that sit directly
   // inside an await_expression (`.await`). The DFS visits the inner call node
   // anyway, so the await branch must NOT push a second edge — instead it
@@ -902,6 +912,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       unattributed: new Map<string, number>(),
       macroArgumentReads: 0,
       pendingInstantiations: [],
+      pendingRenders: [],
       awaitedCalls: new Set<number>(),
     }
     this.usedIds = new Set<string>()
@@ -1390,6 +1401,42 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           // construction), carried through the deferred resolution pass.
           ...(cand.line ? { line_number: cand.line } : {}),
           metadata: { isConstructor: true },
+        })
+      }
+
+      // M14 RUST renders — THE DEFERRED COMPONENT TEST (2026-11-20).
+      //
+      // A candidate is published only when the tag names a symbol THIS FILE declares,
+      // and that test is now made after the walk (see pendingRenders). Resolving it at
+      // the site was order-dependent: a component declared BELOW its use was invisible
+      // to `ctx.symbols` at the moment the render macro was walked, so
+      // `fn App() { view!{ <Button/> } }` + `struct Button;` emitted NOTHING while
+      // `struct Button;` + `fn App() { ... }` emitted a row. Same program, same
+      // meaning, different output depending on declaration order — the coin flip the
+      // deferred pass removes. A tag with no same-file declaration is still refused
+      // and counted, so the impostor class stays visible.
+      const declaredNames = new Set<string>()
+      for (const s of ctx.symbols) declaredNames.add(s.name)
+      for (const cand of ctx.pendingRenders) {
+        if (!declaredNames.has(cand.target)) {
+          this.noOwner(ctx, "renders:tag_not_a_same_file_symbol")
+          continue
+        }
+        ctx.relationships.push({
+          source: cand.source,
+          target: cand.target,
+          fromSymbol: cand.source,
+          toSymbol: cand.target,
+          type: ASTEngine.RelationshipType.Renders,
+          // The tag identifier and the same-file symbol match are both tree-read — 1.0.
+          confidence: 1.0,
+          ...(cand.line ? { line_number: cand.line } : {}),
+          metadata: {
+            renderMacro: cand.macroName,
+            isComponentTag: true,
+            corpusUnexercised: true,
+            rustSpecific: true,
+          },
         })
       }
     }
@@ -4614,30 +4661,36 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let k = 0; k + 1 < flat.length; k++) {
           if (flat[k].text === "<" && flat[k + 1].type === "identifier") {
             const tag = flat[k + 1].text
-            if (tag.length > 0 && !BARE_HTML.has(tag.toLowerCase())) {
+            // THE BARE-HTML TEST READS THE WRITTEN SPELLING, NOT A LOWERCASED ONE.
+            //
+            // It read `BARE_HTML.has(tag.toLowerCase())` until 2026-11-20, and that silently
+            // refused a whole class of LEGAL Rust components: any type or fn whose PascalCase
+            // name lowercases to an HTML tag. `struct Button`, `struct Form`, `struct Label`,
+            // `struct Header`, `struct Main`, `struct Section`, `struct Nav`, `struct Select`,
+            // `struct Option`, `struct Template`, `struct Canvas`, `struct Table`, `struct Path`,
+            // `struct Input`, `struct Footer`, `struct Article`, `struct Aside` — all refused as
+            // "a bare HTML tag", so `view! { <Button/> }` published NO renders edge at all.
+            // The impostor class the guard exists to stop is real, and it is LOWERCASE in every
+            // UI framework's grammar (`<div>`, `<span>`, `<my-element>`), because that is what
+            // HTML spells. Rust components are PascalCase by convention and snake_case at worst
+            // (`my_button`), neither of which collides with a lowercase tag spelling. So the
+            // exact test keeps every true impostor refused (`div` -> refused) and stops
+            // refusing a component whose name merely CASE-INSENSITIVELY matches one. The
+            // same-file symbol test below is still what decides whether the tag is a component.
+            if (tag.length > 0 && !BARE_HTML.has(tag)) {
               // THE COMPONENT TEST: the tag names a same-file symbol (the impostor stop).
-              const hasSymbol = ctx.symbols.some((sym: any) => sym.name === tag)
-              if (hasSymbol) {
-                const renderScope = this.edgeSource(parent) ?? RUST_FILE_SOURCE
-                ctx.relationships.push({
-                  source: renderScope,
-                  target: tag,
-                  fromSymbol: renderScope,
-                  toSymbol: tag,
-                  type: ASTEngine.RelationshipType.Renders,
-                  // The tag identifier and the same-file symbol match are both tree-read — 1.0.
-                  confidence: 1.0,
-                  ...(this.nodeLine(macroNameNode) ? { line_number: this.nodeLine(macroNameNode)! } : {}),
-                  metadata: {
-                    renderMacro: macroName,
-                    isComponentTag: true,
-                    corpusUnexercised: true,
-                    rustSpecific: true,
-                  },
-                })
-              } else {
-                this.noOwner(ctx, "renders:tag_not_a_same_file_symbol")
-              }
+              // It is a DEFERRED test (2026-11-20): "does this file DECLARE the tag?"
+              // cannot be answered at the site when the component is declared below the
+              // use, which made emission order-dependent. The candidate is buffered and
+              // resolved after the walk; `pendingRenders` is drained beside
+              // pendingInstantiations.
+              const renderScope = this.edgeSource(parent) ?? RUST_FILE_SOURCE
+              ctx.pendingRenders.push({
+                source: renderScope,
+                target: tag,
+                macroName,
+                line: this.nodeLine(macroNameNode),
+              })
             } else {
               this.noOwner(ctx, "renders:bare_html_tag")
             }

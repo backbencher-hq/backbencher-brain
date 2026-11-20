@@ -18811,6 +18811,37 @@ export const MUTANTS: Mutant[] = [
   },
 
   {
+    // THE 2026-11-20 MASTER-REVIEW MUTANTS — the two renders defects, one each.
+    id: "rust/renders-lowercase-html-collision",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "MASTER REVIEW 2026-11-20: restores the lowercased bare-HTML test `BARE_HTML.has(tag.toLowerCase())`. That lowercased the tag before the membership test, so every component whose PascalCase name lowercases to an HTML tag was refused as a bare HTML tag — Button, Form, Label, Header, Main, Section, Nav, Select, Option, Template, Canvas, Table, Path, Input, Footer, Article, Aside — and `view! { <Button/> }` published NO renders edge. Caught by rust/renders-component-order, which declares Button (lowercases to `button`) and Form (lowercases to `form`) and pins renders App->Button and App->Form.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type) !== "renders") return true
+        const t = String(x.target ?? "")
+        const BARE = ["div","span","p","a","ul","li","ol","h1","h2","h3","h4","h5","h6","br","hr","img","input","button","form","table","tr","td","th","section","header","footer","nav","main","aside","article","label","select","option","textarea","canvas","svg","path","g","template","slot"]
+        return !BARE.includes(t.toLowerCase())
+      }),
+    }),
+  },
+
+  {
+    id: "rust/renders-order-dependent",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "MASTER REVIEW 2026-11-20: simulates the at-the-site component test that made emission depend on declaration order — a component declared BELOW its use was not yet in the symbol table when the render macro was walked, so nothing was published. The fixture declares Button after App, so this transform must drop App->Button and be caught.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type) !== "renders") return true
+        return !(String(x.source ?? "") === "App" && String(x.target ?? "") === "Button")
+      }),
+    }),
+  },
+
+  {
     id: "rust/prelude-name-collision-instantiates",
     language: "rust",
     defectClass: "relationship-fabrication",
