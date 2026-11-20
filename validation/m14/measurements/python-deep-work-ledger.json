@@ -304,6 +304,17 @@
       "dump": "/tmp/python-whole-diff-post-nested.jsonl",
       "fixtureGate": {"pass": 76, "fail": 0}
     },
+    "stableWholeDifferential": {
+      "commit": "7b065adb2",
+      "files": 11306,
+      "directDisagreements": 21,
+      "missing": {"contains": 8, "calls": 6},
+      "unexplained": {"overrides": 7},
+      "multiplicityDisagreements": 601,
+      "multiplicityByType": {"calls": 575, "extends": 3, "overrides": 23},
+      "dump": "/tmp/python-whole-diff-stable-restored.jsonl",
+      "uncappedRows": 622
+    },
     "uncappedMultiplicityAudit": {
       "dump": "/tmp/python-whole-diff-multiplicity-final.jsonl",
       "totalRows": 622,
