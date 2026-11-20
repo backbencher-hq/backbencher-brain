@@ -1,0 +1,5 @@
+  [cold-pool] ripgrep:rust: 60/60 fresh (rot 1, corpus 110)
+[ripgrep] rust: files=60 tree-truth=6690 file-level-label-target-covered=6690 (100%) MISSING=0 | analyzer-edges=4773 unexplained=0 (0%) heuristic=0 hash=3726f83d65a6e09a
+  [cold-pool] cargo:rust: 60/60 fresh (rot 1, corpus 1352)
+[cargo] rust: files=60 tree-truth=3885 file-level-label-target-covered=3885 (100%) MISSING=0 | analyzer-edges=3219 unexplained=0 (0%) heuristic=0 hash=e09029111a6cc4ec
+probe run (--lang rust): measured 2 lane(s) — M14.0.F5 NOT written. The artifact belongs to the canonical 60-file, 50-language sweep; a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one.

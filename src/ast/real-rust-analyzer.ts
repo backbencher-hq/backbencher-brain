@@ -11,8 +11,9 @@
  * WHERE THE REST OF THE LANE LIVES. `docs/analyzers/rust.md` (the prose contract) ·
  * `script/m14/spec/rust-completeness.json` (per-type expectation inventory) · `validation/m14/
  * fixtures/rust/**` (fixtures + the probes `call-qualifier-census.mts`, `import-claim-census.mts`,
- * `repointed-call-edges.mts`) · `validation/m14/verification/RUST-STATE.md` (owner ledger) and
- * `RUST-FIX.md` (residual report).
+ * `repointed-call-edges.mts`) · `validation/m14/verification/RUST-STATE.md` (owner ledger, with the
+ * residual report folded into its §6 — `RUST-FIX.md` was cited for years without ever existing on
+ * disk, so the citation now names the one file that does).
  * WHEN THIS FILE CHANGES, ALSO EDIT: the completeness spec, the fixtures pinning the touched edge
  * type (`bun run script/m14/run-fixtures.ts --lang rust`), the docs above, and the STATE ledger.
  * NEVER edit `script/m14/**` — the arbiter is Lead-owned; write a proposal instead.
@@ -156,7 +157,7 @@ function isTwoSegmentIdentPath(s: string): boolean {
  * consults a declaration name, so it cannot refute a name the project declares. That is the
  * property a bare-name externality marker lacks: `clone`, `new` and `default` are declared all
  * over, and a marker that is only read where nothing is declared is verified by construction
- * (a vacuous pass, refused in `validation/m14/verification/RUST-FIX.md` §9).
+ * (a vacuous pass, refused in `validation/m14/verification/RUST-STATE.md` §6).
  *
  * THE BASE, read from the Rust reference rather than guessed:
  *   crate::a  -> <crate source root>/a.rs | <crate source root>/a/mod.rs
@@ -804,7 +805,8 @@ interface RustContext {
   // PARSE time: `self` IS the enclosing impl type and `Self` is that type's keyword
   // alias. Every other receiver form (`self.repository.find()`, `x.y.z()`) is an
   // arbitrary expression the grammar carries no type for, so it stays on the bare
-  // leaf — see `validation/m14/verification/RUST-FIX.md` §4.
+  // leaf — see `validation/m14/verification/RUST-STATE.md` §6 (the residual report
+  // lives there; `RUST-FIX.md` was cited for years without ever existing on disk).
   //
   // The candidate is recorded HERE, at the call site, and APPLIED in
   // `publishQualifiedCallTargets` after the walk, because the test that makes the

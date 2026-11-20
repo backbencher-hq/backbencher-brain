@@ -202,6 +202,10 @@ import { deriveNimEdges } from "./nim-truth-oracle"
 import { deriveVbTruth as deriveVbOracleTruth, VB_ORACLE_LABELS } from "./vb-truth-oracle"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
 import { deriveRustContainsTruth } from "./oracles/rust-contains"
+// RUST renders: the label was admitted globally while no rust oracle derived it
+// — allowance-without-truth, the shape that turns every future render macro into
+// an UNEXPLAINED row. Lane-owned oracle, tree-derived, no analyzer import.
+import { deriveRustRendersTruth } from "./oracles/rust-renders"
 // SQL-G14: the sql lane had NO branch at all, so a scoped run ended "derived ZERO truth edges" and
 // #419 sections E/F were unmeasurable for the lane (recorded in script/m14/spec/sql-completeness.json).
 // This is the FIRST HALF of the oracle — `contains` and `references`, the structural bulk — and the
@@ -25303,6 +25307,14 @@ async function main() {
         }
         for (const e of deriveRustOverridesTruth(root)) {
           ;(truth as any[]).push({ label: "overrides", from: e.from, target: e.target })
+        }
+        // RUST renders: the last admitted-but-unmeasured rust label. The corpus
+        // measured 0 render-macro sites over the whole admitted population, so
+        // today this derives nothing and the pair is empty-passes-empty — but
+        // the day a corpus file carries a render macro, the analyzer's row has
+        // truth to be compared against instead of reading UNEXPLAINED.
+        for (const e of deriveRustRendersTruth(root)) {
+          ;(truth as any[]).push({ label: "renders", from: e.from, target: e.target })
         }
       }
       if (lang === "go") {

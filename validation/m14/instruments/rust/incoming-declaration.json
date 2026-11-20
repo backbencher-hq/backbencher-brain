@@ -21,7 +21,9 @@
       "extendedCensus": "validation/m14/measurements/rust-extended-census.json",
       "completenessSpec": "script/m14/spec/rust-completeness.json",
       "fixtures": "validation/m14/fixtures/rust/",
-      "fixtureSummary": "34 pass / 0 fail (bun script/m14/run-fixtures.ts --lang rust)"
+      "fixtureSummary": "34 pass / 0 fail (bun script/m14/run-fixtures.ts --lang rust)",
+      "replay2026_11_19": "validation/m14/measurements/rust-arm-final-2026-11-19.log",
+      "replayNote": "The armLog/extendedCensus paths above name the 2026-10-23 arm and are ABSENT at HEAD 2026-11-19 (never committed; the arm commit d52c665be is not an object in this repository). The arm was re-run over the same admitted population on 2026-11-19 and the log is committed at replay2026_11_19; its population is identical (2532/2532, 9 repos) and its TABLE 1 matches this declaration on every type but imports (11,822 -> 11,813 edges; the r#impl container rename re-keyed 9 import claims; extOK 7,546 -> 7,929; extFAIL 0 on both arms). The per-type closure in this file is unchanged and exact on both arms. Prose form: validation/m14/verification/RUST-STATE.md section 2."
     },
     "analyzerDigest": "sha256:d8f032930f23a070ed9e811a72fc362662d90809873971510dbcaa40c01241e9",
     "analyzerDigestNote": "THE DIGEST NAMES THE BYTES THE ARM MEASURED: src/ast/real-rust-analyzer.ts at the arm's analyzer commit d52c665be, byte-identical at the closure commit b613d0d99 and at arm time. A later fix commit (the lane's D1 + D5) changes that file in TWO ways and NEITHER moves an edge or a bucket: (1) refusal counters that only fill metadata.unattributedEdges (decorates:inner_attribute, decorates:unnamed_declaration, decorates:attribute_without_name, decorates:no_declaration_sibling) and (2) a derive line-number index correction that only changes metadata.line_number, which the arbiter never reads. Proved rather than asserted: the four fixtures that pin these emitters are 34 pass / 0 fail both before and after the fix, and no edge-count assertion in them moved.",
