@@ -311,6 +311,16 @@ for (const f of files) {
     const line = parts[3]
     count(multiN, t, 1)
     sample(multiEx, t, `${path.basename(currentFile)} ${from} -> ${to}${line ? " @L" + line : ""}  truth=${tc} analyzer=${ac}`)
+    if (DUMP) dumpRows.push({
+      side: "multiplicity",
+      type: t,
+      file: currentFile,
+      from,
+      to,
+      line: line ? Number(line) : null,
+      truthCount: tc,
+      analyzerCount: ac,
+    })
   }
 
   for (const k of analyzerKeys) {
