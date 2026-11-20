@@ -34,7 +34,7 @@
   },
   "verified": {
     "pythonFixtures": {
-      "pass": 72,
+      "pass": 76,
       "fail": 0,
       "command": "bun run script/m14/run-fixtures.ts --lang python"
     },

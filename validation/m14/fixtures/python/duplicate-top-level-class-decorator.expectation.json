@@ -1,0 +1,19 @@
+{
+  "fixtureId": "python/duplicate-top-level-class-decorator",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A module-level duplicate class keeps only the last declaration; the earlier decorator is not published.",
+  "expectSymbolCount": [
+    {
+      "name": "Choice",
+      "equals": 1
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "decorates",
+      "from": "Choice",
+      "target": "marker"
+    }
+  ]
+}

@@ -2330,18 +2330,17 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { n, container, inFn } = frames.pop()!
       let nextContainer = container
       let nextInFn = inFn
-      if (n.type === "class_definition") {
-        const name = this.findChildByType(n, "identifier")?.text
-        if (name) {
-          const m = byContainer.get(container) ?? new Map<string, { key: string; node: Node }[]>()
-          m.set(name, [...(m.get(name) ?? []), { key: this.phantomKey(n), node: n }])
-          byContainer.set(container, m)
+      if (n.type === "class_definition" || n.type === "module") {
+        nextContainer = containerKey(n)
+        nextInFn = false
+        if (n.type === "class_definition" && !inFn && container === containerKey(rootNode)) {
+          const name = this.findChildByType(n, "identifier")?.text
+          if (name) {
+            const m = byContainer.get(container) ?? new Map<string, { key: string; node: Node }[]>()
+            m.set(name, [...(m.get(name) ?? []), { key: this.phantomKey(n), node: n }])
+            byContainer.set(container, m)
+          }
         }
-        nextContainer = containerKey(n)
-        nextInFn = false
-      } else if (n.type === "module") {
-        nextContainer = containerKey(n)
-        nextInFn = false
       } else if (n.type === "function_definition") {
         if (!inFn) {
           const name = this.findChildByType(n, "identifier")?.text
