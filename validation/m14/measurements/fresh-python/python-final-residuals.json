@@ -70,6 +70,8 @@
   },
   "stableWholeDifferential": {
     "commit": "7b065adb2",
+    "narrowDuplicateAttempt": "211ebbdd6",
+    "narrowDuplicateRevert": "12e58e57b",
     "admittedFiles": 11306,
     "directDisagreements": 21,
     "missing": {"contains": 8, "calls": 6},
