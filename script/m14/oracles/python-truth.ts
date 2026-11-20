@@ -1276,6 +1276,22 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       if (fn && scope) {
         for (const leaf of calleeNames(fn)) {
           if (!leaf || PY_BUILTINS.has(leaf) || isDunder(leaf)) continue
+          const calleeLine = (() => {
+            if (fn.type === "identifier") return fn.startPosition.row + 1
+            if (fn.type === "attribute") {
+              const attr = fn.childForFieldName("attribute")
+              if (attr) return attr.startPosition.row + 1
+            }
+            if (fn.type === "parenthesized_expression") {
+              const inner = fn.namedChild(0)
+              if (inner?.type === "identifier") return inner.startPosition.row + 1
+              if (inner?.type === "attribute") {
+                const attr = inner.childForFieldName("attribute")
+                if (attr) return attr.startPosition.row + 1
+              }
+            }
+            return n.startPosition.row + 1
+          })()
           // PYTHON'S CONSTRUCTOR CONVENTION, stated rather than assumed: a call whose
           // callee is Capitalised and is declared as a class in THIS file is a
           // construction of it, and the graph should say `instantiates`. The two
@@ -1288,9 +1304,9 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
           //     which is why `TypeVar(...)` and `Exception(...)` are calls.
           // The convention is a convention, and this is the line that makes it one.
           if (leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase() && classNames.has(leaf))
-            add("instantiates", scope, leaf, n.startPosition.row + 1)
+            add("instantiates", scope, leaf, calleeLine)
           else
-            add("calls", scope, leaf, n.startPosition.row + 1)
+            add("calls", scope, leaf, calleeLine)
         }
       }
     }

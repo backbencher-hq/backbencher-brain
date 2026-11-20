@@ -53,3 +53,7 @@ def lam_param():
 
 def nested():
     f()()
+
+
+def repeated_chain():
+    table.update().prefix_with("A").prefix_with("B")

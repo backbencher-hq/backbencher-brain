@@ -12,11 +12,13 @@
     { "name": "lam", "kind": "function" },
     { "name": "lam_param", "kind": "function" },
     { "name": "nested", "kind": "function" }
+    ,{ "name": "repeated_chain", "kind": "function" }
   ],
   "expectRelationships": [
     { "type": "calls", "from": "control", "target": "f", "comment": "the control: an ordinary callee is still named" },
     { "type": "calls", "from": "grouped", "target": "f", "comment": "grouping is transparent — the allowlist unwraps `parenthesized_expression`" },
     { "type": "calls", "from": "nested", "target": "f", "comment": "the INNER call of f()() — a true edge that must survive" }
+    ,{ "type": "calls", "from": "repeated_chain", "target": "prefix_with", "line_number": 59, "comment": "repeated chained call sites retain their own leaf lines" }
   ],
   "comment": "The `nested` shape is written but NOT separately adjudicated, and the reason is structural rather than a gap: `pushRel` dedupes by (type, source, target) with no line component, and the outer call's callee leaf IS the inner call's leaf on the same line, so the fallback's second edge and the true first edge are byte-identical in the emitted set. No pin can separate them — an `equals: 1` count passes in both states and is decoration, so it is not written. The discriminating shapes are `conditional` and both `lambda` forms, whose fabrications carry a (source, target) pair no true edge produces. MEASURED on the full cython draw (475 files, same sample hash before and after): the fallback fabricated FIVE edges corpus-wide — `calls manager_from_ternary -> cm1_getter` (tests/run/withstat_py.py:218, #902 itself), `calls InLambdaInClass -> y_global` (extra_walrus.py:136), `calls in_lambda_in_list_comprehension2 -> z` (extra_walrus.py:151), `calls complicated_cint_times_list -> n` (seq_mul.py:159, `(lambda: n)()`), and `extends T -> namedtuple` (test_dataclasses.py:1637, the base sibling pinned by python/base-shapes). Three of the five were lambdas.",
   "forbidRelationships": [
