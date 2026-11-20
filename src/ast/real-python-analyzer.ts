@@ -1405,7 +1405,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // are ownerless — Python has no module declaration, JS-family contract).
     for (const s of ctx.symbols) {
       const owner = s.ownerName
-      if (owner && owner !== s.name) {
+      if (owner) {
         // PY-23 (R7). The endpoint of this edge is a bare leaf, and a bare leaf can be a
         // name the STORE has already reserved. `SafeUUID` in CPython's `uuid.py` is an Enum
         // with a member literally named `unknown`:
@@ -2198,6 +2198,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const left = assign.namedChild(0)
           const right = assign.namedChild(assign.namedChildCount - 1)
           if (!left || left.type !== "identifier") continue
+          const unwrapLiteral = (n: Node | null | undefined): Node | null | undefined => {
+            let v = n
+            while (v && v.type === "parenthesized_expression") {
+              v = v.namedChild(0)
+            }
+            return v
+          }
+          const literalRight = unwrapLiteral(right)
           // PY-27, found by the independent differential rather than by a gate: `-1`
           // parses as a `unary_operator` wrapping an `integer`, not as an `integer`,
           // so `unsafe = -1` failed the constant test and CPython's own
@@ -2220,14 +2228,14 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // twice in this session (see script/m14/python-construct-census.mts). Reading
           // the grammar's own child list, named and anonymous, is what fixes it.
           const signedNumeric = ((): boolean => {
-            if (!right || right.type !== "unary_operator") return false
+            if (!literalRight || literalRight.type !== "unary_operator") return false
             let sign = false
-            for (let k = 0; k < right.childCount; k++) {
-              const c = right.child(k)
+            for (let k = 0; k < literalRight.childCount; k++) {
+              const c = literalRight.child(k)
               if (c?.type === "-" || c?.type === "+") sign = true
             }
             if (!sign) return false
-            const operand = right.namedChild(right.namedChildCount - 1)
+            const operand = literalRight.namedChild(literalRight.namedChildCount - 1)
             return !!operand && (operand.type === "integer" || operand.type === "float")
           })()
           // PY-30 — the CONTAINER spellings are literals too, and a filter keyed on the
@@ -2249,9 +2257,9 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           // value COMPUTED by an operator (`~1`, `not True`, `a + b`) is not a member this
           // branch can read off the tree. That is the same rule the `__all__` branch
           // applied to name sets one construct away.
-          const literalContainer = !!right && (right.type === "expression_list" ||
-            right.type === "list" || right.type === "tuple" || right.type === "set" ||
-            right.type === "dictionary" || right.type === "concatenated_string")
+          const literalContainer = !!literalRight && (literalRight.type === "expression_list" ||
+            literalRight.type === "list" || literalRight.type === "tuple" || literalRight.type === "set" ||
+            literalRight.type === "dictionary" || literalRight.type === "concatenated_string")
           // The NAME rule CPython's Enum actually applies, and it is the reason the
           // container spelling could not simply be accepted wholesale: a `NAME = value` in
           // an enum body is a member unless ENUM reserves the name. `__dunder__` and
@@ -2263,10 +2271,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           const reservedByEnum =
             (left.text.startsWith("__") && left.text.endsWith("__")) ||
             (left.text.startsWith("_") && left.text.endsWith("_") && left.text.length > 1)
-          if (!reservedByEnum && right && (signedNumeric || literalContainer ||
-              right.type === "string" || right.type === "integer" ||
-              right.type === "float" || right.type === "true" || right.type === "false" ||
-              right.type === "none" || right.type === "identifier" || right.type === "call")) {
+          if (!reservedByEnum && literalRight && (signedNumeric || literalContainer ||
+              literalRight.type === "string" || literalRight.type === "integer" ||
+              literalRight.type === "float" || literalRight.type === "true" || literalRight.type === "false" ||
+              literalRight.type === "none" || literalRight.type === "identifier" || literalRight.type === "call")) {
             ctx.symbols.push({
               name: left.text,
               kind: ASTEngine.SymbolKind.EnumMember,
@@ -2322,7 +2330,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { n, container, inFn } = frames.pop()!
       let nextContainer = container
       let nextInFn = inFn
-      if (n.type === "class_definition" || n.type === "module") {
+      if (n.type === "class_definition") {
+        const name = this.findChildByType(n, "identifier")?.text
+        if (name) {
+          const m = byContainer.get(container) ?? new Map<string, { key: string; node: Node }[]>()
+          m.set(name, [...(m.get(name) ?? []), { key: this.phantomKey(n), node: n }])
+          byContainer.set(container, m)
+        }
+        nextContainer = containerKey(n)
+        nextInFn = false
+      } else if (n.type === "module") {
         nextContainer = containerKey(n)
         nextInFn = false
       } else if (n.type === "function_definition") {

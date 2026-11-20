@@ -1,0 +1,41 @@
+{
+  "fixtureId": "python/enum-member-parenthesized",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "Parenthesized string enum values are real enum members; reserved enum machinery names are not.",
+  "expectSymbols": [
+    {
+      "name": "MISSING",
+      "kind": "enum_member"
+    },
+    {
+      "name": "REQUIRED",
+      "kind": "enum_member"
+    }
+  ],
+  "forbidSymbols": [
+    {
+      "name": "__visit_name__",
+      "kind": "enum_member"
+    }
+  ],
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "TransactionState",
+      "target": "MISSING"
+    },
+    {
+      "type": "contains",
+      "from": "TransactionState",
+      "target": "REQUIRED"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "contains",
+      "from": "TransactionState",
+      "target": "__visit_name__"
+    }
+  ]
+}

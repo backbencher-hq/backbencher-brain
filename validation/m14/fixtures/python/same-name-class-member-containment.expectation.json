@@ -1,0 +1,13 @@
+{
+  "fixtureId": "python/same-name-class-member-containment",
+  "language": "python",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "A class and a member may share one name; containment must remain a real owner/member edge rather than being dropped by owner != member equality.",
+  "expectRelationships": [
+    {
+      "type": "contains",
+      "from": "Item",
+      "target": "Item"
+    }
+  ]
+}

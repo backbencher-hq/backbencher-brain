@@ -228,7 +228,9 @@ for (const f of files) {
   // faster; it is one fewer place for the two sides to drift apart in style.
   const base = path.basename(f)
   let stem = base
-  if (stem.endsWith(".py")) stem = stem.slice(0, stem.length - 3)
+  if (stem.endsWith(".pyi")) stem = stem.slice(0, stem.length - 4)
+  else if (stem.endsWith(".pyw")) stem = stem.slice(0, stem.length - 4)
+  else if (stem.endsWith(".py")) stem = stem.slice(0, stem.length - 3)
   let normalised = ""
   for (let i = 0; i < stem.length; i++) {
     const c = stem.charAt(i)

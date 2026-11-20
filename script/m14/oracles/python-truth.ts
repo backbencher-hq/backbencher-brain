@@ -1334,7 +1334,13 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // source and the analyzer publishes two per-site members, which is what lets a
         // `contains` edge resolve by name AND line. Deduplicating by name is right for an
         // INSTANCE attribute (`self.x` in three methods is one attribute) and wrong here.
-        add("contains", cls, containsTarget(cls, nameNode.text), n.startPosition.row + 1)
+        const clsDecl = classes.findLast((c) => c.name === cls)
+        const isEnumClass = !!clsDecl && clsDecl.bases.some((b) =>
+          b === "Enum" || b === "IntEnum" || b === "StrEnum" || b === "Flag" || b === "IntFlag")
+        const reservedEnumName = isEnumClass &&
+          ((nameNode.text.startsWith("__") && nameNode.text.endsWith("__")) ||
+           (nameNode.text.startsWith("_") && nameNode.text.endsWith("_") && nameNode.text.length > 1))
+        if (!reservedEnumName) add("contains", cls, containsTarget(cls, nameNode.text), n.startPosition.row + 1)
       }
     }
     // A BINDER STATEMENT IN A CLASS BODY DECLARES A MEMBER. Python's class body is a NAMESPACE,
@@ -1411,7 +1417,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     if (n.type === "decorator") return
     if (n.type === "lambda") {
       const body = n.childForFieldName("body")
-      if (body && scope) {
+      if (body && scope && fnOwner && scope === fnOwner && ownerClass !== scope) {
         const lambdaScope = scope
         walkBody(body, lambdaScope, ownerClass, lambdaScope)
       }
