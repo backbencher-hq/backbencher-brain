@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "0.1.6",
+  "packageVersion": "0.1.8",
   "generatedFrom": [
     "src/mcp/tool-registry.ts",
     "script/verify-tool-docs.ts"
@@ -218,7 +218,7 @@
         "Semantic similarity discovers candidates; it does not prove behaviour, ownership or architecture, and the answer says so",
         "Local word vectors are a 205-word programming vocabulary plus the project's own vocabulary hashed into 50 dimensions. Their cosines are not comparable with a model embedding's, and an identifier-shaped query whose tokens are all absent produces a zero vector, reported as `reason=degenerate-query-vector`",
         "Coverage is per comparison space. On a mixed-model index the symbols comparable in the query model's space can be far fewer than the library-wide number; both numbers are reported and labelled",
-        "When the configured embedding provider does not answer within the tool's wait ceiling (2 s, or `BB_EMBEDDING_TIMEOUT_MS` when lower) the question is embedded with the local word-vector model, the answer declares the timeout, and the ranking is limited to that model's space",
+        "When the configured embedding provider does not answer within the tool's wait ceiling the question is embedded with the local word-vector model, the answer declares the timeout, and the ranking is limited to that model's space. The ceiling is 2 s by default; an explicit `BB_EMBEDDING_TIMEOUT_MS` RAISES it (capped at 60 s `EMBEDDING_WAIT_HARD_MAX_MS`), so a slow provider can be given the time it needs instead of silently degrading to the local space",
         "A verified aggregate is exact about the indexed snapshot, not the working tree: files changed after the last index write are not reflected, and the answer reports the snapshot time so the reader can judge the gap",
         "The dense candidate scan is capped at `BB_VECTOR_SCAN_CAP` rows (default 20,000). When the cap is reached the answer declares `truncated=true`, and the candidates are a deterministic prefix of the embedding table ordered by entity id",
         "A non-discriminative ranking (several candidates within the 0.05 margin of the best) publishes no numeric confidence: the answer says the scores do not separate candidates instead of printing a number it calls unreliable"
