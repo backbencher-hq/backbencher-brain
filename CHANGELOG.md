@@ -65,6 +65,18 @@ the defect was reproducible the gate was proven RED against the old code first.
   as "24 Font Awesome LESS/SCSS syntax errors". Those are now counted as declared
   dialect limits, with the raw warnings still stored.
 
+### The manual
+
+- **`man bb` no longer carries a version or a date.** The header read
+  `"September 2026" "bb 0.3.0"` while the package was 0.1.8 — eight releases stale,
+  because the hand-maintained header had to be edited on every release. The manual
+  documents behaviour, not a release; `bb --version` answers "which version". A
+  release no longer requires touching it.
+- Two stale claims fixed with it: the `index` entry told the reader `--force`
+  rebuilds vectors after a model change (contradicting the EMBEDDING SETUP section of
+  the same page, which correctly describes the in-place reconcile pass), and
+  `BB_EMBEDDING_TIMEOUT_MS` is now documented with its real rule.
+
 ### bb_ask
 
 - A non-discriminative ranking now explains itself — how many candidates sit inside
