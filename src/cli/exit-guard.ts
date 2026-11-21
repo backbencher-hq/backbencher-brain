@@ -61,6 +61,29 @@ function describeLiveHandles(): string[] {
 export function exitWhenDone(command: string): void {
   const code = process.exitCode ?? 0
 
+  // A CLOSED OUTPUT PIPE MUST NOT BE AN ERROR.
+  //
+  // This guard ends the process, so it can end it while stdout still has a write in flight to
+  // a pipe whose reader has gone — CI log capture, `| head`, a host that stops reading. Node
+  // raises EPIPE on the socket, and with no listener that is an UNHANDLED 'error' event: the
+  // process dies with a stack instead of the exit code it was given. Measured on CI:
+  //
+  //   Error: write EPIPE
+  //   Emitted 'error' event on Socket instance
+  //   ##[error]Process completed with exit code 1
+  //
+  // A CLI whose reader closed the pipe has not failed at anything, so EPIPE on stdio is
+  // swallowed here. Any other stream error is also non-fatal for the same reason: the report
+  // has already been printed, and the exit code is the command's own.
+  for (const stream of [process.stdout, process.stderr]) {
+    stream.on("error", (err: any) => {
+      if (err?.code === "EPIPE" || err?.code === "ERR_STREAM_DESTROYED") return
+      // Nothing useful can be done with a broken output stream, and throwing here would turn
+      // a completed command into a crash.
+      void err
+    })
+  }
+
   if (process.env.BB_EXIT_DIAGNOSTICS === "1") {
     const handles = describeLiveHandles()
     const detail = handles.length > 0

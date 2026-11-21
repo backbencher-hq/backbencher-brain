@@ -186,10 +186,10 @@
     "The fixed variants are written to be clean, so any finding in one is a suspected false positive for that class. A second real vulnerability in a 'fixed' body would be mislabelled; none is known, but the fixtures are small enough to check by reading.",
     "The measurement runs the RETIRED token detector under BB_SECURITY_LEGACY=1; the Phase-1 spec engine's precision is measured by script/m72/**, not re-derived here."
   ],
-  "generatedAt": "2026-11-21T22:26:04.429Z",
+  "generatedAt": "2026-11-21T23:08:38.033Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T22:26:04.429Z",
-    "contentSha256": "792759dc6f5b7dd00ef69bc3b4e4d36bd5b15e12d8a3521520191289d26c384b"
+    "sealedAt": "2026-11-21T23:08:38.033Z",
+    "contentSha256": "bd9b34a384f09a86460c8e67e8eeb5afd4f1cf3936af2f1e2b8d58e0bae803ce"
   }
 }

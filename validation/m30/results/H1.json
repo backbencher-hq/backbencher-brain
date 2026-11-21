@@ -34,11 +34,11 @@
       "detail": "caught"
     }
   ],
-  "currentCommit": "69acaefa5015f6f2aff23190de0fa53542571f22",
+  "currentCommit": "fb8c3e76371cb93378a76755873b919671c5af65",
   "sourceFingerprint": "f3bc3d33253e0315ad4f8ae5bfa9544f4b86bf5fdbe6a07e37d6b98606c80996",
   "verifierCommand": "npx tsx script/m30/verify-honesty-docs.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-11-21T22:13:04.026Z",
+  "generatedAt": "2026-11-21T22:54:28.673Z",
   "limitations": [
     "Docs-truth is verified by verbatim-string and rule checks against the implementation; it does not audit prose claims outside the M30 scope (no-key trade-off, mixing rule, --force, setup).",
     "Banned-vocabulary lint covers the two edited docs; the full M14 gate (script/verify-honesty.ts) remains authoritative for all artifacts.",

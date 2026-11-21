@@ -120,6 +120,40 @@ function runScenario(name: string, body: string, env: Record<string, string> = {
   check("BB_EXIT_WATCHDOG_MS=0 exits normally with no guard", r.status === 0 && !/forcing the exit/i.test(r.out), `status=${r.status}`)
 }
 
+// ── 5. a CLOSED stdout pipe must not crash the command ──────────────────────
+//
+// CI caught this one, not the unit test: the guard ends the process, so it can end it while
+// stdout still has a write in flight to a pipe whose reader has gone (CI log capture, `| head`).
+// Node raises EPIPE, and with no listener that is an UNHANDLED 'error' event — the command died
+// with a stack and exit 1 AFTER printing a correct report:
+//
+//   Error: write EPIPE / Emitted 'error' event on Socket instance
+//   ##[error]Process completed with exit code 1
+//
+// A reader that stopped reading has not made the command fail.
+{
+  const file = path.join(SCRATCH, "epipe.ts")
+  writeFileSync(
+    file,
+    `import { exitWhenDone } from ${JSON.stringify(GUARD)}\n` +
+      `let i = 0\n` +
+      `const pump = (): void => { if (i++ < 5000) process.stdout.write("line " + i + "\\n", pump) }\n` +
+      `pump()\n` +
+      `process.exitCode = 0\n` +
+      `exitWhenDone("bb demo")\n`,
+  )
+  // `head -2` closes the read end almost immediately.
+  const r = spawnSync("/bin/sh", ["-c", `${JSON.stringify(TSX)} ${JSON.stringify(file)} 2>&1 | head -2; exit \${PIPESTATUS:-0}`], {
+    cwd: ROOT,
+    encoding: "utf8",
+    timeout: 60_000,
+    env: { ...process.env, BB_EXIT_WATCHDOG_MS: "4000" },
+  })
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`
+  check("a closed stdout pipe does not produce an EPIPE crash", !/EPIPE|Unhandled 'error' event/i.test(out), out.trim().slice(0, 220))
+  check("the command still exits successfully", r.status === 0, `status=${r.status}`)
+}
+
 rmSync(SCRATCH, { recursive: true, force: true })
 console.log(`\n${checks - failures}/${checks} passed`)
 console.log(failures === 0 ? "EXIT GUARD: PASS" : `EXIT GUARD: FAIL (${failures})`)
