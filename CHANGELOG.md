@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.1.8 — hotfix: an existing index is indexable again
+
+Fixes a P0 that shipped in 0.1.7 and made every project with a pre-existing index
+unindexable:
+
+    storeResults failed {"error":"no such table: brain_project_meta"}
+    a batch failed to store, some files may be missing from DB
+
+The Go module-identity work reads `brain_project_meta`. `ensureProjectMetaTable()`
+was added for it but wired into only the FRESH-database path; the existing-index
+open path (`src/brain/database.ts`) called its siblings and not this one. Every
+index built by an earlier bb therefore had no such table, the read threw inside
+`storeResults`, and the whole batch was lost — files silently missing from the DB.
+
+Fixed by calling `ensureProjectMetaTable(raw)` on that path too. Additive and
+idempotent: a conforming database pays one `CREATE TABLE IF NOT EXISTS`.
+
+**Workaround for anyone still on 0.1.7:** remove the project's index and re-index.
+`bb index --force` does NOT help — measured, still fails.
+
+**Why the previous release passed its gates:** nothing exercised "an index created
+by the previous version, opened and indexed again". Every gate and fixture built a
+fresh index, so the broken path was never entered. `script/m-fix/verify-old-index-compat.ts`
+now covers it, functionally: build the DB, DROP `brain_project_meta` to stand in
+for a pre-0.1.7 index, re-open (the migration), add a file, re-index, and require
+the new symbol to exist — asserting the row rather than the log, because a
+swallowed error would pass a log check. Proven in both directions: with the fix
+disabled the gate reports `helper rows=0` and fails; restored, it passes.
+
+Verified before tagging: `verify:fast` 22 gates exit 0, `tsc --noEmit`,
+`npm run build`, and the upgrade gate's RED/GREEN control. Reproduced against the
+published 0.1.7 artifact first — a table-less DB plus one new file gave exit 1 and
+eight error lines; the same scenario on this tree gives exit 0, zero errors, both
+files stored.
+
 ## 0.1.7 — four analyzers deepen, and the tool stops promising what it cannot do
 
 Owner-facing release. Every claim below was measured by the lane that made it and
