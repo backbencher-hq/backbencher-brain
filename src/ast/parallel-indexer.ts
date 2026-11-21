@@ -2888,6 +2888,14 @@ function reportEmbeddingIntegrity(
   }
 }
 
+/**
+ * Files whose declared dialect the bundled grammar cannot fully parse (`.less` and
+ * `.sass` on the CSS grammar). Their parse warnings are DECLARED here instead of
+ * being reported as the file having a syntax error — the analyzer is incomplete, not
+ * the file. Read by the run summary so the number is visible.
+ */
+export const declaredDialectMetrics = { files: 0 }
+
 export const backgroundEmbedMetrics = {
   // M40.A9: verifier-only observability for the background queue (read by
   // script/m21 gates). Product code consumes queue state via DB rows, not
@@ -4606,8 +4614,24 @@ export async function storeResults(
            if (hasReact) fileLayer = "ui"
          }
  
-         const hasSyntaxErrors = result.errors && result.errors.some((e: any) => e.severity === "warning")
-         const errorReport = hasSyntaxErrors ? JSON.stringify(result.errors) : null
+         // DECLARED-DIALECT LANGUAGES: `.less` and `.sass` are routed to the CSS
+         // grammar because no LESS/indented-Sass grammar is bundled (see the routing
+         // table in src/ast/engine.ts, which already documents them as declared). The
+         // CSS grammar cannot understand `@variable`, mixin guards or indented syntax,
+         // so it reports parse warnings for constructs the file uses CORRECTLY —
+         // measured on 0.1.8 as "24 Font Awesome LESS/SCSS syntax errors". Counting
+         // those as the file being broken is the wrong claim: the analyzer is
+         // incomplete, not the file. They stay declared (the report is still stored)
+         // and are counted separately from real syntax errors.
+         const DECLARED_DIALECT_EXTS = new Set([".less", ".sass"])
+         const fileExt = (relativePath.match(/\.[A-Za-z0-9]+$/)?.[0] ?? "").toLowerCase()
+         const declaredDialect = DECLARED_DIALECT_EXTS.has(fileExt)
+         const rawSyntaxErrors = result.errors && result.errors.some((e: any) => e.severity === "warning")
+         const hasSyntaxErrors = rawSyntaxErrors && !declaredDialect
+         if (rawSyntaxErrors && declaredDialect) {
+           declaredDialectMetrics.files++
+         }
+         const errorReport = rawSyntaxErrors ? JSON.stringify(result.errors) : null
  
         // M57.T1 (#789): a test file must be CODE. The old path-substring
         // classifier flagged directory segments with no file-type check — all 30
