@@ -10,6 +10,7 @@ import { fileURLToPath } from "url"
 import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import type { EmbeddingDrainProgress } from "../ast/parallel-indexer"
+import { exitWhenDone } from "./exit-guard"
 import { formatEmbeddingDrainLine } from "./index-progress"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel, ParallelIndexerConfig } from "../ast/parallel-indexer"
@@ -804,6 +805,12 @@ async function cmdIndex(
     }
   }
   if (heldLock) await heldLock.release().catch(() => {})
+  // The work is complete and the report is printed. Exit deterministically: a handle
+  // left on the loop used to keep this command alive with no output at all, which the
+  // owner reported as "when the index completes, it is stuck there ... i had to press
+  // ctrl c after at least 2 minutes". The guard is unref'd, so a healthy run is
+  // unaffected and only a real hang is cut short — and it names what held it.
+  exitWhenDone("bb index")
 }
 
 async function cmdSearch(query: string, opts: { dir?: string; limit?: number; language?: string; mode?: string; filePath?: string; symbolName?: string; noAutoRefresh?: boolean }) {
