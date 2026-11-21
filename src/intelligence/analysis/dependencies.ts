@@ -19,6 +19,7 @@ import type { FileDependency } from "../contracts"
 import type { EvidenceProvenance } from "../evidence"
 import { makeProvenance } from "../evidence"
 import { goPackageDirForSpecifier } from "../../ast/go-module"
+import { applyPathAliasCandidates, type PathAliasRule } from "../../ast/path-aliases"
 
 /** Cap on the per-file dependent / dependency lists inside one row.
  *
@@ -84,6 +85,7 @@ const SOURCE_EXTENSIONS = ["", ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".m
 
 type Resolution = "resolved" | "suffix-match" | "unresolved"
 
+
 /** Minimal POSIX join — brain_file.relative_path uses forward slashes on every
  *  platform, and node:path would not agree on Windows. */
 function posixJoin(dir: string, rel: string): string {
@@ -127,8 +129,30 @@ function resolveInternalSpecifier(
   importerRel: string,
   specifier: string,
   filesByPath: Map<string, string>,
+  aliases: readonly PathAliasRule[] = [],
 ): { fileId?: string; resolution: Resolution } {
   const dir = importerRel.includes("/") ? importerRel.slice(0, importerRel.lastIndexOf("/")) : ""
+  // TSCONFIG PATHS: `@/lib/util` is the DEFAULT import form in Next.js, Vite and CRA.
+  // It is not relative and not a bare package, so every rule below returned
+  // "unresolved" and the file's dependencies read as empty — 74.1% of internal imports
+  // lost on a real Next.js app. An alias names a project-root-relative path, so it is
+  // tried first and reported as `resolved` (an exact path match, not a guess).
+  if (aliases.length > 0) {
+    for (const cand of applyPathAliasCandidates(specifier, aliases)) {
+      for (const ext of SOURCE_EXTENSIONS) {
+        const hit = filesByPath.get(cand + ext)
+        if (hit) return { fileId: hit, resolution: "resolved" }
+      }
+      for (const ext of SOURCE_EXTENSIONS) {
+        if (!ext) continue
+        const hit = filesByPath.get(cand + "/index" + ext)
+        if (hit) return { fileId: hit, resolution: "resolved" }
+      }
+      // An alias target that is itself a file (no extension probing needed).
+      const exact = filesByPath.get(cand)
+      if (exact) return { fileId: exact, resolution: "resolved" }
+    }
+  }
   const base = specifier.startsWith("./") || specifier.startsWith("../") || specifier.startsWith("/")
     ? posixJoin(dir, specifier.startsWith("/") ? specifier.slice(1) : specifier)
     : specifier
@@ -247,6 +271,18 @@ export async function getFileDependencies(
   const includeExternal = options.includeExternal !== false
   const limit = options.limit ?? 50
   const includeTests = options.includeTests === true
+  // tsconfig paths aliases, written to brain_project_meta at index time. Absent for
+  // most projects; a project without them behaves exactly as before.
+  let aliases: PathAliasRule[] = []
+  try {
+    const row = raw
+      .prepare("SELECT value FROM brain_project_meta WHERE project_id = ? AND key = 'path_aliases'")
+      .get(projectId) as { value: string | null } | undefined
+    if (row?.value) aliases = JSON.parse(row.value) as PathAliasRule[]
+    if (!Array.isArray(aliases)) aliases = []
+  } catch {
+    aliases = []
+  }
 
   const fileById = new Map<string, string>()
   const languageById = new Map<string, string>()
@@ -358,7 +394,7 @@ export async function getFileDependencies(
         }
       }
       if (!handledByLanguage) {
-        const resolved = resolveInternalSpecifier(fileById.get(imp.fileId) ?? "", imp.importPath, filesByPath)
+        const resolved = resolveInternalSpecifier(fileById.get(imp.fileId) ?? "", imp.importPath, filesByPath, aliases)
         resolution = resolved.resolution
         const targetFileId = resolved.fileId === imp.fileId ? undefined : resolved.fileId
         if (targetFileId) resolvedTargets.push(targetFileId)

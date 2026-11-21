@@ -36,6 +36,7 @@
 // import of an internal module, to a unique target file, where the item names
 // exactly one symbol there.
 
+import { applyPathAlias, applyPathAliasCandidates, type PathAliasRule } from "./path-aliases"
 export interface ImportTargetRow {
   /** brain_relationship.id — the row to update. */
   id: string
@@ -78,6 +79,9 @@ export interface ImportTargetRow {
 }
 
 export interface ImportResolutionIndex {
+  /** tsconfig/jsconfig `compilerOptions.paths`, resolved against baseUrl. Without
+   *  these, `@/*` imports (the Next.js/Vite/CRA default) resolve to nothing. */
+  aliases?: PathAliasRule[]
   /** import specifier -> the file ids it resolves to, built file-aware from brain_import. */
   pathTargets: Map<string, Set<string>>
   /** file id -> relative_path */
@@ -141,8 +145,22 @@ const PROBE_SUFFIXES = [
 const INDEX_BASENAMES = ["index.js", "index.mjs", "index.cjs", "index.ts", "index.tsx", "index.jsx"]
 
 /** Join a specifier onto an importer's directory and normalise `.` / `..`. */
-export function resolveSpecifierPath(importerRelPath: string, specifier: string): string | null {
+export function resolveSpecifierPath(
+  importerRelPath: string,
+  specifier: string,
+  aliases: readonly PathAliasRule[] = [],
+): string | null {
   if (!specifier) return null
+  // TSCONFIG PATHS FIRST. `@/lib/util` is the DEFAULT alias in Next.js, Vite and CRA,
+  // and the bare-specifier branch below returns null for anything starting with `@`
+  // (it reads `@` as a package scope), so every alias import was unresolved — 74.1% of
+  // internal imports lost on a real Next.js app. An alias is resolved against the
+  // project root, not the importer's directory, so it is decided before the relative
+  // branch.
+  if (aliases.length > 0) {
+    const viaAlias = applyPathAlias(specifier, aliases)
+    if (viaAlias) return viaAlias.resolved
+  }
   if (specifier.startsWith("./") || specifier.startsWith("../") || specifier === "." || specifier === "..") {
     const dir = importerRelPath.includes("/") ? importerRelPath.slice(0, importerRelPath.lastIndexOf("/")) : ""
     const parts = (dir ? dir.split("/") : []).concat(specifier.split("/"))
@@ -190,6 +208,8 @@ export function buildImportResolutionIndex(
    * (the safe direction).
    */
   exports: Array<{ fileId: string; name: string; isDefault?: boolean; symbolId?: string }> = [],
+  /** tsconfig paths aliases; [] means "no aliases", which is correct for most projects. */
+  aliases: PathAliasRule[] = [],
 ): ImportResolutionIndex {
   const filePath = new Map<string, string>()
   const fileByTail = new Map<string, string[]>()
@@ -223,14 +243,20 @@ export function buildImportResolutionIndex(
   for (const imp of imports) {
     const importer = filePath.get(imp.fileId)
     if (!importer) continue
-    const base = resolveSpecifierPath(importer, imp.importPath)
-    if (base === null) continue
-    for (const cand of candidatePaths(base)) {
-      const hit = byRel.get(cand)
-      if (hit) {
-        const set = pathTargets.get(imp.importPath) ?? new Set<string>()
-        set.add(hit)
-        pathTargets.set(imp.importPath, set)
+    // An alias can list fallback targets; every one is tried before giving up.
+    const aliasTargets = aliases.length > 0 ? applyPathAliasCandidates(imp.importPath, aliases) : []
+    const bases = aliasTargets.length > 0
+      ? aliasTargets
+      : [resolveSpecifierPath(importer, imp.importPath, aliases)].filter((b): b is string => b !== null)
+    if (bases.length === 0) continue
+    for (const base of bases) {
+      for (const cand of candidatePaths(base)) {
+        const hit = byRel.get(cand)
+        if (hit) {
+          const set = pathTargets.get(imp.importPath) ?? new Set<string>()
+          set.add(hit)
+          pathTargets.set(imp.importPath, set)
+        }
       }
     }
   }
@@ -268,7 +294,9 @@ const JS_EXT_TO_SIBLINGS: Record<string, string[]> = {
   ".jsx": [".tsx", ".jsx"],
 }
 
-function candidatePaths(base: string): string[] {
+/** The extension/index expansions used for every resolution. Exported so the
+ *  indexer tests an alias target against the project's files with the SAME rules. */
+export function candidatePaths(base: string): string[] {
   const out: string[] = [base]
   const dot = base.lastIndexOf(".")
   const slash = base.lastIndexOf("/")
@@ -1471,7 +1499,19 @@ export function resolveImportTargets(
   out.scanned = rows.length
   if (rows.length === 0) return out
 
-  const index = buildImportResolutionIndex(files, symbols, imports, exports)
+  // tsconfig paths aliases, written to brain_project_meta at index time (import
+  // resolution runs with a projectId, not a path). Absent for most projects.
+  let aliases: PathAliasRule[] = []
+  try {
+    const row = db
+      .prepare("SELECT value FROM brain_project_meta WHERE project_id = ? AND key = 'path_aliases'")
+      .get(projectId) as { value: string | null } | undefined
+    if (row?.value) aliases = JSON.parse(row.value) as PathAliasRule[]
+    if (!Array.isArray(aliases)) aliases = []
+  } catch {
+    aliases = []
+  }
+  const index = buildImportResolutionIndex(files, symbols, imports, exports, aliases)
   const plan = planImportResolutions(rows, index)
 
   const planned = new Set(plan.map((p) => p.id))
@@ -1599,7 +1639,17 @@ export function settleImportTargets(db: MinimalDb, projectId: string): ImportSet
   out.scanned = rows.length
   if (rows.length === 0) return out
 
-  const index = buildImportResolutionIndex(files, symbols, imports, exports)
+  let aliases: PathAliasRule[] = []
+  try {
+    const row = db
+      .prepare("SELECT value FROM brain_project_meta WHERE project_id = ? AND key = 'path_aliases'")
+      .get(projectId) as { value: string | null } | undefined
+    if (row?.value) aliases = JSON.parse(row.value) as PathAliasRule[]
+    if (!Array.isArray(aliases)) aliases = []
+  } catch {
+    aliases = []
+  }
+  const index = buildImportResolutionIndex(files, symbols, imports, exports, aliases)
   const plan = planImportResolutions(rows, index)
   const provenById = new Map(plan.map((p) => [p.id, p]))
   out.planned = plan.length

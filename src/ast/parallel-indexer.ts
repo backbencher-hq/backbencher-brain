@@ -32,6 +32,9 @@ import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
 import { detectLanguageFromPath } from "./language-detection"
 import { goImportExternality, goPackageDirForSpecifier, moduleInfoForProject } from "./go-module"
+import { loadProjectPathAliases } from "./path-aliases"
+import { applyPathAliasCandidates } from "./path-aliases"
+import { candidatePaths } from "./import-resolution"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { checkpointWal } from "./index-space"
@@ -4183,6 +4186,51 @@ export async function storeResults(
      upsertProjectMeta.run(projectId, "go_module_path", projectGoModule.modulePath, metaNow)
      upsertProjectMeta.run(projectId, "go_module_dir", projectGoModule.moduleDir, metaNow)
    }
+
+   // TSCONFIG PATH ALIASES. Same reasoning as the Go module identity above: import
+   // resolution runs with a projectId, not a path, so the aliases are written here and
+   // read back by the resolver. `@/*` is the DEFAULT in Next.js, Vite and CRA, and
+   // nothing read `compilerOptions.paths` — 74.1% of internal imports were lost on a
+   // real Next.js app because every alias import fell through to "package scope".
+   const projectPathAliases = loadProjectPathAliases(projectPath)
+   // The project-relative paths this run is writing. An alias specifier names a file
+   // in THIS project only if one of its expansions is in here — no second filesystem
+   // walk, and a specifier that matches nothing correctly stays external.
+   const projectRelativePaths = (() => {
+     const out = new Set<string>()
+     const norm = (p: string) => String(p).replace(/\\/g, "/")
+     for (const r of results) {
+       const raw = (r as any).relativePath || (r as any).filePath || ""
+       if (!raw) continue
+       let rel = norm(String(raw))
+       const base = norm(projectPath).replace(/\/$/, "")
+       if (rel.startsWith(base + "/")) rel = rel.slice(base.length + 1)
+       else if (rel.startsWith("/")) rel = rel.replace(/^\/+/, "")
+       out.add(rel)
+     }
+     return out
+   })()
+
+   /**
+    * Does this alias specifier name a real project file? Tested with the SAME
+    * extension/index expansions import resolution uses, so the two agree.
+    */
+   const aliasSpecIsInternal = (spec: string): boolean => {
+     if (projectPathAliases.length === 0 || projectRelativePaths.size === 0) return false
+     for (const cand of applyPathAliasCandidates(spec, projectPathAliases)) {
+       for (const expanded of candidatePaths(cand)) {
+         if (projectRelativePaths.has(expanded)) return true
+       }
+     }
+     return false
+   }
+   if (projectPathAliases.length > 0) {
+     const upsertAlias = rawDb.prepare(
+       "INSERT INTO brain_project_meta (project_id, key, value, time_updated) VALUES (?, ?, ?, ?) " +
+         "ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value, time_updated = excluded.time_updated",
+     )
+     upsertAlias.run(projectId, "path_aliases", JSON.stringify(projectPathAliases), Date.now())
+   }
  
    const semanticBatch: any[] = []
  
@@ -5580,14 +5628,27 @@ export async function storeResults(
                fileLang === "go"
                  ? goImportExternality(String(imp.path || moduleName), projectGoModule?.modulePath ?? null)
                  : null
+             // TSCONFIG PATH ALIAS: `@/lib/util` names a file in THIS project, so
+             // calling it external is wrong twice over. It is the DEFAULT import form
+             // in Next.js, Vite and CRA, and a bare `@/...` specifier reads as a
+             // package scope to every rule below — which is why 74.1% of internal
+             // imports on a real Next.js app were stored external and unresolvable.
+             // `aliasInternalPaths` is the set of real project paths an alias can name.
+             let impViaAliasIsInternal = false
+             {
+               const spec = String(imp.path || moduleName || "")
+               if (spec) impViaAliasIsInternal = aliasSpecIsInternal(spec)
+             }
              const impIsExternal =
                declaredGoExternal !== null
                  ? declaredGoExternal
                    ? 1
                    : 0
-                 : imp.isExternal === true || impMeta.isExternal === true || impMeta.isSystemInclude === true
-                   ? 1
-                   : 0
+                 : impViaAliasIsInternal
+                   ? 0
+                   : imp.isExternal === true || impMeta.isExternal === true || impMeta.isSystemInclude === true
+                     ? 1
+                     : 0
              // M60/#910: the row's LINE was always 0 for every import that
              // arrived in the worker's BasicImport shape (`{name, path, type,
              // isExternal, line}`) — the worker carried the line, this read
