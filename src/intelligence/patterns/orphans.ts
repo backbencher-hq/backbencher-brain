@@ -30,6 +30,7 @@ import { AnalysisExclusions, isNonCodeLanguage, NON_CODE_LANGUAGES } from "../..
 import type { ProjectID } from "../../project/schema"
 import type { OrphanOptions, PatternFinding, PatternReport } from "../contracts"
 import { makeProvenance } from "../evidence"
+import { isMinifiedOrVendorAsset } from "../../ast/analysis-exclusions"
 
 const ENGINE = "orphans@intelligence"
 
@@ -195,6 +196,38 @@ function pathKey2(relativePathOrSpecifier: string): string {
   const dot = last.lastIndexOf(".")
   const lastStem = dot > 0 ? last.slice(0, dot) : last
   return segments[segments.length - 2] + "/" + lastStem
+}
+
+/**
+ * Is this symbol UNREFERENCABLE BY DESIGN?
+ *
+ * Reported on 0.1.9: "Orphan false positives remain for bundled JS/Makefile/polyfills."
+ * Each of these is real code that no in-code reference can ever point at:
+ *
+ *  · BUILD OUTPUT / VENDORED CODE — a bundle's identifiers are consumed by the loader,
+ *    not by an import in this project. `isMinifiedOrVendorAsset` already knows the
+ *    shapes (it is the same predicate the cross-language and dependency paths use, so
+ *    the three cannot drift apart).
+ *  · MAKEFILE / CMAKE / DOCKERFILE TARGETS — a target is invoked BY NAME from a shell,
+ *    a CI file or a human, and the language has no reference construct at all. Its
+ *    "symbols" are rules; none of them can have an incoming edge.
+ *  · POLYFILLS AND SHIMS — loaded for their SIDE EFFECT by the runtime or the bundler
+ *    entry, so nothing imports them.
+ *
+ * Suppressing them is the safe direction: a missed orphan leaves cleanup on the table,
+ * while a false one invites an agent to delete live build config.
+ */
+export function isUnreferencableByDesign(file: string | null | undefined, language: string | null | undefined): boolean {
+  const lang = (language ?? "").toLowerCase()
+  if (lang === "make" || lang === "makefile" || lang === "cmake" || lang === "dockerfile" || lang === "just") return true
+  if (!file) return false
+  if (isMinifiedOrVendorAsset(file)) return true
+  const p = file.toLowerCase()
+  // polyfill.js / polyfills/array.js / core-js/polyfill-entry.ts / shim.mjs
+  const base = p.split("/").pop() ?? p
+  if (/^(polyfills?|shims?)[.\-]/.test(base)) return true
+  if (/(^|\/)(polyfills?|shims?)\.(js|mjs|cjs|ts)$/.test(p)) return true
+  return false
 }
 
 function isEntryPointName(name: string): boolean {
@@ -778,6 +811,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     ruleNotRequested: 0,
     belowMinConfidence: 0,
     usageUnresolved: 0,
+    unreferencableByDesign: 0,
   }
 
   // Path predicates are pure functions of the path; the scan evaluated them
@@ -873,6 +907,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     if (AnalysisExclusions.isNoiseSymbolName(sym.name)) { suppressed.noiseSymbolName++; continue }
     if (isEntryPointName(sym.name)) { suppressed.entryPointName++; continue }
     if (isNonCodeFile(sym.language)) { suppressed.nonCodeFile++; continue }
+    if (isUnreferencableByDesign(sym.file, sym.language)) { suppressed.unreferencableByDesign++; continue }
 
     const used = usedIds.has(sym.id) || (usedNames.has(sym.name) && !ambiguousNames.has(sym.name))
     if (used) continue

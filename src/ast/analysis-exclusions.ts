@@ -67,6 +67,10 @@ function isTestFileName(base: string): boolean {
   return /Tests?$/.test(stem)
 }
 
+// Build output, vendored code and minified bundles. Defined once (the cross-language
+// and dependency paths both need it, and three copies would drift).
+export { isMinifiedOrVendorAsset } from "../lsp/cross_language_hover"
+
 export function isHardNoisePath(relativePath: string): boolean {
   const lower = relativePath.toLowerCase()
   if (NOISE_FILE_PATTERNS.some((pattern) => pattern.test(lower))) return true
