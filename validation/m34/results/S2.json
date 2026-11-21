@@ -37,10 +37,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "aca91c33446c27bcea897241d539356fade4a250",
+  "currentCommit": "166116c51b1e6925c0b4d58166be61929f4fb293",
   "verifierCommand": "npx tsx script/m34/verify-script-gate.ts",
   "evidenceFile": "S2.json",
-  "generatedAt": "2026-11-21T16:31:40.834Z",
+  "generatedAt": "2026-11-21T21:14:17.324Z",
   "limitations": [
     "Script detection covers 14 non-Latin scripts (Cyrillic, Han, Kana, Hangul, Arabic, Hebrew, Greek, Thai, Devanagari, Bengali, Tamil, Georgian, Armenian); an exotic script outside this set would not be caught.",
     "Typographic symbols (— ✓ ✗ … ⚠ →) are script-neutral and allowed by design; M33.S4 remains the per-string English gate on help surfaces.",

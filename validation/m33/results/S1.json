@@ -22,10 +22,10 @@
     }
   ],
   "version": "0.1.9",
-  "currentCommit": "aca91c33446c27bcea897241d539356fade4a250",
+  "currentCommit": "166116c51b1e6925c0b4d58166be61929f4fb293",
   "verifierCommand": "npx tsx script/m33/verify-version.ts",
   "evidenceFile": "S1.json",
-  "generatedAt": "2026-11-21T16:27:33.156Z",
+  "generatedAt": "2026-11-21T21:07:49.635Z",
   "limitations": [
     "Mutant probes run the mutated component in a child process (npx tsx); a broken tsx runtime would surface as survivor, not as a false pass.",
     "Version parity is pinned to package.json's version field; publishing without a version bump keeps the three forms consistent by construction."

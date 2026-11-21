@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.2.0 — TypeScript resolves, the backfill finishes, and the exit is deterministic
+
+Eight defects reported after 0.1.9, each REPRODUCED before it was fixed and verified at the
+level the user observes — not only by a unit gate. That distinction is the theme of this
+release: three of the 0.1.9 fixes were correct in isolation and dead in the product, because
+they were verified on a helper instead of on the path a user runs.
+
+### TypeScript — the launch blocker
+
+`@/*` is the DEFAULT import alias in Next.js, Vite and Create React App. Nothing read
+`compilerOptions.paths`, and any specifier starting with `@` was treated as an npm package
+scope, so every alias import was unresolved: 80 of 80 alias imports lost on a real Next.js
+app (74.1% of internal imports), against 28 of 28 relative imports resolved.
+
+Three layers had to agree, and fixing one looked like success twice:
+  · a new `path-aliases` module parses `compilerOptions.paths` with TypeScript's semantics
+    (longest pattern wins, one `*`, exact patterns, baseUrl, fallback targets);
+  · the indexer persists the aliases to `brain_project_meta` and stops filing an alias
+    import as an npm package (`brain_import.is_external`);
+  · BOTH specifier resolvers — `import-resolution` (the stored graph) and `dependencies`
+    (the view's own resolver) — became alias-aware.
+Before/after on a two-file fixture:
+  `{'path': '@/lib/util', 'external': True,  'resolution': 'unresolved'}`
+  `{'path': 'src/lib/util.ts', 'external': False, 'resolution': 'resolved'}`
+
+### Embeddings — the backfill actually finishes
+
+A 422 content-safety rejection now isolates the refused input and the run completes.
+The 0.1.9 fix was DEAD CODE: it caught a 422 from `embedMany`, but `embedMany` swallowed the
+422 and returned `[]`, so the catch never fired. A unit test of the bisection proved the
+algorithm worked while the wiring did nothing ("400 embedded, 55,185 missing"). `embedMany`
+now re-throws a 422 on the provider-only path, the tolerant pass reconciles engine state
+(so rows are labelled with the right model), and the reconcile result carries `rejected` —
+distinct from `failed` (provider down) and `invalid` (malformed response).
+
+### `bb index` exits when it is done
+
+The command printed its whole report and then sat there ("i had to press ctrl c after at
+least 2 minutes"). `exitWhenDone` ends it deterministically after stdout drains; the watchdog
+is `unref()`d so it never delays a healthy run and can only cut short a real hang. The root
+handle was NOT reproduced locally, so the guard does not claim to name it —
+`BB_EXIT_DIAGNOSTICS=1` prints what was still open for the next report.
+
+### Honest lists
+
+- **Dependencies**: the 0.1.9 page budget was allocated greedily, so a row late in the
+  ranking returned `dependenciesTotal: 89` beside `dependencies: []`. The allowance is now
+  split fairly (divided by the rows still to come AND the two lists each carries, floor one
+  entry per list), and an exact-file query — one row — still lists every edge.
+- **Cross-language**: the 0.1.9 fix filtered the `bb_cross_language` PROJECTION while
+  `is_cross_language` is a STORED COLUMN that bb_graph, bb_impact and bb_visualize read
+  directly — so the noise left one surface and stayed on the others ("bb_graph N still
+  exposes 85"). The refusal moved to the write: a flag is stored only with evidence (an
+  analyzer assertion or a real bridge mechanism), never on a `name-resolution` spelling
+  collision. The row is still stored and its bridge still says `name-resolution`.
+- **Orphans**: bundled JS, Makefile/CMake/Dockerfile targets and polyfills/shim files are now
+  suppressed as unreferencable by design, and counted in
+  `suppressedByReason.unreferencableByDesign`. A missed orphan leaves cleanup on the table; a
+  false one invites an agent to delete live build configuration.
+- **Health status**: an EXPLAINED shortfall (a deliberate skip, or a file left alone because
+  it was unchanged) no longer derives `incomplete` beside a recorded `complete`. The
+  derivation now keys on the UNEXPLAINED shortfall; a genuine loss still fails closed.
+- **`bb_ask`**: a flat ranking caused by low coverage now distinguishes a coverage gap from a
+  PROVIDER-LIMITED backfill, and says that no scoring change would make those vectors more
+  separable. Telling a rate-limited user to "run the backfill" is useless advice.
+
+Verified before tagging: `npm test` (15/15, 21/21), `verify:fast` (22 gates, exit 0), the full
+fixture corpus (all pass), `tsc --noEmit`, `npm run build`, and all seventeen gates under
+`script/m13/`.
+
 ## 0.1.9 — the tool stops asserting what it cannot see
 
 Ten defects reported after 0.1.8, fixed across three tiers. The unifying theme is

@@ -2,14 +2,14 @@
   "status": "verified",
   "milestone": "M30",
   "issue": "G1",
-  "currentCommit": "aca91c33446c27bcea897241d539356fade4a250",
+  "currentCommit": "166116c51b1e6925c0b4d58166be61929f4fb293",
   "verifierCommand": "bun run script/m30/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-21T16:26:20.247Z",
+  "generatedAt": "2026-11-21T21:06:29.551Z",
   "passed": 24,
   "failed": 0,
   "negativeCases": 8,
-  "trackedFilesScanned": 16511,
+  "trackedFilesScanned": 16520,
   "keyPatternsChecked": [
     "openrouter",
     "nvidia"
