@@ -11,10 +11,10 @@
   "negatives": 0,
   "negativePassed": 0,
   "skipped": [],
-  "generatedAt": "2026-11-21T15:45:28.541Z",
+  "generatedAt": "2026-11-21T16:39:09.014Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T15:45:28.541Z",
-    "contentSha256": "ed01196a88a7a074a881affd2a6b27d5c6402e7fc61b3642fecc95bafa47f688"
+    "sealedAt": "2026-11-21T16:39:09.014Z",
+    "contentSha256": "6f5e274ea8c9e1cdd16a14d9d084cf2f710a20d27cbe6404e0039236c8066214"
   }
 }

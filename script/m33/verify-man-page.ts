@@ -85,6 +85,28 @@ for (const cmd of REQUIRED_COMMANDS) {
   // .B cmd, .BI cmd "args", or bold-with-args variants all count as documented.
   check(`A: page documents the ${cmd.replace("\\-\\-", "--")} command`, commandDocumented(page, cmd))
 }
+// A1: the header must NOT carry a version or a date.
+//
+// It read `"September 2026" "bb 0.3.0"` while the package was 0.1.8 — eight
+// releases stale — because the manual is hand-maintained and every release had to
+// remember to edit it. The manual documents BEHAVIOUR, which changes far more
+// slowly than the release number, so the version does not belong in it at all;
+// `bb --version` is the answer to "which version".
+{
+  const th = page.split("\n")[0]
+  check("A1: the .TH header carries no version number", !/bb\s+v?\d+\.\d+\.\d+/.test(th), th)
+  check("A1: the .TH header carries no date", /^\.TH\s+BB\s+1\s+""\s+""\s+/.test(th), th)
+  check("A1: the page still declares its section and manual name", /^\.TH\s+BB\s+1\s+/.test(th) && /User Commands/.test(th), th)
+  // The stale contradiction: `index` told the reader --force rebuilds vectors after
+  // a model change, while EMBEDDING SETUP said the next run reconciles in place.
+  check(
+    "A1: `index` no longer claims --force is required after a model change",
+    !/Re-run with[\s\S]{0,80}after changing the embedding model/.test(page),
+  )
+  check("A1: the reconcile pass is named as what handles a model change", /reconcile pass re-embeds stored symbols in place/.test(page))
+  check("A1: the wait bound is documented with its real rule", /BB_EMBEDDING_TIMEOUT_MS/.test(page) && /raises it/.test(page))
+}
+
 check("A: page documents -v/--version", page.includes("\\-v") && page.includes("\\-\\-version"))
 check("A: page documents -h/--help", page.includes("\\-h") && page.includes("\\-\\-help"))
 check("A: fingerprint-only rule stated", page.includes("last-four fingerprint"))

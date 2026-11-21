@@ -1,4 +1,8 @@
-.TH BB 1 "September 2026" "bb 0.3.0" "User Commands"
+.TH BB 1 "" "" "User Commands"
+.\" The header deliberately carries NO version and NO date. The manual documents
+.\" behaviour, which changes far more slowly than the release number, and every
+.\" release edit is a chance to drift: this line read "bb 0.3.0" while the package
+.\" was 0.1.8. `bb --version` is the answer to "which version", not the man page.
 .SH NAME
 bb \- Backbencher Brain, universal code intelligence for 40+ languages
 .SH SYNOPSIS
@@ -25,9 +29,10 @@ from scripts).
 .BI index " dir"
 Index a project. The first interactive run offers embedding setup when no
 provider is configured yet; the wizard prompts only once (an explicit skip is
-remembered). Re-run with
+remembered). A changed embedding model is reconciled on the next run: a
+reconcile pass re-embeds stored symbols in place, so
 .B \-\-force
-after changing the embedding model so stored vectors are rebuilt.
+is NOT required for that and is the full parse rebuild (see EMBEDDING SETUP).
 .TP
 .B setup
 Configure the embedding provider interactively: pick a prefilled free
@@ -170,7 +175,11 @@ lists the embedding models that key can use, accepts a manually typed model id,
 and validates the selection before saving. NVIDIA NIM is the built-in free,
 rate-limited provider; OpenRouter currently lists no embedding models, so it is
 reachable through the custom base-URL path. `bb setup reset` removes the saved
-embedding settings without touching the index. A changed model is reconciled on
+embedding settings without touching the index. `BB_EMBEDDING_TIMEOUT_MS` sets how
+long a search will wait for the provider: unset uses a 2-second default, and an
+explicit value raises it (capped at 60 seconds), so a slow provider can be given
+the time it needs instead of silently falling back to the offline word-vector
+model. A changed model is reconciled on
 the next `bb index` by re-embedding stored symbols in place; `bb index --force`
 is the full parse rebuild.
 .SH EXIT STATUS

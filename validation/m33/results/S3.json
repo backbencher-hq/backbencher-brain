@@ -3,8 +3,8 @@
   "code": "S3",
   "milestone": "M33",
   "status": "verified",
-  "checks": 41,
-  "passed": 41,
+  "checks": 47,
+  "passed": 47,
   "failed": 0,
   "negativeCases": 4,
   "mutants": [
@@ -25,10 +25,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "4b3a4637592aae1383ec248a94a4a22fc9df9d86",
+  "currentCommit": "aca91c33446c27bcea897241d539356fade4a250",
   "verifierCommand": "npx tsx script/m33/verify-man-page.ts",
   "evidenceFile": "S3.json",
-  "generatedAt": "2026-11-21T15:34:35.521Z",
+  "generatedAt": "2026-11-21T16:28:21.383Z",
   "limitations": [
     "Rendering is checked with groff -man -Tascii -ww and man -l (both present in this environment); a CI host without groff would surface the B checks as failures, not silent passes.",
     "The command list pinned here is duplicated from src/cli/index.ts by hand; S4's parity gate derives the list from the built binary, so drift between page, help, and code fails at least one gate.",
