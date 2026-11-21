@@ -463,7 +463,7 @@ export namespace SemanticEngine {
     // what bounds a reconcile run to two calls against a rate-limited provider. The
     // tolerant wrapper called the provider directly and bypassed the breaker, so a 429
     // became an unbounded call storm: a gate measured 6 calls where 2 is the ceiling.
-    return bisectContentSafetyRejections(texts, async (slice) => {
+    const result = await bisectContentSafetyRejections(texts, async (slice) => {
       if (Date.now() < _apiRetryAt) {
         const open: any = new Error(
           `embedding provider circuit breaker is open for another ${Math.max(0, Math.ceil((_apiRetryAt - Date.now()) / 1000))}s`,
@@ -482,6 +482,21 @@ export namespace SemanticEngine {
         throw e
       }
     })
+    // The caller labels every row it writes with `getLastEmbeddingModel()`, and the
+    // engine's availability latch decides whether later batches even try. This path
+    // bypasses embedMany, so it must reconcile BOTH itself — otherwise a successful
+    // reconcile writes local-labelled rows under the configured model, or leaves the
+    // batch marked unavailable after it just worked.
+    if (result.vectors.some((v) => v !== null)) {
+      _lastModel = cfg.model
+      _embeddingAvailable = true
+      _checked = true
+      _lastEmbeddingError = result.error
+      _apiRetryAt = 0
+      _apiRetryAttempt = 0
+      _apiRetryDelayMs = 0
+    }
+    return result
   }
 
   export async function embedMany(
@@ -532,6 +547,17 @@ export namespace SemanticEngine {
             `embedding provider rate-limited — retry ${_apiRetryAttempt} in ${Math.max(1, Math.round(_apiRetryDelayMs / 1000))}s (backoff ${(Math.round(_apiRetryDelayMs / 100) / 10).toFixed(1)}s)`,
             { attempt: _apiRetryAttempt, delayMs: _apiRetryDelayMs, retryAfterSec: e?.retryAfterSec },
           )
+        } else if (e?.status === 422 && opts.allowLocalFallback === false) {
+          // CONTENT SAFETY (422) IN A PROVIDER-ONLY PASS. The provider screened the
+          // input and refused the REQUEST, although the fault is one item. Swallowing
+          // it here is what made the reconcile pass stall: the next line returns [],
+          // the caller reads that as "no vectors", fails the batch, and then fails
+          // every remaining batch on the same refused input — measured by the owner
+          // as "backfill stops on repeated provider 422 (400 embedded, 55,185
+          // missing)". Re-throw so the caller can isolate the refused input and skip
+          // it. Scoped to allowLocalFallback:false, i.e. the reconcile pass; the
+          // default path still degrades to the local model as before.
+          throw e
         } else {
           log.debug("API embedding failed for this batch; next batch retries", { error: e?.message?.slice(0, 60) })
         }

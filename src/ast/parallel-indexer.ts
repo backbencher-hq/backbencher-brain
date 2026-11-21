@@ -2968,6 +2968,10 @@ export interface EmbeddingReconcileResult {
   stoppedEarly: boolean
   /** Last provider error from a failed provider-only batch, for the CLI. */
   lastError: string | null
+  /** Symbols the provider refused by content-safety screening (422). Permanent
+   *  per-item verdicts, distinct from a transient outage; they remain in
+   *  `remaining` because the configured model really has no vector for them. */
+  rejected?: number
 }
 
 /**
@@ -3143,6 +3147,13 @@ export async function reconcileEmbeddingModel(
     embedded: Math.max(0, symbols - remaining),
     remaining,
     failed: remaining,
+    // Symbols the provider REFUSED by content safety (HTTP 422). They stay in
+    // `remaining` — the configured model genuinely has no vector for them — but a
+    // permanent per-item refusal is a different fact from "the provider is down",
+    // and a reader needs to know which one is blocking the backfill. Without this
+    // the report said only "pending", which is why the owner read it as "reports
+    // pending but does not skip rejected inputs".
+    rejected: backgroundEmbedMetrics.rejected,
     stoppedEarly,
     lastError: lastBackgroundEmbedError,
   }
