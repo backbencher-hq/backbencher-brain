@@ -139,7 +139,15 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   const f = findings(r)
   check("A5: model-mismatch FAIL detected", f.has("model-mismatch") && f.get("model-mismatch").severity === "fail", JSON.stringify([...f.keys()]))
   check("A5: both model names in message", f.get("model-mismatch")?.message?.includes("config-model-x") && f.get("model-mismatch")?.message?.includes("old-model-z"))
-  check("A5: fix is bb index --force", f.get("model-mismatch")?.fix === "bb index --force")
+  // The fix text names the reconcile BACKFILL, not --force: a vector-space
+  // mismatch is repaired by re-embedding, and `--force` is a full re-parse that
+  // is not required for it. The earlier assertion pinned the --force wording and
+  // went stale when the embeddings-health lane corrected the advice.
+  check(
+    "A5: fix names bb index and the reconcile backfill",
+    /bb index/.test(f.get("model-mismatch")?.fix ?? "") && /reconcile/.test(f.get("model-mismatch")?.fix ?? ""),
+    f.get("model-mismatch")?.fix,
+  )
   check("A5: report not healthy", r.healthy === false)
   t.cleanup()
 }
@@ -310,14 +318,14 @@ const mutants: Mutant[] = [
     },
   },
   {
-    name: "mismatch fix command weakened (index . instead of --force)",
-    mutate: (src) => src.replaceAll('fix: "bb index --force",', 'fix: "bb index .",'),
+    name: "mismatch fix command weakened (reconcile backfill no longer named)",
+    mutate: (src) => src.replaceAll("its embedding reconcile pass backfills", "something"),
     probe: async (m) => {
       const fx = mutantFixture(0o600, { embedding_base_url: "https://g.example/v1", embedding_model: "config-model-x", embedding_api_key: "fixture-doctor-key-000000" })
       try {
         const r = m.runDoctorChecks({ cwd: fx.dir, env: {}, dataDir: fx.dataDir, storedModels: [{ model: "other", count: 1 }] })
         const mm = r.findings.find((f: any) => f.id === "model-mismatch")
-        return mm?.fix !== "bb index --force"
+        return !/reconcile/.test(mm?.fix ?? "")
       } finally { fx.cleanup() }
     },
   },
