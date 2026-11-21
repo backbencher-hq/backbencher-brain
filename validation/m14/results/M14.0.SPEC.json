@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "cc12e0fc2b3a6762fd0be1db27c2e7996ce2cb0433c0eee91954f4fd4f3dbe31",
-    "sealedAt": "2026-11-18T23:15:32.000Z"
+    "contentSha256": "6ff4e1af7a555bd00b71976f826595138acc37c7a5dfc5f5790edd12a14bbc41",
+    "sealedAt": "2026-11-20T02:05:09.000Z"
   },
   "checks": [
     {
@@ -2769,8 +2769,8 @@
       "status": "pass"
     },
     {
-      "description": "11 relationship kinds pinned by csharp fixtures; 11 emitted and all accounted for",
-      "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, declared_type, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, renders, return_type, uses, using_import, using_type_argument; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, renders, uses",
+      "description": "12 relationship kinds pinned by csharp fixtures; 12 emitted and all accounted for",
+      "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, declared_type, decorates, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, renders, return_type, uses, using_import, using_type_argument; emitted: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, renders, uses",
       "id": "section-b-relationship-kinds",
       "language": "csharp",
       "status": "pass"
@@ -2819,8 +2819,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
-  "committedAt": "2026-11-18T18:15:32-05:00",
+  "commit": "925f826849eb302c0777a6730703fb64348b5668",
+  "committedAt": "2026-11-19T21:05:09-05:00",
   "data": {
     "languages": {
       "bash": {
@@ -3130,7 +3130,7 @@
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, declared_type, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, renders, return_type, uses, using_import, using_type_argument; emitted: calls, contains, exports, extends, implements, imports, instantiates, overrides, references, renders, uses",
+            "detail": "pinned: assembly_public_surface, calls, contains, csharp_field_access, declared_type, decorates, exports, extends, identifier_usage, implements, imports, instantiates, method_override, overrides, references, renders, return_type, uses, using_import, using_type_argument; emitted: calls, contains, decorates, exports, extends, implements, imports, instantiates, overrides, references, renders, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
@@ -5561,9 +5561,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-11-18T18:15:32-05:00",
-  "regeneratedAtCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-11-19T21:05:09-05:00",
+  "regeneratedAtCommit": "925f826849eb302c0777a6730703fb64348b5668",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

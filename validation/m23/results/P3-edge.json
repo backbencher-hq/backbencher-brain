@@ -1,0 +1,11 @@
+{
+  "issue": "M23.P3-edge",
+  "status": "verified",
+  "passed": 9,
+  "failed": 0,
+  "negativeCases": 2,
+  "command": "bun script/m23/verify-p3-edge-cases.ts",
+  "evidenceFile": "validation/m23/results/P3-edge.json",
+  "currentCommit": "380a7e4735b083fad2b153df92a1c519767fd98c",
+  "timestamp": "2026-11-19T06:28:21.315Z"
+}

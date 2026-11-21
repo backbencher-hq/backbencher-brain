@@ -1,0 +1,143 @@
+# E3 render capture — canonical rendered states (log evidence)
+# generated: 2026-11-19T06:40:22.213Z
+
+## state: ready + fresh file
+badge: $(check) bb
+tooltip:
+  | server: running (0.3.1)
+  | index: ready
+  | active file: fresh (reindexed)
+  | this file (typescript): I1 — PROTOCOL-PASSED
+staleBadge: (none)
+actions: (none)
+
+## state: stale file
+badge: $(warning) bb ⚠ stale
+tooltip:
+  | server: running (0.3.1)
+  | index: ready
+  | active file: STALE — index behind your edits; results may be wrong until reindex
+  | this file (java): I1 — PROTOCOL-PASSED
+staleBadge: ⚠ stale
+actions: (none)
+
+## state: unknown freshness
+badge: $(warning) bb ⚠ stale
+tooltip:
+  | server: running (0.3.1)
+  | index: ready
+  | active file: UNKNOWN — freshness could not be determined; treated as stale (silence is guilt)
+  | this file (groovy): I1 — PROTOCOL-PASSED
+staleBadge: ⚠ stale
+actions: (none)
+
+## state: server down
+badge: $(error) bb: server down
+tooltip:
+  | server: DOWN — no LSP features
+  | index: ready
+staleBadge: (none)
+actions: Restart bb_lsp -> bbLsp.restartServer
+
+## state: version mismatch
+badge: $(error) bb: version
+tooltip:
+  | server: running at 0.1.0 — INCOMPATIBLE with the declared minimum; features off
+  | index: ready
+staleBadge: (none)
+actions: Restart bb_lsp -> bbLsp.restartServer
+
+## state: indexing
+badge: $(sync~spin) bb: indexing
+tooltip:
+  | server: running (0.3.1)
+  | index: indexing 120/480 — editor stays usable; features arrive when it lands
+staleBadge: (none)
+actions: Index now -> bbLsp.indexNow
+
+## state: no index
+badge: $(circle-slash) bb: no index
+tooltip:
+  | server: running (0.3.1)
+  | index: NO INDEX — features are off until an index exists
+staleBadge: (none)
+actions: Index now -> bbLsp.indexNow
+
+## state: cancelled
+badge: $(circle-slash) bb: paused
+tooltip:
+  | server: running (0.3.1)
+  | index: cancelled — partial index on disk; reopen resumes without re-asking
+staleBadge: (none)
+actions: Index now -> bbLsp.indexNow
+
+## state: failed
+badge: $(error) bb: index failed
+tooltip:
+  | server: running (0.3.1)
+  | index: FAILED — see output channel for the honest error
+staleBadge: (none)
+actions: Index now -> bbLsp.indexNow
+
+## state: undeclared language
+badge: $(check) bb
+tooltip:
+  | server: running (0.3.1)
+  | index: ready
+  | this file (objc): no declared claim level — features not offered
+staleBadge: (none)
+actions: (none)
+
+## per-language evidence table (declared, drift-gated)
+  java         I1   I1 — PROTOCOL-PASSED
+  groovy       I1   I1 — PROTOCOL-PASSED
+  kotlin       I1   I1 — PROTOCOL-PASSED
+  scala        I1   I1 — PROTOCOL-PASSED
+  typescript   I1   I1 — PROTOCOL-PASSED
+  javascript   I1   I1 — PROTOCOL-PASSED
+  python       I1   I1 — PROTOCOL-PASSED
+  zig          I1   I1 — PROTOCOL-PASSED
+  go           I1   I1 — PROTOCOL-PASSED
+  rust         I1   I1 — PROTOCOL-PASSED
+  c            I1   I1 — PROTOCOL-PASSED
+  cpp          I1   I1 — PROTOCOL-PASSED
+  vue          I1   I1 — PROTOCOL-PASSED
+  svelte       I1   I1 — PROTOCOL-PASSED
+  tsx          I1   I1 — PROTOCOL-PASSED
+  html         I1   I1 — PROTOCOL-PASSED
+  css          I1   I1 — PROTOCOL-PASSED
+  scss         I1   I1 — PROTOCOL-PASSED
+  sass         I0   I0 — UNVERIFIED
+  json         I1   I1 — PROTOCOL-PASSED
+  yaml         I1   I1 — PROTOCOL-PASSED
+  toml         I1   I1 — PROTOCOL-PASSED
+  markdown     I1   I1 — PROTOCOL-PASSED
+  xml          I1   I1 — PROTOCOL-PASSED
+  graphql      I1   I1 — PROTOCOL-PASSED
+  protobuf     I1   I1 — PROTOCOL-PASSED
+  sql          I1   I1 — PROTOCOL-PASSED
+  perl         I1   I1 — PROTOCOL-PASSED
+  ruby         I1   I1 — PROTOCOL-PASSED
+  php          I1   I1 — PROTOCOL-PASSED
+  lua          I1   I1 — PROTOCOL-PASSED
+  elixir       I1   I1 — PROTOCOL-PASSED
+  erlang       I1   I1 — PROTOCOL-PASSED
+  haskell      I1   I1 — PROTOCOL-PASSED
+  clojure      I1   I1 — PROTOCOL-PASSED
+  julia        I1   I1 — PROTOCOL-PASSED
+  r            I1   I1 — PROTOCOL-PASSED
+  bash         I1   I1 — PROTOCOL-PASSED
+  powershell   I1   I1 — PROTOCOL-PASSED
+  make         I1   I1 — PROTOCOL-PASSED
+  swift        I1   I1 — PROTOCOL-PASSED
+  dart         I1   I1 — PROTOCOL-PASSED
+  csharp       I1   I1 — PROTOCOL-PASSED
+  fsharp       I1   I1 — PROTOCOL-PASSED
+  nim          I1   I1 — PROTOCOL-PASSED
+  vb           I1   I1 — PROTOCOL-PASSED
+  vba          I1   I1 — PROTOCOL-PASSED
+  matlab       I0   I0 — UNVERIFIED
+  clean        I1   I1 — PROTOCOL-PASSED
+  solidity     I1   I1 — PROTOCOL-PASSED
+  hcl          I1   I1 — PROTOCOL-PASSED
+  terraform    I1   I1 — PROTOCOL-PASSED
