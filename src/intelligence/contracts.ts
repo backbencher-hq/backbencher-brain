@@ -620,6 +620,12 @@ export interface FileDependency {
   dependentsTotal: number
   dependenciesTruncated: boolean
   dependentsTruncated: boolean
+  /** Test files filtered out of the two lists above (`includeTests: false`, the
+   *  default). `session/session.go` returning its own `_test.go` dependents is
+   *  correct coupling but not what a blast-radius question wants, and on a large
+   *  package it dominated the page. Declared, never silently dropped: pass
+   *  `includeTests: true` to see them. */
+  testFilesExcluded?: number
   /** Internal specifiers this file wrote that resolve to no indexed file.
    *  Declared so an incomplete graph reads as incomplete rather than small. */
   unresolvedSpecifiers?: number

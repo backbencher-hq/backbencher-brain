@@ -28,6 +28,36 @@ import { goPackageDirForSpecifier } from "../../ast/go-module"
  *  totals are the real figures and the two Truncated flags say the list was
  *  cut. */
 const MAX_ROW_ENTRIES = 100
+/**
+ * How many dependency/dependent ENTRIES one page may carry in total.
+ *
+ * `limit` bounds the number of FILE ROWS, and each row can carry up to
+ * MAX_ROW_ENTRIES entries per list — so the old worst case was 50 files x 200 =
+ * 10,000 entries. Measured on 0.1.8: `session/session.go` reached 10,923 lines
+ * before the host truncated the payload, and `limit` did nothing about it because
+ * it bounds files, not rows. The per-row cap is kept (one widely-imported file
+ * must not dominate) and this page budget bounds the WHOLE answer; both are
+ * reported so a short page is never read as a small graph.
+ */
+const MAX_PAGE_ROW_ENTRIES = 300
+
+/**
+ * Test sources. A `_test.go` file importing the package under test is REAL
+ * coupling, but for a blast-radius question it is noise: on 0.1.8
+ * `session/session.go` returned its own `_test.go` dependents and filled the page
+ * with them. Filtered by default and COUNTED, so the exclusion is visible;
+ * `includeTests: true` restores them.
+ */
+function isTestSource(relativePath: string): boolean {
+  const p = relativePath.toLowerCase()
+  return (
+    p.endsWith("_test.go") ||
+    p.endsWith(".test.ts") || p.endsWith(".test.tsx") || p.endsWith(".test.js") || p.endsWith(".test.jsx") ||
+    p.endsWith(".spec.ts") || p.endsWith(".spec.tsx") || p.endsWith(".spec.js") || p.endsWith(".spec.jsx") ||
+    p.endsWith("_test.py") || p.endsWith("_test.rs") ||
+    p.includes("/__tests__/") || p.includes("/tests/") || p.includes("/testdata/")
+  )
+}
 
 
 
@@ -211,11 +241,12 @@ export async function scopeFileCount(projectId: ProjectID, filePath: string | nu
 
 export async function getFileDependencies(
   projectId: ProjectID,
-  options: { filePath?: string; includeExternal?: boolean; limit?: number } = {},
+  options: { filePath?: string; includeExternal?: boolean; limit?: number; includeTests?: boolean } = {},
 ): Promise<FileDependency[]> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const includeExternal = options.includeExternal !== false
   const limit = options.limit ?? 50
+  const includeTests = options.includeTests === true
 
   const fileById = new Map<string, string>()
   const languageById = new Map<string, string>()
@@ -376,11 +407,18 @@ export async function getFileDependencies(
   }
 
   const results: FileDependency[] = []
+  // Page-level row budget. Every emitted entry is charged against it, so `limit`
+  // bounding FILE ROWS can no longer produce a ten-thousand-entry payload.
+  let rowsRemaining = MAX_PAGE_ROW_ENTRIES
   for (const file of fileRows) {
-    const deps = rawDepsByFile.get(file.id) ?? []
-    const dependents = Array.from(dependentsByFile.get(file.id) ?? [])
+    const allDeps = rawDepsByFile.get(file.id) ?? []
+    const allDependents = Array.from(dependentsByFile.get(file.id) ?? [])
       .map((depFileId) => ({ path: fileById.get(depFileId) ?? depFileId, fileId: depFileId }))
       .sort((a, b) => a.path.localeCompare(b.path))
+    // Test sources are real coupling but not blast radius. Counted, not hidden.
+    const deps = includeTests ? allDeps : allDeps.filter((d) => !d.fileId || !isTestSource(fileById.get(d.fileId) ?? ""))
+    const dependents = includeTests ? allDependents : allDependents.filter((d) => !isTestSource(d.path))
+    const testFilesExcluded = (allDeps.length - deps.length) + (allDependents.length - dependents.length)
     // A dependency on `node:fs` is a constant of the ecosystem, not coupling
     // to this project, and an unresolved specifier is not coupling either.
     // Counting them let a file's npm imports outrank its real structure: on the
@@ -390,6 +428,12 @@ export async function getFileDependencies(
     const unresolved = deps.filter((d) => d.resolution === "unresolved" && !d.external).length
     const dependenciesTotal = deps.length
     const dependentsTotal = dependents.length
+    // Two budgets from one page allowance: dependencies first, dependents with
+    // whatever is left. Both are capped at MAX_ROW_ENTRIES so a single file
+    // cannot monopolise the page, which is what the per-row cap always meant.
+    const depBudget = Math.min(MAX_ROW_ENTRIES, Math.max(0, rowsRemaining))
+    const depdentBudget = Math.min(MAX_ROW_ENTRIES, Math.max(0, rowsRemaining - depBudget))
+    rowsRemaining -= depBudget + depdentBudget
     results.push({
       file: file.relativePath,
       fileId: file.id,
@@ -400,16 +444,17 @@ export async function getFileDependencies(
       // handler resolves freshness from it, and the row above carries the id for
       // the file the row is about. `resolution` is kept: it is the part that is
       // NOT derivable from a path.
-      dependencies: deps.slice(0, MAX_ROW_ENTRIES).map((d) => ({
+      dependencies: deps.slice(0, depBudget).map((d) => ({
         path: d.path,
         external: d.external,
         resolution: d.resolution,
       })),
-      dependents: dependents.slice(0, MAX_ROW_ENTRIES).map((d) => ({ path: d.path })),
+      dependents: dependents.slice(0, depdentBudget).map((d) => ({ path: d.path })),
       dependenciesTotal,
       dependentsTotal,
-      dependenciesTruncated: dependenciesTotal > MAX_ROW_ENTRIES,
-      dependentsTruncated: dependentsTotal > MAX_ROW_ENTRIES,
+      dependenciesTruncated: dependenciesTotal > depBudget,
+      dependentsTruncated: dependentsTotal > depdentBudget,
+      testFilesExcluded,
       score: internalDeps + dependentsTotal,
       unresolvedSpecifiers: unresolved,
     })

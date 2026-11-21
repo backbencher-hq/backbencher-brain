@@ -373,7 +373,7 @@ export const handler: ToolHandler = async (args, { projectId }) => {
       // copy of the rule to disagree with.
       const rawScope = args.filePath ? String(args.filePath) : undefined
       const scopePath = rawScope ? normalizeScopePath(rawScope) : null
-      const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20) })
+      const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20), includeTests: args.includeTests === true })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
         // Neither list ships a file id any more — a file id is
