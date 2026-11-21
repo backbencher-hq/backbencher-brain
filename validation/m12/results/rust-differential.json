@@ -911,11 +911,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:rust",
-      "wallTimeMs": 81.17342,
-      "userCpuMs": 255.503,
-      "systemCpuMs": 22.52,
-      "peakRssBytes": 297709568,
-      "rssDeltaBytes": 12161024,
+      "wallTimeMs": 67.99201,
+      "userCpuMs": 217.488,
+      "systemCpuMs": 29.794,
+      "peakRssBytes": 270434304,
+      "rssDeltaBytes": 17555456,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
