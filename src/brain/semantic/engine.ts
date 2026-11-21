@@ -355,6 +355,105 @@ export namespace SemanticEngine {
     }
   }
 
+  /**
+   * Embed texts while TOLERATING per-item content-safety rejection (HTTP 422).
+   *
+   * A 422 means the provider screened the INPUT and refused it — the offending text
+   * is one item, but the API rejects the whole request, so a batch fails as a unit.
+   * The reconcile pass (`bb index --changed`, allowLocalFallback:false) treated that
+   * as a batch failure and kept the item's old vector; because the poison item is in
+   * every retry of the same batch, the run made no progress: measured on 0.1.8,
+   * "embedded 950 symbols, then hit 422 and stopped with 44,250 still pending".
+   *
+   * This bisects on 422 until it isolates the rejected item(s), then returns a
+   * per-input slot: a vector, or null for a text the provider will never accept.
+   * The caller stores the good vectors and counts the rejected ones, so one
+   * unscreenable snippet cannot stall the remaining thousands.
+   *
+   * Deliberately NOT a silent skip: `rejectedIndexes` and `error` are returned so
+   * the caller can report exactly how many were dropped and why.
+   */
+  /**
+   * Isolate per-item content-safety rejections by bisection. PURE policy, no I/O:
+   * `embedSlice` is supplied by the caller, so the algorithm is testable without a
+   * provider, an HTTP server or config on disk.
+   *
+   * A 422 means the provider screened the INPUT and refused it. The offending text
+   * is one item, but the API rejects the whole request, so a batch fails as a unit
+   * and — because the same poison item is in every retry of that batch — the run
+   * makes no progress. That is measured, not hypothetical: on 0.1.8 the reconcile
+   * pass "embedded 950 symbols, then hit 422 ... and stopped with 44,250 still
+   * pending".
+   *
+   * On a 422 this narrows the range until the refused text stands alone, then
+   * records its index. Every other text still gets a vector. Only a 422 is treated
+   * as per-item; 429/auth/transport are NOT, because those are not the input's
+   * fault and the caller must decide whether to retry or keep the old row.
+   */
+  export async function bisectContentSafetyRejections(
+    texts: string[],
+    embedSlice: (slice: string[]) => Promise<number[][]>,
+  ): Promise<{ vectors: Array<number[] | null>; rejectedIndexes: number[]; error: string | null }> {
+    const vectors: Array<number[] | null> = new Array(texts.length).fill(null)
+    const rejectedIndexes: number[] = []
+    let error: string | null = null
+    if (!texts || texts.length === 0) return { vectors, rejectedIndexes, error }
+
+    const walk = async (lo: number, hi: number): Promise<void> => {
+      if (hi <= lo) return
+      const slice = texts.slice(lo, hi)
+      try {
+        const got = await embedSlice(slice)
+        if (!got || got.length !== slice.length) {
+          error = `provider returned ${got?.length ?? 0} vector(s) for ${slice.length} input(s)`
+          return
+        }
+        for (let i = 0; i < got.length; i++) vectors[lo + i] = got[i]
+      } catch (e: any) {
+        error = e?.message ? String(e.message) : String(e)
+        if (e?.status === 422) {
+          if (slice.length > 1) {
+            const mid = lo + Math.floor(slice.length / 2)
+            await walk(lo, mid)
+            await walk(mid, hi)
+            return
+          }
+          rejectedIndexes.push(lo)
+        }
+        // Non-422 faults leave this range unembedded; the caller decides.
+      }
+    }
+
+    await walk(0, texts.length)
+    rejectedIndexes.sort((a, b) => a - b)
+    return { vectors, rejectedIndexes, error }
+  }
+
+  /**
+   * Embed texts while TOLERATING per-item content-safety rejection (HTTP 422),
+   * using the configured provider. A thin wrapper over
+   * bisectContentSafetyRejections so the policy stays testable on its own.
+   *
+   * Deliberately NOT a silent skip: `rejectedIndexes` and `error` are returned so
+   * the caller can report exactly how many were dropped and why.
+   */
+  export async function embedManyTolerant(
+    texts: string[],
+    projectId?: string,
+    opts: { timeoutMs?: number } = {},
+  ): Promise<{ vectors: Array<number[] | null>; rejectedIndexes: number[]; error: string | null }> {
+    if (!texts || texts.length === 0) {
+      return { vectors: [], rejectedIndexes: [], error: null }
+    }
+    const cfg = await getEmbeddingConfig()
+    if (!cfg) return { vectors: new Array(texts.length).fill(null), rejectedIndexes: [], error: "no embedding provider configured" }
+    const runtime = opts.timeoutMs !== undefined ? { ...readRuntimeOptions(), timeoutMs: opts.timeoutMs } : undefined
+    void projectId
+    return bisectContentSafetyRejections(texts, (slice) =>
+      embedOpenAICompatible(slice, cfg, runtime, { inputType: embeddingInputType(cfg, "passage") }),
+    )
+  }
+
   export async function embedMany(
     texts: string[],
     projectId?: string,

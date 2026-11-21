@@ -534,6 +534,10 @@ export interface ParallelIndexingStats {
       dropped: number
       /** Vectors that arrived malformed and were discarded at the write boundary. */
       invalid: number
+      /** Items the provider refused by content-safety screening (HTTP 422) and the
+       *  reconcile pass skipped so the rest of the run could proceed. Permanent
+       *  per-item verdicts: retrying the same text is refused again. */
+      rejected: number
     }
     /** Distinct embedding models present in the index after this run.
      *
@@ -2903,6 +2907,13 @@ export const backgroundEmbedMetrics = {
    *  cause and the fix differ — this one points at a malformed provider response
    *  or a corrupt upstream, not at connectivity. */
   invalid: 0,
+  /** Items the provider REFUSED by content-safety screening (HTTP 422). The
+   *  request is rejected as a unit even though the fault is one item, so the
+   *  provider-only reconcile pass isolates the offending text and records it here
+   *  instead of failing the batch (and with it the whole run). A distinct fault
+   *  from `failed`: nothing is wrong with the connection or the key, and retrying
+   *  the same text will be refused again — it is a permanent per-item skip. */
+  rejected: 0,
   /** Jobs skipped entirely because the project/db was removed. */
   skipped: 0,
 }
@@ -3243,6 +3254,9 @@ async function drainBackgroundEmbeddings() {
         for (let j = 0; j < job.items.length; j += maxBatch) {
           const chunk: any[] = job.items.slice(j, j + maxBatch)
           const docs = chunk.map((i: any) => i.snippet)
+          /** Indexes (within `chunk`) the provider refused by content safety. */
+          let chunkRejectedIndexes: number[] = []
+          let chunkRejected = 0
 
           const embeddings: any = await Instance.provide({
             directory: job.projectPath,
@@ -3253,15 +3267,19 @@ async function drainBackgroundEmbeddings() {
               // Word vectors are position-independent, so both sides sharing a
               // vocabulary is a pure coverage increase rather than a change of
               // vector space — see local-embed.ts `wordVector`.
-              SemanticEngine.embedMany(
-                docs,
-                job.projectId,
-                job.allowFallback === false
-                  ? { allowLocalFallback: false, ...(job.timeoutMs ? { timeoutMs: job.timeoutMs } : {}) }
-                  : job.timeoutMs
-                    ? { timeoutMs: job.timeoutMs }
-                    : {},
-              ),
+              job.allowFallback === false
+                // Provider-only pass (the reconcile/backfill). A 422 rejects the
+                // REQUEST although the fault is one input, so embedManyTolerant
+                // bisects, isolates the refused text(s), and returns the rest.
+                // Using the all-or-nothing embedMany here is what made 0.1.8 stop
+                // with tens of thousands of symbols still pending.
+                ? SemanticEngine.embedManyTolerant(docs, job.projectId, job.timeoutMs ? { timeoutMs: job.timeoutMs } : {})
+                    .then((r) => { chunkRejectedIndexes = r.rejectedIndexes; return r.vectors })
+                : SemanticEngine.embedMany(
+                    docs,
+                    job.projectId,
+                    job.timeoutMs ? { timeoutMs: job.timeoutMs } : {},
+                  ),
               EMBED_CALL_TIMEOUT_MS,
               `embedding provider call exceeded ${EMBED_CALL_TIMEOUT_MS}ms bound`,
             ),
@@ -3274,6 +3292,15 @@ async function drainBackgroundEmbeddings() {
           // Throwing routes the batch into the fallback path below, where it
           // gets tfidf-v1 vectors and honest `fallback`/`failed` counters.
           if (!embeddings || embeddings.length === 0) {
+            // Every input in this chunk was refused by content safety: that is a
+            // per-item verdict, already recorded, not a provider outage. Throwing
+            // here would route permanent refusals into the transient-failure path
+            // and stall the reconcile pass forever.
+            if (chunkRejectedIndexes.length > 0 && chunkRejectedIndexes.length === chunk.length) {
+              backgroundEmbedMetrics.rejected += chunkRejectedIndexes.length
+              accounted = job.items.length
+              continue
+            }
             throw new Error("embedding provider returned no vectors")
           }
 
@@ -3302,6 +3329,10 @@ async function drainBackgroundEmbeddings() {
             for (let k = 0; k < rows.length; k++) {
               const item = chunk[k]
               const vec = embeddings[k]
+              if (chunkRejectedIndexes.length > 0 && chunkRejectedIndexes.includes(k)) {
+                chunkRejected++
+                continue
+              }
               // M21.E2: a missing vector inside a non-empty result is a
               // partial provider failure — accounted as `failed`, never
               // silently skipped. Counts are applied AFTER the transaction
@@ -3368,8 +3399,13 @@ async function drainBackgroundEmbeddings() {
             // `embedded` must count only vectors actually stored. Skipping
             // invalidInChunk here would report a corrupt vector as a success,
             // and the index would claim coverage it does not have.
-            backgroundEmbedMetrics.embedded += chunk.length - missingInChunk - invalidInChunk
+            backgroundEmbedMetrics.embedded += chunk.length - missingInChunk - invalidInChunk - chunkRejected
             backgroundEmbedMetrics.failed += missingInChunk + invalidInChunk
+            // Content-safety refusals are permanent per-item verdicts, counted on
+            // their own so an operator can tell "the provider refused 3 snippets"
+            // from "the provider is down" (failed) or "the response was malformed"
+            // (invalid) — three different causes with three different responses.
+            backgroundEmbedMetrics.rejected += chunkRejected
             if (invalidInChunk > 0) {
               backgroundEmbedMetrics.invalid += invalidInChunk
               log.warn("discarded malformed embedding vectors", {
@@ -8825,6 +8861,7 @@ export async function indexProjectParallel(
         skipped: backgroundEmbedMetrics.skipped,
         dropped: backgroundEmbedMetrics.dropped,
         invalid: backgroundEmbedMetrics.invalid,
+        rejected: backgroundEmbedMetrics.rejected,
       }
       // DURABLE last-run outcome (P2-3/P2-4 residual). The counters above live
       // in memory and only reach the CLI that ran the index; a later
