@@ -4104,6 +4104,26 @@ export function applyP02PackageScopedBinding(
   return { bound, refused }
 }
 
+/**
+ * May this relationship be stored as CROSS-LANGUAGE?
+ *
+ * Only with evidence: the analyzer asserted it, or it recorded a real bridge mechanism.
+ * A `name-resolution` match — two symbols sharing a spelling — is a candidate, and a
+ * stored flag is read as a fact by bb_graph/bb_impact/bb_visualize. Measured on 0.1.9:
+ * 110 of 122 cross-language edges were name-only Go->minified-JS collisions.
+ *
+ * The row itself is NOT dropped — it is still a stored relationship, and its bridge stays
+ * `name-resolution` in metadata. Only the cross-language claim is withheld.
+ */
+export function crossLanguageStorable(metadata: any, analyzerSaidCrossLanguage: boolean | number): boolean {
+  if (metadata?.isCrossLanguage === true) return true
+  const bridge = metadata?.bridgeMechanism
+  if (typeof bridge === "string" && bridge.length > 0 && bridge !== "name-resolution") return true
+  // No assertion and no real bridge: `relIsCrossLanguage` here is the fallback guess.
+  void analyzerSaidCrossLanguage
+  return false
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -6229,7 +6249,22 @@ export async function storeResults(
                // turned that 0 into the caller symbol's declaration line).
                relLine,
                relIsCrossFile,
-               rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
+               // A CROSS-LANGUAGE EDGE IS ONLY STORED AS SUCH WHEN THE EVIDENCE EXISTS.
+               //
+               // `name-resolution` means the two symbols merely share a spelling — there
+               // is no import, no call site and no bridge. Measured on 0.1.9: 110 of 122
+               // cross-language edges were Go test `uses` rows into minified `openlayers/
+               // ol.js` identifiers (`N`, `to`, `r`) matched by name at confidence 0.5.
+               // The 0.1.9 fix filtered them out of `bb_cross_language`, but the flag is
+               // STORED, so every other reader — bb_graph, bb_impact, bb_visualize — kept
+               // reporting them: "bb_graph N still exposes 85".
+               //
+               // So the refusal is moved to the WRITE, where all readers agree. The row is
+               // still stored as a relationship and still records `name-resolution` in its
+               // bridge, so the guess is visible in metadata — what is withheld is only the
+               // cross-language CLAIM. Analyzer-asserted edges (C# `decorates`, Go module
+               // identity, explicit bridge mechanisms) are untouched.
+               crossLanguageStorable(rel.metadata, relIsCrossLanguage) ? 1 : 0,
                rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
                fallbackEvidence ? JSON.stringify({ ...rel.metadata, ...fallbackEvidence }) : rel.metadata ? JSON.stringify(rel.metadata) : null,
                now,
