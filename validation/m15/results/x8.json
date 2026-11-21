@@ -3,18 +3,18 @@
   "code": "X8",
   "tool": "bb_security",
   "title": "entry-point parity + determinism + anti-vacuity",
-  "verified": true,
+  "verified": false,
   "checks": 28,
   "passed": 28,
-  "failed": 0,
+  "failed": 1,
   "positives": 22,
   "negatives": 6,
   "negativePassed": 6,
   "skipped": [],
-  "generatedAt": "2026-11-18T20:42:18.653Z",
+  "generatedAt": "2026-11-21T04:13:46.330Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-18T20:42:18.653Z",
-    "contentSha256": "44e549ca1cef7bc52bb5ff3b824aeeede751fe90a6cd23ffac77cbc9ccffcad5"
+    "sealedAt": "2026-11-21T04:13:46.330Z",
+    "contentSha256": "a2e0e31bc5852f95b405d4c116c2b61f52a70def7f2af149f61a2adda12cae7a"
   }
 }

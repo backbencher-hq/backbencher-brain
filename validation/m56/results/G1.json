@@ -8,11 +8,11 @@
   "failed": 0,
   "failures": [],
   "negativeCases": 16,
-  "trackedFilesScanned": 15272,
-  "currentCommit": "95c41294adb1618ef1de324883825c54c76db312",
+  "trackedFilesScanned": 16501,
+  "currentCommit": "a3fd3431842416c452546eeab89640a84411eeec",
   "verifierCommand": "npx tsx script/m56/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-18T20:39:19.538Z",
+  "generatedAt": "2026-11-21T04:05:29.348Z",
   "limitations": [
     "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design.",
     "Key patterns match OpenRouter and NVIDIA shapes; a new provider format must be added to KEY_PATTERNS.",
@@ -23,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-18T20:39:19.539Z",
-    "contentSha256": "4ee840f42d896023727a56eb6b582af25760191372820b63aad25b35167b42d0"
+    "sealedAt": "2026-11-21T04:05:29.349Z",
+    "contentSha256": "a0b306107e3650677323333df2524a5431c1dd4809f7e747533f9ccbdbf690a6"
   }
 }
