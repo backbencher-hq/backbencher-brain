@@ -21,10 +21,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "95c41294adb1618ef1de324883825c54c76db312",
+  "currentCommit": "325f5a4a148dd47e4cb30900044225df3fa36ffe",
   "verifierCommand": "npx tsx script/m33/verify-unknown-command.ts",
   "evidenceFile": "S2.json",
-  "generatedAt": "2026-11-18T20:28:09.290Z",
+  "generatedAt": "2026-11-21T03:43:45.443Z",
   "limitations": [
     "Suggestion quality is commander's Levenshtein implementation (v12.1.0); the gate pins that near-misses suggest and far-misses do not, not the exact algorithm.",
     "Mutant probes run the mutated component via npx tsx in a child process; the shipped pointer behavior itself is asserted against the rebuilt dist binary."

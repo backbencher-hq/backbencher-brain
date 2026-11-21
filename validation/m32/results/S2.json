@@ -2,10 +2,10 @@
   "status": "verified",
   "milestone": "M32",
   "issue": "S2",
-  "currentCommit": "95c41294adb1618ef1de324883825c54c76db312",
+  "currentCommit": "325f5a4a148dd47e4cb30900044225df3fa36ffe",
   "verifierCommand": "npx tsx script/m32/verify-doctor.ts",
   "evidenceFile": "S2.json",
-  "generatedAt": "2026-11-18T20:27:23.031Z",
+  "generatedAt": "2026-11-21T03:43:14.875Z",
   "passed": 44,
   "failed": 0,
   "negativeCases": 7,
@@ -15,7 +15,7 @@
       "caught": true
     },
     {
-      "name": "mismatch fix command weakened (index . instead of --force)",
+      "name": "mismatch fix command weakened (reconcile backfill no longer named)",
       "caught": true
     },
     {

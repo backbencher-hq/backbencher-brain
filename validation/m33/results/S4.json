@@ -25,10 +25,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "95c41294adb1618ef1de324883825c54c76db312",
+  "currentCommit": "325f5a4a148dd47e4cb30900044225df3fa36ffe",
   "verifierCommand": "npx tsx script/m33/verify-help-parity.ts",
   "evidenceFile": "S4.json",
-  "generatedAt": "2026-11-18T20:29:54.075Z",
+  "generatedAt": "2026-11-21T03:45:12.946Z",
   "limitations": [
     "The ASCII-Turkish vocabulary list is a curated denylist, not a translator; a NEW Turkish word outside the list would pass the vocabulary check (the diacritic check still applies to accented spellings).",
     "Parity derives help-side lists from the built binary's rendered help and code-side lists from .command/.option declarations; a command registered dynamically would need this parser extended.",

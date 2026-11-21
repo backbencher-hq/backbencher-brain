@@ -2,7 +2,7 @@
   "milestone": "M29.R4",
   "issue": 539,
   "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
-  "inputsHash": "3edfcfe62daf01c244f3eadc42320c09cfe2aec3",
+  "inputsHash": "9c95ec9f8f04023fe30a840224822d6186f0d5fa",
   "inputs": [
     "validation/m29/results/wave-1-approval.json",
     "validation/m29/results/wave-2-approval.json",
@@ -1054,7 +1054,7 @@
         "differentialFloor": "powershell",
         "differentialMissing": 0,
         "differentialUnexplained": 0,
-        "msPerFile": 91.2,
+        "msPerFile": 115.1,
         "evidenceTiersPinned": 5,
         "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
       },
