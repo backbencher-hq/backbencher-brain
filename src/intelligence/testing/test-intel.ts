@@ -698,6 +698,55 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
   return { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise, rejectedLinks, rejectedTotal }
 }
 
+/**
+ * Fold stored test edges into at most ONE link per (target symbol, test symbol).
+ *
+ * A production symbol can reach the same test through several stored edges — a
+ * call and a reference, or the same call recorded by two scan passes. Those used to
+ * arrive as separate links: measured on 0.1.8, `ModuleParam` repeated
+ * `TestModuleParamValidate:107` sixteen times and `EventPool` repeated
+ * `TestNewEventPool`, so the 20-link cap was spent on repeats and one test read as
+ * twenty. The stronger evidence wins (a `direct_call` outranks a `reference`) rather
+ * than the first seen, and the consolidation is counted so the page can say how many
+ * edges collapsed.
+ *
+ * PURE: no DB, no I/O. Exported so a gate can pin the fold on synthetic edges.
+ */
+export function aggregateTestLinks(
+  testEdges: Array<{ targetId: string; testSymId: string; testSymName: string; testFile: string; relType: string }>,
+): { linksByTarget: Map<string, TestLink[]>; consolidatedLinks: number; classifiedEdges: number } {
+  const linksByTarget = new Map<string, TestLink[]>()
+  const linkSlot = new Map<string, Map<string, number>>()
+  let consolidatedLinks = 0
+  let classifiedEdges = 0
+  for (const e of testEdges) {
+    const kind = classify(e.relType)
+    if (!kind) continue
+    classifiedEdges++
+    if (!linksByTarget.has(e.targetId)) linksByTarget.set(e.targetId, [])
+    const slots = linkSlot.get(e.targetId) ?? new Map<string, number>()
+    if (!linkSlot.has(e.targetId)) linkSlot.set(e.targetId, slots)
+    const incoming: TestLink = {
+      testSymbolId: e.testSymId,
+      testSymbolName: e.testSymName,
+      testFile: e.testFile,
+      evidence: kind,
+      relationshipType: e.relType,
+      confidence: EVIDENCE_CONFIDENCE[kind],
+    }
+    const existingIndex = slots.get(e.testSymId)
+    if (existingIndex !== undefined) {
+      consolidatedLinks++
+      const list = linksByTarget.get(e.targetId)!
+      if (incoming.confidence > list[existingIndex].confidence) list[existingIndex] = incoming
+      continue
+    }
+    slots.set(e.testSymId, linksByTarget.get(e.targetId)!.length)
+    linksByTarget.get(e.targetId)!.push(incoming)
+  }
+  return { linksByTarget, consolidatedLinks, classifiedEdges }
+}
+
 // MODE: mapping — production symbols -> test evidence, keyed by RESOLVED symbol
 // id (avoids same-named-symbol contamination).
 export async function testMapping(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestMappingReport> {
@@ -707,22 +756,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
   const maxResults = options.maxResults ?? DEFAULT_PAGE
   const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise, rejectedLinks, rejectedTotal } = await loadGraph(projectId, includeMethods, options.filePath)
 
-  const linksByTarget = new Map<string, TestLink[]>()
-  let classifiedEdges = 0
-  for (const e of testEdges) {
-    const kind = classify(e.relType)
-    if (!kind) continue
-    classifiedEdges++
-    if (!linksByTarget.has(e.targetId)) linksByTarget.set(e.targetId, [])
-    linksByTarget.get(e.targetId)!.push({
-      testSymbolId: e.testSymId,
-      testSymbolName: e.testSymName,
-      testFile: e.testFile,
-      evidence: kind,
-      relationshipType: e.relType,
-      confidence: EVIDENCE_CONFIDENCE[kind],
-    })
-  }
+  const { linksByTarget, consolidatedLinks, classifiedEdges } = aggregateTestLinks(testEdges)
 
   const entries: TestMappingEntry[] = filtered.map((s) => {
     const links = linksByTarget.get(s.id) ?? []
@@ -804,6 +838,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
       // frozen TestMappingReport contract (contracts.ts is frozen for this wave),
       // so it is attached as a declared intersection field.
       unvalidatedLinks: rejectedTotal,
+      consolidatedLinks,
       unvalidatedByReason: rejectedLinks,
     },
   } as TestMappingReport & { summary: TestMappingReport["summary"] & { unvalidatedLinks: number; unvalidatedByReason: Partial<Record<TestLinkRejection, number>> } }

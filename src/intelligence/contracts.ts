@@ -982,6 +982,12 @@ export interface TestImpactReport {
     /** P1-3 completion: caller edges from test files that FAILED the test-link
      *  contract are counted per reason and excluded from test impact. */
     unvalidatedLinks?: number
+    /** Stored test edges folded into an existing (target, test-symbol) link
+     *  because they described the same evidence — a call and a reference to the
+     *  same test, or one call recorded by two scan passes. Declared so the link
+     *  count is readable: without it the 20-link cap looked exhausted by real
+     *  tests when it was being spent on repeats. */
+    consolidatedLinks?: number
     unvalidatedByReason?: Partial<Record<string, number>>
   }
   truncationReason?: string | null
