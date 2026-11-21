@@ -191,7 +191,7 @@ export interface UnifiedHealthReport {
      * recorded run (a DB written before this key existed). The queue-cap
      * `dropped` count only existed in the CLI's memory before this.
      */
-    lastRun: { queued: number; embedded: number; failed: number; skipped: number; dropped: number; invalid: number; at: number | null } | null
+    lastRun: { queued: number; embedded: number; failed: number; skipped: number; dropped: number; invalid: number; rejected?: number; at: number | null } | null
   }
   schema: { version: number | null; migration: string | null; tables: number }
   runtime: { runtime: "bun" | "node"; version: string; database: string }
@@ -1424,6 +1424,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
         skipped: Number(parsed.skipped ?? 0),
         dropped: Number(parsed.dropped ?? 0),
         invalid: Number(parsed.invalid ?? 0),
+        rejected: Number(parsed.rejected ?? 0),
         at: lastEmbedRow.time_updated ?? null,
       }
     }
@@ -1701,7 +1702,7 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // semantically). On a mixed-model index they diverge sharply, so printing one
     // percentage let a reader take 42.9% as "the configured model works" when its
     // space held 1/55,785 vectors. Pending backfill is declared here, not implied.
-    `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% of symbols (library-wide, ${e.library.embedded}/${e.library.symbols} across ${e.spaces.length} space(s))${e.configured ? ` · configured ${e.configured.model}: ${e.configured.percent}% (${e.configured.embedded}/${e.configured.symbols})${e.configured.pendingBackfill ? " — BACKFILL PENDING" : ""}` : ""}${e.lastRun ? ` · last run: ${e.lastRun.embedded} embedded${e.lastRun.failed ? `, ${e.lastRun.failed} failed` : ""}${e.lastRun.invalid ? `, ${e.lastRun.invalid} invalid` : ""}${e.lastRun.dropped ? `, ${e.lastRun.dropped} dropped (queue cap)` : ""}` : ""}`,
+    `embeddings: ${e.total} rows / ${e.embeddedEntities} entities / ${e.symbolCoveragePercent}% of symbols (library-wide, ${e.library.embedded}/${e.library.symbols} across ${e.spaces.length} space(s))${e.configured ? ` · configured ${e.configured.model}: ${e.configured.percent}% (${e.configured.embedded}/${e.configured.symbols})${e.configured.pendingBackfill ? " — BACKFILL PENDING" : ""}` : ""}${e.lastRun ? ` · last run: ${e.lastRun.embedded} embedded${e.lastRun.failed ? `, ${e.lastRun.failed} failed` : ""}${e.lastRun.invalid ? `, ${e.lastRun.invalid} invalid` : ""}${e.lastRun.dropped ? `, ${e.lastRun.dropped} dropped (queue cap)` : ""}${e.lastRun.rejected ? `, ${e.lastRun.rejected} refused by content safety` : ""}${e.lastRun.at ? ` (at ${new Date(e.lastRun.at).toISOString().slice(0, 16).replace("T", " ")}Z; the LIVE coverage above is ${e.configured ? `${e.configured.embedded}/${e.configured.symbols}` : "n/a"})` : " (run timestamp not recorded — treat the count as the last persisted run, not a live one)"}` : ""}`,
     `models: ${e.models.map((model) => `${model.model}:${model.count}[${model.dimensions.join(",")}]`).join(" ") || "none"}`,
     `schema: ${report.schema.version ?? "unknown"} (${report.schema.migration ?? "no migration record"}), ${report.schema.tables} tables`,
     // `indexedFiles=0 errors=0` for a project with no status record is

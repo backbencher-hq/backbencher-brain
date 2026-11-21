@@ -110,14 +110,26 @@ export function planEmbeddingSpaces(input: EmbeddingSpacePlanInput): EmbeddingSp
   const mostPopulated = dense[0] ?? null
   const localSpace = dense.find((space) => space.model === input.localModel) ?? null
   const localCoverage = localSpace && symbolCount > 0 ? localSpace.entities / symbolCount : 0
-  const pendingBackfill = input.configuredModel !== null && symbolCount > 0 && configuredCoverage < minCoverage
+  // TWO QUESTIONS, TWO ANSWERS — they were one boolean and that is why doctor and
+  // health disagreed. Measured on 0.1.8: configured coverage was 20.7% with 44,250
+  // symbols still missing, and health reported NO pending backfill because 20.7%
+  // clears the 5% floor — while doctor promised its reader that "bb health reports
+  // BACKFILL PENDING until complete". The floor answers "may a vector answer be
+  // presented as the configured space?", NOT "is the backfill finished?".
+  //
+  //   configuredSpaceUsable  -> read path: is the configured space dense enough to
+  //                             compare in, or must a fallback be declared?
+  //   pendingBackfill        -> honesty: are there symbols WITHOUT the configured
+  //                             model that a reconcile pass would still fill?
+  const pendingBackfill = input.configuredModel !== null && symbolCount > 0 && configuredEntities < symbolCount
+  const configuredSpaceUsable = input.configuredModel !== null && symbolCount > 0 && configuredCoverage >= minCoverage
 
   let compareModel: string | null
   if (input.configuredModel === null) {
     // No remote provider configured: the engine embeds locally and the local
     // space is the configured one in practice. No fallback is declared.
     compareModel = mostPopulated?.model ?? null
-  } else if (!pendingBackfill) {
+  } else if (configuredSpaceUsable) {
     compareModel = input.configuredModel
   } else {
     // The configured space is under-covered. Fall back ONLY to a space this
@@ -131,7 +143,7 @@ export function planEmbeddingSpaces(input: EmbeddingSpacePlanInput): EmbeddingSp
     compareModel !== null && input.configuredModel !== null && compareModel !== input.configuredModel
   const fallbackReason = fallbackDeclared
     ? "configured-model-space-under-covered"
-    : pendingBackfill && compareModel === null
+    : !configuredSpaceUsable && compareModel === null
       ? "configured-model-space-under-covered"
       : null
 
