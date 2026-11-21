@@ -5,9 +5,17 @@
 - Analyzer file: `src/ast/real-rust-analyzer.ts`
 - Parser: the wired `wasm/tree-sitter-rust.wasm`, sha256
   `f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57` (1,102,547
-  bytes; binding table `validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md`,
-  served digest = wired digest). Measured 2026-11-03 through `getParser("rust")`:
-  **355 type ids, 185 named ids, 163 unique named types**. The npm package
+  bytes; served digest = wired digest). **CITATION CORRECTED 2026-11-20**: this line used to
+  cite a "binding table `validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md`" as the
+  digest authority. That file is **not in the tree** — it is absent at HEAD, and the same
+  dangling citation stands in `docs/analyzers/vba.md` and `src/ast/real-dart-analyzer.ts`, so
+  it is a fleet-wide loss rather than a rust one. The digest and size are still verifiable
+  directly (`sha256sum wasm/tree-sitter-rust.wasm` → the value above; `stat -c%s` → 1,102,547),
+  and the type counts are re-derived by
+  `npx tsx script/m14/grammar-node-inventory.ts --lang rust` →
+  `validation/m14/measurements/rust-grammar-nodes.json`. Measured 2026-11-03 through
+  `getParser("rust")` and **re-verified 2026-11-20**: **355 type ids, 185 named ids, 163 unique
+  named types**. The npm package
   version this wasm was built from is **not recorded in the tree — unknown**; the
   former "0.24.0 npm" claim is kept only as unverified history. Node shapes in
   use: `source_file` → `mod_item`/`struct_item`/`trait_item`/`enum_item`/
@@ -64,7 +72,7 @@ classifier (`classifyEvidenceTier`) writes onto the edge.
 | references | ✅ | Two sites. (a) declared-type surface — fn params/returns, struct/union field types, enum-variant field types, type-alias right-hand sides, const/static types → `references(declaration -> type leaf)`, `metadata.relationshipType: "declared_type"`, generic params and primitives skipped, `Self` resolves to the enclosing impl type. (b) where-clause bounds (`where T: Trait`) → `references(declaration -> bound leaf)`, `metadata.whereBound`. | (a) 0.9 (`import_based` per the classifier's references branch) · (b) no confidence written (`reference_qualified`) |
 | overrides | ✅ | `impl Trait for Type` methods → `overrides("Type.m" -> "m")`, target the MEMBER LEAF. For a trait declared IN THIS FILE, only methods the trait declares emit (`reasonCode: "local-trait-signature"`, 1.0); when the trait is declared outside the file, the impl's methods emit for the named trait (`"cross-file-trait-signature"`, 0.85). No signature comparison: a same-named method is paired. | 1.0 local · 0.85 cross-file (`structural` at 1.0, `usage_contextual` at 0.85) |
 | instantiates | ✅ | Three sites, all `metadata.isConstructor: true`. (a) `struct_expression` `User { … }` → `instantiates(owner -> type leaf)` (scoped enum-variant literal targets the VARIANT leaf; `Self` resolves to the enclosing impl type). (b) constructor calls naming the RECEIVER TYPE (`MemoryStorage::new()`) → `instantiates(owner -> receiver type)`, deferred until the file declares that type (the `inFile` filter). (c) a BARE tuple-shape constructor `Unit()` only when the file declares a tuple-shape struct of that name visible at the call site. Nothing std/foreign is fabricated. | 0.8 (`usage_contextual`) |
-| decorates | ✅ | An OUTER `attribute_item` applied to its following named declaration → `decorates(declaration name -> attribute name as written)`, e.g. `Config -> derive`, `run -> tokio::main`; `metadata.attributeKind` splits `builtin_directive` from `applied_callable_candidate`, `isQualifiedPath` keeps the path fact. An inner `#![…]` attribute (no declaration sibling) and an attribute whose sibling is not a nameable declaration are REFUSED AND COUNTED (`decorates:inner_attribute`, `decorates:unnamed_declaration`, …). Whole population: 16,195 outer sites = 15,930 rows + 265 counted; 202 inner sites all counted (census artifact `validation/m14/measurements/rust-extended-census.json` — **absent at HEAD 2026-11-19**; the counts are the census's own and are restated in `validation/m14/verification/RUST-STATE.md` §3). | 1.0 (`usage_contextual` fallthrough) |
+| decorates | ✅ | An OUTER `attribute_item` applied to its following named declaration → `decorates(declaration name -> attribute name as written)`, e.g. `Config -> derive`, `run -> tokio::main`; `metadata.attributeKind` splits `builtin_directive` from `applied_callable_candidate`, `isQualifiedPath` keeps the path fact. An inner `#![…]` attribute (no declaration sibling) and an attribute whose sibling is not a nameable declaration are REFUSED AND COUNTED (`decorates:inner_attribute`, `decorates:unnamed_declaration`, …). Whole population: 16,195 outer sites = 15,930 rows + 265 counted; 202 inner sites all counted (census artifact `validation/m14/measurements/rust-extended-census.json` — **absent at HEAD 2026-11-20**; the counts are the census's own and are restated in `validation/m14/verification/RUST-STATE.md` §3). | 1.0 (`usage_contextual` fallthrough) |
 | renders | ✅ | UI-framework macros `view!`/`html!`/`rsx!`/`render!`/`maud!`/`markup!` whose `token_tree` carries an angle-tag shape (`<` identifier … `>`/`/>`) whose tag identifier names a SAME-FILE callable or type → `renders(enclosing fn -> component)`; `metadata.renderMacro`, `isComponentTag`. Bare HTML tags (`div`) and undeclared tags are refused and counted. IMPLEMENTED AND CORPUS-UNEXERCISED: 0 render-macro invocations over the whole admitted population. | 1.0 (`usage_contextual` fallthrough) |
 | mixes_in | ✅ | `#[derive(A, B)]` → one `mixes_in(declaration name -> derived trait)` per derive ARGUMENT; the derived trait is the RIGHTMOST segment of a qualified path (`serde::Serialize` → `Serialize`), because `::` flattening puts the segments in the token_tree as sibling identifiers. `metadata.isMixin`, `deriveComposition`. Whole population: 11,176 rows = the census's `derive_args_total` 11,176 exactly. The measured alternative `use Trait as _` (431 `use_as_clause`, 132 `as _`) is a SCOPE import, not a type's chain, and is not this relation. | 1.0 (`usage_contextual` fallthrough) |
 | part_of | ✅ | `include!("path.rs")` — TEXTUAL file inclusion: the fragment's tokens land in the INCLUDING file's scope and it has no module identity. `part_of(enclosing scope -> written PATH, quotes stripped)`; file scope sources as `(file)` (`fileLevel: true`); `metadata.partRole: "library"`, `isFileInclusion`. The target is a PATH because a fragment has no symbol, and the `importProjectFile` claim is statted before it is written, so a confirmed row lands `extOK`. `include_str!`/`include_bytes!` are data inclusion, not textual splicing, so they publish only their macro-call edge (census: 20 + 2 sites), never `part_of`; a non-literal `include!` argument is refused and counted (`part_of:include_non_literal`). NOT `mod x;` (fleet ruling L-2026-10-21-06: ownership/split — a resolvable module is the opposite of a fragment; the census counts 1,898 file-declarations + 227 inline as the rejected near miss). Whole population: 3 rows, all extOK = the census's 3 single-string-literal sites. | 1.0 (`usage_contextual` fallthrough) |
@@ -236,10 +244,11 @@ disk alone**): **parsed=2,532/2,532 admitted=2,532, 9 repositories, 0 parse
 failures, 0 degraded**, **326,101 edges** = 130,039 resolved + 110,581
 ambiguous(decl) + 77,932 unresolved + 7,549 extOK (imports 7,546 + `part_of` 3),
 unclassed 0. Closure is exact at every level. Artifacts: arm log
-`validation/m14/measurements/rust-gate-whole-2026-10-23.txt`; per-type closure
+`validation/m14/measurements/rust-gate-whole-2026-10-23.txt` **(absent at HEAD — see the
+correction immediately below)**; per-type closure
 and cause rulings `validation/m14/instruments/rust/incoming-declaration.json`;
 extended-types construct census
-`validation/m14/measurements/rust-extended-census.json`. The analyzer bytes the
+`validation/m14/measurements/rust-extended-census.json` **(also absent at HEAD)**. The analyzer bytes the
 arm measured are `sha256:d8f03293…` (the declaration's `analyzerDigest`); the
 only later analyzer changes were refusal counters and a derive line-index
 correction, which the declaration records as moving no edge. The M12 400-file
@@ -276,8 +285,19 @@ record; the 2026-11-19 numbers are the ones a fresh checkout can verify.
 
 The 2026-11-20 master review re-ran the arm a third time, at HEAD `f9224678a`
 with the analyzer at `sha256:a9b988bd…`, and took an **independent symbol census**
-over the same 2,532 files through the production path
-(`.tmp-mr/sym-census.mts` in that session):
+over the same 2,532 files through the production path. The census is now a
+**committed, re-runnable instrument** — `script/m14/rust-symbol-census.ts`, with
+its output at `validation/m14/measurements/rust-symbol-census.json` — not a
+scratch script:
+
+```
+BB_CORPUS_ROOT=/path/to/corpora bun run script/m14/rust-symbol-census.ts --json out.json
+```
+
+It discovers the nine contributing repositories itself and reports
+`repositories: 9`, `repositoriesWithTrackedRs: 11` and names the two that carry
+tracked `.rs` but contribute no admitted file (`julia`, `pb-reference`), so the
+number is never silently larger than the arm's.
 
 | quantity | value |
 | --- | ---: |
@@ -719,7 +739,7 @@ so the ruling is falsifiable.
 | `oracle/overrides.ts` | the `overrides` derivation for the F5 differential, plus a self-check that compares it with the analyzer over the corpus |
 | `mutants.ts` | 10 source-level mutants, each run against the fixture suite with the analyzer restored byte-identical afterwards |
 | `perf.ts` | payload/latency: two arms in separate processes, per-file minimum over N passes, arm order switchable |
-| `derivation.ts` | this lane's DERIVATION debt, read with `rel-type-coverage-gate.ts`'s own `runGate()` without writing its artifact |
+| `derivation.ts` | this lane's DERIVATION debt, read with `rel-type-coverage-gate.ts`'s own `runGate()` without writing its artifact (the gate lives at `script/m60/rel-type-coverage-gate.ts` — **corrected 2026-11-20**, this line said `script/m14/`) |
 | `direction.ts` | the store-level INCOMING/OUTGOING arm counts (currently blocked — §3) |
 
 ## Two defects the master review found in `renders` (2026-11-20)
@@ -846,9 +866,14 @@ so a namespace claim can only reach PATH-shaped targets, and the shared matcher 
 
 - Fixtures: `validation/m14/fixtures/rust/` (M14) and
   `validation/m12/fixtures/rust/` (M12)
-- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-census-after6.txt`,
-  `import-claim-rows.json`, `gate-400-before.txt`, `gate-400-after.txt`, `gate-400-after2.txt`,
-  `gate-400-after3.txt`, `gate-400-after4.txt`, `gate-whole-after.txt`
+- M14 import-claim evidence: `validation/m14/fixtures/rust/import-claim-rows.json` and the
+  census instrument `validation/m14/fixtures/rust/import-claim-census.mts`. **CORRECTED
+  2026-11-20**: this list also named `import-claim-census-after6.txt`, `gate-400-before.txt`,
+  `gate-400-after.txt`, `gate-400-after2.txt`, `gate-400-after3.txt`, `gate-400-after4.txt` and
+  `gate-whole-after.txt`. **None of those seven files is in the tree at HEAD** — the readings
+  they held were the iteration-by-iteration cap-400 import measurements, and the numbers they
+  recorded are preserved in the §"import file claim" tables above. Only `import-claim-rows.json`
+  (869 file-claim rows) and the census instrument survive, so those are what this line cites.
 - M14 differential evidence: `validation/m14/results/M14.0.F5.json`
 - M14 completeness evidence: `validation/m14/results/M14.0.SPEC.json`
 - M14 mutation evidence: `validation/m14/results/M14.0.F4.json`
@@ -878,7 +903,13 @@ so a namespace claim can only reach PATH-shaped targets, and the shared matcher 
   citation is now satisfiable; `RUST-FIX.md` is folded into `RUST-STATE.md` §6 (known residual).
 - Differential replay 2026-11-19: `validation/m14/measurements/rust-differential-final-2026-11-19.log`
   — ripgrep 6,690/6,690 covered, 0 missing, 0 unexplained; cargo 3,885/3,885, 0 missing, 0 unexplained.
-- Served-grammar binding table: `validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md`
+- Served-grammar inventory: `validation/m14/measurements/rust-grammar-nodes.json`
+  (355 ids / 185 named, re-derived 2026-11-20 with
+  `npx tsx script/m14/grammar-node-inventory.ts --lang rust`; the tool records
+  `servedDigest: null`, so the binding is the digest in §Language plus `sha256sum`).
+  **The former citation `validation/m14/verification/GRAMMAR-BINDINGS-2026-10-21.md` is
+  ABSENT at HEAD 2026-11-20 and is corrected here** — the same dangling reference stands in
+  `docs/analyzers/vba.md` and `src/ast/real-dart-analyzer.ts`, a fleet-wide loss.
 - Grammar audit register: `validation/m14/grammar-audit-baseline.json` (rust: 0 dead literals)
 - Docs: this file
 

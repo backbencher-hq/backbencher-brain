@@ -1,0 +1,153 @@
+{
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "repositories": 9,
+    "repositoriesWithTrackedRs": 11,
+    "reposWithTrackedButNoAdmittedFile": [
+      "julia",
+      "pb-reference"
+    ],
+    "files": 2532,
+    "rule": "git ls-files '*.rs', present on disk, <= 1 MiB"
+  },
+  "totals": {
+    "symbols": 40492,
+    "relationships": 326092,
+    "filesWithErrors": 525,
+    "macroArgumentReads": 2326
+  },
+  "symbolsByKind": {
+    "enum": 1025,
+    "enum_member": 3918,
+    "function": 10175,
+    "struct": 2283,
+    "property": 7892,
+    "type": 606,
+    "impl": 3256,
+    "method": 8422,
+    "module": 2125,
+    "variable": 615,
+    "macro": 104,
+    "trait": 71
+  },
+  "symbolsByVisibility": {
+    "private": 28040,
+    "public": 11717,
+    "crate": 682,
+    "super": 53
+  },
+  "relationshipsByType": {
+    "decorates": 15930,
+    "mixes_in": 11176,
+    "uses": 28323,
+    "calls": 180486,
+    "instantiates": 6149,
+    "contains": 22507,
+    "references": 38680,
+    "imports": 11813,
+    "exports": 6185,
+    "implements": 1901,
+    "overrides": 2910,
+    "extends": 29,
+    "part_of": 3
+  },
+  "confidenceByType": {
+    "decorates": {
+      "1": 15930
+    },
+    "mixes_in": {
+      "1": 11176
+    },
+    "uses": {
+      "1": 13194,
+      "0.9": 12803,
+      "0.6": 2326
+    },
+    "calls": {
+      "1": 180486
+    },
+    "instantiates": {
+      "0.8": 6149
+    },
+    "contains": {
+      "1": 22507
+    },
+    "references": {
+      "0.9": 38646,
+      "(none)": 34
+    },
+    "imports": {
+      "1": 11813
+    },
+    "exports": {
+      "1": 6185
+    },
+    "implements": {
+      "1": 1901
+    },
+    "overrides": {
+      "1": 179,
+      "0.85": 2731
+    },
+    "extends": {
+      "1": 29
+    },
+    "part_of": {
+      "1": 3
+    }
+  },
+  "evidenceClassByType": {
+    "decorates": {
+      "usage_contextual": 15930
+    },
+    "mixes_in": {
+      "usage_contextual": 11176
+    },
+    "uses": {
+      "usage_contextual": 28323
+    },
+    "calls": {
+      "usage_contextual": 180486
+    },
+    "instantiates": {
+      "usage_contextual": 6149
+    },
+    "contains": {
+      "structural": 22507
+    },
+    "references": {
+      "import_based": 38646,
+      "reference_qualified": 34
+    },
+    "imports": {
+      "import_based": 11813
+    },
+    "exports": {
+      "structural": 6185
+    },
+    "implements": {
+      "structural": 1901
+    },
+    "overrides": {
+      "usage_contextual": 2731,
+      "structural": 179
+    },
+    "extends": {
+      "structural": 29
+    },
+    "part_of": {
+      "usage_contextual": 3
+    }
+  },
+  "refusedEdges": {
+    "decorates:inner_attribute": 202,
+    "calls:macro_invocation": 475,
+    "uses:identifier_read": 1223,
+    "decorates:unnamed_declaration": 265,
+    "calls:call_expression": 63,
+    "uses:field_expression": 9,
+    "part_of:include_non_literal": 1
+  },
+  "refusedTotal": 2238,
+  "note": "Counts are of what RealRustAnalyzer.analyze emits over the admitted population. They are not a claim about correctness — the differential and the fixtures carry that."
+}

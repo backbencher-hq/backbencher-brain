@@ -363,9 +363,9 @@ stale sample artifact and a fleet-wide convention respectively.
 | 47 mutants, all caught | `mutate-analyzer.ts --lang rust`, 2026-11-20 |
 | refs=88 unknown=0 | `audit-analyzer-grammar.ts --lang rust`, 2026-11-20 |
 | 14/14 types close | `incoming-declaration.json` + this run's TABLE 1 |
-| 40,492 symbols / 2,238 refusals / kind+visibility census | independent census `.tmp-mr/sym-census.mts` over all 2,532 admitted files, 2026-11-20 |
+| 40,492 symbols / 2,238 refusals / kind+visibility census | `bun script/m14/rust-symbol-census.ts` over all 2,532 admitted files, 2026-11-20 → `validation/m14/measurements/rust-symbol-census.json` |
 | 42,689 unresolved `calls` breakdown (45.0% std / 21.9% macro / 33.1% other) | `DUMP calls unresolved` rows, 2026-11-20 |
-| 2 renders defects + fix | `.tmp-mr/real-render.rs` (leptos-shaped) + `.tmp-mr/dbg7.mts` order test, 2026-11-20 |
+| 2 renders defects + fix | a leptos-shaped probe component and the order test, 2026-11-20 — both pinned permanently by `rust/renders-component-order` and the two mutants |
 
 Anything not in this table is prose, and prose is not evidence.
 
