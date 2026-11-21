@@ -29,10 +29,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "ca77e6f555161186053861d176d8ba1f190af6a9",
+  "currentCommit": "4b3a4637592aae1383ec248a94a4a22fc9df9d86",
   "verifierCommand": "npx tsx script/m33/verify-honesty-docs.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-11-21T15:17:57.349Z",
+  "generatedAt": "2026-11-21T15:35:09.095Z",
   "limitations": [
     "Doc mutants are string-level probes on the document text, not full re-runs of the docs gate; the verbatim pins double-check the same claims.",
     "The built-binary cross-check proves the -v and did-you-mean claims at run time; the man bb claim is proven by the S3 gate (npm pack + rendering)."

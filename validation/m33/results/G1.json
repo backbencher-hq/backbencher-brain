@@ -7,15 +7,15 @@
   "passed": 25,
   "failed": 0,
   "negativeCases": 8,
-  "trackedFilesScanned": 16510,
+  "trackedFilesScanned": 16511,
   "keyPatternsChecked": [
     "openrouter",
     "nvidia"
   ],
-  "currentCommit": "ca77e6f555161186053861d176d8ba1f190af6a9",
+  "currentCommit": "4b3a4637592aae1383ec248a94a4a22fc9df9d86",
   "verifierCommand": "npx tsx script/m33/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-21T15:16:18.217Z",
+  "generatedAt": "2026-11-21T15:33:40.757Z",
   "limitations": [
     "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design (.env.local is gitignored).",
     "Key patterns match OpenRouter (sk-or-v1-…) and NVIDIA (nvapi-…) shapes; a provider with a different key format must be added to KEY_PATTERNS.",
