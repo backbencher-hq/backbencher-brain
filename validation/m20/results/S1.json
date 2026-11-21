@@ -8,19 +8,19 @@
   "failed": 0,
   "negativeCases": 4,
   "negativePassed": 4,
-  "currentCommit": "166116c51b1e6925c0b4d58166be61929f4fb293",
-  "sourceFingerprint": "5d9405c7fcb508ae72c4ca643852910081e2a0bbb5d1fe0e283d7255646be3d0",
+  "currentCommit": "69acaefa5015f6f2aff23190de0fa53542571f22",
+  "sourceFingerprint": "c479277f98b990c5066301c793d12086452e571a64f697e701982815ed2ff2fa",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m20/verify-security-flow-boundary.ts",
   "evidenceFile": "S1.json",
-  "generatedAt": "2026-11-21T21:21:13.329Z",
+  "generatedAt": "2026-11-21T22:26:10.626Z",
   "limitations": [
     "Fixture-level endpoint-state and evidence coverage; static taint remains heuristic and is not a runtime exploit proof.",
     "Real-repository security coverage is measured by the m15 corpus leg and validation/tools/bb_security/REAL-CORPUS.json."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T21:21:13.330Z",
-    "contentSha256": "426ee0cb5196f2073aa29806246cea9d2ba968e2a5c17155be539b12b4573183"
+    "sealedAt": "2026-11-21T22:26:10.627Z",
+    "contentSha256": "e945f6836200875ff3c2a3f7bfa729f17b607536521964ddbe0cc9020c70a353"
   }
 }

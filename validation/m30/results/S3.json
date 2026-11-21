@@ -54,11 +54,11 @@
     "detail": "BB_M30_LIVE_KEYS=1 + --live not set; live provider validation not exercised (mock coverage only). This is recorded, not hidden.",
     "providers": []
   },
-  "currentCommit": "166116c51b1e6925c0b4d58166be61929f4fb293",
+  "currentCommit": "69acaefa5015f6f2aff23190de0fa53542571f22",
   "sourceFingerprint": "76699eb7e7846ef780ff5065dadf64c658cc51f30bc1637f8baeb290d1ea4dc1",
   "verifierCommand": "npx tsx script/m30/verify-key-validation.ts",
   "evidenceFile": "S3.json",
-  "generatedAt": "2026-11-21T21:06:43.521Z",
+  "generatedAt": "2026-11-21T22:12:49.940Z",
   "limitations": [
     "Live provider tests run only when BB_M30_LIVE_KEYS=1, --live is passed, and provider keys are in env; without them this suite covers mock paths only and records live: blocked.",
     "Live-call budget is 1 request per provider per run; free-tier rate limits are respected and 429 soft-pass is accepted as a valid outcome.",

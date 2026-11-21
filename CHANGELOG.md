@@ -25,6 +25,13 @@ Before/after on a two-file fixture:
   `{'path': '@/lib/util', 'external': True,  'resolution': 'unresolved'}`
   `{'path': 'src/lib/util.ts', 'external': False, 'resolution': 'resolved'}`
 
+An UPGRADE detail that would have hidden the whole fix: the aliases were persisted only when
+files were reparsed, so upgrading 0.1.9 → 0.2.0 and running `bb index` on an UNCHANGED project
+did nothing (`aliases` never written, and the old `is_external` flag still marking the import
+external). Both are fixed — the aliases are written on every run, and an alias-shaped specifier
+is resolved on the spot so a stale flag cannot outlive the upgrade. Verified by installing
+0.1.9 from npm, indexing, upgrading to 0.2.0 and re-indexing with no source changes.
+
 ### Embeddings — the backfill actually finishes
 
 A 422 content-safety rejection now isolates the refused input and the run completes.
