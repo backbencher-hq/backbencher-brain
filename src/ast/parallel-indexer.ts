@@ -3283,19 +3283,29 @@ async function drainBackgroundEmbeddings() {
               // Word vectors are position-independent, so both sides sharing a
               // vocabulary is a pure coverage increase rather than a change of
               // vector space — see local-embed.ts `wordVector`.
-              job.allowFallback === false
-                // Provider-only pass (the reconcile/backfill). A 422 rejects the
-                // REQUEST although the fault is one input, so embedManyTolerant
-                // bisects, isolates the refused text(s), and returns the rest.
-                // Using the all-or-nothing embedMany here is what made 0.1.8 stop
-                // with tens of thousands of symbols still pending.
-                ? SemanticEngine.embedManyTolerant(docs, job.projectId, job.timeoutMs ? { timeoutMs: job.timeoutMs } : {})
-                    .then((r) => { chunkRejectedIndexes = r.rejectedIndexes; return r.vectors })
-                : SemanticEngine.embedMany(
-                    docs,
-                    job.projectId,
-                    job.timeoutMs ? { timeoutMs: job.timeoutMs } : {},
-                  ),
+              (async () => {
+                const opts = job.timeoutMs ? { timeoutMs: job.timeoutMs } : {}
+                if (job.allowFallback !== false) {
+                  return SemanticEngine.embedMany(docs, job.projectId, opts)
+                }
+                // Provider-only pass (the reconcile/backfill). Try the NORMAL path
+                // first so every behaviour it already has — the rate-limit circuit
+                // breaker, the retry policy, the in-sync fast path — is unchanged.
+                // Only a 422 (content safety) is handled differently: it rejects the
+                // whole REQUEST although the fault is one input, and because that
+                // input sits in every retry of the batch the run used to make no
+                // progress ("stopped with 44,250 still pending"). On a 422 the
+                // tolerant path bisects, isolates the refused text(s) and returns
+                // the rest.
+                try {
+                  return await SemanticEngine.embedMany(docs, job.projectId, { ...opts, allowLocalFallback: false })
+                } catch (providerError: any) {
+                  if (providerError?.status !== 422) throw providerError
+                  const tolerant = await SemanticEngine.embedManyTolerant(docs, job.projectId, opts)
+                  chunkRejectedIndexes = tolerant.rejectedIndexes
+                  return tolerant.vectors
+                }
+              })(),
               EMBED_CALL_TIMEOUT_MS,
               `embedding provider call exceeded ${EMBED_CALL_TIMEOUT_MS}ms bound`,
             ),

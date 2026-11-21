@@ -449,9 +449,30 @@ export namespace SemanticEngine {
     if (!cfg) return { vectors: new Array(texts.length).fill(null), rejectedIndexes: [], error: "no embedding provider configured" }
     const runtime = opts.timeoutMs !== undefined ? { ...readRuntimeOptions(), timeoutMs: opts.timeoutMs } : undefined
     void projectId
-    return bisectContentSafetyRejections(texts, (slice) =>
-      embedOpenAICompatible(slice, cfg, runtime, { inputType: embeddingInputType(cfg, "passage") }),
-    )
+    // The rate-limit CIRCUIT BREAKER must survive this path. `embedMany` opens it on a
+    // 429 and refuses to call the provider again until the backoff expires — that is
+    // what bounds a reconcile run to two calls against a rate-limited provider. The
+    // tolerant wrapper called the provider directly and bypassed the breaker, so a 429
+    // became an unbounded call storm: a gate measured 6 calls where 2 is the ceiling.
+    return bisectContentSafetyRejections(texts, async (slice) => {
+      if (Date.now() < _apiRetryAt) {
+        const open: any = new Error(
+          `embedding provider circuit breaker is open for another ${Math.max(0, Math.ceil((_apiRetryAt - Date.now()) / 1000))}s`,
+        )
+        open.status = 429
+        throw open
+      }
+      try {
+        return await embedOpenAICompatible(slice, cfg, runtime, { inputType: embeddingInputType(cfg, "passage") })
+      } catch (e: any) {
+        if (e?.name === "EmbeddingApiError" && e?.status === 429) {
+          _apiRetryAttempt += 1
+          _apiRetryDelayMs = embeddingBackoffForAttempt(_apiRetryAttempt, e?.retryAfterSec)
+          _apiRetryAt = Date.now() + _apiRetryDelayMs
+        }
+        throw e
+      }
+    })
   }
 
   export async function embedMany(
