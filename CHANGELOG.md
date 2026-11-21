@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.1.7 — four analyzers deepen, and the tool stops promising what it cannot do
+
+Owner-facing release. Every claim below was measured by the lane that made it and
+is committed with its evidence; the tree itself was verified by the gates named at
+the end.
+
+- **Python — duplicate classes, MRO and overload chains.** A later top-level class
+  declaration shadows an earlier one instead of both being published, the MRO walk
+  resolves override parents, and nested function bodies are descended so their
+  truth scopes are real. Direct override keys now resolve exactly, and a rejected
+  experiment was reverted rather than kept as dead code.
+- **Go — import identity is decided by the module, not by spelling.** `go.mod`
+  gives the analyzer the project's own module path, so a project-internal import
+  is no longer recorded as an external package (bettercap issue 03: 1,880 of
+  1,880 Go imports were external, so the dependency graph had no internal edges
+  and dependents came back empty). Package-scoped name binding stops
+  `errors.New()` from binding to an unrelated `session.New`, and an old-index
+  compat path keeps previously built indexes readable.
+- **Rust and C# — emitter correctness and relationship coverage.** The Rust lane
+  fixed two `renders`-emitter defects its master review found, closed the
+  `renders` truth gap, and re-measured the arm to correct the record. C# added the
+  `decorates` relationship, so its pinned and emitted sets are now twelve kinds
+  and every record reports twelve — verified in the evidence as "12 relationship
+  kinds pinned by csharp fixtures; 12 emitted and all accounted for".
+- **Bettercap triage — 12 reported defects verified, none false, and fixed.**
+  An external 12-point "still broken" report against the Go analyzer was checked
+  adversarially by eight lanes: 5 REAL, 4 REAL-BUT-MISDESCRIBED, 1 REAL-composite,
+  2 PARTIAL, with at least one correction to every stated mechanism or number.
+  Two P0s led it: a Go rename that planned 2 files and missed a
+  package-qualified caller while reporting success, and name-only cross-language
+  binding that turned `errors.New()` into an edge to a session method. Both are
+  fixed, and the campaign verifier runs the fix gates independently and records
+  its own verdicts under `docs/bb-bettercap-fix/evidence/verifier/runs/`.
+- **Documentation now matches the code.** The TypeScript page claimed path aliases
+  resolve through tsconfig. The analyzer never reads tsconfig at all, so that
+  sentence promised resolution the product cannot perform — and the same site
+  described the opposite as a known gap elsewhere. The claim is corrected and the
+  limitation is now stated where the page states every other limitation. Measured
+  on a real Next.js app (`{"@/*": ["./src/*"]}`, 50 files): `../lib/util`
+  resolves (`is_external=0`), `@/lib/util` and `~/util` do not (`is_external=1`).
+  Resolving aliases is tracked work, not a claim in this release.
+
+Two gates on `main` were red going into this release; both were stale assertions
+about corrected product text, not product defects, and both are fixed here — the
+`bb doctor` model-mismatch advice (which no longer recommends `--force` for a
+vector-space mismatch) and the `bb_security` tier line (whose label changed when
+the lead census was disambiguated from the stored-lead count).
+
+Verified before tagging: `npm test` (46/46, 15/15, 21/21), `verify:fast` (22 gates,
+exit 0), the full fixture corpus (all pass), `tsc --noEmit`, `npm run build`.
+
 ## 0.1.6 — five analyzers, one graph: the gaps that were invisible are now counted
 
 Owner-facing release. Every number below is one the lanes measured on their own
