@@ -90,7 +90,13 @@ const GUIDE_CLAIMS: Array<{ label: string; test: (text: string) => boolean }> = 
   { label: "local vocabulary is 205 words at 50 dimensions", test: (t) => t.includes("205-word") && t.includes("50 dimensions") },
   { label: "per-model coverage versus library coverage", test: (t) => t.includes("embeddingCoverage") && t.includes("libraryCoverage") },
   { label: "scan cap 20,000 and its declared truncation", test: (t) => t.includes("20,000") && t.includes("truncated=true") },
-  { label: "provider wait ceiling min(2 s, BB_EMBEDDING_TIMEOUT_MS)", test: (t) => t.includes("min(2 s, BB_EMBEDDING_TIMEOUT_MS)") },
+  // The ceiling is a DEFAULT that an explicit BB_EMBEDDING_TIMEOUT_MS RAISES. The
+  // earlier assertion pinned "min(2 s, BB_EMBEDDING_TIMEOUT_MS)", which described
+  // the defect: the env could only lower the wait, never extend it.
+  {
+    label: "provider wait ceiling: 2 s default, BB_EMBEDDING_TIMEOUT_MS raises it to 60 s",
+    test: (t) => t.includes("2 s by default") && t.includes("BB_EMBEDDING_TIMEOUT_MS") && t.includes("RAISES") && t.includes("60 s"),
+  },
   { label: "STALE and MISSING are distinct markers", test: (t) => t.includes("STALE — file changed since index") && t.includes("MISSING — file no longer on disk") },
   { label: "the question is sent to the configured provider at ask time", test: (t) => /natural-language question is sent\b/i.test(t.replace(/\s+/g, " ")) },
 ]

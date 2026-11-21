@@ -298,9 +298,12 @@ type MutantProbe = {
 const mutants: Mutant[] = [
   {
     name: "process-wide latch restored (any failure poisons the run)",
+    // The rate-limit rule now lives in ONE predicate used by both embed paths, so the
+    // mutant neutralises the predicate: that restores the process-wide latch (any
+    // failure poisons the run) without depending on how many call sites there are.
     mutate: (src) => src.replace(
-      "if (e?.name === \"EmbeddingApiError\" && e?.status === 429) {",
-      "if (true) {",
+      'return e?.name === "EmbeddingApiError" && e?.status === 429',
+      "return true",
     ),
     // With a latch, the blip's batch-2 retry must NOT reach the API.
     probe: (m) => m.blip.b2?.model !== "mock-embed-4d",

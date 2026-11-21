@@ -390,6 +390,15 @@ export namespace SemanticEngine {
    * as per-item; 429/auth/transport are NOT, because those are not the input's
    * fault and the caller must decide whether to retry or keep the old row.
    */
+  /**
+   * Is this a provider RATE LIMIT? One predicate for both embed paths, so the
+   * circuit-breaker rule cannot drift between them — and so a mutant of the rule
+   * mutates one place, which is what the M30 mutant gate expects.
+   */
+  export function isRateLimitError(e: any): boolean {
+    return e?.name === "EmbeddingApiError" && e?.status === 429
+  }
+
   export async function bisectContentSafetyRejections(
     texts: string[],
     embedSlice: (slice: string[]) => Promise<number[][]>,
@@ -465,7 +474,7 @@ export namespace SemanticEngine {
       try {
         return await embedOpenAICompatible(slice, cfg, runtime, { inputType: embeddingInputType(cfg, "passage") })
       } catch (e: any) {
-        if (e?.name === "EmbeddingApiError" && e?.status === 429) {
+        if (isRateLimitError(e)) {
           _apiRetryAttempt += 1
           _apiRetryDelayMs = embeddingBackoffForAttempt(_apiRetryAttempt, e?.retryAfterSec)
           _apiRetryAt = Date.now() + _apiRetryDelayMs
@@ -512,7 +521,7 @@ export namespace SemanticEngine {
       } catch (e: any) {
         _lastEmbeddingError = e?.message ? String(e.message) : String(e)
         // Per-batch fallback: this batch degrades, the run does not.
-        if (e?.name === "EmbeddingApiError" && e?.status === 429) {
+        if (isRateLimitError(e)) {
           _apiRetryAttempt += 1
           _apiRetryDelayMs = embeddingBackoffForAttempt(_apiRetryAttempt, e?.retryAfterSec)
           _apiRetryAt = Date.now() + _apiRetryDelayMs
