@@ -119,6 +119,41 @@ export function factsFromRows(rows: CrossLanguageEdgeRow[], hoverLanguage: strin
   return facts
 }
 
+/**
+ * Build output, vendored code and minified bundles.
+ *
+ * A cross-language row into `openlayers/ol.js` is structurally impossible to act on:
+ * the identifiers there are single letters produced by a minifier (`N`, `to`, `r`), so
+ * a name match against them is a coincidence of the alphabet, not a bridge. Measured
+ * on 0.1.8: 110 of 122 cross-language edges were Go test `uses` rows into minified
+ * `ol.js` identifiers at confidence 0.5 / bindingBasis=name-only, and
+ * `bb_cross_language N` alone reported 85 such facts.
+ *
+ * Path-based and therefore deterministic — this never guesses from file contents.
+ * Excluded rows are COUNTED by the caller, never silently dropped.
+ */
+export function isMinifiedOrVendorAsset(relativePath: string | null | undefined): boolean {
+  if (!relativePath) return false
+  const lower = relativePath.toLowerCase()
+  const segments = lower.split("/")
+  for (const segment of segments) {
+    if (
+      segment === "node_modules" || segment === "vendor" || segment === "third_party" || segment === "third-party" ||
+      segment === "bower_components" || segment === "dist" || segment === "build" || segment === "out" ||
+      segment === "coverage" || segment === "jspm_packages"
+    ) return true
+  }
+  return (
+    /\.min\.(js|mjs|cjs|css)$/.test(lower) ||
+    /-min\.(js|css)$/.test(lower) ||
+    /\.bundle\.(js|mjs)$/.test(lower) ||
+    /\.chunk\.(js|mjs)$/.test(lower) ||
+    /\.minified\.[a-z]+$/.test(lower) ||
+    /\.generated\.[a-z]+$/.test(lower) ||
+    /\.pb\.(go|js|ts)$/.test(lower)
+  )
+}
+
 /** The hover text section. EMPTY when there are no stored facts — the hover
  *  renders the section only when this returns a non-empty string. */
 export function crossLanguageSection(facts: CrossLanguageFact[]): string {
@@ -297,6 +332,13 @@ export interface CrossLanguageNameResult {
   storedRowCount: number
   /** rows that matched but cannot name a pair (unknown/equal languages) */
   unpairableRowCount: number
+  /** Rows into build output, vendored code or a minified bundle, excluded from the
+   *  fact list. A minifier-minted identifier (`N`, `to`, `r`) is not a bridge. */
+  excludedAssetRowCount: number
+  /** Rows whose only basis is a name collision (`bindingBasis: "name-only"` or
+   *  `bridge_mechanism: "name-resolution"`), excluded from the fact list as
+   *  candidates. Measured on 0.1.8: 110 of 122 edges, and 85 from the letter N. */
+  nameOnlyCandidateCount: number
   /** rows dropped because the same row id was matched from both directions */
   collapsedRowCount: number
   /** distinct members that contributed a member fact */
@@ -507,13 +549,28 @@ SELECT COUNT(*) AS n FROM (
  *  fact's own `self` and `other` ends. `owner` is the attribution and rides the
  *  owner-cascade facts only. A row whose ends cannot name a pair is counted and not
  *  emitted — no language is ever substituted to manufacture a pair. */
-function factFromRow(row: AgentFactRow, match: CrossLanguageMatch, counters: { unpairable: number }): CrossLanguageAgentFact | null {
+function factFromRow(row: AgentFactRow, match: CrossLanguageMatch, counters: { unpairable: number; excludedAssetRows: number; nameOnlyCandidates: number }): CrossLanguageAgentFact | null {
   const pair = row.self_language && row.other_language && row.self_language.toLowerCase() !== row.other_language.toLowerCase()
     ? `${row.self_language} → ${row.other_language}`
     : null
   if (pair === null) { counters.unpairable++; return null }
+  // A row into build output or a minified bundle is not a bridge an agent can act
+  // on: the identifiers there are one or two minifier-minted characters, so a name
+  // match is a coincidence of the alphabet. Counted so the exclusion is visible.
+  if (isMinifiedOrVendorAsset(row.other_file) || isMinifiedOrVendorAsset(row.self_file) || isMinifiedOrVendorAsset(row.owner_file)) {
+    counters.excludedAssetRows++
+    return null
+  }
   const self: CrossLanguageEnd = { symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line }
   const bindingBasis = bindingBasisOf(row.metadata)
+  // A name-only row asserts nothing but a spelling collision: no import, no call
+  // site, no bridge. `bb_cross_language N` reported 85 of them for the letter N.
+  // They are CANDIDATES, and a fact list is not the place for a candidate — the
+  // agent reads a fact as a stored relationship. Counted, so the drop is visible.
+  if (bindingBasis === "name-only" || row.bridge_mechanism === "name-resolution") {
+    counters.nameOnlyCandidates++
+    return null
+  }
   const fact: CrossLanguageAgentFact = {
     self,
     direction: row.direction,
@@ -575,7 +632,7 @@ export function storedCrossLanguageFactsByName(
   const facts: CrossLanguageAgentFact[] = []
   const memberFacts: CrossLanguageAgentFact[] = []
   const members = new Set<string>()
-  const counters = { unpairable: 0 }
+  const counters = { unpairable: 0, excludedAssetRows: 0, nameOnlyCandidates: 0 }
   let collapsed = 0
 
   for (const row of rows) {
@@ -627,6 +684,8 @@ export function storedCrossLanguageFactsByName(
     memberFacts,
     storedRowCount: rows.length + memberRows.length,
     unpairableRowCount: counters.unpairable,
+    excludedAssetRowCount: counters.excludedAssetRows,
+    nameOnlyCandidateCount: counters.nameOnlyCandidates,
     collapsedRowCount: collapsed,
     memberCount: members.size,
   }
