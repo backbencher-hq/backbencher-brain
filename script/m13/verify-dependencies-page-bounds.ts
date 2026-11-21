@@ -70,6 +70,42 @@ const emitted = page.reduce((n, r) => n + r.dependencies.length + r.dependents.l
 check("the page cannot exceed the row budget however many files it lists", emitted <= 300, `emitted=${emitted} across ${page.length} file rows`)
 check("the per-row cap still applies (one file cannot dominate)", page.every((r) => r.dependencies.length <= 100 && r.dependents.length <= 100))
 
+// ── THE REPORTED DEFECT: a non-zero total must never come with an empty list ──
+// The first version of the page budget spent the whole allowance on the first rows, so a
+// row later in the ranking returned `dependenciesTotal: 89` beside `dependencies: []`.
+// Reported by the owner as "Directory dependencies now show totals but empty edge lists".
+{
+  const starved = page.filter(
+    (r) =>
+      (r.dependenciesTotal > 0 && r.dependencies.length === 0) ||
+      (r.dependentsTotal > 0 && r.dependents.length === 0),
+  )
+  check(
+    "THE REPORTED DEFECT: no row reports a total with an EMPTY edge list",
+    starved.length === 0,
+    starved.slice(0, 3).map((r) => `${r.file} deps=${r.dependenciesTotal}/${r.dependencies.length} depdents=${r.dependentsTotal}/${r.dependents.length}`).join(" | "),
+  )
+  // Every trimmed row must SAY it was trimmed, so a short list is declared, not silent.
+  const silentlyShort = page.filter((r) => (r.dependencies.length < r.dependenciesTotal && !r.dependenciesTruncated) || (r.dependents.length < r.dependentsTotal && !r.dependentsTruncated))
+  check("every trimmed row declares its truncation", silentlyShort.length === 0, silentlyShort.slice(0, 2).map((r) => r.file).join(", "))
+}
+
+// ── an EXACT-FILE query is never thinned ─────────────────────────────────────
+// The scoped question ("this file's edges") is the one the page budget must not touch:
+// one row, so it receives the full per-row cap.
+{
+  const one = await getFileDependencies(projectId as any, { filePath: "hub/hub.go", limit: 50 })
+  const row = one.find((r) => r.file.endsWith("hub/hub.go"))
+  check("an exact-file query returns its row", !!row)
+  if (row) {
+    check(
+      "an exact-file query lists EVERY dependent (not a fair-share slice)",
+      row.dependents.length === Math.min(row.dependentsTotal, 100),
+      `${row.dependents.length} of ${row.dependentsTotal}`,
+    )
+  }
+}
+
 // ── test filtering ───────────────────────────────────────────────────────────
 // Scope to the hub so it is the ONLY row and therefore receives the whole row
 // budget. Searching the unscoped page is unreliable: with the budget correctly

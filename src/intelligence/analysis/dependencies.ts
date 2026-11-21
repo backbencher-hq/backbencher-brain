@@ -269,7 +269,7 @@ export async function getFileDependencies(
 ): Promise<FileDependency[]> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const includeExternal = options.includeExternal !== false
-  const limit = options.limit ?? 50
+
   const includeTests = options.includeTests === true
   // tsconfig paths aliases, written to brain_project_meta at index time. Absent for
   // most projects; a project without them behaves exactly as before.
@@ -443,10 +443,18 @@ export async function getFileDependencies(
   }
 
   const results: FileDependency[] = []
+  // At 2 entries per row minimum (one dependency, one dependent), this many rows can
+  // always be served by the page allowance — so no row is ever reduced to an empty list
+  // while reporting a non-zero total. The cap is applied through `limit` (a DECLARED page
+  // size) rather than as a silent extra trim.
+  const maxRowsForBudget = Math.max(1, Math.floor(MAX_PAGE_ROW_ENTRIES / 2))
+  const limit = Math.min(options.limit ?? 50, maxRowsForBudget)
+  const pageRows = Math.min(fileRows.length, limit)
   // Page-level row budget. Every emitted entry is charged against it, so `limit`
   // bounding FILE ROWS can no longer produce a ten-thousand-entry payload.
   let rowsRemaining = MAX_PAGE_ROW_ENTRIES
-  for (const file of fileRows) {
+  for (let rowIndex = 0; rowIndex < pageRows; rowIndex++) {
+    const file = fileRows[rowIndex]
     const allDeps = rawDepsByFile.get(file.id) ?? []
     const allDependents = Array.from(dependentsByFile.get(file.id) ?? [])
       .map((depFileId) => ({ path: fileById.get(depFileId) ?? depFileId, fileId: depFileId }))
@@ -464,11 +472,26 @@ export async function getFileDependencies(
     const unresolved = deps.filter((d) => d.resolution === "unresolved" && !d.external).length
     const dependenciesTotal = deps.length
     const dependentsTotal = dependents.length
-    // Two budgets from one page allowance: dependencies first, dependents with
-    // whatever is left. Both are capped at MAX_ROW_ENTRIES so a single file
-    // cannot monopolise the page, which is what the per-row cap always meant.
-    const depBudget = Math.min(MAX_ROW_ENTRIES, Math.max(0, rowsRemaining))
-    const depdentBudget = Math.min(MAX_ROW_ENTRIES, Math.max(0, rowsRemaining - depBudget))
+    // FAIR SHARE of the page allowance, not a greedy first-come split.
+    //
+    // The greedy version consumed the whole 300-entry page on the first few rows, so a
+    // row later in the ranking came back with `dependenciesTotal: 89` and
+    // `dependencies: []` — a non-zero total beside an empty list, which reads as "this
+    // file has dependencies but the tool will not show them" and is worse than a smaller
+    // number. Reported by the owner as "Directory dependencies now show totals but empty
+    // edge lists".
+    //
+    // Dividing by the rows still to come gives every row at least one entry while the
+    // page stays bounded, and each row's own `*Truncated` flag says it was trimmed. An
+    // EXACT-FILE query has one row, so it gets the full per-row cap and lists all of its
+    // edges (89 of 89 at MAX_ROW_ENTRIES 100) — the scoped question is never thinned.
+    // Divide by the rows still to come AND by the two lists each row carries, or the
+    // share spends the allowance twice as fast as it is earned and the tail of the page
+    // still starves.
+    const rowsLeft = Math.max(1, pageRows - rowIndex)
+    const fairShare = Math.max(1, Math.floor(rowsRemaining / (rowsLeft * 2)))
+    const depBudget = Math.min(MAX_ROW_ENTRIES, fairShare, Math.max(0, rowsRemaining))
+    const depdentBudget = Math.min(MAX_ROW_ENTRIES, fairShare, Math.max(0, rowsRemaining - depBudget))
     rowsRemaining -= depBudget + depdentBudget
     results.push({
       file: file.relativePath,
