@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "c8f508b4934bc0d9583407c6a267fb2027552f6db2f9d9907031192fc75d962e",
-    "sealedAt": "2026-11-18T23:15:32.000Z"
+    "contentSha256": "a287c2c29d70381dcd83dcd215e1b8e2a0558e581ed54f586f12b9bb1cea6901",
+    "sealedAt": "2026-11-21T04:33:10.000Z"
   },
   "checks": [
     {
@@ -91,13 +91,13 @@
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "34/34 fixtures pass",
+      "detail": "35/35 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "66/66 fixtures pass",
+      "detail": "76/76 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
@@ -115,7 +115,7 @@
     },
     {
       "description": "csharp adversarial fixtures",
-      "detail": "26/26 fixtures pass",
+      "detail": "27/27 fixtures pass",
       "id": "fixtures-csharp",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
-  "committedAt": "2026-11-18T18:15:32-05:00",
+  "commit": "ccff4e7e8a08ceb5e555fc7f44a20be154bf75fd",
+  "committedAt": "2026-11-20T23:33:10-05:00",
   "data": {
     "details": [
       {
@@ -5017,6 +5017,11 @@
         "problems": []
       },
       {
+        "fixture": "rust/renders-component-order",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/renders-component-tag",
         "ok": true,
         "problems": []
@@ -5122,6 +5127,11 @@
         "problems": []
       },
       {
+        "fixture": "python/conditional-import-rebinding",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/dataclass-decorator-binding",
         "ok": true,
         "problems": []
@@ -5167,6 +5177,16 @@
         "problems": []
       },
       {
+        "fixture": "python/duplicate-top-level-class-decorator",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/enum-member-parenthesized",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/external-callee-is-called",
         "ok": true,
         "problems": []
@@ -5183,6 +5203,11 @@
       },
       {
         "fixture": "python/framework-surface-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/from-import-alias-not-builtin",
         "ok": true,
         "problems": []
       },
@@ -5252,6 +5277,11 @@
         "problems": []
       },
       {
+        "fixture": "python/lambda-call-scope",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/lambda-scope-is-not-class-scope",
         "ok": true,
         "problems": []
@@ -5312,6 +5342,11 @@
         "problems": []
       },
       {
+        "fixture": "python/namespace-alias-interface",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/namespace-citation",
         "ok": true,
         "problems": []
@@ -5357,6 +5392,11 @@
         "problems": []
       },
       {
+        "fixture": "python/qualified-same-leaf-heritage",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/reference-binding-is-not-a-guess",
         "ok": true,
         "problems": []
@@ -5382,7 +5422,22 @@
         "problems": []
       },
       {
+        "fixture": "python/same-name-class-member-containment",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/same-name-class-scopes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/same-name-member-read",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/set-all-exports",
         "ok": true,
         "problems": []
       },
@@ -5763,6 +5818,11 @@
       },
       {
         "fixture": "csharp/declared-type-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "csharp/decorates-attribute",
         "ok": true,
         "problems": []
       },
@@ -9550,7 +9610,7 @@
       },
       "csharp": {
         "fail": 0,
-        "pass": 26
+        "pass": 27
       },
       "css": {
         "fail": 0,
@@ -9658,7 +9718,7 @@
       },
       "python": {
         "fail": 0,
-        "pass": 66
+        "pass": 76
       },
       "r": {
         "fail": 0,
@@ -9670,7 +9730,7 @@
       },
       "rust": {
         "fail": 0,
-        "pass": 34
+        "pass": 35
       },
       "scala": {
         "fail": 0,
@@ -9743,8 +9803,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-18T18:15:32-05:00",
-  "regeneratedAtCommit": "75448b02991e6f6f5b1dfa0630b4e07c06436109",
+  "regeneratedAt": "2026-11-20T23:33:10-05:00",
+  "regeneratedAtCommit": "ccff4e7e8a08ceb5e555fc7f44a20be154bf75fd",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
