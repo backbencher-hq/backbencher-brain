@@ -407,6 +407,12 @@ export interface ParallelIndexingStats {
   timeoutFiles: number
   errorFiles: number
   skippedFiles: number
+  /** Files that were ALREADY indexed and whose mtime+size did not change, so the
+   *  incremental run did not re-parse them. NOT a deliberate skip: these files
+   *  are in the index. Kept apart from `skippedFiles` because health printed one
+   *  number for both and then reported "skippedFiles=1973" beside "1 file was
+   *  skipped" — the same counter answering two different questions. */
+  unchangedFiles: number
   symbolsExtracted: number
   relationshipsFound: number
   importsFound: number
@@ -876,7 +882,7 @@ export async function discoverIndexableFiles(
   excludePatterns?: string[],
 ): Promise<string[]> {
   const throwaway = {
-    totalFiles: 0, processedFiles: 0, skippedFiles: 0, failedFiles: 0,
+    totalFiles: 0, processedFiles: 0, skippedFiles: 0, unchangedFiles: 0, failedFiles: 0,
     totalSymbols: 0, totalRelationships: 0, workerBatchSize: 0, dbBatchSize: 0,
     retries: 0, noop: false,
   } as unknown as ParallelIndexingStats
@@ -1045,7 +1051,8 @@ async function discoverAndFilterFiles(
       const mtimeMs = Math.floor(fileStat.mtimeMs)
 
       if (existing && Math.floor(existing.mtime) === mtimeMs && existing.size === fileStat.size) {
-        stats.skippedFiles++
+        // Unchanged, still in the index. NOT a skip: the file is covered.
+        stats.unchangedFiles++
       } else {
         files.push(fullPath)
       }
@@ -1279,6 +1286,7 @@ async function discoverAndFilterFiles(
   log.debug("file discovery and incremental check complete", {
     filesToIndex: files.length,
     skippedFiles: stats.skippedFiles,
+    unchangedFiles: stats.unchangedFiles,
     durationMs: Date.now() - startTime,
   })
 
@@ -7682,6 +7690,7 @@ export async function indexProjectParallel(
     successFiles: 0,
     timeoutFiles: 0,
     errorFiles: 0,
+    unchangedFiles: 0,
     skippedFiles: 0,
     symbolsExtracted: 0,
     relationshipsFound: 0,
@@ -7762,7 +7771,7 @@ export async function indexProjectParallel(
     }
 
     // const files = await discoverAndFilterFiles(projectId, projectPath, stats, options.files)
-    stats.totalFiles = files.length + stats.skippedFiles
+    stats.totalFiles = files.length + stats.skippedFiles + stats.unchangedFiles
     phases.parsedFiles = files.length
 
     // Publish the discovered corpus BEFORE the worker probe. The renderer prints
@@ -7793,7 +7802,7 @@ export async function indexProjectParallel(
       stats.symbolsExtracted = dbStats.symbols
       stats.relationshipsFound = dbStats.relationships
       stats.endTime = Date.now()
-      stats.processedFiles = stats.skippedFiles
+      stats.processedFiles = stats.skippedFiles + stats.unchangedFiles
       phases.finalAccountingMs = Date.now() - discoveryStart - phases.discoveryMs
       phases.totalWallMs = Date.now() - stats.startTime
 
@@ -7802,7 +7811,7 @@ export async function indexProjectParallel(
       stats.summary = {
         totalCandidates: stats.totalFiles,
         newlyParsed: 0,
-        unchanged: stats.skippedFiles,
+        unchanged: stats.unchangedFiles,
         skipped: 0,
         symbolLoss: 0,
         errors: 0,
@@ -7884,7 +7893,7 @@ export async function indexProjectParallel(
               mode: "worker-pool",
               noop: true,
               phases: { discoveryMs: phases.discoveryMs, workerStartupMs: 0, parseMs: 0, dbFlushMs: 0, finalAccountingMs: phases.finalAccountingMs, totalWallMs: phases.totalWallMs, workerStartupFailures: 0, poisonFiles: 0 },
-              counts: { totalFiles: stats.totalFiles, processedFiles: stats.skippedFiles, successFiles: 0, timeoutFiles: 0, errorFiles: 0, skippedFiles: stats.skippedFiles, workerCount: 0, parsedFiles: 0, retries: 0 },
+              counts: { totalFiles: stats.totalFiles, processedFiles: stats.skippedFiles + stats.unchangedFiles, successFiles: 0, timeoutFiles: 0, errorFiles: 0, skippedFiles: stats.skippedFiles, unchangedFiles: stats.unchangedFiles, workerCount: 0, parsedFiles: 0, retries: 0 },
             },
           ],
         },
@@ -7900,6 +7909,7 @@ export async function indexProjectParallel(
           duration: stats.endTime - stats.startTime,
           filesPerSecond: 0,
           skippedFiles: stats.skippedFiles,
+          unchangedFiles: stats.unchangedFiles,
         },
       })
 
@@ -7997,7 +8007,7 @@ export async function indexProjectParallel(
       projectPath,
       files,
       (processed, total, file) => {
-        stats.processedFiles = processed + stats.skippedFiles
+        stats.processedFiles = processed + stats.skippedFiles + stats.unchangedFiles
 
       const now = Date.now()
       if (now - lastProgressUpdate > ParallelIndexerConfig.progressUpdateMs || processed === total) {

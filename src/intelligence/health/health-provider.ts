@@ -1332,6 +1332,12 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     }
   })()
   const runSkippedFiles = typeof perfCounters?.skippedFiles === "number" ? perfCounters.skippedFiles : null
+  // Files that were already indexed and unchanged. They are NOT skipped — the
+  // index covers them — but the counter once shared `skippedFiles` with the
+  // >5MB rule skip, so a run of 1,972 unchanged files beside one oversize file
+  // reported `skippedFiles=1973` next to "1 file was skipped". Two questions, one
+  // number. Now read separately and reported separately.
+  const runUnchangedFiles = typeof perfCounters?.unchangedFiles === "number" ? perfCounters.unchangedFiles : null
   const runErrorFiles = typeof perfCounters?.errorFiles === "number" ? perfCounters.errorFiles : null
   const completeness = deriveIndexCompleteness({
     recordPresent: statusRecordPresent,
@@ -1348,7 +1354,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     // skips the same file again. Report the cause and the real options.
     warnings.push({
       code: "SKIPPED_FILES",
-      message: `the last index run found ${indexShortfall.total} files and wrote ${indexShortfall.indexed}: ${indexShortfall.missing} file(s) were deliberately SKIPPED by indexing rules (skippedFiles=${runSkippedFiles}, errorFiles=${runErrorFiles}) — a file over the 5 MB size tier (>5MB) or an unchanged file on an incremental run. This is not a lost write, and a force=true rebuild will SKIP IT AGAIN. If such a file must be indexed, raise the size tier or split the file; otherwise the index correctly covers ${indexShortfall.indexed}/${indexShortfall.total} discovered files.`,
+      message: `the last index run found ${indexShortfall.total} files and wrote ${indexShortfall.indexed}: ${indexShortfall.missing} file(s) were deliberately SKIPPED by an indexing rule (skippedFiles=${runSkippedFiles}, errorFiles=${runErrorFiles}) — the size tier, for a file over 5 MB. This is not a lost write, and a force=true rebuild will SKIP IT AGAIN. If such a file must be indexed, raise the size tier or split the file. Separately, ${runUnchangedFiles ?? "an unknown number of"} file(s) were UNCHANGED and already in the index, which is why they are not in "wrote"; they are covered, not missing. The index correctly covers ${indexShortfall.indexed}/${indexShortfall.total} discovered files.`,
       severity: "warning",
     })
   } else if (indexShortfall) {
