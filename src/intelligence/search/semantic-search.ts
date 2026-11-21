@@ -53,10 +53,44 @@ declare module "../contracts" {
  *  (ordered by entity_id) and that fact is published in `scan.capped`. */
 export const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
 
-/** How much a query embedding may block the tool before the local fallback runs.
- *  The provider bound is 30 s by default; a read tool that answers in ~2 s cannot
- *  wait for it. The answer declares the bound that fired. */
+/** How much a query embedding may block the tool before the local fallback runs,
+ *  when the caller has NOT declared a wait of its own. The provider bound is 30 s
+ *  by default; a read tool that answers in ~2 s cannot wait for it. The answer
+ *  declares the bound that fired.
+ *
+ *  This is a DEFAULT, not a cap on the caller. An explicit
+ *  BB_EMBEDDING_TIMEOUT_MS is the caller stating how long it will wait, and it
+ *  wins — bounded by EMBEDDING_WAIT_HARD_MAX_MS so a typo cannot hang a tool call
+ *  for an hour. Before this was separated, `Math.min(providerBound, 2000)` made the
+ *  setting unraisable: BB_EMBEDDING_TIMEOUT_MS=15000 still waited 2000 ms and then
+ *  silently answered from the local 50-dimension space. */
 export const EMBEDDING_WAIT_CEILING_MS = 2000
+
+/** Hard ceiling an explicit BB_EMBEDDING_TIMEOUT_MS cannot exceed. Bounds a tool
+ *  call's worst case; high enough to let a slow-but-working provider answer. */
+export const EMBEDDING_WAIT_HARD_MAX_MS = 60_000
+
+/**
+ * The wall-clock bound one query embedding may use, in ms.
+ *
+ * Unset `BB_EMBEDDING_TIMEOUT_MS` → the read-tool default (2 s), because a tool
+ * that answers in ~2 s must not block for the provider's 30 s.
+ * EXPLICIT `BB_EMBEDDING_TIMEOUT_MS` → that value, capped at
+ * EMBEDDING_WAIT_HARD_MAX_MS (60 s). The caller has stated how long it will wait,
+ * so the read-tool default must not override it — the defect this replaces was
+ * `Math.min(providerBound, 2000)`, where 15000 silently became 2000 and the answer
+ * fell back to the 50-dimension local space without the caller being able to ask
+ * for more time.
+ *
+ * Exported so a gate can assert the arithmetic with a supplied env instead of
+ * depending on the ambient one.
+ */
+export function resolveEmbeddingWaitMs(env: Record<string, string | undefined>): number {
+  const fromEnv = Number(env.BB_EMBEDDING_TIMEOUT_MS)
+  const declared = Number.isFinite(fromEnv) && fromEnv > 0
+  if (declared) return Math.min(fromEnv, EMBEDDING_WAIT_HARD_MAX_MS)
+  return Math.min(30_000, EMBEDDING_WAIT_CEILING_MS)
+}
 
 /**
  * How close two scores must be for the ranking to be treated as unable to tell
@@ -263,11 +297,7 @@ export async function semanticVectorSearch(
     return unreadableResult(projectId, error?.message ?? String(error))
   }
 
-  const waitCeilingMs = (() => {
-    const fromEnv = Number(process.env.BB_EMBEDDING_TIMEOUT_MS)
-    const providerBound = Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : 30_000
-    return Math.min(providerBound, EMBEDDING_WAIT_CEILING_MS)
-  })()
+  const waitCeilingMs = resolveEmbeddingWaitMs(process.env)
 
   let queryVector: number[] = []
   let queryModel = "unknown"
@@ -478,6 +508,11 @@ export async function semanticVectorSearch(
       limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."],
       truncated: scan.capped,
       unknowns: [
+        ...(competitors > 0
+          ? [
+              `The ranking is not discriminative: ${competitors} other candidate(s) scored within ${NON_DISCRIMINATIVE_MARGIN} of the best (top score ${topScore.toFixed(4)}), so the scores separate these results by vocabulary rather than by anything about the question. This is reported instead of a confidence number because a number there would be false precision. Coverage is ${(comparison.comparableCoverage * 100).toFixed(1)}% in this comparison space — discrimination improves as coverage does, and the configured-model backfill is what raises it.`,
+            ]
+          : []),
         ...(embeddingBound?.timedOut
           ? [`The embedding provider did not answer within ${waitCeilingMs} ms; the question was embedded with the local word-vector model (${SemanticEngine.LOCAL_MODEL_LABEL}).`]
           : []),
