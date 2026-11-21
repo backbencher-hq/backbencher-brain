@@ -8,12 +8,12 @@
   "failed": 0,
   "negativeCases": 7,
   "negativePassed": 7,
-  "currentCommit": "14efb4fac143fb5f435e4b38f5617a180036028f",
-  "sourceFingerprint": "2fd9dd5bede06b1ba5d4d6652c44b568898021dfaff6c967b24ae536a181a26a",
+  "currentCommit": "ca77e6f555161186053861d176d8ba1f190af6a9",
+  "sourceFingerprint": "e59ad61e2e483adb5397285eeff2ed51cb3c0e4cd32c9b7f12fc6b382a12c16c",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m20/verify-security-history.ts",
   "evidenceFile": "S3.json",
-  "generatedAt": "2026-11-21T06:18:15.385Z",
+  "generatedAt": "2026-11-21T15:27:10.005Z",
   "skipped": [],
   "limitations": [
     "Deterministic fixture-level history matrix over the M72 store; real-repository history parity is covered by the m17 corpus verifiers.",
@@ -21,7 +21,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T06:18:15.386Z",
-    "contentSha256": "171aa591e897222da4ac883de00e37b97b4ddec53e4479dae5f3c59c1077c09e"
+    "sealedAt": "2026-11-21T15:27:10.005Z",
+    "contentSha256": "5708a6670a180a453ce662d387e3eda52565a0d30bd6c6b742a7d3a175a9c209"
   }
 }

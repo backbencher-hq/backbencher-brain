@@ -10,10 +10,10 @@
   "negatives": 1,
   "negativePassed": 1,
   "defect": "A3/A5",
-  "generatedAt": "2026-11-21T06:16:22.148Z",
+  "generatedAt": "2026-11-21T15:25:50.194Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T06:16:22.148Z",
-    "contentSha256": "2ca0fbfae3daab0a044b14fda7cd3024a8eeb40ad3743704dcbf3f7e5683a56a"
+    "sealedAt": "2026-11-21T15:25:50.195Z",
+    "contentSha256": "e08962f45e69172a1c04ce1fbbcf5fd243df21be30620083e1f7798d7e1dc0ac"
   }
 }
