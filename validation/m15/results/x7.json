@@ -3,18 +3,18 @@
   "code": "X7",
   "tool": "bb_security",
   "title": "non-TypeScript language coverage",
-  "verified": false,
+  "verified": true,
   "checks": 17,
   "passed": 17,
-  "failed": 1,
+  "failed": 0,
   "positives": 17,
   "negatives": 0,
   "negativePassed": 0,
   "skipped": [],
-  "generatedAt": "2026-11-21T04:13:43.593Z",
+  "generatedAt": "2026-11-21T04:19:12.116Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T04:13:43.593Z",
-    "contentSha256": "87c1f0ca7801a4591e365d39f9c176abad788285c03aa4fa99e91611d2ca0f2a"
+    "sealedAt": "2026-11-21T04:19:12.116Z",
+    "contentSha256": "b726e835a13151c6bf859673f00884d2afe4c33fcf37d0924b9de53099dc574b"
   }
 }

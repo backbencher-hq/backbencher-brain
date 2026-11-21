@@ -3,18 +3,18 @@
   "code": "X6",
   "tool": "bb_security",
   "title": "handler answer contract + docs honesty",
-  "verified": false,
+  "verified": true,
   "checks": 46,
-  "passed": 45,
-  "failed": 1,
-  "positives": 38,
+  "passed": 46,
+  "failed": 0,
+  "positives": 39,
   "negatives": 7,
   "negativePassed": 7,
   "skipped": [],
-  "generatedAt": "2026-11-21T04:13:28.536Z",
+  "generatedAt": "2026-11-21T04:18:58.636Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-21T04:13:28.536Z",
-    "contentSha256": "4b9c4a84a4a4a6f162250a68c062a98f3411cac0409355c35e199f77d1a16cfa"
+    "sealedAt": "2026-11-21T04:18:58.636Z",
+    "contentSha256": "1083bc328fdbef356e32cd69e5c368217a67218d467fc92d3d8a51e644b7a544"
   }
 }

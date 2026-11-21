@@ -67,7 +67,17 @@ function parseFirstLine(text: string): string {
 }
 
 function findTierLine(lines: string[]): string | null {
-  return lines.find((line) => line.startsWith("tiers: ")) ?? null
+  // The registry declaration's opening label changed when bettercap issue 12 was
+  // fixed: the old line said `tiers: 0 scan / 39 leads / …`, which read as a
+  // contradiction two lines above a body line saying `0 stored lead(s)` because
+  // the two numbers measure different things. The unit is now in the label —
+  // `tiers (analyzer registry census, project-independent): …` — and this finder
+  // still looked for the retired `tiers: ` prefix, so it returned null and the
+  // contract reported "missing/incorrect registry tier line" about an answer
+  // that carried the declaration byte-for-byte. Match the label, not one
+  // historical spelling of it; the exact-equality check against
+  // formatSecurityTierDeclaration() below is what pins the content.
+  return lines.find((line) => line.startsWith("tiers ") || line.startsWith("tiers:")) ?? null
 }
 
 function findLeadsLine(lines: string[]): string | null {
