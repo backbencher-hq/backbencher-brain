@@ -98,6 +98,9 @@ export interface UnifiedHealthReport {
     statusContradicted: boolean
     /** Last-run counters that explain a shortfall: deliberate skips vs parse/write errors. */
     runSkippedFiles: number | null
+    /** Files already indexed whose mtime+size did not change. NOT skipped, but also not
+     *  parsed this run — they explain a shortfall exactly as a deliberate skip does. */
+    runUnchangedFiles: number | null
     runErrorFiles: number | null
     /** Shortfall NOT explained by a deliberate skip — the population a rebuild can fix. */
     unexplainedShortfall: number
@@ -361,6 +364,9 @@ export interface IndexCompletenessInput {
   recordedTotal: number | null
   recordedIndexed: number | null
   runSkippedFiles: number | null
+  /** Files already indexed whose mtime+size did not change: not skipped, but not parsed
+   *  this run either, so they explain a shortfall exactly as a deliberate skip does. */
+  runUnchangedFiles?: number | null
   runErrorFiles: number | null
 }
 export interface IndexCompleteness {
@@ -380,7 +386,13 @@ export function deriveIndexCompleteness(input: IndexCompletenessInput): IndexCom
   const total = input.recordedTotal
   const indexed = input.recordedIndexed
   const shortfall = total !== null && indexed !== null && indexed < total ? total - indexed : 0
-  const skipCapacity = Math.max(0, input.runSkippedFiles ?? 0)
+  // A shortfall is EXPLAINED by a file the run deliberately skipped AND by a file it left
+  // alone because it was unchanged. 0.1.9 split `skippedFiles` from `unchangedFiles` so the
+  // health message could tell them apart — and this capacity still counted only the skip
+  // half, so every unchanged file became an "unexplained" shortfall and health derived
+  // `incomplete` while the run had recorded `complete`: exactly the contradiction the owner
+  // reported as "Index status still says incomplete vs recordedStatus=complete".
+  const skipCapacity = Math.max(0, (input.runSkippedFiles ?? 0) + (input.runUnchangedFiles ?? 0))
   const explainedBySkips = shortfall > 0 ? Math.min(shortfall, skipCapacity) : 0
   const unexplainedShortfall = Math.max(0, shortfall - explainedBySkips)
   const shortfallCause: IndexCompleteness["shortfallCause"] =
@@ -391,10 +403,22 @@ export function deriveIndexCompleteness(input: IndexCompletenessInput): IndexCom
         : explainedBySkips > 0
           ? "mixed"
           : "write-failure"
+  // ONLY AN UNEXPLAINED SHORTFALL MAKES THE INDEX INCOMPLETE.
+  //
+  // This keyed on the RAW shortfall, so a run whose gap was fully explained still derived
+  // `incomplete` — and because the run had recorded `complete` (nothing errored), health
+  // printed the two side by side and read as the tool contradicting itself. That is the
+  // owner's "Index status still says incomplete vs recordedStatus=complete": 1,972 parsed
+  // of 1,973 discovered, the one file UNCHANGED. An unchanged file and a deliberately
+  // skipped file are both files the index is correct NOT to contain this run, so neither
+  // can make the index's completeness claim false.
+  //
+  // `shortfall` and `explainedBySkips` still report the raw numbers, so the fact is not
+  // hidden — only the verdict changes.
   const derivedStatus: IndexCompleteness["derivedStatus"] =
-    shortfall > 0 ? "incomplete" : input.storedStatus === "partial" ? "partial" : "complete"
+    unexplainedShortfall > 0 ? "incomplete" : input.storedStatus === "partial" ? "partial" : "complete"
   const storedStatusContradicted =
-    shortfall > 0 && (input.storedStatus === "complete" || input.storedStatus === null)
+    unexplainedShortfall > 0 && (input.storedStatus === "complete" || input.storedStatus === null)
   return { derivedStatus, storedStatusContradicted, shortfall, explainedBySkips, unexplainedShortfall, shortfallCause }
 }
 
@@ -546,7 +570,7 @@ function emptyIndexReport(
   return {
     projectId, projectPath, timestamp: Date.now(),
     counts: { files: 0, symbols: 0, relationships: 0, imports: 0, syntaxErrors: 0 },
-    indexStatus: { lastFullIndex: null, lastIncrementalIndex: null, indexedFiles: null, totalFilesDiscovered: null, indexShortfall: 0, isIncomplete: false, indexingVersion: null, status: null, derivedStatus: "unrecorded", statusContradicted: false, runSkippedFiles: null, runErrorFiles: null, unexplainedShortfall: 0, shortfallCause: "unrecorded", errors: [], recordPresent: false },
+    indexStatus: { lastFullIndex: null, lastIncrementalIndex: null, indexedFiles: null, totalFilesDiscovered: null, indexShortfall: 0, isIncomplete: false, indexingVersion: null, status: null, derivedStatus: "unrecorded", statusContradicted: false, runSkippedFiles: null, runUnchangedFiles: null, runErrorFiles: null, unexplainedShortfall: 0, shortfallCause: "unrecorded", errors: [], recordPresent: false },
     performanceStats: { schemaVersion: null, runs: [], latestRun: null },
     freshness: {
       mode: "complete", requestedMode: options.freshness ?? "sampled",
@@ -1345,6 +1369,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     recordedTotal,
     recordedIndexed,
     runSkippedFiles,
+    runUnchangedFiles,
     runErrorFiles,
   })
   if (indexShortfall && completeness.shortfallCause === "deliberate-skip") {
@@ -1460,6 +1485,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       // branch on this without parsing a warning message.
       totalFilesDiscovered: recordedTotal,
       indexShortfall: indexShortfall ? indexShortfall.missing : 0,
+      runUnchangedFiles,
       isIncomplete: indexShortfall !== null,
       indexingVersion: status?.indexing_version ?? null,
       status: status?.status ?? null,
