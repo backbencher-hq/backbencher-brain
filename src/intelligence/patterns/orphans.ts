@@ -777,6 +777,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     manifestFile: 0,
     ruleNotRequested: 0,
     belowMinConfidence: 0,
+    usageUnresolved: 0,
   }
 
   // Path predicates are pure functions of the path; the scan evaluated them
@@ -913,6 +914,17 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     if (confidence > 0.7) confidence = 0.7
 
     if (confidence < minConfidence) { suppressed.belowMinConfidence++; continue }
+    // A symbol with usage rows the gate REFUSED is not dead code — it is code whose
+    // usage this analyzer cannot resolve. Reporting it as an orphan is the dangerous
+    // direction: an agent told "this is unreferenced" deletes live code, while a
+    // missed orphan merely leaves work on the table. Measured on 0.1.8: 32,806 usage
+    // rows were refused (32,503 of them low-confidence) while 4,570 symbols were
+    // still published as candidates, and the list included `jsOnEventFunc`,
+    // `jsRunFunc` and `jsEnvFunc` — all live, all registered dynamically.
+    //
+    // They are suppressed here and COUNTED, so the gap is a declared number instead
+    // of a false accusation.
+    if (rejectedFor.has(sym.id)) { suppressed.usageUnresolved++; continue }
     // The coverage-gap indicator: this symbol has NO incoming row of any kind,
     // while its file has some. Computed from the raw table rather than from
     // usedIds, because usedIds holds only what survived the gate — a symbol the
