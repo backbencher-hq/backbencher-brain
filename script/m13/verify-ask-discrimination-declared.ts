@@ -40,6 +40,15 @@ check("it reports the coverage that limits discrimination", /Coverage is \$\{/.t
 check("it points at the backfill as the remedy", /backfill is what raises it/.test(src))
 check("the disclosure is conditional — a discriminative answer stays clean", /competitors > 0\s*\n?\s*\?/.test(src))
 
+// ── a provider-limited backfill is named as the cause, not implied ──────────
+// Reported on 0.1.9: "bb_ask ranking still non-discriminative; coverage is
+// provider-limited." Telling a rate-limited user to "run the backfill" is useless advice,
+// and a coverage-caused ranking failure is not a scoring defect. The answer says which.
+check("the disclosure distinguishes a PROVIDER-LIMITED backfill", /PROVIDER-LIMITED/.test(src))
+check("it says the limit is quota, not the scoring", /supply problem, not a ranking problem/.test(src))
+check("it does not promise the scoring can fix it", /no change to the scoring would make these vectors more separable/.test(src))
+check("the condition is detected from the recorded provider error", /rate\.\?limit|429|quota/i.test(src) && /lastEmbeddingError/.test(src))
+
 // ── totalMatches is honestly a candidate bound, not a result count ──────────
 check("the bounds line labels totalMatches explicitly", /totalMatches=\$\{total\}/.test(handler))
 check("it names returned separately from total", /returned=\$\{bounds\.returned\}/.test(handler))

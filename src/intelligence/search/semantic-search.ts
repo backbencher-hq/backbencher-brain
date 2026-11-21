@@ -496,6 +496,11 @@ export async function semanticVectorSearch(
   const rankedScores = ranked.map((r) => r.similarity)
   const topScore = rankedScores[0]
   const competitors = rankedScores.filter((s) => s >= topScore - NON_DISCRIMINATIVE_MARGIN).length - 1
+  // Is coverage stuck because the PROVIDER is rate-limited? The owner's key is, and the
+  // difference matters to the reader: "run the backfill" is useless advice against a daily
+  // quota, and a non-discriminative ranking caused by coverage is not a scoring defect.
+  const lastEmbeddingError = SemanticEngine.lastEmbeddingError()
+  const providerLimited = typeof lastEmbeddingError === "string" && /rate.?limit|429|quota/i.test(lastEmbeddingError)
 
   return {
     results,
@@ -510,7 +515,7 @@ export async function semanticVectorSearch(
       unknowns: [
         ...(competitors > 0
           ? [
-              `The ranking is not discriminative: ${competitors} other candidate(s) scored within ${NON_DISCRIMINATIVE_MARGIN} of the best (top score ${topScore.toFixed(4)}), so the scores separate these results by vocabulary rather than by anything about the question. This is reported instead of a confidence number because a number there would be false precision. Coverage is ${(comparison.comparableCoverage * 100).toFixed(1)}% in this comparison space — discrimination improves as coverage does, and the configured-model backfill is what raises it.`,
+              `The ranking is not discriminative: ${competitors} other candidate(s) scored within ${NON_DISCRIMINATIVE_MARGIN} of the best (top score ${topScore.toFixed(4)}), so the scores separate these results by vocabulary rather than by anything about the question. This is reported instead of a confidence number because a number there would be false precision. Coverage is ${(comparison.comparableCoverage * 100).toFixed(1)}% in this comparison space — discrimination improves as coverage does, and the configured-model backfill is what raises it.${providerLimited ? " The backfill is currently PROVIDER-LIMITED: the last embedding attempt was rate-limited, so coverage cannot rise until the provider has quota again. This is a supply problem, not a ranking problem — no change to the scoring would make these vectors more separable." : ""}`,
             ]
           : []),
         ...(embeddingBound?.timedOut
