@@ -364,6 +364,7 @@ export async function getFileDependencies(
   >()
   for (const imp of allImports) {
     const external = !!imp.isExternal
+    let externalOverrideInternal = false
     if (external && !includeExternal) continue
     const importerLanguage = languageById.get(imp.fileId) ?? ""
     // Targets this specifier resolves to. A RELATIVE specifier names at most one file;
@@ -371,7 +372,12 @@ export async function getFileDependencies(
     // directory — the set is the honest unit, and each member gets its own edge.
     const resolvedTargets: string[] = []
     let resolution: Resolution = "unresolved"
-    if (!external) {
+    // An EXTERNAL row is normally not resolved locally. But a tsconfig-alias specifier was
+    // filed external by a version that did not understand aliases, and an unchanged file is
+    // never re-parsed — so that stale flag outlives the upgrade. Attempt resolution for any
+    // alias-shaped specifier and let the RESULT decide (see externalOverrideInternal below).
+    const aliasShaped = aliases.length > 0 && applyPathAliasCandidates(imp.importPath, aliases).length > 0
+    if (!external || aliasShaped) {
       let handledByLanguage = false
       if (importerLanguage === "go" && goModule) {
         // P1-1 PHASE 2 — Go module-path resolution. This engine's generic resolver
@@ -395,6 +401,15 @@ export async function getFileDependencies(
       }
       if (!handledByLanguage) {
         const resolved = resolveInternalSpecifier(fileById.get(imp.fileId) ?? "", imp.importPath, filesByPath, aliases)
+        // AN ALIAS THAT RESOLVES IS INTERNAL, whatever an OLDER RUN recorded.
+        //
+        // `is_external` is written at store time, so a row produced by a version that did
+        // not understand tsconfig paths still says "external" after an upgrade — and since an
+        // unchanged file is not re-parsed, that stale flag survives every incremental run.
+        // The resolution is computed HERE and now, so it decides: a specifier that resolves
+        // to a real project file is internal. (This is also why an upgrade + `bb index` on an
+        // unchanged project shows the fix immediately.)
+        if (resolved.fileId) externalOverrideInternal = true
         resolution = resolved.resolution
         const targetFileId = resolved.fileId === imp.fileId ? undefined : resolved.fileId
         if (targetFileId) resolvedTargets.push(targetFileId)
@@ -413,7 +428,8 @@ export async function getFileDependencies(
     // conflated "we tried and failed" with "outside the project" (the reported
     // contradiction). Go rows carry no resolution claim at all; the external flag is the
     // claim. Other languages keep their historical shape.
-    const reportResolution = external && importerLanguage === "go"
+    const reportedExternal = externalOverrideInternal ? false : external
+    const reportResolution = reportedExternal && importerLanguage === "go"
     const reportedPaths = resolvedTargets.length > 0
       ? resolvedTargets.map((id) => fileById.get(id) ?? imp.importPath)
       : [imp.importPath]
@@ -422,11 +438,12 @@ export async function getFileDependencies(
     // hide a real import.
     for (const reportedPath of reportedPaths) {
       const targetFileId = resolvedTargets.length > 0 && reportedPaths.length === 1 ? resolvedTargets[0] : resolvedTargets.find((id) => (fileById.get(id) ?? "") === reportedPath)
-      if (list.some((d) => d.path === reportedPath && d.external === external)) continue
+      const emittedExternal = externalOverrideInternal ? false : external
+      if (list.some((d) => d.path === reportedPath && d.external === emittedExternal)) continue
       list.push(
         reportResolution
-          ? { path: reportedPath, fileId: targetFileId, external, resolution: undefined }
-          : { path: reportedPath, fileId: targetFileId, external, resolution },
+          ? { path: reportedPath, fileId: targetFileId, external: emittedExternal, resolution: undefined }
+          : { path: reportedPath, fileId: targetFileId, external: emittedExternal, resolution },
       )
     }
   }

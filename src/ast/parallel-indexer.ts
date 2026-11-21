@@ -7885,6 +7885,34 @@ export async function indexProjectParallel(
   }
 
   try {
+    // PERSIST THE TSCONFIG PATH ALIASES ON EVERY RUN, before anything reads them.
+    //
+    // They were written only inside storeResults, which runs when files are actually
+    // (re)parsed. So upgrading 0.1.9 -> 0.2.0 and running `bb index` on an UNCHANGED project
+    // skipped every file, storeResults never ran, and `path_aliases` was never written — the
+    // alias fix silently did nothing on the exact project a user upgrades. Measured on a
+    // 0.1.9-built index: after upgrade + reindex the alias still read
+    // `{'path': '@/lib/util', 'external': True, 'resolution': 'unresolved'}`.
+    //
+    // Writing it here means any run, including a no-op, leaves the resolver the facts it
+    // needs. A project with no tsconfig writes nothing and nothing changes.
+    try {
+      const aliasesForRun = loadProjectPathAliases(projectPath)
+      if (aliasesForRun.length > 0) {
+        const metaDb = await BrainDatabase.getRawInstance(projectId)
+        metaDb
+          .prepare(
+            "INSERT INTO brain_project_meta (project_id, key, value, time_updated) VALUES (?, ?, ?, ?) " +
+              "ON CONFLICT(project_id, key) DO UPDATE SET value = excluded.value, time_updated = excluded.time_updated",
+          )
+          .run(projectId, "path_aliases", JSON.stringify(aliasesForRun), Date.now())
+      }
+    } catch (e: any) {
+      // Never fail an index run over an optional resolution hint; the unresolved-specifier
+      // count still declares the consequence.
+      log.debug("could not persist tsconfig path aliases", { error: e?.message })
+    }
+
     const discoveryStart = Date.now()
     const files = options.skipDiscovery && options.files
       ? options.files.filter(f => !shouldSkipCli(f) && hasValidExtension(f))

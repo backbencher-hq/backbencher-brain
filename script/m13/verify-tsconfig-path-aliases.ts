@@ -124,6 +124,33 @@ if (page) {
 }
 
 rmSync(SCRATCH, { recursive: true, force: true })
+// ── THE UPGRADE PATH: an EXISTING index must pick up aliases ────────────────
+// Found by actually upgrading a 0.1.9 install: aliases were persisted only inside
+// storeResults, which runs when files are (re)parsed. Upgrading and running `bb index` on an
+// UNCHANGED project skips every file, so the aliases were never written and the fix did
+// nothing — on the exact project a user upgrades. The stored `is_external` flag from the old
+// run then kept the import marked external too.
+{
+  const UP = path.join(SCRATCH, "upgrade")
+  mkdirSync(path.join(UP, "src", "lib"), { recursive: true })
+  mkdirSync(path.join(UP, "src", "app"), { recursive: true })
+  writeFileSync(path.join(UP, "package.json"), '{"name":"upgrade-shape","version":"1.0.0"}\n')
+  writeFileSync(path.join(UP, "src", "lib", "util.ts"), "export function helper(): number { return 9 }\n")
+  writeFileSync(path.join(UP, "src", "app", "page.ts"), 'import { helper } from "@/lib/util"\nexport const v = helper()\n')
+  const upId = getProjectId(UP)
+  await indexProjectParallel(upId, UP, {})
+  const before = (await getFileDependencies(upId as any, { filePath: "src/app/page.ts" })).find((r) => r.file === "src/app/page.ts")
+  check("before the tsconfig exists the alias is unresolved (the 0.1.9 shape)", before?.dependencies[0]?.resolution === "unresolved", JSON.stringify(before?.dependencies[0]))
+  check("and the row is marked external (the stale flag)", before?.dependencies[0]?.external !== false, JSON.stringify(before?.dependencies[0]))
+
+  writeFileSync(path.join(UP, "tsconfig.json"), '{"compilerOptions":{"baseUrl":".","paths":{"@/*":["./src/*"]}}}\n')
+  await indexProjectParallel(upId, UP, {})
+  const after = (await getFileDependencies(upId as any, { filePath: "src/app/page.ts" })).find((r) => r.file === "src/app/page.ts")
+  check("THE UPGRADE DEFECT: a re-index with NO file changes picks up the alias", after?.dependencies[0]?.resolution === "resolved", JSON.stringify(after?.dependencies[0]))
+  check("and the stale external flag no longer wins", after?.dependencies[0]?.external === false, JSON.stringify(after?.dependencies[0]))
+  check("resolving to the real file", after?.dependencies[0]?.path === "src/lib/util.ts", String(after?.dependencies[0]?.path))
+}
+
 console.log(`\n${checks - failures}/${checks} passed`)
 console.log(failures === 0 ? "TS PATH ALIASES: PASS" : `TS PATH ALIASES: FAIL (${failures})`)
 process.exit(failures === 0 ? 0 : 1)
