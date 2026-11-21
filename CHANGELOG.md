@@ -1,5 +1,84 @@
 # Changelog
 
+## 0.1.9 — the tool stops asserting what it cannot see
+
+Ten defects reported after 0.1.8, fixed across three tiers. The unifying theme is
+the one the external review named: a tool that states more than it can substantiate
+is worse than a smaller honest one. Every fix below is pinned by a gate, and where
+the defect was reproducible the gate was proven RED against the old code first.
+
+### Embeddings — the reason coverage sat at 20.7%
+
+- **A content-safety refusal no longer stalls the backfill.** A 422 rejects the
+  whole *request* although the fault is one input, so one snippet failed its batch —
+  and because that snippet sat in every retry of that batch, the run made no further
+  progress: measured as "embedded 950 symbols, then stopped with 44,250 still
+  pending". The reconcile path now bisects on a 422, isolates the refused text and
+  embeds everything else. Refusals are counted in a new `rejected` counter, distinct
+  from `failed` (provider down) and `invalid` (malformed response). A 429 is
+  deliberately NOT treated as per-item: permanently skipping good text would hide an
+  outage.
+- **`BB_EMBEDDING_TIMEOUT_MS` now raises the wait ceiling.** It was
+  `min(providerBound, 2000)`, so the 2 s read-tool default was also a hard cap and
+  `15000` still waited 2000 ms, then silently answered from the 50-dimension local
+  space. Unset keeps the fast default; an explicit value wins (capped at 60 s).
+- **Health and doctor agree on BACKFILL PENDING.** One boolean answered two
+  questions: "may a vector answer be presented as the configured space?" (the 5%
+  floor) and "is the backfill finished?". At 20.7% coverage with 43,000 symbols still
+  missing, the floor said nothing was pending while doctor promised health would
+  report it. The two are now separate. Health's last-run count also carries its
+  timestamp and the live coverage beside it, so a stale persisted number cannot read
+  as current.
+
+### Honest counts
+
+- **Unchanged files are no longer counted as skipped files.** `skippedFiles`
+  incremented for both a >5 MB rule skip and an unchanged file, so a 1,973-file
+  incremental run reported `skippedFiles=1973` beside the honest count of one. Now
+  split, with both in the denominator and both in the health message.
+- **Dependency pages are bounded by rows and exclude test files.** `limit` bounded
+  file rows while each row could carry 100 dependencies plus 100 dependents, so a
+  page could reach ~10,000 entries (measured: 10,923 lines before host truncation).
+  A page row budget now bounds the whole answer; `_test.go` files are filtered,
+  counted in `testFilesExcluded`, and restorable with `includeTests: true`.
+- **Test mapping no longer spends its link cap on duplicates.** The same test could
+  occupy many of the 20 slots through repeated stored edges: 16 repeats of
+  `TestModuleParamValidate:107` read as sixteen tests. Links are folded to one per
+  (symbol, test), strongest evidence wins, and the fold is counted.
+
+### Refusing to accuse
+
+- **Cross-language facts exclude minified assets and name-only collisions.** A row
+  into `openlayers/ol.js` matched identifiers a minifier had minted (`N`, `to`,
+  `r`) — a coincidence of the alphabet, not a bridge. 110 of 122 edges were that
+  shape, and `bb_cross_language N` alone reported 85. Both classes are refused and
+  counted (`excludedAssetRowCount`, `nameOnlyCandidateCount`).
+- **A symbol with refused usage evidence is unresolved, not dead.** Orphan detection
+  published 4,570 candidates, including live dynamically-registered functions, beside
+  a "REFUSED EVIDENCE" note. A false orphan is dangerous — an agent deletes live
+  code — so such symbols are now suppressed as `usageUnresolved` and counted. The
+  analyzer's inability to see dynamic registration is still a declared limit; what
+  changed is that the tool no longer asserts death where it merely lacks evidence.
+- **A dialect the grammar cannot parse is declared, not called a file error.**
+  `.less` and `.sass` route to the CSS grammar, which has no `@variable`, mixin
+  guards or indentation, so it warned about correct constructs — reported to the user
+  as "24 Font Awesome LESS/SCSS syntax errors". Those are now counted as declared
+  dialect limits, with the raw warnings still stored.
+
+### bb_ask
+
+- A non-discriminative ranking now explains itself — how many candidates sit inside
+  the margin, the margin, the top score, the coverage that limits it, and that the
+  configured-model backfill is what raises it — instead of only withholding a number.
+  `totalMatches` beside `limit` remains the candidate bound, already labelled.
+
+Verified before tagging: `npm test` (15/15, 21/21), `verify:fast` (22 gates, exit 0),
+the full fixture corpus (all pass), `tsc --noEmit`, `npm run build`, and the ten new
+gates. One regression was caught by `npm test` during this work — the first cut of
+the content-safety fix routed the whole reconcile pass through the new path and
+bypassed its rate-limit circuit breaker — and was fixed before release rather than
+after.
+
 ## 0.1.8 — hotfix: an existing index is indexable again
 
 Fixes a P0 that shipped in 0.1.7 and made every project with a pre-existing index
