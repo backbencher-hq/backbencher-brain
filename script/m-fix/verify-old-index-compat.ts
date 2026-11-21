@@ -237,6 +237,60 @@ async function main(): Promise<void> {
   const controlGraph = await handlers.bb_graph!({ symbol: "hub" }, { projectId: controlId, projectPath: controlSource })
   check("control: current-schema DB answers bb_graph", controlGraph?.isError !== true, String(controlGraph?.content?.[0]?.text ?? "").slice(0, 200))
 
+  // ── upgrade: a DB whose brain_project_meta was never created must still index ──
+  //
+  // REGRESSION THIS PINS (shipped in 0.1.7, reported by the owner):
+  //   storeResults failed {"error":"no such table: brain_project_meta"}
+  //   a batch failed to store, some files may be missing from DB
+  // The Go module-identity read in parallel-indexer.ts reads brain_project_meta.
+  // The fresh-database path created that table; the EXISTING-database open path
+  // (src/brain/database.ts) never called ensureProjectMetaTable, so every index
+  // built by an earlier bb lacked it and the storeResults batch threw. Nothing in
+  // gate_order exercised "index created by the previous version, then indexed
+  // again", which is why a green suite shipped it.
+  //
+  // The check is deliberately functional: build the DB, DROP the table to stand in
+  // for a pre-0.1.7 index, re-open (the migration), add a file, re-index, and
+  // require the new symbol to exist. A log-scrape would pass on a swallowed error.
+  {
+    const upgradeSource = path.join(SCRATCH, "upgrade-src")
+    const upgradeData = path.join(SCRATCH, "upgrade-data")
+    mkdirSync(upgradeSource, { recursive: true })
+    writeFileSync(path.join(upgradeSource, "go.mod"), "module example.com/up\n\ngo 1.21\n")
+    writeFileSync(path.join(upgradeSource, "main.go"), "package main\n\nfunc main() {}\n")
+    const upgradeId = getProjectId(upgradeSource)
+    process.env.BB_DATA_DIR = upgradeData
+    await indexProjectParallel(upgradeId, upgradeSource, {})
+    const upgradeMod = await dbModule()
+    const beforeDrop = await upgradeMod.BrainDatabase.getRawInstance(upgradeId)
+    beforeDrop.exec("DROP TABLE IF EXISTS brain_project_meta")
+    upgradeMod.BrainDatabase.close(upgradeId)
+    const afterDrop = await upgradeMod.BrainDatabase.getRawInstance(upgradeId, { readonly: true })
+    const droppedCount = afterDrop.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_project_meta'").all().length
+    check("upgrade: fixture really lost brain_project_meta (the pre-0.1.7 shape)", droppedCount === 0)
+    upgradeMod.BrainDatabase.close(upgradeId)
+
+    writeFileSync(path.join(upgradeSource, "extra.go"), "package main\n\nfunc helper() int { return 1 }\n")
+    let indexThrew: unknown = null
+    try {
+      await indexProjectParallel(upgradeId, upgradeSource, {})
+    } catch (error) {
+      indexThrew = error
+    }
+    check("upgrade: indexing a pre-0.1.7 DB does not throw", indexThrew === null, String(indexThrew ?? ""))
+
+    const healed = await upgradeMod.BrainDatabase.getRawInstance(upgradeId, { readonly: true })
+    const healedTable = healed.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='brain_project_meta'").all().length
+    check("upgrade: the write-path open creates brain_project_meta", healedTable === 1)
+    const stored = healed.prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE name = 'helper'").get() as { c: number }
+    check(
+      "upgrade: the newly indexed symbol reached the DB (no failed storeResults batch)",
+      stored.c >= 1,
+      `helper rows=${stored.c}`,
+    )
+    upgradeMod.BrainDatabase.close(upgradeId)
+  }
+
   // ── v(N-1) fixture: the real 2026-10-17 index (or a synthetic strip) ───────────
   let oldId: string
   let oldProjectPath: string

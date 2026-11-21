@@ -12,7 +12,7 @@ import * as BrainSchema from "./brain.sql"
 // of the other -- dropping either would leave a column/index unensured at open.
 //   local:  ensureSymbolSupertypesColumn   (symbol.supertypes)
 //   remote: ensureSymbolSourceTextColumn, ensureQueryShapeIndexes
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn, ensureRelationshipEvidenceClassColumn, ensureSecurityFlowTable, SCHEMA_VERSION, SCHEMA_MIGRATION_NAME } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSupertypesColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes, ensureRelationshipTargetBasisColumn, ensureRelationshipEvidenceClassColumn, ensureSecurityFlowTable, ensureProjectMetaTable, SCHEMA_VERSION, SCHEMA_MIGRATION_NAME } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -248,6 +248,15 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // M28.A1: the annotation store must exist on pre-existing DBs too
       // (additive, idempotent) — bb_annotate writes where every editor reads.
       ensureAnnotationTable(raw)
+      // P1-1 phase 2: project-scoped identity metadata (`go_module_path`,
+      // `go_module_dir`, `last_embed_outcome`). The fresh-database path has
+      // created this table since it was introduced, but THIS path — the one every
+      // pre-existing index takes when it is opened — never did, so an index built
+      // by an earlier version had no `brain_project_meta` and the Go module
+      // identity read threw `no such table`, which failed the whole storeResults
+      // batch and left files missing from the DB. Additive and idempotent, so
+      // conforming databases pay one `CREATE TABLE IF NOT EXISTS`.
+      ensureProjectMetaTable(raw)
       // M50.A2 (#764): dense-vector accelerator column for semantic reads.
       // Additive metadata-only ALTER (O(1)); reads without it fall back to the
       // JSON column, so an old DB behaves exactly as before until it is filled.
