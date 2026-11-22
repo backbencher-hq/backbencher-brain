@@ -2,20 +2,18 @@
   "issue": "M20.S3",
   "code": "S3",
   "milestone": "M20",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 39,
   "passed": 39,
   "failed": 0,
   "negativeCases": 7,
   "negativePassed": 7,
-  "currentCommit": "982e2b5262e6f0f1c94c75e7a4e53d360de077af",
+  "currentCommit": "70837e1f93c8b0f04e03a9bedf49ee2e9824408e",
   "sourceFingerprint": "8534e25e33042c05a8b7dc88c003b7c65cc8d434086575119bf2d39d7694edc9",
-  "workingTreeRelevantChanges": [
-    "src/ast/parallel-indexer.ts"
-  ],
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m20/verify-security-history.ts",
   "evidenceFile": "S3.json",
-  "generatedAt": "2026-11-22T01:15:13.311Z",
+  "generatedAt": "2026-11-22T01:45:02.608Z",
   "skipped": [],
   "limitations": [
     "Deterministic fixture-level history matrix over the M72 store; real-repository history parity is covered by the m17 corpus verifiers.",
@@ -23,7 +21,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-22T01:15:13.312Z",
-    "contentSha256": "382527ea051d37cc86c6ffba11cc26450734d13abd6bf453742125f76d4e3f79"
+    "sealedAt": "2026-11-22T01:45:02.608Z",
+    "contentSha256": "ff3b93828edd207aff5d08c3067b5577a56dc009f385ed18ae93fee38286de67"
   }
 }

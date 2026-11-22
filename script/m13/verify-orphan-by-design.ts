@@ -66,6 +66,19 @@ for (const [file, lang] of [
   check("it runs before the candidate is pushed", src.indexOf("isUnreferencableByDesign(sym.file") < src.indexOf("candidates.push({ conf: confidence"))
 }
 
+// ── the FILE-level rule must honour the same policy ─────────────────────────
+//
+// Caught on the PUBLISHED 0.2.0: src/polyfills.ts was suppressed as symbols and still reported
+// as `orphaned_file`, because a side-effect file has no referencing symbol AND no importing
+// module — the file rule fired with nothing left to contradict it.
+{
+  const src = readFileSync(path.join(ROOT, "src/intelligence/patterns/orphans.ts"), "utf8")
+  const i = src.indexOf("if (rules.has(\"orphaned_file\"))")
+  const block = i === -1 ? "" : src.slice(i, i + 2500)
+  check("THE FILE-LEVEL DEFECT: the orphaned_file rule consults the by-design policy", /isUnreferencableByDesign\(file\.relativePath, file\.language\)/.test(block))
+  check("and it COUNTS the suppression", /suppressed\.unreferencableByDesign\+\+/.test(block))
+}
+
 console.log(`\n${checks - failures}/${checks} passed`)
 console.log(failures === 0 ? "ORPHAN BY-DESIGN: PASS" : `ORPHAN BY-DESIGN: FAIL (${failures})`)
 process.exit(failures === 0 ? 0 : 1)

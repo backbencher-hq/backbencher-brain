@@ -26,7 +26,18 @@ real feature:
   · `.tsx` → `.ts` must NOT be cross-language;
   · `.ts` → `.js` must STILL be cross-language.
 
-Gate `script/m13/verify-cross-language-family.ts`, 8/8 PASS.
+### Orphans: the FILE rule honours the same policy
+
+Also caught by verifying the published build: `src/polyfills.ts` was correctly suppressed as
+SYMBOLS and still reported as `orphaned_file`. A side-effect file has no referencing symbol and
+no importing module, so the file rule fired with nothing left to contradict it. The
+`orphaned_file` path now consults the same by-design policy and COUNTS the suppression
+(`suppressedByReason.unreferencableByDesign`). On the fixture the published build reported
+`unusedFn` + `polyfills.ts`; this build reports only `unusedFn`, with
+`unreferencableByDesign=3` disclosed.
+
+Gate `script/m13/verify-cross-language-family.ts`, 8/8 PASS; `verify-orphan-by-design.ts`, 22/22
+PASS.
 
 Verified before tagging: `tsc` clean, `build` clean, `npm test` 15/15 + 21/21, `verify:fast`
 22 gates exit 0, and the cross-language, alias, exit-guard, status and dependency gates all

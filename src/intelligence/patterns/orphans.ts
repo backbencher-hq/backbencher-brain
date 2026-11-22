@@ -979,6 +979,15 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       if (!includeTests && isTestFile(file.relativePath)) continue
       if (isNoiseFile(file.relativePath)) continue
       if (isManifestFile(file.relativePath)) { suppressed.manifestFile++; continue }
+      // The SAME by-design rule that suppresses a symbol must suppress its FILE. Verification
+      // on the published 0.2.0 caught this: src/polyfills.ts was still reported as
+      // `orphaned_file` even though its symbols were correctly suppressed — a file that is
+      // loaded for its side effect has no referencing symbol AND no importing module, so the
+      // file rule fired with nothing left to contradict it.
+      if (isUnreferencableByDesign(file.relativePath, file.language)) {
+        suppressed.unreferencableByDesign++
+        continue
+      }
       const stem = stemOf(file.relativePath)
       if (ENTRY_POINT_FILE_STEMS.has(stem.toLowerCase())) continue
       fileScope.add(file.id)
