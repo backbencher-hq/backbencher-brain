@@ -29,11 +29,11 @@
       "detail": "caught"
     }
   ],
-  "currentCommit": "fb8c3e76371cb93378a76755873b919671c5af65",
+  "currentCommit": "982e2b5262e6f0f1c94c75e7a4e53d360de077af",
   "sourceFingerprint": "fcad2d2500856ff99a935d01b0be22152797e4ac05701db51a43c2883db79849",
   "verifierCommand": "npx tsx script/m30/verify-rate-limit.ts",
   "evidenceFile": "Q1.json",
-  "generatedAt": "2026-11-21T22:54:27.586Z",
+  "generatedAt": "2026-11-22T01:03:47.008Z",
   "limitations": [
     "Backoff timing is tested with a 2.2s sleep against Retry-After: 1; jitter (<=500ms) is bounded and the window math is declared (cap 30s).",
     "The verifier proves the quality cliff is fixed (batch degrades, run continues), not wall-clock index time; 429 storms still slow indexing by design.",

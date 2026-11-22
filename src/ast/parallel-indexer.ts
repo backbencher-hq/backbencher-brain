@@ -3855,7 +3855,7 @@ export function applyP02BindingGates(
          JOIN brain_file tf ON tf.id = ts.file_id
          WHERE ss.id = brain_relationship.source_symbol_id
            AND COALESCE(sf.language, '') <> '' AND COALESCE(tf.language, '') <> ''
-           AND lower(sf.language) <> lower(tf.language))`,
+           AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF})`,
     // 4. `imports`/`calls`/`instantiates` never bind across languages except a
     //    DECLARED interop pair (java-scala, ts-js, …). For every other pair the
     //    binding is a name coincidence; leave it unresolved.
@@ -3871,7 +3871,7 @@ export function applyP02BindingGates(
          JOIN brain_file tf ON tf.id = ts.file_id
          WHERE ss.id = brain_relationship.source_symbol_id
            AND COALESCE(sf.language, '') <> '' AND COALESCE(tf.language, '') <> ''
-           AND lower(sf.language) <> lower(tf.language)
+           AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF}
            AND (lower(sf.language) || '|' || lower(tf.language)) NOT IN (${allowedPairs}))`,
   ]
   let unbound = 0
@@ -3917,7 +3917,7 @@ export function applyP02CrossLanguageDegrade(
         JOIN brain_file tf ON tf.id = ts.file_id
         WHERE ss.id = brain_relationship.source_symbol_id
           AND COALESCE(sf.language, '') <> '' AND COALESCE(tf.language, '') <> ''
-          AND lower(sf.language) <> lower(tf.language))
+          AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF})
   `)
   return { degraded: Number(result?.changes ?? 0) }
 }
@@ -6509,7 +6509,7 @@ export async function storeResults(
              WHERE ss.id = brain_relationship.source_symbol_id
                AND COALESCE(sf.language, '') <> ''
                AND COALESCE(tf.language, '') <> ''
-               AND lower(sf.language) <> lower(tf.language)
+               AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF}
            ) THEN 1 ELSE brain_relationship.is_cross_language END,
            bridge_mechanism = COALESCE(
              brain_relationship.bridge_mechanism,
@@ -6521,7 +6521,7 @@ export async function storeResults(
                WHERE ss.id = brain_relationship.source_symbol_id
                  AND COALESCE(sf.language, '') <> ''
                  AND COALESCE(tf.language, '') <> ''
-                 AND lower(sf.language) <> lower(tf.language)
+                 AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF}
              ) THEN 'name-resolution' ELSE NULL END
            )
            WHERE brain_relationship.project_id = '${projectId}'
@@ -7412,7 +7412,34 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
     // silently invisible to cross-language hover/graph. UPGRADE-ONLY: an
     // analyzer-declared flag is never downgraded; the bridge is filled only
     // when NULL.
+    // A CROSS-LANGUAGE EDGE CANNOT HAVE TWO ENDPOINTS IN THE SAME LANGUAGE FAMILY.
+    //
+    // Verification found a FRESH index of an all-TypeScript project still holding one row
+    // flagged cross-language: a `calls` edge page.tsx -> util.ts. The write-time refusal only
+    // covers name-resolution guesses; the deeper cause was that `.tsx` and `.ts` carry
+    // different grammar ids, so the label comparison said "different language". See
+    // LANG_FAMILY_SF.
+    //
+    // This is a data invariant rather than a heuristic, and it is idempotent: running it every
+    // index also CLEANS indexes written by earlier versions, which is what an upgrade needs.
     rawDb.run(`
+      UPDATE brain_relationship
+      SET is_cross_language = 0
+      WHERE project_id = '${projectId}'
+        AND is_cross_language = 1
+        AND target_symbol_id IS NOT NULL
+        AND source_symbol_id IS NOT NULL
+        AND COALESCE((SELECT ${LANG_FAMILY_SF} FROM brain_symbol ss JOIN brain_file sf ON sf.id = ss.file_id
+                       WHERE ss.id = brain_relationship.source_symbol_id), '') <> ''
+        AND COALESCE((SELECT ${LANG_FAMILY_TF} FROM brain_symbol ts JOIN brain_file tf ON tf.id = ts.file_id
+                       WHERE ts.id = brain_relationship.target_symbol_id), '') <> ''
+        AND (SELECT ${LANG_FAMILY_SF} FROM brain_symbol ss JOIN brain_file sf ON sf.id = ss.file_id
+              WHERE ss.id = brain_relationship.source_symbol_id)
+          = (SELECT ${LANG_FAMILY_TF} FROM brain_symbol ts JOIN brain_file tf ON tf.id = ts.file_id
+              WHERE ts.id = brain_relationship.target_symbol_id)
+    `)
+
+rawDb.run(`
       UPDATE brain_relationship
       SET is_cross_language = CASE WHEN EXISTS (
         SELECT 1 FROM brain_symbol ss
@@ -7422,7 +7449,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
         WHERE ss.id = brain_relationship.source_symbol_id
           AND COALESCE(sf.language, '') <> ''
           AND COALESCE(tf.language, '') <> ''
-          AND lower(sf.language) <> lower(tf.language)
+          AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF}
       ) THEN 1 ELSE brain_relationship.is_cross_language END,
       bridge_mechanism = COALESCE(
         brain_relationship.bridge_mechanism,
@@ -7434,7 +7461,7 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
           WHERE ss.id = brain_relationship.source_symbol_id
             AND COALESCE(sf.language, '') <> ''
             AND COALESCE(tf.language, '') <> ''
-            AND lower(sf.language) <> lower(tf.language)
+            AND ${LANG_FAMILY_SF} <> ${LANG_FAMILY_TF}
         ) THEN 'name-resolution' ELSE NULL END
       )
       WHERE brain_relationship.project_id = '${projectId}'
@@ -7661,6 +7688,23 @@ async function measureUnresolvedRelationships(projectId: ProjectID): Promise<num
   }
 }
 
+
+/**
+ * LANGUAGE FAMILY, as a SQL expression.
+ *
+ * `.tsx` has its OWN grammar id ("tsx") while `.ts` is "typescript", so comparing the raw
+ * labels said "different language" for two TypeScript files. Measured on a fresh index of an
+ * all-TypeScript project: one `calls` row from `src/app/dashboard/page.tsx` to
+ * `src/lib/util.ts` was stored as CROSS-LANGUAGE, and because that flag is a stored column
+ * every reader (bb_graph, bb_impact, bb_cross_language) reported it.
+ *
+ * Seven queries in this file decide "cross-language" by comparing language labels, and all
+ * seven were wrong the same way. The fix is at the comparison, NOT the stored value: "tsx",
+ * "ts" and "js" are real grammar ids used by the parsers, so rewriting them in brain_file
+ * would break the engine to fix a predicate.
+ */
+const LANG_FAMILY_SF = `CASE lower(sf.language) WHEN 'tsx' THEN 'typescript' WHEN 'jsx' THEN 'javascript' WHEN 'mts' THEN 'typescript' WHEN 'cts' THEN 'typescript' WHEN 'mjs' THEN 'javascript' WHEN 'cjs' THEN 'javascript' ELSE lower(sf.language) END`
+const LANG_FAMILY_TF = `CASE lower(tf.language) WHEN 'tsx' THEN 'typescript' WHEN 'jsx' THEN 'javascript' WHEN 'mts' THEN 'typescript' WHEN 'cts' THEN 'typescript' WHEN 'mjs' THEN 'javascript' WHEN 'cjs' THEN 'javascript' ELSE lower(tf.language) END`
 
 /**
  * Write-side receiver binding (P1-3 completion): a Go selector call

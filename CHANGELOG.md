@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.2.1 — cross-language stops flagging two TypeScript files as different languages
+
+Found by verifying the PUBLISHED 0.2.0, not by any gate, and it is exactly the class of defect
+0.2.0 was meant to end: a fresh index of an all-TypeScript project still held ONE row with
+`is_cross_language = 1` — a `calls` edge from `src/app/dashboard/page.tsx` to
+`src/lib/util.ts`. Both endpoints are TypeScript. Because the flag is a STORED COLUMN, every
+reader (`bb_graph`, `bb_impact`, `bb_cross_language`) reported a false cross-language edge, so
+the 0.2.0 write-time refusal was correct and still not sufficient.
+
+The cause was a LABEL comparison. `.tsx` has its own grammar id (`tsx`) while `.ts` is
+`typescript`, so the seven queries that ask "do these two endpoints have different languages?"
+answered YES for two TypeScript files. Every one of those seven was wrong the same way.
+
+The fix normalises the COMPARISON into language families — `tsx`≡`typescript`,
+`jsx`/`mjs`/`cjs`≡`javascript` — rather than rewriting the stored ids, because those are real
+grammar ids the parsers need. A post-pass also CLEARS a stored flag whose endpoints are in the
+same family, so an existing index is repaired by re-indexing rather than needing a rebuild.
+
+Deliberately NOT flattened: `typescript` and `javascript` stay different languages, because a
+`.ts` file calling into a `.js` file is a genuine cross-language edge. The gate pins both
+directions, since a fix that silenced the false row by flattening everything would delete a
+real feature:
+
+  · `.tsx` → `.ts` must NOT be cross-language;
+  · `.ts` → `.js` must STILL be cross-language.
+
+Gate `script/m13/verify-cross-language-family.ts`, 8/8 PASS.
+
+Verified before tagging: `tsc` clean, `build` clean, `npm test` 15/15 + 21/21, `verify:fast`
+22 gates exit 0, and the cross-language, alias, exit-guard, status and dependency gates all
+pass. On a fresh index of the all-TypeScript fixture: **0** cross-language rows; on the
+TS→JS fixture: the edge is still flagged.
+
 ## 0.2.0 — TypeScript resolves, the backfill finishes, and the exit is deterministic
 
 Eight defects reported after 0.1.9, each REPRODUCED before it was fixed and verified at the
