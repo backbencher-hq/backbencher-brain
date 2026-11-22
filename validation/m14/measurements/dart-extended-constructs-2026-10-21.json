@@ -1,0 +1,3986 @@
+{
+  "kind": "constructs",
+  "mergedFrom": [
+    ".tmp-release/dart-chunks/dart-http-0.json",
+    ".tmp-release/dart-chunks/dart-sdk-0.json",
+    ".tmp-release/dart-chunks/dart-sdk-10000.json",
+    ".tmp-release/dart-chunks/dart-sdk-12000.json",
+    ".tmp-release/dart-chunks/dart-sdk-14000.json",
+    ".tmp-release/dart-chunks/dart-sdk-16000.json",
+    ".tmp-release/dart-chunks/dart-sdk-18000.json",
+    ".tmp-release/dart-chunks/dart-sdk-20000.json",
+    ".tmp-release/dart-chunks/dart-sdk-2000.json",
+    ".tmp-release/dart-chunks/dart-sdk-22000.json",
+    ".tmp-release/dart-chunks/dart-sdk-24000.json",
+    ".tmp-release/dart-chunks/dart-sdk-4000.json",
+    ".tmp-release/dart-chunks/dart-sdk-6000.json",
+    ".tmp-release/dart-chunks/dart-sdk-8000.json",
+    ".tmp-release/dart-chunks/flutter-packages-0.json",
+    ".tmp-release/dart-chunks/flutter-packages-2000.json",
+    ".tmp-release/dart-chunks/flutter-packages-4000.json",
+    ".tmp-release/dart-chunks/nvim-treesitter-0.json",
+    ".tmp-release/dart-chunks/riverpod-0.json"
+  ],
+  "population": {
+    "files": 31388,
+    "parsed": 31388,
+    "failed": 0,
+    "repos": {
+      "dart-http": 333,
+      "dart-sdk": 25727,
+      "flutter-packages": 4028,
+      "nvim-treesitter": 5,
+      "riverpod": 1295
+    }
+  },
+  "renders": {
+    "buckets": {
+      "buildMethods": {
+        "rows": 4433,
+        "files": 1581
+      },
+      "buildReturnsCreation": {
+        "rows": 4022,
+        "files": 1414
+      },
+      "buildReturnsCall": {
+        "rows": 0,
+        "files": 0
+      },
+      "buildReturnsVariable": {
+        "rows": 39,
+        "files": 36
+      },
+      "buildReturnsOther": {
+        "rows": 372,
+        "files": 203
+      },
+      "buildNoBody": {
+        "rows": 0,
+        "files": 0
+      },
+      "renderHostCall": {
+        "rows": 0,
+        "files": 0
+      },
+      "typeArgCall": {
+        "rows": 4293,
+        "files": 694
+      },
+      "childNamedArg": {
+        "rows": 0,
+        "files": 0
+      },
+      "widgetBuildReturnsCreation": {
+        "rows": 3913,
+        "files": 1356
+      },
+      "widgetBuildReturnsComponent": {
+        "rows": 3738,
+        "files": 1326
+      },
+      "buildReturnTypes": {
+        "rows": 0,
+        "files": 0
+      },
+      "renderedNames": {
+        "rows": 0,
+        "files": 0
+      }
+    },
+    "buildReturnTypes": {
+      "Widget": 3999,
+      "CronetEngine": 2,
+      "UrlRequest": 1,
+      "DnsOptions$StaleDnsOptions": 1,
+      "DnsOptions": 1,
+      "CompletionSuggestion": 2,
+      "LibraryImportTable": 1,
+      "(none)": 23,
+      "RuleInfo": 1,
+      "ProgramInfo": 1,
+      "Uint8List": 1,
+      "T": 1,
+      "ir": 1,
+      "AnalysisOptionsImpl": 2,
+      "TypeImpl": 2,
+      "FeatureSetProvider": 1,
+      "PrimaryConstructorDeclarationImpl": 1,
+      "MixinDeclarationImpl": 1,
+      "ExtensionTypeDeclarationImpl": 1,
+      "ExtensionDeclarationImpl": 1,
+      "EnumDeclarationImpl": 1,
+      "ClassDeclarationImpl": 1,
+      "BlockDocDirective": 1,
+      "CommentImpl": 1,
+      "LibraryExportRequirements": 1,
+      "List": 4,
+      "_InfoUnit": 1,
+      "RecordTypeImpl": 1,
+      "Map": 2,
+      "ValueListenableBuilder": 1,
+      "HGraph": 3,
+      "ProgramSplitConstraints": 1,
+      "DartType": 12,
+      "Program": 4,
+      "Constant": 3,
+      "InternalVariable": 2,
+      "Class": 2,
+      "vm": 1,
+      "BrTableInfo": 1,
+      "String": 20,
+      "InternalFunctionParameter": 1,
+      "InternalCatchVariable": 1,
+      "InternalAnonymousMethodParameter": 1,
+      "Nullability": 1,
+      "ExtensionTypeMembersNode": 1,
+      "ClassHierarchyBuilder": 1,
+      "ExtensionTypeHierarchyNode": 1,
+      "ClassHierarchyNode": 1,
+      "ClassMembersBuilder": 1,
+      "ClassMembersNode": 1,
+      "Extension": 1,
+      "ast": 1,
+      "Typedef": 1,
+      "Future": 53,
+      "_i5": 1,
+      "_i2": 1,
+      "_i4": 1,
+      "int": 199,
+      "FutureOr": 21,
+      "Stream": 16,
+      "Raw": 4,
+      "Set": 3,
+      "ValueT": 2,
+      "AsyncValue": 2,
+      "StateT": 1,
+      "Factory": 1,
+      "InspectorSettings": 1,
+      "dynamic": 1,
+      "MyAsyncNotifier": 1,
+      "MyNotifier": 1,
+      "MyChangeNotifier": 1,
+      "SyncSelfNotifier": 1,
+      "MyStateNotifier": 1,
+      "Todo": 1
+    },
+    "renderedNames": {
+      "ListView": 68,
+      "Scaffold": 924,
+      "MaterialApp": 874,
+      "_build": 6,
+      "CupertinoApp": 120,
+      "DartCompletionSuggestion": 1,
+      "RuleInfo": 1,
+      "ir": 1,
+      "AnalysisOptionsImpl": 1,
+      "builder": 5,
+      "FeatureSetProvider": 1,
+      "PrimaryConstructorDeclarationImpl": 1,
+      "MixinDeclarationImpl": 1,
+      "ExtensionTypeDeclarationImpl": 1,
+      "ExtensionDeclarationImpl": 1,
+      "EnumDeclarationImpl": 1,
+      "ClassDeclarationImpl": 1,
+      "BlockDocDirective": 1,
+      "CommentImpl": 1,
+      "map": 1,
+      "_InfoUnit": 1,
+      "_type": 1,
+      "ValueListenableBuilder": 5,
+      "ProgramSplitConstraints": 1,
+      "_task": 1,
+      "reporter": 1,
+      "_builder": 2,
+      "Program": 4,
+      "_variable": 3,
+      "evaluator": 3,
+      "outputUnits": 1,
+      "BrTableInfo": 1,
+      "InvalidType": 1,
+      "VoidType": 1,
+      "ExtensionTypeMembersNode": 1,
+      "ExtensionTypeHierarchyNode": 1,
+      "ClassHierarchyNode": 1,
+      "ClassMembersNode": 1,
+      "Column": 824,
+      "CupertinoPageScaffold": 112,
+      "AlertDialog": 72,
+      "Padding": 86,
+      "Center": 86,
+      "BasePage": 46,
+      "Stack": 72,
+      "Container": 100,
+      "SizedBox": 88,
+      "Card": 24,
+      "MediaQuery": 26,
+      "DefaultTabController": 26,
+      "HomeScreen": 16,
+      "TextField": 16,
+      "Text": 104,
+      "ElevatedButton": 60,
+      "DecoratedBox": 12,
+      "Row": 38,
+      "_ClusteringBody": 12,
+      "AnimateCamera": 12,
+      "GroundOverlayBody": 12,
+      "NotificationListener": 14,
+      "MapIdBody": 12,
+      "MapUiBody": 12,
+      "MoveCamera": 12,
+      "MarkerIconsBody": 12,
+      "PlaceCircleBody": 12,
+      "PlacePolygonBody": 12,
+      "PlacePolylineBody": 12,
+      "ScrollingMapBody": 12,
+      "TileOverlayBody": 12,
+      "GoogleMapsFlutterPlatform": 12,
+      "Material": 40,
+      "Directionality": 30,
+      "RadioGroup": 10,
+      "MouseRegion": 14,
+      "MetaData": 12,
+      "GestureDetector": 30,
+      "TextButton": 16,
+      "ReorderableListView": 10,
+      "ListTile": 12,
+      "CupertinoTabScaffold": 8,
+      "ConstrainedBox": 18,
+      "SafeArea": 10,
+      "ColoredBox": 8,
+      "DetailsScreen": 8,
+      "Autocomplete": 8,
+      "TextFormField": 10,
+      "OutlinedButton": 8,
+      "LayoutBuilder": 16,
+      "DualTransitionBuilder": 12,
+      "Semantics": 64,
+      "Focus": 8,
+      "CupertinoScrollbar": 6,
+      "Icon": 18,
+      "AnimatedBuilder": 24,
+      "Screen": 6,
+      "FamilyScreen": 6,
+      "LoginScreen": 6,
+      "_AdvancedMarkerIconsBody": 6,
+      "_CollisionBehaviorPageBody": 6,
+      "_LiteModeBody": 6,
+      "_MapClickBody": 6,
+      "_MapCoordinatesBody": 6,
+      "_MarkerIconsBody": 6,
+      "_PlaceAdvancedMarkerBody": 6,
+      "_PlaceMarkerBody": 6,
+      "_SnapshotBody": 6,
+      "InkWell": 12,
+      "SingleChildScrollView": 24,
+      "SegmentedButton": 6,
+      "Stepper": 6,
+      "Tooltip": 10,
+      "widget": 17,
+      "OpenContainer": 4,
+      "SwitchListTile": 4,
+      "FadeTransition": 10,
+      "FutureBuilder": 14,
+      "CustomPaint": 16,
+      "CupertinoButton": 4,
+      "SlideTransition": 4,
+      "Actions": 8,
+      "CupertinoTextSelectionToolbar": 4,
+      "NavigatorPopHandler": 4,
+      "Navigator": 6,
+      "Align": 8,
+      "Placeholder": 1968,
+      "IterablePage": 4,
+      "JsonScreen": 4,
+      "PersonScreen": 4,
+      "WidgetsApp": 4,
+      "AnimatedContainer": 6,
+      "RepaintBoundary": 4,
+      "ClipRRect": 4,
+      "CallbackShortcuts": 4,
+      "MainWidget": 44,
+      "_MainWidget": 15,
+      "MergeSemantics": 12,
+      "RawChip": 10,
+      "Dialog": 10,
+      "HtmlElementView": 8,
+      "PopupMenuButton": 8,
+      "WebView": 8,
+      "DefaultTextStyle": 6,
+      "Localizations": 6,
+      "Ink": 4,
+      "_ActionIcon": 4,
+      "IconButton": 8,
+      "Hero": 4,
+      "PhysicalShape": 4,
+      "MenuItemButton": 4,
+      "SnapshotWidget": 4,
+      "UiKitView": 4,
+      "RemoteWidget": 4,
+      "RoundedOutlinedBorder": 4,
+      "RotatedBox": 4,
+      "PlatformViewLink": 4,
+      "WebViewAndroidWidget": 4,
+      "DraggableScrollableSheet": 2,
+      "ScrollConfiguration": 2,
+      "RawAutocomplete": 2,
+      "Expanded": 4,
+      "RawGestureDetector": 2,
+      "FocusableActionDetector": 2,
+      "DesktopTextSelectionToolbar": 2,
+      "HeroControllerScope": 2,
+      "PopScope": 2,
+      "DialogTheme": 2,
+      "ListTileTheme": 2,
+      "MergeableMaterial": 2,
+      "Expansible": 2,
+      "RawMagnifier": 2,
+      "AnimatedPositioned": 2,
+      "RawMaterialButton": 2,
+      "CompositedTransformFollower": 2,
+      "CompositedTransformTarget": 2,
+      "_StatusTransitionWidgetBuilder": 2,
+      "_NavigationDestinationBuilder": 2,
+      "Drawer": 2,
+      "Divider": 2,
+      "Builder": 2,
+      "RawRadio": 2,
+      "CustomScrollView": 4,
+      "AnimatedOpacity": 2,
+      "SelectableRegion": 2,
+      "TextSelectionToolbar": 2,
+      "Theme": 2,
+      "_HourMinuteTextField": 2,
+      "ExcludeSemantics": 2,
+      "IntrinsicHeight": 2,
+      "ExpansionPanelList": 2,
+      "createCompatVectorGraphic": 1,
+      "ProviderScope": 284,
+      "WidgetDependencies": 160,
+      "DepWidget": 28,
+      "ref": 19,
+      "Stream": 12,
+      "Consumer": 10,
+      "Panel": 6,
+      "fetchTodosFromServer": 6,
+      "CircularProgressIndicator": 6,
+      "fetchActivity": 6,
+      "Future": 4,
+      "DevtoolIconButton": 4,
+      "User": 4,
+      "_create": 3,
+      "Image": 2,
+      "AppBar": 2,
+      "Shimmer": 2,
+      "UncontrolledProviderScope": 2,
+      "DevToolsExtension": 2,
+      "SplitPane": 2,
+      "RawTooltip": 2,
+      "RichText": 2,
+      "SliverList": 2,
+      "AsyncData": 2,
+      "MyStateNotifier": 2,
+      "HookConsumer": 2,
+      "character": 1,
+      "Random": 1,
+      "question": 1,
+      "_UncontrolledProviderScope": 1,
+      "InspectorSettings": 1,
+      "_ExpansibleTile": 1,
+      "maybeWrapWithTooltip": 1,
+      "devtools_shared_ui": 1,
+      "ui": 1,
+      "MyAsyncNotifier": 1,
+      "MyNotifier": 1,
+      "MyChangeNotifier": 1,
+      "Todo": 1,
+      "_EagerInitialization": 1
+    }
+  },
+  "decorates": {
+    "buckets": {
+      "annotationNodes": {
+        "rows": 136422,
+        "files": 10988
+      },
+      "withArguments": {
+        "rows": 30465,
+        "files": 3132
+      },
+      "bare": {
+        "rows": 105957,
+        "files": 8904
+      },
+      "coreMarker": {
+        "rows": 110540,
+        "files": 8401
+      },
+      "userCallable": {
+        "rows": 25882,
+        "files": 4507
+      },
+      "appliedCallableTest": {
+        "rows": 482,
+        "files": 146
+      },
+      "appliedCallableTrueSites": {
+        "rows": 5,
+        "files": 4
+      },
+      "appliedCallableMemberOfCarrier": {
+        "rows": 5,
+        "files": 4
+      }
+    },
+    "annotationNames": {},
+    "appliedCallableTest": {
+      "rows": 482,
+      "files": 146
+    },
+    "appliedCallableTrueSites": {
+      "rows": 5,
+      "files": 4
+    },
+    "appliedCallableSites": [
+      {
+        "file": "pkg/meta/lib/meta_meta.dart",
+        "carrier": "Target",
+        "carrierType": "class_definition",
+        "annotation": "Target",
+        "args": "({TargetKind.classType})"
+      },
+      {
+        "file": "sdk/lib/_internal/vm_shared/lib/integers_patch.dart",
+        "carrier": "int",
+        "carrierType": "class_definition",
+        "annotation": "pragma",
+        "args": "(\"vm:entry-point\")"
+      },
+      {
+        "file": "sdk/lib/ffi/c_type.dart",
+        "carrier": "Int",
+        "carrierType": "class_definition",
+        "annotation": "AbiSpecificIntegerMapping",
+        "args": "({\n  Abi.androidArm: Int32(),\n  Abi.androidArm64: Int32(),\n  Abi.androidIA32: Int32(),\n  Abi.androidX64: Int32(),\n  Abi.androidRiscv64: Int32(),\n  Abi.fuchsiaAr"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "VersionChangeEvent",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBVersionChangeEvent\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Transaction",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBTransaction\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Request",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBRequest\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "OpenDBRequest",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBOpenDBRequest,IDBVersionChangeRequest\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "ObserverChanges",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBObserverChanges\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Observer",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBObserver\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Observation",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBObservation\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "ObjectStore",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBObjectStore\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "KeyRange",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBKeyRange\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Index",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBIndex\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Database",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBDatabase\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "CursorWithValue",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBCursorWithValue\")"
+      },
+      {
+        "file": "sdk/lib/indexed_db/dart2js/indexed_db_dart2js.dart",
+        "carrier": "Cursor",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"IDBCursor\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "ViewElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGViewElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "UseElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGUseElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "UnitTypes",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGUnitTypes\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TransformList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTransformList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Transform",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTransform\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TitleElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTitleElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TextPositioningElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTextPositioningElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TextPathElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTextPathElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TextElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTextElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TextContentElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTextContentElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "TSpanElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGTSpanElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "SymbolElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGSymbolElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "SwitchElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGSwitchElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "StyleElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGStyleElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "StringList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGStringList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "StopElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGStopElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "SetElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGSetElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "ScriptElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGScriptElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "RectElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGRectElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Rect",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGRect\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "RadialGradientElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGRadialGradientElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "PreserveAspectRatio",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPreserveAspectRatio\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "PolylineElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPolylineElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "PolygonElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPolygonElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "PointList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPointList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Point",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPoint\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "PatternElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPatternElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "PathElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGPathElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "NumberList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGNumberList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Number",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGNumber\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "MetadataElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGMetadataElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Matrix",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGMatrix\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "MaskElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGMaskElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "MarkerElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGMarkerElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "LinearGradientElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGLinearGradientElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "LineElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGLineElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "LengthList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGLengthList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Length",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGLength\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "ImageElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGImageElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "GraphicsElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGGraphicsElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "GeometryElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGGeometryElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "GElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGGElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "ForeignObjectElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGForeignObjectElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FilterElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFilterElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FETurbulenceElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFETurbulenceElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FETileElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFETileElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FESpotLightElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFESpotLightElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FESpecularLightingElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFESpecularLightingElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEPointLightElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEPointLightElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEOffsetElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEOffsetElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEMorphologyElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEMorphologyElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEMergeNodeElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEMergeNodeElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEMergeElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEMergeElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEImageElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEImageElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEGaussianBlurElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEGaussianBlurElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEFuncRElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEFuncRElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEFuncGElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEFuncGElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEFuncBElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEFuncBElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEFuncAElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEFuncAElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEFloodElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEFloodElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEDistantLightElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEDistantLightElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEDisplacementMapElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEDisplacementMapElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEDiffuseLightingElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEDiffuseLightingElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEConvolveMatrixElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEConvolveMatrixElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FECompositeElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFECompositeElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEComponentTransferElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEComponentTransferElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEColorMatrixElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEColorMatrixElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "FEBlendElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGFEBlendElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "EllipseElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGEllipseElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "DiscardElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGDiscardElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "DescElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGDescElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "DefsElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGDefsElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "ClipPathElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGClipPathElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "CircleElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGCircleElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimationElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimationElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedTransformList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedTransformList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedString",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedString\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedRect",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedRect\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedPreserveAspectRatio",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedPreserveAspectRatio\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedNumberList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedNumberList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedNumber",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedNumber\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedLengthList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedLengthList\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedLength",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedLength\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedInteger",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedInteger\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedEnumeration",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedEnumeration\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedBoolean",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedBoolean\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimatedAngle",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimatedAngle\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimateTransformElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimateTransformElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimateMotionElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimateMotionElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AnimateElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAnimateElement\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "Angle",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAngle\")"
+      },
+      {
+        "file": "sdk/lib/svg/dart2js/svg_dart2js.dart",
+        "carrier": "AElement",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"SVGAElement\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "WaveShaperNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WaveShaperNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "StereoPannerNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"StereoPannerNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "ScriptProcessorNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"ScriptProcessorNode,JavaScriptAudioNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "PeriodicWave",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"PeriodicWave\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "PannerNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"PannerNode,AudioPannerNode,webkitAudioPannerNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "OscillatorNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"OscillatorNode,Oscillator\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "OfflineAudioContext",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"OfflineAudioContext\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "OfflineAudioCompletionEvent",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"OfflineAudioCompletionEvent\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "MediaStreamAudioSourceNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"MediaStreamAudioSourceNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "MediaStreamAudioDestinationNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"MediaStreamAudioDestinationNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "MediaElementAudioSourceNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"MediaElementAudioSourceNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "GainNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"GainNode,AudioGainNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "DynamicsCompressorNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"DynamicsCompressorNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "DelayNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"DelayNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "ConvolverNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"ConvolverNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "ConstantSourceNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"ConstantSourceNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "ChannelSplitterNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"ChannelSplitterNode,AudioChannelSplitter\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "ChannelMergerNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"ChannelMergerNode,AudioChannelMerger\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "BiquadFilterNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"BiquadFilterNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "BaseAudioContext",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"BaseAudioContext\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioWorkletProcessor",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioWorkletProcessor\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioWorkletNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioWorkletNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioWorkletGlobalScope",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioWorkletGlobalScope\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioTrackList",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioTrackList\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioTrack",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioTrack\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioScheduledSourceNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioScheduledSourceNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioProcessingEvent",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioProcessingEvent\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioParamMap",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioParamMap\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioParam",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioParam\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioListener",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioListener\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioDestinationNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioDestinationNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioContext",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioContext,webkitAudioContext\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioBufferSourceNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioBufferSourceNode\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AudioBuffer",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AudioBuffer\")"
+      },
+      {
+        "file": "sdk/lib/web_audio/dart2js/web_audio_dart2js.dart",
+        "carrier": "AnalyserNode",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AnalyserNode,RealtimeAnalyserNode\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "WebGL",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGL\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "VertexArrayObject",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLVertexArrayObject\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "UniformLocation",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLUniformLocation\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "TransformFeedback",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLTransformFeedback\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Texture",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLTexture\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Sync",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLSync\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "ShaderPrecisionFormat",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLShaderPrecisionFormat\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Shader",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLShader\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Sampler",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLSampler\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "RenderingContext",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLRenderingContext\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Renderbuffer",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLRenderbuffer\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Query",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLQuery\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Program",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLProgram\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "LoseContext",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLLoseContext,WebGLExtensionLoseContext,WEBGL_lose_context\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "GetBufferSubDataAsync",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLGetBufferSubDataAsync\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Framebuffer",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLFramebuffer\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "DrawBuffers",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLDrawBuffers,WEBGL_draw_buffers\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "DepthTexture",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLDepthTexture,WEBGL_depth_texture\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "DebugShaders",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLDebugShaders,WEBGL_debug_shaders\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "DebugRendererInfo",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLDebugRendererInfo,WEBGL_debug_renderer_info\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "ContextEvent",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLContextEvent\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "CompressedTextureS3TC",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLCompressedTextureS3TC,WEBGL_compressed_texture_s3tc\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "CompressedTextureETC1",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLCompressedTextureETC1,WEBGL_compressed_texture_etc1\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "ColorBufferFloat",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLColorBufferFloat\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Canvas",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLCanvas\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "Buffer",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLBuffer\")"
+      },
+      {
+        "file": "sdk/lib/web_gl/dart2js/web_gl_dart2js.dart",
+        "carrier": "ActiveInfo",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"WebGLActiveInfo\")"
+      },
+      {
+        "file": "tests/dartdevc/hot_restart_js_interop_test.dart",
+        "carrier": "MyClass",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('window.MyClass')"
+      },
+      {
+        "file": "tests/ffi/static_checks/vmspecific_static_checks_test.dart",
+        "carrier": "AbiSpecificInteger1",
+        "carrierType": "class_definition",
+        "annotation": "AbiSpecificIntegerMapping",
+        "args": "({\n  Abi.androidArm: Uint32(),\n  Abi.androidArm64: IntPtr(),\n  //                ^^^^^^^^\n  // [analyzer] COMPILE_TIME_ERROR.ABI_SPECIFIC_INTEGER_MAPPING_UNSUPP"
+      },
+      {
+        "file": "pkg/analyzer/lib/analysis_rule/rule_visitor_registry.g.dart",
+        "carrier": "RuleVisitorRegistry",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use RuleVisitorRegistry2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/dart/ast/visitor.dart",
+        "carrier": "DelegatingAstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use DelegatingAstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/dart/ast/visitor.g.dart",
+        "carrier": "UnifyingAstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use UnifyingAstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/dart/ast/visitor.g.dart",
+        "carrier": "TimedAstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use TimedAstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/dart/ast/visitor.g.dart",
+        "carrier": "ThrowingAstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use ThrowingAstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/dart/ast/visitor.g.dart",
+        "carrier": "SimpleAstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use SimpleAstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/dart/ast/visitor.g.dart",
+        "carrier": "RecursiveAstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use RecursiveAstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/dart/ast/ast.g.dart",
+        "carrier": "AstVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use AstVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/dart/ast/element_locator.dart",
+        "carrier": "ElementLocator",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use ElementLocatorV2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/error/element_usage_detector.dart",
+        "carrier": "ElementUsageDetector",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use ElementUsageDetectorV2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/error/element_usage_frontier_detector.dart",
+        "carrier": "ElementUsageFrontierDetector",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use ElementUsageFrontierDetector instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/lint/linter_visitor.dart",
+        "carrier": "_Subscription",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use _Subscription2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/lint/linter_visitor.g.dart",
+        "carrier": "RuleVisitorRegistryImpl",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use RuleVisitorRegistryImpl2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/lint/linter_visitor.g.dart",
+        "carrier": "AnalysisRuleVisitor",
+        "carrierType": "class_definition",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use AnalysisRuleVisitor2 instead')"
+      },
+      {
+        "file": "pkg/analyzer/lib/src/utilities/extensions/flutter.dart",
+        "carrier": "AstNodeExtension",
+        "carrierType": "extension_declaration",
+        "annotation": "ToBeDeprecated",
+        "args": "('Use AstNodeExtension2 instead.')"
+      },
+      {
+        "file": "tests/lib/html/js_interop_constructor_name/util.dart",
+        "carrier": "HTMLDivElement",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('Foo.HTMLDivElement')"
+      },
+      {
+        "file": "tests/lib/html/js_typed_interop_lazy_test.dart",
+        "carrier": "NestedLazyClass",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('baz.foo.NestedLazyClass')"
+      },
+      {
+        "file": "tests/lib/html/js_typed_interop_lazy_test.dart",
+        "carrier": "LazyClass",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('baz.LazyClass')"
+      },
+      {
+        "file": "tests/lib/html/js_typed_interop_rename_static_test.dart",
+        "carrier": "Foo",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('JSFoo')"
+      },
+      {
+        "file": "tests/lib/html/js_typed_interop_test.dart",
+        "carrier": "Bar",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('Bar')"
+      },
+      {
+        "file": "tests/lib/html/js_typed_interop_test.dart",
+        "carrier": "Foob",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('Foob')"
+      },
+      {
+        "file": "tests/lib/js/instanceof_test.dart",
+        "carrier": "Class",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('Class')"
+      },
+      {
+        "file": "tests/lib/js/static_class_member_static_test.dart",
+        "carrier": "Foo",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('a.Foo')"
+      },
+      {
+        "file": "tests/lib/js/static_interop_test/extension_type/external_static_member_with_namespaces.dart",
+        "carrier": "ExternalStatic",
+        "carrierType": "extension_type_declaration",
+        "annotation": "JS",
+        "args": "('library*3.ExternalStatic')"
+      },
+      {
+        "file": "tests/lib/js/static_interop_test/external_extension_members_test.dart",
+        "carrier": "Bar",
+        "carrierType": "class_definition",
+        "annotation": "pkgJs.JS",
+        "args": "('module.Bar')"
+      },
+      {
+        "file": "tests/lib/js/static_interop_test/external_static_member_lowerings_with_namespaces.dart",
+        "carrier": "ExternalStatic",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('library*3.ExternalStatic')"
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_constructor_arguments_runtime_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "Tag",
+        "args": "(named: C.STATIC_FIELD)"
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_constructor_arguments_test.dart",
+        "carrier": "F",
+        "carrierType": "class_definition",
+        "annotation": "Tag",
+        "args": "(named: F.nonConstStaticField)"
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_constructor_arguments_test.dart",
+        "carrier": "D",
+        "carrierType": "class_definition",
+        "annotation": "Tag",
+        "args": "(named: D.instanceMethod())"
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_nested_constructor_call_runtime_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Box",
+        "args": "(const Box())"
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_scope_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Annotation",
+        "args": "(B.foo)"
+      },
+      {
+        "file": "tests/web/internal/javascriptobject_extensions_test.dart",
+        "carrier": "JSClass",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('JSClass')"
+      },
+      {
+        "file": "tests/web/js_interop_optional_arg_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('C')"
+      },
+      {
+        "file": "tests/web/native/abstract_class_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/abstract_class_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/bound_closure_test.dart",
+        "carrier": "CC",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"CC\")"
+      },
+      {
+        "file": "tests/web/native/bound_closure_test.dart",
+        "carrier": "BB",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"BB\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_1_prepatched_test.dart",
+        "carrier": "T1C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1C\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_1_prepatched_test.dart",
+        "carrier": "T1B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1B\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_1_prepatched_test.dart",
+        "carrier": "T1A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1A\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_1_unpatched_test.dart",
+        "carrier": "T1C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1C\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_1_unpatched_test.dart",
+        "carrier": "T1B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1B\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_1_unpatched_test.dart",
+        "carrier": "T1A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1A\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_2_test.dart",
+        "carrier": "T1D",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1D\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_2_test.dart",
+        "carrier": "T1C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1C\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_2_test.dart",
+        "carrier": "T1B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1B\")"
+      },
+      {
+        "file": "tests/web/native/browser_compat_2_test.dart",
+        "carrier": "T1A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"T1A\")"
+      },
+      {
+        "file": "tests/web/native/core_type_check_native_test.dart",
+        "carrier": "D",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"D\")"
+      },
+      {
+        "file": "tests/web/native/core_type_check_native_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"C\")"
+      },
+      {
+        "file": "tests/web/native/core_type_check_native_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/core_type_check_native_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/dispatch_property_initialization_test.dart",
+        "carrier": "Foo",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"Foo\")"
+      },
+      {
+        "file": "tests/web/native/downcast_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/downcast_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/error_safeToString_test.dart",
+        "carrier": "Q",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('QQQQ')"
+      },
+      {
+        "file": "tests/web/native/event_loop_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/field_type2_test.dart",
+        "carrier": "Node",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"Node\")"
+      },
+      {
+        "file": "tests/web/native/field_type_test.dart",
+        "carrier": "Node",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"Node\")"
+      },
+      {
+        "file": "tests/web/native/hash_code_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/hash_code_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/is_check_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/jsobject_test.dart",
+        "carrier": "Q",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('QQ')"
+      },
+      {
+        "file": "tests/web/native/native_call_arity1_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_call_arity1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_call_arity2_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_call_arity2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_call_arity3_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_call_arity3_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_checked_arguments1_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_checked_arguments1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_checked_fields_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_checked_fields_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_fields_2_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_fields_3_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_fields_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance1_frog_test.dart",
+        "carrier": "B2",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B2\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance1_frog_test.dart",
+        "carrier": "A2",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A2\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance1_frog_test.dart",
+        "carrier": "B1",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B1\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance1_frog_test.dart",
+        "carrier": "A1",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A1\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance2_frog_test.dart",
+        "carrier": "D",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"D\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance2_frog_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"C\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance2_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance3_frog_test.dart",
+        "carrier": "B2",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B2\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance3_frog_test.dart",
+        "carrier": "A2",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A2\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance3_frog_test.dart",
+        "carrier": "B1",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B1\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance3_frog_test.dart",
+        "carrier": "A1",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A1\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance4_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_class_inheritance4_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_is_check1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_is_check3_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_class_is_check3_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_class_with_dart_methods_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_closure_identity_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_equals_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_equals_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_exception2_test.dart",
+        "carrier": "NativeClass",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"NativeClass\")"
+      },
+      {
+        "file": "tests/web/native/native_exceptions1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_exceptions1_frog_test.dart",
+        "carrier": "E",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"E\")"
+      },
+      {
+        "file": "tests/web/native/native_field_invocation2_test.dart",
+        "carrier": "NNative",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"NNative\")"
+      },
+      {
+        "file": "tests/web/native/native_field_invocation4_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_field_invocation6_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_field_invocation_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_field_name_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_field_optimization_test.dart",
+        "carrier": "Foo",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"Foo\")"
+      },
+      {
+        "file": "tests/web/native/native_field_rename_1_frog_test.dart",
+        "carrier": "X",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"X\")"
+      },
+      {
+        "file": "tests/web/native/native_field_rename_1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_field_rename_2_frog_test.dart",
+        "carrier": "X",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"X\")"
+      },
+      {
+        "file": "tests/web/native/native_field_rename_2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_method_inlining_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_method_rename1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_method_rename2_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_method_rename2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_method_rename3_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_method_rename3_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_method_with_keyword_name_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_missing_method1_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_missing_method2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_field2_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_field2_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_field_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_field_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple2_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple2_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple3_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"C\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple3_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple3_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_multiple_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_with_plain_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_mixin_with_plain_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_named_constructors2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_named_constructors3_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_no_such_method_exception2_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_no_such_method_exception2_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_no_such_method_exception_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/native_no_such_method_exception_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_novel_html_test.dart",
+        "carrier": "Element",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"HTMLElement\")"
+      },
+      {
+        "file": "tests/web/native/native_null_assertions/non_web_library_interfaces.dart",
+        "carrier": "CCC",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('CCC')"
+      },
+      {
+        "file": "tests/web/native/native_null_assertions/non_web_library_interfaces.dart",
+        "carrier": "AAA",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AAA\")"
+      },
+      {
+        "file": "tests/web/native/native_null_assertions/web_library_interfaces.dart",
+        "carrier": "CCC",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('CCC')"
+      },
+      {
+        "file": "tests/web/native/native_null_assertions/web_library_interfaces.dart",
+        "carrier": "AAA",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"AAA\")"
+      },
+      {
+        "file": "tests/web/native/native_null_closure_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_null_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_property_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_to_string_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_use_native_name_in_table_frog_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"NativeB\")"
+      },
+      {
+        "file": "tests/web/native/native_use_native_name_in_table_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"NativeA\")"
+      },
+      {
+        "file": "tests/web/native/native_wrapping_function3_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/native_wrapping_function_frog_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/oddly_named_fields_test.dart",
+        "carrier": "NativeClassWithOddNames",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"NativeClassWithOddNames\")"
+      },
+      {
+        "file": "tests/web/native/rti_only_native_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/runtimetype_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"TAGX\")"
+      },
+      {
+        "file": "tests/web/native/static_interop_erasure/factory_stub_test.dart",
+        "carrier": "NativeClass",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('NativeClass')"
+      },
+      {
+        "file": "tests/web/native/static_interop_erasure/type_test.dart",
+        "carrier": "NativeClass",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('NativeClass')"
+      },
+      {
+        "file": "tests/web/native/static_interop_erasure/use_erased_type_members_test.dart",
+        "carrier": "NativeClass",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('NativeClass')"
+      },
+      {
+        "file": "tests/web/native/subclassing_1_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_2_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_3_test.dart",
+        "carrier": "N",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_4_test.dart",
+        "carrier": "N",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_5_test.dart",
+        "carrier": "N",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_constructor_1_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_constructor_2_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_super_call_test.dart",
+        "carrier": "N2",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N2\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_super_call_test.dart",
+        "carrier": "N1",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N1\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_super_field_1_test.dart",
+        "carrier": "N",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_super_field_2_test.dart",
+        "carrier": "N",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N\")"
+      },
+      {
+        "file": "tests/web/native/subclassing_type_test.dart",
+        "carrier": "N",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"N\")"
+      },
+      {
+        "file": "tests/web/native/super_call_test.dart",
+        "carrier": "D",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"D\")"
+      },
+      {
+        "file": "tests/web/native/super_call_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"C\")"
+      },
+      {
+        "file": "tests/web/native/super_call_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/super_call_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/native/super_property_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"B\")"
+      },
+      {
+        "file": "tests/web/native/super_property_test.dart",
+        "carrier": "A",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"A\")"
+      },
+      {
+        "file": "tests/web/regress/issue/49129_test.dart",
+        "carrier": "Foo",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('a.Foo.c.d')"
+      },
+      {
+        "file": "tests/web/wasm/static_interop_test.dart",
+        "carrier": "NestedJSClass",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('JSClass.NestedJSClass')"
+      },
+      {
+        "file": "pkg/analyzer_testing/lib/analysis_rule/analysis_rule.dart",
+        "carrier": "messageContains",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "('Use messageContainsAll instead')"
+      },
+      {
+        "file": "pkg/analyzer_testing/lib/analysis_rule/analysis_rule.dart",
+        "carrier": "text",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "('Use textContains instead')"
+      },
+      {
+        "file": "pkg/analyzer_testing/lib/src/analysis_rule/pub_package_resolution.dart",
+        "carrier": "messageContains",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "('Use messageContainsAll instead')"
+      },
+      {
+        "file": "pkg/compiler/test/codegen/model_data/native.dart",
+        "carrier": "Class",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('Class')"
+      },
+      {
+        "file": "pkg/compiler/test/codegen/model_data/native_inlined.dart",
+        "carrier": "Class",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('Class')"
+      },
+      {
+        "file": "pkg/compiler/test/codegen/model_data/native_unused_parameters.dart",
+        "carrier": "Class",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('Class')"
+      },
+      {
+        "file": "pkg/compiler/test/impact/data/native.dart",
+        "carrier": "NativeClass",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "(\"NativeClass\")"
+      },
+      {
+        "file": "pkg/compiler/test/member_usage/data/native.dart",
+        "carrier": "Class",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('Class')"
+      },
+      {
+        "file": "pkg/compiler/test/rti/emission/jsinterop.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "JS",
+        "args": "('BClass')"
+      },
+      {
+        "file": "pkg/compiler/test/rti/emission/native.dart",
+        "carrier": "Q",
+        "carrierType": "class_definition",
+        "annotation": "Native",
+        "args": "('QQQQ')"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "DisplayOrientedMeteringPointFactory",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.core.DisplayOrientedMeteringPointFactory',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "MeteringPointFactory",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.MeteringPointFactory'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Camera2CameraInfo",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.camera2.interop.Camera2CameraInfo',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CameraCharacteristics",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'android.hardware.camera2.CameraCharacteristics',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ResolutionFilter",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.core.resolutionselector.ResolutionFilter',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Camera2CameraControl",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.camera2.interop.Camera2CameraControl',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CaptureRequestOptions",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.camera2.interop.CaptureRequestOptions',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CaptureRequest",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.hardware.camera2.CaptureRequest'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "FocusMeteringResult",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.FocusMeteringResult'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "FocusMeteringAction",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.FocusMeteringAction'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CameraControl",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.CameraControl'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "FallbackStrategy",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.FallbackStrategy'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "QualitySelector",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.QualitySelector'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "PlaneProxy",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ImageProxy.PlaneProxy'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ImageProxy",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ImageProxy'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "LiveData",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'io.flutter.plugins.camerax.LiveDataProxyApi.LiveDataWrapper',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Analyzer",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.core.ImageAnalysis.Analyzer',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ImageAnalysis",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ImageAnalysis'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ZoomState",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ZoomState'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ExposureState",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ExposureState'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CameraState",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.CameraState'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "AspectRatioStrategy",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.core.resolutionselector.AspectRatioStrategy',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ResolutionSelector",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.core.resolutionselector.ResolutionSelector',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ResolutionStrategy",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.core.resolutionselector.ResolutionStrategy',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ImageCapture",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ImageCapture'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Recording",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.Recording'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "PendingRecording",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.PendingRecording'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Recorder",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.Recorder'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "VideoOutput",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.VideoOutput'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "VideoCapture",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.VideoCapture<*>'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Preview",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.Preview'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Camera",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.Camera'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "UseCase",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.UseCase'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ProcessCameraProvider",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.camera.lifecycle.ProcessCameraProvider',\n  ),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CameraSelector",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.CameraSelector'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "CameraInfo",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.CameraInfo'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "Observer",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.lifecycle.Observer<*>'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "MeteringPoint",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.MeteringPoint'))"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "VideoRecordEvent",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.video.VideoRecordEvent'),\n)"
+      },
+      {
+        "file": "packages/camera/camera_android_camerax/pigeons/camerax_library.dart",
+        "carrier": "ResolutionInfo",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.camera.core.ResolutionInfo'),\n)"
+      },
+      {
+        "file": "packages/cross_file/cross_file_android/pigeons/android_library.dart",
+        "carrier": "InputStream",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'java.io.InputStream'))"
+      },
+      {
+        "file": "packages/cross_file/cross_file_android/pigeons/android_library.dart",
+        "carrier": "ContentResolver",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.content.ContentResolver'))"
+      },
+      {
+        "file": "packages/cross_file/cross_file_android/pigeons/android_library.dart",
+        "carrier": "DocumentFile",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'androidx.documentfile.provider.DocumentFile',\n  ),\n)"
+      },
+      {
+        "file": "packages/cupertino_ui/lib/src/migration_utility.dart",
+        "carrier": "CupertinoUiCompatibilityBridge",
+        "carrierType": "class_definition",
+        "annotation": "Deprecated",
+        "args": "(\n  'CupertinoUiCompatibilityBridge is a temporary migration utility intended for use only while '\n  'dependencies are being migrated to package:cupertino_ui. '"
+      },
+      {
+        "file": "packages/google_maps_flutter/google_maps_flutter_android/lib/src/google_maps_flutter_android.dart",
+        "carrier": "legacy",
+        "carrierType": "enum_constant",
+        "annotation": "Deprecated",
+        "args": "(\n    'The legacy renderer is no longer supported by the Google Maps, '\n    'SDK, so requesting it will have no effect.',\n  )"
+      },
+      {
+        "file": "packages/google_maps_flutter/google_maps_flutter_web/lib/src/marker_clustering_js_interop.dart",
+        "carrier": "MarkerClusterer",
+        "carrierType": "extension_type_declaration",
+        "annotation": "JS",
+        "args": "('markerClusterer.MarkerClusterer')"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdSlot",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdSlot',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "CompanionAdSlot",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.CompanionAdSlot',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "Ad",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'com.google.ads.interactivemedia.v3.api.Ad'),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "UniversalAdId",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.UniversalAdId',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "CompanionAd",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.CompanionAd',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdProgressInfo",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdProgressInfo',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdsRenderingSettings",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdsRenderingSettings',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdEventListener",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdEvent.AdEventListener',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdErrorListener",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdErrorEvent.AdErrorListener',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdsLoadedListener",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdsLoader.AdsLoadedListener',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "VideoAdPlayer",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.player.VideoAdPlayer',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "VideoAdPlayerCallback",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName:\n        'com.google.ads.interactivemedia.v3.api.player.VideoAdPlayer.VideoAdPlayerCallback',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "MediaPlayer",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.media.MediaPlayer'))"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "View",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.view.View'))"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "VideoView",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.widget.VideoView'))"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "ViewGroup",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.view.ViewGroup'))"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "FrameLayout",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.widget.FrameLayout'))"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdPodInfo",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdPodInfo',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdMediaInfo",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.player.AdMediaInfo',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "VideoProgressUpdate",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.player.VideoProgressUpdate',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "ImaSdkSettings",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.ImaSdkSettings',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "ImaSdkFactory",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.ImaSdkFactory',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdEvent",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdEvent',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "BaseManager",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.BaseManager',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdsManager",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdsManager',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "ContentProgressProvider",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.player.ContentProgressProvider',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdsRequest",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdsRequest',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdError",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdError',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdErrorEvent",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdErrorEvent',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdsManagerLoadedEvent",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdsManagerLoadedEvent',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdsLoader",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdsLoader',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "AdDisplayContainer",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.AdDisplayContainer',\n  ),\n)"
+      },
+      {
+        "file": "packages/interactive_media_ads/pigeons/interactive_media_ads_android.dart",
+        "carrier": "BaseDisplayContainer",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'com.google.ads.interactivemedia.v3.api.BaseDisplayContainer',\n  ),\n)"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/carousel.dart",
+        "carrier": "itemExtent",
+        "carrierType": "formal_parameter",
+        "annotation": "Deprecated",
+        "args": "(\n      'The itemExtent is already available within the scope of this function. '\n      'This feature was deprecated after v3.20.0-7.0.pre.',\n    )"
+      },
+      {
+        "file": "packages/material_ui/lib/src/migration_utility.dart",
+        "carrier": "MaterialUiCompatibilityBridge",
+        "carrierType": "class_definition",
+        "annotation": "Deprecated",
+        "args": "(\n  'MaterialUiCompatibilityBridge is a temporary migration utility intended for use only while '\n  'dependencies are being migrated to package:material_ui. '\n "
+      },
+      {
+        "file": "packages/pigeon/pigeons/proxy_api_tests.dart",
+        "carrier": "ProxyApiSuperClass",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'com.example.test_plugin.ProxyApiSuperClass'),\n  swiftOptions: SwiftProxyApiOptions(name: 'ProxyApiSuper"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebViewFeature",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.webkit.WebViewFeature'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebSettingsCompat",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.webkit.WebSettingsCompat'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "Certificate",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'java.security.cert.Certificate'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "SslCertificate",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.net.http.SslCertificate'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "SslError",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.net.http.SslError'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "SslErrorHandler",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.SslErrorHandler'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "X509Certificate",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'java.security.cert.X509Certificate'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "PrivateKey",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'java.security.PrivateKey'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "ClientCertRequest",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.ClientCertRequest'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "HttpAuthHandler",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.HttpAuthHandler'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "View",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.view.View'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "CustomViewCallback",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'android.webkit.WebChromeClient.CustomViewCallback',\n  ),\n)"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "PermissionRequest",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.PermissionRequest'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "FileChooserParams",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'android.webkit.WebChromeClient.FileChooserParams',\n  ),\n)"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebStorage",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebStorage'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "FlutterAssetManager",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'io.flutter.plugins.webviewflutter.FlutterAssetManager',\n  ),\n)"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebChromeClient",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(\n    fullClassName: 'io.flutter.plugins.webviewflutter.WebChromeClientProxyApi.WebChromeClientImpl',\n  ),\n)"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "DownloadListener",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.DownloadListener'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebViewClient",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebViewClient'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebSettings",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebSettings'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebView",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebView'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "CookieManager",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.CookieManager'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "ConsoleMessage",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.ConsoleMessage'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebResourceErrorCompat",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'androidx.webkit.WebResourceErrorCompat'),\n)"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebResourceError",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebResourceError'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebResourceResponse",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebResourceResponse'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_android/pigeons/android_webkit.dart",
+        "carrier": "WebResourceRequest",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebResourceRequest'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_wkwebview/pigeons/web_kit.dart",
+        "carrier": "SecCertificate",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(swiftOptions: SwiftProxyApiOptions(name: 'SecCertificateWrapper'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_wkwebview/pigeons/web_kit.dart",
+        "carrier": "SecTrust",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(swiftOptions: SwiftProxyApiOptions(name: 'SecTrustWrapper'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_wkwebview/pigeons/web_kit.dart",
+        "carrier": "URL",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(swiftOptions: SwiftProxyApiOptions(name: 'URL'))"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_wkwebview/pigeons/web_kit.dart",
+        "carrier": "WKWebView",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(\n  swiftOptions: SwiftProxyApiOptions(import: 'WebKit', name: 'WKWebView'),\n)"
+      },
+      {
+        "file": "packages/webview_flutter/webview_flutter_wkwebview/pigeons/web_kit.dart",
+        "carrier": "URLRequest",
+        "carrierType": "class_definition",
+        "annotation": "ProxyApi",
+        "args": "(swiftOptions: SwiftProxyApiOptions(name: 'URLRequestWrapper'))"
+      },
+      {
+        "file": "packages/riverpod/lib/src/core/provider_listenable_transformer.dart",
+        "carrier": "ProviderTransformer",
+        "carrierType": "class_definition",
+        "annotation": "Deprecated",
+        "args": "(\n  'Use CustomProviderListenable/ProviderTransformer2 instead. '\n  'This will be removed in a future version.',\n)"
+      }
+    ],
+    "appliedCallableTrueSiteList": [
+      {
+        "file": "tests/ffi/static_checks/vmspecific_static_checks_test.dart",
+        "carrier": "AbiSpecificInteger1",
+        "carrierType": "class_definition",
+        "annotation": "AbiSpecificIntegerMapping",
+        "args": "({\n  Abi.androidArm: Uint32(),\n  Abi.androidArm64: IntPtr(),\n  //                ^^^^^^^^\n  // [analyzer] COMPILE_TIME_ERROR.ABI_SPECIFIC_INTEGER_MAPPING_UNSUPP",
+        "outsideStrings": "({\n  Abi.androidArm: Uint32(),\n  Abi.androidArm64: IntPtr(),\n  //                ^^^^^^^^\n  // [analyzer] COMPILE_TIME_ERROR.ABI_SPECIFIC_INTEGER_MAPPING_UNSUPP",
+        "isMemberAccess": true
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_constructor_arguments_runtime_test.dart",
+        "carrier": "C",
+        "carrierType": "class_definition",
+        "annotation": "Tag",
+        "args": "(named: C.STATIC_FIELD)",
+        "outsideStrings": "(named: C.STATIC_FIELD)",
+        "isMemberAccess": true
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_constructor_arguments_test.dart",
+        "carrier": "F",
+        "carrierType": "class_definition",
+        "annotation": "Tag",
+        "args": "(named: F.nonConstStaticField)",
+        "outsideStrings": "(named: F.nonConstStaticField)",
+        "isMemberAccess": true
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_constructor_arguments_test.dart",
+        "carrier": "D",
+        "carrierType": "class_definition",
+        "annotation": "Tag",
+        "args": "(named: D.instanceMethod())",
+        "outsideStrings": "(named: D.instanceMethod())",
+        "isMemberAccess": true
+      },
+      {
+        "file": "tests/lib/mirrors/metadata_scope_test.dart",
+        "carrier": "B",
+        "carrierType": "class_definition",
+        "annotation": "Annotation",
+        "args": "(B.foo)",
+        "outsideStrings": "(B.foo)",
+        "isMemberAccess": true
+      }
+    ],
+    "byCarrier": {
+      "class_body": {
+        "rows": 105190,
+        "files": 7809
+      },
+      "extension_body": {
+        "rows": 1352,
+        "files": 112
+      },
+      "program": {
+        "rows": 18805,
+        "files": 2280
+      },
+      "extension_type_declaration": {
+        "rows": 91,
+        "files": 36
+      },
+      "library_name": {
+        "rows": 1107,
+        "files": 467
+      },
+      "class_definition": {
+        "rows": 7833,
+        "files": 3583
+      },
+      "enum_body": {
+        "rows": 143,
+        "files": 47
+      },
+      "enum_constant": {
+        "rows": 29,
+        "files": 10
+      },
+      "mixin_declaration": {
+        "rows": 37,
+        "files": 17
+      },
+      "enum_declaration": {
+        "rows": 48,
+        "files": 44
+      },
+      "type_parameter": {
+        "rows": 172,
+        "files": 26
+      },
+      "optional_formal_parameters": {
+        "rows": 240,
+        "files": 96
+      },
+      "library_export": {
+        "rows": 9,
+        "files": 9
+      },
+      "representation_declaration": {
+        "rows": 3,
+        "files": 3
+      },
+      "extension_declaration": {
+        "rows": 363,
+        "files": 64
+      },
+      "formal_parameter": {
+        "rows": 603,
+        "files": 126
+      },
+      "ERROR": {
+        "rows": 40,
+        "files": 19
+      },
+      "type_alias": {
+        "rows": 64,
+        "files": 35
+      },
+      "local_variable_declaration": {
+        "rows": 143,
+        "files": 64
+      },
+      "part_directive": {
+        "rows": 8,
+        "files": 8
+      },
+      "local_function_declaration": {
+        "rows": 41,
+        "files": 21
+      },
+      "named_parameter_types": {
+        "rows": 2,
+        "files": 2
+      },
+      "normal_parameter_type": {
+        "rows": 26,
+        "files": 6
+      },
+      "library_import": {
+        "rows": 20,
+        "files": 15
+      },
+      "part_of_directive": {
+        "rows": 2,
+        "files": 2
+      },
+      "for_loop_parts": {
+        "rows": 4,
+        "files": 3
+      },
+      "initialized_variable_definition": {
+        "rows": 5,
+        "files": 5
+      },
+      "record_type_field": {
+        "rows": 33,
+        "files": 14
+      },
+      "record_type_named_field": {
+        "rows": 9,
+        "files": 6
+      }
+    }
+  }
+}

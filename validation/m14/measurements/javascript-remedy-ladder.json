@@ -1,0 +1,91 @@
+{
+  "generated": "2026-11-22T20:32:08.369Z",
+  "lane": "javascript",
+  "author": "Muhammad Ishaq Khan",
+  "instrument": "script/m14/javascript-remedy-ladder.ts",
+  "rule": "L-2026-10-21-14 — a ruling names WHICH RUNG was unavailable and why; a rung that is merely HARD is not a reason. This instrument measures each rung over the whole admitted population.",
+  "grammar": {
+    "wasm": "wasm/tree-sitter-javascript.wasm",
+    "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+    "bytes": 647334,
+    "nodeTypeIds": 271,
+    "distinctNamedTypes": 125,
+    "citationRule": "L-2026-10-21-20 — the sha256 of the bytes the REGISTRY SERVES. Never a path, never a log line."
+  },
+  "population": {
+    "corpusRoot": "/home/ishaq2321/mcp/backbencher-brain/.corpus",
+    "admitted": 49097,
+    "rule": "git ls-files per repository, 1 MiB cap"
+  },
+  "r1": {
+    "registryLatestVersion": "0.25.0",
+    "registryQueriedLive": true,
+    "sourceFetched": false,
+    "sourceSha256": null,
+    "sourceNote": "the fetched source is the npm registry's own tree-sitter-javascript@latest grammar.js; the SOURCE is the question, because the source is what says whether the construct can exist in the grammar at all — a construct the source cannot spell is a construct no build of it can carry",
+    "tokenOccurrencesInSource": {},
+    "tokenOccurrenceNote": "'part' occurrences in the 0.25.0 source are `exponentPart`/`decimalPart` — a NUMERIC LITERAL helper, not a part directive; the count is reported with the sites it names"
+  },
+  "r2": {
+    "question": "could the construct be ADDED to the grammar source and then built (R2), and if so what would the patched grammar have to MATCH? The measurement is the population's own sites of the construct, because a patched grammar that can parse a spelling the corpus never uses still has nothing to publish.",
+    "implements": {
+      "classHeritageWithAnImplementsClause": 0,
+      "filesWhoseTextCarriesTheWord": 47,
+      "samples": [
+        "chartjs/src/core/core.scale.js :: // implements box",
+        "chartjs/src/platform/platform.base.js :: * @param {function} listener - Receives a notification (an object that implements",
+        "consul/agent/uiserver/dist/assets/codemirror/mode/javascript/javascript-a5e5d64b0f9ff6b6e21f5f48aa1ef464.js :: if(u){var o={type:\"variable\",style:\"variable-3\"},l={interface:e(\"class\"),implements:n,name",
+        "consul/ui/packages/consul-ui/app/services/local-storage.js :: * implement the [Storage](https://developer.mozilla.org/en-US/docs/Web/API/Storage)-interf",
+        "jquery/test/unit/css.js :: // Newer Firefox implements CSS zoom in a way it affects",
+        "jquery/test/unit/selector.js :: // module is used. The jQuery selector engine implements old",
+        "mongoose/test/schema.test.js :: // test any object that implements toString",
+        "preact/src/diff/index.js :: // @ts-expect-error Trust me, Component implements the interface we want"
+      ],
+      "note": "JavaScript's own language has no conformance clause. `class A implements B {}` is TypeScript, not JavaScript, and the corpus's class heritage carries ONLY `extends` — measured: 0 heritage children of any implements shape over the whole admitted population. A patched grammar could ADD an implements_clause, and it would then match nothing, because the construct is not in the language."
+    },
+    "part_of": {
+      "statementWhoseFirstTokenIsPart": 0,
+      "partThatIsACallOrAnAssignmentTarget": 32,
+      "directiveSamples": [],
+      "partThatIsACallOrAnAssignmentTargetSamples": [
+        "axios/lib/core/AxiosHeaders.js :: const part = trimOWS(str.slice(start, end));",
+        "axios/lib/helpers/formDataToStream.js :: const part = new FormDataPart(name, value);",
+        "bootstrap/dist/js/bootstrap.bundle.js :: placements.xs = part;",
+        "bootstrap/dist/js/bootstrap.js :: placements.xs = part;",
+        "bootstrap/js/dist/util/floating-ui.js :: placements.xs = part;",
+        "lodash/vendor/backbone/test/router.js :: this.part = part;",
+        "lodash/vendor/firebug-lite/src/firebug-lite-debug.js :: part = isXML ? part : part.toUpperCase();",
+        "lodash/vendor/firebug-lite/src/firebug-lite-debug.js :: part = part.toUpperCase();"
+      ],
+      "textSitesCarryingTheWord": [
+        "axios/lib/adapters/http.js :: const [major, minor] = nodeVersion.split('.').map((part) => Number(part));",
+        "axios/lib/core/Axios.js :: // them as part of the low-level cause.",
+        "axios/lib/core/AxiosHeaders.js :: const part = trimOWS(str.slice(start, end));",
+        "axios/lib/helpers/formDataToBlob.js :: throw new FormDataError('Unsupported FormData part size', 'part');",
+        "axios/lib/helpers/formDataToStream.js :: const part = new FormDataPart(name, value);",
+        "axios/lib/helpers/shouldBypassProxy.js :: * left, the final part fills the remaining octets from the right with",
+        "axios/tests/setup/formBodyLengthCases.js :: it('checks explicit boundary length as part of the exact body limit', async () => {",
+        "axios/tests/unit/adapters/bodyLength.test.js :: this.size = parts.reduce(function (total, part) {",
+        "axios/tests/unit/helpers/formDataToJSON.test.js :: // `.`, `[` and `]` are not part of a key, so bracket contents are split the",
+        "axios/tests/unit/helpers/indexedFormFields.test.js :: append: function (name, part) {",
+        "axios/tests/unit/helpers/shouldBypassProxy.test.js :: // Node URL parser treats 1-part as a 32-bit integer, giving `127` ->",
+        "axios/tests/unit/parseProtocol.test.js :: it('should parse protocol part if it exists', () => {"
+      ],
+      "note": "JavaScript has no part directive. The nearest construct in the language is the ES module import/export, which names ANOTHER MODULE — and that relation is ALREADY PUBLISHED under the `imports` label, so a `part_of` row would duplicate it under a second name.",
+      "filesWithAnImportOrExportOfAnotherModule": 9780
+    }
+  },
+  "r3": {
+    "question": "is there a node type the SHIPPED grammar ALREADY has that can carry the relation (R3)? The measurement is the served bytes' own inventory, read from the live language.",
+    "implements": {
+      "nodeTypesMatchingTheRelation": [],
+      "count": 0,
+      "note": "the inventory is of the SERVED BYTES (63812b9e), not of the npm package's node-types.json, which is a DIFFERENT artifact and carries a different number"
+    },
+    "part_of": {
+      "nodeTypesMatchingTheRelation": [],
+      "count": 0,
+      "note": "the node types that match /part/ are the ones whose NAME contains it — the question is whether any of them is a PART DIRECTIVE, and the corpus half measures the directive sites directly"
+    }
+  }
+}

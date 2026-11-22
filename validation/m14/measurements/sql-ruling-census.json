@@ -1,0 +1,146 @@
+{
+  "language": "sql",
+  "rule": {
+    "population": "the WHOLE admitted population: every `.sql` file under the corpus root, walked with `statSync` (SYMLINK-FOLLOWING), admitted when present AND <= 1,048,576 bytes",
+    "counting": "NODE counts over the served build's own parse: how many times the construct's node type occurs, and in how many files",
+    "reading": "a count is the NEAR MISS's size, not the type's verdict: the contract decides whether the near miss IS the type, and the contract is cited in each `whyNot`"
+  },
+  "population": {
+    "paths": 1970,
+    "distinctFiles": 1970,
+    "admitted": 1964,
+    "overCap": 6,
+    "symlinkedDirsFollowed": 183,
+    "symlinkedDirsFollowedInsideRepos": 182,
+    "symlinkedTopLevelEntries": 1,
+    "reposCarryingAdmittedFiles": 20,
+    "parsed": 1964,
+    "parseFailures": 0
+  },
+  "rulings": [
+    {
+      "type": "part_of",
+      "nearMiss": "a TABLE PARTITION — `CREATE TABLE ... PARTITION OF <parent>` — a table that is a FRAGMENT of another table",
+      "nearMissSites": 50,
+      "nearMissFiles": 29,
+      "perNodeType": [
+        {
+          "nodeType": "table_partition",
+          "sites": 6,
+          "files": 1
+        },
+        {
+          "nodeType": "partition_by",
+          "sites": 44,
+          "files": 29
+        }
+      ],
+      "whyNot": "the contract (`src/ast/types.ts:164-190`) is about a library unit INCLUDING a part FILE: a part shares the library's single scope, imports nothing, and cannot be resolved as a separate module. A partition is a TABLE, it resolves as its own relation, and it is a row-level storage division — a table-level `part_of` candidate, not the file-level one the contract names."
+    },
+    {
+      "type": "renders",
+      "nearMiss": "a VIEW — `CREATE VIEW v AS SELECT ...` — a named relation that RENDERS a query's result",
+      "nearMissSites": 755,
+      "nearMissFiles": 141,
+      "perNodeType": [
+        {
+          "nodeType": "create_view",
+          "sites": 752,
+          "files": 141
+        },
+        {
+          "nodeType": "create_materialized_view",
+          "sites": 3,
+          "files": 2
+        }
+      ],
+      "whyNot": "the contract (`src/ast/types.ts:146-154`) makes the TARGET a rendered COMPONENT that a renderer constructs. A view's target is a QUERY, and the view IS a relation rather than a renderer of a component; there is no component-shaped target in the construct at all."
+    },
+    {
+      "type": "decorates",
+      "nearMiss": "a COMMENT ON <object> — text that DECORATES the object it is attached to",
+      "nearMissSites": 1398,
+      "nearMissFiles": 343,
+      "perNodeType": [
+        {
+          "nodeType": "comment_statement",
+          "sites": 1398,
+          "files": 343
+        }
+      ],
+      "whyNot": "the contract (`src/ast/types.ts:137-144`) makes the SOURCE the decorated DECLARATION and the TARGET the decorator, applied by the runtime at creation. A COMMENT is text attached after the fact: it names no decorator, and the direction of the useful edge (object -> comment) is the opposite of the contract's."
+    },
+    {
+      "type": "mixes_in",
+      "nearMiss": "a routine BODY — `CREATE FUNCTION ... $$ ... $$` — code MIXED INTO the routine's own scope",
+      "nearMissSites": 2349,
+      "nearMissFiles": 297,
+      "perNodeType": [
+        {
+          "nodeType": "create_function",
+          "sites": 1174,
+          "files": 297
+        },
+        {
+          "nodeType": "procedure_body",
+          "sites": 1,
+          "files": 1
+        },
+        {
+          "nodeType": "function_body",
+          "sites": 1174,
+          "files": 297
+        }
+      ],
+      "whyNot": "the contract (`src/ast/types.ts:155-162`) makes the SOURCE a class COMPOSING a mixin into its SUPERTYPE CHAIN. A routine body is not a mixin and there is no supertype chain in it; the only SQL construct that composes members into a type's chain is the inheritance clause, which is 0 sites and belongs to `extends`."
+    },
+    {
+      "type": "exports",
+      "nearMiss": "a routine that RETURNS a result set — `RETURNS TABLE` / `RETURNS SETOF` — a unit PUBLISHING a named result",
+      "nearMissSites": 2511,
+      "nearMissFiles": 297,
+      "perNodeType": [
+        {
+          "nodeType": "create_function",
+          "sites": 1174,
+          "files": 297
+        },
+        {
+          "nodeType": "create_procedure",
+          "sites": 1,
+          "files": 1
+        },
+        {
+          "nodeType": "function_declaration",
+          "sites": 1336,
+          "files": 195
+        }
+      ],
+      "whyNot": "the contract's export is a MODULE's named export. A SQL routine publishes a result over a CALL, it does not export a name from a module scope, and the grammar carries no export node type at all (`keyword_export` is absent from the served build's 594)."
+    },
+    {
+      "type": "implements",
+      "nearMiss": "a DOMAIN or a base TYPE — `CREATE DOMAIN d AS <base>` / `CREATE TYPE ... (...)` — a type that CONFORMS to a base type",
+      "nearMissSites": 23,
+      "nearMissFiles": 6,
+      "perNodeType": [
+        {
+          "nodeType": "create_type",
+          "sites": 23,
+          "files": 6
+        },
+        {
+          "nodeType": "create_domain",
+          "sites": 0,
+          "files": 0
+        },
+        {
+          "nodeType": "type_definition",
+          "sites": 0,
+          "files": 0
+        }
+      ],
+      "whyNot": "the contract's implements is a type DECLARING conformance to an INTERFACE — a named contract with no body. SQL declares no interface: a domain over a base type is a VALUE RESTRICTION, not a conformance declaration, and the served build carries no implement/interface/super node type (measured: 0 of 594)."
+    }
+  ]
+}

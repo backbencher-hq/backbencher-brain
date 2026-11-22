@@ -1,0 +1,704 @@
+julia ontology census
+corpus root: /home/ishaq2321/bb_tests/repositories
+admitted files: 1985
+excluded over 512 KB: 0 .jl file(s) — THIS is the cut to the julia population
+                 1176 non-.jl tracked file(s) in the SHARED corpus root (other lanes' repos), which is why this number moves when another agent clones
+per repo: Documenter.jl=101, LanguageServer.jl=57, Flux.jl=100, GLM.jl=14, julia=941, StaticArrays.jl=111, DataFrames.jl=73, Query.jl=30, json_jl=25, Aqua.jl=51, Graphs.jl=253, DifferentialEquations.jl=5, Pkg.jl=219, nvim-treesitter=5
+
+files the production grammar could not read at all: 0
+INSTRUMENT A — grammar inventory
+production grammar: wasm/tree-sitter-julia.wasm  md5 84cd9327586eea3d53d0c2f9d7a9c4c5
+distinct node types produced over 1985 files: 149
+total nodes visited: 7,164,958
+node types that would express a protocol/interface conformance clause: 12 named
+  present in the grammar's observed output: NONE — instrument A returns zero
+
+THE LANGUAGE HALF — declared vocabulary of the WIRED bytes, not of the corpus
+  wasm/tree-sitter-julia.wasm declares 245 symbol ids = 224 unique names (named and anonymous both scanned)
+  of those, expressing a protocol/interface conformance relation: 0 — NOT ONE
+    scanned for: interface, implements, implement, protocol, trait, conform, contract, mixin
+  CONTROL 1 (same code path, grammar that HAS the construct) wasm/tree-sitter-typescript.wasm: 6 — implements, implements_clause, implements_clause_repeat1, interface, interface_body, interface_declaration
+  CONTROL 2 (the scanner must see words julia HAS): struct=2  abstract=2  where=2  function=3
+
+observed node types (type=count, most frequent first):
+  identifier=1,586,557  (=434,870  )=434,649  ,=408,941  operator=406,640  argument_list=381,521      
+  call_expression=366,491  integer_literal=215,698  binary_expression=187,873  content=144,496  @=120,873  .=120,850
+  macro_identifier=120,812  macrocall_expression=120,326  assignment=120,134  field_expression=115,377  "=113,563  string_literal=109,902
+  macro_argument_list=109,846  :=81,131  [=69,349  ]=69,192  end=67,326  line_comment=66,472          
+  vector_expression=62,577  ::=61,327  typed_expression=54,623  {=54,394  }=54,393  curly_expression=54,386
+  parametrized_type_expression=50,132  quote_expression=49,469  index_expression=41,826  named_argument=41,512  escape_sequence=40,835  tuple_expression=28,963
+  float_literal=25,279  boolean_literal=23,382  parenthesized_expression=21,859  unary_expression=20,872  range_expression=20,047  return=20,036
+  return_statement=20,023  if=17,368  ;=17,249  if_statement=17,085  signature=16,461  matrix_row=16,424
+  $=16,312  function=15,792  function_definition=15,753  for_binding=13,417  true=12,543  for=12,391  
+  ERROR=11,998  prefixed_string_literal=10,907  false=10,849  string_interpolation=10,526  for_statement=9,863  begin=8,007
+  compound_statement=7,974  ...=7,448  juxtaposition_expression=7,408  splat_expression=7,367  """=7,294  unary_typed_expression=6,535
+  where=6,535  where_expression=6,531  character_literal=6,288  open_tuple=5,789  interpolation_expression=5,684  ->=5,640
+  else=5,587  arrow_function_expression=5,583  else_clause=5,572  ?=5,221  ternary_expression=5,213  matrix_expression=4,930
+  compound_assignment_expression=4,571  elseif=4,272  elseif_clause=4,259  ==4,208  do=4,063  do_clause=4,011
+  let_binding=3,784  let=3,701  let_statement=3,656  named_field=3,621  type_head=3,555  const=3,548  
+  const_statement=3,538  struct=3,182  struct_definition=3,178  for_clause=2,483  using=2,370  using_statement=2,368
+  source_file=1,936  broadcast_call_expression=1,851  comprehension_expression=1,640  try_statement=1,584  try=1,584  while=1,363
+  while_statement=1,361  continue_statement=1,293  `=1,181  command_literal=1,176  module_definition=1,169  module=1,132
+  catch_clause=1,113  catch=1,113  selected_import=1,056  break_statement=924  .==913  import=787     
+  import_statement=786  global=724  global_statement=698  macro=688  macro_definition=682  local=679  
+  import_path=675  local_statement=673  mutable=661  scoped_identifier=628  block_comment=617  finally=535
+  finally_clause=534  quote=517  quote_statement=512  '=496  adjoint_expression=486  type=388         
+  export_statement=367  export=367  abstract=291  abstract_definition=290  if_clause=249  primitive=94
+  primitive_definition=84  baremodule=54  :==54  public_statement=49  public=49  as=35                
+  import_alias=32  ```=21  outer=21  prefixed_command_literal=9  $==1                                 
+
+INSTRUMENT A' — L2 reference audit (lane-owned substitute; julia is absent from
+script/m14/audit-analyzer-grammar.ts's language list, so the shared gate cannot speak here)
+  node-type CLAIMS in src/ast/real-julia-analyzer.ts: 58
+  of those, NOT produced by the production grammar on any of 1985 corpus files: 0
+
+INSTRUMENT B — parse-tree semantic counts (a string literal cannot fake a node)
+
+  B: every `<:` / `>:` clause (julia's ONLY supertype construct)
+    ontology types: extends, implements
+    occurrences: 5,607   files: 604
+      e.g. Documenter.jl/src/builder_pipeline.jl:23 `DocumentPipeline` <: `Selectors.AbstractSelector`
+      e.g. Documenter.jl/src/builder_pipeline.jl:28 `SetupBuildDirectory` <: `DocumentPipeline`
+      e.g. Documenter.jl/src/builder_pipeline.jl:33 `Doctest` <: `DocumentPipeline`
+      e.g. Documenter.jl/src/builder_pipeline.jl:38 `ExpandTemplates` <: `DocumentPipeline`
+
+  B: `<:` / `>:` in a `type_head` — a declared type's supertype
+    ontology types: extends
+    occurrences: 1,706   files: 390
+
+  B: `<:` / `>:` in a `where`/curly — a type PARAMETER's bound
+    ontology types: extends
+    occurrences: 3,901   files: 418
+
+  B: `import_statement` / `using_statement` — a file-to-module dependency
+    ontology types: imports
+    occurrences: 3,154   files: 961
+      e.g. Documenter.jl/.github/scripts/julia-manual-regression-test.jl:7 using Dates, InteractiveUtils, Pkg
+      e.g. Documenter.jl/assets/html/verify.jl:7 using Test
+      e.g. Documenter.jl/assets/html/verify.jl:8 using Documenter: HTMLWriter, git
+      e.g. Documenter.jl/docs/changelog.jl:1 using Changelog
+
+  B: `export_statement` / `public_statement` — a module publishing a binding
+    ontology types: exports
+    occurrences: 416   files: 210
+      e.g. Documenter.jl/src/Documenter.jl:102 export makedocs, deploydocs, hide, doctest, DocMeta, asset, RawH
+      e.g. Documenter.jl/src/expander_pipeline.jl:632 public = get(fields, :Public, true) private
+      e.g. Documenter.jl/src/expander_pipeline.jl:640 public
+      e.g. Documenter.jl/src/html/HTMLWriter.jl:82 export HTML
+
+  B: method redefinition — same name AND same signature declared twice in one file
+    ontology types: overrides
+    occurrences: 487   files: 130
+      e.g. Documenter.jl/test/examples/make.jl: `f` with an identical signature declared at lines 89, 103, 118
+      e.g. Documenter.jl/test/examples/make.jl: `m` with an identical signature declared at lines 98, 112, 127
+      e.g. Documenter.jl/test/missingdocs/make.jl: `f` with an identical signature declared at lines 10, 21
+      e.g. LanguageServer.jl/src/utilities.jl: `_splitdir_nodrive` with an identical signature declared at lines 136, 185
+
+  B: …and the replacement is UNCONDITIONAL (not in an if/else/try/catch/ternary/&& or generated)
+    ontology types: overrides
+    occurrences: 276   files: 67
+      e.g. Documenter.jl/test/examples/make.jl: `f` at lines 89, 103, 118
+      e.g. Documenter.jl/test/examples/make.jl: `m` at lines 98, 112, 127
+      e.g. Documenter.jl/test/missingdocs/make.jl: `f` at lines 10, 21
+      e.g. Flux.jl/perf/reactant/benchmark.jl: `step!` at lines 220, 265, 307
+
+  B: …and inside a DECLARED module (the analyzer's edge source must be a real symbol)
+    ontology types: overrides
+    occurrences: 49   files: 17
+      e.g. Documenter.jl/test/examples/make.jl: `f` at lines 89, 103, 118 in scope `B`
+      e.g. Documenter.jl/test/examples/make.jl: `m` at lines 98, 112, 127 in scope `B`
+      e.g. Documenter.jl/test/missingdocs/make.jl: `f` at lines 10, 21 in scope `UndocumentedSubmodule`
+      e.g. julia/Compiler/test/contextual.jl: `f` at lines 136, 138 in scope `contextual`
+
+  B: a call of a type name declared in the same file (julia has no `new`)
+    ontology types: instantiates
+    occurrences: 7,333   files: 534
+      e.g. Documenter.jl/docs/DocumenterShowcase.jl:113 Foo(...)
+      e.g. Documenter.jl/src/DocSystem.jl:324 APIStatus(...)
+      e.g. Documenter.jl/src/DocSystem.jl:336 APIStatus(...)
+      e.g. Documenter.jl/src/DocSystem.jl:336 APIStatus(...)
+
+  B: a supertype clause naming an `abstract type` declared in the same file
+    ontology types: implements
+    occurrences: 449   files: 87
+      e.g. Documenter.jl/src/builder_pipeline.jl:28 `SetupBuildDirectory` <: abstract `DocumentPipeline`
+      e.g. Documenter.jl/src/builder_pipeline.jl:33 `Doctest` <: abstract `DocumentPipeline`
+      e.g. Documenter.jl/src/builder_pipeline.jl:38 `ExpandTemplates` <: abstract `DocumentPipeline`
+      e.g. Documenter.jl/src/builder_pipeline.jl:43 `CrossReferences` <: abstract `DocumentPipeline`
+
+  B: `&&` binary_expressions / of those with a DECLARATION node on the right (the `&&` branch of isUnconditionalPosition)
+    ontology types: overrides
+    occurrences: 14,710   files: 1985
+    of those, matching the probe's second clause: 1 (ALL of them, not a sample)
+      > julia/JuliaSyntax/src/core/parse_stream.jl:316 `function ParseStream(io::IOBuffer; version=VERSION)`
+      e.g. Documenter.jl/.github/scripts/julia-manual-regression-test.jl: 0 `&&`, 0 with a declaration on the right
+      e.g. Documenter.jl/assets/html/verify.jl: 1 `&&`, 0 with a declaration on the right
+      e.g. Documenter.jl/docs/DocumenterShowcase.jl: 0 `&&`, 0 with a declaration on the right
+      e.g. Documenter.jl/docs/changelog.jl: 0 `&&`, 0 with a declaration on the right
+
+  B: `||` binary_expressions / of those with a DECLARATION node on the right (the SAME branch with the other operator)
+    ontology types: overrides
+    occurrences: 6,537   files: 1985
+    of those, matching the probe's second clause: 0 (ALL of them, not a sample)
+      none — this branch is UNREACHABLE over the corpus
+      e.g. Documenter.jl/.github/scripts/julia-manual-regression-test.jl: 0 `||`, 0 with a declaration on the right
+      e.g. Documenter.jl/assets/html/verify.jl: 0 `||`, 0 with a declaration on the right
+      e.g. Documenter.jl/docs/DocumenterShowcase.jl: 0 `||`, 0 with a declaration on the right
+      e.g. Documenter.jl/docs/changelog.jl: 0 `||`, 0 with a declaration on the right
+
+  B: …and NOT a local binding (no enclosing function body / do / let / ->; inside those, `f(x) = …` binds a closure and enters no method table)
+    ontology types: overrides
+    occurrences: 203   files: 52
+      e.g. Documenter.jl/test/examples/make.jl: `f` at lines 89, 103, 118
+      e.g. Documenter.jl/test/examples/make.jl: `m` at lines 98, 112, 127
+      e.g. Documenter.jl/test/missingdocs/make.jl: `f` at lines 10, 21
+      e.g. julia/Compiler/test/contextual.jl: `f` at lines 136, 138
+
+  B: …and the enclosing scope differs from the earlier declaration's (the pre-fix key omitted scope, so two closures in different functions collided)
+    ontology types: overrides
+    occurrences: 161   files: 46
+      e.g. julia/Compiler/test/contextual.jl: `f` at lines 136, 138 all in scope `contextual`
+      e.g. julia/Compiler/test/effects.jl: `f_redefine_me` at lines 351, 355 all in scope `<file-scope>`
+      e.g. julia/Compiler/test/inference.jl: `wrapper62338_bump` at lines 65, 76 all in scope `<file-scope>`
+      e.g. julia/Compiler/test/inference.jl: `Size62001` at lines 2823, 2824 all in scope `<file-scope>`
+
+PRODUCTION PATH — parseFile() from src/ast/pool-worker.ts over 1985 files
+symbols: 38,179   relationships in the 10 ontology types: 238,130
+files ANALYSED: 1985 of 1985 admitted   files yielding ZERO symbols: 365   parseFile threw: 0
+DEGRADED (parseFile returned fallback:true — its symbols and edges are in NEITHER total above): 0
+  none. Every one of the 1985 admitted files produced a real tree, so the totals above are a whole-population measurement.
+  zero-symbol examples: Documenter.jl/docs/changelog.jl, Documenter.jl/docs/make.jl, Documenter.jl/src/docs_precompile/make.jl, Documenter.jl/test/formats/latex.jl, Documenter.jl/test/manual.jl, Documenter.jl/test/nongit/docs/make.jl, Documenter.jl/test/nongit/tests.jl, Documenter.jl/test/online/runtests.jl, Documenter.jl/test/search/run_all_benchmarks.jl, Documenter.jl/test/search_edge_cases/make.jl, Documenter.jl/test/workdir/tests.jl, LanguageServer.jl/docs/make.jl
+ORPHANED BOMBS that fired during this run: 0 (engine.ts:1441-1447 arms a 120s exit(1) before parser.parse and clears it after, so a THROW leaves it armed; this census observed them rather than dying of them)
+
+PER-TYPE — EXISTS/FIRES (production parseFile), LABELLED (evidenceClass), CONFIDENT (confidence)
+
+  "files" is the TRUE count of distinct files the type appeared in. An earlier version of this
+  table capped the set at 6 to keep the output short, which made every large type print "6" — a
+  number that reads as a measurement and is a display limit.
+
+type      edges     conf<0.7 heur%   files  evidenceClass                     
+------------------------------------------------------------------------------
+calls     121,938   0        0.0     1854   1:121938  usage_contextual:121752 <none>:186                                                                        
+uses      37,101    0        0.0     1480   0.9:37101  usage_contextual:37101                                                                                   
+contains  14,804    0        0.0     910    1:14804  structural:14804                                                                                           
+imports   3,384     0        0.0     961    1:3384  import_based:3384                                                                                           
+references52,122    0        0.0     1664   1:48679 0.95:3443  import_based:52122                                                                               
+exports   2,797     0        0.0     207    1:2797  import_based:2797                                                                                           
+extends   2,522     0        0.0     536    1:2522  structural:2522                                                                                             
+implements0         —        —       —      NOT EMITTED                       
+overrides 3         0        0.0     3      1:3  structural:3                                                                                                   
+instantiates3,459     0        0.0     533    0.9:3459  usage_contextual:3459                                                                                   
+
+RECONCILIATION — files CONTAINING the construct vs files where the edge fired
+
+  Two numbers that should agree and do not are the only signal that finds a silent
+  omission: a dropped construct parses without an ERROR node and its file still
+  publishes symbols, so nothing else here would notice.
+
+  imports   files with the construct: 961   files with >=1 edge: 961   silent: 0
+  exports   files with the construct: 210   files with >=1 edge: 207   silent: 3
+      Documenter.jl/src/expander_pipeline.jl
+      julia/stdlib/REPL/src/docview.jl
+      julia/test/precompile.jl
+
+SYMBOL KINDS
+
+  function       21,662
+  property       7,314
+  constant       3,161
+  class          3,128
+  module         1,139
+  variable       858
+  macro          555
+  interface      362
+  empty/unknown kind: 0   empty name: 0
+  endpoint === "unknown" that DOES resolve to a declared symbol: 11
+  endpoint === "unknown" that does NOT resolve: 0  (none)
+
+SYNTHETIC SOURCES — a relationship source that is not a declared symbol in any file
+
+  type=calls       source="global"  25,792 edges
+  type=uses        source="global"  7,746 edges
+  type=references  source="global"  4,066 edges
+  type=references  source="root"    3,230 edges
+  type=imports     source="root"    1,635 edges
+  type=exports     source="root"    797 edges
+  type=instantiates source="global"  739 edges
+
+RESOLVED — both endpoints bind to a symbol declared in the SAME file (the analyzer is per-file)
+
+  Measured against the FILE's own symbol table. An earlier version of this census kept one
+  union set of every name in the corpus and asked "is this endpoint in the set", which is
+  neither this number nor the project-wide one below, and which cannot see a name published
+  twice in one file — the case the incoming table exists to count.
+
+type      edges     both%   src%    tgt%    neither% 
+-----------------------------------------------------
+calls     121,938   17.3    78.8    19.9    18.5     
+uses      37,101    26.6    79.1    28.7    18.7     
+contains  14,804    0.1     100.0   0.1     0.0      
+imports   3,384     0.4     51.7    0.7     48.0     
+references52,122    16.2    86.0    17.4    12.8     
+exports   2,797     29.5    71.5    40.5    17.5     
+extends   2,522     19.6    54.6    27.4    37.5     
+implements0
+overrides 3         100.0   100.0   100.0   0.0      
+instantiates3,459     78.6    78.6    100.0   0.0      
+
+INCOMING — can the graph WALK TO the other end of each edge? (per-file, single-threaded)
+
+type       edges    in-file-unique        in-file-ambiguous-disambiguatedin-file-ambiguous-residualforeign-ccall         external-by-import    corpus-only           local-binding         unresolvable          synthetic-scope       
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+calls      121,938  23,408                543                   341                   1,593                 5,838                 78,768                964                   10,483                0                     
+uses       37,101   8,025                 365                   2,261                 0                     0                     20,331                2,245                 3,857                 17                    
+contains   14,804   15                    0                     0                     0                     580                   40                    0                     14,169                0                     
+imports    3,384    19                    0                     3                     0                     348                   1,810                 0                     1,204                 0                     
+references 52,122   3,948                 4,801                 337                   0                     1,917                 27,932                3,383                 9,804                 0                     
+exports    2,797    950                   0                     184                   0                     0                     1,360                 6                     297                   0                     
+extends    2,522    608                   74                    9                     0                     85                    1,259                 121                   366                   0                     
+implements 0        —                     —                     —                     —                     —                     —                     —                     —                     —                     
+overrides  3        2                     0                     1                     0                     0                     0                     0                     0                     0                     
+instantiates3,459    1,451                 1,947                 61                    0                     0                     0                     0                     0                     0                     
+
+  TARGET buckets, and what each one CLAIMS:
+    in-file-unique     resolves in this file, one symbol
+    in-file-ambiguous-disambiguated >1 symbol, but exactly ONE matches the kind the relationship type implies
+    in-file-ambiguous-residual >1 symbol and NOT disambiguated by kind — a genuine collision
+    foreign-ccall      a C symbol, so by the file's own declaration (isForeignCall)
+    external-by-import qualified root is imported by THIS file (tree-read import path)
+    corpus-only        declared in another file of this corpus
+    local-binding      bound in this file and NOT published — a parameter/loop/let/catch binding
+    unresolvable       resolves to nothing — external package, dynamic dispatch, or a lost declaration
+    synthetic-scope    synthetic scope name (global/root), not a symbol
+
+  SOURCE buckets are the same seven classes, measured the same way and printed in the JSON as
+  `incomingSource`; `global` and `root` are this repo's synthetic scopes and appear there
+  as `synthetic-scope`, which is the count the SYNTHETIC SOURCES table above itemises.
+
+AMBIGUOUS TARGETS — a name this file publishes under MORE THAN ONE kind
+
+  calls: 180 distinct names across 884 edges
+    lock                          70 edges  3 symbols across kinds function,property,macro
+      at julia/base/condition.jl:24  |  julia/base/condition.jl:128  |  julia/base/lock.jl:239
+    parent                        64 edges  3 symbols across kinds property,function
+      at julia/base/reinterpretarray.jl:210  |  julia/base/reinterpretarray.jl:229  |  julia/base/reinterpretarray.jl:287
+    f                             53 edges  2 symbols across kinds function,property,variable,macro,constant
+      at julia/Compiler/test/codegen.jl:589  |  julia/Compiler/test/effects.jl:63  |  julia/Compiler/test/effects.jl:292
+    fail                          53 edges  2 symbols across kinds function,macro
+      at julia/JuliaLowering/src/validation.jl:153  |  julia/JuliaLowering/src/validation.jl:366  |  julia/JuliaLowering/src/validation.jl:405
+    children                      27 edges  2 symbols across kinds property,function
+      at julia/JuliaSyntax/src/porcelain/green_node.jl:32  |  julia/JuliaSyntax/src/porcelain/green_node.jl:35  |  julia/JuliaSyntax/src/porcelain/green_node.jl:44
+    step                          23 edges  3 symbols across kinds property,function
+      at julia/base/range.jl:495  |  julia/base/range.jl:498  |  julia/base/range.jl:744
+    …and 174 more names, all in the JSON's `incoming.ambiguousTargets`
+  uses: 495 distinct names across 2626 edges
+    x                            147 edges  6 symbols across kinds property,constant,variable,macro
+      at Flux.jl/test/layers/basic.jl:296  |  Flux.jl/test/layers/basic.jl:297  |  julia/Compiler/test/EscapeAnalysis.jl:1445
+    parent                        68 edges  3 symbols across kinds property,function
+      at julia/Compiler/src/abstractlattice.jl:32  |  julia/Compiler/test/AbstractInterpreter.jl:309  |  julia/base/reinterpretarray.jl:190
+    name                          59 edges  4 symbols, ALL kind property (several methods of one name, or one field name in several structs)
+      at Documenter.jl/src/documents.jl:1170  |  Documenter.jl/src/utilities/DOM.jl:147  |  Documenter.jl/src/utilities/DOM.jl:197
+    f                             50 edges  2 symbols across kinds property,function,variable,macro,constant
+      at julia/Compiler/test/effects.jl:63  |  julia/Compiler/test/effects.jl:1612  |  julia/Compiler/test/inference.jl:1263
+    handle                        42 edges  3 symbols, ALL kind property (several methods of one name, or one field name in several structs)
+      at julia/base/asyncevent.jl:26  |  julia/base/asyncevent.jl:136  |  julia/base/asyncevent.jl:169
+    status                        42 edges  2 symbols across kinds property,function
+      at julia/base/stream.jl:140  |  julia/base/stream.jl:199  |  julia/base/stream.jl:250
+    …and 489 more names, all in the JSON's `incoming.ambiguousTargets`
+  imports: 2 distinct names across 3 edges
+    Bar                            2 edges  4 symbols across kinds class,module,variable
+      at julia/test/errorshow.jl:1451  |  julia/test/errorshow.jl:1488
+    JuliaLowering                  1 edges  2 symbols, ALL kind constant (several methods of one name, or one field name in several structs)
+      at julia/JuliaLowering/test/utils.jl:4
+  references: 784 distinct names across 5138 edges
+    BigInt                       107 edges  3 symbols across kinds class,function
+      at julia/base/gmp.jl:159  |  julia/base/gmp.jl:160  |  julia/base/gmp.jl:165
+    ParseState                    96 edges  2 symbols across kinds class,function
+      at julia/JuliaSyntax/src/julia/parser.jl:34  |  julia/JuliaSyntax/src/julia/parser.jl:51  |  julia/JuliaSyntax/src/julia/parser.jl:61
+    BigFloat                      70 edges  3 symbols across kinds class,function
+      at julia/base/mpfr.jl:183  |  julia/base/mpfr.jl:201  |  julia/base/mpfr.jl:216
+    MIState                       66 edges  2 symbols across kinds class,function
+      at julia/stdlib/REPL/src/LineEdit.jl:289  |  julia/stdlib/REPL/src/LineEdit.jl:336  |  julia/stdlib/REPL/src/LineEdit.jl:460
+    Complex                       63 edges  2 symbols across kinds class,function
+      at julia/base/complex.jl:38  |  julia/base/complex.jl:42  |  julia/base/complex.jl:49
+    Parser                        56 edges  2 symbols across kinds class,function
+      at julia/base/toml/parser.jl:139  |  julia/base/toml/parser.jl:167  |  julia/base/toml/parser.jl:182
+    …and 778 more names, all in the JSON's `incoming.ambiguousTargets`
+  exports: 148 distinct names across 184 edges
+    x                             12 edges  5 symbols across kinds property,variable,macro,constant
+      at julia/test/core.jl:9160  |  julia/test/core.jl:9163  |  julia/test/core.jl:9166
+    f                              9 edges  6 symbols across kinds function,variable
+      at Documenter.jl/test/missingdocs/make.jl:7  |  Documenter.jl/test/missingdocs/make.jl:18  |  julia/stdlib/REPL/test/repl.jl:1268
+    foo                            5 edges  4 symbols across kinds function,macro
+      at julia/stdlib/REPL/test/replcompletions.jl:21  |  julia/test/docs.jl:92  |  julia/test/docs.jl:800
+    X                              4 edges  3 symbols, ALL kind class (several methods of one name, or one field name in several structs)
+      at julia/test/core.jl:9201  |  julia/test/core.jl:9202  |  julia/test/core.jl:9203
+    C                              3 edges  2 symbols across kinds class,constant
+      at julia/test/ambiguous.jl:159  |  julia/test/ambiguous.jl:163  |  julia/test/docs.jl:853
+    HTML                           2 edges  2 symbols across kinds class,function
+      at Documenter.jl/src/html/HTMLWriter.jl:82  |  julia/base/docs/utils.jl:7
+    …and 142 more names, all in the JSON's `incoming.ambiguousTargets`
+  extends: 48 distinct names across 83 edges
+    Sampler                        7 edges  2 symbols across kinds interface,function
+      at julia/stdlib/Random/src/Random.jl:164  |  julia/stdlib/Random/src/Random.jl:175  |  julia/stdlib/Random/src/Random.jl:195
+    BroadcastStyle                 4 edges  2 symbols across kinds interface,function
+      at julia/base/broadcast.jl:36  |  julia/base/broadcast.jl:47  |  julia/base/broadcast.jl:77
+    IteratorSize                   4 edges  2 symbols across kinds interface,function
+      at julia/base/generator.jl:64  |  julia/base/generator.jl:65  |  julia/base/generator.jl:66
+    Signed                         3 edges  2 symbols across kinds interface,function
+      at julia/base/boot.jl:280  |  julia/base/boot.jl:282  |  julia/base/boot.jl:288
+    OrdinalRange                   3 edges  2 symbols across kinds interface,function
+      at julia/base/range.jl:311  |  julia/base/range.jl:339  |  julia/base/range.jl:1397
+    AbstractUnitRange              3 edges  2 symbols across kinds interface,function
+      at julia/base/range.jl:425  |  julia/base/range.jl:476  |  julia/base/range.jl:1336
+    …and 42 more names, all in the JSON's `incoming.ambiguousTargets`
+  overrides: 1 distinct names across 1 edges
+    foo                            1 edges  4 symbols, ALL kind function (several methods of one name, or one field name in several structs)
+      at julia/test/reflection.jl:1123
+  instantiates: 831 distinct names across 2008 edges
+    Complex                       38 edges  2 symbols across kinds class,function
+      at julia/base/complex.jl:17  |  julia/base/complex.jl:36  |  julia/base/complex.jl:169
+    BigFloat                      32 edges  3 symbols across kinds class,function
+      at julia/base/mpfr.jl:297  |  julia/base/mpfr.jl:306  |  julia/base/mpfr.jl:314
+    ParserError                   25 edges  2 symbols across kinds class,function
+      at julia/base/toml/parser.jl:340  |  julia/base/toml/parser.jl:629  |  julia/base/toml/parser.jl:650
+    BigInt                        20 edges  3 symbols across kinds class,function
+      at julia/base/gmp.jl:98  |  julia/base/gmp.jl:163  |  julia/base/gmp.jl:177
+    CartesianIndex                20 edges  3 symbols across kinds class,function
+      at julia/base/multidimensional.jl:80  |  julia/base/multidimensional.jl:114  |  julia/base/multidimensional.jl:121
+    EscapeInfo                    18 edges  2 symbols across kinds class,function
+      at julia/Compiler/src/ssair/EscapeAnalysis.jl:139  |  julia/Compiler/src/ssair/EscapeAnalysis.jl:140  |  julia/Compiler/src/ssair/EscapeAnalysis.jl:141
+    …and 825 more names, all in the JSON's `incoming.ambiguousTargets`
+
+  TOTAL ambiguous-target edges: 10,927
+
+  RESIDUAL AMBIGUITY — of the edges whose target names MORE THAN ONE published symbol, how
+  many the edge's OWN metadata picks out. This is the number that says whether an ambiguous
+  endpoint is a defect or a fact the consumer has to read, and it is computed per edge from
+  that edge's metadata, not from the type alone.
+
+type        multi-sym edgespicked out  rate    implied kinds             corpus-wide  
+--------------------------------------------------------------------------------------
+calls       884            543         61.4    function                  884          
+uses        2,626          365         13.9    property                  2,630        
+contains    0              —           —       —            
+imports     3              0           0.0     <none>                    3            
+references  5,138          4,801       93.4    class                     5,138        
+exports     184            0           0.0     <none>                    184          
+extends     83             74          89.2    class|interface           83           
+implements  0              —           —       —            
+overrides   1              0           0.0     function|macro            1            
+instantiates2,008          1,947       97.0    class                     2,008        
+
+  CROSS-CHECK: the residual table and the INCOMING buckets count the same edges — 10,927 in both.
+
+  `contains` reads 0% picked out and that is NOT a defect: its SOURCE is the owning
+  declaration, so `Owner -contains-> field` already names exactly one member, and `contains`
+  both-ends resolution is 99.9%. A bare field NAME colliding across structs is not something
+  the reverse walk has to choose between.
+  `overrides` reads 0% for a different reason: `julia/test/reflection.jl` declares FOUR
+  methods named `foo`, all of kind `function`, so the edge's kind narrows nothing. It is
+  disambiguated by `metadata.signature` and `metadata.replacesLine`, which the edge carries
+  and this table does not read.
+
+THE `calls` SPLIT — 122k edges, the largest bucket, classified by what the fix would act on
+
+  shape      edges     resolved   ambiguous  unresolved
+  bare       110529    37529      47283      25717
+  dotted     11409     2261       575        8573
+
+  OF THE 47,858 AMBIGUOUS `calls` EDGES:
+    target declared in the edge's OWN file:   8,408  (17.6%)
+    target declared in ANOTHER file only:     39,450  (82.4%)  <- the lua B2b shape
+    dotted callee whose ROOT the project declares:   495
+    dotted callee whose ROOT the project does NOT:   80
+    CEILING of an owner-qualification fix — the project publishes `<edge source>.<target>`
+    as a UNIQUE key, so targeting it resolves the edge:  346  (0.7% of ambiguous)
+
+  OF THE 34,290 UNRESOLVED `calls` EDGES:
+    target declared in the edge's own file:   0
+    dotted, root IS a project declaration:    5,623
+    dotted, root is NOT a project declaration:2,950  <- external by the project's own key space
+    bare (a bare name the project does not declare anywhere): 25,717
+
+  Cross-check against the gate's TABLE 1, same population: calls resolved 39,790 ·
+  ambiguous 47,858 · unresolved 34,290. A disagreement here is a finding, not a rounding.
+
+THE `imports` EXTERNAL CLAIMS — the must-be-zero column, audited edge by edge
+
+  imports edges: 3,384   claimed external: 2,412 (bare 2,412 / dotted 0)   unclaimed: 972
+  claim never read (target resolves or is ambiguous in the project): 1,288
+  claim read:  verified 1,163 (bare 1,163 / dotted 0)   REFUTED 0
+    of the refuted, the root IS declared in the importing file: 0  <- all an in-lane same-file basis can reach
+  Cross-check: REFUTED here is the incoming gate's extFAIL PLUS its `ext?` count, because a
+  path-like or punctuation-bearing spelling is UNVERIFIABLE to the gate and this audit does not
+  model that third outcome. Measured 2026-10-10: 208 here against 205 extFAIL + 3 ext? there.
+  The gate reads a BARE-target claim only where the target is already absent, so it verifies BY
+  CONSTRUCTION and cannot fail — the fleet ruled on 2026-10-10 that such a claim means "the
+  analyzer said so", not "the project confirmed it", and this lane reports its bare claims as such.
+  The trade a wholesale drop of DOTTED claims makes: extFAIL 0 -> 0 at the cost of 0 verified dotted claims -> unresolved.
+
+THE `references` SPLIT — three populations wearing one label, and what each rule could reach
+
+                        edges     resolved   ambiguous  unresolved
+  bare                  45426     14745      17906      12775
+  dotted                6696      1159       83         5454
+
+  BY MARKER (the marker set is what separates three different causes):
+  isTypeReference       45449     15007      17648      12794
+  isQualifiedReference  3443      49         10         3384
+  isImport              3230      848        331        2051
+
+  OF THE 17,989 AMBIGUOUS: own file 5,820 · another file only 12,169
+  OF THE 18,229 UNRESOLVED: dotted with an in-project ROOT 3,034 · root absent 2,420 · dotted whose LEAF is in the project 4,153
+
+  CEILINGS OF THE THREE CANDIDATE RULES (what each could RESOLVE):
+    scope key <source>.<target> unique:  ambiguous 158 · unresolved 0
+    leaf key  (dotted -> last segment):  ambiguous 10 · unresolved 1,958
+    own key   (the file's own declaration's qualifiedName): ambiguous 2,085 · unresolved 0
+    own key, STRICT (the analyzer's guard: the file declares the name exactly once): ambiguous 6 · resolved it would re-point 23
+    …and the BREAKAGE each retargeting rule would cause, counted rather than argued:
+    own key would move a RESOLVED edge:  23
+    leaf key would move a RESOLVED edge: 893
+
+  Cross-check against the gate's TABLE 1: references resolved 15,904 ·
+  ambiguous 17,989 · unresolved 18,229.
+
+THE `uses` SPLIT — a field-read type with a RECEIVER, where the own-key rule is not transferable
+
+                                edges     resolved   ambiguous  unresolved
+  bare                          37101     12212      17824      7065
+  dotted                        0         0          0          0
+
+  BY MARKER:
+  isFieldRead                   36954     12199      17716      7039
+  isFieldRead+isOperatorMember  147       13         108        26
+
+  DISTINCT member names carrying a `uses` edge: 7,719 — the population a schema-level rule would have to cover
+  OF THE 17,824 AMBIGUOUS: own file 7,140 · another file only 10,684
+  OF THE 7,065 UNRESOLVED: bare and declared nowhere 7,065 · dotted root in project 0 · dotted root absent 0
+
+  CEILINGS OF THE THREE CANDIDATE RULES (what each could RESOLVE):
+    scope key <source>.<target> unique:  ambiguous 331 · unresolved 0
+    leaf key  (dotted -> last segment):  ambiguous 0 · unresolved 0
+    own key   (the file's own declaration's qualifiedName): ambiguous 4,397 · unresolved 0
+    own key, STRICT (the analyzer's guard: the file declares the name exactly once): ambiguous 4,130
+    …and the SILENT RE-POINT each retargeting rule would cause, counted rather than argued:
+    own key would move a RESOLVED edge:  3,330 (strict guard: 3,330)
+    leaf key would move a RESOLVED edge: 0
+  NOTE the receiver: a `uses` target is the MEMBER of `x.field`, and the declaration it names
+  belongs to whatever type `x` holds — which this analyzer does not infer. A re-point count
+  above zero is therefore a WRONG-TARGET count, not a bucket count.
+  Cross-check against the gate's TABLE 1: uses resolved 12,212 ·
+  ambiguous 17,824 · unresolved 7,065.
+
+THE UNRESOLVED SPLIT — "is there a candidate AT ALL?", per type
+
+  type          unresolved  bare     dotted   another-proj  stdlib-root  other-root  tgt-elsewhere nowhere
+  calls         34290       25717    8573     18415         18711        383         91            15105
+  references    18229       12775    5454     7027          7272         328         11            10618
+  uses          7065        7065     0        3167          2864         303         0             3898
+  imports       2096        1163     933      564           486          102         0             1508
+  extends       658         569      89       219           221          4           0             433
+  exports       329         329      0        32            29           3           0             297
+  TOTAL         62667       47618    15049    29424         29583        1123        102           31859
+
+  THE STDLIB SURFACE as the ARBITER derives it — every name the corpus's `julia` repository
+  declares, leaf-reduced, a fact about the corpus rather than a list the claimant supplies:
+    names in the surface: 19,581  ·  distinct ROOTS the 29,583 stdlib-root edges name: 1,384
+  THE YAML REVERSE CHECK — of those 29,583 edges, does the edge's OWN project declare ANY key whose leaf
+  equals the target's leaf? A yes is a claim that must NOT be made (extFAIL cannot see it):
+    safe to confirm: 24,814   leaf-collision risk: 4,769   root-leaf risk: 0
+      calls          stdlib-root 18711   safe 15183   leaf-risk 3528    root-risk 0
+      references     stdlib-root 7272    safe 6660    leaf-risk 612     root-risk 0
+      uses           stdlib-root 2864    safe 2257    leaf-risk 607     root-risk 0
+      imports        stdlib-root 486     safe 472     leaf-risk 14      root-risk 0
+      extends        stdlib-root 221     safe 214     leaf-risk 7       root-risk 0
+      exports        stdlib-root 29      safe 28      leaf-risk 1       root-risk 0
+
+  THE NOWHERE CLASS SUB-CLASSIFIED — the largest unresolved class gets a cause, not a label:
+    local binding (a call through a VALUE: param/loop/let/catch/destructuring — unresolvable in
+    any name-keyed graph, and the repo's standing contract says a binding is not a declaration):
+      8,679  of which SAME FILE (the implementable slice): 1,361
+        calls          same-file 203  of 2248 binding edges
+        references     same-file 1089  of 5496 binding edges
+        uses           same-file 41  of 577 binding edges
+        imports        same-file 16  of 198 binding edges
+        extends        same-file 12  of 129 binding edges
+        e.g. Documenter.jl/src/DocSystem.jl: calls getmeta -> Docs.meta
+        e.g. Documenter.jl/src/cross_references.jl: calls find_docref -> Documenter.DocSystem.binding
+        e.g. Documenter.jl/src/expander_pipeline.jl: calls Selectors.runner -> Documenter.DocSystem.binding
+        e.g. Documenter.jl/src/html/HTMLWriter.jl: calls domify -> article
+        e.g. Documenter.jl/src/html/write_inventory.jl: calls write_inventory -> Documenter.anchor
+        e.g. Documenter.jl/src/latex/LaTeXWriter.jl: calls latex -> MarkdownAST.Node
+        e.g. Documenter.jl/docs/DocumenterShowcase.jl: references foo -> AbstractString
+        e.g. Documenter.jl/docs/DocumenterShowcase.jl: references bar -> AbstractString
+        e.g. Documenter.jl/src/DocSystem.jl: references binding -> Any
+        e.g. Documenter.jl/src/DocSystem.jl: references binding -> DataType
+        e.g. Documenter.jl/src/DocSystem.jl: references binding -> Function
+        e.g. Documenter.jl/src/DocSystem.jl: references getdocs -> Any
+        e.g. Documenter.jl/src/latex/LaTeXWriter.jl: uses latex -> math
+        e.g. Flux.jl/src/layers/attention.jl: uses MultiHeadAttention -> q_in
+        e.g. Flux.jl/src/layers/attention.jl: uses MultiHeadAttention -> k_in
+        e.g. Flux.jl/src/layers/attention.jl: uses MultiHeadAttention -> v_in
+        e.g. julia/Compiler/src/abstractinterpretation.jl: uses infercalls -> sparams
+        e.g. julia/Compiler/src/abstractinterpretation.jl: uses infercalls2 -> sparams
+        e.g. julia/base/client.jl: imports exec_options -> Base.MainInclude.Distributed
+        e.g. julia/base/client.jl: imports load_InteractiveUtils -> Base.MainInclude.InteractiveUtils
+        e.g. julia/test/core.jl: imports M57638 -> .I
+        e.g. julia/test/core.jl: imports M57638_2 -> .I
+        e.g. julia/test/core.jl: imports M -> .C
+        e.g. julia/test/core.jl: imports GlobalBindingMulti -> .M
+        e.g. julia/Compiler/test/inference.jl: extends X -> comparison
+        e.g. julia/Compiler/test/inference.jl: extends T1 -> T2
+        e.g. julia/base/range.jl: extends T -> bigints
+        e.g. julia/base/strings/util.jl: extends S -> AbstractString
+        e.g. julia/base/strings/util.jl: extends T -> AbstractString
+        e.g. julia/test/core.jl: extends T -> AbstractString
+    called by the stdlib repo but never DECLARED in it (Core builtins / bootstrap names — the
+    bound on JUL-D13's surface: .jl declarations cannot list what C defines):
+      12,296
+    dotted into a namespace nothing declares: 4,128
+    OTHER (bare, not a binding anywhere, never called by the stdlib): 6,756
+    closure check: 31,859 = 31,859 CLOSED
+
+  §6.11 CONTROL, stated before the class is called unreachable: the SAME lookup that produced the
+  31,859 nowhere edges found a candidate for 30,808 others in the same run, so the bucket is a
+  COMPLEMENT of a working lookup rather than a broken one. Per type, the candidate-carrying half:
+      calls          candidates 19185    nowhere 15105    of which binding 2248     stdlib-called 10164    other 1223
+      references     candidates 7611     nowhere 10618    of which binding 5496     stdlib-called 1428     other 1823
+      uses           candidates 3167     nowhere 3898     of which binding 577      stdlib-called 589      other 2732
+      imports        candidates 588      nowhere 1508     of which binding 198      stdlib-called 34       other 534
+      extends        candidates 225      nowhere 433      of which binding 129      stdlib-called 8        other 251
+      exports        candidates 32       nowhere 297      of which binding 31       stdlib-called 73       other 193
+
+  TOP NOWHERE NAMES PER TYPE (exact counts for the names listed):
+    calls         throw(1399) · isa(876) · getfield(295) · fieldtype(95) · Core.svec(89) · Core.eval(84) · setfield!(76) · Base.inferencebarrier(76) · Meta.isexpr(71) · Base.julia_cmd(69)
+    references    Type(1635) · AbstractString(883) · Vararg(367) · Any(343) · Function(237) · DataType(167) · Method(126) · MethodInstance(102) · StaticArray(102) · SimpleVector(76)
+    uses          svec(102) · SimpleVector(60) · BindingPartition(58) · MethodInstance(57) · module(44) · TypeEgal(44) · CodeInfo(34) · TypeName(33) · CodeBlock(32) · specTypes(32)
+    imports       LinearAlgebra(60) · Core(40) · ..Pkg(34) · Statistics(29) · ..Utils(24) · CategoricalArrays(20) · .Base(19) · BenchmarkTools(18) · .Main.OffsetArrays(18) · SparseArrays(16)
+    extends       Outbound(193) · AbstractString(41) · Function(34) · StaticArray(13) · JSON.JSONStyle(13) · Base.BitInteger(7) · FieldVector(7) · DenseArray(5) · Type(5) · AbstractWeights(4)
+    exports       DepC(4) · Any(2) · TypeEq(2) · Type(2) · DataType(2) · Vararg(2) · DenseArray(2) · Function(2) · Method(2) · Task(2)
+
+  THE CLAIM PRICE: 29,583 unresolved edges name a ROOT that the corpus's
+  `julia` repository declares (Base + stdlib) and that the edge's OWN project does not — the
+  checkable basis JUL-D8 asks for: the gate can verify "absent from the project AND present in
+  another project" without trusting the analyzer. 31,859 name nothing anywhere.
+
+  TOP UNRESOLVED NAMES PER TYPE (worklist, counts exact for the names listed):
+    calls         throw(1399) · isa(876) · length(538) · isempty(383) · test(375) · push!(356)
+    references    Type(1635) · AbstractString(883) · Union(845) · Vector(763) · Bool(453) · String(429)
+    uses          parameters(156) · svec(102) · SimpleVector(60) · BindingPartition(58) · MethodInstance(57) · iswindows(52)
+    imports       Test(196) · Random(60) · LinearAlgebra(60) · Core(40) · UUIDs(37) · ..Pkg(34)
+    extends       Outbound(193) · Integer(82) · AbstractString(41) · Function(34) · Number(26) · Exception(23)
+    exports       DepC(4) · Any(2) · TypeEq(2) · Type(2) · DataType(2) · Vararg(2)
+
+THE FOUR SMALL TYPES — clause 2 coverage for every emitted type, not every large one
+
+  INSTANTIATES
+    shape     edges    resolved   ambiguous  unresolved
+    bare      3459     1363       2096       0
+      by marker isTypeConstruction     edges 3459     res 1363     amb 2096     unres 0
+    ambiguity: own file 2096 · another file only 0
+    CEILINGS: scope key amb 171 / unres 0 · leaf key amb 0 / unres 0 · own key amb 741 (strict 25) / unres 0
+    SILENT RE-POINTS: own key 226 (strict 226) · leaf key 0
+
+  EXPORTS
+    shape     edges    resolved   ambiguous  unresolved
+    bare      2797     1546       922        329
+      by marker exportForm             edges 2797     res 1546     amb 922      unres 329
+    ambiguity: own file 434 · another file only 488
+    CEILINGS: scope key amb 241 / unres 0 · leaf key amb 0 / unres 0 · own key amb 203 (strict 161) / unres 0
+    SILENT RE-POINTS: own key 493 (strict 493) · leaf key 0
+
+  EXTENDS
+    shape     edges    resolved   ambiguous  unresolved
+    bare      2409     1253       587        569
+    dotted    113      23         1          89
+      by marker isSubtype+isWhereBound edges 1230     res 523      amb 420      unres 287
+      by marker isSubtype              edges 1292     res 753      amb 168      unres 371
+    ambiguity: own file 135 · another file only 453
+    CEILINGS: scope key amb 1 / unres 0 · leaf key amb 0 / unres 65 · own key amb 35 (strict 23) / unres 0
+    SILENT RE-POINTS: own key 178 (strict 178) · leaf key 21
+
+  OVERRIDES
+    shape     edges    resolved   ambiguous  unresolved
+    bare      3        0          3          0
+      by marker isMethodRedefinition   edges 3        res 0        amb 3        unres 0
+    ambiguity: own file 3 · another file only 0
+    CEILINGS: scope key amb 3 / unres 0 · leaf key amb 0 / unres 0 · own key amb 2 (strict 2) / unres 0
+    SILENT RE-POINTS: own key 0 (strict 0) · leaf key 0
+
+
+THE COLON-NAMED CONTAINMENT AUDIT — is julia inside the blast radius of 140be2f01?
+
+  symbols published over the population: 38,179
+  symbol NAMES carrying a colon:          8
+  …AND carrying an owner (the indexer synthesizes an owner->owned contains row for these,
+  which is the row the defect duplicated): 2
+      julia/base/multidimensional.jl: IteratorsMD -> :
+      julia/test/testhelpers/InfiniteArrays.jl: InfiniteArrays -> Base.:
+  contains EDGE TARGETS carrying a colon: 0
+  The expectation was "julia is dotted, so unaffected". This is the count, not the expectation.
+
+LEVER PRICING — two candidate levers, each stated in the gate's own columns
+
+  (a) METHOD-TABLE COLLAPSE — an ambiguous edge whose every candidate declaration belongs
+      to ONE binding (julia's method table is one entry per (name, signature)) would land in
+      RESOLVED under a project-scoped method-table pass:
+        calls       19,880 of 47,858 ambiguous
+        references  7,869 of 17,989 ambiguous
+        uses        1,538 of 17,824 ambiguous
+        four small types: instantiates 0 · exports 0 · extends 0 · overrides 0
+      An edge whose candidates span TWO bindings would NOT move, and no UNRESOLVED edge can
+      be reached this way: its target names nothing to collapse.
+
+  (b) NARROWER LEAF RULE for references — retarget a dotted target to its leaf ONLY when a
+      PER-FILE fact supports it (this file declares the leaf, or declares the root):
+        reach  (unresolved -> resolved): 332 of 1,958 leaf-unique unresolved
+        re-points inside RESOLVED that the same guard still touches: 845 of 893 without the guard
+
+WHY EACH AMBIGUOUS EDGE IS AMBIGUOUS — the B-split, ON THE GATE'S OWN amb(decl) PREDICATE
+
+  type          amb(decl)   B1 one file,  B2 one project  B3b one file,  cross-project
+                            two scopes    several files    one scope      key exists too
+  calls            47858     2519   5.3%    43576  91.1%    1763     19165
+  uses             17824     1743   9.8%    15575  87.4%     506      9898
+  references       17989     3900  21.7%     9917  55.1%    4172      3406
+  TOTAL            83671     8162   9.8%    69068  82.5%    6441     32469
+  THE POOLED-ONLY COLUMN IS THE ONE THAT MUST NOT BE SUBTRACTED FROM A PER-PROJECT NUMBER:
+  it counts edges whose key ALSO exists in another project — in production a project IS a path
+  (`src/util/project-id.ts:29`) and the corpus root holds no project at all, so those candidates
+  cannot collide there. A pooled instrument calls such an edge ambiguous where the gate RESOLVES it.
+
+  IS THE COLLAPSE A METHOD TABLE OR A NAME COINCIDENCE? (this decides whether it is buildable)
+    calls        collapsible 19880: QUALIFIED 247 (1.2%) · BARE-ONLY 19502 (98.1%) · MIXED 131
+    uses         collapsible 1538: QUALIFIED 136 (8.8%) · BARE-ONLY 1402 (91.2%) · MIXED 0
+    references   collapsible 7869: QUALIFIED 717 (9.1%) · BARE-ONLY 7107 (90.3%) · MIXED 45
+
+  AND WHAT THE BARE-ONLY CLASS IS, by where its candidate FILES live (a julia package includes
+  its src/ files into ONE module, so one region CAN be one binding while src/ vs test/ cannot):
+    calls        one region 13578 · several regions 6055
+    uses         one region 1150 · several regions 252
+    references   one region 6405 · several regions 747
+
+  THE FALSIFIER FOR THE ONE-REGION BUILD, measured BEFORE it is built — a candidate FILE that
+  opens a `module` block means its file-scope declarations may belong to THAT module, so
+  qualifying them by the package would MERGE two bindings:
+    calls        one-region 13578: NO module block anywhere 9702 · at least one file has one 3876 · module names CONFLICT 762
+    uses         one-region 1150: NO module block anywhere 905 · at least one file has one 245 · module names CONFLICT 88
+    references   one-region 6405: NO module block anywhere 4017 · at least one file has one 2388 · module names CONFLICT 76
+    TOTAL        one-region 21133: clean 14624 · dirty 6509 · conflicting 926
+      calls        clean-and-PACKAGE 2143 · clean-but-NO root Project.toml 7559
+      uses         clean-and-PACKAGE 297 · clean-but-NO root Project.toml 608
+      references   clean-and-PACKAGE 630 · clean-but-NO root Project.toml 3387
+      TOTAL        clean-and-PACKAGE 3070  <- THE REACHABLE SUBSET for (b) · clean-but-no-package 11554 (pre-registered OUT)
+    VERDICT: NON-ZERO -> the one-region assumption is NOT safe; STOP and report this count
+    calls        control (NOT collapsible): multi-binding 27978 · no-candidates 0
+    uses         control (NOT collapsible): multi-binding 16286 · no-candidates 0
+    references   control (NOT collapsible): multi-binding 10120 · no-candidates 0
+
+  THE SAME SPLIT FOR THE METHOD-TABLE-COLLAPSIBLE SUBSET (the lever this lane priced):
+    calls        19880  B1 6 · B2 18114 · B3b 1760 · cross-project 5003
+    uses         1538  B1 0 · B2 1032 · B3b 506 · cross-project 227
+    references   7869  B1 0 · B2 3697 · B3b 4172 · cross-project 214

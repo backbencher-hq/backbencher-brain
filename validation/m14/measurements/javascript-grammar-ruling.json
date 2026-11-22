@@ -1,0 +1,559 @@
+{
+  "generated": "2026-11-22T20:40:13.430Z",
+  "lane": "javascript",
+  "instrument": "script/m14/javascript-grammar-ruling.ts",
+  "populationRule": "the gate's own discoverFiles (incoming-gate.ts:454), copied rule-for-rule: git-tracked files only, symlinked corpus roots followed, extensions js/mjs/cjs/jsx, 1 MB cap",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "admitted": 12348,
+    "repos": 93,
+    "absent": 1,
+    "overCap": 16,
+    "overCapLargest": 3784908,
+    "capped": false
+  },
+  "glimmerCensus": {
+    "grammar": {
+      "wasm": "wasm/tree-sitter-javascript.wasm",
+      "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5"
+    },
+    "rule": "the census counts NODE TYPES produced by the PRODUCTION build over the WHOLE admitted population — not text matches, and not the build that lacks the types",
+    "nodeTypes": [
+      "glimmer_template",
+      "glimmer_opening_tag",
+      "glimmer_closing_tag"
+    ],
+    "nodesProduced": 0,
+    "byNodeType": [],
+    "filesWithAGlimmerNode": 0,
+    "files": [],
+    "priorVacuousResult": "the earlier '0 glimmer hits' was measured with the node_modules build (4a378293), which has NO glimmer types at all — so it could only ever have been 0, and it is VACUOUS"
+  },
+  "nearMissCensus": {
+    "implements": {
+      "files": 66,
+      "sites": 166,
+      "samples": [
+        {
+          "file": "Exposed/docs/api/scripts/prism.js",
+          "text": "Prism.languages.clike={comment:[{pattern:/(^|[^\\\\])\\/\\*[\\s\\S]*?(?:\\*\\/|$)/,lookbehind:!0,greedy:!0},{pattern:/(^|[^\\\\:])\\/\\/.*/,lookbehind:!"
+        },
+        {
+          "file": "Exposed/docs/api/scripts/prism.js",
+          "text": "Prism.languages.javascript=Prism.languages.extend(\"clike\",{\"class-name\":[Prism.languages.clike[\"class-name\"],{pattern:/(^|[^$\\w\\xA0-\\uFFFF])"
+        },
+        {
+          "file": "Exposed/docs/api/scripts/prism.js",
+          "text": "!function(e){var n=/\\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends"
+        },
+        {
+          "file": "Fake/docs/content/assets/js/prism.js",
+          "text": "Prism.languages.clike={comment:[{pattern:/(^|[^\\\\])\\/\\*[\\s\\S]*?(?:\\*\\/|$)/,lookbehind:!0,greedy:!0},{pattern:/(^|[^\\\\:])\\/\\/.*/,lookbehind:!"
+        },
+        {
+          "file": "Falco/docs/prism.js",
+          "text": "Prism.languages.clike={comment:[{pattern:/(^|[^\\\\])\\/\\*[\\s\\S]*?(?:\\*\\/|$)/,lookbehind:!0},{pattern:/(^|[^\\\\:])\\/\\/.*/,lookbehind:!0,greedy:!"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements ITrace"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements ICachePolicy"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements IDetails"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements IError"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements IHTTP"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements IValues"
+        },
+        {
+          "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+          "text": "* @implements ILocation"
+        }
+      ]
+    },
+    "part_of": {
+      "files": 0,
+      "sites": 0,
+      "samples": []
+    }
+  },
+  "grammars": {
+    "productionInstrument": {
+      "wasm": "wasm/tree-sitter-javascript.wasm",
+      "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+      "bytes": 647334,
+      "namedNodeTypes": 125,
+      "nodeTypeIds": 271,
+      "namedDigest": "faa878525997a8714941df1d6ae41704d90d958d01b0076bd98a9eaae286bef2",
+      "citationRule": "L-20 — the sha256 of the bytes the REGISTRY SERVES, measured by script/m14/javascript-grammar-binding-probe.ts (exit 0)"
+    },
+    "fixtureInstrument": {
+      "wasm": "wasm/tree-sitter-javascript.wasm",
+      "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+      "bytes": 647334,
+      "namedNodeTypes": 125,
+      "nodeTypeIds": 271,
+      "namedDigest": "faa878525997a8714941df1d6ae41704d90d958d01b0076bd98a9eaae286bef2"
+    },
+    "npmPackageBuild": {
+      "wasm": "node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm",
+      "sha256": "4a378293fe7853cbee2836023be072dafa0e53b3b5edb245920838ca834ed121",
+      "bytes": 358909,
+      "namedNodeTypes": 122,
+      "nodeTypeIds": 263,
+      "namedDigest": "cdbb7400fb6de9237631071f4c3df69516d2d1b52e594c067e753787610b5f19",
+      "note": "SERVED BY NOTHING — the engine's LOG prints this path, and the bytes it loads are the production build's"
+    },
+    "controls": [
+      {
+        "wasm": "node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm",
+        "sha256": "778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d",
+        "namedNodeTypes": 191,
+        "namedDigest": "0262b26f7278d3fc2719f22b0ff5df4706611b579c01db3adaa0585d98dc3f74"
+      },
+      {
+        "wasm": "wasm/tree-sitter-dart.wasm",
+        "sha256": "7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1",
+        "namedNodeTypes": 222,
+        "namedDigest": "8fc166bc4ccf272d9aaf8f3479838be3bbe7f7785d70d1d56cb7e32be2ae5a95"
+      }
+    ],
+    "finding": "the PRODUCTION build and the FIXTURE SUITE's build are BYTE-IDENTICAL (63812b9e) — the same grammar parses the population and the fixtures",
+    "onlyInProductionGrammar": [
+      "glimmer_closing_tag",
+      "glimmer_opening_tag",
+      "glimmer_template"
+    ],
+    "onlyInNpmBuild": []
+  },
+  "corpusHalfTotals": {
+    "classHeritageClauses": 2562,
+    "implementsTokens": 0,
+    "withTokens": 0,
+    "partTokens": 2,
+    "partExamples": [
+      {
+        "file": "/home/ishaq2321/bb_tests/repositories/proxicall/functions/test/reserve_accrual_service.test.js",
+        "text": "part(5, true);",
+        "sexp": "(expression_statement (call_expression function: (identifier) arguments: (arguments (number) (true))))"
+      },
+      {
+        "file": "/home/ishaq2321/bb_tests/repositories/proxicall/functions/test/reserve_accrual_service.test.js",
+        "text": "part(4, false);",
+        "sexp": "(expression_statement (call_expression function: (identifier) arguments: (arguments (number) (false))))"
+      }
+    ],
+    "extendsCallClauses": 76,
+    "extendsIdentifierClauses": 1728,
+    "mixinNamedClauses": 0,
+    "extendMixinCalls": 1913,
+    "extendMixinArgs": [
+      [
+        "({}, Backbone.Events)",
+        51
+      ],
+      [
+        "({ aclEnabled: true, selfToken: { type: 'client' }",
+        38
+      ],
+      [
+        "()",
+        35
+      ],
+      [
+        "(exports, proto.google.api)",
+        28
+      ],
+      [
+        "({ tagName: '', })",
+        19
+      ],
+      [
+        "(new Backbone.History, {location: location})",
+        19
+      ],
+      [
+        "(new Backbone.History, { location: location, histo",
+        18
+      ],
+      [
+        "({})",
+        17
+      ],
+      [
+        "(WithWatchers)",
+        17
+      ],
+      [
+        "({},a)",
+        16
+      ],
+      [
+        "({},e)",
+        15
+      ],
+      [
+        "(obj, Backbone.Events)",
+        15
+      ],
+      [
+        "({ aclEnabled: true, })",
+        14
+      ],
+      [
+        "(exports, proto.google.type)",
+        12
+      ],
+      [
+        "(proto, google_api_annotations_pb)",
+        9
+      ],
+      [
+        "({active:0,lastModified:{},etag:{},ajaxSettings:{u",
+        8
+      ],
+      [
+        "({ aclEnabled: true, selfToken: { type: 'managemen",
+        8
+      ],
+      [
+        "(WithBlockingActions)",
+        7
+      ],
+      [
+        "({},s)",
+        6
+      ],
+      [
+        "({ aclEnabled: false, })",
+        6
+      ]
+    ],
+    "heritageShapes": [
+      [
+        "identifier",
+        1728
+      ],
+      [
+        "parenthesized_expression",
+        726
+      ],
+      [
+        "call_expression",
+        76
+      ],
+      [
+        "member_expression",
+        32
+      ]
+    ],
+    "topMixinIdiomCalls": [
+      [
+        "Route.extend(WithWatchers)",
+        17
+      ],
+      [
+        "Route.extend(WithBlockingActions)",
+        7
+      ],
+      [
+        "Route.extend(\n  withForbiddenState,\n  WithModelErrorHandling",
+        5
+      ],
+      [
+        "Route.extend(WithForbiddenState)",
+        5
+      ],
+      [
+        "Component.extend(WindowResizable)",
+        4
+      ],
+      [
+        "Controller.extend(\n  WithNamespaceResetting,\n)",
+        4
+      ],
+      [
+        "Component.extend(Sortable)",
+        2
+      ],
+      [
+        "Controller.extend(\n  SortableFactory([\n    'modifyIndex',\n  ",
+        2
+      ],
+      [
+        "Controller.extend(\n  WithNamespaceResetting,\n  SortableFacto",
+        2
+      ],
+      [
+        "Route.extend(\n  WithWatchers,\n  WithForbiddenState,\n)",
+        2
+      ],
+      [
+        "Route.extend(\n  WithForbiddenState,\n)",
+        2
+      ],
+      [
+        "EmberObject.extend(AbstractStatsTracker)",
+        2
+      ],
+      [
+        "EmberObject.extend(AbstractLogger)",
+        2
+      ],
+      [
+        "Serializer.extend(EmbeddedRecordsMixin)",
+        1
+      ],
+      [
+        "Serializer.extend(WithPolicies)",
+        1
+      ],
+      [
+        "Serializer.extend(WithPolicies, WithRoles)",
+        1
+      ],
+      [
+        "Controller.extend(\n  SortableFactory(['name', 'state']),\n)",
+        1
+      ],
+      [
+        "Controller.extend(\n  SortableFactory(['id', 'name', 'composi",
+        1
+      ],
+      [
+        "Controller.extend(\n  SortableFactory(['id', 'name', 'jobStat",
+        1
+      ],
+      [
+        "Controller.extend(\n  SortableFactory(['modifyIndex', 'name',",
+        1
+      ]
+    ]
+  },
+  "rulings": [
+    {
+      "type": "implements",
+      "label": "a nominal conformance clause (`class A implements B`)",
+      "evidence": "grammar-remedy-ruled",
+      "grammarHalf": {
+        "wasm": "wasm/tree-sitter-javascript.wasm",
+        "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+        "bytes": 647334,
+        "namedNodeTypes": 125,
+        "nodeTypeIds": 271,
+        "namedDigest": "faa878525997a8714941df1d6ae41704d90d958d01b0076bd98a9eaae286bef2",
+        "matchingNodeTypes": 0,
+        "matching": [],
+        "vocabulary": [
+          "implement"
+        ],
+        "vocabularyText": "implement",
+        "positiveControl": {
+          "wasm": "node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm",
+          "nodeType": "implements_clause",
+          "present": true,
+          "note": "the same scan fires on a grammar that HAS the construct, so the absence above is a measurement"
+        },
+        "counterfactuals": [
+          {
+            "source": "class A extends B { }",
+            "of": "implements",
+            "sexp": "(program (class_declaration name: (identifier) (class_heritage (identifier)) body: (class_body)))",
+            "hasError": false,
+            "hasHeritage": true,
+            "hasPartDirective": false
+          },
+          {
+            "source": "class A implements B { }",
+            "of": "implements",
+            "sexp": "(program (class_declaration name: (identifier) (ERROR (identifier) (identifier)) body: (class_body)))",
+            "hasError": true,
+            "hasHeritage": false,
+            "hasPartDirective": false
+          },
+          {
+            "source": "class A extends B implements C { }",
+            "of": "implements",
+            "sexp": "(program (class_declaration name: (identifier) (class_heritage (identifier)) (ERROR (identifier) (identifier)) body: (class_body)))",
+            "hasError": true,
+            "hasHeritage": true,
+            "hasPartDirective": false
+          }
+        ]
+      },
+      "corpusHalf": {
+        "population": "12348 admitted js/jsx/mjs/cjs files over 93 repos (the gate's own discovery rule)",
+        "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+        "constructSites": 0,
+        "unit": "the construct's own token in the grammar's own node"
+      },
+      "nearMissCensus": {
+        "files": 66,
+        "sites": 166,
+        "samples": [
+          {
+            "file": "Exposed/docs/api/scripts/prism.js",
+            "text": "Prism.languages.clike={comment:[{pattern:/(^|[^\\\\])\\/\\*[\\s\\S]*?(?:\\*\\/|$)/,lookbehind:!0,greedy:!0},{pattern:/(^|[^\\\\:])\\/\\/.*/,lookbehind:!"
+          },
+          {
+            "file": "Exposed/docs/api/scripts/prism.js",
+            "text": "Prism.languages.javascript=Prism.languages.extend(\"clike\",{\"class-name\":[Prism.languages.clike[\"class-name\"],{pattern:/(^|[^$\\w\\xA0-\\uFFFF])"
+          },
+          {
+            "file": "Exposed/docs/api/scripts/prism.js",
+            "text": "!function(e){var n=/\\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends"
+          },
+          {
+            "file": "Fake/docs/content/assets/js/prism.js",
+            "text": "Prism.languages.clike={comment:[{pattern:/(^|[^\\\\])\\/\\*[\\s\\S]*?(?:\\*\\/|$)/,lookbehind:!0,greedy:!0},{pattern:/(^|[^\\\\:])\\/\\/.*/,lookbehind:!"
+          },
+          {
+            "file": "Falco/docs/prism.js",
+            "text": "Prism.languages.clike={comment:[{pattern:/(^|[^\\\\])\\/\\*[\\s\\S]*?(?:\\*\\/|$)/,lookbehind:!0},{pattern:/(^|[^\\\\:])\\/\\/.*/,lookbehind:!0,greedy:!"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements ITrace"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements ICachePolicy"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements IDetails"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements IError"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements IHTTP"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements IValues"
+          },
+          {
+            "file": "apollo-server/packages/usage-reporting-protobuf/generated/cjs/protobuf.js",
+            "text": "* @implements ILocation"
+          }
+        ],
+        "rule": "L-17 — the near-miss census is how a ruling is EARNED: the text sites that carry the construct's word but are NOT the construct."
+      },
+      "falsifier": "a named node type matching /implement/ appears in the PRODUCTION grammar inventory, OR a corpus class_heritage carries an `implements` token, OR the gate's TABLE 1 shows a non-zero `implements` row for javascript"
+    },
+    {
+      "type": "part_of",
+      "label": "a part directive (`part 'x.js';` / `part of 'x.js';`)",
+      "evidence": "grammar-remedy-ruled",
+      "grammarHalf": {
+        "wasm": "wasm/tree-sitter-javascript.wasm",
+        "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+        "bytes": 647334,
+        "namedNodeTypes": 125,
+        "nodeTypeIds": 271,
+        "namedDigest": "faa878525997a8714941df1d6ae41704d90d958d01b0076bd98a9eaae286bef2",
+        "matchingNodeTypes": 0,
+        "matching": [],
+        "vocabulary": [
+          "part_directive",
+          "part_of_directive",
+          "part"
+        ],
+        "vocabularyText": "part_directive, part_of_directive, part",
+        "positiveControl": {
+          "wasm": "wasm/tree-sitter-dart.wasm",
+          "nodeType": "part_directive",
+          "present": true,
+          "note": "the same scan fires on a grammar that HAS the construct, so the absence above is a measurement"
+        },
+        "counterfactuals": [
+          {
+            "source": "part 'x.js';",
+            "of": "part_of",
+            "sexp": "(program (ERROR (identifier)) (expression_statement (string (string_fragment))))",
+            "hasError": true,
+            "hasHeritage": false,
+            "hasPartDirective": false
+          },
+          {
+            "source": "part of 'x.js';",
+            "of": "part_of",
+            "sexp": "(program (ERROR (identifier)) (expression_statement (string (string_fragment))))",
+            "hasError": true,
+            "hasHeritage": false,
+            "hasPartDirective": false
+          },
+          {
+            "source": "import 'x.js';",
+            "of": "part_of",
+            "sexp": "(program (import_statement source: (string (string_fragment))))",
+            "hasError": false,
+            "hasHeritage": false,
+            "hasPartDirective": false
+          }
+        ]
+      },
+      "corpusHalf": {
+        "population": "12348 admitted js/jsx/mjs/cjs files over 93 repos (the gate's own discovery rule)",
+        "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+        "constructSites": 2,
+        "unit": "the construct's own token in the grammar's own node"
+      },
+      "nearMissCensus": {
+        "files": 0,
+        "sites": 0,
+        "samples": [],
+        "rule": "L-17 — the near-miss census is how a ruling is EARNED: the text sites that carry the construct's word but are NOT the construct."
+      },
+      "falsifier": "a named node type matching /part/ appears in the PRODUCTION grammar inventory, OR a corpus statement carries a `part` directive token, OR the gate's TABLE 1 shows a non-zero `part_of` row for javascript"
+    }
+  ],
+  "implementedTypes": [
+    {
+      "type": "mixes_in",
+      "wasRuled": "grammar-absence",
+      "nowVerdict": "IMPLEMENTED — the R3 remedy publishes it, and the discriminator is POSITION, not a name",
+      "whyTheRulingWasWrong": "the ruling said no rule can tell `Route.extend(M)` from `_.extend(obj, props)` without a NAMING CONVENTION, which C2 forbids. That is HALF the truth, and the half that decides it was wrong: the discriminator is not the callee's NAME but that the call IS the HERITAGE. A call in heritage position is class-producing by construction - the language requires the heritage to evaluate to a constructor - and a call in argument position is not. POSITION, NOT A NAME ⇒ C2 is not violated.",
+      "measuredBy": "script/m14/javascript-r3-measurement.ts → validation/m14/measurements/javascript-r3-remedy.json",
+      "overTheAdmittedPopulation": 12374,
+      "theMeasurement": "76 call-shaped heritage clauses (74 member-form, 2 identifier-form); 0 found by the pre-remedy lookup; 76 `extends` and 83 `mixes_in` rows published after; 11 computed-only near misses refused and 0 published for them",
+      "corroboration": "a SECOND, independent instrument (script/m14/javascript-heritage-census.ts) agrees on the clause count, the shape split and the argument split",
+      "behaviouralFixture": "validation/m14/fixtures/javascript/call-shaped-heritage-mixins.js — the suite is 94 pass / 0 fail, and two mutants cover the rule's two halves (both CAUGHT)",
+      "theGrammarHalfStillHolds": "the GRAMMAR has no `with` clause and no mixin node type — the counterfactuals below are the DECISIVE measurement and they are unchanged: `class C with M { }` and `class C extends mixin(Base) { }` are not constructs the language has. ⇒ THE CONSTRUCT IS NOT A GRAMMAR CLAUSE; IT IS A CALL IN HERITAGE POSITION ✓✓, AND THAT IS WHY NO GRAMMAR CHANGE WAS NEEDED ✓✓.",
+      "counterfactuals": [
+        {
+          "source": "class C with M { }",
+          "of": "mixes_in",
+          "sexp": "(program (class_declaration name: (identifier) (ERROR (identifier)) body: (class_body)))",
+          "hasError": true,
+          "hasHeritage": false,
+          "hasPartDirective": false
+        },
+        {
+          "source": "class C extends mixin(Base) { }",
+          "of": "mixes_in",
+          "sexp": "(program (class_declaration name: (identifier) (class_heritage (call_expression function: (identifier) arguments: (arguments (identifier)))) body: (class_body)))",
+          "hasError": false,
+          "hasHeritage": true,
+          "hasPartDirective": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+BASH part_of SITE RECONCILIATION
+  population: 2962 git-tracked .sh/.bash files under 400KB across 199 corpus directories
+  instrument: production parseFile shape (getParser -> analyze) + the lane's site walk; no index, no network
+
+  parsed OK                    : 2962/2962  (parse failures: 0)
+  source/. sites on the tree   : 522
+      ELIGIBLE                 : 470
+      refused (child process)  : 18
+      refused (no nameable part): 34
+  part_of rows (production)    : 470
+
+  ELIGIBLE-WITH-NO-ROW         : 0  (a guard refused a site the census calls eligible)
+  REFUSED-WITH-ROW             : 0  (the discrimination FAILED at these sites)
+  ROW-WITH-NO-SITE             : 0  (a row whose line holds no source command)
+
+  SITE/EDGE RECONCILIATION     : 470 eligible - 0 eligible-with-no-row + 0 refused-with-row = 470 predicted rows; 470 observed
+  resolution share of rows     : 100.0% of eligible sites published

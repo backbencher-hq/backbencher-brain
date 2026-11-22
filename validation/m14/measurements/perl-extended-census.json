@@ -1,0 +1,74 @@
+{
+  "instrument": "perl-extended-census.mts",
+  "population": {
+    "files": 427,
+    "repos": 8,
+    "rule": "git ls-files <=1MiB detectLanguageFromPath=perl",
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "parsed": 427,
+    "failures": 0
+  },
+  "decorates": {
+    "attrOnSub": {},
+    "attrCallShaped": {},
+    "hasOptions": {},
+    "attrAll": {},
+    "attrFiles": 0,
+    "hasFiles": 0
+  },
+  "renders": {
+    "bag": {
+      "heredoc_token": 252,
+      "method:render": 408,
+      "method:process": 5,
+      "method:template": 3,
+      "method:output": 45
+    },
+    "files": 85
+  },
+  "mixes_in": {
+    "with": {},
+    "shapes": {},
+    "roleModules": {
+      "Role::Tiny": 1
+    },
+    "useRole": {},
+    "withFiles": 0,
+    "roleModFiles": 1
+  },
+  "part_of": {
+    "requireModule": {
+      "module": 48,
+      "other": 1
+    },
+    "requirePath": {},
+    "doFile": {
+      "block": 11
+    },
+    "useLib": {
+      "use-lib": 24
+    }
+  },
+  "examples": {
+    "with": [],
+    "roleMod": [],
+    "doFile": [],
+    "requirePath": [],
+    "heredoc": [
+      "erts/emulator/beam/jit/arm/beam_asm_global.hpp.pl:170",
+      "erts/emulator/beam/jit/x86/beam_asm_global.hpp.pl:168",
+      "examples/microhttpd.pl:29",
+      "lib/Mojo/Server.pm:57",
+      "lib/Mojolicious/Command/Author/generate.pm:5",
+      "lib/Mojolicious/Command/version.pm:25",
+      "lib/Mojolicious/Commands.pm:8",
+      "t/mojo/dom.t:41",
+      "t/mojo/dom.t:73",
+      "t/mojo/dom.t:79",
+      "t/mojo/dom.t:95",
+      "t/mojo/dom.t:117"
+    ],
+    "attrCall": [],
+    "hasTraits": []
+  }
+}

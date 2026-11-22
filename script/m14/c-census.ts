@@ -50,7 +50,7 @@ import path from "node:path"
 const argv = process.argv.slice(2)
 const writeIdx = argv.indexOf("--write")
 const out = writeIdx >= 0 && writeIdx + 1 < argv.length ? argv[writeIdx + 1] : undefined
-const root = process.cwd() + "/.corpus"
+const root = process.env.BB_CORPUS_ROOT ? path.resolve(process.env.BB_CORPUS_ROOT) : process.cwd() + "/.corpus"
 const EXTS = ["c", "h"]
 // The gate's own SIZE_CAP (incoming-gate.ts): above 1 MiB the analyzer itself extracts
 // structurally, so the population claim and the analyzer's capability line are the same line.

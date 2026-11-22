@@ -1,0 +1,929 @@
+{
+  "language": "powershell",
+  "instrument": "script/m14/powershell-extended-census.ts",
+  "measuredAt": "2026-11-22T20:17:59.389Z",
+  "population": {
+    "admitted": 1181,
+    "repos": 30,
+    "parsed": 1181,
+    "failed": 0,
+    "absent": 23090,
+    "overCap": 1176,
+    "sizeCapBytes": 524288,
+    "declaredNames": 1874,
+    "rule": "per-repo `git ls-files`, the router's powershell spellings, <= 512 KiB (this lane's census cap); an empty population is a refusal"
+  },
+  "control": {
+    "ok": true,
+    "results": {
+      "addMember": 4,
+      "updateTypeData": 1,
+      "updateFormatData": 1,
+      "addType": 2,
+      "convertToHtml": 2,
+      "outGridView": 1,
+      "showCommand": 1,
+      "classStatements": 2,
+      "classBaseListEntries": 1,
+      "classMethods": 1,
+      "classProperties": 1,
+      "memberAttachmentSites": 5,
+      "memberSetArgs": 3,
+      "memberNameArgs": 3,
+      "typeDefinitionArgs": 2,
+      "memberSetArgsOnAttachment": 3,
+      "hostArgs": 2,
+      "hostNotDeclared": 2,
+      "attachmentsNoArguments": 1,
+      "attachmentsNoValue": 1,
+      "memberNameDeclared": 1,
+      "unshapedMemberSetArgs": 1,
+      "renderSitesWithDeclaredName": 1,
+      "renderDeclaredNameNodes": 4,
+      "showControlPanelItem": 1
+    }
+  },
+  "vocabulary": {
+    "symbolKinds": 32,
+    "componentSymbolKinds": [],
+    "note": "a `renders` target must be a component symbol; the vocabulary is read from src/ast/types.ts rather than asserted"
+  },
+  "renders": {
+    "convertToHtml": 15,
+    "outGridView": 0,
+    "showCommand": 0,
+    "showControlPanelItem": 0,
+    "xamlReaderTypeMentions": 1,
+    "candidateSites": 15,
+    "sitesWhoseTargetNamesADeclaration": 4,
+    "declarationNameNodesInRenderArguments": 4,
+    "filesWithAnyCandidate": 1,
+    "exampleSites": [
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 16,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 36,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 48,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 66,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 83,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 103,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 123,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 144,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 149,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 168,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 173,
+        "command": "convertto-html"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Html.Tests.ps1",
+        "line": 178,
+        "command": "convertto-html"
+      }
+    ]
+  },
+  "mixes_in": {
+    "classStatements": 273,
+    "classBaseListEntries": 50,
+    "addMember": 127,
+    "updateTypeData": 17,
+    "updateFormatData": 10,
+    "addType": 172,
+    "memberAttachmentSites": 144,
+    "candidateSites": 326,
+    "memberSetArgumentShapes": {
+      "array_literal_expression": 33,
+      "script_block": 25,
+      "string_literal": 49,
+      "generic_token": 14
+    },
+    "memberSetNamesADeclaration": 0,
+    "memberSetDeclaredSites": [],
+    "memberNameArguments": {
+      "-name array_literal_expression": 5,
+      "-name generic_token": 81,
+      "-notepropertyname string_literal": 10,
+      "-name declared_name": 1,
+      "-name string_literal": 8,
+      "-membername generic_token": 14,
+      "-notepropertyname generic_token": 6
+    },
+    "memberNameDeclaredSites": [
+      {
+        "file": "kubernetes/cluster/gce/windows/k8s-node-setup.psm1",
+        "line": 146,
+        "command": "add-member",
+        "param": "-name",
+        "argument": "Build",
+        "declarationKinds": [
+          "function"
+        ]
+      }
+    ],
+    "memberSetUnshapedArgs": [
+      {
+        "file": "ansible/lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Legacy.psm1",
+        "line": 26,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$value"
+      },
+      {
+        "file": "ansible/test/integration/targets/module_utils_Ansible.Basic/library/ansible_basic_tests.ps1",
+        "line": 106,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$_test_out"
+      },
+      {
+        "file": "PSScriptAnalyzer/Utils/New-CommandDataFile.ps1",
+        "line": 87,
+        "command": "add-member",
+        "param": "-notepropertyvalue",
+        "shape": "array_literal_expression",
+        "argument": "$shortCommands"
+      },
+      {
+        "file": "PSScriptAnalyzer/Utils/New-CommandDataFile.ps1",
+        "line": 88,
+        "command": "add-member",
+        "param": "-notepropertyvalue",
+        "shape": "array_literal_expression",
+        "argument": "$module.ExportedAliases.Keys"
+      },
+      {
+        "file": "PSScriptAnalyzer/Utils/New-CommandDataFile.ps1",
+        "line": 100,
+        "command": "add-member",
+        "param": "-notepropertyvalue",
+        "shape": "array_literal_expression",
+        "argument": "$shortCommands"
+      },
+      {
+        "file": "PSScriptAnalyzer/Utils/New-CommandDataFile.ps1",
+        "line": 111,
+        "command": "add-member",
+        "param": "-notepropertyvalue",
+        "shape": "array_literal_expression",
+        "argument": "$aliases"
+      },
+      {
+        "file": "powershell/test/powershell/Host/Logging.Tests.ps1",
+        "line": 65,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$eventId"
+      },
+      {
+        "file": "powershell/test/powershell/Language/Operators/NullConditional.Tests.ps1",
+        "line": 271,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$psobj2"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 259,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$null"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 1002,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "(Get-ExpectedComputerInfoValue $propertyName)"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 27,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "something"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 47,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$null"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 54,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "something"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 59,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "Length"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 65,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "Length"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 71,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "something"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 76,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$null"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 85,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$members"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 90,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "ImNotACollection"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 95,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "something"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 106,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "something"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 121,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "Any"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 132,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "Value"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 155,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "1"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/ConvertTo-Json.Tests.ps1",
+        "line": 146,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$text"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Format-List.Tests.ps1",
+        "line": 21,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "testValue"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Format-List.Tests.ps1",
+        "line": 42,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "testValue"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Json.Tests.ps1",
+        "line": 238,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "Revision"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 299,
+        "command": "update-typedata",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$script1"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 301,
+        "command": "update-typedata",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$script2"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/object.tests.ps1",
+        "line": 39,
+        "command": "add-member",
+        "param": "-notepropertyvalue",
+        "shape": "array_literal_expression",
+        "argument": "$firstValue"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/object.tests.ps1",
+        "line": 45,
+        "command": "add-member",
+        "param": "-notepropertyvalue",
+        "shape": "array_literal_expression",
+        "argument": "$secondValue"
+      },
+      {
+        "file": "powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1",
+        "line": 198,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$mi1"
+      },
+      {
+        "file": "powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1",
+        "line": 199,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$mi2"
+      },
+      {
+        "file": "powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1",
+        "line": 200,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$mi1.MakeGenericMethod"
+      },
+      {
+        "file": "powershell/test/powershell/engine/Api/GetMethodInfoOverloadDefinition.Tests.ps1",
+        "line": 201,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$mi2.MakeGenericMethod"
+      },
+      {
+        "file": "powershell/test/powershell/engine/Api/TypeInference.Tests.ps1",
+        "line": 925,
+        "command": "update-typedata",
+        "param": "-value",
+        "shape": "generic_token",
+        "argument": "Length"
+      },
+      {
+        "file": "powershell/test/powershell/engine/ETS/Adapter.Tests.ps1",
+        "line": 20,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "1"
+      },
+      {
+        "file": "powershell/test/powershell/engine/ETS/Adapter.Tests.ps1",
+        "line": 22,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "$testmethod"
+      },
+      {
+        "file": "powershell/test/tools/CodeCoverageAutomation/Start-CodeCoverageRun.ps1",
+        "line": 51,
+        "command": "add-member",
+        "param": "-value",
+        "shape": "array_literal_expression",
+        "argument": "([PSCustomObject]::new())"
+      }
+    ],
+    "typeCompilationDefinitionShapes": {
+      "array_literal_expression": 51,
+      "string_literal": 50
+    },
+    "memberSetOnNonAttachment": {},
+    "hostTypeArgumentSites": 36,
+    "hostTypeArgumentNotACorpusDeclaration": 22,
+    "hostTypeNonDeclaredSites": [
+      {
+        "file": "kubernetes/cluster/gce/windows/common.psm1",
+        "line": 340,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "'Kernel32'"
+      },
+      {
+        "file": "powershell/test/powershell/Host/ConsoleHost.Tests.ps1",
+        "line": 1012,
+        "command": "add-type",
+        "shape": "generic_token",
+        "argument": "User32"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 271,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"Win32BiosFirmwareType\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 281,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"Win32PhyicallyInstalledMemory\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 291,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"Win32PhyicallyInstalledMemory\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 300,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"Win32PowerDeterminePlatformRole\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 309,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"Win32LCIDToLocaleNameDllName\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Management/Get-ComputerInfo.Tests.ps1",
+        "line": 1234,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "'slc'"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 126,
+        "command": "add-member",
+        "shape": "generic_token",
+        "argument": "System.Object"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 138,
+        "command": "add-type",
+        "shape": "array_literal_expression",
+        "argument": "$sourceType"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 140,
+        "command": "add-type",
+        "shape": "array_literal_expression",
+        "argument": "$sourceType"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 142,
+        "command": "add-type",
+        "shape": "array_literal_expression",
+        "argument": "$sourceType"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 146,
+        "command": "add-type",
+        "shape": "array_literal_expression",
+        "argument": "$sourceType"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 150,
+        "command": "add-type",
+        "shape": "array_literal_expression",
+        "argument": "$sourceType"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 209,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"TestType1\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 211,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"TestType1\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Type.Tests.ps1",
+        "line": 214,
+        "command": "add-type",
+        "shape": "string_literal",
+        "argument": "\"TestType1\""
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 296,
+        "command": "update-typedata",
+        "shape": "generic_token",
+        "argument": "System.Object[]"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 297,
+        "command": "update-typedata",
+        "shape": "generic_token",
+        "argument": "System.Object[]"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 299,
+        "command": "update-typedata",
+        "shape": "generic_token",
+        "argument": "System.Object[]"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 301,
+        "command": "update-typedata",
+        "shape": "generic_token",
+        "argument": "System.Object[]"
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 302,
+        "command": "update-typedata",
+        "shape": "generic_token",
+        "argument": "System.Object[]"
+      }
+    ],
+    "attachmentSitesWithNoValueArgument": 23,
+    "attachmentSitesWithNoArguments": 0,
+    "attachmentSitesWithoutValue": [
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 7,
+        "command": "add-member",
+        "params": [
+          "-name"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 10,
+        "command": "add-member",
+        "params": [
+          "-name"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 13,
+        "command": "add-member",
+        "params": [
+          "-membertype"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 16,
+        "command": "add-member",
+        "params": [
+          "-membertype"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 19,
+        "command": "add-member",
+        "params": [
+          "-inputobject"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 36,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-membertype",
+          "-name"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 39,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-membertype",
+          "-name"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 126,
+        "command": "add-member",
+        "params": [
+          "-typename",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 139,
+        "command": "add-member",
+        "params": [
+          "-inputobject"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 148,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-typename",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 156,
+        "command": "add-member",
+        "params": [
+          "-force"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 161,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 164,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 167,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 170,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 173,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 179,
+        "command": "add-member",
+        "params": [
+          "-inputobject"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Add-Member.Tests.ps1",
+        "line": 180,
+        "command": "add-member",
+        "params": [
+          "-inputobject",
+          "-errorvariable",
+          "-erroraction"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Date.Tests.ps1",
+        "line": 241,
+        "command": "add-member",
+        "params": []
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Get-Member.Tests.ps1",
+        "line": 162,
+        "command": "update-typedata",
+        "params": [
+          "-appendpath"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Implicit.Remoting.Tests.ps1",
+        "line": 654,
+        "command": "update-typedata",
+        "params": []
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Out-String.Tests.ps1",
+        "line": 6,
+        "command": "add-member",
+        "params": [
+          "-passthru"
+        ]
+      },
+      {
+        "file": "powershell/test/powershell/Modules/Microsoft.PowerShell.Utility/Update-TypeData.Tests.ps1",
+        "line": 302,
+        "command": "update-typedata",
+        "params": [
+          "-typename",
+          "-serializationmethod",
+          "-serializationdepth",
+          "-stringserializationsource",
+          "-targettypefordeserialization"
+        ]
+      }
+    ],
+    "filesWithAnyCandidate": 123,
+    "filesWithAnyMemberAttachment": 34,
+    "exampleSites": [
+      {
+        "file": "ansible/lib/ansible/module_utils/powershell/Ansible.ModuleUtils.Legacy.psm1",
+        "line": 26,
+        "command": "add-member"
+      },
+      {
+        "file": "ansible/lib/ansible/module_utils/powershell/Ansible.ModuleUtils.LinkUtil.psm1",
+        "line": 417,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/integration/targets/module_utils_Ansible.Basic/library/ansible_basic_tests.ps1",
+        "line": 106,
+        "command": "add-member"
+      },
+      {
+        "file": "ansible/test/integration/targets/module_utils_Ansible.Become/library/ansible_become_tests.ps1",
+        "line": 48,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/integration/targets/module_utils_Ansible.ModuleUtils.ArgvParser/library/argv_parser_test.ps1",
+        "line": 11,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+        "line": 287,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_copy.ps1",
+        "line": 288,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/modules/win_file.ps1",
+        "line": 56,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/plugins/modules/setup.ps1",
+        "line": 40,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/plugins/modules/win_copy.ps1",
+        "line": 287,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/plugins/modules/win_copy.ps1",
+        "line": 288,
+        "command": "add-type"
+      },
+      {
+        "file": "ansible/test/support/windows-integration/plugins/modules/win_file.ps1",
+        "line": 56,
+        "command": "add-type"
+      }
+    ]
+  },
+  "classMembers": {
+    "methods": 378,
+    "properties": 395
+  },
+  "falsifiers": {
+    "renders": "a site where a declaration produces a COMPONENT value that a host renderer constructs and whose target is a declared component: counted as sitesWhoseTargetNamesADeclaration, a SITE count (at most once per command) — declarationNameNodesInRenderArguments is the same walk counted per matching name and is NEVER the site count; a non-zero would be a name READ (uses/calls), not a render",
+    "mixes_in": "a site where a MEMBER ATTACHMENT passes a member set that is itself a named declaration: counted as memberSetNamesADeclaration, over the -Value / -NotePropertyValue argument of Add-Member and Update-TypeData ONLY. -Name / -MemberName / -NotePropertyName name ONE member and are tallied apart (memberNameArguments, with the declaration-shaped ones LISTED in memberNameDeclaredSites); -TypeName is the HOST and never a member set; Add-Type compiles source rather than attaching members. THE SHAPE TEST IS A SUBTREE TEST: any declared name anywhere inside the argument makes it declared_name, so a non-zero would have to be read by a human before it was called a named member set — which is why a zero here is the stronger reading"
+  },
+  "shapeGloss": {
+    "script_block": "the argument is a `{ … }` block",
+    "string_literal": "the argument is, or contains, a string literal",
+    "declared_name": "a declared name occurs inside the argument (a SUBTREE test, not the argument's own type)",
+    "array_literal_expression": "the grammar's wrapper for a SINGLE bare expression, so this is a VALUE — not a list of members, which the key's name would suggest to a reader of this JSON",
+    "generic_token": "a bare token that is none of the above — a literal, a variable, or a switch-shaped argument"
+  }
+}

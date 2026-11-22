@@ -1,0 +1,210 @@
+{
+  "population": {
+    "cap": 0,
+    "sampled": 958,
+    "parsed": 958,
+    "failed": 0,
+    "admitted": 958,
+    "repos": 14,
+    "absent": 191,
+    "overCap": 0,
+    "exts": [
+      "rb"
+    ],
+    "sizeCapBytes": 1048576
+  },
+  "control": {
+    "ok": true,
+    "checked": "published whole-population baseline",
+    "detail": "population 958 parsed of 958 admitted (14 repos) · last published reading on record: 958/958 files · 14 repos · TOTAL 84,865 (calls 56,953 · uses 4,760 · contains 10,201 · imports 1,303 · references 1,303 · exports 1,367 · extends 2,010 · implements 428 · overrides 3,115 · instantiates 3,425; ruby-completeness.json _from, 2026-10-14) — a difference is corpus growth (a repo appeared since: 989 files / 15 repos today), the RUBY-D1 relabel (implements 428 -> 0, extends loses the extend rows, mixes_in gains both), or this turn's emissions; stated rather than averaged"
+  },
+  "perType": {
+    "calls": {
+      "edges": 58091,
+      "files": 883,
+      "repos": 13
+    },
+    "contains": {
+      "edges": 10289,
+      "files": 756,
+      "repos": 7
+    },
+    "uses": {
+      "edges": 4760,
+      "files": 343,
+      "repos": 4
+    },
+    "instantiates": {
+      "edges": 3425,
+      "files": 473,
+      "repos": 7
+    },
+    "overrides": {
+      "edges": 2595,
+      "files": 386,
+      "repos": 5
+    },
+    "extends": {
+      "edges": 1895,
+      "files": 470,
+      "repos": 5
+    },
+    "exports": {
+      "edges": 1367,
+      "files": 817,
+      "repos": 12
+    },
+    "imports": {
+      "edges": 1303,
+      "files": 544,
+      "repos": 9
+    },
+    "references": {
+      "edges": 1303,
+      "files": 544,
+      "repos": 9
+    },
+    "mixes_in": {
+      "edges": 396,
+      "files": 202,
+      "repos": 4
+    },
+    "implements": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "decorates": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "renders": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "part_of": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    }
+  },
+  "perMarker": {},
+  "callsPayload": {
+    "callNode": {
+      "edges": 54900,
+      "files": 881,
+      "repos": 13
+    },
+    "bareCall": {
+      "edges": 3191,
+      "files": 370,
+      "repos": 5
+    }
+  },
+  "usesPayload": {
+    "memberRead": {
+      "edges": 4746,
+      "files": 342,
+      "repos": 4
+    },
+    "activerecordMacro": {
+      "edges": 14,
+      "files": 3,
+      "repos": 1
+    }
+  },
+  "loadPayload": {
+    "require/load-path": {
+      "edges": 805,
+      "files": 465,
+      "repos": 9
+    },
+    "require_relative/file-relative": {
+      "edges": 350,
+      "files": 140,
+      "repos": 3
+    },
+    "autoload/load-path": {
+      "edges": 146,
+      "files": 10,
+      "repos": 2
+    },
+    "load/load-path": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "mixinPayload": {
+    "include": {
+      "edges": 315,
+      "files": 177,
+      "repos": 4
+    },
+    "extend": {
+      "edges": 80,
+      "files": 41,
+      "repos": 3
+    },
+    "prepend": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "exportPayload": {
+    "module": {
+      "edges": 628,
+      "files": 587,
+      "repos": 7
+    },
+    "class": {
+      "edges": 441,
+      "files": 214,
+      "repos": 6
+    },
+    "function": {
+      "edges": 298,
+      "files": 129,
+      "repos": 8
+    }
+  },
+  "extendsPayload": {
+    "(direct)": {
+      "edges": 1885,
+      "files": 467,
+      "repos": 5
+    },
+    "Class.new": {
+      "edges": 10,
+      "files": 9,
+      "repos": 3
+    }
+  },
+  "overridePayload": {
+    "guess/first-parent-guess": {
+      "edges": 2572,
+      "files": 383,
+      "repos": 5
+    },
+    "structural/0.95": {
+      "edges": 23,
+      "files": 10,
+      "repos": 2
+    }
+  },
+  "instantiatePayload": {
+    "(receiver)": {
+      "edges": 3388,
+      "files": 467,
+      "repos": 7
+    },
+    "enclosing-class": {
+      "edges": 37,
+      "files": 29,
+      "repos": 3
+    }
+  }
+}

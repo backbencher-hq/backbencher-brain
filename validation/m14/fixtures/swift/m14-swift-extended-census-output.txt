@@ -1,0 +1,271 @@
+# Swift ontology census — text record
+
+Source JSON: validation/m14/measurements/swift-ontology-census.json
+Measured: 2026-11-22
+
+tool: swift-ontology-census
+corpus: /home/ishaq2321/bb_tests/repositories
+trackedCodeBearing: 1500
+limit: 400
+shard: all
+sampleSize: 400
+filesParsed: 400
+filesFailed: 0
+filesWithSymbols: 400
+filesWithRelationships: 400
+symbolsTotal: 10632
+relationshipsTotal: 40037
+relationshipsWithLine: 40035
+## failures
+[]
+## relationshipChannel
+{
+ "calls": {
+  "n": 11041,
+  "files": 321,
+  "firstFiles": [
+   "afnetworking/Example/tvOS Example/Gravatar.swift",
+   "afnetworking/Example/tvOS Example/ViewController.swift",
+   "alamofire/Example/Source/DetailViewController.swift",
+   "alamofire/Example/Source/MasterViewController.swift",
+   "alamofire/Source/Core/AFError.swift"
+  ],
+  "confidence": {
+   "0.95": 11041
+  },
+  "evidenceClass": {
+   "usage_contextual": 11041
+  },
+  "withLine": 11041,
+  "lineNamesTarget": 11041,
+  "sourceBindsToFileSymbol": 11036,
+  "targetBindsToFileSymbol": 3568,
+  "bothBindToFileSymbol": 3568,
+  "emptyEndpoint": 0,
+  "placeholderEndpoint": 33,
+  "examples": [
+   "afnetworking/Example/tvOS Example/Gravatar.swift:28 String -> trimmingCharacters",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:28 String -> lowercased",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:29 String -> cString",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:30 String -> lengthOfBytes"
+  ]
+ },
+ "uses": {
+  "n": 12623,
+  "files": 309,
+  "firstFiles": [
+   "afnetworking/Example/tvOS Example/Gravatar.swift",
+   "afnetworking/Example/tvOS Example/ViewController.swift",
+   "alamofire/Example/Source/AppDelegate.swift",
+   "alamofire/Example/Source/DetailViewController.swift",
+   "alamofire/Example/Source/MasterViewController.swift"
+  ],
+  "confidence": {
+   "0.9": 8547,
+   "0.6": 3877,
+   "0.95": 199
+  },
+  "evidenceClass": {
+   "usage_contextual": 8746,
+   "inferred": 3877
+  },
+  "withLine": 12623,
+  "lineNamesTarget": 12623,
+  "sourceBindsToFileSymbol": 12619,
+  "targetBindsToFileSymbol": 6532,
+  "bothBindToFileSymbol": 6532,
+  "emptyEndpoint": 0,
+  "placeholderEndpoint": 140,
+  "examples": [
+   "afnetworking/Example/tvOS Example/Gravatar.swift:28 String -> whitespaces",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:29 String -> utf8",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:29 String -> Encoding",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:101 URL -> scale"
+  ]
+ },
+ "contains": {
+  "n": 8363,
+  "files": 379,
+  "firstFiles": [
+   "afnetworking/Example/tvOS Example/AppDelegate.swift",
+   "afnetworking/Example/tvOS Example/Gravatar.swift",
+   "afnetworking/Example/tvOS Example/ViewController.swift",
+   "alamofire/Example/Source/AppDelegate.swift",
+   "alamofire/Example/Source/DetailViewController.swift"
+  ],
+  "confidence": {
+   "1": 8363
+  },
+  "evidenceClass": {
+   "structural": 8363
+  },
+  "withLine": 8363,
+  "lineNamesTarget": 7896,
+  "sourceBindsToFileSymbol": 8363,
+  "targetBindsToFileSymbol": 8363,
+  "bothBindToFileSymbol": 8363,
+  "emptyEndpoint": 0,
+  "placeholderEndpoint": 35,
+  "examples": [
+   "afnetworking/Example/tvOS Example/AppDelegate.swift:27 AppDelegate -> window",
+   "afnetworking/Example/tvOS Example/AppDelegate.swift:30 AppDelegate -> application",
+   "afnetworking/Example/tvOS Example/AppDelegate.swift:35 AppDelegate -> applicationWillResignActive",
+   "afnetworking/Example/tvOS Example/AppDelegate.swift:40 AppDelegate -> applicationDidEnterBackground"
+  ]
+ },
+ "imports": {
+  "n": 893,
+  "files": 395,
+  "firstFiles": [
+   "afnetworking/Example/tvOS Example/AppDelegate.swift",
+   "afnetworking/Example/tvOS Example/Gravatar.swift",
+   "afnetworking/Example/tvOS Example/ViewController.swift",
+   "afnetworking/Package.swift",
+   "alamofire/Example/Source/AppDelegate.swift"
+  ],
+  "confidence": {
+   "1": 893
+  },
+  "evidenceClass": {
+   "import_based": 893
+  },
+  "withLine": 893,
+  "lineNamesTarget": 893,
+  "sourceBindsToFileSymbol": 0,
+  "targetBindsToFileSymbol": 0,
+  "bothBindToFileSymbol": 0,
+  "emptyEndpoint": 0,
+  "placeholderEndpoint": 0,
+  "examples": [
+   "afnetworking/Example/tvOS Example/AppDelegate.swift:22 root -> UIKit",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:23 root -> Foundation",
+   "afnetworking/Example/tvOS Example/Gravatar.swift:24 root -> UIKit",
+   "afnetworking/Example/tvOS Example/ViewController.swift:22 root -> UIKit"
+  ]
+ },
+ "references": {
+  "n": 911,
+  "files": 395,
+
+## importChannel
+{
+ "n": 911,
+ "files": 395,
+ "withLine": 911,
+ "firstFiles": [
+  "afnetworking/Example/tvOS Example/AppDelegate.swift",
+  "afnetworking/Example/tvOS Example/Gravatar.swift",
+  "afnetworking/Example/tvOS Example/ViewController.swift",
+  "afnetworking/Package.swift",
+  "alamofire/Example/Source/AppDelegate.swift"
+ ],
+ "distinctModules": 51,
+ "topModules": [
+  [
+   "Foundation",
+   125
+  ],
+  [
+   "Flutter",
+   98
+  ],
+  [
+   "GoogleMaps",
+   95
+  ],
+  [
+   "XCTest",
+   72
+  ],
+  [
+   "UIKit",
+   63
+  ],
+  [
+   "Testing",
+   57
+  ],
+  [
+   "AVFoundation",
+   47
+  ],
+  [
+   "Alamofire",
+   44
+  ],
+  [
+   "camera_avfoundation",
+   42
+  ],
+  [
+   "FlutterMacOS",
+   41
+  ],
+  [
+   "Cduckdb",
+   34
+  ],
+  [
+   "google_maps_flutter_ios",
+   28
+  ]
+ ]
+}
+## exportChannel
+{
+ "n": 134,
+ "files": 65
+}
+## exportConstructProbe
+{
+ "distinctNodeTypes": 147,
+ "nodeTypeNamesContainingExport": [],
+ "exportKeywordAnonTokens": 0,
+ "visibilityModifierTokens": [
+  [
+   "public",
+   1485
+  ],
+  [
+   "private",
+   682
+  ],
+  [
+   "open",
+   151
+  ],
+  [
+   "fileprivate",
+   35
+  ],
+  [
+   "internal",
+   33
+  ],
+  [
+   "private(set)",
+   22
+  ],
+  [
+   "internal(set)",
+   6
+  ]
+ ],
+ "topLevelPublicOrOpen": 157,
+ "topLevelPublicOrOpenFiles": 71,
+ "topLevelNominal": 156,
+ "topLevelOther": 1,
+ "memberPublicOrOpen": 1472,
+ "atExportedAttributes": 1,
+ "atExportedFiles": 1,
+ "examples": [
+  "afnetworking/Example/tvOS Example/Gravatar.swift:56 class_declaration public",
+  "alamofire/Source/Alamofire.swift:37 property_declaration public",
+  "alamofire/Source/Alamofire.swift:40 class_declaration public",
+  "alamofire/Source/Core/AFError.swift:33 class_declaration public",
+  "alamofire/Source/Core/DataRequest.swift:28 class_declaration public",
+  "alamofire/Source/Core/DataStreamRequest.swift:28 class_declaration public",
+  "alamofire/Source/Core/DataStreamRequest.swift:518 protocol_declaration public",
+  "alamofire/Source/Core/DataStreamRequest.swift:531 class_declaration public"
+ ]
+}

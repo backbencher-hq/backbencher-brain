@@ -1,0 +1,47 @@
+==============================================================================
+CENSUS — the FOUR EXTENDED TYPES' CONSTRUCT SITES over the WHOLE admitted R population
+==============================================================================
+node v24.3.0   workers 4   cores 8
+load at start: 1.87 4.19 6.74
+corpus root: /home/ishaq2321/bb_tests/repositories
+admission: the GATE's predicate (script/m14/incoming-gate.ts:367) — spelling .r from the ROUTER TABLE (script/m14/language-extensions.ts), bare basename==spelling only when the router's detection names this lane; SIZE_CAP 1048576 B
+admitted files [0,2184) of 2184 — the WHOLE admitted population (no stride, no cap)
+excluded from the population: 0 tracked-but-absent/unreadable + 0 over the 1048576 B cap
+corpus file set: sha256 953c03149397dc86ba1b64e1d4b91d01aa5fc11b5b10d59610e26f670d6261d9 (2184 absolute paths, sorted)
+files parsed: 2184   failures: 0   traps: 0
+parse attempts: up to 3 per file for the engine's known intermittent wasm trap — 3 file(s) needed a retry, 0 exhausted all attempts
+walk wall time: 7134ms
+
+mixes_in — the CONSTRUCT SITES, by spelling (the label question is whether conformance is declared):
+  setClass(contains=) — S4 composition clause       151 sites      15 files
+    contains= naming ONE class (single-base shape)     68 sites      15 files
+    contains= naming SEVERAL classes (list shape)     83 sites       5 files
+  setRefClass(contains=) — R5 (same keyword, same reading)      4 sites       2 files
+    R5 contains= naming ONE class (single-base)       3 sites       2 files
+    R5 contains= naming SEVERAL classes (list)        1 sites       1 files
+  R6Class(inherit=) — IS-A conformance [extends, NOT mixes_in]    108 sites      32 files
+    inherit= naming ONE class                       108 sites      32 files
+    inherit= naming SEVERAL classes                   0 sites       0 files
+  R6Class(include=) — the asked-about spelling (R6 has no such arg)      0 sites       0 files
+  S7 new_class(parent=) — IS-A conformance [extends]     49 sites      20 files
+  setIs() — S4 coerce inheritance [extends]           0 sites       0 files
+
+part_of — the runtime-inclusion CONSTRUCT SITES (a CALL, not a grammar construct):
+  source() call sites                                36 sites      26 files
+  sys.source() call sites                             2 sites       1 files
+    local=FALSE (global env — SHARES scope)           0 sites       0 files
+    local=globalenv() (SHARES scope)                  1 sites       1 files
+    local=TRUE / default (NEW env — fails contract)     32 sites      25 files
+      of which: NO local= given at all               28 sites      22 files
+    local= other spelling                             5 sites       3 files
+
+decorates — roxygen comment sites (a COMMENT a TOOL reads):
+  any roxygen `#'` comment site                   59334 sites     779 files
+    @export tag sites                              3695 sites     718 files
+    @import* tag sites                               75 sites      31 files
+  DISTINCT FILES carrying any roxygen tag: 779 of 2184
+
+renders — the admitted population cannot host the construct:
+  .Rmd 0   .Rnw 0   .rmd 0   .rnw 0 (corpus TREE, depth<=6)
+  the ROUTER'S ONE TABLE gives this lane .r only, so a .Rmd file is NOT this lane's file
+==============================================================================

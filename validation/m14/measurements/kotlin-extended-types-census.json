@@ -1,0 +1,529 @@
+{
+  "generated": "2026-11-22T20:21:00.662Z",
+  "instrument": "script/m14/kotlin-extended-types-census.ts",
+  "rule": "git-tracked ∧ present ∧ ≤1 MiB, extensions kt/kts, tree-sitter tree of the SERVED grammar; parsed must equal the window's file count or the run exits 3; family scans run with indexOf (this lane's no-regex convention), not regex",
+  "population": {
+    "admitted": 2346,
+    "tracked": 2369,
+    "repos": 8,
+    "absentFromDisk": 23,
+    "overCap": 0,
+    "window": [
+      0,
+      2346
+    ],
+    "windowFiles": 2346,
+    "parsed": 2346,
+    "failed": 0,
+    "populationString": "parsed=2346/2346 admitted=2346 exts=kt,kts index=no",
+    "wholePopulation": true
+  },
+  "grammar": {
+    "resolvedBy": "src/util/wasm.resolveWasmAsset('tree-sitter-kotlin.wasm')",
+    "wasmPath": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-kotlin.wasm",
+    "sha256": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
+    "namedTypeIds": 152,
+    "uniqueNamedTypes": 142,
+    "universalPair": "ERROR/MISSING not found among named ids — check before applying the fleet counting rule",
+    "candidateFamilies": {
+      "decorator": [],
+      "mixin": [],
+      "part-directive": [],
+      "render/component": [],
+      "delegation": [
+        "constructor_delegation_call",
+        "delegation_specifier",
+        "explicit_delegation",
+        "property_delegate"
+      ],
+      "annotation": [
+        "annotated_lambda",
+        "annotation",
+        "file_annotation"
+      ]
+    }
+  },
+  "decorates": {
+    "annotationSites": {
+      "annotation": {
+        "sites": 10092,
+        "files": 1472
+      },
+      "file_annotation": {
+        "sites": 241,
+        "files": 192
+      }
+    },
+    "annotationSitesTotal": 10333,
+    "annotationSimpleNames": [
+      [
+        "Test",
+        {
+          "sites": 5555,
+          "files": 827
+        }
+      ],
+      [
+        "Suppress",
+        {
+          "sites": 1314,
+          "files": 505
+        }
+      ],
+      [
+        "OptIn",
+        {
+          "sites": 613,
+          "files": 221
+        }
+      ],
+      [
+        "Deprecated",
+        {
+          "sites": 398,
+          "files": 80
+        }
+      ],
+      [
+        "JvmName",
+        {
+          "sites": 228,
+          "files": 62
+        }
+      ],
+      [
+        "JvmField",
+        {
+          "sites": 156,
+          "files": 73
+        }
+      ],
+      [
+        "Transactional",
+        {
+          "sites": 90,
+          "files": 26
+        }
+      ],
+      [
+        "RepeatedTest",
+        {
+          "sites": 89,
+          "files": 10
+        }
+      ],
+      [
+        "Tag",
+        {
+          "sites": 84,
+          "files": 57
+        }
+      ],
+      [
+        "PublishedApi",
+        {
+          "sites": 79,
+          "files": 44
+        }
+      ],
+      [
+        "Benchmark",
+        {
+          "sites": 74,
+          "files": 31
+        }
+      ],
+      [
+        "InternalCoroutinesApi",
+        {
+          "sites": 69,
+          "files": 39
+        }
+      ],
+      [
+        "JvmStatic",
+        {
+          "sites": 60,
+          "files": 44
+        }
+      ],
+      [
+        "InternalApi",
+        {
+          "sites": 57,
+          "files": 32
+        }
+      ],
+      [
+        "ExperimentalCoroutinesApi",
+        {
+          "sites": 52,
+          "files": 31
+        }
+      ],
+      [
+        "Before",
+        {
+          "sites": 48,
+          "files": 48
+        }
+      ],
+      [
+        "Bean",
+        {
+          "sites": 47,
+          "files": 15
+        }
+      ],
+      [
+        "Param",
+        {
+          "sites": 45,
+          "files": 21
+        }
+      ],
+      [
+        "Target",
+        {
+          "sites": 43,
+          "files": 37
+        }
+      ],
+      [
+        "Volatile",
+        {
+          "sites": 43,
+          "files": 27
+        }
+      ],
+      [
+        "RunWith",
+        {
+          "sites": 41,
+          "files": 41
+        }
+      ],
+      [
+        "Retention",
+        {
+          "sites": 38,
+          "files": 34
+        }
+      ],
+      [
+        "LowPriorityInOverloadResolution",
+        {
+          "sites": 35,
+          "files": 14
+        }
+      ],
+      [
+        "After",
+        {
+          "sites": 34,
+          "files": 34
+        }
+      ],
+      [
+        "BeforeEach",
+        {
+          "sites": 33,
+          "files": 33
+        }
+      ],
+      [
+        "State",
+        {
+          "sites": 32,
+          "files": 32
+        }
+      ],
+      [
+        "JvmMultifileClass",
+        {
+          "sites": 32,
+          "files": 32
+        }
+      ],
+      [
+        "JvmOverloads",
+        {
+          "sites": 31,
+          "files": 21
+        }
+      ],
+      [
+        "Measurement",
+        {
+          "sites": 31,
+          "files": 31
+        }
+      ],
+      [
+        "BenchmarkMode",
+        {
+          "sites": 31,
+          "files": 31
+        }
+      ]
+    ],
+    "annotatedDeclarationKinds": {
+      "function_declaration": {
+        "sites": 8077,
+        "files": 1245
+      },
+      "class_declaration": {
+        "sites": 934,
+        "files": 402
+      },
+      "property_declaration": {
+        "sites": 544,
+        "files": 251
+      },
+      "prefix_expression": {
+        "sites": 270,
+        "files": 118
+      },
+      "source_file": {
+        "sites": 241,
+        "files": 192
+      },
+      "class_parameter": {
+        "sites": 98,
+        "files": 50
+      },
+      "statements": {
+        "sites": 40,
+        "files": 28
+      },
+      "object_declaration": {
+        "sites": 38,
+        "files": 33
+      },
+      "parameter_modifiers": {
+        "sites": 34,
+        "files": 14
+      },
+      "catch_block": {
+        "sites": 12,
+        "files": 2
+      },
+      "getter": {
+        "sites": 9,
+        "files": 8
+      },
+      "companion_object": {
+        "sites": 8,
+        "files": 5
+      },
+      "type_alias": {
+        "sites": 8,
+        "files": 7
+      },
+      "type_modifiers": {
+        "sites": 6,
+        "files": 4
+      },
+      "primary_constructor": {
+        "sites": 5,
+        "files": 5
+      },
+      "secondary_constructor": {
+        "sites": 4,
+        "files": 4
+      },
+      "setter": {
+        "sites": 4,
+        "files": 2
+      },
+      "enum_entry": {
+        "sites": 1,
+        "files": 1
+      }
+    },
+    "annotationArgumentNodeTypes": {
+      "value_argument": {
+        "sites": 5038,
+        "files": 869
+      },
+      "value_arguments": {
+        "sites": 3664,
+        "files": 870
+      },
+      "simple_identifier": {
+        "sites": 3129,
+        "files": 299
+      },
+      "string_content": {
+        "sites": 3085,
+        "files": 619
+      },
+      "string_literal": {
+        "sites": 3082,
+        "files": 619
+      },
+      "callable_reference": {
+        "sites": 724,
+        "files": 296
+      },
+      "type_identifier": {
+        "sites": 724,
+        "files": 296
+      },
+      "navigation_expression": {
+        "sites": 719,
+        "files": 167
+      },
+      "navigation_suffix": {
+        "sites": 719,
+        "files": 167
+      },
+      "integer_literal": {
+        "sites": 332,
+        "files": 71
+      },
+      "call_expression": {
+        "sites": 250,
+        "files": 40
+      },
+      "call_suffix": {
+        "sites": 250,
+        "files": 40
+      },
+      "additive_expression": {
+        "sites": 153,
+        "files": 28
+      },
+      "collection_literal": {
+        "sites": 52,
+        "files": 30
+      },
+      "boolean_literal": {
+        "sites": 45,
+        "files": 18
+      },
+      "long_literal": {
+        "sites": 11,
+        "files": 4
+      },
+      "line_comment": {
+        "sites": 8,
+        "files": 5
+      }
+    },
+    "annotationArgumentNodesTotal": 21985,
+    "falsifierKotlinForm": {
+      "note": "kotlin ALLOWS annotation instances as annotation arguments (java measured 0 call-shaped nodes under JLS 9.7.1; kotlin's ReplaceWith inside @Deprecated parses as a call_expression), so the falsifier is counted BY CALLEE NAME: every call-shaped annotation argument must be a nested ANNOTATION CONSTRUCTOR (passive metadata one level down), never a runtime callable applied to the declaration",
+      "callShapedAnnotationArguments": 250,
+      "callShapedArgumentCalleeNames": {
+        "ReplaceWith": {
+          "sites": 248,
+          "files": 39
+        },
+        "Param": {
+          "sites": 2,
+          "files": 1
+        }
+      },
+      "lambdasInAnnotationArguments": 0,
+      "anonymousObjectsInAnnotationArguments": 0
+    },
+    "grammarFamilyHits": [
+      "annotated_lambda",
+      "annotation",
+      "file_annotation"
+    ]
+  },
+  "renders": {
+    "composableAnnotationSites": {},
+    "androidxComposeImports": {},
+    "androidxComposeImportSites": 0,
+    "shapeProbeNote": "the Compose DSL survives the grammar as real nodes — annotation[Composable] under modifiers > function_declaration, with the body's Text(...) as call_expression — probe-measured on synthetic source (this lane, 2026-10-25); this census counts whether the CORPUS exercises it",
+    "grammarFamilyHits": []
+  },
+  "mixes_in": {
+    "delegationFamilySites": {
+      "delegation_specifier": {
+        "sites": 4481,
+        "files": 1429
+      },
+      "property_delegate": {
+        "sites": 611,
+        "files": 173
+      },
+      "explicit_delegation": {
+        "sites": 50,
+        "files": 41
+      },
+      "constructor_delegation_call": {
+        "sites": 46,
+        "files": 36
+      }
+    },
+    "bySupertypeSites": 50,
+    "byPropertySites": 611,
+    "contractTest": {
+      "note": "a mixes_in candidate must compose behaviour WITHOUT declaring conformance (src/ast/types.ts:156-162); the census proves from the tree that EVERY explicit_delegation sits under delegation_specifier in the class's SUPERTYPE CLAUSE — the position where conformance IS declared (the class statically conforms to the delegated interface) — and a property_delegate has no supertype chain at all (the contract's subject is a class-supertype fact)",
+      "explicitDelegationParentChains": {
+        "delegation_specifier > class_declaration > source_file": {
+          "sites": 29,
+          "files": 25
+        },
+        "delegation_specifier > class_declaration > class_body": {
+          "sites": 11,
+          "files": 9
+        },
+        "delegation_specifier > object_literal > property_declaration": {
+          "sites": 4,
+          "files": 2
+        },
+        "delegation_specifier > object_literal > jump_expression": {
+          "sites": 3,
+          "files": 3
+        },
+        "delegation_specifier > object_declaration > source_file": {
+          "sites": 2,
+          "files": 2
+        },
+        "delegation_specifier > object_literal > value_argument": {
+          "sites": 1,
+          "files": 1
+        }
+      },
+      "propertyDelegateParentKinds": {
+        "property_declaration": {
+          "sites": 611,
+          "files": 173
+        }
+      }
+    },
+    "interfaceNearMiss": {
+      "note": "the java lane's near miss, counted for kotlin: interface members with bodies are default methods — conformance IS declared when a class names the interface, so they are `implements` under the fleet rule, not a mixin",
+      "interfaceMembers": {
+        "abstract (no body)": {
+          "sites": 924,
+          "files": 98
+        },
+        "with-body (default)": {
+          "sites": 240,
+          "files": 26
+        }
+      }
+    },
+    "grammarFamilyHits": []
+  },
+  "part_of": {
+    "grammarFamilyHits": [],
+    "importHeaderSites": 14047,
+    "gradleNearMiss": {
+      "note": "`include` is NOT a kotlin grammar production (it parses as a plain call_expression) and a Gradle project-inclusion is a BUILD-CONFIGURATION fact, not a compile-unit inclusion of source; counted in .kts files only, by callee-name string equality",
+      "includeCallSites": 103,
+      "includeCallFiles": 55,
+      "applyCallSites": 25,
+      "applyFromSites": 0,
+      "applyFromFiles": 0
+    },
+    "interfaceSites": 169
+  },
+  "filesFailed": []
+}

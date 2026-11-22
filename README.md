@@ -300,8 +300,10 @@ silently mixed. See EMBEDDINGS.md for the full provider list, precedence rules (
 
 ## Language support
 
-**50 languages**, all first-class in discovery, parsing, relationship extraction and the
-cross-language graph:
+**50 languages**, all in discovery, parsing, relationship extraction and the cross-language
+graph. Every one of the 14 relationship types is implemented or ruled inapplicable per lane,
+and each lane's residuals are published — see the
+[closure matrix](validation/m14/verification/LANGUAGE-MATRIX-EXTENDED.md):
 
 Bash, C, C#, C++, Clean, Clojure, CSS, Dart, Elixir, Erlang, F#, Go, GraphQL, Groovy, Haskell, HCL, HTML,
 Java, JavaScript, JSON, Julia, Kotlin, Lua, Make, Markdown, MATLAB, Nim, Objective-C, Perl, PHP, PowerShell,

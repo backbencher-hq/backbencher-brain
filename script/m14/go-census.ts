@@ -71,7 +71,7 @@ const WASM = path.join(ROOT, "wasm", "tree-sitter-go.wasm")
  *  under this instrument's name. The value is the served build's sha256 (the resolver reads
  *  `<root>/wasm/tree-sitter-go.wasm`; the engine's log prints a temp copy path, and the fleet
  *  rule is that a grammar is cited by the bytes' sha256, never by a path or a log line). */
-const PINNED_WASM_SHA256 = "9963ca89b616eaf04b08a43bc1fb0f07b85395bec313330851f1f1ead2f755b6"
+const PINNED_WASM_SHA256 = "cc55ee8a3579e03a1b94e5371f92f6a5c92045308ee633c25360ab7789573a08"
 
 const argv = process.argv.slice(2)
 const argOf = (flag: string): string | undefined => {

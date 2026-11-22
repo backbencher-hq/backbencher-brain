@@ -1,0 +1,240 @@
+{
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "repos": [
+    "bash-completion",
+    "kubernetes",
+    "otp",
+    "ohmyzsh",
+    "gql-graphql-platform",
+    "boundary",
+    "consul",
+    "ansible",
+    "hasura-engine",
+    "dart-sdk",
+    "nomad",
+    "core",
+    "vault",
+    "proxicall",
+    "grails-core",
+    "apollo-server",
+    "Fabulous",
+    "dark",
+    "nvm",
+    "cabal",
+    "hledger",
+    "docker",
+    "flutter-packages",
+    "redis",
+    "cargo",
+    "caddy",
+    "rbenv",
+    "swift-nio",
+    "element-plus",
+    "gh-cli",
+    "scala3",
+    "terragrunt",
+    "yq",
+    "ripgrep",
+    "terraform-aws-components",
+    "sqlite",
+    "rebar3",
+    "clj-kondo",
+    "helm",
+    "packer",
+    "traefik",
+    "riverpod",
+    "cats-effect",
+    "Fake",
+    "powershell",
+    "luarocks",
+    "primer-css",
+    "phpmyadmin",
+    "sdwebimage",
+    "lazy.nvim",
+    "vega",
+    "luvit",
+    "solidity",
+    "FSharpx.Extras",
+    "Grace",
+    "DataFrames.jl",
+    "phoenix"
+  ],
+  "scanned": 501320,
+  "admitted": 4223,
+  "sampled": 400,
+  "totalSymbols": 4995,
+  "totalRelationships": 22900,
+  "parseFailures": 0,
+  "relCounts": {
+    "uses": 12177,
+    "calls": 5777,
+    "contains": 4589,
+    "references": 54,
+    "exports": 231,
+    "overrides": 28
+  },
+  "relFiles": {
+    "uses": [
+      "otp/erts/etc/win32/cygwin_tools/vc/rc.sh",
+      "kubernetes/hack/tools/instrumentation/test-update.sh",
+      "gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/run-single-benchmark.sh",
+      "bash-completion/completions-core/filesnarf.bash",
+      "consul/test/integration/connect/envoy/helpers.bash",
+      "consul/.release/release-scripts/prepare-release-branch.sh"
+    ],
+    "calls": [
+      "otp/erts/etc/win32/cygwin_tools/vc/rc.sh",
+      "kubernetes/hack/tools/instrumentation/test-update.sh",
+      "gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/run-single-benchmark.sh",
+      "ohmyzsh/lib/directories.zsh",
+      "boundary/enos/modules/docker_boundary_cmd/get_worker_token.sh",
+      "bash-completion/completions-core/filesnarf.bash"
+    ],
+    "contains": [
+      "otp/erts/etc/win32/cygwin_tools/vc/rc.sh",
+      "kubernetes/hack/tools/instrumentation/test-update.sh",
+      "gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/run-single-benchmark.sh",
+      "ohmyzsh/lib/directories.zsh",
+      "bash-completion/completions-core/filesnarf.bash",
+      "consul/test/integration/connect/envoy/helpers.bash"
+    ],
+    "references": [
+      "kubernetes/hack/tools/instrumentation/test-update.sh",
+      "kubernetes/hack/lib/protoc.sh",
+      "dark/scripts/run-cli",
+      "kubernetes/test/e2e_node/gubernator.sh",
+      "kubernetes/hack/update-translations.sh",
+      "rbenv/libexec/rbenv-exec"
+    ],
+    "exports": [
+      "gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/run-single-benchmark.sh",
+      "consul/.release/release-scripts/prepare-release-branch.sh",
+      "otp/erts/etc/win32/msys_tools/vc/emu_cc.sh",
+      "grails-core/etc/bin/verify-wrapper-distribution.sh",
+      "kubernetes/third_party/gimme/gimme",
+      "kubernetes/hack/lib/protoc.sh"
+    ],
+    "overrides": [
+      "kubernetes/third_party/gimme/gimme",
+      "ohmyzsh/lib/clipboard.zsh",
+      "nomad/demo/hostvolume/example-plugin-mkfs",
+      "ohmyzsh/plugins/git-auto-fetch/git-auto-fetch.plugin.zsh"
+    ]
+  },
+  "relFileCount": {
+    "uses": 312,
+    "calls": 369,
+    "contains": 322,
+    "references": 36,
+    "exports": 59,
+    "overrides": 4
+  },
+  "resolution": {
+    "uses": {
+      "both": 787,
+      "srcOnly": 11390,
+      "tgtOnly": 0,
+      "neither": 0
+    },
+    "calls": {
+      "both": 1210,
+      "srcOnly": 4567,
+      "tgtOnly": 0,
+      "neither": 0
+    },
+    "contains": {
+      "both": 4589,
+      "srcOnly": 0,
+      "tgtOnly": 0,
+      "neither": 0
+    },
+    "references": {
+      "both": 0,
+      "srcOnly": 54,
+      "tgtOnly": 0,
+      "neither": 0
+    },
+    "exports": {
+      "both": 1,
+      "srcOnly": 230,
+      "tgtOnly": 0,
+      "neither": 0
+    },
+    "overrides": {
+      "both": 28,
+      "srcOnly": 0,
+      "tgtOnly": 0,
+      "neither": 0
+    }
+  },
+  "confidence": {
+    "uses": {
+      "under07": 0,
+      "total": 12177
+    },
+    "calls": {
+      "under07": 0,
+      "total": 5777
+    },
+    "contains": {
+      "under07": 0,
+      "total": 4589
+    },
+    "references": {
+      "under07": 0,
+      "total": 54
+    },
+    "exports": {
+      "under07": 0,
+      "total": 231
+    },
+    "overrides": {
+      "under07": 0,
+      "total": 28
+    }
+  },
+  "evidenceClasses": {
+    "uses": {
+      "usage_contextual": 12177
+    },
+    "calls": {
+      "structural": 5777
+    },
+    "contains": {
+      "structural": 4589
+    },
+    "references": {
+      "import_based": 54
+    },
+    "exports": {
+      "structural": 231
+    },
+    "overrides": {
+      "structural": 28
+    }
+  },
+  "kindCounts": {
+    "module": 400,
+    "variable": 3543,
+    "function": 846,
+    "constant": 206
+  },
+  "emptyNameSymbols": 0,
+  "unknownKindSymbols": 0,
+  "unknownEndpointEdges": 0,
+  "emptyEndpointEdges": 0,
+  "containsTargetNotSymbol": 0,
+  "overridesTargetNotFunction": 0,
+  "exportsTargetNotExportedSymbol": 0,
+  "usesTargetIsPositional": 0,
+  "callsLocal": 1156,
+  "callsLocalTargetResolves": 1156,
+  "callsExternal": 4621,
+  "callsExternalTargetResolves": 54,
+  "importsKeys": 0,
+  "referencesKeys": 54,
+  "referencesOnlyKeys": 54,
+  "importsOnlyKeys": 0,
+  "damagedFileCount": 22,
+  "damagedCommandEdges": 80
+}

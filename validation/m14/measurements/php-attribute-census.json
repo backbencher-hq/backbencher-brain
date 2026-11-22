@@ -1,0 +1,68 @@
+{
+  "language": "php",
+  "generated": "2026-11-22T20:51:16.522Z",
+  "rule": "CANDIDATE SET = files of the admitted php population whose TEXT contains `#[` (a SUPERSET of the files that can carry a PHP attribute: `#[` is required and contiguous, and a comment/string containing it only adds a file that parses to zero attributes). Every candidate is PARSED; the decisive counter classifies each DIRECT argument expression of each `attribute` node by its own node type.",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "admitted": 6404,
+    "candidates": 1884,
+    "parsed": 1884,
+    "failures": 0
+  },
+  "control": {
+    "expectedAttributesFromFullCensus": 6507,
+    "expectedGroupsFromFullCensus": 6506,
+    "measuredAttributes": 6507,
+    "measuredGroups": 6506,
+    "exact": true,
+    "problems": []
+  },
+  "decoratesCounter": {
+    "preRegisteredPredicate": "an `attribute` whose ARGUMENT is a call-shaped expression",
+    "directCallShaped": {
+      "rows": 0,
+      "files": 0,
+      "samples": []
+    },
+    "callableArgument": {
+      "rows": 12,
+      "files": 12,
+      "samples": [
+        "phpunit/tests/_files/EmptyStringKeyDataProviderClosureTest.php: anonymous_function: static function (): Generator { yield '' => ['foo']; }",
+        "phpunit/tests/_files/Metadata/Attribute/tests/DataProviderClosureTest.php: anonymous_function: static function (): array {return []; }",
+        "phpunit/tests/end-to-end/_files/DataProviderClosureTest.php: anonymous_function: static function (): array { return [[true], [false]]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureArgumentCountNoWarningDisabledTest.php: anonymous_function: static function (): array { return [[1, 2, 3]]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureArgumentCountWarningTest.php: anonymous_function: static function (): array { return [[1, 2, 3]]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureDoesNotReturnIterableTest.php: anonymous_function: static function (): int { return 42; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureDuplicateStringKeyTest.php: anonymous_function: static function (): Generator { yield 'key' => [true]; yield 'key' => [false]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureInvalidKeyTypeTest.php: anonymous_function: static function (): Generator { $key = 1.5; yield $key => [true]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureSuccessWithIntegerKeysTest.php: anonymous_function: static function (): array { return [[1], [2]]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureSuccessWithStringKeysTest.php: anonymous_function: static function (): array { return ['first' => [1], 'second' => [2]]; }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureThrowsExceptionTest.php: anonymous_function: static function (): array { throw new RuntimeException('closure failed'); }",
+        "phpunit/tests/end-to-end/_files/data-provider/ClosureValueIsNotArrayTest.php: anonymous_function: static function (): array { return [42]; }"
+      ]
+    },
+    "nestedCallOnly": {
+      "rows": 0,
+      "files": 0,
+      "samples": []
+    },
+    "meaning": "`directCallShaped` IS the pre-registered counter: non-zero falsifies the passive-metadata ruling and `decorates` is implemented. `callableArgument` (a closure passed as a metadata VALUE) and `nestedCallOnly` (a call shape somewhere beneath the argument) are reported because the FIRST implementation of the counter walked the whole `arguments` subtree and therefore measured `nestedCallOnly` while claiming to measure the predicate."
+  },
+  "attributeSites": {
+    "groups": 6506,
+    "attributes": 6507,
+    "files": 1799,
+    "annotatedDeclKinds": {
+      "method_declaration": 2617,
+      "class_declaration": 3866,
+      "enum_case": 8,
+      "enum_declaration": 3
+    }
+  },
+  "screens": {
+    "candidateFiles": 1884,
+    "admittedFiles": 6404,
+    "note": "a candidate set that misses a file reports a clean zero over a population it never read — the control above is what prevents that"
+  }
+}

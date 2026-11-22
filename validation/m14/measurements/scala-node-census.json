@@ -1,0 +1,1627 @@
+{
+  "instrument": "script/m14/scala-node-census.ts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "grammarSha256": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+  "population": {
+    "rule": "PATHS · DISTINCT FILES · ADMITTED — ADMITTED is the git-tracked set under the 1 MB size cap",
+    "paths": 19345,
+    "distinctFiles": 19345,
+    "admitted": 19345,
+    "overCapFiles": 0,
+    "repoCount": 3,
+    "perRepo": {
+      "cats-effect": 462,
+      "gql-sangria": 267,
+      "scala3": 18616
+    },
+    "symlinkedDirsFollowed": 1
+  },
+  "measurement": {
+    "filesParsed": 19345,
+    "parseFailures": 0,
+    "nodesVisited": 9341045,
+    "nodeTypesSeen": 260,
+    "namedTypes": 169,
+    "anonymousTypes": 91
+  },
+  "stemHits": {
+    "decorat": [],
+    "render": [],
+    "xml": [
+      "xml_text",
+      "xml_name",
+      "xml_element",
+      "xml_expression",
+      "xml_pattern",
+      "xml_attribute",
+      "xml_string",
+      "xml_comment"
+    ],
+    "part": [],
+    "partial": [],
+    "package": [
+      "package_identifier",
+      "package_clause",
+      "package_object"
+    ],
+    "template": [
+      "template_body",
+      "with_template_body"
+    ],
+    "view": [
+      "view_bound"
+    ],
+    "annotat": [
+      "annotation",
+      "annotated_type"
+    ],
+    "include": [],
+    "fragment": []
+  },
+  "byType": {
+    "identifier": {
+      "sites": 1663125,
+      "files": 19325,
+      "named": true
+    },
+    "arguments": {
+      "sites": 847628,
+      "files": 16793,
+      "named": true
+    },
+    "type_identifier": {
+      "sites": 690286,
+      "files": 18211,
+      "named": true
+    },
+    ")": {
+      "sites": 523831,
+      "files": 16783,
+      "named": false
+    },
+    ",": {
+      "sites": 422598,
+      "files": 9138,
+      "named": false
+    },
+    ".": {
+      "sites": 387246,
+      "files": 14658,
+      "named": false
+    },
+    "call_expression": {
+      "sites": 317183,
+      "files": 12858,
+      "named": true
+    },
+    "field_expression": {
+      "sites": 275950,
+      "files": 10967,
+      "named": true
+    },
+    ":": {
+      "sites": 262439,
+      "files": 16284,
+      "named": false
+    },
+    "=": {
+      "sites": 227144,
+      "files": 17480,
+      "named": false
+    },
+    "[": {
+      "sites": 174061,
+      "files": 12384,
+      "named": false
+    },
+    "]": {
+      "sites": 174050,
+      "files": 12381,
+      "named": false
+    },
+    "type_arguments": {
+      "sites": 137184,
+      "files": 11543,
+      "named": true
+    },
+    "operator_identifier": {
+      "sites": 123809,
+      "files": 9099,
+      "named": true
+    },
+    "infix_expression": {
+      "sites": 115595,
+      "files": 6468,
+      "named": true
+    },
+    "def": {
+      "sites": 115050,
+      "files": 15360,
+      "named": false
+    },
+    "}": {
+      "sites": 115039,
+      "files": 15487,
+      "named": false
+    },
+    "{": {
+      "sites": 111975,
+      "files": 15431,
+      "named": false
+    },
+    "integer_literal": {
+      "sites": 111417,
+      "files": 8301,
+      "named": true
+    },
+    "generic_type": {
+      "sites": 108535,
+      "files": 10528,
+      "named": true
+    },
+    "function_definition": {
+      "sites": 107203,
+      "files": 15072,
+      "named": true
+    },
+    "parameters": {
+      "sites": 93524,
+      "files": 12738,
+      "named": true
+    },
+    "parameter": {
+      "sites": 90919,
+      "files": 11409,
+      "named": true
+    },
+    "string": {
+      "sites": 88692,
+      "files": 7212,
+      "named": true
+    },
+    "val": {
+      "sites": 82878,
+      "files": 10970,
+      "named": false
+    },
+    "val_definition": {
+      "sites": 77479,
+      "files": 10300,
+      "named": true
+    },
+    "=>": {
+      "sites": 77332,
+      "files": 7792,
+      "named": false
+    },
+    "case": {
+      "sites": 58164,
+      "files": 5775,
+      "named": false
+    },
+    "comment": {
+      "sites": 54746,
+      "files": 9039,
+      "named": true
+    },
+    "//": {
+      "sites": 54738,
+      "files": 9039,
+      "named": false
+    },
+    ";": {
+      "sites": 51450,
+      "files": 1650,
+      "named": false
+    },
+    "block": {
+      "sites": 49516,
+      "files": 7329,
+      "named": true
+    },
+    "case_clause": {
+      "sites": 47349,
+      "files": 4215,
+      "named": true
+    },
+    "indented_block": {
+      "sites": 45623,
+      "files": 6231,
+      "named": true
+    },
+    "modifiers": {
+      "sites": 44963,
+      "files": 8156,
+      "named": true
+    },
+    "template_body": {
+      "sites": 44949,
+      "files": 16301,
+      "named": true
+    },
+    "_": {
+      "sites": 43110,
+      "files": 6459,
+      "named": false
+    },
+    "wildcard": {
+      "sites": 39242,
+      "files": 5191,
+      "named": true
+    },
+    "type_parameters": {
+      "sites": 33138,
+      "files": 6699,
+      "named": true
+    },
+    "parenthesized_expression": {
+      "sites": 28984,
+      "files": 3399,
+      "named": true
+    },
+    "generic_function": {
+      "sites": 28456,
+      "files": 4852,
+      "named": true
+    },
+    "if": {
+      "sites": 27759,
+      "files": 2658,
+      "named": false
+    },
+    "import": {
+      "sites": 26874,
+      "files": 8847,
+      "named": false
+    },
+    "import_declaration": {
+      "sites": 26864,
+      "files": 8838,
+      "named": true
+    },
+    "block_comment": {
+      "sites": 26839,
+      "files": 2753,
+      "named": true
+    },
+    "stable_type_identifier": {
+      "sites": 26459,
+      "files": 4349,
+      "named": true
+    },
+    "class": {
+      "sites": 26425,
+      "files": 10385,
+      "named": false
+    },
+    "class_definition": {
+      "sites": 26378,
+      "files": 10371,
+      "named": true
+    },
+    "if_expression": {
+      "sites": 23747,
+      "files": 2398,
+      "named": true
+    },
+    "extends": {
+      "sites": 23083,
+      "files": 8371,
+      "named": false
+    },
+    "extends_clause": {
+      "sites": 23062,
+      "files": 8364,
+      "named": true
+    },
+    "assignment_expression": {
+      "sites": 22586,
+      "files": 2408,
+      "named": true
+    },
+    "new": {
+      "sites": 21910,
+      "files": 5462,
+      "named": false
+    },
+    "instance_expression": {
+      "sites": 21887,
+      "files": 5458,
+      "named": true
+    },
+    "object": {
+      "sites": 20685,
+      "files": 11792,
+      "named": false
+    },
+    "object_definition": {
+      "sites": 20476,
+      "files": 11682,
+      "named": true
+    },
+    "class_parameter": {
+      "sites": 20270,
+      "files": 4717,
+      "named": true
+    },
+    "case_class_pattern": {
+      "sites": 19859,
+      "files": 2154,
+      "named": true
+    },
+    "compilation_unit": {
+      "sites": 19305,
+      "files": 19305,
+      "named": true
+    },
+    "@": {
+      "sites": 19012,
+      "files": 3760,
+      "named": false
+    },
+    "else": {
+      "sites": 17002,
+      "files": 2080,
+      "named": false
+    },
+    "annotation": {
+      "sites": 17000,
+      "files": 3456,
+      "named": true
+    },
+    "access_modifier": {
+      "sites": 15540,
+      "files": 2682,
+      "named": true
+    },
+    "interpolation": {
+      "sites": 15321,
+      "files": 1743,
+      "named": true
+    },
+    "$": {
+      "sites": 15321,
+      "files": 1743,
+      "named": false
+    },
+    "<:": {
+      "sites": 15264,
+      "files": 2085,
+      "named": false
+    },
+    "upper_bound": {
+      "sites": 15250,
+      "files": 2079,
+      "named": true
+    },
+    "lambda_expression": {
+      "sites": 15233,
+      "files": 3157,
+      "named": true
+    },
+    "using": {
+      "sites": 14704,
+      "files": 3423,
+      "named": false
+    },
+    "match": {
+      "sites": 14570,
+      "files": 3719,
+      "named": false
+    },
+    "unit": {
+      "sites": 14233,
+      "files": 1668,
+      "named": true
+    },
+    "stable_identifier": {
+      "sites": 13925,
+      "files": 1724,
+      "named": true
+    },
+    "match_expression": {
+      "sites": 13838,
+      "files": 3463,
+      "named": true
+    },
+    "boolean_literal": {
+      "sites": 13593,
+      "files": 2308,
+      "named": true
+    },
+    "type": {
+      "sites": 13529,
+      "files": 3665,
+      "named": false
+    },
+    "class_parameters": {
+      "sites": 13088,
+      "files": 5122,
+      "named": true
+    },
+    "typed_pattern": {
+      "sites": 12878,
+      "files": 2150,
+      "named": true
+    },
+    "private": {
+      "sites": 12824,
+      "files": 2475,
+      "named": false
+    },
+    "case_block": {
+      "sites": 12214,
+      "files": 3320,
+      "named": true
+    },
+    "namespace_wildcard": {
+      "sites": 11919,
+      "files": 5407,
+      "named": true
+    },
+    "override": {
+      "sites": 11801,
+      "files": 2417,
+      "named": false
+    },
+    "function_type": {
+      "sites": 11002,
+      "files": 2584,
+      "named": true
+    },
+    "parameter_types": {
+      "sites": 10767,
+      "files": 2587,
+      "named": true
+    },
+    "trait": {
+      "sites": 10637,
+      "files": 5014,
+      "named": false
+    },
+    "trait_definition": {
+      "sites": 10614,
+      "files": 5005,
+      "named": true
+    },
+    "type_definition": {
+      "sites": 10072,
+      "files": 2991,
+      "named": true
+    },
+    "interpolated_string_expression": {
+      "sites": 10005,
+      "files": 1877,
+      "named": true
+    },
+    "interpolated_string": {
+      "sites": 10005,
+      "files": 1877,
+      "named": true
+    },
+    "infix_type": {
+      "sites": 9917,
+      "files": 1928,
+      "named": true
+    },
+    "*": {
+      "sites": 9491,
+      "files": 3934,
+      "named": false
+    },
+    "then": {
+      "sites": 9227,
+      "files": 1026,
+      "named": false
+    },
+    "binding": {
+      "sites": 9039,
+      "files": 1290,
+      "named": true
+    },
+    "\"": {
+      "sites": 8000,
+      "files": 1730,
+      "named": false
+    },
+    "function_declaration": {
+      "sites": 7760,
+      "files": 2413,
+      "named": true
+    },
+    "null_literal": {
+      "sites": 7696,
+      "files": 1484,
+      "named": true
+    },
+    "var": {
+      "sites": 7571,
+      "files": 1905,
+      "named": false
+    },
+    "implicit": {
+      "sites": 7507,
+      "files": 1839,
+      "named": false
+    },
+    "tuple_type": {
+      "sites": 7441,
+      "files": 1795,
+      "named": true
+    },
+    "var_definition": {
+      "sites": 7118,
+      "files": 1785,
+      "named": true
+    },
+    "prefix_expression": {
+      "sites": 7002,
+      "files": 1232,
+      "named": true
+    },
+    "package": {
+      "sites": 6878,
+      "files": 4847,
+      "named": false
+    },
+    "true": {
+      "sites": 6868,
+      "files": 1891,
+      "named": false
+    },
+    "false": {
+      "sites": 6729,
+      "files": 1630,
+      "named": false
+    },
+    "package_identifier": {
+      "sites": 6705,
+      "files": 4790,
+      "named": true
+    },
+    "package_clause": {
+      "sites": 6704,
+      "files": 4790,
+      "named": true
+    },
+    "!": {
+      "sites": 6504,
+      "files": 1112,
+      "named": false
+    },
+    "bindings": {
+      "sites": 6023,
+      "files": 1701,
+      "named": true
+    },
+    "inline_modifier": {
+      "sites": 5978,
+      "files": 1807,
+      "named": true
+    },
+    "tuple_expression": {
+      "sites": 5903,
+      "files": 1432,
+      "named": true
+    },
+    "enumerator": {
+      "sites": 5852,
+      "files": 897,
+      "named": true
+    },
+    "tuple_pattern": {
+      "sites": 5603,
+      "files": 1231,
+      "named": true
+    },
+    "indented_cases": {
+      "sites": 5455,
+      "files": 1284,
+      "named": true
+    },
+    "final": {
+      "sites": 5392,
+      "files": 1420,
+      "named": false
+    },
+    "context_bound": {
+      "sites": 5287,
+      "files": 936,
+      "named": true
+    },
+    "<-": {
+      "sites": 5262,
+      "files": 898,
+      "named": false
+    },
+    "with": {
+      "sites": 5167,
+      "files": 1398,
+      "named": false
+    },
+    "ascription_expression": {
+      "sites": 4794,
+      "files": 1357,
+      "named": true
+    },
+    "^": {
+      "sites": 4747,
+      "files": 688,
+      "named": false
+    },
+    "capturing_type": {
+      "sites": 4733,
+      "files": 686,
+      "named": true
+    },
+    "'": {
+      "sites": 4563,
+      "files": 1113,
+      "named": false
+    },
+    "quote_expression": {
+      "sites": 4476,
+      "files": 1101,
+      "named": true
+    },
+    "escape_sequence": {
+      "sites": 4033,
+      "files": 637,
+      "named": true
+    },
+    "guard": {
+      "sites": 3861,
+      "files": 830,
+      "named": true
+    },
+    "capture_ref": {
+      "sites": 3675,
+      "files": 502,
+      "named": true
+    },
+    "character_literal": {
+      "sites": 3399,
+      "files": 467,
+      "named": true
+    },
+    "singleton_type": {
+      "sites": 3379,
+      "files": 1105,
+      "named": true
+    },
+    "+": {
+      "sites": 3344,
+      "files": 1145,
+      "named": false
+    },
+    "covariant_type_parameter": {
+      "sites": 3273,
+      "files": 1104,
+      "named": true
+    },
+    "namespace_selectors": {
+      "sites": 3201,
+      "files": 1920,
+      "named": true
+    },
+    "splice_expression": {
+      "sites": 3121,
+      "files": 981,
+      "named": true
+    },
+    "${": {
+      "sites": 3121,
+      "files": 981,
+      "named": false
+    },
+    "capture_set": {
+      "sites": 3046,
+      "files": 528,
+      "named": true
+    },
+    "for": {
+      "sites": 3043,
+      "files": 903,
+      "named": false
+    },
+    "literal_type": {
+      "sites": 3025,
+      "files": 441,
+      "named": true
+    },
+    "for_expression": {
+      "sites": 3023,
+      "files": 897,
+      "named": true
+    },
+    "enumerators": {
+      "sites": 3023,
+      "files": 897,
+      "named": true
+    },
+    "access_qualifier": {
+      "sites": 3019,
+      "files": 730,
+      "named": true
+    },
+    "given": {
+      "sites": 2981,
+      "files": 1103,
+      "named": false
+    },
+    "compound_type": {
+      "sites": 2919,
+      "files": 791,
+      "named": true
+    },
+    "lazy": {
+      "sites": 2870,
+      "files": 647,
+      "named": false
+    },
+    "protected": {
+      "sites": 2723,
+      "files": 620,
+      "named": false
+    },
+    "given_definition": {
+      "sites": 2705,
+      "files": 1044,
+      "named": true
+    },
+    "enum_case_definitions": {
+      "sites": 2481,
+      "files": 436,
+      "named": true
+    },
+    "end_marker": {
+      "sites": 2432,
+      "files": 607,
+      "named": true
+    },
+    "floating_point_literal": {
+      "sites": 2255,
+      "files": 445,
+      "named": true
+    },
+    "infix_pattern": {
+      "sites": 2178,
+      "files": 497,
+      "named": true
+    },
+    "ERROR": {
+      "sites": 2162,
+      "files": 470,
+      "named": true
+    },
+    "abstract": {
+      "sites": 2151,
+      "files": 1307,
+      "named": false
+    },
+    "while": {
+      "sites": 2041,
+      "files": 537,
+      "named": false
+    },
+    "_end_ident": {
+      "sites": 2033,
+      "files": 588,
+      "named": false
+    },
+    "refinement": {
+      "sites": 2027,
+      "files": 628,
+      "named": true
+    },
+    "while_expression": {
+      "sites": 2012,
+      "files": 531,
+      "named": true
+    },
+    "simple_enum_case": {
+      "sites": 2012,
+      "files": 312,
+      "named": true
+    },
+    "capture_pattern": {
+      "sites": 1988,
+      "files": 471,
+      "named": true
+    },
+    "extension": {
+      "sites": 1988,
+      "files": 734,
+      "named": false
+    },
+    "|": {
+      "sites": 1962,
+      "files": 283,
+      "named": false
+    },
+    "alternative_pattern": {
+      "sites": 1958,
+      "files": 279,
+      "named": true
+    },
+    "\"\"\"": {
+      "sites": 1912,
+      "files": 378,
+      "named": false
+    },
+    "val_declaration": {
+      "sites": 1818,
+      "files": 529,
+      "named": true
+    },
+    "throw": {
+      "sites": 1816,
+      "files": 724,
+      "named": false
+    },
+    "throw_expression": {
+      "sites": 1815,
+      "files": 724,
+      "named": true
+    },
+    "sealed": {
+      "sites": 1740,
+      "files": 971,
+      "named": false
+    },
+    "try": {
+      "sites": 1715,
+      "files": 779,
+      "named": false
+    },
+    "extension_definition": {
+      "sites": 1709,
+      "files": 716,
+      "named": true
+    },
+    "try_expression": {
+      "sites": 1704,
+      "files": 777,
+      "named": true
+    },
+    "lazy_parameter_type": {
+      "sites": 1694,
+      "files": 846,
+      "named": true
+    },
+    "lower_bound": {
+      "sites": 1661,
+      "files": 542,
+      "named": true
+    },
+    ">:": {
+      "sites": 1661,
+      "files": 542,
+      "named": false
+    },
+    "-": {
+      "sites": 1450,
+      "files": 522,
+      "named": false
+    },
+    "colon_argument": {
+      "sites": 1431,
+      "files": 391,
+      "named": true
+    },
+    "->": {
+      "sites": 1300,
+      "files": 303,
+      "named": false
+    },
+    ">": {
+      "sites": 1298,
+      "files": 1134,
+      "named": false
+    },
+    "catch_clause": {
+      "sites": 1248,
+      "files": 657,
+      "named": true
+    },
+    "catch": {
+      "sites": 1248,
+      "files": 657,
+      "named": false
+    },
+    "repeated_parameter_type": {
+      "sites": 1182,
+      "files": 623,
+      "named": true
+    },
+    "yield": {
+      "sites": 1156,
+      "files": 404,
+      "named": false
+    },
+    "contravariant_type_parameter": {
+      "sites": 1138,
+      "files": 391,
+      "named": true
+    },
+    "using_directive": {
+      "sites": 1136,
+      "files": 1106,
+      "named": true
+    },
+    "using_directive_value": {
+      "sites": 1136,
+      "files": 1106,
+      "named": true
+    },
+    "using_directive_key": {
+      "sites": 1136,
+      "files": 1106,
+      "named": true
+    },
+    "type_case_clause": {
+      "sites": 1109,
+      "files": 289,
+      "named": true
+    },
+    "annotated_type": {
+      "sites": 1094,
+      "files": 294,
+      "named": true
+    },
+    "return": {
+      "sites": 1063,
+      "files": 279,
+      "named": false
+    },
+    "return_expression": {
+      "sites": 1062,
+      "files": 278,
+      "named": true
+    },
+    "do": {
+      "sites": 1022,
+      "files": 340,
+      "named": false
+    },
+    "self_type": {
+      "sites": 1017,
+      "files": 636,
+      "named": true
+    },
+    "name_and_type": {
+      "sites": 934,
+      "files": 261,
+      "named": true
+    },
+    "?=>": {
+      "sites": 887,
+      "files": 311,
+      "named": false
+    },
+    "#": {
+      "sites": 875,
+      "files": 260,
+      "named": false
+    },
+    "projected_type": {
+      "sites": 867,
+      "files": 254,
+      "named": true
+    },
+    "full_enum_case": {
+      "sites": 832,
+      "files": 251,
+      "named": true
+    },
+    "vararg": {
+      "sites": 766,
+      "files": 310,
+      "named": true
+    },
+    "arrow_renamed_identifier": {
+      "sites": 763,
+      "files": 498,
+      "named": true
+    },
+    "enum": {
+      "sites": 720,
+      "files": 446,
+      "named": false
+    },
+    "enum_definition": {
+      "sites": 711,
+      "files": 439,
+      "named": true
+    },
+    "enum_body": {
+      "sites": 711,
+      "files": 439,
+      "named": true
+    },
+    "named_tuple_type": {
+      "sites": 689,
+      "files": 260,
+      "named": true
+    },
+    "xml_text": {
+      "sites": 668,
+      "files": 17,
+      "named": true
+    },
+    "transparent_modifier": {
+      "sites": 649,
+      "files": 353,
+      "named": true
+    },
+    "match_type": {
+      "sites": 616,
+      "files": 289,
+      "named": true
+    },
+    "with_template_body": {
+      "sites": 553,
+      "files": 176,
+      "named": true
+    },
+    "structural_type": {
+      "sites": 517,
+      "files": 252,
+      "named": true
+    },
+    "finally": {
+      "sites": 512,
+      "files": 237,
+      "named": false
+    },
+    "finally_clause": {
+      "sites": 511,
+      "files": 236,
+      "named": true
+    },
+    "=>>": {
+      "sites": 480,
+      "files": 173,
+      "named": false
+    },
+    "type_lambda": {
+      "sites": 478,
+      "files": 172,
+      "named": true
+    },
+    "macro": {
+      "sites": 461,
+      "files": 278,
+      "named": false
+    },
+    "macro_body": {
+      "sites": 449,
+      "files": 278,
+      "named": true
+    },
+    "opaque_modifier": {
+      "sites": 445,
+      "files": 314,
+      "named": true
+    },
+    "erased_modifier": {
+      "sites": 434,
+      "files": 164,
+      "named": true
+    },
+    "capture_variable": {
+      "sites": 388,
+      "files": 131,
+      "named": true
+    },
+    "postfix_expression": {
+      "sites": 373,
+      "files": 178,
+      "named": true
+    },
+    "method_value": {
+      "sites": 366,
+      "files": 94,
+      "named": true
+    },
+    "repeat_pattern": {
+      "sites": 352,
+      "files": 105,
+      "named": true
+    },
+    "as": {
+      "sites": 344,
+      "files": 203,
+      "named": false
+    },
+    "forSome": {
+      "sites": 315,
+      "files": 28,
+      "named": false
+    },
+    "existential_type": {
+      "sites": 311,
+      "files": 28,
+      "named": true
+    },
+    "applied_constructor_type": {
+      "sites": 299,
+      "files": 138,
+      "named": true
+    },
+    "as_renamed_identifier": {
+      "sites": 285,
+      "files": 181,
+      "named": true
+    },
+    "derives_clause": {
+      "sites": 277,
+      "files": 84,
+      "named": true
+    },
+    "derives": {
+      "sites": 277,
+      "files": 84,
+      "named": false
+    },
+    "export_declaration": {
+      "sites": 271,
+      "files": 153,
+      "named": true
+    },
+    "export": {
+      "sites": 271,
+      "files": 153,
+      "named": false
+    },
+    "named_pattern": {
+      "sites": 250,
+      "files": 20,
+      "named": true
+    },
+    "consume_modifier": {
+      "sites": 192,
+      "files": 61,
+      "named": true
+    },
+    "xml_name": {
+      "sites": 187,
+      "files": 25,
+      "named": true
+    },
+    "named_type_argument": {
+      "sites": 184,
+      "files": 29,
+      "named": true
+    },
+    "package_object": {
+      "sites": 168,
+      "files": 163,
+      "named": true
+    },
+    "update_modifier": {
+      "sites": 167,
+      "files": 103,
+      "named": true
+    },
+    "identifiers": {
+      "sites": 158,
+      "files": 105,
+      "named": true
+    },
+    "infix_modifier": {
+      "sites": 157,
+      "files": 73,
+      "named": true
+    },
+    "<": {
+      "sites": 130,
+      "files": 24,
+      "named": false
+    },
+    "~": {
+      "sites": 126,
+      "files": 36,
+      "named": false
+    },
+    "rd": {
+      "sites": 95,
+      "files": 36,
+      "named": false
+    },
+    "only": {
+      "sites": 91,
+      "files": 39,
+      "named": false
+    },
+    "tracked_modifier": {
+      "sites": 87,
+      "files": 43,
+      "named": true
+    },
+    "given_pattern": {
+      "sites": 86,
+      "files": 23,
+      "named": true
+    },
+    "except": {
+      "sites": 79,
+      "files": 25,
+      "named": false
+    },
+    "given_conditional": {
+      "sites": 75,
+      "files": 55,
+      "named": true
+    },
+    "var_declaration": {
+      "sites": 69,
+      "files": 50,
+      "named": true
+    },
+    "?->": {
+      "sites": 69,
+      "files": 27,
+      "named": false
+    },
+    "xml_element": {
+      "sites": 60,
+      "files": 15,
+      "named": true
+    },
+    "view_bound": {
+      "sites": 52,
+      "files": 17,
+      "named": true
+    },
+    "<%": {
+      "sites": 52,
+      "files": 17,
+      "named": false
+    },
+    "</": {
+      "sites": 49,
+      "files": 13,
+      "named": false
+    },
+    "xml_expression": {
+      "sites": 39,
+      "files": 14,
+      "named": true
+    },
+    "uses_clause": {
+      "sites": 34,
+      "files": 20,
+      "named": true
+    },
+    "uses": {
+      "sites": 34,
+      "files": 20,
+      "named": false
+    },
+    "named_tuple_pattern": {
+      "sites": 34,
+      "files": 12,
+      "named": true
+    },
+    "/>": {
+      "sites": 22,
+      "files": 7,
+      "named": false
+    },
+    "into_modifier": {
+      "sites": 17,
+      "files": 7,
+      "named": true
+    },
+    "this": {
+      "sites": 17,
+      "files": 16,
+      "named": false
+    },
+    "open_modifier": {
+      "sites": 16,
+      "files": 12,
+      "named": true
+    },
+    "xml_pattern": {
+      "sites": 10,
+      "files": 4,
+      "named": true
+    },
+    "xml_attribute": {
+      "sites": 7,
+      "files": 3,
+      "named": true
+    },
+    "xml_string": {
+      "sites": 7,
+      "files": 3,
+      "named": true
+    },
+    "do_while_expression": {
+      "sites": 6,
+      "files": 4,
+      "named": true
+    },
+    "early_defs": {
+      "sites": 4,
+      "files": 3,
+      "named": true
+    },
+    "xml_comment": {
+      "sites": 1,
+      "files": 1,
+      "named": true
+    },
+    "←": {
+      "sites": 1,
+      "files": 1,
+      "named": false
+    }
+  },
+  "namedTypeNames": [
+    "identifier",
+    "arguments",
+    "type_identifier",
+    "call_expression",
+    "field_expression",
+    "type_arguments",
+    "operator_identifier",
+    "infix_expression",
+    "integer_literal",
+    "generic_type",
+    "function_definition",
+    "parameters",
+    "parameter",
+    "string",
+    "val_definition",
+    "comment",
+    "block",
+    "case_clause",
+    "indented_block",
+    "modifiers",
+    "template_body",
+    "wildcard",
+    "type_parameters",
+    "parenthesized_expression",
+    "generic_function",
+    "import_declaration",
+    "block_comment",
+    "stable_type_identifier",
+    "class_definition",
+    "if_expression",
+    "extends_clause",
+    "assignment_expression",
+    "instance_expression",
+    "object_definition",
+    "class_parameter",
+    "case_class_pattern",
+    "compilation_unit",
+    "annotation",
+    "access_modifier",
+    "interpolation",
+    "upper_bound",
+    "lambda_expression",
+    "unit",
+    "stable_identifier",
+    "match_expression",
+    "boolean_literal",
+    "class_parameters",
+    "typed_pattern",
+    "case_block",
+    "namespace_wildcard",
+    "function_type",
+    "parameter_types",
+    "trait_definition",
+    "type_definition",
+    "interpolated_string_expression",
+    "interpolated_string",
+    "infix_type",
+    "binding",
+    "function_declaration",
+    "null_literal",
+    "tuple_type",
+    "var_definition",
+    "prefix_expression",
+    "package_identifier",
+    "package_clause",
+    "bindings",
+    "inline_modifier",
+    "tuple_expression",
+    "enumerator",
+    "tuple_pattern",
+    "indented_cases",
+    "context_bound",
+    "ascription_expression",
+    "capturing_type",
+    "quote_expression",
+    "escape_sequence",
+    "guard",
+    "capture_ref",
+    "character_literal",
+    "singleton_type",
+    "covariant_type_parameter",
+    "namespace_selectors",
+    "splice_expression",
+    "capture_set",
+    "literal_type",
+    "for_expression",
+    "enumerators",
+    "access_qualifier",
+    "compound_type",
+    "given_definition",
+    "enum_case_definitions",
+    "end_marker",
+    "floating_point_literal",
+    "infix_pattern",
+    "ERROR",
+    "refinement",
+    "while_expression",
+    "simple_enum_case",
+    "capture_pattern",
+    "alternative_pattern",
+    "val_declaration",
+    "throw_expression",
+    "extension_definition",
+    "try_expression",
+    "lazy_parameter_type",
+    "lower_bound",
+    "colon_argument",
+    "catch_clause",
+    "repeated_parameter_type",
+    "contravariant_type_parameter",
+    "using_directive",
+    "using_directive_value",
+    "using_directive_key",
+    "type_case_clause",
+    "annotated_type",
+    "return_expression",
+    "self_type",
+    "name_and_type",
+    "projected_type",
+    "full_enum_case",
+    "vararg",
+    "arrow_renamed_identifier",
+    "enum_definition",
+    "enum_body",
+    "named_tuple_type",
+    "xml_text",
+    "transparent_modifier",
+    "match_type",
+    "with_template_body",
+    "structural_type",
+    "finally_clause",
+    "type_lambda",
+    "macro_body",
+    "opaque_modifier",
+    "erased_modifier",
+    "capture_variable",
+    "postfix_expression",
+    "method_value",
+    "repeat_pattern",
+    "existential_type",
+    "applied_constructor_type",
+    "as_renamed_identifier",
+    "derives_clause",
+    "export_declaration",
+    "named_pattern",
+    "consume_modifier",
+    "xml_name",
+    "named_type_argument",
+    "package_object",
+    "update_modifier",
+    "identifiers",
+    "infix_modifier",
+    "tracked_modifier",
+    "given_pattern",
+    "given_conditional",
+    "var_declaration",
+    "xml_element",
+    "view_bound",
+    "xml_expression",
+    "uses_clause",
+    "named_tuple_pattern",
+    "into_modifier",
+    "open_modifier",
+    "xml_pattern",
+    "xml_attribute",
+    "xml_string",
+    "do_while_expression",
+    "early_defs",
+    "xml_comment"
+  ],
+  "anonymousTypeNames": [
+    ")",
+    ",",
+    ".",
+    ":",
+    "=",
+    "[",
+    "]",
+    "def",
+    "}",
+    "{",
+    "val",
+    "=>",
+    "case",
+    "//",
+    ";",
+    "_",
+    "if",
+    "import",
+    "class",
+    "extends",
+    "new",
+    "object",
+    "@",
+    "else",
+    "$",
+    "<:",
+    "using",
+    "match",
+    "type",
+    "private",
+    "override",
+    "trait",
+    "*",
+    "then",
+    "\"",
+    "var",
+    "implicit",
+    "package",
+    "true",
+    "false",
+    "!",
+    "final",
+    "<-",
+    "with",
+    "^",
+    "'",
+    "+",
+    "${",
+    "for",
+    "given",
+    "lazy",
+    "protected",
+    "abstract",
+    "while",
+    "_end_ident",
+    "extension",
+    "|",
+    "\"\"\"",
+    "throw",
+    "sealed",
+    "try",
+    ">:",
+    "-",
+    "->",
+    ">",
+    "catch",
+    "yield",
+    "return",
+    "do",
+    "?=>",
+    "#",
+    "enum",
+    "finally",
+    "=>>",
+    "macro",
+    "as",
+    "forSome",
+    "derives",
+    "export",
+    "<",
+    "~",
+    "rd",
+    "only",
+    "except",
+    "?->",
+    "<%",
+    "</",
+    "uses",
+    "/>",
+    "this",
+    "←"
+  ]
+}

@@ -1,0 +1,312 @@
+{
+ "instrument": "script/m14/python-type-census.ts",
+ "corpus": {
+  "view": {
+   "head": "6351091d3691742cb32cb895767b3d2a39042cb8",
+   "analyzer": "48c8a003ee4837336f94aba420b02d941a221126",
+   "grammarWasm": "wasm/tree-sitter-python.wasm",
+   "grammarSha256": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+   "corpusRoot": "/home/ishaq2321/bb_tests/repositories"
+  },
+  "degradationCheck": {
+   "triggerSites": {
+    "total": 0,
+    "insideAnalyze": 0,
+    "outsideAnalyze": 0,
+    "tokens": []
+   },
+   "handOver": {
+    "ok": false,
+    "status": "NOT AVAILABLE (this analyzer's class defines no `setGrammar`)",
+    "message": "⇒ this analyzer RECEIVES AN ALREADY-PARSED TREE (`analyze(rootNode, content, filePath)`) and never acquires a parser, so there is no grammar to hand over and no pass that could differ from the one measured. The direct call IS the production call for this analyzer."
+   },
+   "handOverDeltaByType": null,
+   "handOverNote": "the hand-over is NOT AVAILABLE for this analyzer (its class defines no `setGrammar`, and it RECEIVES AN ALREADY-PARSED TREE), so there is no hand-over pass to difference. THE MEASUREMENT THAT ANSWERS THE SAME QUESTION IS THE CONTEXT DELTA BELOW: the per-type difference between the direct call WITHOUT the production context and the direct call WITH it, over the same population, the same parser and the same analyzer.",
+   "contextDeltaByType": {
+    "calls": {
+     "without": 534996,
+     "with": 534996,
+     "delta": 0
+    },
+    "contains": {
+     "without": 135658,
+     "with": 135658,
+     "delta": 0
+    },
+    "decorates": {
+     "without": 32257,
+     "with": 32257,
+     "delta": 0
+    },
+    "exports": {
+     "without": 3043,
+     "with": 3043,
+     "delta": 0
+    },
+    "extends": {
+     "without": 22803,
+     "with": 22803,
+     "delta": 0
+    },
+    "implements": {
+     "without": 363,
+     "with": 363,
+     "delta": 0
+    },
+    "imports": {
+     "without": 99821,
+     "with": 99821,
+     "delta": 0
+    },
+    "instantiates": {
+     "without": 13134,
+     "with": 13134,
+     "delta": 0
+    },
+    "overrides": {
+     "without": 33483,
+     "with": 12487,
+     "delta": -20996
+    },
+    "references": {
+     "without": 61955,
+     "with": 61955,
+     "delta": 0
+    },
+    "uses": {
+     "without": 389974,
+     "with": 389974,
+     "delta": 0
+    }
+   },
+   "pass1": {
+    "parsed": 11488,
+    "failed": 0,
+    "degraded": 0,
+    "totalEdges": 1327487
+   },
+   "pass2": {
+    "parsed": 11488,
+    "failed": 0,
+    "degraded": 0,
+    "totalEdges": 1306491
+   },
+   "companionOwners": 11559,
+   "companionSymbols": 416240
+  },
+  "armComparison": {
+   "armLog": "/home/ishaq2321/mcp/backbencher-brain/validation/m14/measurements/python-cell-noindex-2026-10-21.log",
+   "armLogPresent": false,
+   "byType": {
+    "calls": {
+     "census": 534996,
+     "arm": 0,
+     "delta": 534996
+    },
+    "contains": {
+     "census": 135658,
+     "arm": 0,
+     "delta": 135658
+    },
+    "decorates": {
+     "census": 32257,
+     "arm": 0,
+     "delta": 32257
+    },
+    "exports": {
+     "census": 3043,
+     "arm": 0,
+     "delta": 3043
+    },
+    "extends": {
+     "census": 22803,
+     "arm": 0,
+     "delta": 22803
+    },
+    "implements": {
+     "census": 363,
+     "arm": 0,
+     "delta": 363
+    },
+    "imports": {
+     "census": 99821,
+     "arm": 0,
+     "delta": 99821
+    },
+    "instantiates": {
+     "census": 13134,
+     "arm": 0,
+     "delta": 13134
+    },
+    "overrides": {
+     "census": 12487,
+     "arm": 0,
+     "delta": 12487
+    },
+    "references": {
+     "census": 61955,
+     "arm": 0,
+     "delta": 61955
+    },
+    "uses": {
+     "census": 389974,
+     "arm": 0,
+     "delta": 389974
+    }
+   }
+  },
+  "label": "direct call WITH the production context",
+  "population": {
+   "rule": "BB_CORPUS_ROOT=/home/ishaq2321/bb_tests/repositories · one REPO per corpus entry that is a directory AND a real git checkout (git rev-parse --git-dir) · the file set is `git ls-files` (TRACKED paths) · admitted extensions .py,.pyi,.pyw · size cap 1048576 B (the engine's own full-AST limit) · over-cap and absent counted, never dropped",
+   "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+   "total": 11488,
+   "repos": 49,
+   "absent": 2533,
+   "overCap": 1,
+   "overCapLargest": 1414143,
+   "symlinkedReposFollowed": 0,
+   "nonGitEntriesSkipped": 0,
+   "parsed": 11488,
+   "failed": 0,
+   "degraded": 0,
+   "totalEdges": 1306491,
+   "discoverMs": 4026,
+   "setupMs": 117
+  },
+  "perf": {
+   "discoverMs": 0,
+   "setupMs": 481193,
+   "parseReadMs": 479341,
+   "files": 11488,
+   "bytes": 92224380,
+   "filesPerSecond": 23.9662369795198,
+   "megaBytesPerSecond": 0.1834852903308714
+  },
+  "types": {
+   "calls": {
+    "rows": 534996,
+    "files": 9171,
+    "repos": 47
+   },
+   "contains": {
+    "rows": 135658,
+    "files": 6740,
+    "repos": 36
+   },
+   "decorates": {
+    "rows": 32257,
+    "files": 4493,
+    "repos": 25
+   },
+   "exports": {
+    "rows": 3043,
+    "files": 340,
+    "repos": 12
+   },
+   "extends": {
+    "rows": 22803,
+    "files": 5453,
+    "repos": 35
+   },
+   "implements": {
+    "rows": 363,
+    "files": 113,
+    "repos": 8
+   },
+   "imports": {
+    "rows": 99821,
+    "files": 10472,
+    "repos": 47
+   },
+   "instantiates": {
+    "rows": 13134,
+    "files": 1401,
+    "repos": 31
+   },
+   "overrides": {
+    "rows": 12487,
+    "files": 2164,
+    "repos": 26
+   },
+   "references": {
+    "rows": 61955,
+    "files": 3444,
+    "repos": 32
+   },
+   "uses": {
+    "rows": 389974,
+    "files": 5970,
+    "repos": 44
+   }
+  },
+  "candidateFamilySites": {
+   "renders": {
+    "sites": 0,
+    "files": 0
+   },
+   "mixes_in": {
+    "sites": 0,
+    "files": 0
+   },
+   "part_of": {
+    "sites": 0,
+    "files": 0
+   }
+  },
+  "nearestConstructSites": {
+   "renders": {
+    "sites": 0,
+    "files": 0,
+    "note": "python has no element node; a template is a string literal and the nearest construct that produces an object from a name is a CALL, published as `calls`"
+   },
+   "mixes_in": {
+    "sites": 3201,
+    "files": 782,
+    "note": "python's ONE superclass clause: `class C(A, B)` — every base is published as `extends`, and the source cannot say which base is the mixin"
+   },
+   "part_of": {
+    "sites": 0,
+    "files": 0,
+    "note": "python's unit of inclusion is an IMPORT, published as `imports`"
+   }
+  },
+  "nearMissCensus": {
+   "renders": {
+    "nodeType": "string (a template — it carries {{ ... }})",
+    "construct": "python's nearest 'a thing that renders another thing' is the TEMPLATE — a string that carries placeholders, and the call that renders it. python has no COMPONENT and no ELEMENT LITERAL.",
+    "missingDiscriminator": "the relation is between a COMPONENT and the component it renders; python has no component type and no element literal, so there is no node type that could carry the relation — only a template string and a call.",
+    "sites": 3280,
+    "files": 228,
+    "mergingPairs": 4998,
+    "mergingPairsExample": "a template string carrying 1 placeholder(s)",
+    "alreadyPublishedUnder": "calls (the RENDER CALL is a call); the component-to-component relation has NO carrier, and a template's placeholders are published under NO label",
+    "alreadyPublishedEdges": 534996,
+    "sitesAlreadyPublished": 0
+   },
+   "mixes_in": {
+    "nodeType": "class_definition (superclasses > 1)",
+    "construct": "python's MULTIPLE-INHERITANCE class statement `class C(A, B)` — one class, several bases merged into one supertype chain. The near-miss is not the spelling; it is the MERGE.",
+    "missingDiscriminator": "python has NO syntax that separates 'the base' from 'the composed member': every base in `class C(A, B)` is a NOMINAL SUPERTYPE (python's MRO makes `issubclass(C, B)` true), so a `mixes_in` edge would have to name a member that IS a supertype — which is the `extends` edge the analyzer already publishes.",
+    "sites": 6402,
+    "files": 782,
+    "mergingPairs": 8114,
+    "mergingPairsExample": "class ApiResponse(BaseModel, Generic[T]) → the pair (ApiResponse, Generic[T])",
+    "alreadyPublishedUnder": "extends",
+    "alreadyPublishedEdges": 22803,
+    "sitesAlreadyPublished": 0
+   },
+   "part_of": {
+    "nodeType": "import_statement",
+    "construct": "python's UNIT OF INCLUSION is the IMPORT — `import a.b` pulls another module's source into the program. The near-miss is the construct that INCLUDES another unit.",
+    "missingDiscriminator": "a Dart `part` SHARES the library's single scope; a python import CREATES binding scope and names a module — the two are different relations, and python's grammar has no node type that can express the shared-scope one.",
+    "sites": 29930,
+    "files": 6744,
+    "mergingPairs": 29930,
+    "mergingPairsExample": "import import argparse",
+    "alreadyPublishedUnder": "imports",
+    "alreadyPublishedEdges": 99821,
+    "sitesAlreadyPublished": 29930
+   }
+  }
+ }
+}

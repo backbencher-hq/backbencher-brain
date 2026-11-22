@@ -1,0 +1,2394 @@
+{
+  "instrument": "script/m14/clojure-extended-types-census.ts",
+  "question": "the four extended values, counted on the AST over the whole admitted population — what node type does each construct arrive as, and is it a REAL node rather than recovery text?",
+  "population": {
+    "files": 646,
+    "repos": {
+      "clj-kondo": 503,
+      "clojure": 142,
+      "nvim-treesitter": 1
+    },
+    "byExt": {
+      "edn": 59,
+      "clj": 541,
+      "cljs": 26,
+      "cljc": 20
+    },
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "rule": "the GATE's own rule: a real git checkout + `git ls-files` + the lane's extension list {clj,cljs,cljc,edn} + the 1 MB cap"
+  },
+  "grammar": {
+    "file": "wasm/tree-sitter-clojure.wasm",
+    "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27"
+  },
+  "parse": {
+    "parsed": 646,
+    "parseFail": 0,
+    "listHeadedFormsWalked": 74617
+  },
+  "counts": {
+    "mixes_in.defprotocol": 46,
+    "mixes_in.extend_type": 4,
+    "mixes_in.extend_protocol": 31,
+    "mixes_in.extend": 49,
+    "mixes_in.reify": 54,
+    "mixes_in.proxy": 40,
+    "mixes_in.defmixin": 0,
+    "implements.defrecord_deftype": 146,
+    "decorates.metadata_carrier": 3013,
+    "decorates.metadata_on_a_declaration": 550,
+    "decorates.metadata_value_keyword_marker": 323,
+    "decorates.metadata_value_symbol_type_hint": 2318,
+    "decorates.metadata_value_map": 311,
+    "decorates.metadata_map_naming_a_symbol": 83,
+    "renders.keyword_led_vector": 900,
+    "renders.keyword_led_vector_nested": 10,
+    "renders.keyword_led_vector_nested_in_code": 10,
+    "renders.element_with_bare_symbol_child": 159,
+    "renders.element_with_component_vector_child": 0,
+    "renders.tagged_literal": 64,
+    "part_of.ns_form": 588,
+    "part_of.load_form": 34,
+    "part_of.require_form": 89
+  },
+  "files": {
+    "mixes_in.defprotocol": 21,
+    "mixes_in.extend_type": 3,
+    "mixes_in.extend_protocol": 14,
+    "mixes_in.extend": 6,
+    "mixes_in.reify": 13,
+    "mixes_in.proxy": 21,
+    "mixes_in.defmixin": 0,
+    "implements.defrecord_deftype": 52,
+    "decorates.metadata_carrier": 198,
+    "decorates.metadata_on_a_declaration": 96,
+    "decorates.metadata_value_keyword_marker": 83,
+    "decorates.metadata_value_symbol_type_hint": 119,
+    "decorates.metadata_value_map": 105,
+    "decorates.metadata_map_naming_a_symbol": 20,
+    "renders.keyword_led_vector": 123,
+    "renders.keyword_led_vector_nested": 3,
+    "renders.keyword_led_vector_nested_in_code": 3,
+    "renders.element_with_bare_symbol_child": 23,
+    "renders.element_with_component_vector_child": 0,
+    "renders.tagged_literal": 7,
+    "part_of.ns_form": 543,
+    "part_of.load_form": 11,
+    "part_of.require_form": 57
+  },
+  "repos": {
+    "mixes_in.defprotocol": 2,
+    "mixes_in.extend_type": 2,
+    "mixes_in.extend_protocol": 2,
+    "mixes_in.extend": 2,
+    "mixes_in.reify": 1,
+    "mixes_in.proxy": 2,
+    "mixes_in.defmixin": 0,
+    "implements.defrecord_deftype": 2,
+    "decorates.metadata_carrier": 3,
+    "decorates.metadata_on_a_declaration": 2,
+    "decorates.metadata_value_keyword_marker": 2,
+    "decorates.metadata_value_symbol_type_hint": 3,
+    "decorates.metadata_value_map": 2,
+    "decorates.metadata_map_naming_a_symbol": 2,
+    "renders.keyword_led_vector": 2,
+    "renders.keyword_led_vector_nested": 2,
+    "renders.keyword_led_vector_nested_in_code": 2,
+    "renders.element_with_bare_symbol_child": 2,
+    "renders.element_with_component_vector_child": 0,
+    "renders.tagged_literal": 2,
+    "part_of.ns_form": 3,
+    "part_of.load_form": 1,
+    "part_of.require_form": 2
+  },
+  "errorSubtrees": {
+    "mixes_in.defprotocol": 0,
+    "mixes_in.extend_type": 0,
+    "mixes_in.extend_protocol": 0,
+    "mixes_in.extend": 0,
+    "mixes_in.reify": 0,
+    "mixes_in.proxy": 0,
+    "mixes_in.defmixin": 0,
+    "implements.defrecord_deftype": 0,
+    "decorates.metadata_carrier": 0,
+    "decorates.metadata_on_a_declaration": 0,
+    "decorates.metadata_value_keyword_marker": 0,
+    "decorates.metadata_value_symbol_type_hint": 0,
+    "decorates.metadata_value_map": 0,
+    "decorates.metadata_map_naming_a_symbol": 0,
+    "renders.keyword_led_vector": 0,
+    "renders.keyword_led_vector_nested": 0,
+    "renders.keyword_led_vector_nested_in_code": 0,
+    "renders.element_with_bare_symbol_child": 0,
+    "renders.element_with_component_vector_child": 0,
+    "renders.tagged_literal": 0,
+    "part_of.ns_form": 0,
+    "part_of.load_form": 0,
+    "part_of.require_form": 0
+  },
+  "nodeTypesSeen": {
+    "sym_lit": 167488,
+    "sym_name": 167488,
+    "(": 86834,
+    ")": 86833,
+    "kwd_lit": 86722,
+    "kwd_name": 86722,
+    ":": 86517,
+    "list_lit": 85876,
+    "num_lit": 33767,
+    "str_lit": 28597,
+    "vec_lit": 19944,
+    "]": 19944,
+    "[": 19944,
+    "}": 17045,
+    "{": 17045,
+    "map_lit": 15836,
+    "/": 7986,
+    "sym_ns": 7409,
+    "comment": 5116,
+    "quoting_lit": 4262,
+    "'": 4262,
+    "bool_lit": 3492,
+    "meta_lit": 3013,
+    "^": 3013,
+    "#": 2613,
+    "nil_lit": 2072,
+    "set_lit": 1192,
+    "unquoting_lit": 982,
+    "~": 982,
+    "anon_fn_lit": 910,
+    "char_lit": 780,
+    "source": 646,
+    "kwd_ns": 575,
+    "syn_quoting_lit": 569,
+    "`": 569,
+    "regex_lit": 430,
+    "derefing_lit": 308,
+    "@": 308,
+    "::": 208,
+    "unquote_splicing_lit": 206,
+    "~@": 206,
+    "dis_expr": 176,
+    "#_": 176,
+    "sym_val_lit": 150,
+    "##": 150,
+    "var_quoting_lit": 149,
+    "#'": 149,
+    "tagged_or_ctor_lit": 64,
+    "read_cond_lit": 31,
+    "#?": 31,
+    "ns_map_lit": 17,
+    "old_meta_lit": 17,
+    "#^": 17,
+    "splicing_read_cond_lit": 16,
+    "#?@": 16,
+    "ERROR": 3,
+    "auto_res_mark": 3
+  },
+  "examples": {
+    "mixes_in.defprotocol": [
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 17,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol IntoInputStream"
+      },
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 3,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol ^{:added \"1.3\"} Foo"
+      },
+      {
+        "file": "clj-kondo/corpus/defrecord.clj",
+        "line": 4,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol IFoo"
+      },
+      {
+        "file": "clj-kondo/corpus/record_protocol_metadata.clj",
+        "line": 4,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol Handler"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs",
+        "line": 29,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol IndexingReader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs",
+        "line": 25,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol IPushbackReader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs",
+        "line": 19,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol Reader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 195,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol PushbackReaderCoercer"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 177,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol ReaderCoercer"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 32,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol IndexingReader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 28,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol IPushbackReader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 22,
+        "form": "defprotocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defprotocol Reader"
+      }
+    ],
+    "mixes_in.extend_type": [
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 153,
+        "form": "extend-type",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-type java.io.PushbackReader"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core_deftype.clj",
+        "line": 884,
+        "form": "extend-type",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-type ~t ~p ~@fs)"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/protocols.clj",
+        "line": 651,
+        "form": "extend-type",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-type ~c"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/protocols.clj",
+        "line": 100,
+        "form": "extend-type",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-type WillGetMarker MarkerProtocol)"
+      }
+    ],
+    "mixes_in.extend_protocol": [
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 7,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol Foo"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/impl/utils.cljs",
+        "line": 35,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol IPrintWithWriter"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 198,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol PushbackReaderCoercer"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 182,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol ReaderCoercer"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 158,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 146,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 135,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 93,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 77,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 70,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 65,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      },
+      {
+        "file": "clj-kondo/parser/clj_kondo/impl/rewrite_clj/node/coerce.clj",
+        "line": 58,
+        "form": "extend-protocol",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend-protocol NodeCoerceable"
+      }
+    ],
+    "mixes_in.extend": [
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/reader_types.clj",
+        "line": 170,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend LineNumberingPushbackReader"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core_deftype.clj",
+        "line": 852,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend ~c"
+      },
+      {
+        "file": "clojure/src/clj/clojure/data.clj",
+        "line": 81,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend Object"
+      },
+      {
+        "file": "clojure/src/clj/clojure/data.clj",
+        "line": 77,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend nil"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 288,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend nil"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 284,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend Object"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 279,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend char-array-type"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 274,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend byte-array-type"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 268,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend Socket"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 254,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend String"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 248,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend URI"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/io.clj",
+        "line": 235,
+        "form": "extend",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(extend URL"
+      }
+    ],
+    "mixes_in.reify": [
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 8036,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 7356,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify "
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 7222,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify "
+      },
+      {
+        "file": "clojure/src/clj/clojure/core/reducers.clj",
+        "line": 88,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core/reducers.clj",
+        "line": 74,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core_deftype.clj",
+        "line": 219,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify clojure.lang.ILookupThunk"
+      },
+      {
+        "file": "clojure/src/clj/clojure/gvec.clj",
+        "line": 500,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify clojure.core.ArrayManager"
+      },
+      {
+        "file": "clojure/src/clj/clojure/gvec.clj",
+        "line": 471,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify java.util.ListIterator"
+      },
+      {
+        "file": "clojure/src/clj/clojure/gvec.clj",
+        "line": 426,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify java.util.Iterator"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/process.clj",
+        "line": 147,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/process.clj",
+        "line": 132,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify ThreadFactory"
+      },
+      {
+        "file": "clojure/src/clj/clojure/java/process.clj",
+        "line": 119,
+        "form": "reify",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(reify"
+      }
+    ],
+    "mixes_in.proxy": [
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj",
+        "line": 212,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [ThreadLocal] []"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/clojure/tools/reader/default_data_readers.clj",
+        "line": 166,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [ThreadLocal] []"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analysis/java.clj",
+        "line": 167,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [ClassVisitor] [Opcodes/ASM9]"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analyzer.clj",
+        "line": 3599,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy defcurried)"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/cache.clj",
+        "line": 58,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [java.io.BufferedOutputStream] [os]"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core_print.clj",
+        "line": 573,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [Writer] []"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core_proxy.clj",
+        "line": 429,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [clojure.lang.APersistentMap]"
+      },
+      {
+        "file": "clojure/src/clj/clojure/inspector.clj",
+        "line": 142,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [AbstractTableModel] []"
+      },
+      {
+        "file": "clojure/src/clj/clojure/inspector.clj",
+        "line": 131,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [AbstractTableModel] []"
+      },
+      {
+        "file": "clojure/src/clj/clojure/inspector.clj",
+        "line": 77,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [TableModel] []"
+      },
+      {
+        "file": "clojure/src/clj/clojure/inspector.clj",
+        "line": 57,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [TreeModel] []"
+      },
+      {
+        "file": "clojure/src/clj/clojure/instant.clj",
+        "line": 212,
+        "form": "proxy",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(proxy [ThreadLocal] []"
+      }
+    ],
+    "mixes_in.defmixin": [],
+    "implements.defrecord_deftype": [
+      {
+        "file": "clj-kondo/corpus/defrecord.clj",
+        "line": 11,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord Thing [a b] ;; b should not be reported as unused"
+      },
+      {
+        "file": "clj-kondo/corpus/defrecord.clj",
+        "line": 7,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord Dude []"
+      },
+      {
+        "file": "clj-kondo/corpus/deftype.cljs",
+        "line": 3,
+        "form": "deftype",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(deftype LazySeq2 [meta ^:mutable fx ^:mutable s ^:mutable __hash]"
+      },
+      {
+        "file": "clj-kondo/corpus/issue-2223/a.clj",
+        "line": 3,
+        "form": "deftype",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(deftype Foo [])"
+      },
+      {
+        "file": "clj-kondo/corpus/issue-2246/.clj-kondo/hooks/a.clj",
+        "line": 4,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord ~@body)"
+      },
+      {
+        "file": "clj-kondo/corpus/issue-2246/a.clj",
+        "line": 5,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord ~@body)"
+      },
+      {
+        "file": "clj-kondo/corpus/issue_2259.clj",
+        "line": 3,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord Example [a b c])"
+      },
+      {
+        "file": "clj-kondo/corpus/record_protocol_metadata.clj",
+        "line": 7,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord NewRelicHandler [handler]"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/impl/utils.cljs",
+        "line": 22,
+        "form": "defrecord",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(defrecord ReaderConditional [splicing? form])"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs",
+        "line": 163,
+        "form": "deftype",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(deftype SourceLoggingPushbackReader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs",
+        "line": 100,
+        "form": "deftype",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(deftype IndexingPushbackReader"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/reader_types.cljs",
+        "line": 69,
+        "form": "deftype",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(deftype PushbackReader"
+      }
+    ],
+    "decorates.metadata_carrier": [
+      {
+        "file": "clj-kondo/benchmarks/bench.clj",
+        "line": 8,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^com.sun.management.ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase+clojure-lsp.clj",
+        "line": 11,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase-lint.clj",
+        "line": 11,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/corpus/cljc/datascript.cljc",
+        "line": 6,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "vec_lit",
+        "hasError": false,
+        "text": "^Boolean"
+      },
+      {
+        "file": "clj-kondo/corpus/cljc/datascript.cljc",
+        "line": 5,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^boolean"
+      },
+      {
+        "file": "clj-kondo/corpus/config_in_ns/my_custom_ns.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:private"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 12,
+        "form": "aget",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^objects"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 9,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^int"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 9,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^clojure.core.ArrayManager"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 8,
+        "form": "^boolean regular",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^boolean"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 7,
+        "form": "^java.util.concurrent.atomic.AtomicReference edit",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^java.util.concurrent.atomic.AtomicReference"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 4,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^java.util.concurrent.atomic.AtomicReference"
+      }
+    ],
+    "decorates.metadata_on_a_declaration": [
+      {
+        "file": "clj-kondo/benchmarks/bench.clj",
+        "line": 8,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^com.sun.management.ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase+clojure-lsp.clj",
+        "line": 11,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase-lint.clj",
+        "line": 11,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/corpus/config_in_ns/my_custom_ns.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:private"
+      },
+      {
+        "file": "clj-kondo/corpus/def_fn.clj",
+        "line": 4,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:arglists '([x seq])"
+      },
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 3,
+        "form": "defprotocol",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:added \"1.3\"}"
+      },
+      {
+        "file": "clj-kondo/corpus/deprecated_var.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:deprecated"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 23,
+        "form": "defmacro",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 11,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 5,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-xref/src/helpers.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/macroexpand-hook true}"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source/src/script.clj",
+        "line": 61,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/macroexpand-hook true}"
+      }
+    ],
+    "decorates.metadata_value_keyword_marker": [
+      {
+        "file": "clj-kondo/corpus/config_in_ns/my_custom_ns.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:private"
+      },
+      {
+        "file": "clj-kondo/corpus/def_fn.clj",
+        "line": 10,
+        "form": "fn*",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:static"
+      },
+      {
+        "file": "clj-kondo/corpus/deftype.cljs",
+        "line": 3,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:mutable"
+      },
+      {
+        "file": "clj-kondo/corpus/deftype.cljs",
+        "line": 3,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:mutable"
+      },
+      {
+        "file": "clj-kondo/corpus/deftype.cljs",
+        "line": 3,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:mutable"
+      },
+      {
+        "file": "clj-kondo/corpus/deprecated_namespace/foo.cljc",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:deprecated"
+      },
+      {
+        "file": "clj-kondo/corpus/deprecated_var.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:deprecated"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 23,
+        "form": "defmacro",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 11,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 5,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-resolve/src/repl.clj",
+        "line": 3,
+        "form": "declare",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:clj-kondo/macroexpand-hook"
+      },
+      {
+        "file": "clj-kondo/corpus/private/private_defs.clj",
+        "line": 6,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^:private"
+      }
+    ],
+    "decorates.metadata_value_symbol_type_hint": [
+      {
+        "file": "clj-kondo/benchmarks/bench.clj",
+        "line": 8,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^com.sun.management.ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase+clojure-lsp.clj",
+        "line": 11,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase-lint.clj",
+        "line": 11,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^ThreadMXBean"
+      },
+      {
+        "file": "clj-kondo/corpus/cljc/datascript.cljc",
+        "line": 6,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "vec_lit",
+        "hasError": false,
+        "text": "^Boolean"
+      },
+      {
+        "file": "clj-kondo/corpus/cljc/datascript.cljc",
+        "line": 5,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^boolean"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 12,
+        "form": "aget",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^objects"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 9,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^int"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 9,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^clojure.core.ArrayManager"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 8,
+        "form": "^boolean regular",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^boolean"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 7,
+        "form": "^java.util.concurrent.atomic.AtomicReference edit",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^java.util.concurrent.atomic.AtomicReference"
+      },
+      {
+        "file": "clj-kondo/corpus/core.rrb-vector.clj",
+        "line": 4,
+        "form": "(not on a form)",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^java.util.concurrent.atomic.AtomicReference"
+      },
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 18,
+        "form": "into-input-stream",
+        "nodeType": "meta_lit",
+        "headNodeType": "vec_lit",
+        "hasError": false,
+        "text": "^java.io.InputStream"
+      }
+    ],
+    "decorates.metadata_value_map": [
+      {
+        "file": "clj-kondo/corpus/def_fn.clj",
+        "line": 4,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:arglists '([x seq])"
+      },
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 5,
+        "form": "^{:added \"1.3\"} -foo",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:added \"1.3\"}"
+      },
+      {
+        "file": "clj-kondo/corpus/defprotocol.clj",
+        "line": 3,
+        "form": "defprotocol",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:added \"1.3\"}"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source-xref/src/helpers.clj",
+        "line": 3,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/macroexpand-hook true}"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source/src/script.clj",
+        "line": 61,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/macroexpand-hook true}"
+      },
+      {
+        "file": "clj-kondo/corpus/macro-from-source/src/script.clj",
+        "line": 50,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/macroexpand-hook true}"
+      },
+      {
+        "file": "clj-kondo/corpus/metadata.clj",
+        "line": 11,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:test (fn []"
+      },
+      {
+        "file": "clj-kondo/corpus/record_protocol_metadata.clj",
+        "line": 9,
+        "form": "^{Trace {:dispatcher true :transactionType \"web\"}} handle",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{Trace {:dispatcher true :transactionType \"web\"}}"
+      },
+      {
+        "file": "clj-kondo/corpus/unresolved_symbol.clj",
+        "line": 7,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [unresolved-fn2]}}}}"
+      },
+      {
+        "file": "clj-kondo/corpus/unresolved_symbol.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [unresolved-fn1]}}}}"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/edn.cljs",
+        "line": 9,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:no-doc true}"
+      },
+      {
+        "file": "clj-kondo/inlined/clj_kondo/impl/toolsreader/v1v2v2/cljs/tools/reader/impl/commons.cljs",
+        "line": 9,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:no-doc true}"
+      }
+    ],
+    "decorates.metadata_map_naming_a_symbol": [
+      {
+        "file": "clj-kondo/corpus/def_fn.clj",
+        "line": 4,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:arglists '([x seq])"
+      },
+      {
+        "file": "clj-kondo/corpus/metadata.clj",
+        "line": 11,
+        "form": "defn",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:test (fn []"
+      },
+      {
+        "file": "clj-kondo/corpus/record_protocol_metadata.clj",
+        "line": 9,
+        "form": "^{Trace {:dispatcher true :transactionType \"web\"}} handle",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{Trace {:dispatcher true :transactionType \"web\"}}"
+      },
+      {
+        "file": "clj-kondo/corpus/unresolved_symbol.clj",
+        "line": 7,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [unresolved-fn2]}}}}"
+      },
+      {
+        "file": "clj-kondo/corpus/unresolved_symbol.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:clj-kondo/config '{:linters {:unresolved-symbol {:exclude [unresolved-fn1]}}}}"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 2718,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:tag Boolean"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 2699,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:tag Boolean"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 448,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:doc \"Like defn, but the resulting function name is declared as a"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 287,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:doc \"Same as (def name (fn [params* ] exprs*)) or (def"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 275,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:arglists '([coll])"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 265,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:arglists '([coll])"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 214,
+        "form": "def",
+        "nodeType": "meta_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "^{:arglists '([^clojure.lang.IObj obj m])"
+      }
+    ],
+    "renders.keyword_led_vector": [
+      {
+        "file": "clj-kondo/.clj-kondo/config.edn",
+        "line": 16,
+        "form": ":map",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:map]"
+      },
+      {
+        "file": "clj-kondo/.clj-kondo/config.edn",
+        "line": 14,
+        "form": ":map",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:map]"
+      },
+      {
+        "file": "clj-kondo/analysis/script/private_vars.cljs",
+        "line": 31,
+        "form": ":from",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:from :to :name :filename :row :col]"
+      },
+      {
+        "file": "clj-kondo/analysis/script/private_vars.cljs",
+        "line": 29,
+        "form": ":ns",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:ns :name :filename :row :col]"
+      },
+      {
+        "file": "clj-kondo/analysis/script/private_vars.cljs",
+        "line": 25,
+        "form": ":from",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:from :to]"
+      },
+      {
+        "file": "clj-kondo/analysis/script/private_vars.cljs",
+        "line": 17,
+        "form": ":to",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:to :name]"
+      },
+      {
+        "file": "clj-kondo/analysis/script/private_vars.cljs",
+        "line": 12,
+        "form": ":var-definitions",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:var-definitions :var-usages]"
+      },
+      {
+        "file": "clj-kondo/analysis/script/unused_vars.cljs",
+        "line": 13,
+        "form": ":var-definitions",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:var-definitions :var-usages]"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/circular_dependencies.clj",
+        "line": 11,
+        "form": ":from",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:from :to :filename :row :col]"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/circular_dependencies.clj",
+        "line": 10,
+        "form": ":namespace-usages",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:namespace-usages]"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/missing_docstrings.clj",
+        "line": 9,
+        "form": ":ns",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:ns :name :private :doc]"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/missing_docstrings.clj",
+        "line": 8,
+        "form": ":var-definitions",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:var-definitions]"
+      }
+    ],
+    "renders.keyword_led_vector_nested": [
+      {
+        "file": "clj-kondo/corpus/macroexpand.clj",
+        "line": 61,
+        "form": ":pre",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:pre (pr-str context)]"
+      },
+      {
+        "file": "clj-kondo/corpus/macroexpand.clj",
+        "line": 60,
+        "form": ":h1",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:h1 \"result\"]"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/types/clojure/core.clj",
+        "line": 189,
+        "form": ":any",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:any :any]"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/types/clojure/core.clj",
+        "line": 136,
+        "form": ":any",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:any :any]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 710,
+        "form": ":b",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:b #?@(:clj [[:c]]) :d]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 710,
+        "form": ":c",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:c]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 709,
+        "form": ":b",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:b [:c] :d]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 709,
+        "form": ":c",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:c]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 704,
+        "form": ":b",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:b #?@(:clj [:c]) :d]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 704,
+        "form": ":c",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:c]"
+      }
+    ],
+    "renders.keyword_led_vector_nested_in_code": [
+      {
+        "file": "clj-kondo/corpus/macroexpand.clj",
+        "line": 61,
+        "form": ":pre",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:pre (pr-str context)]"
+      },
+      {
+        "file": "clj-kondo/corpus/macroexpand.clj",
+        "line": 60,
+        "form": ":h1",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:h1 \"result\"]"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/types/clojure/core.clj",
+        "line": 189,
+        "form": ":any",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:any :any]"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/types/clojure/core.clj",
+        "line": 136,
+        "form": ":any",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:any :any]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 710,
+        "form": ":b",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:b #?@(:clj [[:c]]) :d]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 710,
+        "form": ":c",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:c]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 709,
+        "form": ":b",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:b [:c] :d]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 709,
+        "form": ":c",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:c]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 704,
+        "form": ":b",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:b #?@(:clj [:c]) :d]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/reader.cljc",
+        "line": 704,
+        "form": ":c",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "[:c]"
+      }
+    ],
+    "renders.element_with_bare_symbol_child": [
+      {
+        "file": "clj-kondo/corpus/macroexpand.clj",
+        "line": 72,
+        "form": ":div",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "label"
+      },
+      {
+        "file": "clj-kondo/corpus/shadow_cljs/default.cljs",
+        "line": 4,
+        "form": ":>",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "ViewOverflow"
+      },
+      {
+        "file": "clj-kondo/extract/clj_kondo/impl/extract_var_info.clj",
+        "line": 102,
+        "form": ":cljc",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "cljs.core"
+      },
+      {
+        "file": "clj-kondo/extract/clj_kondo/impl/extract_var_info.clj",
+        "line": 101,
+        "form": ":cljc",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "cljs.core"
+      },
+      {
+        "file": "clj-kondo/extract/clj_kondo/impl/extract_var_info.clj",
+        "line": 100,
+        "form": ":cljs",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "cljs.core"
+      },
+      {
+        "file": "clj-kondo/extract/clj_kondo/impl/extract_var_info.clj",
+        "line": 74,
+        "form": ":clj",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "clojure.core"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analysis.clj",
+        "line": 109,
+        "form": ":cljc",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "cljs.core"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analysis.clj",
+        "line": 108,
+        "form": ":cljs",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "cljs.core"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analysis.clj",
+        "line": 107,
+        "form": ":clj",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "clojure.core"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analyzer.clj",
+        "line": 4127,
+        "form": ":config",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "tag"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analyzer.clj",
+        "line": 3760,
+        "form": ":clj-kondo/unknown-namespace",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "fn-name"
+      },
+      {
+        "file": "clj-kondo/src/clj_kondo/impl/analyzer.clj",
+        "line": 2732,
+        "form": ":bindings",
+        "nodeType": "vec_lit",
+        "headNodeType": "kwd_lit",
+        "hasError": false,
+        "text": "sym"
+      }
+    ],
+    "renders.element_with_component_vector_child": [],
+    "renders.tagged_literal": [
+      {
+        "file": "clj-kondo/.clj-kondo/config.edn",
+        "line": 19,
+        "form": "#include",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#include \"../src/clj_kondo/impl/findings.types.edn\""
+      },
+      {
+        "file": "clj-kondo/.clj-kondo/config.edn",
+        "line": 18,
+        "form": "#include",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#include \"../src/clj_kondo/impl/config.types.edn\""
+      },
+      {
+        "file": "clj-kondo/corpus/issue-2466/src/foobar.clj",
+        "line": 3,
+        "form": "#a/b",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#a/b 1"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/compilation.clj",
+        "line": 275,
+        "form": "#clojure.test_clojure.compilation.Y[1]",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#clojure.test_clojure.compilation.Y[1]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/method_thunks.clj",
+        "line": 53,
+        "form": "#uuid",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#uuid \"00000000-0000-0001-0000-000000000002\""
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/method_thunks.clj",
+        "line": 35,
+        "form": "#uuid",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#uuid \"00000000-0000-0001-0000-000000000002\""
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/param_tags.clj",
+        "line": 55,
+        "form": "#uuid",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#uuid \"00000000-0000-0001-0000-000000000002\""
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/param_tags.clj",
+        "line": 54,
+        "form": "#uuid",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#uuid \"00000000-0000-0001-0000-000000000002\""
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/protocols.clj",
+        "line": 574,
+        "form": "#clojure.test_clojure.protocols.RecordToTestBoolHint[true]",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#clojure.test_clojure.protocols.RecordToTestBoolHint[true]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/protocols.clj",
+        "line": 573,
+        "form": "#clojure.test_clojure.protocols.RecordToTestBoolHint{:a",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#clojure.test_clojure.protocols.RecordToTestBoolHint{:a true}"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/protocols.clj",
+        "line": 543,
+        "form": "#clojure.test_clojure.protocols.RecordToTestLongHint[42]",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#clojure.test_clojure.protocols.RecordToTestLongHint[42]"
+      },
+      {
+        "file": "clojure/test/clojure/test_clojure/protocols.clj",
+        "line": 542,
+        "form": "#clojure.test_clojure.protocols.RecordToTestLongHint{:a",
+        "nodeType": "tagged_or_ctor_lit",
+        "headNodeType": "(tagged literal)",
+        "hasError": false,
+        "text": "#clojure.test_clojure.protocols.RecordToTestLongHint{:a 42}"
+      }
+    ],
+    "part_of.ns_form": [
+      {
+        "file": "clj-kondo/.clj-kondo/hooks/one_of.clj",
+        "line": 3,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns hooks.one-of"
+      },
+      {
+        "file": "clj-kondo/.clj-kondo/imports/babashka/sci/sci/core.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns sci.core)"
+      },
+      {
+        "file": "clj-kondo/.sbx/repl.clj",
+        "line": 14,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns repl"
+      },
+      {
+        "file": "clj-kondo/analysis/script/private_vars.cljs",
+        "line": 3,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns script.private-vars"
+      },
+      {
+        "file": "clj-kondo/analysis/script/unused_vars.cljs",
+        "line": 3,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns script.unused-vars"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/ast.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.ast"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/circular_dependencies.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.circular-dependencies"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/find_var.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.find-var"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/missing_docstrings.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.missing-docstrings"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/namespace_graph.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.namespace-graph"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/popular_vars.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.popular-vars"
+      },
+      {
+        "file": "clj-kondo/analysis/src/clj_kondo/tools/pprint.clj",
+        "line": 1,
+        "form": "ns",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(ns clj-kondo.tools.pprint"
+      }
+    ],
+    "part_of.load_form": [
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 7020,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"uuid\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6995,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"instant\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6947,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"gvec\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6946,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"core/protocols\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6945,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"core_deftype\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6944,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"genclass\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6943,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"core_print\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6942,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load \"core_proxy\")"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6105,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load lib need-ns require)"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 6063,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load (root-resource lib))"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 4120,
+        "form": "load-reader",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load-reader rdr)"
+      },
+      {
+        "file": "clojure/src/clj/clojure/core.clj",
+        "line": 4110,
+        "form": "load",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(load rdr)"
+      }
+    ],
+    "part_of.require_form": [
+      {
+        "file": "clj-kondo/.circleci/script/docker.clj",
+        "line": 4,
+        "form": "import",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(import '[java.time Instant])"
+      },
+      {
+        "file": "clj-kondo/.circleci/script/docker.clj",
+        "line": 1,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[babashka.fs :as fs]"
+      },
+      {
+        "file": "clj-kondo/benchmarks/alloc-profile.clj",
+        "line": 3,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-async-profiler.core :as prof]"
+      },
+      {
+        "file": "clj-kondo/benchmarks/bench.clj",
+        "line": 3,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-kondo.core :as kondo])"
+      },
+      {
+        "file": "clj-kondo/benchmarks/cpu-profile.clj",
+        "line": 2,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-async-profiler.core :as prof]"
+      },
+      {
+        "file": "clj-kondo/benchmarks/dump-findings.clj",
+        "line": 2,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-kondo.core :as kondo])"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase+clojure-lsp.clj",
+        "line": 7,
+        "form": "import",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(import"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase+clojure-lsp.clj",
+        "line": 4,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clojure-lsp.api :as api]"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase-lint.clj",
+        "line": 7,
+        "form": "import",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(import"
+      },
+      {
+        "file": "clj-kondo/benchmarks/metabase-lint.clj",
+        "line": 4,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-kondo.core :as kondo]"
+      },
+      {
+        "file": "clj-kondo/corpus/aliased_namespaces/analyze_call_hook_str.clj",
+        "line": 1,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-kondo.hooks-api :as api])"
+      },
+      {
+        "file": "clj-kondo/corpus/aliased_namespaces/macroexpansion_str.clj",
+        "line": 1,
+        "form": "require",
+        "nodeType": "list_lit",
+        "headNodeType": "sym_lit",
+        "hasError": false,
+        "text": "(require '[clj-kondo.hooks-api :as api])"
+      }
+    ]
+  }
+}

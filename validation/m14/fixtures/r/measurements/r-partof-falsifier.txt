@@ -1,0 +1,45 @@
+==============================================================================
+FALSIFIER CENSUS — the `part_of` ruling's named constructs, COUNTED
+==============================================================================
+node v24.3.0   workers 4
+load at start: 6.47 5.68 6.37
+corpus root: /home/ishaq2321/bb_tests/repositories
+admission: the GATE's predicate — .r + bare basename clause, SIZE_CAP 1048576 B
+admitted files [0,2184) of 2184
+corpus file set: sha256 97c3d6498765b35cbd940c05ca086ca826143b3108135585248eec0c41a57687
+files parsed: 2184   failures: 0   (wasm-trap retries: 3)
+
+THE CONSTRUCT CLASS — the served grammar's directive-family named types:
+  served grammar digest: null (validation/m14/measurements/r-grammar-nodes.json)
+  named node types served: 41
+  include/part/import/source/require/directive/header-family named types: 0
+  -> R's grammar carries NO inclusion directive; what it carries is the ordinary 
+     `call` node — the same node type as every other call in the language.
+
+THE SITES — source()/sys.source() over the whole admitted population:
+  source() call sites:            36
+  sys.source() call sites:        2
+  total inclusion-call sites:     38
+
+THE SCOPE SPLIT (the contract requires the included file to SHARE the single scope):
+  local=FALSE (global env — SHARES):        0
+  local=globalenv() (SHARES):              1
+  local=TRUE / default (NEW env — FAILS):   32
+    of which NO local= given at all:        28
+  local= other spelling (custom env — FAILS): 5
+
+THE TARGET SPLIT (a part_of row needs a NAMEABLE target):
+  LITERAL STRING path (nameable):           8
+    dplyr/tests/testthat/test-mutate.R: "utf-8.txt"
+    r-Rcpp/inst/examples/FastLM/benchmark.r: "lmArmadillo.R"
+    r-Rcpp/inst/examples/FastLM/benchmark.r: "lmGSL.R"
+    r-Rcpp/inst/examples/FastLM/benchmarkLongley.r: "lmArmadillo.R"
+    r-Rcpp/inst/examples/FastLM/benchmarkLongley.r: "lmGSL.R"
+    r-Rcpp/inst/examples/FastLM/fastLMviaArmadillo.r: "lmArmadillo.R"
+    r-Rcpp/inst/examples/FastLM/fastLMviaGSL.r: "lmGSL.R"
+    r-rlang/tests/testthat/test-trace.R: "code.R"
+  COMPUTED path (call/variable/connection): 30
+
+THE INTERSECTION — literal path AND shares scope (the only sites a part_of row could name):
+  0
+==============================================================================

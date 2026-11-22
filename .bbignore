@@ -26,4 +26,8 @@ validation/m60/script-surface-baseline.json
 validation/m49/regex-debt-register.json
 validation/m12/ground-truth/
 .bb-*/
+# Test corpora are not this repository's source. Indexing them inflated the self-index
+# (31k files / 9,277 syntax errors) and polluted `bb_ask` with Flutter/DuckDB symbols.
+.corpus*/
+.cpp-corpus/
 !bin/

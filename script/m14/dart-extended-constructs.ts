@@ -75,6 +75,8 @@ const LIMIT = Number(argOf("--limit") ?? "0")
 // script/m14/wasm-parse-lifetime.ts (exit 5 on an abort).
 const REPO = argOf("--repo") ?? ""
 const OFFSET = Number(argOf("--offset") ?? "0")
+const EXCLUDE = new Set<string>()
+for (let i = 0; i < argv.length; i++) if (argv[i] === "--exclude-file" && argv[i + 1]) EXCLUDE.add(path.resolve(argv[i + 1]))
 const SIZE_CAP = 1024 * 1024
 
 /** THE CORE MARKERS — dart's annotations that are the LANGUAGE's own, not a user's callable. */
@@ -187,12 +189,18 @@ async function main(): Promise<void> {
     const walked = OFFSET > 0 ? list.slice(OFFSET, LIMIT > 0 ? OFFSET + LIMIT : undefined) : (LIMIT > 0 ? list.slice(0, LIMIT) : list)
     const repoBuckets: Record<string, number> = {}
     for (const abs of walked) {
+      if (EXCLUDE.has(abs)) continue
       files++
       const rel = path.relative(path.join(CR, repo), abs).split(path.sep).join("/")
       let src: string
       try { src = readFileSync(abs, "utf8") } catch { failed++; continue }
       let tree: any
-      const parser = await parserFor()
+      process.stderr.write(`DART_FILE ${abs}\n`)
+      let parser: any
+      try { parser = await parserFor() } catch {
+        process.stderr.write(`DART_GETPARSER_ABORT ${abs}\n`)
+        process.exit(7)
+      }
       try { tree = parser.parse(src) } catch { failed++; continue }
       if (!tree) { failed++; continue }
       const root = tree.rootNode

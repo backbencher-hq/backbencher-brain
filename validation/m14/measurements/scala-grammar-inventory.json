@@ -1,0 +1,452 @@
+{
+ "lane": "scala",
+ "generatedAt": "2026-11-22T20:29:56.203Z",
+ "grammar": {
+  "spelling": "tree-sitter-scala.wasm",
+  "registrySha256": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+  "fileSha256": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+  "resolvedPath": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-scala.wasm",
+  "pathExists": true,
+  "agree": true
+ },
+ "nodeTypeCount": 455,
+ "namedCount": 189,
+ "namedCountRules": {
+  "grammarOwn": {
+   "count": 189,
+   "rule": "the pinned build's OWN named node types: every id the grammar declares for which nodeTypeIsNamed(id) is true, as the wasm reports them",
+   "servedDigest": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+   "note": "this is what `named` above contains, and what the stem scan and the near-miss census are run over"
+  },
+  "fleetRule": {
+   "count": 191,
+   "rule": "the grammar's own named node types PLUS the universal ERROR and MISSING pair, which every tree-sitter parser produces and every analyzer consults",
+   "servedDigest": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+   "pair": [
+    "ERROR",
+    "MISSING"
+   ],
+   "note": "a count that omits the pair says those nodes do not exist, which is false; a count that includes them says they exist and are produced by every file"
+  },
+  "why": "A COUNT WITHOUT ITS RULE IS A MEASUREMENT OF A MOMENT: the two numbers differ by exactly the pair, so a reader comparing this lane with another must know which rule each used before the numbers mean anything."
+ },
+ "namedCountFleetRule": 191,
+ "named": [
+  "access_modifier",
+  "access_qualifier",
+  "alternative_pattern",
+  "annotated_type",
+  "annotation",
+  "annotation",
+  "applied_constructor_type",
+  "arguments",
+  "arguments",
+  "arrow_renamed_identifier",
+  "as_renamed_identifier",
+  "ascription_expression",
+  "assignment_expression",
+  "binding",
+  "bindings",
+  "bindings",
+  "block",
+  "block_comment",
+  "boolean_literal",
+  "call_expression",
+  "capture_pattern",
+  "capture_ref",
+  "capture_set",
+  "capture_variable",
+  "capturing_type",
+  "case_block",
+  "case_class_pattern",
+  "case_clause",
+  "catch_clause",
+  "character_literal",
+  "class_definition",
+  "class_parameter",
+  "class_parameters",
+  "colon_argument",
+  "comment",
+  "comment",
+  "compilation_unit",
+  "compound_type",
+  "consume_modifier",
+  "context_bound",
+  "contravariant_type_parameter",
+  "covariant_type_parameter",
+  "derives_clause",
+  "do_while_expression",
+  "early_defs",
+  "end_marker",
+  "end_marker",
+  "enum_body",
+  "enum_case_definitions",
+  "enum_definition",
+  "enumerator",
+  "enumerators",
+  "erased_modifier",
+  "error_sentinel",
+  "escape_sequence",
+  "escape_sequence",
+  "existential_type",
+  "export_declaration",
+  "extends_clause",
+  "extension_definition",
+  "field_expression",
+  "finally_clause",
+  "floating_point_literal",
+  "floating_point_literal",
+  "for_expression",
+  "full_enum_case",
+  "function_declaration",
+  "function_definition",
+  "function_type",
+  "generic_function",
+  "generic_type",
+  "given_conditional",
+  "given_definition",
+  "given_pattern",
+  "guard",
+  "identifier",
+  "identifier",
+  "identifier",
+  "identifiers",
+  "if_expression",
+  "import_declaration",
+  "indented_block",
+  "indented_cases",
+  "infix_expression",
+  "infix_modifier",
+  "infix_pattern",
+  "infix_type",
+  "inline_modifier",
+  "instance_expression",
+  "integer_literal",
+  "interpolated_string",
+  "interpolated_string",
+  "interpolated_string_expression",
+  "interpolation",
+  "into_modifier",
+  "lambda_expression",
+  "lambda_expression",
+  "lambda_expression",
+  "lazy_parameter_type",
+  "literal_type",
+  "lower_bound",
+  "macro_body",
+  "match_expression",
+  "match_type",
+  "method_value",
+  "modifiers",
+  "name_and_type",
+  "named_pattern",
+  "named_tuple_pattern",
+  "named_tuple_type",
+  "named_type_argument",
+  "namespace_selectors",
+  "namespace_wildcard",
+  "null_literal",
+  "object_definition",
+  "opaque_modifier",
+  "open_modifier",
+  "operator_identifier",
+  "operator_identifier",
+  "operator_identifier",
+  "package_clause",
+  "package_identifier",
+  "package_object",
+  "parameter",
+  "parameter_types",
+  "parameters",
+  "parenthesized_expression",
+  "postfix_expression",
+  "prefix_expression",
+  "projected_type",
+  "quote_expression",
+  "refinement",
+  "repeat_pattern",
+  "repeat_pattern",
+  "repeated_parameter_type",
+  "return_expression",
+  "self_type",
+  "simple_enum_case",
+  "singleton_type",
+  "splice_expression",
+  "stable_identifier",
+  "stable_type_identifier",
+  "string",
+  "structural_type",
+  "template_body",
+  "throw_expression",
+  "tracked_modifier",
+  "trait_definition",
+  "transparent_modifier",
+  "try_expression",
+  "tuple_expression",
+  "tuple_pattern",
+  "tuple_type",
+  "type_arguments",
+  "type_case_clause",
+  "type_definition",
+  "type_identifier",
+  "type_lambda",
+  "type_parameters",
+  "typed_pattern",
+  "unit",
+  "update_modifier",
+  "upper_bound",
+  "uses_clause",
+  "using_directive",
+  "using_directive_key",
+  "using_directive_value",
+  "val_declaration",
+  "val_definition",
+  "var_declaration",
+  "var_definition",
+  "vararg",
+  "view_bound",
+  "while_expression",
+  "wildcard",
+  "with_template_body",
+  "xml_attribute",
+  "xml_cdata",
+  "xml_comment",
+  "xml_element",
+  "xml_expression",
+  "xml_name",
+  "xml_name",
+  "xml_pattern",
+  "xml_processing_instruction",
+  "xml_string",
+  "xml_text",
+  "xml_text",
+  "xml_text"
+ ],
+ "anonymousCount": 265,
+ "candidatePresence": {
+  "implements": {
+   "present": [
+    "self_type",
+    "refinement",
+    "template_body",
+    "extends_clause",
+    "class_definition",
+    "trait_definition"
+   ],
+   "absent": [
+    "implements_clause",
+    "implements_list",
+    "interface_specifier",
+    "super_interfaces",
+    "self_type_clause",
+    "self",
+    "this_type",
+    "mixin_definition"
+   ]
+  },
+  "decorates": {
+   "present": [
+    "annotation",
+    "modifiers"
+   ],
+   "absent": [
+    "decorator",
+    "decorators",
+    "decorated_definition",
+    "annotations",
+    "annotation_argument",
+    "marker_annotation",
+    "class_annotation"
+   ]
+  },
+  "renders": {
+   "present": [
+    "xml_element"
+   ],
+   "absent": [
+    "jsx_element",
+    "jsx_self_closing_element",
+    "jsx_fragment",
+    "template_element",
+    "razor_element",
+    "html_element",
+    "element",
+    "render_element",
+    "component_element",
+    "view_element",
+    "sbt_task"
+   ]
+  },
+  "part_of": {
+   "present": [
+    "package_object",
+    "package_clause",
+    "package_identifier",
+    "export_declaration",
+    "extension_definition"
+   ],
+   "absent": [
+    "part_directive",
+    "part_of_directive",
+    "part_file",
+    "part_definition"
+   ]
+  },
+  "mixes_in": {
+   "present": [
+    "extends_clause",
+    "class_definition",
+    "trait_definition"
+   ],
+   "absent": [
+    "mixin_application",
+    "mixins",
+    "mixin_definition",
+    "mixin_body",
+    "with_clause"
+   ]
+  }
+ },
+ "stemHits": {
+  "implements": [],
+  "interface": [],
+  "self": [
+   "self_type"
+  ],
+  "refinement": [
+   "refinement"
+  ],
+  "extend": [
+   "extends_clause"
+  ],
+  "mixin": [],
+  "with": [
+   "with_template_body"
+  ],
+  "decorat": [],
+  "annotat": [
+   "annotated_type",
+   "annotation",
+   "annotation"
+  ],
+  "render": [],
+  "template": [
+   "template_body",
+   "with_template_body"
+  ],
+  "jsx": [],
+  "xml": [
+   "xml_attribute",
+   "xml_cdata",
+   "xml_comment",
+   "xml_element",
+   "xml_expression",
+   "xml_name",
+   "xml_name",
+   "xml_pattern",
+   "xml_processing_instruction",
+   "xml_string",
+   "xml_text",
+   "xml_text",
+   "xml_text"
+  ],
+  "part": [],
+  "partial": [],
+  "package": [
+   "package_clause",
+   "package_identifier",
+   "package_object"
+  ],
+  "export": [
+   "export_declaration"
+  ],
+  "element": [
+   "xml_element"
+  ],
+  "tag": [],
+  "include": [],
+  "view": [
+   "view_bound"
+  ],
+  "component": [],
+  "razor": [],
+  "html": []
+ },
+ "positiveControls": [
+  {
+   "lang": "typescript",
+   "spelling": "tree-sitter-typescript.wasm",
+   "registrySha256": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335",
+   "namedCount": 192,
+   "totalIds": 385,
+   "expected": [
+    "implements_clause"
+   ],
+   "found": [
+    "implements_clause"
+   ],
+   "missing": [],
+   "controlFired": true,
+   "why": "typescript HAS an implements clause — the scan must FIND it, or the scan is blind"
+  },
+  {
+   "lang": "dart",
+   "spelling": "tree-sitter-dart.wasm",
+   "registrySha256": "7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1",
+   "namedCount": 222,
+   "totalIds": 527,
+   "expected": [
+    "mixin_application",
+    "part_directive"
+   ],
+   "found": [
+    "mixin_application",
+    "part_directive"
+   ],
+   "missing": [],
+   "controlFired": true,
+   "why": "dart HAS a mixin application and a part directive — the scan must FIND both"
+  },
+  {
+   "lang": "python",
+   "spelling": "tree-sitter-python.wasm",
+   "registrySha256": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+   "namedCount": 128,
+   "totalIds": 274,
+   "expected": [
+    "decorator"
+   ],
+   "found": [
+    "decorator"
+   ],
+   "missing": [],
+   "controlFired": true,
+   "why": "python HAS a decorator — the scan must FIND it"
+  },
+  {
+   "lang": "tsx",
+   "spelling": "tree-sitter-tsx.wasm",
+   "registrySha256": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6",
+   "namedCount": 203,
+   "totalIds": 405,
+   "expected": [
+    "jsx_element"
+   ],
+   "found": [
+    "jsx_element"
+   ],
+   "missing": [],
+   "controlFired": true,
+   "why": "tsx HAS a jsx element — the scan must FIND it"
+  }
+ ],
+ "controlsAllFired": true,
+ "buildTest": {
+  "rule": "L-2026-10-21-05 — the SHA-256 of the bytes the REGISTRY SERVES, beside the node-type count enumerated from the SAME build",
+  "registrySha256": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+  "fileSha256": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+  "agree": true,
+  "namedCount": 189,
+  "totalIds": 455
+ }
+}

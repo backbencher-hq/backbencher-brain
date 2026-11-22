@@ -1,0 +1,182 @@
+{
+ "whatThisIs": "The grammar half of markdown's three extended-type rulings. Both pinned grammars' DECLARED named node types are enumerated with the fleet inventory's own accessor, unioned, and each ruling's vocabulary is tested against the union with a planted control.",
+ "measuredOn": "2026-11-22T20:40:05.501Z",
+ "grammars": {
+  "block": {
+   "wasm": "wasm/tree-sitter-markdown.wasm",
+   "totalIds": 207,
+   "namedSlots": 64,
+   "distinctNamed": 51
+  },
+  "inline": {
+   "wasm": "wasm/tree-sitter-markdown_inline.wasm",
+   "totalIds": 153,
+   "namedSlots": 34,
+   "distinctNamed": 26
+  },
+  "unionDistinct": 70,
+  "sharedDistinct": 7,
+  "shared": [
+   "backslash_escape",
+   "entity_reference",
+   "inline",
+   "link_destination",
+   "link_label",
+   "link_title",
+   "numeric_character_reference"
+  ],
+  "blockOnly": [
+   "atx_h1_marker",
+   "atx_h2_marker",
+   "atx_h3_marker",
+   "atx_h4_marker",
+   "atx_h5_marker",
+   "atx_h6_marker",
+   "atx_heading",
+   "block_continuation",
+   "block_quote",
+   "block_quote_marker",
+   "code_fence_content",
+   "document",
+   "fenced_code_block",
+   "fenced_code_block_delimiter",
+   "html_block",
+   "indented_code_block",
+   "info_string",
+   "language",
+   "link_reference_definition",
+   "list",
+   "list_item",
+   "list_marker_dot",
+   "list_marker_minus",
+   "list_marker_parenthesis",
+   "list_marker_plus",
+   "list_marker_star",
+   "minus_metadata",
+   "paragraph",
+   "pipe_table",
+   "pipe_table_align_left",
+   "pipe_table_align_right",
+   "pipe_table_cell",
+   "pipe_table_delimiter_cell",
+   "pipe_table_delimiter_row",
+   "pipe_table_header",
+   "pipe_table_row",
+   "plus_metadata",
+   "section",
+   "setext_h1_underline",
+   "setext_h2_underline",
+   "setext_heading",
+   "task_list_marker_checked",
+   "task_list_marker_unchecked",
+   "thematic_break"
+  ],
+  "inlineOnly": [
+   "code_span",
+   "code_span_delimiter",
+   "collapsed_reference_link",
+   "email_autolink",
+   "emphasis",
+   "emphasis_delimiter",
+   "full_reference_link",
+   "hard_line_break",
+   "html_tag",
+   "image",
+   "image_description",
+   "inline_link",
+   "latex_block",
+   "latex_span_delimiter",
+   "link_text",
+   "shortcut_link",
+   "strikethrough",
+   "strong_emphasis",
+   "uri_autolink"
+  ]
+ },
+ "rows": [
+  {
+   "type": "decorates",
+   "vocabularySize": 13,
+   "wouldMeanIt": [
+    "decorator",
+    "decorator_expression",
+    "decorator_list",
+    "decorated_definition",
+    "annotation",
+    "annotation_clause",
+    "marker_annotation",
+    "attribute_item",
+    "attribute",
+    "modifier",
+    "meta",
+    "pragma",
+    "directive_annotation"
+   ],
+   "presentInUnion": [],
+   "control": {
+    "planted": "document",
+    "presentAfterPlanting": [
+     "document"
+    ],
+    "fires": true
+   },
+   "rationale": "a decorator/annotation/attribute production: a name applied TO a declaration. Markdown declares no functions, classes or methods, so there is no decorated declaration to name."
+  },
+  {
+   "type": "renders",
+   "vocabularySize": 13,
+   "wouldMeanIt": [
+    "jsx_element",
+    "jsx_self_closing_element",
+    "component_element",
+    "component",
+    "render",
+    "render_method",
+    "render_expression",
+    "returns",
+    "template_element",
+    "vue_component",
+    "svelte_component",
+    "element",
+    "custom_element"
+   ],
+   "presentInUnion": [],
+   "control": {
+    "planted": "document",
+    "presentAfterPlanting": [
+     "document"
+    ],
+    "fires": true
+   },
+   "rationale": "a component/render production: a rendering symbol and the component it renders. Markdown is a document grammar; JSX/Vue/Svelte component productions belong to the lanes that own those grammars."
+  },
+  {
+   "type": "mixes_in",
+   "vocabularySize": 12,
+   "wouldMeanIt": [
+    "mixin",
+    "mixin_application",
+    "mixin_application_class",
+    "with_clause",
+    "trait_declaration",
+    "trait_definition",
+    "trait_usage",
+    "include_mixin",
+    "class_declaration",
+    "class",
+    "class_specifier",
+    "composition"
+   ],
+   "presentInUnion": [],
+   "control": {
+    "planted": "document",
+    "presentAfterPlanting": [
+     "document"
+    ],
+    "fires": true
+   },
+   "rationale": "a mixin/with-clause/composition production: a class composing an implementation into its supertype chain. Markdown has no classes and no supertype chain."
+  }
+ ],
+ "allControlsFire": true
+}

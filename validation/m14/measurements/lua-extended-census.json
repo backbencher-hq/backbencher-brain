@@ -1,0 +1,1079 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_extended_census",
+  "at": "2026-11-22T21:37:15.578Z",
+  "commit": "6351091d3691742cb32cb895767b3d2a39042cb8",
+  "corpus": {
+    "root": "/home/ishaq2321/bb_tests/repositories",
+    "filesParsed": 3250,
+    "skippedOver1MiB": 0,
+    "rule": "git-tracked *.lua under the corpus root, sorted, no cap; the admitted set is the tracked set"
+  },
+  "grammar": {
+    "wasm": "wasm/tree-sitter-lua.wasm",
+    "inventoryArtifact": "validation/m14/measurements/lua-grammar-nodes.json",
+    "servedDigest": null,
+    "totalIds": 137,
+    "namedTypeSlots": 54,
+    "uniqueNamedTypes": 46,
+    "includeProductionCandidates": [],
+    "renderProductionCandidates": [],
+    "decoratorProductionCandidates": [
+      "attribute"
+    ],
+    "mixinProductionCandidates": []
+  },
+  "part_of": {
+    "question": "does any Lua construct make a loaded file's declarations children of the including chunk (a single shared scope)?",
+    "loaderSites": 6994,
+    "loaderByName": {
+      "require": 6922,
+      "load": 32,
+      "loadstring": 10,
+      "loadfile": 28,
+      "dofile": 2
+    },
+    "loaderFiles": 2169,
+    "loaderSemantics": "every loader in this list evaluates its argument in a NEW chunk (Lua 5.4 manual: require loads a module chunk; dofile/loadfile load and run a file chunk; load/loadstring compile a chunk) — none splices text or declarations into the caller's scope.",
+    "includeProductionCandidates": [],
+    "rulingBasis": "the served grammar carries no include/splice/part/embed production, and every loader site evaluates into a new chunk"
+  },
+  "mixes_in": {
+    "question": "does any corpus construct compose a member-set into a class's supertype chain and name both sides in the file?",
+    "includeMethodCalls": 3,
+    "includeBareCalls": 2,
+    "includeCallSites": [
+      {
+        "file": "kong/kong/tools/sandbox/environment/init.lua",
+        "line": 166,
+        "argShape": "env",
+        "receiverClassLike": false,
+        "argClassLike": false
+      },
+      {
+        "file": "lapis/lapis/html.lua",
+        "line": 785,
+        "receiver": "self",
+        "argShape": "dot_index_expression",
+        "receiverClassLike": false,
+        "argClassLike": false
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/explorer/tree.lua",
+        "line": 214,
+        "argShape": "dot_index_expression",
+        "receiverClassLike": false,
+        "argClassLike": false
+      }
+    ],
+    "structuralMixinSites": 0,
+    "structuralMixinSiteList": [],
+    "discriminator": "method call whose field is exactly `include`, whose RECEIVER is a class-like declaration in the file (table constructor binding, function receiver, class/classic factory binding, or Y:extend() binding), and whose first explicit argument is an identifier naming a class-like symbol. Never a name filter: the receiver/argument role test is what separates the lapis Widget:include convention from the 152 prose occurrences of the word.",
+    "mixinProductionCandidates": []
+  },
+  "decorates": {
+    "question": "does any construct APPLY a decorator to a declaration at run time?",
+    "annotationCommentNodes": 19082,
+    "annotationNote": "the `---@` / `--@` forms are the grammar's `comment` nodes — editor documentation — never a declaration production and never applied at run time",
+    "attributeNodes": 0,
+    "attributeNames": {},
+    "attributeSites": [],
+    "attributeNote": "Lua 5.4's `local x <const>` / `<close>` is the language's ONLY declaration attribute. The served grammar carries the `attribute` production (so this ruling is stated over a counted construct), but the attribute names a KEYWORD — `const`/`close` — not a decorator SYMBOL, and its meaning is enforced at compile time: nothing is applied at run time and nothing is available as an edge target.",
+    "selfApplicationAll": 1184,
+    "selfApplicationTopLevel": 5,
+    "selfApplicationOnDeclaration": 186,
+    "selfApplicationOnDeclarationTopLevel": 3,
+    "decoratorApplicationSites": 1,
+    "decoratorApplicationSiteList": [
+      {
+        "file": "redis/deps/lua/test/fib.lua",
+        "line": 39,
+        "lhs": "fib",
+        "callee": "cache",
+        "form": "assign",
+        "topLevel": true
+      }
+    ],
+    "selfApplicationDeclarationSites": [
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 273,
+        "lhs": "value",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 278,
+        "lhs": "value",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 71,
+        "lhs": "message",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 239,
+        "lhs": "key",
+        "callee": "unescape_uri",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/routes/certificates.lua",
+        "line": 82,
+        "lhs": "snis",
+        "callee": "infer_value",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/config_helper.lua",
+        "line": 327,
+        "lhs": "err_t",
+        "callee": "declarative_config_flattened",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/control_plane.lua",
+        "line": 146,
+        "lhs": "payload",
+        "callee": "json_encode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/control_plane.lua",
+        "line": 153,
+        "lhs": "payload",
+        "callee": "deflate_gzip",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 274,
+        "lhs": "compile_env",
+        "callee": "merge",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 320,
+        "lhs": "compile_env",
+        "callee": "merge",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 467,
+        "lhs": "csp_connect_src",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 905,
+        "lhs": "v",
+        "callee": "shallow_copy",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 920,
+        "lhs": "v",
+        "callee": "tostring",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 922,
+        "lhs": "v",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/conf_loader/parse.lua",
+        "line": 71,
+        "lhs": "value",
+        "callee": "strip",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/conf_loader/parse.lua",
+        "line": 85,
+        "lhs": "value",
+        "callee": "tostring",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/conf_loader/parse.lua",
+        "line": 88,
+        "lhs": "value",
+        "callee": "tonumber",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/conf_loader/parse.lua",
+        "line": 225,
+        "lhs": "value",
+        "callee": "parse_value",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/errors.lua",
+        "line": 1181,
+        "lhs": "err_t",
+        "callee": "declarative_config",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/errors.lua",
+        "line": 1206,
+        "lhs": "err_t",
+        "callee": "sync_deltas",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/schema/init.lua",
+        "line": 1959,
+        "lhs": "refs",
+        "callee": "collect_field_reference",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/schema/init.lua",
+        "line": 1972,
+        "lhs": "refs",
+        "callee": "collect_subfield_reference",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/schema/init.lua",
+        "line": 1988,
+        "lhs": "refs",
+        "callee": "collect_subfield_reference",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/schema/others/declarative_config.lua",
+        "line": 1005,
+        "lhs": "schemas_array",
+        "callee": "schema_topological_sort",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/off/init.lua",
+        "line": 232,
+        "lhs": "items",
+        "callee": "filter_tag_items",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 521,
+        "lhs": "offset",
+        "callee": "encode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 522,
+        "lhs": "offset",
+        "callee": "encode_base64",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1030,
+        "lhs": "select_expressions",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1031,
+        "lhs": "primary_key_placeholders",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1032,
+        "lhs": "update_placeholders",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1081,
+        "lhs": "insert_expressions",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1082,
+        "lhs": "insert_columns",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1084,
+        "lhs": "update_expressions",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1086,
+        "lhs": "upsert_expressions",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1334,
+        "lhs": "fk_placeholders",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/init.lua",
+        "line": 1335,
+        "lhs": "pk_placeholders",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/tags.lua",
+        "line": 120,
+        "lhs": "offset",
+        "callee": "encode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/db/strategies/postgres/tags.lua",
+        "line": 121,
+        "lhs": "offset",
+        "callee": "encode_base64",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/llm/drivers/anthropic.lua",
+        "line": 255,
+        "lhs": "message",
+        "callee": "encode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/llm/drivers/bedrock.lua",
+        "line": 265,
+        "lhs": "new_event",
+        "callee": "encode",
+        "form": "assign",
+        "topLevel": false
+      }
+    ],
+    "selfApplicationDeclarationTopLevelSites": [
+      {
+        "file": "kong/kong/runloop/balancer/targets.lua",
+        "line": 260,
+        "lhs": "sorts",
+        "callee": "setmetatable",
+        "form": "assign",
+        "topLevel": true
+      },
+      {
+        "file": "nvim-lspconfig/lua/lspconfig/configs/stylelint_lsp.lua",
+        "line": 23,
+        "lhs": "root_file",
+        "callee": "insert_package_json",
+        "form": "assign",
+        "topLevel": true
+      },
+      {
+        "file": "redis/deps/lua/test/fib.lua",
+        "line": 39,
+        "lhs": "fib",
+        "callee": "cache",
+        "form": "assign",
+        "topLevel": true
+      }
+    ],
+    "selfApplicationSample": [
+      {
+        "file": "docker/contrib/wireshark/memberlist.lua",
+        "line": 129,
+        "lhs": "buffer",
+        "callee": "try_decrypt",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/api_helpers.lua",
+        "line": 104,
+        "lhs": "v",
+        "callee": "normalize_nested_params",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/api_helpers.lua",
+        "line": 108,
+        "lhs": "v",
+        "callee": "parse_value",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/api_helpers.lua",
+        "line": 554,
+        "lhs": "err",
+        "callee": "write",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 70,
+        "lhs": "path",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 99,
+        "lhs": "boundary",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 273,
+        "lhs": "value",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 277,
+        "lhs": "name",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/arguments.lua",
+        "line": 278,
+        "lhs": "value",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 71,
+        "lhs": "message",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 194,
+        "lhs": "size",
+        "callee": "tonumber",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 239,
+        "lhs": "key",
+        "callee": "unescape_uri",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 415,
+        "lhs": "entity",
+        "callee": "post_process",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 483,
+        "lhs": "fk",
+        "callee": "extract_pk_values",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 642,
+        "lhs": "fk",
+        "callee": "extract_pk_values",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/endpoints.lua",
+        "line": 718,
+        "lhs": "fk",
+        "callee": "extract_pk_values",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/routes/certificates.lua",
+        "line": 48,
+        "lhs": "content_type",
+        "callee": "lower",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/routes/certificates.lua",
+        "line": 82,
+        "lhs": "snis",
+        "callee": "infer_value",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/routes/kong.lua",
+        "line": 158,
+        "lhs": "path",
+        "callee": "next",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/routes/plugins.lua",
+        "line": 99,
+        "lhs": "content_type",
+        "callee": "lower",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/api/routes/plugins.lua",
+        "line": 102,
+        "lhs": "post",
+        "callee": "decode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cluster_events/strategies/postgres.lua",
+        "line": 125,
+        "lhs": "p_chans",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/compat/init.lua",
+        "line": 389,
+        "lhs": "payload",
+        "callee": "cycle_aware_deep_copy",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/compat/version.lua",
+        "line": 23,
+        "lhs": "major",
+        "callee": "tonumber",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/compat/version.lua",
+        "line": 24,
+        "lhs": "minor",
+        "callee": "tonumber",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/config_helper.lua",
+        "line": 327,
+        "lhs": "err_t",
+        "callee": "declarative_config_flattened",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/control_plane.lua",
+        "line": 146,
+        "lhs": "payload",
+        "callee": "json_encode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/control_plane.lua",
+        "line": 153,
+        "lhs": "payload",
+        "callee": "deflate_gzip",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/control_plane.lua",
+        "line": 230,
+        "lhs": "data",
+        "callee": "json_decode",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/data_plane.lua",
+        "line": 176,
+        "lhs": "json_err",
+        "callee": "tostring",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/rpc/json_rpc_v2.lua",
+        "line": 38,
+        "lhs": "msg",
+        "callee": "tostring",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/clustering/rpc/manager.lua",
+        "line": 285,
+        "lhs": "rpc_capabilities",
+        "callee": "table_clone",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/config.lua",
+        "line": 100,
+        "lhs": "filename",
+        "callee": "abspath",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/inject_confs.lua",
+        "line": 53,
+        "lhs": "new_conf",
+        "callee": "sub",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/nginx_signals.lua",
+        "line": 82,
+        "lhs": "secrets",
+        "callee": "serialize",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 274,
+        "lhs": "compile_env",
+        "callee": "merge",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 307,
+        "lhs": "value",
+        "callee": "min",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 308,
+        "lhs": "value",
+        "callee": "max",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 320,
+        "lhs": "compile_env",
+        "callee": "merge",
+        "form": "assign",
+        "topLevel": false
+      },
+      {
+        "file": "kong/kong/cmd/utils/prefix_handler.lua",
+        "line": 467,
+        "lhs": "csp_connect_src",
+        "callee": "concat",
+        "form": "assign",
+        "topLevel": false
+      }
+    ],
+    "discriminator": "`X = f(X)` where X names a function or class-like DECLARATION in the same file is the runtime-application shape a decorator would need; a rebinding of a VALUE (`path = sub(path, ...)`) is not decoration of a declaration.",
+    "decoratorProductionCandidates": [
+      "attribute"
+    ]
+  },
+  "renders": {
+    "question": "does any construct name a COMPONENT SYMBOL being rendered by another component?",
+    "renderCalls": 90,
+    "renderComponentSites": 8,
+    "renderComponentSiteList": [
+      {
+        "file": "kong/kong/plugins/opentelemetry/utils.lua",
+        "line": 136,
+        "callee": "render",
+        "argShape": "template_env"
+      },
+      {
+        "file": "kong/kong/plugins/request-transformer/access.lua",
+        "line": 107,
+        "callee": "render",
+        "argShape": "template_env"
+      },
+      {
+        "file": "kong/spec/03-plugins/43-ai-prompt-template/01-unit_spec.lua",
+        "line": 92,
+        "callee": "render",
+        "argShape": "good_chat_template"
+      },
+      {
+        "file": "kong/spec/03-plugins/43-ai-prompt-template/01-unit_spec.lua",
+        "line": 99,
+        "callee": "render",
+        "argShape": "good_prompt_template"
+      },
+      {
+        "file": "kong/spec/03-plugins/43-ai-prompt-template/01-unit_spec.lua",
+        "line": 106,
+        "callee": "render",
+        "argShape": "good_chat_template"
+      },
+      {
+        "file": "lapis/lapis/html.lua",
+        "line": 603,
+        "callee": "render",
+        "argShape": "buffer"
+      },
+      {
+        "file": "lapis/lapis/html.lua",
+        "line": 618,
+        "callee": "render",
+        "argShape": "buffer"
+      },
+      {
+        "file": "snacks.nvim/lua/snacks/dashboard.lua",
+        "line": 663,
+        "callee": "render_buf",
+        "argShape": "extmarks"
+      }
+    ],
+    "renderNearMiss": 40,
+    "renderNearMissSample": [
+      {
+        "file": "kong/kong/db/migrations/core/016_280_to_300.lua",
+        "line": 28,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 34,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 65,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 80,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 101,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 129,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 159,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 179,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/200_to_210.lua",
+        "line": 205,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/280_to_300.lua",
+        "line": 39,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/331_to_332.lua",
+        "line": 30,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/db/migrations/operations/331_to_332.lua",
+        "line": 43,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/kong/plugins/ai-prompt-template/filters/render-prompt-template.lua",
+        "line": 103,
+        "callee": "render",
+        "argShape": "requested_template"
+      },
+      {
+        "file": "kong/spec/03-plugins/11-correlation-id/02-schema_spec.lua",
+        "line": 39,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/spec/03-plugins/11-correlation-id/02-schema_spec.lua",
+        "line": 101,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/spec/03-plugins/11-correlation-id/02-schema_spec.lua",
+        "line": 126,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/spec/05-migration/plugins/ai-proxy/migrations/001_360_to_370_spec.lua",
+        "line": 39,
+        "callee": "render",
+        "argShape": "string"
+      },
+      {
+        "file": "kong/spec/fixtures/https_server.lua",
+        "line": 67,
+        "callee": "render",
+        "argShape": "params"
+      },
+      {
+        "file": "kong/spec/helpers/http_mock/nginx_instance.lua",
+        "line": 42,
+        "callee": "render",
+        "argShape": "function_call"
+      },
+      {
+        "file": "lapis/lapis/application.lua",
+        "line": 192,
+        "callee": "render",
+        "argShape": "r"
+      },
+      {
+        "file": "lapis/lapis/application.lua",
+        "line": 210,
+        "callee": "render",
+        "argShape": "r"
+      },
+      {
+        "file": "lapis/lapis/application.lua",
+        "line": 221,
+        "callee": "render_request",
+        "argShape": "r"
+      },
+      {
+        "file": "lapis/lapis/application.lua",
+        "line": 229,
+        "callee": "render_error_request",
+        "argShape": "error_request"
+      },
+      {
+        "file": "lapis/lapis/html.lua",
+        "line": 405,
+        "callee": "render_widget",
+        "argShape": "function_call"
+      },
+      {
+        "file": "lapis/lapis/html.lua",
+        "line": 417,
+        "callee": "render",
+        "argShape": "self"
+      },
+      {
+        "file": "lapis/lapis/html.lua",
+        "line": 701,
+        "callee": "render",
+        "argShape": "vararg_expression"
+      },
+      {
+        "file": "lapis/lapis/nginx/cache.lua",
+        "line": 82,
+        "callee": "render",
+        "argShape": "self"
+      },
+      {
+        "file": "lapis/lapis/request.lua",
+        "line": 279,
+        "callee": "render",
+        "argShape": "dot_index_expression"
+      },
+      {
+        "file": "lazy.nvim/lua/lazy/manage/task/init.lua",
+        "line": 52,
+        "callee": "render",
+        "argShape": "absent"
+      },
+      {
+        "file": "lazy.nvim/lua/lazy/manage/task/init.lua",
+        "line": 127,
+        "callee": "render",
+        "argShape": "absent"
+      },
+      {
+        "file": "lazy.nvim/lua/lazy/manage/task/init.lua",
+        "line": 177,
+        "callee": "render",
+        "argShape": "absent"
+      },
+      {
+        "file": "lazy.nvim/lua/lazy/view/render.lua",
+        "line": 81,
+        "callee": "render",
+        "argShape": "dot_index_expression"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/callhierarchy.lua",
+        "line": 183,
+        "callee": "render_virtline",
+        "argShape": "curlnum"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/callhierarchy.lua",
+        "line": 422,
+        "callee": "render_virtline",
+        "argShape": "curlnum"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/codeaction/lightbulb.lua",
+        "line": 137,
+        "callee": "render",
+        "argShape": "buf"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/command.lua",
+        "line": 26,
+        "callee": "render_hover_doc",
+        "argShape": "args"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/implement/init.lua",
+        "line": 204,
+        "callee": "render",
+        "argShape": "dot_index_expression"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/rename/project.lua",
+        "line": 183,
+        "callee": "render",
+        "argShape": "function_call"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/typehierarchy.lua",
+        "line": 183,
+        "callee": "render_virtline",
+        "argShape": "curlnum"
+      },
+      {
+        "file": "lspsaga.nvim/lua/lspsaga/typehierarchy.lua",
+        "line": 423,
+        "callee": "render_virtline",
+        "argShape": "curlnum"
+      }
+    ],
+    "htmlHostSites": 0,
+    "htmlHostNote": "lapis `html(function() ... end)` composes a widget from a CALLBACK. It is the near miss: the rendered thing is a function literal, not a named component symbol, so it fails the contract's positive test. Counted so the ruling names a construct an instrument counts.",
+    "renderProductionCandidates": []
+  },
+  "overturnConditions": {
+    "part_of": "a node type whose parse tree makes the included file's declarations children of the including chunk (a textual/include/literal-include production) — counted in `grammar.includeProductionCandidates`, currently 0",
+    "mixes_in": "a structural include call site outside the measured set, or a Lua dialect build carrying a mixin/with production (counted in `grammar.mixinProductionCandidates`)",
+    "decorates": "a site counted by `decoratorApplicationSites` (top-level X = f(X) where X is a declared function and f is a declared function returning a function) that is NOT a decorator application — i.e. the discriminator's own positive population would have to be empty for the ruling to hold; or an ATTRIBUTE naming a decorator VALUE rather than const/close; or a grammar build carrying a decorator/annotation production",
+    "renders": "a render call whose argument names a class-like component symbol (counted by `renderComponentSites`, currently 0), or a grammar build carrying a component/template production"
+  }
+}

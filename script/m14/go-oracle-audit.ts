@@ -110,8 +110,8 @@ const GO_ORACLE_LABELS = [
 // sweep with `process.argv[1]?.endsWith("differential.ts")`, so importing the
 // derivations does NOT start a 42-language run — verified by reading the guard,
 // and this runner completes in seconds on 36 files where a sweep would not.
-import {
 import { GO_DEFAULT_REPOS, requireGoRepoDir } from "./go-corpus"
+import {
   normTarget,
   strictTargetText,
   deriveGoEdges,

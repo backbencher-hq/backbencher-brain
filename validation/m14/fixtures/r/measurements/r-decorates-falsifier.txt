@@ -1,0 +1,29 @@
+==============================================================================
+FALSIFIER CENSUS — the `decorates` ruling's TWO NAMED CONSTRUCTS, COUNTED
+==============================================================================
+node v24.3.0   workers 4   cores 8
+load at start: 7.26 5.76 6.42
+corpus root: /home/ishaq2321/bb_tests/repositories
+admission: the GATE's predicate (script/m14/incoming-gate.ts:367) — .r + bare basename clause, SIZE_CAP 1048576 B
+admitted files [0,2184) of 2184
+corpus file set: sha256 97c3d6498765b35cbd940c05ca086ca826143b3108135585248eec0c41a57687
+files parsed: 2184   failures: 0   (wasm-trap retries: 3)
+
+FALSIFIER 1 — an annotation production in the SERVED grammar whose node wraps a declaration:
+  served grammar digest: null (validation/m14/measurements/r-grammar-nodes.json)
+  named node types served: 41
+  annotation/decorator/attribute/roxygen/tag-family named types among them: 0
+  the `comment` node type IS named in the served list: true
+  -> roxygen is a COMMENT in this grammar, and a comment node wraps a declaration in no grammar sense.
+
+FALSIFIER 2 — a roxygen tag a tool INVOKES on the declaration at build time:
+  roxygen `#'` comment sites: 59334
+  files carrying roxygen: 779
+  tag sites (@export, @import*, @param, ...): 12791
+  roxygen sites whose next named sibling is a DECLARATION shape: 45830
+  files with such adjacent sites: 732
+  -> the tags sit on comments that PRECEDE declarations, and roxygen2 reads them from
+     SOURCE TEXT at package BUILD time; nothing in the R grammar attaches the tag to the
+     declaration as a node. The opportunity is counted, so the ruling does not treat all
+     sites as one undifferentiated class.
+==============================================================================

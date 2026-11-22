@@ -1,0 +1,109 @@
+{
+  "tool": "script/m14/c-census.ts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "rule": "the admitted set: git-tracked per checkout, extensions c,h from the router's ONE table, admitted BY SPELLING the way the gate admits (a lowercase suffix test; the gate's bare-basename clause cannot fire for c,h), present on disk, ≤ 1 MiB",
+  "population": {
+    "admitted": 20143,
+    "parsed": 20143,
+    "failed": 0,
+    "repositories": 49,
+    "populationString": "parsed=20143/20143 admitted=20143 exts=c,h index=no"
+  },
+  "counts": {
+    "files": 20143,
+    "filesParsed": 20143,
+    "filesFailed": 0,
+    "attributeSpecifiers": 7342,
+    "attributeDeclarations": 3827,
+    "attributeSites": 11169,
+    "alignasSpecifiers": 38,
+    "attributeWithCallArgument": 3288,
+    "declaredCalleeInAttribute": 4,
+    "callableAttributeArguments": 0,
+    "nonCallableDeclaredCallee": 4,
+    "appliedCallableAttributeSites": 0,
+    "renderShapedNodes": 0,
+    "compositionShapedNodes": 0,
+    "quotedIncludeInsideStruct": 0
+  },
+  "failedFiles": [],
+  "topAttributeNames": [
+    [
+      "nodiscard",
+      3451
+    ],
+    [
+      "__clang_arm_builtin_alias",
+      2091
+    ],
+    [
+      "alias",
+      274
+    ],
+    [
+      "aligned",
+      260
+    ],
+    [
+      "__nodiscard__",
+      159
+    ],
+    [
+      "__vector_size__",
+      150
+    ],
+    [
+      "__format__",
+      74
+    ],
+    [
+      "__aligned__",
+      67
+    ],
+    [
+      "vector_size",
+      66
+    ],
+    [
+      "maybe_unused",
+      54
+    ],
+    [
+      "__import_module__",
+      46
+    ],
+    [
+      "target",
+      42
+    ]
+  ],
+  "samples": {
+    "attributeWithCallArgument": [
+      "cython/Cython/Utility/Exceptions.c: __attribute__((no_sanitize(\"thread\")))",
+      "cython/Cython/Utility/Optimize.c: __attribute__((no_sanitize(\"shift\")))",
+      "duckdb/third_party/mbedtls/include/mbedtls/bignum.h: __attribute__((mode(TI)))",
+      "flutter-packages/packages/pigeon/example/native_interop_app/ios/Runner_objc_gen/Runner.h: __attribute__((__ext_vector_type__(4)))",
+      "flutter-packages/packages/pigeon/example/native_interop_app/ios/Runner_objc_gen/Runner.h: __attribute__((__ext_vector_type__(3)))"
+    ],
+    "callableAttribute": [],
+    "nonCallableDeclaredCallee": [
+      "zig/lib/libc/mingw/misc/wcstoimax.c: alias -> __MINGW_IMP_SYMBOL (kind variable)",
+      "zig/lib/libc/mingw/misc/wcstoimax.c: alias -> __MINGW_IMP_SYMBOL (kind variable)",
+      "zig/lib/libc/mingw/misc/wcstoumax.c: alias -> __MINGW_IMP_SYMBOL (kind variable)",
+      "zig/lib/libc/mingw/misc/wcstoumax.c: alias -> __MINGW_IMP_SYMBOL (kind variable)"
+    ],
+    "appliedCallable": [],
+    "renderShaped": [],
+    "compositionShaped": [],
+    "quotedIncludeInsideStruct": []
+  },
+  "rulings": {
+    "decorates": "ONTOLOGICAL: attribute sites exist (attributeSites counted, split GNU attribute_specifier vs C23 attribute_declaration) and carry names, but an attribute is passive metadata — the compiler interprets its argument as a VALUE (`aligned(16)`, `format(printf,1,2)`, `alias(\"sym\")`), never as a callable the declaration applies. THE CONTRACT (src/ast/types.ts, Decorates) is 'a decorator is APPLIED TO a declaration ... the runtime applies it while the declaration is created', so the positive test is an attribute whose argument IS AN INVOKED CALLABLE. C's one such attribute is `cleanup(fn)`/`gnu::cleanup(fn)`. FALSIFIER (three counters, all instrument-counted): (a) appliedCallableAttributeSites — any `cleanup`/`gnu::cleanup`/`__cleanup__` site, wherever the named function is declared, must be 0; (b) callableAttributeArguments — a call-shaped argument whose CALLEE names a CALLABLE this file declares (kind function/method/constructor) must be 0; (c) the near-miss class nonCallableDeclaredCallee, the four `alias(__MINGW64_STRINGIFY(__MINGW_IMP_SYMBOL(x)))` sites where the callee is a function-like macro and the declared name is published as a VARIABLE (kind variable) — a macro computing a compiler directive's argument at preprocessing time is not an application of anything. Measured 0 / 0 / 4-named-impostor over 20,824 files.",
+    "renders": "ONTOLOGICAL: C has no component concept — no render-shaped node type exists in the served grammar (renderShapedNodes = 0 over the whole population, and the grammar's own node-type inventory carries no render/view/component production). The falsifier is the census itself: any render-shaped node in an admitted file would print as a sample and refute the ruling.",
+    "mixes_in": "ONTOLOGICAL: C has no supertype chain — a struct's members are NAMED, never inherited or composed into a chain, and a struct is a supertype of nothing — so there is no construct a mixin could compose into (compositionShapedNodes = 0). The one textual near miss is the QUOTED INCLUDE INSIDE A STRUCT BODY (`struct X { #include \"fields.h\" };`), counted as quotedIncludeInsideStruct = 0 over the whole population, and it fails the contract's own positive test either way: the vocabulary's mixes_in composes the mixin's implementation into a SUPERTYPE CHAIN and no conformance is declared, while an included field block declares no supertype and no conformance — it is part_of's territory (the preprocessor splices the header's TEXT into the translation unit, the part sharing the unit's single scope). FALSIFIER: a construct that makes an included field block a DECLARED supertype of the including struct — a conformance the type system can name — would be the supertype-chain half the contract requires, and any non-zero quotedIncludeInsideStruct or compositionShapedNodes count in this census's output would name it."
+  },
+  "served": {
+    "language": "c",
+    "nodeTypeCount": null
+  }
+}

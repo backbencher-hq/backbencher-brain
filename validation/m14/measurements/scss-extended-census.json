@@ -1,0 +1,792 @@
+{
+  "language": "scss",
+  "kind": "WHOLE POPULATION",
+  "generated": "2026-11-22T20:21:44.763Z",
+  "population": {
+    "artifact": "validation/m14/measurements/scss-population.json",
+    "rule": "THE ADMITTED SET IS THE GIT-TRACKED SET, NOT THE DISK: per-checkout `git ls-files -z` under `$PWD/.corpus`, the router's extension list {scss} from script/m14/language-extensions.ts (`.sass` is the `sass`/css lanes' — 67 corpus files this analyzer is never given), present in the working tree, <= 1 MiB, dedup by realpath.",
+    "admitted": 3490,
+    "repositoriesCarrying": 7,
+    "extensions": [
+      "scss"
+    ],
+    "capBytes": 1048576,
+    "populationString": "parsed=4433/4433 admitted=3490 exts=scss index=yes"
+  },
+  "guard": {
+    "filesAdmitted": 3490,
+    "filesRead": 4433,
+    "filesFailed": 0,
+    "treesDeleted": true,
+    "statement": "every tree deleted in a finally; filesRead === filesAdmitted or exit 5 (the cpp 15,223-file lesson)"
+  },
+  "servedBuildR1": {
+    "measuredBy": "getParser('scss') -> parser.language; nodeTypeForId + nodeTypeIsNamed (NOT t.named: a string has no .named)",
+    "wasmPathFromResolverCandidates": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-scss.wasm",
+    "servedWasSha256": "67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5",
+    "namedTypes": 90,
+    "totalIds": 195,
+    "stemMatches": {
+      "decorat": [],
+      "annotation": [],
+      "attribute": [
+        "attribute_selector",
+        "attribute_name"
+      ],
+      "application": [],
+      "modifier": [],
+      "render": [],
+      "component": [],
+      "jsx": [],
+      "template": [],
+      "markup": [],
+      "element": [
+        "pseudo_element_selector"
+      ],
+      "part": [],
+      "content": []
+    },
+    "statement": "The served build's OWN inventory: the filter over stemMatches shows which node names exist for each extended value. A stem with 0 matches is a POSITIVE grammar-inventory absence for THIS build, not a failed scan — the named accessor returns 90 named types, so the inventory is non-empty."
+  },
+  "grammarSourceR2": {
+    "path": "grammars/tree-sitter-scss/grammar.js",
+    "sha256": "3c62d074511966dce882ae171b1a249c316234f055cb16a8f8cb01b536b7ae5c",
+    "ruleCount": 39,
+    "rules": [
+      "_top_level_item",
+      "_block_item",
+      "_selector",
+      "class_selector",
+      "pseudo_class_selector",
+      "declaration",
+      "_sass_visibility_flag",
+      "_query",
+      "_value",
+      "use_statement",
+      "forward_statement",
+      "_with_clause",
+      "mixin_statement",
+      "include_statement",
+      "_include_arguments",
+      "_include_argument",
+      "function_statement",
+      "parameters",
+      "parameter",
+      "return_statement",
+      "extend_statement",
+      "error_statement",
+      "warn_statement",
+      "debug_statement",
+      "at_root_statement",
+      "if_statement",
+      "else_if_clause",
+      "else_clause",
+      "each_statement",
+      "for_statement",
+      "while_statement",
+      "call_expression",
+      "binary_expression",
+      "parenthesized_value",
+      "list_value",
+      "interpolation",
+      "placeholder",
+      "_concatenated_identifier",
+      "variable"
+    ],
+    "statement": "The vendored grammar SOURCE the served build was generated from (tree-sitter-scss@1.0.0 + 2 local patches that extend EXISTING rules: list_value/parenthesized_value for maps, and include_statement's closing delimiter for whitespace — neither adds a named node type). R2 unavailability is a claim about THIS production list."
+  },
+  "counts": {
+    "includeSites": 2737,
+    "includeClean": 2438,
+    "includeUnparsable": 299,
+    "includeCleanSameFileMixin": 237,
+    "includeCleanSameFileFunction": 0,
+    "includeCleanForeign": 2201,
+    "includeTopLevel": 352,
+    "mixinDeclarations": 324,
+    "functionDeclarations": 79,
+    "importSites": 3638,
+    "importSassForm": 3626,
+    "importSassFormVerified": 3159,
+    "importCssForm": 12,
+    "importCssUrl": 10,
+    "importCssMedia": 2,
+    "importCssDotCss": 0,
+    "importCssProtocol": 0,
+    "useStatements": 1572,
+    "forwardStatements": 165,
+    "extendStatements": 112,
+    "importantSites": 1270,
+    "importantNamingCallable": 0,
+    "declarationsWithGlobalFlag": 26,
+    "declarationsWithDefaultFlag": 1857,
+    "contentDeclarations": 5120,
+    "contentCapitalizedComponentShape": 0,
+    "contentCapitalizedInStringValue": 5,
+    "pseudoElementSelectors": 1144,
+    "errorNodes": 100949,
+    "files": 4433,
+    "filesRead": 4433,
+    "filesFailed": 0,
+    "filesWithErrors": 616
+  },
+  "filesBy": {
+    "include": 452,
+    "mixin": 130,
+    "importSass": 819,
+    "important": 236,
+    "content": 790,
+    "pseudoElement": 303
+  },
+  "declarationsByRepo": {
+    "Documenter.jl": {
+      "mixins": [
+        "font-awesome",
+        "sidebar-scroll"
+      ],
+      "functions": [
+        "darken-color",
+        "lighten-color"
+      ]
+    },
+    "Fabulous": {
+      "mixins": [
+        "font-button",
+        "font-callout-header",
+        "font-community-header",
+        "font-fabulous",
+        "font-getstarted-header",
+        "font-getstarted-optionlabel",
+        "font-header1",
+        "font-header2",
+        "font-header3",
+        "font-menu",
+        "font-paragraph",
+        "padding-page",
+        "shadow"
+      ],
+      "functions": []
+    },
+    "bootstrap": {
+      "mixins": [
+        "_assert-ascending",
+        "_assert-starts-at-zero",
+        "_rfs-media-query",
+        "_rfs-media-query-rule",
+        "_rfs-rule",
+        "alert-variant",
+        "border-bottom-end-radius",
+        "border-bottom-radius",
+        "border-bottom-start-radius",
+        "border-end-radius",
+        "border-radius",
+        "border-start-radius",
+        "border-top-end-radius",
+        "border-top-radius",
+        "border-top-start-radius",
+        "box-shadow",
+        "bsBanner",
+        "button-outline-variant",
+        "button-size",
+        "button-variant",
+        "caret",
+        "caret-down",
+        "caret-end",
+        "caret-start",
+        "caret-up",
+        "clearfix",
+        "color-mode",
+        "color-scheme",
+        "deprecate",
+        "font-size",
+        "form-validation-state-selector",
+        "generate-utility",
+        "gradient-bg",
+        "gradient-directional",
+        "gradient-radial",
+        "gradient-striped",
+        "gradient-x",
+        "gradient-x-three-colors",
+        "gradient-y",
+        "gradient-y-three-colors",
+        "img-fluid",
+        "list-group-item-variant",
+        "list-unstyled",
+        "margin",
+        "margin-bottom",
+        "margin-left",
+        "margin-right",
+        "margin-top",
+        "media-breakpoint-between",
+        "media-breakpoint-down",
+        "media-breakpoint-only",
+        "media-breakpoint-up",
+        "overlay-backdrop",
+        "padding",
+        "padding-bottom",
+        "padding-left",
+        "padding-right",
+        "padding-top",
+        "pagination-size",
+        "reset-text",
+        "resizable",
+        "rfs",
+        "test-generate-utility",
+        "text-truncate",
+        "transition",
+        "visually-hidden",
+        "visually-hidden-focusable"
+      ],
+      "functions": [
+        "add",
+        "breakpoint-infix",
+        "breakpoint-max",
+        "breakpoint-min",
+        "breakpoint-next",
+        "color-contrast",
+        "contrast-ratio",
+        "divide",
+        "escape-svg",
+        "luminance",
+        "map-get-multiple",
+        "map-loop",
+        "map-merge-multiple",
+        "negativify-map",
+        "opaque",
+        "rfs-fluid-value",
+        "rfs-value",
+        "rgba-css-var",
+        "shade-color",
+        "shift-color",
+        "str-replace",
+        "subtract",
+        "tint-color",
+        "to-rgb",
+        "valid-radius",
+        "varify"
+      ]
+    },
+    "bulma": {
+      "mixins": [
+        "anim-bounce-jelly",
+        "arrow",
+        "bd-animate",
+        "block",
+        "bulma-theme",
+        "center",
+        "clearfix",
+        "control",
+        "control-large",
+        "control-medium",
+        "control-small",
+        "dark-theme",
+        "fa-icon",
+        "fa-icon-brands",
+        "fa-icon-flip",
+        "fa-icon-regular",
+        "fa-icon-rotate",
+        "fa-icon-solid",
+        "fa-size",
+        "fa-sr-only",
+        "fa-sr-only-focusable",
+        "fixed-grid-properties",
+        "generate-basic-palette",
+        "generate-color-palette",
+        "generate-on-scheme-colors",
+        "input",
+        "light-theme",
+        "navbar-fixed",
+        "register-base-color",
+        "register-hsl",
+        "register-rgb",
+        "register-var",
+        "register-vars",
+        "sr-only",
+        "sr-only-focusable",
+        "system-theme",
+        "typography-size",
+        "v1-generate-on-scheme-colors"
+      ],
+      "functions": [
+        "buildHslaString",
+        "buildVarName",
+        "bulmaColorBrightness",
+        "bulmaColorLuminance",
+        "bulmaDarken",
+        "bulmaEnoughContrast",
+        "bulmaFindColorInvert",
+        "bulmaFindDarkColor",
+        "bulmaFindLightColor",
+        "bulmaLighten",
+        "bulmaRgba",
+        "bulmaStringToNumber",
+        "fa-content",
+        "fa-divide",
+        "getRgbaVar",
+        "getVar",
+        "getVarWithBackup",
+        "mergeColorMaps",
+        "powerNumber"
+      ]
+    },
+    "element-plus": {
+      "mixins": [
+        "alpha-bg",
+        "alternate-padding",
+        "alternate-tail-node-center",
+        "alternate-wrapper-end",
+        "alternate-wrapper-start",
+        "b",
+        "bar-background",
+        "button-dashed",
+        "button-plain",
+        "button-size",
+        "button-variant",
+        "cascader-tag-normal",
+        "cell-alignment",
+        "cell-padding",
+        "center-flex",
+        "checked-icon",
+        "circle-size",
+        "col-size",
+        "color-picker-thumb",
+        "configurable-m",
+        "css-var-from-global",
+        "dark",
+        "disable",
+        "e",
+        "extend-rule",
+        "genTheme",
+        "hidden-scrollbar",
+        "hover-available",
+        "inset-append-border",
+        "inset-append-input-border",
+        "inset-input-border",
+        "inset-prepend-border",
+        "inset-prepend-input-border",
+        "m",
+        "meb",
+        "menu-item",
+        "mixed-input-border",
+        "op-icon",
+        "pagination-button",
+        "picker-popper",
+        "pseudo",
+        "res",
+        "reset-button",
+        "respond-to",
+        "safe-padding",
+        "scroll-bar",
+        "set-color-mix-level",
+        "set-component-css-var",
+        "set-css-color-rgb",
+        "set-css-color-type",
+        "set-css-var-type",
+        "set-css-var-value",
+        "share-rule",
+        "showScrollbar",
+        "skeleton-color",
+        "spec-selector",
+        "table-root",
+        "upload-success",
+        "utils-clearfix",
+        "utils-ellipsis",
+        "utils-inline-flex-center",
+        "utils-vertical-center",
+        "when",
+        "with-bg",
+        "with-border"
+      ],
+      "functions": [
+        "bem",
+        "containPseudoClass",
+        "containWhenFlag",
+        "containsModifier",
+        "getCssVar",
+        "getCssVarName",
+        "getCssVarWithDefault",
+        "hitAllSpecialNestRule",
+        "joinVarName",
+        "mix-overlay-color",
+        "returnVarList",
+        "rgb2hex",
+        "roundColor",
+        "selectorToString"
+      ]
+    },
+    "gql-ruby": {
+      "mixins": [
+        "doc-header"
+      ],
+      "functions": []
+    },
+    "hasura-engine": {
+      "mixins": [
+        "custom-footer-wrapper__vertical"
+      ],
+      "functions": []
+    },
+    "nomad": {
+      "mixins": [
+        "input",
+        "standard-gradient"
+      ],
+      "functions": []
+    },
+    "pico": {
+      "mixins": [
+        "background-colors",
+        "color-swatch",
+        "color-wrapper",
+        "colors",
+        "css-vars",
+        "foreground-color",
+        "slider-track",
+        "theme"
+      ],
+      "functions": [
+        "brightness",
+        "display-color",
+        "display-hsl",
+        "display-rgb",
+        "foreground-brightness",
+        "get",
+        "shadow-layer"
+      ]
+    },
+    "primer-css": {
+      "mixins": [
+        "breakpoint",
+        "clearfix",
+        "color-mode",
+        "color-mode-theme",
+        "color-variables",
+        "double-caret",
+        "f1-responsive",
+        "f2-responsive",
+        "f3-responsive",
+        "focusBoxShadowInset",
+        "focusOutline",
+        "focusOutlineOnEmphasis",
+        "gutters",
+        "h1",
+        "h1-responsive",
+        "h2",
+        "h2-responsive",
+        "h3",
+        "h3-responsive",
+        "h4",
+        "h5",
+        "h6",
+        "hide-text",
+        "labels--inline",
+        "labels-base",
+        "labels-large",
+        "minTouchTarget",
+        "retina-media-query",
+        "targetBoxShadow"
+      ],
+      "functions": []
+    },
+    "r-pkgdown": {
+      "mixins": [
+        "invert-filter"
+      ],
+      "functions": []
+    },
+    "riverpod": {
+      "mixins": [
+        "min-width",
+        "themed"
+      ],
+      "functions": []
+    },
+    "sass-spec": {
+      "mixins": [
+        "inspect",
+        "test-hue"
+      ],
+      "functions": [
+        "-real-channel",
+        "real-separator",
+        "with-separator"
+      ]
+    },
+    "spectre": {
+      "mixins": [
+        "avatar-base",
+        "bg-color-variant",
+        "button-outline-variant",
+        "button-variant",
+        "clearfix",
+        "control-shadow",
+        "label-base",
+        "label-variant",
+        "margin-variant",
+        "padding-variant",
+        "parallax-dir",
+        "shadow-variant",
+        "text-color-variant",
+        "text-ellipsis",
+        "toast-variant",
+        "viewer-slider-size"
+      ],
+      "functions": []
+    },
+    "vault": {
+      "mixins": [
+        "css-arrow",
+        "css-bottom-arrow",
+        "css-top-arrow",
+        "dark-mode-app-header-override",
+        "dark-mode-app-side-nav-override",
+        "dark-mode-box-label-override",
+        "dark-mode-button-overrides",
+        "dark-mode-component-overrides",
+        "dark-mode-console-override",
+        "dark-mode-radio-card-override",
+        "dark-mode-swagger-override",
+        "dark-theme",
+        "dark-token-mappings",
+        "dark-variables",
+        "font-face",
+        "from",
+        "keyframes",
+        "stacked-content",
+        "stacked-grid",
+        "until",
+        "vault-block"
+      ],
+      "functions": []
+    },
+    "vue-element-admin": {
+      "mixins": [
+        "clearfix",
+        "colorBtn",
+        "pct",
+        "relative",
+        "scrollBar",
+        "triangle"
+      ],
+      "functions": []
+    },
+    "wagtail": {
+      "mixins": [
+        "arrow--left",
+        "arrow--top",
+        "arrow--top-left",
+        "clearfix",
+        "column",
+        "dark-theme",
+        "dark-theme-more-contrast",
+        "focus-outline",
+        "font-smoothing",
+        "guide-line-horizontal",
+        "guide-line-nested",
+        "guide-line-vertical",
+        "guide-line-vertical-stop",
+        "hover",
+        "input-base",
+        "invalid-image-fallback",
+        "light-theme",
+        "max-form-width",
+        "media-breakpoint-down",
+        "media-breakpoint-up",
+        "more-contrast",
+        "more-contrast-interactive",
+        "nice-margin",
+        "nice-padding",
+        "radio-checkbox-base",
+        "row",
+        "row-flush",
+        "select-arrow",
+        "show-focus-outline-inside",
+        "sidebar-toggle",
+        "sticky-areas-scroll-offset",
+        "svg-icon",
+        "transition",
+        "unlist",
+        "unlistimmediate",
+        "wagtail-textarea-overrides"
+      ],
+      "functions": [
+        "breakpoint-max",
+        "breakpoint-min",
+        "breakpoint-next"
+      ]
+    },
+    "waypoint": {
+      "mixins": [
+        "button-reset"
+      ],
+      "functions": [
+        "dehex"
+      ]
+    }
+  },
+  "samples": {
+    "includeForeign": [
+      "Documenter.jl/assets/html/scss/catppuccin/_overrides.scss:196 @include touch",
+      "Documenter.jl/assets/html/scss/darkly/_overrides.scss:193 @include touch",
+      "Documenter.jl/assets/html/scss/documenter/_elements.scss:17 @include font-awesome",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:92 @include font-awesome",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:107 @include font-awesome",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:126 @include font-awesome",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:133 @include font-awesome",
+      "Documenter.jl/assets/html/scss/documenter/layout/_main.scss:22 @include desktop"
+    ],
+    "importSass": [
+      "Documenter.jl/assets/html/scss/catppuccin.scss:10 catppuccin/${CATPPUCCIN_FLAVOR}",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:11 catppuccin/variables",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:80 documenter/utilities",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:81 documenter/variables",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:88 bulma/utilities/all",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:89 bulma/base/minireset.sass",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:90 bulma/helpers/all",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:126 bulma/base/generic.sass"
+    ],
+    "importCss": [],
+    "important": [
+      "Documenter.jl/assets/html/scss/catppuccin.scss:227",
+      "Documenter.jl/assets/html/scss/catppuccin.scss:228",
+      "Documenter.jl/assets/html/scss/documenter-dark.scss:150",
+      "Documenter.jl/assets/html/scss/documenter-dark.scss:151",
+      "Documenter.jl/assets/html/scss/documenter/_elements.scss:30",
+      "Documenter.jl/assets/html/scss/documenter/_elements.scss:34",
+      "Documenter.jl/assets/html/scss/documenter/_elements.scss:43",
+      "Documenter.jl/assets/html/scss/documenter/_elements.scss:49"
+    ],
+    "content": [
+      "Documenter.jl/assets/html/scss/documenter/_elements.scss:19 content: \"\\f0c1\";",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:95 content: \"\\f06a\";",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:109 content: \"\\f0c1\";",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:128 content: \"\\f055\";",
+      "Documenter.jl/assets/html/scss/documenter/components/_admonition.scss:135 content: \"\\f056\";",
+      "Documenter.jl/assets/html/scss/documenter/components/_docstring.scss:39 content: '\\f054';",
+      "Documenter.jl/assets/html/scss/documenter/components/_docstring.scss:86 content: \"\\f078\";",
+      "Documenter.jl/assets/html/scss/documenter/components/_footnote.scss:30 content: \"\";"
+    ],
+    "contentCapitalized": [],
+    "contentCapitalizedInStringValue": [
+      "hasura-engine/docs/src/css/badges.scss:38 content: 'Alpha';",
+      "hasura-engine/docs/src/css/badges.scss:60 content: \"Beta\";",
+      "hasura-engine/docs/src/css/badges.scss:84 content: 'Alpha';",
+      "hasura-engine/docs/src/css/badges.scss:99 content: 'Beta';",
+      "nomad/ui/app/styles/core/tag.scss:101 content: \"Canary\";"
+    ],
+    "brokenInclude": [
+      "bulma/docs/_sass/docs/brand.scss:108 @include mx",
+      "bulma/docs/_sass/docs/brand.scss:123 @include mx",
+      "bulma/docs/_sass/docs/code.scss:192 @include mx",
+      "bulma/docs/_sass/docs/cupcake.scss:59 @include mx",
+      "bulma/docs/_sass/docs/cupcake.scss:67 @include mx",
+      "bulma/docs/_sass/docs/docs.scss:19 @include mx",
+      "bulma/docs/_sass/docs/drawing.scss:57 @include mx",
+      "bulma/docs/_sass/docs/examples.scss:6 @include mx"
+    ]
+  },
+  "topImportSassTargets": [
+    [
+      "./keyframes",
+      593
+    ],
+    [
+      "./placeholders",
+      593
+    ],
+    [
+      "./property-16",
+      436
+    ],
+    [
+      "./property-24",
+      423
+    ],
+    [
+      "./layout",
+      53
+    ],
+    [
+      "./skin",
+      50
+    ],
+    [
+      "variables",
+      29
+    ],
+    [
+      "../support/index.scss",
+      24
+    ],
+    [
+      "mixins",
+      10
+    ],
+    [
+      "functions",
+      9
+    ],
+    [
+      "icons",
+      8
+    ],
+    [
+      "../../../Common/Common.module",
+      8
+    ],
+    [
+      "reboot",
+      6
+    ],
+    [
+      "tables",
+      6
+    ],
+    [
+      "forms",
+      6
+    ],
+    [
+      "navbar",
+      6
+    ],
+    [
+      "card",
+      6
+    ],
+    [
+      "../Common.module",
+      6
+    ],
+    [
+      "../../Common.module",
+      6
+    ],
+    [
+      "breadcrumb",
+      5
+    ],
+    [
+      "../../functions",
+      5
+    ],
+    [
+      "../../variables",
+      5
+    ],
+    [
+      "../../mixins",
+      5
+    ],
+    [
+      "../../Common/Common.module",
+      5
+    ],
+    [
+      "mixins/banner",
+      4
+    ]
+  ],
+  "includeTargetsSeen": 227,
+  "statement": "COUNTS ARE PARSE-DERIVED CONSTRUCT SITES over the admitted population, not published relationship rows. `includeUnparsable` is the dotted/namespaced `@include ns.mixin` class the served build splits at the dot; it is counted so the mixes_in wall is a number rather than a sentence. `importSassFormVerified` uses the analyzer's own file-claim spelling arithmetic against the file's repository root."
+}

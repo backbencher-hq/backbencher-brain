@@ -1,0 +1,429 @@
+{
+  "language": "clean",
+  "measuredAt": "2026-11-22T20:42:02.828Z",
+  "population": {
+    "admitted": 312,
+    "parsed": 312,
+    "failed": 0,
+    "repositories": {
+      "Clyde": 109,
+      "Prelude": 42,
+      "clean-stdlib": 74,
+      "cloogle.org": 14,
+      "eastwood": 73
+    }
+  },
+  "servedBuild": {
+    "namedTypes": 143,
+    "totalIds": 290,
+    "digest": null
+  },
+  "vocabulary": {
+    "decorates": {
+      "stems": {
+        "decorat": [],
+        "annotat": [
+          "fixity_annotation"
+        ],
+        "macro_apply": [],
+        "macro_call": [],
+        "pragma": [],
+        "attribute": []
+      },
+      "hits": 1
+    },
+    "part_of": {
+      "stems": {
+        "include": [],
+        "incbin": [],
+        "part_of": [],
+        "partof": [],
+        "inline_file": [],
+        "paste": []
+      },
+      "hits": 0
+    },
+    "renders": {
+      "stems": {
+        "render": [],
+        "component": [],
+        "element": [],
+        "jsx": [],
+        "vnode": [],
+        "fragment": [],
+        "slot": [],
+        "template": []
+      },
+      "hits": 0
+    },
+    "mixes_in": {
+      "stems": {
+        "mixin": [],
+        "trait": [],
+        "embed": [],
+        "compose": [],
+        "with_clause": [],
+        "member_set": []
+      },
+      "hits": 0
+    }
+  },
+  "declaredFields": [
+    "alias",
+    "alternative",
+    "argument",
+    "associativity",
+    "body",
+    "condition",
+    "consequence",
+    "constructor",
+    "context",
+    "context_arg",
+    "existential",
+    "expression",
+    "field",
+    "fixity",
+    "function",
+    "kind",
+    "module",
+    "name",
+    "object",
+    "operator",
+    "parameter",
+    "pattern",
+    "precedence",
+    "record",
+    "rhs",
+    "subject",
+    "type",
+    "value",
+    "variable"
+  ],
+  "fieldVocabulary": {
+    "decorates": [],
+    "part_of": [],
+    "renders": [],
+    "mixes_in": []
+  },
+  "keyCensus": {
+    "keysWalked": 2831,
+    "byNodeType": {
+      "field_access": 1129,
+      "record_field": 521,
+      "instance_member": 1009,
+      "class_member": 161,
+      "record_binding": 1,
+      "class_method_name": 10
+    },
+    "constructNameHits": [],
+    "stemMatches": [
+      "cloogle.org/backend/CloogleServer.icl:57 record_field `c_include_builtins`",
+      "cloogle.org/backend/CloogleServer.icl:58 record_field `c_include_core`",
+      "cloogle.org/backend/CloogleServer.icl:59 record_field `c_include_apps`",
+      "cloogle.org/backend/CloogleServer.icl:82 field_access `frommaybe default_include_builtins r.inc`",
+      "cloogle.org/backend/CloogleServer.icl:83 field_access `frommaybe default_include_core r.include`",
+      "cloogle.org/backend/CloogleServer.icl:84 field_access `frommaybe default_include_apps r.include`",
+      "cloogle.org/backend/CloogleServer.icl:96 field_access `just k.c_include_builtins`",
+      "cloogle.org/backend/CloogleServer.icl:97 field_access `just k.c_include_core`",
+      "cloogle.org/backend/CloogleServer.icl:98 field_access `just k.c_include_apps`",
+      "cloogle.org/backend/builddb.icl:42 record_field `include_builtins`",
+      "cloogle.org/backend/builddb.icl:49 instance_member `zero =\n\t\t{ root             = \"/opt/clea`",
+      "cloogle.org/backend/builddb.icl:108 field_access `opts.include_builtins`",
+      "eastwood/src/languageServer/GotoDefinition.icl:286 record_field `requestfilefuncdefwithouttypeannotations`",
+      "eastwood/src/languageServer/GotoDefinition.icl:290 record_field `requestfilefuncdefwithouttypeannotations`"
+    ]
+  },
+  "controls": {
+    "probed": [
+      "class_declaration",
+      "instance_declaration",
+      "import_declaration",
+      "macro_definition",
+      "with_block",
+      "index_access"
+    ],
+    "present": [
+      "class_declaration",
+      "instance_declaration",
+      "import_declaration",
+      "macro_definition",
+      "with_block",
+      "index_access"
+    ]
+  },
+  "shapes": [
+    {
+      "name": "constant/macro definition `:==`",
+      "source": "NSViewCloseButton\t:== 0",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "macro_definition",
+        "constructor",
+        ":==",
+        "number",
+        "integer"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "constant whose body is an expression",
+      "source": "sizeOfInt :== 4 + 4",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "macro_definition",
+        "identifier",
+        ":==",
+        "binary_expression",
+        "number",
+        "integer",
+        "operator_add"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "macro definition whose body is a function",
+      "source": "apply :== \\f x -> f x",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "macro_definition",
+        "identifier",
+        ":==",
+        "lambda_expression",
+        "lambda_start",
+        "identifier",
+        "identifier"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "with-block (defining scope)",
+      "source": "f x = y with y = x + 1",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "function_declaration",
+        "identifier",
+        "identifier",
+        "=",
+        "identifier",
+        "with_block",
+        "with"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "class with a context `|`",
+      "source": "class Ord a | Eq a where (<) infix 4 :: a a -> Bool",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "class_declaration",
+        "class",
+        "class_name",
+        "constructor",
+        "type_variable",
+        "identifier",
+        "class_context"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "instance composing a context `with`",
+      "source": "instance Ord Int with Eq Int where (<) x y = True",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "instance_declaration",
+        "instance",
+        "instance_class",
+        "constructor",
+        "constructor",
+        "type_variable",
+        "identifier"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "import (module, not file)",
+      "source": "import StdEnv",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "import_declaration",
+        "import",
+        "module_name",
+        "module_identifier"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "from-import (selective)",
+      "source": "from StdEnv import length",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "import_declaration",
+        "from",
+        "module_name",
+        "module_identifier",
+        "import",
+        "identifier"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "array index access",
+      "source": "f xs = xs.[0]",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "function_declaration",
+        "identifier",
+        "identifier",
+        "=",
+        "index_access",
+        "identifier",
+        "."
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "constructor applied to an element string",
+      "source": "f = Tag \"<div>\"",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "function_declaration",
+        "identifier",
+        "=",
+        "application",
+        "constructor",
+        "string"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [
+          "probe.icl:1 constructor `Tag` applied to an element string — a component element"
+        ],
+        "mixes_in": []
+      }
+    },
+    {
+      "name": "function application (a real call)",
+      "source": "f x = g x",
+      "errorNodes": 0,
+      "shapes": [
+        "source_file",
+        "function_declaration",
+        "identifier",
+        "identifier",
+        "=",
+        "application",
+        "identifier",
+        "identifier"
+      ],
+      "hits": {
+        "decorates": [],
+        "part_of": [],
+        "renders": [],
+        "mixes_in": []
+      }
+    }
+  ],
+  "corpus": {
+    "nearest": {
+      "macroDefinition": 583,
+      "macroDefinitionWithDeclarationChild": 0,
+      "withBlock": 20,
+      "withBlockWithDeclarationChild": 0,
+      "classContext": 473,
+      "classContextWithDeclarationChild": 0,
+      "importDeclaration": 1328,
+      "modulePathEndingInFile": 0,
+      "indexAccess": 307,
+      "indexAccessReceiverNamed": 263,
+      "renderishCalls": 0,
+      "htmlStringLiterals": 4,
+      "constructorElementString": 0
+    },
+    "detectorHits": {
+      "decorates": 0,
+      "part_of": 0,
+      "renders": 0,
+      "mixes_in": 0
+    },
+    "detectorSamples": {
+      "decorates": [],
+      "part_of": [],
+      "renders": [],
+      "mixes_in": []
+    },
+    "topNodeTypes": {
+      "identifier": 66144,
+      "application": 23902,
+      "constructor": 22210,
+      "=": 14086,
+      ",": 11512,
+      "!": 10544,
+      "strict_type": 9656,
+      ")": 9374,
+      "(": 9372,
+      "type_variable": 5508,
+      "::": 5336,
+      "binary_expression": 4980,
+      "string": 4846,
+      "function_declaration": 4642,
+      "[": 4135
+    }
+  },
+  "note": "The four extended values are ruled on the conjunction of the three parts: 0 vocabulary hits per construct, 0 detector hits over the whole admitted population, and the nearest construct counted rather than dismissed. Falsifiers are per type in script/m14/spec/clean-completeness.json and script/m14/clean-ruled.ts."
+}

@@ -1,0 +1,32 @@
+BASH EXTENDED-TYPE NEAR-MISS CENSUS
+  population: 2962 git-tracked .sh/.bash files under 400KB (0 parse failures) across 199 corpus directories
+  instrument: pinned tree-sitter-bash parse; counts are PARSE TREE nodes, no analyzer involved
+
+DECORATES — nearest shapes (all metadata or handler registration, none is applied code around a body):
+  trap command sites (installs a handler, BD3 emits it as calls+viaTrap) : 225
+  set command sites (a shell OPTION: errexit/nounset/pipefail)            : 2904  (with -e/-o: 2209)
+  declare/typeset/local/readonly with an ATTRIBUTE flag (-A -a -i -r -x …) : 590
+  alias command sites (a command-name metadata declaration)                : 10
+  function_definition nodes (the would-be DECORATED declaration)          : 4667
+  function_definition child types observed (the whole clause inventory)   : word×4667 · compound_statement×4658 · (×3752 · )×3752 · function×1632 · subshell×9
+  modifier/annotation/decorator clauses on function_definition             : 0  <- the falsifier's count
+
+RENDERS — nearest shapes (TEXT written to a stream; a render relation's endpoints are component symbols):
+  heredoc_redirect nodes (write a block of text)                          : 984
+  heredoc_body nodes                                                      : 984
+  printf/echo command sites (write formatted text)                        : 12972
+  component/JSX-like node types in the served grammar                     : 0 (see the census's INAPPLICABILITY PROBES: 280 node types, 0 component forms)
+
+MIXES_IN — the only splice construct, and the commands that could name a mixin keyword:
+  source/. sites (TEXTUAL INCLUSION; shares the calling scope -> part_of)  : 522
+  of which inside a child-process boundary (different scope, REFUSED)     : 18
+  commands named any construct keyword (class/interface/mixin/include/…)  : 1  <-- A COMMAND WITH THAT NAME, not a construct: the site(s) below are external executables whose name happens to be a keyword
+      /home/ishaq2321/bb_tests/repositories/Fabulous/eng/ci/capture-avalonia-samples.sh:130  import -window "$window_id" "$screenshot"  (parent: redirected_statement)
+
+IMPORTS — the label that moved to part_of:
+  source/. inclusion sites (all)                                          : 522
+  same-scope inclusions (all, after removing the child-process ones)      : 504
+      of which NAMEABLE last segment (published as part_of)               : 470  (the emission count, measured by probe-bash-silent-types --corpus)
+      of which last segment is an EXPRESSION (refused, no part can be named): 34
+  child-process inclusions (REFUSED: bind in the fork, no scope here)     : 18
+  constructs that import NAMES into this unit's binding scope             : 0 (a served-grammar production that imports symbols: none of 280 node types)

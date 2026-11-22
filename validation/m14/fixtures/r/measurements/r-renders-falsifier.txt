@@ -1,0 +1,34 @@
+==============================================================================
+RENDERS CENSUS — the Shiny component model's construct sites, whole admitted R population
+==============================================================================
+corpus root: /home/ishaq2321/bb_tests/repositories
+admission: the GATE's predicate — .r + bare basename clause, SIZE_CAP 1048576 B
+admitted files [0,2184) of 2184
+corpus file set: sha256 97c3d6498765b35cbd940c05ca086ca826143b3108135585248eec0c41a57687
+files parsed: 2184   failures: 0
+
+renderY(...) call sites: 7
+  r-cli/inst/shiny/along/app.R: renderPlot
+  r-cli/inst/shiny/format/app.R: renderPlot
+  r-cli/inst/shiny/nested/app.R: renderPlot
+  r-cli/inst/shiny/output/app.R: renderPlot
+  r-cli/inst/shiny/simple/app.R: renderPlot
+  r-pkgdown/R/build-reference.R: renderDependencies
+  r-pkgdown/R/theme.R: renderDependencies
+output$X <- renderY(...) wiring sites: 5
+*Output(...) UI-widget call sites (the rendered component the UI names): 7
+  r-cli/inst/shiny/along/app.R: plotOutput
+  r-cli/inst/shiny/format/app.R: plotOutput
+  r-cli/inst/shiny/nested/app.R: plotOutput
+  r-cli/inst/shiny/output/app.R: plotOutput
+  r-cli/inst/shiny/simple/app.R: plotOutput
+  r-cli/R/progress-server.R: jobAddOutput
+  r-Rcpp/R/Attributes.R: .printVerboseOutput
+component-model container sites (shinyUI/basicPage/fluidPage/...): 17
+DISTINCT FILES carrying any of the above: 10 of 2184
+
+THE DISCRIMINATOR — does an *Output widget NAME A COMPONENT (a renders row needs a target):
+  first argument is a STRING (an output ID the server wires at runtime): 5
+  first argument is an IDENTIFIER (a component symbol): 1
+  no argument / other shape: 1
+==============================================================================

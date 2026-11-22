@@ -1,0 +1,6009 @@
+{
+  "summary": {
+    "language": "haskell",
+    "measuredAt": "2026-11-22T20:14:29.183Z",
+    "population": {
+      "admittedFiles": 3702,
+      "repositories": 6,
+      "overCap": 0,
+      "absent": 0,
+      "exts": [
+        "hs",
+        "lhs"
+      ],
+      "rule": "per-repo `git ls-files`, the router's .hs/.lhs spellings, under the engine's 1 MiB FULL_AST_LIMIT"
+    },
+    "parsedFiles": 3702,
+    "readOrParseFailures": 0,
+    "decorates": {
+      "topSpliceSites": 420,
+      "topSpliceDollarForm": 196,
+      "topSpliceBareForm": 224,
+      "topSpliceWithCallableHead": 344,
+      "topSpliceHeadDeclaredInFile": 0,
+      "topSpliceWithQuotedName": 210,
+      "topSpliceQuoteDeclaredInFile": 177,
+      "decoratesRows": 177,
+      "filesWithTopSplice": 122,
+      "expressionSpliceSites": 411,
+      "annPragmas": 30,
+      "annTargetDeclared": 9,
+      "annTargetModule": 21,
+      "annTargetOther": 0,
+      "filesWithAnn": 24,
+      "languagePragmas": 2423,
+      "pragmaTotal": 3954,
+      "quasiquoteSites": 4201,
+      "quoterSites": 4201,
+      "quoteSites": 45,
+      "typedQuoteSites": 20
+    },
+    "part_of": {
+      "cppNodes": 675,
+      "cppIncludeSites": 4,
+      "cppIncludeNonLiteral": 0,
+      "importEdgesMeasuredByArm": 32704,
+      "note": "Haskell has no textual include; `import` is a module load in the module's own scope. 675 cpp nodes exist (the CPP extension's directives); the #include family is the only textual-splice candidate and is counted here."
+    },
+    "mixes_in": {
+      "classDecls": 360,
+      "instanceDecls": 12451,
+      "derivingClauses": 7454,
+      "derivingVia": 493,
+      "derivingInstanceStandalone": 596,
+      "note": "typeclasses are conformance (implements/extends/overrides); no trait/mixin clause exists in the grammar inventory."
+    },
+    "renders": {
+      "templateLoaderSplices": 0,
+      "rows": [],
+      "note": "no component model in the language or the grammar inventory; TH template loaders are the nearest analogue and name template FILES, not symbols."
+    }
+  },
+  "spliceRows": [
+    {
+      "file": "cabal/cabal-dev-scripts/src/GenPathsModule.hs",
+      "line": 22,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$(capture \"decls\" [d|\\n    data Z = Z\\n        { zPackageName                :: PackageName\\n        , zVersionDigits      "
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/Backpack/T5634/Go.hs",
+      "line": 5,
+      "form": "bare",
+      "head": "thfun",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Int",
+          "name": "Int",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "thfun ''Int"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/Backpack/TemplateHaskell/M.hs",
+      "line": 3,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$( [d| x = True |] )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/Backpack/TemplateHaskell/M.hs",
+      "line": 3,
+      "form": "bare",
+      "head": "x",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "x"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/BuildToolPaths/pbts/bench/Main.hs",
+      "line": 18,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$( do\r\\n    runIO $ do\r\\n      callCustomPp \"custom-pp1\"\r\\n      callCustomPp \"custom-pp2\"\r\\n    return []\r\\n  )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/BuildToolPaths/pbts/exe/Main.hs",
+      "line": 18,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$( do\r\\n    runIO $ do\r\\n      callCustomPp \"custom-pp1\"\r\\n      callCustomPp \"custom-pp2\"\r\\n    return []\r\\n  )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/BuildToolPaths/pbts/test/Main.hs",
+      "line": 18,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$( do\r\\n    runIO $ do\r\\n      callCustomPp \"custom-pp1\"\r\\n      callCustomPp \"custom-pp2\"\r\\n    return []\r\\n  )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/FFI/ForeignSourceTemplateHaskell/addForeignSourceC.hs",
+      "line": 5,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$( do\\n    addForeignSource LangC \"int test_one_c() { return ONE; }\"\\n    pure []\\n )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/FFI/ForeignSourceTemplateHaskell/addForeignSourceCxx.hs",
+      "line": 5,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$( do\\n    addForeignSource LangCxx \"int test_two_cxx() { return TWO; }\"\\n    pure []\\n )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/NewFreeze/T9799b/src/None.hs",
+      "line": 8,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$(do\\n    runIO $ do\\n        putStrLn $ \"Building: \" ++ renamedVers\\n        hFlush stdout\\n    [d| x = () |]\\n )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/NewFreeze/T9799b/src/None.hs",
+      "line": 12,
+      "form": "bare",
+      "head": "x",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "x"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/Regression/T10046/src/MyLib.hs",
+      "line": 8,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$(do runIO $\\n       threadDelay (5*1000*1000) -- 5s\\n     [d| data X |]\\n  )"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/Regression/T9756/OK.hs",
+      "line": 8,
+      "form": "dollar",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$(do\\n    out <- runIO $ readProcess \"mybuilder\" [] \"\"\\n    if \"0.2.0.0\" `isInfixOf` out then\\n       [d| x = () |]\\n    els"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/Regression/T9756/OK.hs",
+      "line": 11,
+      "form": "bare",
+      "head": "x",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "x"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksNoBase/A.hs",
+      "line": 2,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": " {}"
+    },
+    {
+      "file": "cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksRuleOrdering/A.hs",
+      "line": 1,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": " {}"
+    },
+    {
+      "file": "cabal/templates/Paths_pkg.template.hs",
+      "line": 5,
+      "form": "bare",
+      "head": "endif",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "endif %}\\n{-# OPTIONS_GHC -w #-}\\n\\n{-|\\nModule      : Paths_{{ manglePkgName packageName }}\\nDescription : Data file locatio"
+    },
+    {
+      "file": "cabal/templates/SPDX.LicenseExceptionId.template.hs",
+      "line": 33,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "(Eq, Ord, Enum, Bounded, Show, Read, Data, Generic)"
+    },
+    {
+      "file": "cabal/templates/SPDX.LicenseExceptionId.template.hs",
+      "line": 78,
+      "form": "bare",
+      "head": "",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": ""
+    },
+    {
+      "file": "cabal/templates/SPDX.LicenseExceptionId.template.hs",
+      "line": 168,
+      "form": "bare",
+      "head": "licenseList_all",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "licenseList_all"
+    },
+    {
+      "file": "cabal/templates/SPDX.LicenseId.template.hs",
+      "line": 37,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "(Eq, Ord, Enum, Bounded, Show, Read, Data)"
+    },
+    {
+      "file": "cabal/templates/SPDX.LicenseId.template.hs",
+      "line": 129,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Whether the license is approved by Open Source Initiative (OSI).\\n--\\n-- See <https://opensource.org/licenses/alphabetical"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Regression/NullRemoteRelationship8345Spec.hs",
+      "line": 378,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ninput IntCompExp {\\n  _eq: Int\\n}\\n\\ninput StringCompExp {\\n  _eq: String\\n}\\n\\n|]"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Regression/NullRemoteRelationship8345Spec.hs",
+      "line": 496,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ntype Album {\\n  id: Int!\\n  title: String!\\n}\\n\\ntype Artist {\\n  id: Int!\\n  name: String!\\n}\\n\\ntype Query {\\n  al"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Regression/RemoteSchemaConflictingTypesSpec.hs",
+      "line": 121,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\ntype Query {\\n  user: User!\\n}\\n\\ntype User {\\n  id: Int!\\n  name: String!\\n}\\n|]"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/FromRemoteSchemaSpec.hs",
+      "line": 148,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ntype Query {\\n  object(id: Int!): Object\\n  writer(id: Int!): Writer\\n  artist(id: Int!): Artist\\n  objects(i"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/MetadataAPI/Common.hs",
+      "line": 362,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ntype Album {\\n  id: Int!\\n  title: String!\\n  artist_id: Int\\n}\\n\\ntype Query {\\n  album(album_id: Int!): Album\\n"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/MetadataAPI/Common.hs",
+      "line": 526,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ninput IntCompExp {\\n  _eq: Int\\n}\\n\\ninput StringCompExp {\\n  _eq: String\\n}\\n\\n|]"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/XToDBArrayRelationshipSpec.hs",
+      "line": 584,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ninput IntCompExp {\\n  _eq: Int\\n}\\n\\ninput StringCompExp {\\n  _eq: String\\n}\\n\\n|]"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/XToDBObjectRelationshipSpec.hs",
+      "line": 697,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ninput IntCompExp {\\n  _eq: Int\\n}\\n\\ninput StringCompExp {\\n  _eq: String\\n}\\n\\n|]"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/XToRemoteSchemaRelationshipSpec.hs",
+      "line": 519,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ninput IntCompExp {\\n  _eq: Int\\n}\\n\\ninput StringCompExp {\\n  _eq: String\\n}\\n\\n|]"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteRelationships/XToRemoteSchemaRelationshipSpec.hs",
+      "line": 644,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\n\"A music album with track information\"\\ntype Album {\\n  \"Unique identifier for the album\"\\n  id: Int!\\n  \"Alb"
+    },
+    {
+      "file": "hasura-engine/server/lib/api-tests/src/Test/Schema/RemoteSchemaCustomizationSpec.hs",
+      "line": 164,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[gqlDocument|\\n\\ntype Query {\\n  echoEnum (x: Profession!): Profession!\\n}\\n\\nenum Profession {\\n  ENGINEER\\n  DOCTOR\\n  ARCHITEC"
+    },
+    {
+      "file": "hasura-engine/server/lib/ci-info/src/CI/Types.hs",
+      "line": 63,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CI",
+          "name": "CI",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CI",
+      "text": "$( J.deriveJSON\\n     J.defaultOptions {J.constructorTagModifier = drop $ T.length \"CI_\"}\\n     ''CI\\n )"
+    },
+    {
+      "file": "hasura-engine/server/lib/ci-info/src/CI/Types.hs",
+      "line": 122,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Vendor",
+          "name": "Vendor",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Vendor",
+      "text": "$(J.deriveJSON (J.aesonPrefix J.snakeCase) ''Vendor)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Capabilities.hs",
+      "line": 621,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CapabilitiesResponse",
+          "name": "CapabilitiesResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CapabilitiesResponse",
+      "text": "$(makeLenses ''CapabilitiesResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Capabilities.hs",
+      "line": 622,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Capabilities",
+          "name": "Capabilities",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Capabilities",
+      "text": "$(makeLenses ''Capabilities)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Capabilities.hs",
+      "line": 623,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryCapabilities",
+          "name": "QueryCapabilities",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryCapabilities",
+      "text": "$(makeLenses ''QueryCapabilities)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Capabilities.hs",
+      "line": 624,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DataSchemaCapabilities",
+          "name": "DataSchemaCapabilities",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DataSchemaCapabilities",
+      "text": "$(makeLenses ''DataSchemaCapabilities)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Column.hs",
+      "line": 169,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ColumnInfo",
+          "name": "ColumnInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ColumnInfo",
+      "text": "$(makeLenses ''ColumnInfo)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Dataset.hs",
+      "line": 46,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DatasetTemplateName",
+          "name": "DatasetTemplateName",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DatasetTemplateName",
+      "text": "$(makeLenses ''DatasetTemplateName)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Dataset.hs",
+      "line": 60,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DatasetCloneName",
+          "name": "DatasetCloneName",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DatasetCloneName",
+      "text": "$(makeLenses ''DatasetCloneName)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Dataset.hs",
+      "line": 78,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DatasetGetTemplateResponse",
+          "name": "DatasetGetTemplateResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DatasetGetTemplateResponse",
+      "text": "$(makeLenses ''DatasetGetTemplateResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Dataset.hs",
+      "line": 92,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DatasetCreateCloneRequest",
+          "name": "DatasetCreateCloneRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DatasetCreateCloneRequest",
+      "text": "$(makeLenses ''DatasetCreateCloneRequest)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Dataset.hs",
+      "line": 105,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DatasetCreateCloneResponse",
+          "name": "DatasetCreateCloneResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DatasetCreateCloneResponse",
+      "text": "$(makeLenses ''DatasetCreateCloneResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Dataset.hs",
+      "line": 123,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DatasetDeleteCloneResponse",
+          "name": "DatasetDeleteCloneResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DatasetDeleteCloneResponse",
+      "text": "$(makeLenses ''DatasetDeleteCloneResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Expression.hs",
+      "line": 364,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'ComparisonColumn",
+          "name": "ComparisonColumn",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ComparisonColumn",
+      "text": "$(makeLenses 'ComparisonColumn)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 219,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionInfo",
+          "name": "FunctionInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionInfo",
+      "text": "$(makeLenses ''FunctionInfo)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 220,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionArg",
+          "name": "FunctionArg",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionArg",
+      "text": "$(makeLenses ''FunctionArg)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 221,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionArgument",
+          "name": "FunctionArgument",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionArgument",
+      "text": "$(makeLenses ''FunctionArgument)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 222,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ArgumentValue",
+          "name": "ArgumentValue",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ArgumentValue",
+      "text": "$(makeLenses ''ArgumentValue)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 223,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionReturnType",
+          "name": "FunctionReturnType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionReturnType",
+      "text": "$(makePrisms ''FunctionReturnType)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 224,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionArity",
+          "name": "FunctionArity",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionArity",
+      "text": "$(makePrisms ''FunctionArity)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Function.hs",
+      "line": 225,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionType",
+          "name": "FunctionType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionType",
+      "text": "$(makePrisms ''FunctionType)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/InterpolatedQuery.hs",
+      "line": 84,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InterpolatedQueries",
+          "name": "InterpolatedQueries",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InterpolatedQueries",
+      "text": "$(makeLenses ''InterpolatedQueries)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/InterpolatedQuery.hs",
+      "line": 85,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InterpolatedQuery",
+          "name": "InterpolatedQuery",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InterpolatedQuery",
+      "text": "$(makeLenses ''InterpolatedQuery)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/InterpolatedQuery.hs",
+      "line": 86,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InterpolatedQueryId",
+          "name": "InterpolatedQueryId",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InterpolatedQueryId",
+      "text": "$(makeLenses ''InterpolatedQueryId)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/InterpolatedQuery.hs",
+      "line": 87,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InterpolatedItem",
+          "name": "InterpolatedItem",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InterpolatedItem",
+      "text": "$(makePrisms ''InterpolatedItem)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Mutations.hs",
+      "line": 532,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MutationRequest",
+          "name": "MutationRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MutationRequest",
+      "text": "$(makeLenses ''MutationRequest)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Mutations.hs",
+      "line": 533,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InsertMutationOperation",
+          "name": "InsertMutationOperation",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InsertMutationOperation",
+      "text": "$(makeLenses ''InsertMutationOperation)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Mutations.hs",
+      "line": 534,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''UpdateMutationOperation",
+          "name": "UpdateMutationOperation",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "UpdateMutationOperation",
+      "text": "$(makeLenses ''UpdateMutationOperation)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Mutations.hs",
+      "line": 535,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DeleteMutationOperation",
+          "name": "DeleteMutationOperation",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DeleteMutationOperation",
+      "text": "$(makeLenses ''DeleteMutationOperation)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Mutations.hs",
+      "line": 536,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MutationResponse",
+          "name": "MutationResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MutationResponse",
+      "text": "$(makeLenses ''MutationResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Mutations.hs",
+      "line": 537,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MutationOperationResults",
+          "name": "MutationOperationResults",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MutationOperationResults",
+      "text": "$(makeLenses ''MutationOperationResults)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/OrderBy.hs",
+      "line": 126,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'OrderByElement",
+          "name": "OrderByElement",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "OrderByElement",
+      "text": "$(makeLenses 'OrderByElement)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/OrderBy.hs",
+      "line": 127,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''OrderByTarget",
+          "name": "OrderByTarget",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "OrderByTarget",
+      "text": "$(makePrisms ''OrderByTarget)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Query.hs",
+      "line": 405,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryRequest",
+          "name": "QueryRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryRequest",
+      "text": "$(makePrisms ''QueryRequest)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Query.hs",
+      "line": 406,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryRequest",
+          "name": "QueryRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryRequest",
+      "text": "$(makeLenses ''QueryRequest)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Query.hs",
+      "line": 407,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Query",
+          "name": "Query",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Query",
+      "text": "$(makeLenses ''Query)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Query.hs",
+      "line": 408,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Field",
+          "name": "Field",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Field",
+      "text": "$(makePrisms ''Field)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Query.hs",
+      "line": 409,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryResponse",
+          "name": "QueryResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryResponse",
+      "text": "$(makeLenses ''QueryResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Query.hs",
+      "line": 410,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FieldValue",
+          "name": "FieldValue",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FieldValue",
+      "text": "$(makePrisms ''FieldValue)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Raw.hs",
+      "line": 51,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RawRequest",
+          "name": "RawRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RawRequest",
+      "text": "$(makeLenses ''RawRequest)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Raw.hs",
+      "line": 52,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RawResponse",
+          "name": "RawResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RawResponse",
+      "text": "$(makeLenses ''RawResponse)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Relationships.hs",
+      "line": 148,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'TableRelationships",
+          "name": "TableRelationships",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TableRelationships",
+      "text": "$(makeLenses 'TableRelationships)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Relationships.hs",
+      "line": 149,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'Relationship",
+          "name": "Relationship",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Relationship",
+      "text": "$(makeLenses 'Relationship)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Relationships.hs",
+      "line": 150,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'FunctionRelationships",
+          "name": "FunctionRelationships",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionRelationships",
+      "text": "$(makeLenses 'FunctionRelationships)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Relationships.hs",
+      "line": 151,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Relationships",
+          "name": "Relationships",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Relationships",
+      "text": "$(makePrisms ''Relationships)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Table.hs",
+      "line": 156,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TableInfo",
+          "name": "TableInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TableInfo",
+      "text": "$(makeLenses ''TableInfo)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Table.hs",
+      "line": 157,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Constraint",
+          "name": "Constraint",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Constraint",
+      "text": "$(makeLenses ''Constraint)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Table.hs",
+      "line": 158,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ForeignKeys",
+          "name": "ForeignKeys",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ForeignKeys",
+      "text": "$(makeLenses ''ForeignKeys)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Target.hs",
+      "line": 126,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Target",
+          "name": "Target",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Target",
+      "text": "$(makePrisms ''Target)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Target.hs",
+      "line": 127,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TargetTable",
+          "name": "TargetTable",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TargetTable",
+      "text": "$(makeLenses ''TargetTable)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Target.hs",
+      "line": 128,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TargetFunction",
+          "name": "TargetFunction",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TargetFunction",
+      "text": "$(makeLenses ''TargetFunction)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Target.hs",
+      "line": 129,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TargetInterpolatedQuery",
+          "name": "TargetInterpolatedQuery",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TargetInterpolatedQuery",
+      "text": "$(makeLenses ''TargetInterpolatedQuery)"
+    },
+    {
+      "file": "hasura-engine/server/lib/dc-api/src/Hasura/Backends/DataConnector/API/V0/Target.hs",
+      "line": 130,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TargetName",
+          "name": "TargetName",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TargetName",
+      "text": "$(makePrisms ''TargetName)"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 1,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "NOTE: This tutorial is not being maintained. It needs to be rewritten."
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 5,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "This document introduces the `ekg-prometheus` Prometheus client library,\\nand illustrates how to use the library to instr"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 7,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Prometheus metrics. If you are new to the library, read this document"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 8,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "first. If you have used the `ekg-core` library, on which\\n`ekg-prometheus` is based, you should still read this document "
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 47,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "using the `ekg-prometheus` API, you will not need a solid understanding"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 48,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "of type-level programming. You can use `ekg-prometheus` proficiently"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 51,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "For those who have used the original `ekg-core` library, Hasura's fork"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 57,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "## Overview"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 59,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Metrics are used to monitor program behavior and performance. All"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 62,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- a name,\\n- a set of labels (possibly empty), and"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 64,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- a way to get the metric's current value"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 66,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "ekg-prometheus` provides a way to register metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 69,
+      "form": "bare",
+      "head": "metrics",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metrics, both user and library defined"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 73,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- specify metrics,\\n- register and sample metrics,\\n- add labels to metrics,\\n- deregister metrics,\\n- use pre-defined metri"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 78,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- sample a subset of metrics atomically."
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 80,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "## Specifying metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 82,
+      "form": "bare",
+      "head": "Before",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Before you can register metrics to a metric store, you must first"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 83,
+      "form": "bare",
+      "head": "specify",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "specify _which_ metrics may be registered to that store"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 85,
+      "form": "bare",
+      "head": "respected",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "respected"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 87,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Your **metrics specification** must be given as a generalized algebraic"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 89,
+      "form": "bare",
+      "head": "that",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "that specifies two metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 105,
+      "form": "bare",
+      "head": "of",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "of each constructor determine the name, type, and \"label structure\" of"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 106,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "their corresponding metric. For example, the `Requests` constructor"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 113,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Tutorial note: We have glossed over labels for now, but will introduce"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 116,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "## Registering and sampling metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 118,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Now that you have created a metrics specification, you can use it to"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 119,
+      "form": "bare",
+      "head": "annotate",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "annotate a metric store and start registering and collecting metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 121,
+      "form": "bare",
+      "head": "Here",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Here is an example program that uses the above specification"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 154,
+      "form": "bare",
+      "head": "In",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "In this"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 158,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'CounterType",
+          "name": "CounterType",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "1. The `register` IO action atomically applies a sequence of\\n   \"registrations\" to a metric store. Individual registrati"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 174,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "1. The `sampleAll` function iterates through all of the metrics\\n   registered to the store, runs their sampling actions"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 177,
+      "form": "bare",
+      "head": "metric",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metric will be retrieved atomically, the sample is not an atomic"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 178,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "snapshot of the system as a whole."
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 179,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "(For more information, see\\n   [sampling metrics atomically](#Sampling-groups-of-metrics-atomically))"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 182,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "## Adding labels to metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 185,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "[Prometheus](https://prometheus.io). In this data model, metrics may be"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 186,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "annotated by a **labels set**,\\nwhich is a set of key-value pairs called **labels**.\\nLabels are useful for convenient fil"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 190,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "_and_ their label set, so metrics with the same name but different label"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 191,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "sets are distinct and independent metrics. When working with labelled"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 192,
+      "form": "bare",
+      "head": "metrics",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metrics, the constructors of a metrics specification GADT corrrespond to"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 196,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "of your labels. A label set can be represented by a value of any type,\\nas long as the type is associated with a function"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 198,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "value into a label set. More specifically, a label set can be"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 200,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "typeclass, which has a single function `toLabels :: ToLabels a => a ->\\nHashMap Text Text`.\\n\\nHere is an example metrics s"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 204,
+      "form": "bare",
+      "head": "metrics",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 235,
+      "form": "bare",
+      "head": "label",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "label set structure"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 237,
+      "form": "bare",
+      "head": "In",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "In this example, the types provided for the label set structure"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 238,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "parameter are two user-defined types, `EndpointLabels` and"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 242,
+      "form": "bare",
+      "head": "hand",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "hand"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 302,
+      "form": "bare",
+      "head": "Metrics",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Metrics you register to a metric store need not be permanent"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 302,
+      "form": "bare",
+      "head": "metrics",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 303,
+      "form": "bare",
+      "head": "can",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "can be replaced (reregistered) or removed (deregistered)"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 307,
+      "form": "bare",
+      "head": "an",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "an existing metric, the existing metric will be deregistered and"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 308,
+      "form": "bare",
+      "head": "replaced",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "replaced with the new metric"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 315,
+      "form": "bare",
+      "head": "deregistration",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "deregistration handle targets a metric, and that metric is replaced by a"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 317,
+      "form": "bare",
+      "head": "used",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "used"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 319,
+      "form": "bare",
+      "head": "Here",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Here is an example program that illustrates the reregistration and"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 320,
+      "form": "bare",
+      "head": "deregistration",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "deregistration of metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 371,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "1. The deregistration handle removes all metrics registered by the\\n   initial call to `register`. In particular, this do"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 375,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "## Using pre-defined sets of metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 377,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Other libraries can define sets of metrics that you can register to your"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 378,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metric store. For example, the `ekg-prometheus` library defines metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 379,
+      "form": "bare",
+      "head": "for",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "for the runtime system metrics exposed by"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 381,
+      "form": "bare",
+      "head": "their",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "their own metrics specifications, which you will need to include"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 384,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "Here is an example program which includes the `GcMetrics` metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 385,
+      "form": "bare",
+      "head": "specification",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "specification (used by `registerGcMetrics`) as a part of another metrics"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 386,
+      "form": "bare",
+      "head": "specification",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "specification"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 409,
+      "form": "bare",
+      "head": "the",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "the type parameters"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 411,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "1. In order use `registerGcMetrics` with our metric store, we must use\\n   the `subset` function to create a new referenc"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 421,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- you need a consistent view of several metrics, or"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 422,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- sampling the metrics together is more efficient"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 427,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "run-time system provides a function to sample all GC statistics at once"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 429,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "The usual metric samples obtained through the `sampleAll` function are"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 430,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "generally _not_ atomic snapshots of their metrics. In general, because"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 431,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "metric sampling actions can be arbitrary `IO` actions, `ekg-prometheus"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 432,
+      "form": "bare",
+      "head": "has",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "has no way to ensure that independent metrics are sampled atomically"
+    },
+    {
+      "file": "hasura-engine/server/lib/ekg-prometheus/Tutorial.lhs",
+      "line": 436,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "- their values are all derived from a single shared value, via pure\\n  functions, and"
+    },
+    {
+      "file": "hasura-engine/server/lib/hasura-extras/src/GHC/Stats/Extended.hs",
+      "line": 15,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''GCDetails",
+          "name": "GCDetails",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(J.deriveToJSON J.defaultOptions ''GCDetails)"
+    },
+    {
+      "file": "hasura-engine/server/lib/hasura-extras/src/GHC/Stats/Extended.hs",
+      "line": 16,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RTSStats",
+          "name": "RTSStats",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(J.deriveToJSON J.defaultOptions ''RTSStats)"
+    },
+    {
+      "file": "hasura-engine/server/lib/test-harness/src/Harness/Services/ExternalProcess/GraphqlEngine.hs",
+      "line": 89,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''HgePoolArguments",
+          "name": "HgePoolArguments",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "HgePoolArguments",
+      "text": "$(makeLenses ''HgePoolArguments)"
+    },
+    {
+      "file": "hasura-engine/server/lib/test-harness/src/Harness/Webhook.hs",
+      "line": 110,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RequestBody",
+          "name": "RequestBody",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RequestBody",
+      "text": "$(J.deriveToJSON hasuraJSON ''RequestBody)"
+    },
+    {
+      "file": "hasura-engine/server/lib/test-harness/src/Harness/Webhook.hs",
+      "line": 120,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TweetRow",
+          "name": "TweetRow",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TweetRow",
+      "text": "$(J.deriveJSON hasuraJSON ''TweetRow)"
+    },
+    {
+      "file": "hasura-engine/server/lib/test-harness/src/Harness/Webhook.hs",
+      "line": 127,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''IdPk",
+          "name": "IdPk",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "IdPk",
+      "text": "$(J.deriveJSON hasuraJSON ''IdPk)"
+    },
+    {
+      "file": "hasura-engine/server/lib/test-harness/src/Harness/Webhook.hs",
+      "line": 149,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''UserRow",
+          "name": "UserRow",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "UserRow",
+      "text": "$(J.deriveToJSON hasuraJSON ''UserRow)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/DataConnector/Adapter/Types.hs",
+      "line": 629,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceConfig",
+          "name": "SourceConfig",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceConfig",
+      "text": "$(makeLenses ''SourceConfig)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 46,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(UnifiedTableName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 47,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(UnifiedObjectRelationship)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 48,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(UnifiedArrayRelationship)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 49,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(UnifiedUsing)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 50,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(UnifiedOn)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 51,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(UnifiedColumn)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 52,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(TempTableName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 53,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(SomeTableName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 54,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_1",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_1(ConstraintName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 64,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Where)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 65,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(For)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 66,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Aggregate)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 67,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(EntityAlias)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 68,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(ForJson)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 69,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(JsonCardinality)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 70,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Root)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 71,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(OrderBy)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 72,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(JoinAlias)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 73,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Reselect)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 74,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(ColumnName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 75,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(DataLength)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 76,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Expression)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 77,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(FunctionApplicationExpression)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 78,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(MethodApplicationExpression)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 79,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(NullsOrder)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 80,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Order)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 81,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(ScalarType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 82,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(TableName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 83,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(FunctionName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 84,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Select)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 85,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(With)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 86,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(CTEBody)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 87,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Top)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 88,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(FieldName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 89,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(JsonPath)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 90,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Op)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 91,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(SpatialOp)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 92,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Projection)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 93,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(From)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 94,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(OpenJson)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 95,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(JsonFieldSpec)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 96,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Join)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 97,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(JoinSource)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 98,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(SelectIntoTempTable)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 99,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(SITTConstraints)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 100,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(InsertValuesIntoTempTable)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 101,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(InsertOutput)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 102,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Inserted)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 103,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(OutputColumn)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 104,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(TempTable)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 105,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Deleted)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 106,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(DeleteOutput)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 107,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Values)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 108,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Delete)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 109,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Insert)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 110,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(Merge)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 111,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(MergeUsing)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 112,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(MergeOn)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 113,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(MergeWhenMatched)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 114,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_2",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_2(MergeWhenNotMatched)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 173,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_3",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_3(Order)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 174,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_3",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_3(NullsOrder)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/MSSQL/Types/Instances.hs",
+      "line": 175,
+      "form": "bare",
+      "head": "INSTANCE_CLUMP_3",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCE_CLUMP_3(FieldName)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/Postgres/Execute/Mutation.hs",
+      "line": 366,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ValidateInputErrorResponse",
+          "name": "ValidateInputErrorResponse",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ValidateInputErrorResponse",
+      "text": "$(J.deriveJSON hasuraJSON ''ValidateInputErrorResponse)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/Postgres/Execute/Mutation.hs",
+      "line": 377,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''HttpHandlerLog",
+          "name": "HttpHandlerLog",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "HttpHandlerLog",
+      "text": "$(J.deriveToJSON hasuraJSON ''HttpHandlerLog)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/Postgres/Execute/Subscription.hs",
+      "line": 92,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryParametersInfo",
+          "name": "QueryParametersInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryParametersInfo",
+      "text": "makeLenses ''QueryParametersInfo"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/Postgres/SQL/Error.hs",
+      "line": 70,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''PGErrorType",
+          "name": "PGErrorType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "PGErrorType",
+      "text": "$(makePrisms ''PGErrorType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/Postgres/SQL/Error.hs",
+      "line": 71,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''PGErrorCode",
+          "name": "PGErrorCode",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "PGErrorCode",
+      "text": "$(makePrisms ''PGErrorCode)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Backends/Postgres/Types/ComputedField.hs",
+      "line": 129,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ComputedFieldReturn",
+          "name": "ComputedFieldReturn",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ComputedFieldReturn",
+      "text": "$(makePrisms ''ComputedFieldReturn)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Function/Lenses.hs",
+      "line": 26,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InputArgument",
+          "name": "InputArgument",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''InputArgument)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Function/Lenses.hs",
+      "line": 28,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionPermissionInfo",
+          "name": "FunctionPermissionInfo",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''FunctionPermissionInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Function/Lenses.hs",
+      "line": 30,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionInfo",
+          "name": "FunctionInfo",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''FunctionInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Function/Metadata.hs",
+      "line": 39,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FunctionMetadata",
+          "name": "FunctionMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FunctionMetadata",
+      "text": "$(makeLenses ''FunctionMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Execute/Inline.hs",
+      "line": 73,
+      "form": "dollar",
+      "head": "makeLensesFor",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InlineEnv",
+          "name": "InlineEnv",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InlineEnv",
+      "text": "$(makeLensesFor [(\"_ieFragmentStack\", \"ieFragmentStack\")] ''InlineEnv)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Execute/Inline.hs",
+      "line": 74,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InlineState",
+          "name": "InlineState",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InlineState",
+      "text": "$(makeLenses ''InlineState)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Execute/Subscription/Plan.hs",
+      "line": 164,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'ValidatedVariables",
+          "name": "ValidatedVariables",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ValidatedVariables",
+      "text": "$(makeLenses 'ValidatedVariables)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Execute/Subscription/Plan.hs",
+      "line": 219,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "'CohortVariables",
+          "name": "CohortVariables",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CohortVariables",
+      "text": "$(makeLenses 'CohortVariables)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Execute/Subscription/Plan.hs",
+      "line": 303,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ParameterizedSubscriptionQueryPlan",
+          "name": "ParameterizedSubscriptionQueryPlan",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ParameterizedSubscriptionQueryPlan",
+      "text": "$(J.deriveToJSON hasuraJSON ''ParameterizedSubscriptionQueryPlan)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Execute/Subscription/Plan.hs",
+      "line": 312,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SubscriptionQueryPlanExplanation",
+          "name": "SubscriptionQueryPlanExplanation",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SubscriptionQueryPlanExplanation",
+      "text": "$(J.deriveToJSON hasuraJSON ''SubscriptionQueryPlanExplanation)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket.hs",
+      "line": 139,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''OpDetail",
+          "name": "OpDetail",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "OpDetail",
+      "text": "$( J.deriveToJSON\\n     J.defaultOptions\\n       { J.constructorTagModifier = J.snakeCase . drop 2,\\n         J.sumEncoding"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket.hs",
+      "line": 157,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''OperationDetails",
+          "name": "OperationDetails",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "OperationDetails",
+      "text": "$(J.deriveToJSON hasuraJSON ''OperationDetails)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket.hs",
+      "line": 167,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''WSEvent",
+          "name": "WSEvent",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "WSEvent",
+      "text": "$( J.deriveToJSON\\n     J.defaultOptions\\n       { J.constructorTagModifier = J.snakeCase . drop 1,\\n         J.sumEncoding"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket.hs",
+      "line": 182,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''WsConnInfo",
+          "name": "WsConnInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "WsConnInfo",
+      "text": "$(J.deriveToJSON hasuraJSON ''WsConnInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket.hs",
+      "line": 191,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''WSLogInfo",
+          "name": "WSLogInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "WSLogInfo",
+      "text": "$(J.deriveToJSON hasuraJSON ''WSLogInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket/Server.hs",
+      "line": 113,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MessageDetails",
+          "name": "MessageDetails",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MessageDetails",
+      "text": "$(J.deriveToJSON hasuraJSON ''MessageDetails)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket/Server.hs",
+      "line": 128,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''WSEvent",
+          "name": "WSEvent",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "WSEvent",
+      "text": "$( J.deriveToJSON\\n     J.defaultOptions\\n       { J.constructorTagModifier = J.snakeCase . drop 1,\\n         J.sumEncoding"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket/Server.hs",
+      "line": 155,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''WSEventInfo",
+          "name": "WSEventInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "WSEventInfo",
+      "text": "$( J.deriveToJSON\\n     J.defaultOptions\\n       { J.fieldLabelModifier = J.snakeCase . drop 5,\\n         J.omitNothingFiel"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Transport/WebSocket/Server.hs",
+      "line": 170,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''WSLog",
+          "name": "WSLog",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "WSLog",
+      "text": "$( J.deriveToJSON\\n     J.defaultOptions\\n       { J.fieldLabelModifier = J.snakeCase . drop 4,\\n         J.omitNothingFiel"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/LogicalModel/Lenses.hs",
+      "line": 19,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''LogicalModelInfo",
+          "name": "LogicalModelInfo",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''LogicalModelInfo"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/LogicalModel/Lenses.hs",
+      "line": 20,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''LogicalModelMetadata",
+          "name": "LogicalModelMetadata",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''LogicalModelMetadata"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/LogicalModelResolver/Lenses.hs",
+      "line": 14,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InlineLogicalModelMetadata",
+          "name": "InlineLogicalModelMetadata",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''InlineLogicalModelMetadata"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/LogicalModelResolver/Lenses.hs",
+      "line": 15,
+      "form": "bare",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''LogicalModelIdentifier",
+          "name": "LogicalModelIdentifier",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makePrisms ''LogicalModelIdentifier"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/NativeQuery/Lenses.hs",
+      "line": 24,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''NativeQueryMetadata",
+          "name": "NativeQueryMetadata",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''NativeQueryMetadata"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/NativeQuery/Lenses.hs",
+      "line": 25,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''NativeQueryInfo",
+          "name": "NativeQueryInfo",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''NativeQueryInfo"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/DDL/Action/Lenses.hs",
+      "line": 16,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CreateAction",
+          "name": "CreateAction",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''CreateAction)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/DDL/Action/Lenses.hs",
+      "line": 18,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''UpdateAction",
+          "name": "UpdateAction",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''UpdateAction)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/DDL/EventTrigger.hs",
+      "line": 110,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CreateEventTriggerQuery",
+          "name": "CreateEventTriggerQuery",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CreateEventTriggerQuery",
+      "text": "$(makeLenses ''CreateEventTriggerQuery)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/DDL/Schema/Cache/Common.hs",
+      "line": 109,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InvalidationKeys",
+          "name": "InvalidationKeys",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InvalidationKeys",
+      "text": "$(makeLenses ''InvalidationKeys)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/DDL/Schema/Cache/Common.hs",
+      "line": 205,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''BuildOutputs",
+          "name": "BuildOutputs",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "BuildOutputs",
+      "text": "$(makeLenses ''BuildOutputs)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Action.hs",
+      "line": 103,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ActionFieldG",
+          "name": "ActionFieldG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ActionFieldG",
+      "text": "$(makePrisms ''ActionFieldG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Action.hs",
+      "line": 174,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnActionAsyncQuery",
+          "name": "AnnActionAsyncQuery",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnActionAsyncQuery",
+      "text": "$(makeLenses ''AnnActionAsyncQuery)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Action.hs",
+      "line": 175,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnActionExecution",
+          "name": "AnnActionExecution",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnActionExecution",
+      "text": "$(makeLenses ''AnnActionExecution)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Action.hs",
+      "line": 176,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AsyncActionQueryFieldG",
+          "name": "AsyncActionQueryFieldG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AsyncActionQueryFieldG",
+      "text": "$(makePrisms ''AsyncActionQueryFieldG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/BoolExp/Lenses.hs",
+      "line": 18,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''GExists",
+          "name": "GExists",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''GExists"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/BoolExp/Lenses.hs",
+      "line": 22,
+      "form": "bare",
+      "head": "makeWrapped",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''BoolExp",
+          "name": "BoolExp",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeWrapped ''BoolExp"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/BoolExp/Lenses.hs",
+      "line": 24,
+      "form": "bare",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''GBoolExp",
+          "name": "GBoolExp",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makePrisms ''GBoolExp"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/BoolExp/Lenses.hs",
+      "line": 25,
+      "form": "bare",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnRedactionExp",
+          "name": "AnnRedactionExp",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makePrisms ''AnnRedactionExp"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Delete.hs",
+      "line": 48,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnDelG",
+          "name": "AnnDelG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnDelG",
+      "text": "$(makeLenses ''AnnDelG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Insert.hs",
+      "line": 149,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedInsert",
+          "name": "AnnotatedInsert",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedInsert",
+      "text": "$(makeLenses ''AnnotatedInsert)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Insert.hs",
+      "line": 150,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedInsertField",
+          "name": "AnnotatedInsertField",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedInsertField",
+      "text": "$(makePrisms ''AnnotatedInsertField)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/RemoteSchema.hs",
+      "line": 346,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Field",
+          "name": "Field",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Field",
+      "text": "$(makePrisms ''Field)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/RemoteSchema.hs",
+      "line": 347,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''GraphQLField",
+          "name": "GraphQLField",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "GraphQLField",
+      "text": "$(makeLenses ''GraphQLField)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/RemoteSchema.hs",
+      "line": 348,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DeduplicatedSelectionSet",
+          "name": "DeduplicatedSelectionSet",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DeduplicatedSelectionSet",
+      "text": "$(makeLenses ''DeduplicatedSelectionSet)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Returning.hs",
+      "line": 99,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MutFldG",
+          "name": "MutFldG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MutFldG",
+      "text": "$(makePrisms ''MutFldG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 70,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnSelectG",
+          "name": "AnnSelectG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''AnnSelectG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 71,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SelectArgsG",
+          "name": "SelectArgsG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''SelectArgsG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 72,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnObjectSelectG",
+          "name": "AnnObjectSelectG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''AnnObjectSelectG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 73,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnNestedObjectSelectG",
+          "name": "AnnNestedObjectSelectG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''AnnNestedObjectSelectG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 74,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ConnectionSelect",
+          "name": "ConnectionSelect",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''ConnectionSelect)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 75,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnRelationSelectG",
+          "name": "AnnRelationSelectG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''AnnRelationSelectG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 76,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''GroupByG",
+          "name": "GroupByG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makeLenses ''GroupByG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 78,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedOrderByElement",
+          "name": "AnnotatedOrderByElement",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''AnnotatedOrderByElement)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 79,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnFieldG",
+          "name": "AnnFieldG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''AnnFieldG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 80,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TableAggregateFieldG",
+          "name": "TableAggregateFieldG",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''TableAggregateFieldG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 81,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''GroupByField",
+          "name": "GroupByField",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''GroupByField)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 82,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ConnectionField",
+          "name": "ConnectionField",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''ConnectionField)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Select/Lenses.hs",
+      "line": 83,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EdgeField",
+          "name": "EdgeField",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "$(makePrisms ''EdgeField)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/IR/Update.hs",
+      "line": 64,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedUpdateG",
+          "name": "AnnotatedUpdateG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedUpdateG",
+      "text": "$(makeLenses ''AnnotatedUpdateG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Action.hs",
+      "line": 460,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ActionMetadata",
+          "name": "ActionMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ActionMetadata",
+      "text": "$(makeLenses ''ActionMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Action.hs",
+      "line": 461,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ActionDefinition",
+          "name": "ActionDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ActionDefinition",
+      "text": "$(makeLenses ''ActionDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Action.hs",
+      "line": 462,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ActionInfo",
+          "name": "ActionInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ActionInfo",
+      "text": "$(makeLenses ''ActionInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Backend.hs",
+      "line": 504,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ComputedFieldReturnType",
+          "name": "ComputedFieldReturnType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ComputedFieldReturnType",
+      "text": "$(makePrisms ''ComputedFieldReturnType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Column.hs",
+      "line": 78,
+      "form": "dollar",
+      "head": "deriveJSON",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EnumValueInfo",
+          "name": "EnumValueInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EnumValueInfo",
+      "text": "$(deriveJSON hasuraJSON ''EnumValueInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Column.hs",
+      "line": 128,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ColumnType",
+          "name": "ColumnType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ColumnType",
+      "text": "$(makePrisms ''ColumnType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Column.hs",
+      "line": 439,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''StructuredColumnInfo",
+          "name": "StructuredColumnInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "StructuredColumnInfo",
+      "text": "$(makePrisms ''StructuredColumnInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/ComputedField.hs",
+      "line": 120,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ComputedFieldInfo",
+          "name": "ComputedFieldInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ComputedFieldInfo",
+      "text": "$(makeLenses ''ComputedFieldInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 431,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InputObjectFieldDefinition",
+          "name": "InputObjectFieldDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InputObjectFieldDefinition",
+      "text": "$(J.deriveJSON hasuraJSON ''InputObjectFieldDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 432,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InputObjectTypeDefinition",
+          "name": "InputObjectTypeDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InputObjectTypeDefinition",
+      "text": "$(J.deriveJSON hasuraJSON ''InputObjectTypeDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 433,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ObjectFieldDefinition",
+          "name": "ObjectFieldDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ObjectFieldDefinition",
+      "text": "$(J.deriveJSON hasuraJSON ''ObjectFieldDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 434,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ScalarTypeDefinition",
+          "name": "ScalarTypeDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ScalarTypeDefinition",
+      "text": "$(J.deriveJSON hasuraJSON ''ScalarTypeDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 436,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EnumValueDefinition",
+          "name": "EnumValueDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EnumValueDefinition",
+      "text": "$(J.deriveJSON hasuraJSON ''EnumValueDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 438,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TypeRelationshipDefinition",
+          "name": "TypeRelationshipDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TypeRelationshipDefinition",
+      "text": "$(J.deriveToJSON hasuraJSON ''TypeRelationshipDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 449,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TypeRelationshipDefinition",
+          "name": "TypeRelationshipDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TypeRelationshipDefinition",
+      "text": "$(makeLenses ''TypeRelationshipDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 451,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EnumTypeDefinition",
+          "name": "EnumTypeDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EnumTypeDefinition",
+      "text": "$(J.deriveJSON hasuraJSON ''EnumTypeDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 469,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ObjectTypeDefinition",
+          "name": "ObjectTypeDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ObjectTypeDefinition",
+      "text": "$(J.deriveToJSON hasuraJSON ''ObjectTypeDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 470,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CustomTypes",
+          "name": "CustomTypes",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CustomTypes",
+      "text": "$(J.deriveToJSON hasuraJSON ''CustomTypes)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 471,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedInputType",
+          "name": "AnnotatedInputType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedInputType",
+      "text": "$(J.deriveToJSON hasuraJSON ''AnnotatedInputType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 472,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedObjectFieldType",
+          "name": "AnnotatedObjectFieldType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedObjectFieldType",
+      "text": "$(J.deriveToJSON hasuraJSON ''AnnotatedObjectFieldType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 473,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedTypeRelationship",
+          "name": "AnnotatedTypeRelationship",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedTypeRelationship",
+      "text": "$(J.deriveToJSON hasuraJSON ''AnnotatedTypeRelationship)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 474,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedObjectType",
+          "name": "AnnotatedObjectType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedObjectType",
+      "text": "$(J.deriveToJSON hasuraJSON ''AnnotatedObjectType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/CustomTypes.hs",
+      "line": 475,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AnnotatedOutputType",
+          "name": "AnnotatedOutputType",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AnnotatedOutputType",
+      "text": "$(J.deriveToJSON hasuraJSON ''AnnotatedOutputType)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 126,
+      "form": "dollar",
+      "head": "deriveJSON",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryReference",
+          "name": "QueryReference",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryReference",
+      "text": "$(deriveJSON (aesonDrop 3 snakeCase) ''QueryReference)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 127,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''QueryReference",
+          "name": "QueryReference",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "QueryReference",
+      "text": "$(makeLenses ''QueryReference)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 141,
+      "form": "dollar",
+      "head": "deriveJSON",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EndpointDef",
+          "name": "EndpointDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EndpointDef",
+      "text": "$(deriveJSON (aesonDrop 3 snakeCase) ''EndpointDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 142,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EndpointDef",
+          "name": "EndpointDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EndpointDef",
+      "text": "$(makeLenses ''EndpointDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 188,
+      "form": "dollar",
+      "head": "deriveJSON",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EndpointMetadata",
+          "name": "EndpointMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EndpointMetadata",
+      "text": "$(deriveJSON (aesonDrop 3 snakeCase) ''EndpointMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 189,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''EndpointMetadata",
+          "name": "EndpointMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "EndpointMetadata",
+      "text": "$(makeLenses ''EndpointMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 196,
+      "form": "dollar",
+      "head": "deriveJSON",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DropEndpoint",
+          "name": "DropEndpoint",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DropEndpoint",
+      "text": "$(deriveJSON (aesonDrop 3 snakeCase) ''DropEndpoint)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Endpoint.hs",
+      "line": 197,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''DropEndpoint",
+          "name": "DropEndpoint",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "DropEndpoint",
+      "text": "$(makeLenses ''DropEndpoint)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Metadata.hs",
+      "line": 166,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''Metadata",
+          "name": "Metadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "Metadata",
+      "text": "$(makeLenses ''Metadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Metadata/Common.hs",
+      "line": 150,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceMetadata",
+          "name": "SourceMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceMetadata",
+      "text": "$(makeLenses ''SourceMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Metadata/Object.hs",
+      "line": 133,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MetadataObjId",
+          "name": "MetadataObjId",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MetadataObjId",
+      "text": "$(makePrisms ''MetadataObjId)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Metadata/Object.hs",
+      "line": 275,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MetadataObject",
+          "name": "MetadataObject",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MetadataObject",
+      "text": "$(makeLenses ''MetadataObject)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Metadata/Object.hs",
+      "line": 324,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InconsistentMetadata",
+          "name": "InconsistentMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InconsistentMetadata",
+      "text": "$(makePrisms ''InconsistentMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/OpenTelemetry.hs",
+      "line": 459,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''OpenTelemetryConfig",
+          "name": "OpenTelemetryConfig",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "OpenTelemetryConfig",
+      "text": "$(makeLenses ''OpenTelemetryConfig)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/OpenTelemetry.hs",
+      "line": 545,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''OpenTelemetryInfo",
+          "name": "OpenTelemetryInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "OpenTelemetryInfo",
+      "text": "$(makeLenses ''OpenTelemetryInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Permission.hs",
+      "line": 612,
+      "form": "dollar",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$(return [])"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Permission.hs",
+      "line": 626,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''PermDef",
+          "name": "PermDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "PermDef",
+      "text": "$(makeLenses ''PermDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/QueryCollection.hs",
+      "line": 138,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CollectionDef",
+          "name": "CollectionDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CollectionDef",
+      "text": "$(makeLenses ''CollectionDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/QueryCollection.hs",
+      "line": 165,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CreateCollection",
+          "name": "CreateCollection",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CreateCollection",
+      "text": "$(makeLenses ''CreateCollection)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/QueryCollection.hs",
+      "line": 183,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RenameCollection",
+          "name": "RenameCollection",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RenameCollection",
+      "text": "$(makeLenses ''RenameCollection)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Relationships/Local.hs",
+      "line": 70,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RelDef",
+          "name": "RelDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RelDef",
+      "text": "$(makeLenses ''RelDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Relationships/Remote.hs",
+      "line": 326,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RemoteRelationshipDefinition",
+          "name": "RemoteRelationshipDefinition",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RemoteRelationshipDefinition",
+      "text": "$(makePrisms ''RemoteRelationshipDefinition)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Relationships/ToSource.hs",
+      "line": 95,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ToSourceRelationshipDef",
+          "name": "ToSourceRelationshipDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ToSourceRelationshipDef",
+      "text": "$(makeLenses ''ToSourceRelationshipDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/ScheduledTrigger.hs",
+      "line": 213,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CreateCronTrigger",
+          "name": "CreateCronTrigger",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CreateCronTrigger",
+      "text": "$(makeLenses ''CreateCronTrigger)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Source.hs",
+      "line": 266,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceInfo",
+          "name": "SourceInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceInfo",
+      "text": "$(makeLenses ''SourceInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Source/Column.hs",
+      "line": 97,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceColumnInfo",
+          "name": "SourceColumnInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceColumnInfo",
+      "text": "$(makeLenses ''SourceColumnInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Source/Table.hs",
+      "line": 127,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceTableInfo",
+          "name": "SourceTableInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceTableInfo",
+      "text": "$(makeLenses ''SourceTableInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Source/Table.hs",
+      "line": 128,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceConstraint",
+          "name": "SourceConstraint",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceConstraint",
+      "text": "$(makeLenses ''SourceConstraint)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/Types/Source/Table.hs",
+      "line": 129,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''SourceForeignKeys",
+          "name": "SourceForeignKeys",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "SourceForeignKeys",
+      "text": "$(makeLenses ''SourceForeignKeys)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/Metadata/Core.hs",
+      "line": 165,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RemoteSchemaMetadataG",
+          "name": "RemoteSchemaMetadataG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RemoteSchemaMetadataG",
+      "text": "$(makeLenses ''RemoteSchemaMetadataG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/Metadata/RemoteRelationship.hs",
+      "line": 267,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ToSchemaRelationshipDef",
+          "name": "ToSchemaRelationshipDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ToSchemaRelationshipDef",
+      "text": "$(J.deriveJSON hasuraJSON ''ToSchemaRelationshipDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/Metadata/RemoteRelationship.hs",
+      "line": 268,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RemoteSchemaTypeRelationships",
+          "name": "RemoteSchemaTypeRelationships",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RemoteSchemaTypeRelationships",
+      "text": "$(makeLenses ''RemoteSchemaTypeRelationships)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/Metadata/RemoteRelationship.hs",
+      "line": 269,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ToSchemaRelationshipDef",
+          "name": "ToSchemaRelationshipDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ToSchemaRelationshipDef",
+      "text": "$(makeLenses ''ToSchemaRelationshipDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/SchemaCache/Types.hs",
+      "line": 412,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ValidatedRemoteSchemaDef",
+          "name": "ValidatedRemoteSchemaDef",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ValidatedRemoteSchemaDef",
+      "text": "$(J.deriveJSON hasuraJSON ''ValidatedRemoteSchemaDef)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/SchemaCache/Types.hs",
+      "line": 413,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RemoteSchemaCustomizer",
+          "name": "RemoteSchemaCustomizer",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RemoteSchemaCustomizer",
+      "text": "$(J.deriveJSON hasuraJSON ''RemoteSchemaCustomizer)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/SchemaCache/Types.hs",
+      "line": 414,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RemoteSchemaInfo",
+          "name": "RemoteSchemaInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RemoteSchemaInfo",
+      "text": "$(J.deriveJSON hasuraJSON ''RemoteSchemaInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RemoteSchema/SchemaCache/Types.hs",
+      "line": 440,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RemoteSchemaCtxG",
+          "name": "RemoteSchemaCtxG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RemoteSchemaCtxG",
+      "text": "$(makeLenses ''RemoteSchemaCtxG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Server/Types.hs",
+      "line": 375,
+      "form": "dollar",
+      "head": "J.deriveToJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''PersistedQueryRequest",
+          "name": "PersistedQueryRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "PersistedQueryRequest",
+      "text": "$(J.deriveToJSON (J.aesonPrefix J.camelCase) {J.omitNothingFields = True} ''PersistedQueryRequest)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Server/Types.hs",
+      "line": 397,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ExtPersistedQueryRequest",
+          "name": "ExtPersistedQueryRequest",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ExtPersistedQueryRequest",
+      "text": "$(J.deriveJSON (J.aesonDrop 4 J.camelCase) {J.omitNothingFields = True} ''ExtPersistedQueryRequest)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/StoredProcedure/Lenses.hs",
+      "line": 16,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''StoredProcedureInfo",
+          "name": "StoredProcedureInfo",
+          "quotedDeclared": false
+        }
+      ],
+      "decorated": null,
+      "text": "makeLenses ''StoredProcedureInfo"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/StoredProcedure/Metadata.hs",
+      "line": 80,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''StoredProcedureMetadata",
+          "name": "StoredProcedureMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "StoredProcedureMetadata",
+      "text": "makeLenses ''StoredProcedureMetadata"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 384,
+      "form": "dollar",
+      "head": "makePrisms",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''FieldInfo",
+          "name": "FieldInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "FieldInfo",
+      "text": "$(makePrisms ''FieldInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 723,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RolePermInfo",
+          "name": "RolePermInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RolePermInfo",
+      "text": "makeLenses ''RolePermInfo"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 783,
+      "form": "dollar",
+      "head": "deriveJSON",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ViewInfo",
+          "name": "ViewInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ViewInfo",
+      "text": "$(deriveJSON hasuraJSON ''ViewInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 849,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TableConfig",
+          "name": "TableConfig",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TableConfig",
+      "text": "$(makeLenses ''TableConfig)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 979,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''PrimaryKey",
+          "name": "PrimaryKey",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "PrimaryKey",
+      "text": "$(makeLenses ''PrimaryKey)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 1054,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TableCoreInfoG",
+          "name": "TableCoreInfoG",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TableCoreInfoG",
+      "text": "$(makeLenses ''TableCoreInfoG)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Cache.hs",
+      "line": 1090,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TableInfo",
+          "name": "TableInfo",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TableInfo",
+      "text": "$(makeLenses ''TableInfo)"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Table/Metadata.hs",
+      "line": 207,
+      "form": "dollar",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TableMetadata",
+          "name": "TableMetadata",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TableMetadata",
+      "text": "$(makeLenses ''TableMetadata)"
+    },
+    {
+      "file": "hasura-engine/server/src-test/Hasura/Backends/BigQuery/SourceSpec.hs",
+      "line": 38,
+      "form": "dollar",
+      "head": "J.deriveJSON",
+      "headKind": "qualified",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MockServiceAccount",
+          "name": "MockServiceAccount",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MockServiceAccount",
+      "text": "$(J.deriveJSON (J.aesonDrop 4 J.snakeCase) {J.omitNothingFields = False} ''MockServiceAccount)"
+    },
+    {
+      "file": "hledger/hledger-lib/Hledger/Data/Balancing.hs",
+      "line": 941,
+      "form": "bare",
+      "head": "makeHledgerClassyLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''BalancingOpts",
+          "name": "BalancingOpts",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "BalancingOpts",
+      "text": "makeHledgerClassyLenses ''BalancingOpts"
+    },
+    {
+      "file": "hledger/hledger-lib/Hledger/Read/InputOptions.hs",
+      "line": 129,
+      "form": "bare",
+      "head": "makeHledgerClassyLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''InputOpts",
+          "name": "InputOpts",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "InputOpts",
+      "text": "makeHledgerClassyLenses ''InputOpts"
+    },
+    {
+      "file": "hledger/hledger-lib/Hledger/Reports/ReportOptions.hs",
+      "line": 984,
+      "form": "bare",
+      "head": "makeHledgerClassyLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ReportOpts",
+          "name": "ReportOpts",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ReportOpts",
+      "text": "makeHledgerClassyLenses ''ReportOpts"
+    },
+    {
+      "file": "hledger/hledger-lib/Hledger/Reports/ReportOptions.hs",
+      "line": 985,
+      "form": "bare",
+      "head": "makeHledgerClassyLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ReportSpec",
+          "name": "ReportSpec",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ReportSpec",
+      "text": "makeHledgerClassyLenses ''ReportSpec"
+    },
+    {
+      "file": "hledger/hledger-ui/Hledger/UI/UITypes.hs",
+      "line": 275,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''MenuScreenState",
+          "name": "MenuScreenState",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "MenuScreenState",
+      "text": "makeLenses ''MenuScreenState"
+    },
+    {
+      "file": "hledger/hledger-ui/Hledger/UI/UITypes.hs",
+      "line": 276,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''AccountsScreenState",
+          "name": "AccountsScreenState",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "AccountsScreenState",
+      "text": "makeLenses ''AccountsScreenState"
+    },
+    {
+      "file": "hledger/hledger-ui/Hledger/UI/UITypes.hs",
+      "line": 277,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''RegisterScreenState",
+          "name": "RegisterScreenState",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "RegisterScreenState",
+      "text": "makeLenses ''RegisterScreenState"
+    },
+    {
+      "file": "hledger/hledger-ui/Hledger/UI/UITypes.hs",
+      "line": 278,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''TransactionScreenState",
+          "name": "TransactionScreenState",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "TransactionScreenState",
+      "text": "makeLenses ''TransactionScreenState"
+    },
+    {
+      "file": "hledger/hledger-ui/Hledger/UI/UITypes.hs",
+      "line": 279,
+      "form": "bare",
+      "head": "makeLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''ErrorScreenState",
+          "name": "ErrorScreenState",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "ErrorScreenState",
+      "text": "makeLenses ''ErrorScreenState"
+    },
+    {
+      "file": "hledger/hledger-web/Hledger/Web/App.hs",
+      "line": 98,
+      "form": "bare",
+      "head": "mkYesodData",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "mkYesodData \"App\" $(parseRoutesFile \"config/routes\")"
+    },
+    {
+      "file": "hledger/hledger-web/Hledger/Web/Application.hs",
+      "line": 37,
+      "form": "bare",
+      "head": "mkYesodDispatch",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "mkYesodDispatch \"App\" resourcesApp"
+    },
+    {
+      "file": "hledger/hledger-web/Hledger/Web/Settings/StaticFiles.hs",
+      "line": 31,
+      "form": "dollar",
+      "head": "publicFiles",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "$(publicFiles staticDir)"
+    },
+    {
+      "file": "hledger/hledger/Hledger/Cli/CliOptions.hs",
+      "line": 976,
+      "form": "bare",
+      "head": "makeHledgerClassyLenses",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [
+        {
+          "raw": "''CliOpts",
+          "name": "CliOpts",
+          "quotedDeclared": true
+        }
+      ],
+      "decorated": "CliOpts",
+      "text": "makeHledgerClassyLenses ''CliOpts"
+    },
+    {
+      "file": "hledger/hledger/test/cli/addons/hledger-addon.hs",
+      "line": 2,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "echo add-on: $0"
+    },
+    {
+      "file": "hledger/hledger/test/cli/addons/hledger-addon.lhs",
+      "line": 2,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "echo add-on: $0"
+    },
+    {
+      "file": "hledger/hledger/test/cli/addons/hledger-addon2.hs",
+      "line": 2,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "echo add-on: $0"
+    },
+    {
+      "file": "hledger/hledger/test/cli/addons/hledger-addon3.lhs",
+      "line": 2,
+      "form": "bare",
+      "head": null,
+      "headKind": null,
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "echo add-on: $0"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 71,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Char, char)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 72,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Double, float8)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 73,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Float, float4)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 74,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Int16, int2)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 75,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Int32, int4)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 76,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Int64, int8)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 77,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(ByteString, bytea)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 78,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Scientific, numeric)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 79,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Text, text)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 80,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(UTCTime, timestamptz)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 81,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Aeson.Value, jsonb)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 82,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(UUID, uuid)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 83,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Day, date)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 84,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(DiffTime, interval)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 85,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(TimeOfDay, time)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 86,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(LocalTime, timestamp)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 87,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES((TimeOfDay, TimeZone), timetz)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 88,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(IPRange, inet)"
+    },
+    {
+      "file": "postgrest/src/hasql/Hasql/Implicits/Encoders.hs",
+      "line": 89,
+      "form": "bare",
+      "head": "INSTANCES",
+      "headKind": "constructor",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "INSTANCES(Bool, bool)"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/ASTLib.hs",
+      "line": 932,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Analytics.hs",
+      "line": 5272,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/AnalyzerLib.hs",
+      "line": 957,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/CFG.hs",
+      "line": 1318,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/CFGAnalysis.hs",
+      "line": 1429,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Checker.hs",
+      "line": 574,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Checks/Commands.hs",
+      "line": 1476,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Checks/ControlFlow.hs",
+      "line": 100,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Checks/Custom.hs",
+      "line": 20,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Checks/ShellSupport.hs",
+      "line": 730,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Fixer.hs",
+      "line": 411,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Formatter/Diff.hs",
+      "line": 259,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    },
+    {
+      "file": "shellcheck/src/ShellCheck/Parser.hs",
+      "line": 3668,
+      "form": "bare",
+      "head": "return",
+      "headKind": "variable",
+      "headDeclaredTopLevel": false,
+      "quotes": [],
+      "decorated": null,
+      "text": "return []"
+    }
+  ],
+  "annRows": [
+    {
+      "file": "hasura-engine/server/lib/hasura-extras/src/Data/Environment.hs",
+      "line": 26,
+      "target": "getEnvironment",
+      "targetDeclared": true,
+      "text": "{-# ANN getEnvironment (\"HLINT: ignore avoid getEnvironment\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/lib/test-harness/src/Harness/TestEnvironment.hs",
+      "line": 188,
+      "target": "testLogTrace",
+      "targetDeclared": true,
+      "text": "{-# ANN testLogTrace (\"HLINT: ignore\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/src-exec/Main.hs",
+      "line": 46,
+      "target": "main",
+      "targetDeclared": true,
+      "text": "{-# ANN main (\"HLINT: ignore avoid getEnvironment\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Control/Monad/Circular.hs",
+      "line": 155,
+      "target": "withCircular",
+      "targetDeclared": true,
+      "text": "{-# ANN withCircular (\"HLint: ignore Use onNothing\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/Eventing/EventTrigger.hs",
+      "line": 281,
+      "target": "processEventQueue",
+      "targetDeclared": true,
+      "text": "{-# ANN processEventQueue (\"HLint: ignore Use withAsync\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/GraphQL/Schema/Update.hs",
+      "line": 183,
+      "target": "updateOperator",
+      "targetDeclared": true,
+      "text": "{-# ANN updateOperator (\"HLint: ignore Use tuple-section\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/src-lib/Hasura/RQL/DDL/Webhook/Transform/QueryParams.hs",
+      "line": 98,
+      "target": "validateQueryParamsTransformFn",
+      "targetDeclared": true,
+      "text": "{-# ANN validateQueryParamsTransformFn (\"HLint: ignore Redundant pure\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/src-test/Hasura/QuickCheck/Instances.hs",
+      "line": 78,
+      "target": "arbitraryGraphQLName",
+      "targetDeclared": true,
+      "text": "{-# ANN arbitraryGraphQLName (\"HLint: ignore Use mkName\" :: String) #-}"
+    },
+    {
+      "file": "hasura-engine/server/test-postgres/Main.hs",
+      "line": 56,
+      "target": "main",
+      "targetDeclared": true,
+      "text": "{-# ANN main (\"HLINT: ignore avoid getEnvironment\" :: String) #-}"
+    }
+  ]
+}

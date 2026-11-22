@@ -1,0 +1,574 @@
+PROBE-BASH-SILENT-TYPES  runtime=bun  repo=bash-completion  population=2962 .sh/.bash files (<400KB)
+  parsed OK                      : 2962/2962  (parse failures: 0)
+  firing-check population NFILES=120 : 120 files (its walk, its cap 400)
+  distinct node types observed   : 59
+  first construct-bearing walk index: export sites @ 0, redefinitions @ 1271  (the instrument reaches index < 120)
+
+EDGES EMITTED (production path), all files / firing-check sample:
+  calls           42290 edges in 2704 files   |  sample:  1270 edges in 108 files
+  extends             0 edges in   0 files   |  sample:     0 edges in 0 files
+  implements          0 edges in   0 files   |  sample:     0 edges in 0 files
+  uses            61765 edges in 2351 files   |  sample:  1623 edges in 81 files
+  imports             0 edges in   0 files   |  sample:     0 edges in 0 files
+  exports          1598 edges in 502 files   |  sample:    64 edges in 14 files
+  contains        27668 edges in 2356 files   |  sample:   565 edges in 72 files
+  references        518 edges in 370 files   |  sample:    37 edges in 36 files
+  overrides          19 edges in  12 files   |  sample:     0 edges in 0 files
+  instantiates        0 edges in   0 files   |  sample:     0 edges in 0 files
+  decorates           0 edges in   0 files   |  sample:     0 edges in 0 files
+  renders             0 edges in   0 files   |  sample:     0 edges in 0 files
+  mixes_in            0 edges in   0 files   |  sample:     0 edges in 0 files
+  part_of           470 edges in 346 files   |  sample:    37 edges in 36 files
+
+SYNTAX SITES ON THE PARSE TREE (the denominator), all files / sample:
+  export sites                   : 1628 in 507 files   |  sample: 64 in 14 files
+      export NAME=value                        1397
+      export NAME                              201
+      export "computed=value" (dynamic name)   25
+      export NAME (bare word)                  2
+      export <ERROR> (not a name site)         2
+      export <expansion> (dynamic name)        1
+  function redefinition events   : 19 in 12 files
+  unset_command sites            : 289 in 122 files
+  source/. sites                 : 522 in 373 files
+      part_of-ELIGIBLE           : 470  (nameable last segment, NOT in a child-process boundary)
+      refused: child-process     : 18  (subshell / command substitution / process substitution: a forked shell's scope, not this file's)
+      refused: no nameable part  : 34  (last path segment is an expression: a quoted variable, a command substitution, or a glob)
+
+INAPPLICABILITY PROBES:
+  grammar node types (pinned wasm)      : 280
+  candidate node types IN THE GRAMMAR   : 0 (none of the 20 probed types exists in the grammar)
+  candidate node types on 2962 trees : 0 (0 occurrences)
+  keyword words in COMMAND position     : 0 in 0 files
+  dynamic doors: eval 146, ${!name} 52, bash|sh -c 5
+
+ADJUDICATION (site with no edge = DEFECT; zero sites = RULED):
+  exports     : 1628 export-headed nodes (1600 statically NAMEABLE, 28 computed/not-a-name) -> 1598 edges
+  overrides   : 19 redefinition events -> 19 edges
+  extends     : grammar has NO type/supertype node type, 0 candidate nodes on 2962 trees -> RULED
+  implements  : same probe as extends -> RULED
+  instantiates: grammar HAS no constructor node type, 0 candidate nodes, 0 command(s) spelled 'new' -> RULED
+  part_of     : 522 source/. sites, 470 ELIGIBLE after the two refusals -> 470 edges in 346 files  (1:1 — every eligible site published)
+
+export-site files (all of them):
+  [idx   0*] /home/ishaq2321/bb_tests/repositories/Aporia/osx/bundle/launcher.sh sites=29 edges=29  shapes=export NAME=value
+  [idx  10*] /home/ishaq2321/bb_tests/repositories/FSharp.Formatting/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx  37*] /home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/commands/entry-point.sh sites=10 edges=10  shapes=export NAME=value
+  [idx  56*] /home/ishaq2321/bb_tests/repositories/ansible/.azure-pipelines/scripts/run-tests.sh sites=4 edges=4  shapes=export NAME
+  [idx  57*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/adhoc/runme.sh sites=2 edges=2  shapes=export NAME=value
+  [idx  59*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-doc/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx  60*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-galaxy/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx  61*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-inventory/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx  62*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-playbook-callbacks/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx  63*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-pull/runme.sh sites=5 edges=5  shapes=export NAME + export NAME=value
+  [idx  75*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-git/collection-tests/git-at-collection-base.sh sites=2 edges=2  shapes=export NAME
+  [idx  76*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-git/collection-tests/git-at-collection-root.sh sites=2 edges=2  shapes=export NAME
+  [idx  78*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-test-git/runme.sh sites=2 edges=2  shapes=export NAME
+  [idx 116*] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible-vault/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 120 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ansible_log/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 127 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/become_unprivileged/runme.sh sites=4 edges=4  shapes=export NAME=value + export NAME
+  [idx 133 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/cache-plugins/runme.sh sites=10 edges=10  shapes=export NAME=value
+  [idx 135 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_default/runme.sh sites=56 edges=56  shapes=export NAME=value
+  [idx 136 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_junit/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 137 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_minimal/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 138 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_oneline/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 140 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/callback_tree/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 143 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collection/setup.sh sites=2 edges=2  shapes=export NAME
+  [idx 145 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections/runme.sh sites=9 edges=8  shapes=export NAME=value + export NAME (bare word)
+  [idx 146 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections/test_task_resolved_plugin.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 147 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections/vars_plugin_tests.sh sites=8 edges=7  shapes=export NAME=value + export NAME (bare word)
+  [idx 149 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections_relative_imports/runme.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 150 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/collections_runtime_pythonpath/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 165 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/connection_windows_no_pipelining/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 174 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/deprecations/runme.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 178 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/fetch/runme.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 180 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/filter_mathstuff/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 187 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/handlers/runme.sh sites=2 edges=2  shapes=export NAME + export NAME=value
+  [idx 191 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/ignore_unreachable/runme.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 194 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/include_import/runme.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 196 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/include_vars/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 199 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/includes/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 206 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/inventory_advanced_host_list/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 207 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/inventory_cache/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 214 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/json-serialization/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 229 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/missing_required_lib/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 234 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/module_utils/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 235 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/module_utils_distro/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 236 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/no_log/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 239 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/old_style_vars_plugins/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 250 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/plugin_filtering/runme.sh sites=2 edges=2  shapes=export NAME
+  [idx 253 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/raw/runme.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 257 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/result_pickle_error/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 259 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/roles_arg_spec/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 276 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/set_fact/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 277 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/set_stats/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 278 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/setup_passlib_controller/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 282 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/strategy-external/runme.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 283 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/strategy_free/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 284 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/strategy_host_pinned/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 287 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/subversion/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 288 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/tags/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 297 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/throttle/runme.sh sites=1 edges=1  shapes=export NAME
+  [idx 304 ] /home/ishaq2321/bb_tests/repositories/ansible/test/integration/targets/var_precedence/runme.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 737 ] completions-core/wget.bash                       sites=1 edges=1  shapes=export NAME=value
+  [idx 795 ] completions-fallback/jungle.bash                 sites=1 edges=0  shapes=export "computed=value" (dynamic name)
+  [idx 814 ] completions-fallback/pipenv.bash                 sites=1 edges=0  shapes=export "computed=value" (dynamic name)
+  [idx 858 ] test/docker/debian10/install-packages.sh         sites=1 edges=1  shapes=export NAME=value
+  [idx 859 ] test/docker/entrypoint.sh                        sites=2 edges=2  shapes=export NAME + export NAME=value
+  [idx 861 ] test/docker/ubuntu14/install-packages.sh         sites=1 edges=1  shapes=export NAME=value
+  [idx 879 ] /home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_vault/templates/create-kms-policy.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 881 ] /home/ishaq2321/bb_tests/repositories/boundary/enos/modules/aws_vault/templates/vault-write-license.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 884 ] /home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_boundary_docker_local/build.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 885 ] /home/ishaq2321/bb_tests/repositories/boundary/enos/modules/build_local/templates/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 894 ] /home/ishaq2321/bb_tests/repositories/boundary/enos/templates/get-token.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 896 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_accounts.bash sites=1 edges=1  shapes=export NAME=value
+  [idx 898 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_auth.bash sites=2 edges=2  shapes=export NAME=value
+  [idx 906 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_credentials.bash sites=4 edges=4  shapes=export NAME=value
+  [idx 907 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_generics.bash sites=1 edges=1  shapes=export NAME=value
+  [idx 909 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_helpers.bash sites=15 edges=15  shapes=export NAME=value
+  [idx 919 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/boundary/_targets.bash sites=2 edges=2  shapes=export NAME=value
+  [idx 925 ] /home/ishaq2321/bb_tests/repositories/boundary/internal/tests/cli/test.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 926 ] /home/ishaq2321/bb_tests/repositories/boundary/scripts/build-ui.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 928 ] /home/ishaq2321/bb_tests/repositories/boundary/scripts/plugins.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 929 ] /home/ishaq2321/bb_tests/repositories/boundary/scripts/schema-diff.sh sites=1 edges=1  shapes=export NAME
+  [idx 936 ] /home/ishaq2321/bb_tests/repositories/buckaroo/warp-bundle-linux.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 941 ] /home/ishaq2321/bb_tests/repositories/cabal/.gitlab/brew.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 942 ] /home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ci.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 944 ] /home/ishaq2321/bb_tests/repositories/cabal/.gitlab/ghcup.sh sites=7 edges=7  shapes=export NAME=value
+  [idx 960 ] /home/ishaq2321/bb_tests/repositories/cargo/ci/fetch-smoke-test.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 993 ] /home/ishaq2321/bb_tests/repositories/consul/.github/scripts/set_test_package_matrix.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1003 ] /home/ishaq2321/bb_tests/repositories/consul/.release/release-scripts/prepare-release-branch.sh sites=6 edges=6  shapes=export NAME
+  [idx 1004 ] /home/ishaq2321/bb_tests/repositories/consul/.release/release-scripts/trigger-promotion.sh sites=5 edges=5  shapes=export NAME
+  [idx 1005 ] /home/ishaq2321/bb_tests/repositories/consul/.release/release-scripts/verify-release-image.sh sites=1 edges=0  shapes=export "computed=value" (dynamic name)
+  [idx 1011 ] /home/ishaq2321/bb_tests/repositories/consul/build-support/functions/10-util.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 1015 ] /home/ishaq2321/bb_tests/repositories/consul/build-support/scripts/build-docker.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1027 ] /home/ishaq2321/bb_tests/repositories/consul/build-support/windows/build-consul-local-images.sh sites=2 edges=2  shapes=export NAME
+  [idx 1036 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-header-match-invert/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1039 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-hostnames/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1042 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-sds-multiple-routes/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1045 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-sds-single-route-multi-service/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1048 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-simple/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1051 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-splitter-targets/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1054 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-tls-overlapping-hosts/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1057 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-http-tls-termination/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1060 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-lua/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1063 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-max-request-headers-kb-proxy-defaults/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1066 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-max-request-headers-kb/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1069 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-passive-health-check/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1072 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-tcp-conflicted/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1075 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-tcp-simple/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1078 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-api-gateway-tcp-tls-overlapping-hosts/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1088 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-cluster-peering-failover/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1092 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-dc-failover-gateways-none/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1096 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-dc-failover-gateways-remote/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1098 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-defaultsubset/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1101 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-features/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1103 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-subset-onlypassing/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1105 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-subset-redirect/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1107 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-svc-failover/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1109 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-svc-redirect-http/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1111 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-resolver-svc-redirect-tcp/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1114 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-router-features/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1118 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-splitter-cluster-peering/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1121 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-splitter-features/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1125 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cfg-splitter-peering-ingress-gateways/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1127 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-consul-exec/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1131 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cross-peer-control-plane-mgw/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1135 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cross-peers-http-router/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1139 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cross-peers-http/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1143 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cross-peers-resolver-redirect-tcp/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1147 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-cross-peers/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1149 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-dns-inline-resolver/vars.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1151 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-dogstatsd-udp/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1156 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-gateway-without-services/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1160 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-gateways-local/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1164 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-gateways-remote/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1166 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-grpc/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1173 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-grpc/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1176 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-http/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1179 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-multiple-services/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1183 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-peering-failover/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1186 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-sds/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1189 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-simple/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1192 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-gateway-tls/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1196 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-ingress-mesh-gateways-resolver/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1199 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-l7-intentions-request-normalization-disabled/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1202 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-l7-intentions-request-normalization/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1207 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-lua/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1212 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-mesh-to-lambda/vars.sh sites=7 edges=7  shapes=export NAME=value
+  [idx 1216 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-multidc-rsa-ca/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1221 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-property-override/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1224 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-statsd-udp/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1227 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-terminating-gateway-hostnames/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1230 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-terminating-gateway-max-request-headers/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1232 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-terminating-gateway-simple/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1235 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-terminating-gateway-subsets/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1237 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-terminating-gateway-without-services/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1244 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-wanfed-gw/vars.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1247 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-wasm/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1249 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/case-zipkin/vars.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1250 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/defaults.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 1254 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/run-tests.sh sites=5 edges=5  shapes=export NAME + export NAME=value
+  [idx 1255 ] /home/ishaq2321/bb_tests/repositories/consul/test/integration/connect/envoy/run-tests.windows.sh sites=5 edges=4  shapes=export <expansion> (dynamic name) + export NAME + export NAME=value
+  [idx 1264 ] /home/ishaq2321/bb_tests/repositories/core/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1268 ] /home/ishaq2321/bb_tests/repositories/cython/Tools/ci-run.sh sites=7 edges=7  shapes=export NAME=value
+  [idx 1272 ] /home/ishaq2321/bb_tests/repositories/dark/scripts/build/build-release-cli-exes.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1276 ] /home/ishaq2321/bb_tests/repositories/dark/scripts/launch-extension.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1287 ] /home/ishaq2321/bb_tests/repositories/dart-sdk/build/mac/edit_xibs.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1306 ] /home/ishaq2321/bb_tests/repositories/dart-sdk/tools/bots/flutter/analyze_flutter.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1308 ] /home/ishaq2321/bb_tests/repositories/dart-sdk/tools/bots/try_benchmarks.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1320 ] /home/ishaq2321/bb_tests/repositories/docker/contrib/dockerd-rootless-setuptool.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1321 ] /home/ishaq2321/bb_tests/repositories/docker/contrib/dockerd-rootless.sh sites=2 edges=2  shapes=export NAME
+  [idx 1329 ] /home/ishaq2321/bb_tests/repositories/docker/hack/dockerfile/install/install.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1335 ] /home/ishaq2321/bb_tests/repositories/docker/hack/make.sh sites=8 edges=8  shapes=export NAME=value
+  [idx 1352 ] /home/ishaq2321/bb_tests/repositories/docker/vendor/github.com/pelletier/go-toml/v2/ci.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1361 ] /home/ishaq2321/bb_tests/repositories/docker/vendor/golang.org/x/sys/plan9/mkerrors.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1364 ] /home/ishaq2321/bb_tests/repositories/docker/vendor/golang.org/x/sys/unix/mkerrors.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1377 ] /home/ishaq2321/bb_tests/repositories/duckdb/scripts/osx_import_codesign_certificate.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1381 ] /home/ishaq2321/bb_tests/repositories/duckdb/scripts/run_extension_medata_tests.sh sites=10 edges=10  shapes=export NAME=value
+  [idx 1385 ] /home/ishaq2321/bb_tests/repositories/duckdb/test/sqlite/validate_tags_usage.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1392 ] /home/ishaq2321/bb_tests/repositories/elixir/lib/elixir/scripts/windows_installer/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1420 ] /home/ishaq2321/bb_tests/repositories/flutter-packages/.ci/scripts/set_default_linux_apps.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1442 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/cross/build-rootfs.sh sites=4 edges=4  shapes=export NAME
+  [idx 1452 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/native/init-compiler.sh sites=4 edges=4  shapes=export NAME
+  [idx 1453 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/native/init-distro-rid.sh sites=2 edges=2  shapes=export NAME
+  [idx 1457 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/native/install-dependencies.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1458 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/pipeline-logging-functions.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1460 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/tools.sh sites=11 edges=11  shapes=export NAME=value
+  [idx 1461 ] /home/ishaq2321/bb_tests/repositories/fsharp/eng/common/vmr-sync.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1466 ] /home/ishaq2321/bb_tests/repositories/geb/build-in-docker.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 1470 ] /home/ishaq2321/bb_tests/repositories/gh-cli/.github/workflows/scripts/spam-detection/eval.sh sites=5 edges=5  shapes=export NAME
+  [idx 1490 ] /home/ishaq2321/bb_tests/repositories/ghostty/src/shell-integration/bash/bash-preexec.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1491 ] /home/ishaq2321/bb_tests/repositories/ghostty/src/shell-integration/bash/ghostty.bash sites=1 edges=1  shapes=export NAME=value
+  [idx 1500 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/.github/fmt-actions.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1501 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/.github/fmt-md.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1502 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/.github/lint-actions.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1503 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/.github/pin-actions.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1504 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/.github/workflows/check-gomod.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1508 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/bin/update_gqlparser.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1509 ] /home/ishaq2321/bb_tests/repositories/gql-gqlgen/docs/build.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1527 ] /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/run-and-collect-gateway.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 1529 ] /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/run-single-benchmark.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1530 ] /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/start-gateway.sh sites=4 edges=4  shapes=export NAME=value + export NAME
+  [idx 1532 ] /home/ishaq2321/bb_tests/repositories/gql-graphql-platform/src/HotChocolate/Fusion/benchmarks/k6/start-review.sh sites=2 edges=2  shapes=export NAME + export NAME=value
+  [idx 1549 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/test-reproducible-build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1550 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/test-reproducible-builds.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1551 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/verify-cli-distribution.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1552 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/verify-jar-artifacts.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1554 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/verify-reproducible.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1555 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/verify-source-distribution.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1556 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/verify-wrapper-distribution.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1557 ] /home/ishaq2321/bb_tests/repositories/grails-core/etc/bin/verify.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1558 ] /home/ishaq2321/bb_tests/repositories/grails-core/grails-forge/etc/bin/test-reproducible-builds.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1559 ] /home/ishaq2321/bb_tests/repositories/grails-core/grails-spring-security/rest/generate-test-apps.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1565 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/.circleci/install-cli-builder-deps.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1566 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/.circleci/test-console.sh sites=9 edges=9  shapes=export NAME=value
+  [idx 1567 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/.circleci/test-deprecated-server-flags.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1568 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/.circleci/test-server-flags.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1569 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/.circleci/test-server.sh sites=150 edges=150  shapes=export NAME=value + export NAME
+  [idx 1572 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/cli/build/get-version.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1573 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/cli/get.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1594 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/scripts/bigquery.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1601 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/scripts/dev.sh sites=22 edges=22  shapes=export NAME=value
+  [idx 1613 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/benchmarks/bench.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1614 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/benchmarks/benchmark_sets/chinook/adhoc_operations/replace_metadata.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1615 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/benchmarks/benchmark_sets/deep_schema/adhoc_operations/replace_metadata.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1616 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/benchmarks/benchmark_sets/huge_schema/adhoc_operations/allowlist.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1617 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/benchmarks/benchmark_sets/huge_schema/adhoc_operations/replace_metadata.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1618 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/benchmarks/benchmark_sets/huge_schema/adhoc_operations/untrack_track_table.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1631 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/server/tests-py/run.sh sites=5 edges=5  shapes=export NAME + export NAME=value
+  [idx 1632 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/v3/crates/engine/tests/ndc-postgres-configuration/regenerate.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1633 ] /home/ishaq2321/bb_tests/repositories/hasura-engine/v3/nix/docker-entrypoint.sh sites=1 edges=0  shapes=export "computed=value" (dynamic name)
+  [idx 1649 ] /home/ishaq2321/bb_tests/repositories/helm/pkg/provenance/testdata/regen-keyring-formats.sh sites=2 edges=2  shapes=export NAME
+  [idx 1686 ] /home/ishaq2321/bb_tests/repositories/jq/compile-ios.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1688 ] /home/ishaq2321/bb_tests/repositories/kong/build/dockerfiles/entrypoint.sh sites=2 edges=1  shapes=export "computed=value" (dynamic name) + export NAME=value
+  [idx 1690 ] /home/ishaq2321/bb_tests/repositories/kong/build/luarocks/templates/luarocks_make.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1691 ] /home/ishaq2321/bb_tests/repositories/kong/build/luarocks/templates/luarocks_target.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1693 ] /home/ishaq2321/bb_tests/repositories/kong/build/templates/venv.sh sites=7 edges=7  shapes=export NAME + export NAME=value
+  [idx 1695 ] /home/ishaq2321/bb_tests/repositories/kong/scripts/build-wasm-test-filters.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1698 ] /home/ishaq2321/bb_tests/repositories/kong/scripts/dependency_services/common.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1699 ] /home/ishaq2321/bb_tests/repositories/kong/scripts/dependency_services/up.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1702 ] /home/ishaq2321/bb_tests/repositories/kong/scripts/release-lib.sh sites=2 edges=1  shapes=export NAME=value + export "computed=value" (dynamic name)
+  [idx 1703 ] /home/ishaq2321/bb_tests/repositories/kong/scripts/upgrade-tests/test-upgrade-path.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1720 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/common.sh sites=11 edges=11  shapes=export NAME=value + export NAME
+  [idx 1721 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/config-common.sh sites=24 edges=24  shapes=export NAME=value
+  [idx 1722 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/config-default.sh sites=59 edges=59  shapes=export NAME=value + export NAME
+  [idx 1723 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/config-test.sh sites=84 edges=84  shapes=export NAME=value + export NAME
+  [idx 1725 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/gci/configure-helper.sh sites=2 edges=2  shapes=export NAME + export NAME=value
+  [idx 1736 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/upgrade-aliases.sh sites=8 edges=8  shapes=export NAME=value
+  [idx 1737 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/upgrade.sh sites=5 edges=5  shapes=export NAME
+  [idx 1738 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/gce/util.sh sites=4 edges=4  shapes=export NAME=value + export NAME
+  [idx 1742 ] /home/ishaq2321/bb_tests/repositories/kubernetes/cluster/get-kube.sh sites=1 edges=1  shapes=export NAME
+  [idx 1757 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/apidiff.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1766 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/e2e-internal/e2e-cluster-size.sh sites=2 edges=2  shapes=export NAME
+  [idx 1767 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/e2e-internal/e2e-down.sh sites=2 edges=2  shapes=export NAME
+  [idx 1768 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/e2e-internal/e2e-grow-cluster.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 1769 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/e2e-internal/e2e-shrink-cluster.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1770 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/e2e-internal/e2e-status.sh sites=2 edges=2  shapes=export NAME
+  [idx 1771 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/e2e-internal/e2e-up.sh sites=2 edges=2  shapes=export NAME
+  [idx 1776 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/ginkgo-e2e.sh sites=4 edges=4  shapes=export NAME + export NAME=value
+  [idx 1780 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/jenkins/benchmark-dockerized.sh sites=6 edges=6  shapes=export NAME + export NAME=value
+  [idx 1782 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/jenkins/test-dockerized.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1784 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/jenkins/update-dockerized.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1785 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/jenkins/verify-dockerized.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1786 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/lib/etcd.sh sites=4 edges=4  shapes=export NAME=value + export NAME
+  [idx 1787 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/lib/golang.sh sites=25 edges=25  shapes=export NAME + export NAME=value
+  [idx 1788 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/lib/init.sh sites=4 edges=4  shapes=export NAME=value + export NAME
+  [idx 1790 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/lib/protoc.sh sites=1 edges=1  shapes=export NAME
+  [idx 1795 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/lint-dependencies.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1796 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/local-up-cluster.sh sites=6 edges=6  shapes=export NAME + export NAME=value
+  [idx 1801 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/make-rules/test-cmd.sh sites=5 edges=5  shapes=export NAME + export NAME=value
+  [idx 1802 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/make-rules/test-e2e-node.sh sites=2 edges=2  shapes=export NAME
+  [idx 1803 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/make-rules/test-integration.sh sites=3 edges=3  shapes=export NAME
+  [idx 1804 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/make-rules/test.sh sites=3 edges=3  shapes=export NAME + export NAME=value
+  [idx 1806 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/make-rules/verify.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1808 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/pin-dependency.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1813 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/tools/instrumentation/stability-utils.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1819 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/update-codegen.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1833 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/update-netparse-cve.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1838 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/update-vendor-licenses.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 1839 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/update-vendor.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 1844 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-codegen.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1847 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-deadcode-elimination.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1849 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-e2e-images.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1851 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-external-dependencies-version.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1861 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-golangci-lint.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1867 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-licenses.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1869 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-metrics-naming.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 1883 ] /home/ishaq2321/bb_tests/repositories/kubernetes/hack/verify-spelling.sh sites=2 edges=2  shapes=export NAME + export NAME=value
+  [idx 1910 ] /home/ishaq2321/bb_tests/repositories/kubernetes/staging/src/k8s.io/code-generator/kube_codegen.sh sites=1 edges=1  shapes=export NAME
+  [idx 1919 ] /home/ishaq2321/bb_tests/repositories/kubernetes/staging/src/k8s.io/kubectl/pkg/cmd/edit/testdata/record_testcase.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1928 ] /home/ishaq2321/bb_tests/repositories/kubernetes/staging/test/test-modules-with-minimum-go.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 1951 ] /home/ishaq2321/bb_tests/repositories/kubernetes/test/cmd/legacy-script.sh sites=42 edges=42  shapes=export NAME=value
+  [idx 1973 ] /home/ishaq2321/bb_tests/repositories/kubernetes/test/e2e/testing-manifests/auth/encrypt/run-e2e.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 1974 ] /home/ishaq2321/bb_tests/repositories/kubernetes/test/e2e/testing-manifests/storage-csi/external-snapshot-metadata/run_snapshot_metadata_e2e.sh sites=10 edges=10  shapes=export NAME=value + export NAME
+  [idx 1976 ] /home/ishaq2321/bb_tests/repositories/kubernetes/test/e2e_dra/run.sh sites=6 edges=6  shapes=export NAME
+  [idx 1996 ] /home/ishaq2321/bb_tests/repositories/kubernetes/test/kubemark/gce/util.sh sites=17 edges=16  shapes=export NAME=value + export "computed=value" (dynamic name)
+  [idx 1999 ] /home/ishaq2321/bb_tests/repositories/kubernetes/test/kubemark/run-e2e-tests.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2015 ] /home/ishaq2321/bb_tests/repositories/kubernetes/vendor/golang.org/x/sys/plan9/mkerrors.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2018 ] /home/ishaq2321/bb_tests/repositories/kubernetes/vendor/golang.org/x/sys/unix/mkerrors.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2021 ] /home/ishaq2321/bb_tests/repositories/lapis/ci.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2022 ] /home/ishaq2321/bb_tests/repositories/libxslt/.gitlab-ci/dist.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2025 ] /home/ishaq2321/bb_tests/repositories/libxslt/.gitlab-ci/test_cmake.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2035 ] /home/ishaq2321/bb_tests/repositories/nim-lang-nimble/tests/populate_cache.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2038 ] /home/ishaq2321/bb_tests/repositories/nim/tests/dll/test_nimhcr_integration.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2055 ] /home/ishaq2321/bb_tests/repositories/nomad/demo/hostvolume/_test-plugin.sh sites=17 edges=17  shapes=export NAME=value
+  [idx 2066 ] /home/ishaq2321/bb_tests/repositories/nomad/e2e/terraform/packer/ubuntu-jammy-amd64/setup.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2068 ] /home/ishaq2321/bb_tests/repositories/nomad/e2e/terraform/provision-infra/scripts/bootstrap-nomad.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2070 ] /home/ishaq2321/bb_tests/repositories/nomad/e2e/ui/run.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2104 ] /home/ishaq2321/bb_tests/repositories/nomad/scripts/linux-priv-config.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2112 ] /home/ishaq2321/bb_tests/repositories/nomad/scripts/vagrant-freebsd-unpriv-bootstrap.sh sites=2 edges=2  shapes=export NAME=value + export NAME
+  [idx 2116 ] /home/ishaq2321/bb_tests/repositories/nomad/scripts/vagrant-linux-unpriv-ui.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2122 ] /home/ishaq2321/bb_tests/repositories/nomad/terraform/shared/scripts/client.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2123 ] /home/ishaq2321/bb_tests/repositories/nomad/terraform/shared/scripts/server.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2124 ] /home/ishaq2321/bb_tests/repositories/nomad/terraform/shared/scripts/setup.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2132 ] /home/ishaq2321/bb_tests/repositories/nvm/nvm.sh sites=11 edges=11  shapes=export NAME=value + export NAME
+  [idx 2135 ] /home/ishaq2321/bb_tests/repositories/nvm/test/common.sh sites=1 edges=1  shapes=export NAME
+  [idx 2137 ] /home/ishaq2321/bb_tests/repositories/ohmyzsh/oh-my-zsh.sh sites=23 edges=4  shapes=export NAME=value + export <ERROR> (not a name site) + export "computed=value" (dynamic name) + export NAME
+  [idx 2149 ] /home/ishaq2321/bb_tests/repositories/ohmyzsh/tools/install.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2158 ] /home/ishaq2321/bb_tests/repositories/otp/.github/scripts/build-macos-wxwidgets.sh sites=1 edges=1  shapes=export NAME
+  [idx 2159 ] /home/ishaq2321/bb_tests/repositories/otp/.github/scripts/build-macos.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2170 ] /home/ishaq2321/bb_tests/repositories/otp/.github/scripts/renovate-vendored-deps.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2177 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/cygwin_tools/javac.sh sites=1 edges=1  shapes=export NAME
+  [idx 2194 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/msys_tools/javac.sh sites=1 edges=1  shapes=export NAME
+  [idx 2200 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/msys_tools/vc/cc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2201 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/msys_tools/vc/emu_cc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2203 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/msys_tools/vc/mc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2204 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/msys_tools/vc/rc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2209 ] /home/ishaq2321/bb_tests/repositories/otp/erts/etc/win32/wsl_tools/javac.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2225 ] /home/ishaq2321/bb_tests/repositories/otp/lib/inets/examples/server_root/cgi-bin/printenv.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2227 ] /home/ishaq2321/bb_tests/repositories/otp/lib/inets/test/httpc_proxy_SUITE_data/server_proxy.sh sites=15 edges=15  shapes=export NAME
+  [idx 2234 ] /home/ishaq2321/bb_tests/repositories/otp/make/test_target_script.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2242 ] /home/ishaq2321/bb_tests/repositories/packer/examples/_common/vmware.sh sites=1 edges=1  shapes=export NAME
+  [idx 2244 ] /home/ishaq2321/bb_tests/repositories/packer/examples/hcl/linux/etc/scripts/010-update.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2253 ] /home/ishaq2321/bb_tests/repositories/packer/examples/hcl/linux/etc/scripts/100-cleanup.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2256 ] /home/ishaq2321/bb_tests/repositories/packer/scripts/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2261 ] /home/ishaq2321/bb_tests/repositories/packer/scripts/sign.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2263 ] /home/ishaq2321/bb_tests/repositories/packer/scripts/vagrant-freebsd-unpriv-bootstrap.sh sites=2 edges=2  shapes=export NAME=value + export NAME
+  [idx 2264 ] /home/ishaq2321/bb_tests/repositories/packer/scripts/vagrant-linux-priv-config.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2275 ] /home/ishaq2321/bb_tests/repositories/pb-reference/regenerate_stale_files.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2287 ] /home/ishaq2321/bb_tests/repositories/postgrest/test/memory/memory-tests.sh sites=6 edges=6  shapes=export NAME=value
+  [idx 2304 ] /home/ishaq2321/bb_tests/repositories/proxicall/.copilot-tools/mcp_call.sh sites=3 edges=3  shapes=export NAME=value + export NAME
+  [idx 2306 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_e2e_seed.sh sites=2 edges=2  shapes=export NAME
+  [idx 2307 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_edges_e2e_seed.sh sites=2 edges=2  shapes=export NAME
+  [idx 2308 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_payouts_e2e_seed.sh sites=3 edges=3  shapes=export NAME
+  [idx 2309 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_push_e2e_orchestrator.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2310 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_push_e2e_seed.sh sites=3 edges=3  shapes=export NAME + export NAME=value
+  [idx 2311 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_tasks_e2e_seed.sh sites=2 edges=2  shapes=export NAME
+  [idx 2312 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/ems_workloop_e2e_seed.sh sites=2 edges=2  shapes=export NAME
+  [idx 2313 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m17b_2873_device.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2315 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m17b_2873_role_matrix.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2323 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m22_2917_schedule_gate.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2324 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m22_2917_schedule_tap.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2325 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m22_2927_channel_gate.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2327 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m89_2899_ems_journeys.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2330 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/m95_3006_mutation_proof.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2332 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/run_m16_2819_device_drive.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2333 ] /home/ishaq2321/bb_tests/repositories/proxicall/_dev/run_payment_e2e.sh sites=7 edges=7  shapes=export NAME=value
+  [idx 2335 ] /home/ishaq2321/bb_tests/repositories/proxicall/database/run_money_verification.sh sites=1 edges=0  shapes=export "computed=value" (dynamic name)
+  [idx 2349 ] /home/ishaq2321/bb_tests/repositories/proxicall/tools/brain/hooks/post-commit.append.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2353 ] /home/ishaq2321/bb_tests/repositories/r-Rcpp/inst/examples/ConvolveBenchmarks/buildAndRun.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2354 ] /home/ishaq2321/bb_tests/repositories/r-Rcpp/inst/examples/ConvolveBenchmarks/overhead.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2356 ] /home/ishaq2321/bb_tests/repositories/rbenv/rbenv.d/exec/gem-rehash.bash sites=1 edges=1  shapes=export NAME=value
+  [idx 2357 ] /home/ishaq2321/bb_tests/repositories/rbenv/test/test_helper.bash sites=5 edges=5  shapes=export NAME=value + export NAME
+  [idx 2358 ] /home/ishaq2321/bb_tests/repositories/rebar3/pr2relnotes.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2359 ] /home/ishaq2321/bb_tests/repositories/rebar3/vendor_hex_core.sh sites=2 edges=2  shapes=export NAME
+  [idx 2379 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/cpp/infallible_new_false.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2380 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/cpp/infallible_new_true.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2381 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/extent.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2382 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/mallocx.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2383 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/slab_sizes.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2384 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/smallocx.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2385 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/integration/xallocx.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2386 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/arena_decay.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2387 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/arena_reset_prof.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2388 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/batch_alloc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2389 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/batch_alloc_prof.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2390 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/binshard.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2391 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/hpa_background_thread.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2392 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/inspect.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2393 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/junk.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2394 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/junk_alloc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2395 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/junk_free.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2396 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/malloc_conf_2.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2397 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/pack.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2398 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_accum.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2399 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_active.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2400 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_gdump.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2401 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_hook.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2402 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_idump.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2403 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_log.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2404 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_mdump.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2405 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_recent.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2406 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_reset.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2407 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_stats.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2408 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_sys_thread_name.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2409 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_tctx.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2410 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/prof_thread_name.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2411 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/safety_check.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2412 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/san.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2413 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/size_check.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2414 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/tcache_max.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2415 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/thread_event.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2416 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/zero.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2417 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/zero_realloc_abort.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2418 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/zero_realloc_alloc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2419 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/zero_realloc_free.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2420 ] /home/ishaq2321/bb_tests/repositories/redis/deps/jemalloc/test/unit/zero_reallocs.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2423 ] /home/ishaq2321/bb_tests/repositories/redis/scripts/bootstrap.sh sites=2 edges=2  shapes=export NAME=value + export NAME
+  [idx 2552 ] /home/ishaq2321/bb_tests/repositories/swift-nio/scripts/install_android_ndk.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2562 ] /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/tfstate-backend/scripts/destroy.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2564 ] /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/aws/tfstate-backend/scripts/init.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2565 ] /home/ishaq2321/bb_tests/repositories/terraform-aws-components/deprecated/spacelift-worker-pool/templates/user-data.sh sites=17 edges=17  shapes=export NAME=value
+  [idx 2571 ] /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/github-runners/templates/user-data.sh sites=12 edges=12  shapes=export NAME=value
+  [idx 2574 ] /home/ishaq2321/bb_tests/repositories/terraform-aws-components/modules/spacelift/worker-pool/templates/user-data.sh sites=17 edges=17  shapes=export NAME=value
+  [idx 2576 ] /home/ishaq2321/bb_tests/repositories/terraform/.github/scripts/e2e_test_linux_darwin.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2582 ] /home/ishaq2321/bb_tests/repositories/terraform/scripts/build.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2596 ] /home/ishaq2321/bb_tests/repositories/terragrunt/.github/scripts/build/no-proxy-binaries.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2642 ] /home/ishaq2321/bb_tests/repositories/terragrunt/.github/scripts/setup/engine.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2644 ] /home/ishaq2321/bb_tests/repositories/terragrunt/.github/scripts/setup/gcp.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2696 ] /home/ishaq2321/bb_tests/repositories/tfsec/scripts/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2712 ] /home/ishaq2321/bb_tests/repositories/traefik/script/validate-vendor.sh sites=1 edges=1  shapes=export NAME
+  [idx 2714 ] /home/ishaq2321/bb_tests/repositories/vault/.build/entrypoint.sh sites=3 edges=3  shapes=export NAME=value
+  [idx 2716 ] /home/ishaq2321/bb_tests/repositories/vault/.build/system.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2726 ] /home/ishaq2321/bb_tests/repositories/vault/.release/docker/docker-entrypoint.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2727 ] /home/ishaq2321/bb_tests/repositories/vault/.release/docker/ubi-docker-entrypoint.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2728 ] /home/ishaq2321/bb_tests/repositories/vault/command/agentproxyshared/auth/kerberos/integtest/integrationtest.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2737 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/build_local/scripts/build.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2770 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/vault_cluster/scripts/start-audit-socket-listener.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2776 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/vault_proxy/scripts/use-proxy.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2778 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/vault_run_blackbox_test/scripts/run-test.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2781 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/vault_setup_replication_secondary/scripts/wait-for-leader-ready.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2789 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/vault_verify_billing_start_date/scripts/verify-billing-start.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2801 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_aws_secrets_engine/scripts/aws-generate-roles.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2802 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_aws_secrets_engine/scripts/aws-verify-new-creds.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2803 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_aws_secrets_engine/scripts/secrets-enable.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2806 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/auth-enable.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2807 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/auth-userpass-login.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2808 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/auth-userpass-write.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2809 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/aws-generate-roles.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2810 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/aws-verify-new-creds.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2811 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/delete.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2812 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/identity-oidc-introspect-token.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2813 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/identity-verify-entity.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2814 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/identity-verify-oidc.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2816 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/kmip/kmip-configure.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2817 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/kmip/kmip-generate-cert.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2818 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/kv-put.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2819 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/kv-verify-value.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2820 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-configs.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2821 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-lease-renew.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2822 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-lease-revoke.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2823 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-library-checkin-specific.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2824 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-library-enforcement-config.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2825 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-library-force-checkin.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2826 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-library-password-checkout.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2827 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-library-password-rotation.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2828 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-library-ttl-config.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2829 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap-secrets-config.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2831 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/Dynamic-roles/dynamic-roles-deletion.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2832 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/Dynamic-roles/dynamic-roles-listing.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2833 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/Dynamic-roles/dynamic-roles-rollback.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2834 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/Dynamic-roles/dynamic-roles-validation.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2835 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/Dynamic-roles/dynamic-roles.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2837 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/audit-verify.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2838 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/secrets-rollback/secrets-rollback-creds-mismatch.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2839 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/secrets-rollback/secrets-rollback-invalid-config.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2840 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/secrets-rollback/secrets-rollback-transactional.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2841 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/setup.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2842 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/static-roles.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2843 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-audit-trail.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2844 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-auto-cleanup.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2845 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-credential-renewal.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2846 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-error-handling.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2847 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-manual-revocation.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2848 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-rollback.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2849 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/vault_dynamic_credentials/verify-ttl-limits.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2851 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/verify-auth.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2852 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/verify-password-policy.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2853 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/verify-rotation.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2854 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ldap/verify-secrets.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2855 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/list.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2856 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/pki-issue-certificates.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2857 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/pki-verify-certificates.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2858 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/policy-write.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2859 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/read.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2860 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/secrets-enable.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2861 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ssh/ssh-verify-ca.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2862 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ssh/ssh-verify-otp.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2863 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/ssh/ssh-verify-role.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2865 ] /home/ishaq2321/bb_tests/repositories/vault/enos/modules/verify_secrets_engines/scripts/write.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2869 ] /home/ishaq2321/bb_tests/repositories/vault/scripts/ci-helper.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2874 ] /home/ishaq2321/bb_tests/repositories/vault/scripts/docker/docker-entrypoint.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2875 ] /home/ishaq2321/bb_tests/repositories/vault/scripts/gen_openapi.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2893 ] /home/ishaq2321/bb_tests/repositories/waypoint/ci/integration.sh sites=1 edges=1  shapes=export NAME=value
+  [idx 2902 ] /home/ishaq2321/bb_tests/repositories/waypoint/test-e2e/run-test.sh sites=6 edges=6  shapes=export NAME=value
+  [idx 2946 ] /home/ishaq2321/bb_tests/repositories/zig/ci/aarch64-linux-debug.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2947 ] /home/ishaq2321/bb_tests/repositories/zig/ci/aarch64-linux-release.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2948 ] /home/ishaq2321/bb_tests/repositories/zig/ci/aarch64-macos-debug.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2949 ] /home/ishaq2321/bb_tests/repositories/zig/ci/aarch64-macos-release.sh sites=2 edges=2  shapes=export NAME=value
+  [idx 2950 ] /home/ishaq2321/bb_tests/repositories/zig/ci/loongarch64-linux-debug.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2951 ] /home/ishaq2321/bb_tests/repositories/zig/ci/loongarch64-linux-release.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2952 ] /home/ishaq2321/bb_tests/repositories/zig/ci/riscv64-linux-debug.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2953 ] /home/ishaq2321/bb_tests/repositories/zig/ci/riscv64-linux-release.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2954 ] /home/ishaq2321/bb_tests/repositories/zig/ci/s390x-linux-debug.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2955 ] /home/ishaq2321/bb_tests/repositories/zig/ci/s390x-linux-release.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2956 ] /home/ishaq2321/bb_tests/repositories/zig/ci/x86_64-freebsd-debug.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2957 ] /home/ishaq2321/bb_tests/repositories/zig/ci/x86_64-freebsd-release.sh sites=4 edges=4  shapes=export NAME=value
+  [idx 2958 ] /home/ishaq2321/bb_tests/repositories/zig/ci/x86_64-linux-debug-llvm.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2959 ] /home/ishaq2321/bb_tests/repositories/zig/ci/x86_64-linux-debug.sh sites=5 edges=5  shapes=export NAME=value
+  [idx 2960 ] /home/ishaq2321/bb_tests/repositories/zig/ci/x86_64-linux-release.sh sites=7 edges=7  shapes=export NAME=value
+
+redefinition files (all of them):
+  [idx 1271] /home/ishaq2321/bb_tests/repositories/dark/install.sh events=2 edges=2
+  [idx 1601] /home/ishaq2321/bb_tests/repositories/hasura-engine/scripts/dev.sh events=1 edges=1
+  [idx 1702] /home/ishaq2321/bb_tests/repositories/kong/scripts/release-lib.sh events=4 edges=4
+  [idx 2136] /home/ishaq2321/bb_tests/repositories/nvm/update_test_mocks.sh events=1 edges=1
+  [idx 2137] /home/ishaq2321/bb_tests/repositories/ohmyzsh/oh-my-zsh.sh events=1 edges=1
+  [idx 2147] /home/ishaq2321/bb_tests/repositories/ohmyzsh/tools/changelog.sh events=1 edges=1
+  [idx 2149] /home/ishaq2321/bb_tests/repositories/ohmyzsh/tools/install.sh events=1 edges=1
+  [idx 2153] /home/ishaq2321/bb_tests/repositories/ohmyzsh/tools/upgrade.sh events=1 edges=1
+  [idx 2234] /home/ishaq2321/bb_tests/repositories/otp/make/test_target_script.sh events=3 edges=3
+  [idx 2721] /home/ishaq2321/bb_tests/repositories/vault/.github/scripts/install-cob.sh events=1 edges=1
+  [idx 2907] /home/ishaq2321/bb_tests/repositories/yq/acceptance_tests/basic.sh events=2 edges=2
+  [idx 2920] /home/ishaq2321/bb_tests/repositories/yq/acceptance_tests/pretty-print.sh events=1 edges=1

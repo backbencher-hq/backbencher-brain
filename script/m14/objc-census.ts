@@ -53,7 +53,7 @@ const argv = process.argv.slice(2)
 const writeIdx = argv.indexOf("--write")
 const out = writeIdx >= 0 && writeIdx + 1 < argv.length ? argv[writeIdx + 1] : undefined
 const ROOT = process.cwd()
-const CORPUS = path.join(ROOT, ".corpus")
+const CORPUS = process.env.BB_CORPUS_ROOT ? path.resolve(process.env.BB_CORPUS_ROOT) : path.join(ROOT, ".corpus")
 const POPULATION = path.join(ROOT, "validation/m14/measurements/objc-population.txt")
 const GATE_PART_OF_EDGES = 717 // the gate's own TABLE 1 row, whole-population run (parsed=262/262)
 

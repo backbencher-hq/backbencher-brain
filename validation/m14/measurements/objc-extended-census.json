@@ -1,0 +1,244 @@
+{
+  "tool": "script/m14/objc-census.ts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "rule": "the gate's OWN admitted population, read from the file list the gate printed (`BB_LIST_FILES=1 bun run script/m14/incoming-gate.ts objective-c 0`): 262 files over 9 repositories, extensions m,mm from the router's one table, present on disk, ≤ 1 MiB",
+  "population": {
+    "admitted": 259,
+    "parsed": 259,
+    "failed": 0,
+    "repositories": 8,
+    "populationString": "parsed=259/259 admitted=259 exts=m,mm index=no",
+    "list": "validation/m14/measurements/objc-population.txt"
+  },
+  "counts": {
+    "files": 259,
+    "filesParsed": 259,
+    "filesFailed": 0,
+    "partOfEdges": 711,
+    "filesWithPartOf": 235,
+    "preprocIncludeSites": 772,
+    "systemIncludeSites": 201,
+    "quotedIncludeSites": 571,
+    "moduleImportSites": 73,
+    "categorySites": 271,
+    "categoryInterfaceSites": 220,
+    "categoryImplementationSites": 51,
+    "namedCategorySites": 67,
+    "anonymousClassExtensionSites": 204,
+    "categoryLabelPublishedAsTypeInSameFile": 0,
+    "categoryLabelPublishedAsTypeInProject": 1,
+    "categoryExtendedClassAlsoPlainInSameFile": 14,
+    "categoryExtendedClassAlsoPlainInProject": 0,
+    "nibResourceStrings": 2,
+    "attributeSites": 177,
+    "attributeSpecifierSites": 177,
+    "attributeDeclarationSites": 0,
+    "availabilityAttributeSpecifierSites": 51,
+    "propertyAttributeSites": 1238,
+    "attributeWithCallArgument": 95,
+    "declaredCalleeInAttribute": 0,
+    "callableAttributeArguments": 0,
+    "nonCallableDeclaredCallee": 0,
+    "appliedCallableAttributeSites": 0,
+    "compilerDirectiveMacroSites": 0,
+    "blockLiteralSites": 1347,
+    "renderShapedNodes": 0,
+    "nibOrStoryboardStringSites": 0,
+    "nibInitializerSites": 3,
+    "compositionShapedNodes": 0
+  },
+  "perType": {
+    "edges": {
+      "imports": 830,
+      "part_of": 711,
+      "references": 940,
+      "calls": 13805,
+      "uses": 14918,
+      "instantiates": 1209,
+      "contains": 4009,
+      "extends": 131,
+      "exports": 731,
+      "overrides": 786,
+      "implements": 36
+    },
+    "files": {
+      "imports": 256,
+      "part_of": 235,
+      "references": 259,
+      "calls": 246,
+      "uses": 242,
+      "instantiates": 162,
+      "contains": 223,
+      "extends": 77,
+      "exports": 233,
+      "overrides": 60,
+      "implements": 23
+    }
+  },
+  "crossCheck": {
+    "partOfEdges": {
+      "census": 711,
+      "gateTableOne": 717,
+      "agrees": false
+    },
+    "population": {
+      "list": 259,
+      "gateWidthOneHeader": 259
+    }
+  },
+  "categorySites": {
+    "records": 67,
+    "labels": 32,
+    "top": [
+      [
+        "AFNetworking",
+        6
+      ],
+      [
+        "_AFNetworking",
+        6
+      ],
+      [
+        "WebCache",
+        6
+      ],
+      [
+        "Conveniences",
+        6
+      ],
+      [
+        "DvAExtensions",
+        4
+      ],
+      [
+        "Private",
+        2
+      ],
+      [
+        "AFNetworkingSafeImageLoading",
+        2
+      ],
+      [
+        "NSCoding",
+        2
+      ],
+      [
+        "Testing",
+        2
+      ],
+      [
+        "FIPPickerItem",
+        2
+      ],
+      [
+        "AuthSample",
+        2
+      ],
+      [
+        "Constructors",
+        2
+      ]
+    ]
+  },
+  "failedFiles": [],
+  "topAttributeNames": [
+    [
+      "visibility",
+      95
+    ],
+    [
+      "used",
+      70
+    ],
+    [
+      "unused",
+      12
+    ]
+  ],
+  "compilerDirectiveMacros": [],
+  "topCategoryLabels": [
+    [
+      "AFNetworking",
+      6
+    ],
+    [
+      "_AFNetworking",
+      6
+    ],
+    [
+      "WebCache",
+      6
+    ],
+    [
+      "Conveniences",
+      6
+    ],
+    [
+      "DvAExtensions",
+      4
+    ],
+    [
+      "Private",
+      2
+    ],
+    [
+      "AFNetworkingSafeImageLoading",
+      2
+    ],
+    [
+      "NSCoding",
+      2
+    ],
+    [
+      "Testing",
+      2
+    ],
+    [
+      "FIPPickerItem",
+      2
+    ],
+    [
+      "AuthSample",
+      2
+    ],
+    [
+      "Constructors",
+      2
+    ]
+  ],
+  "samples": {
+    "attributeWithCallArgument": [
+      "dart-http/pkgs/cupertino_http/src/native_cupertino_bindings.m: __attribute__((visibility(\"default\")))",
+      "dart-http/pkgs/cupertino_http/src/native_cupertino_bindings.m: __attribute__((visibility(\"default\")))",
+      "dart-http/pkgs/cupertino_http/src/native_cupertino_bindings.m: __attribute__((visibility(\"default\")))",
+      "dart-http/pkgs/cupertino_http/src/native_cupertino_bindings.m: __attribute__((visibility(\"default\")))",
+      "dart-http/pkgs/cupertino_http/src/native_cupertino_bindings.m: __attribute__((visibility(\"default\")))"
+    ],
+    "callableAttribute": [],
+    "nonCallableDeclaredCallee": [],
+    "appliedCallable": [],
+    "renderShaped": [],
+    "nibOrStoryboard": [],
+    "nibInitializer": [
+      "sdwebimage/Examples/SDWebImage Demo/AppDelegate.m: [[MasterViewController alloc] initWithNibName:@\"MasterViewController\" bundle:nil]",
+      "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m: [[DetailViewController alloc] initWithNibName:@\"DetailViewController\" bundle:nil]",
+      "sdwebimage/Examples/SDWebImage Demo/MasterViewController.m: [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]"
+    ],
+    "categoryLabelPublishedAsType": [],
+    "categoryLabelPublishedAsTypeInProject": [
+      "sdwebimage/SDWebImage/Core/SDImageCache.m: SDImageCache (SDImageCache) -> extension|class"
+    ],
+    "categoryExtendedClassAlsoPlainInSameFile": [
+      "Clyde/NoodleLineNumberView.m: NoodleLineNumberView (Private)",
+      "afnetworking/Example/Classes/Models/Post.m: Post (NSCoding)",
+      "afnetworking/Example/Classes/Models/User.m: User (NSCoding)",
+      "sdwebimage/SDWebImage/Core/SDAnimatedImage.m: SDAnimatedImage (MultiFormat)",
+      "sdwebimage/SDWebImage/Core/SDAnimatedImage.m: SDAnimatedImage (Metadata)"
+    ],
+    "compositionShaped": []
+  },
+  "served": {
+    "language": "objective-c",
+    "nodeTypeCount": null
+  }
+}

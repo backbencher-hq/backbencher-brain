@@ -1,0 +1,136 @@
+toml census: 1576 file(s) across 199 repo(s) (2 unreadable entries skipped)
+{
+  "files": 1576,
+  "repos": 199,
+  "skippedEntries": 2,
+  "filesWithParseErrors": 18,
+  "declaredTypes": 21,
+  "observedTypes": 20,
+  "claimed": [
+    {
+      "type": "bare_key",
+      "n": 34788
+    },
+    {
+      "type": "document",
+      "n": 1576
+    },
+    {
+      "type": "dotted_key",
+      "n": 6883
+    },
+    {
+      "type": "pair",
+      "n": 20060
+    },
+    {
+      "type": "quoted_key",
+      "n": 308
+    },
+    {
+      "type": "table",
+      "n": 5900
+    },
+    {
+      "type": "table_array_element",
+      "n": 2124
+    }
+  ],
+  "ruled": [
+    {
+      "type": "ERROR",
+      "n": 211,
+      "why": "reported as a ParseError; the structure is not modelled — a fabricated tree for a mis-nested document is a guess dressed as a fact"
+    },
+    {
+      "type": "array",
+      "n": 2324,
+      "why": "a value is DATA — its elements are data, not symbols"
+    },
+    {
+      "type": "boolean",
+      "n": 2738,
+      "why": "a value is DATA"
+    },
+    {
+      "type": "comment",
+      "n": 2547,
+      "why": "not an identity; TOML has no block-comment form"
+    },
+    {
+      "type": "escape_sequence",
+      "n": 132,
+      "why": "TOML-D1: decoded from the PARENT'S text in pure-String, never walked — equivalent by construction"
+    },
+    {
+      "type": "float",
+      "n": 30,
+      "why": "a value is DATA"
+    },
+    {
+      "type": "inline_table",
+      "n": 1345,
+      "why": "a value is DATA — its keys ride on the enclosing key's metadata.inlineKeys"
+    },
+    {
+      "type": "integer",
+      "n": 370,
+      "why": "a value is DATA"
+    },
+    {
+      "type": "local_date",
+      "n": 1,
+      "why": "a value is DATA"
+    },
+    {
+      "type": "local_date_time",
+      "n": 1,
+      "why": "a value is DATA"
+    },
+    {
+      "type": "local_time",
+      "n": 1,
+      "why": "a value is DATA"
+    },
+    {
+      "type": "offset_date_time",
+      "n": 10,
+      "why": "a value is DATA — one of TOML's four date/time forms"
+    },
+    {
+      "type": "string",
+      "n": 18817,
+      "why": "a value is DATA — recorded as metadata.valueType on its key, never a symbol"
+    }
+  ],
+  "unseen": [
+    "MISSING"
+  ],
+  "unaccounted": [],
+  "shapesRuled": [
+    {
+      "shape": "a value of any type",
+      "why": "data, not a dependency — TOML defines no reference mechanism, so a path-shaped string is a STRING and not a fetch"
+    },
+    {
+      "shape": "an inline table's keys",
+      "why": "part of one value expression; recorded on the key in metadata.inlineKeys so a manifest of 200 `{ version = ... }` dependencies does not publish 600+ un-navigable symbols"
+    },
+    {
+      "shape": "an implied parent table",
+      "why": "recorded in metadata.impliedParents and never a node — an edge to a non-existent target is the unresolvable-identity defect"
+    },
+    {
+      "shape": "a comment",
+      "why": "not an identity"
+    },
+    {
+      "shape": "an empty key `\"\"`",
+      "why": "parses, but names nothing — an identity needs a name"
+    },
+    {
+      "shape": "a bare key outside the bare-key alphabet",
+      "why": "rejected by the GRAMMAR, correctly: TOML v1.0.0 restricts bare keys to A-Za-z0-9_-; a quoted key is the way to write anything else"
+    }
+  ]
+}

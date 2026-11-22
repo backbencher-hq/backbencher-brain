@@ -1,0 +1,171 @@
+[INFO] [16:48:16] [ast-engine] tree-sitter core initialized {"wasmFile":"/tmp/bb-ts-core.wasm"}
+[INFO] [16:48:16] [ast-engine] language grammar allocated {"language":"html"}
+[INFO] [16:48:16] [ast-engine] language parser loaded {"language":"html","wasmPath":"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm_16_8eddvlq"}
+[INFO] [16:48:16] [ast-engine] language grammar allocated {"language":"javascript"}
+[INFO] [16:48:16] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:48:54] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:49:11] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:49:21] [ast-engine] language parser loaded {"language":"html","wasmPath":"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm_16_12c77n37"}
+[INFO] [16:49:21] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:49:27] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:49:36] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:49:44] [ast-engine] language parser loaded {"language":"html","wasmPath":"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm_16_1cxoj5m5"}
+[INFO] [16:49:44] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:50:00] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:50:11] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:50:23] [ast-engine] language parser loaded {"language":"html","wasmPath":"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm_16_1uzj4o1g"}
+[INFO] [16:50:24] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:50:36] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+[INFO] [16:50:55] [ast-engine] language parser loaded {"language":"javascript","wasmPath":"/home/ishaq2321/mcp/backbencher-brain/node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm"}
+  qualified-name join: 0 row(s) resolved by the qualified-name join (the name model alone would not have resolved them) — slash branch: 0 of 239034 row(s) asked · namespace branch: 0 of 113984 row(s) asked
+  case fold (project key space): 0 row(s) moved from unresolved to a declaration whose spelling differs only in case (this language is not opt-in: the fold is inert)
+  module-qualified resolution: 0 row(s) retargeted from '<Module>.<name>' to the leaf, because the claimed module's file is the ONE file in the repo declaring that name
+  module channel: 0 row(s) resolved through it — the claimed module's file declares the name once, so the qualified spelling names that declaration even where the bare name is NOT unique project-wide
+  module channel refusals: 0 row(s) where the module's file declares the name NOWHERE (a re-export, an unpublished record selector, or a class-instance name) and 0 where it declares it more than once
+  implements class-like resolution: 0 row(s) resolved by the class-like rule (the key's CLASS declarations under the bare, then the parenthesised, spelling; a member of the same name is not a rival for an `implements` row)
+incoming gate — html
+corpus root: /home/ishaq2321/bb_tests/repositories (OVERRIDDEN by BB_CORPUS_ROOT — a DIFFERENT population from the default <corpus-root>/bb_tests/repositories; a rate measured here is not comparable with a rate measured there)
+population: 2000 parsed of 2000 sampled (corpus has 8879 .html,htm,xhtml,hbs,twig,pug,erb,mustache,ejs,liquid,njk,jinja,j2 files across 93 repos; CHUNK)
+population: ★ THIS RUN IS A CHUNK, NOT A POPULATION — admitted files [0, 2000) of 8879, and 2000 of them were measured.
+population: the chunk is a SLICE of the admitted set, not a stride of it, so it is DISJOINT from a chunk at another offset and the chunks COVER the population when walked from offset 0.
+population: admitted extensions = .html, .htm, .xhtml, .hbs, .twig, .pug, .erb, .mustache, .ejs, .liquid, .njk, .jinja, .j2 (SOURCE: the CALLER'S ARGUMENT (an explicit set — deliberate, and the table's set is printed beside it)) (the ROUTER'S ONE TABLE says: .html, .htm, .xhtml, .hbs, .twig, .pug, .erb, .mustache, .ejs, .liquid, .njk, .jinja, .j2 — SAME as this run) (13 spellings) — PLUS a bare BASENAME equal to any of them WHEN THE ROUTER'S OWN DETECTION GIVES IT TO THIS LANE (`Makefile` has no extension to match, and an extension-only rule measured 129 files where the production router admits 8879 for THIS lane in THIS run — but the router's verdict is a LANGUAGE, not a spelling: `dart-sdk/sdk/bin/dart` is a bash script and is NOT this lane's file).
+project index: USED — 0 repo index(es) (0 built, 0 from cache, 0 damaged) over 0 file(s) — the files THIS RUN sampled, so an index over a stride sample is not a project index (run with maxFiles 0 for the real one). Passed as { projectIndex } exactly as `pool-worker.ts` parse_batch does. INDEX-ASSISTED POPULATION, and the distinction is not academic: with the index IN, cross-file base resolution and the widened type-visibility gate are measured. THE GATE'S PROJECT-INDEX POPULATION is clojure, cpp, dart, fsharp, java, javascript, protobuf, python, ruby, scss, solidity, typescript (the languages `INDEX_SPECS` can build an index for). For those, this population IS production's; for every other language the analyzer is parsed with NO context and behaves as this run's --index-less arm does, so its counts are not comparable to a --index-less run. Production's own list is PROJECT_INDEX_EXTENSIONS in src/ast/parallel-indexer.ts; a language in that list with no INDEX_SPECS entry here is a gap in THIS instrument, not in production.
+excluded from that population: 2 tracked-but-absent/unreadable + 2 over the 1 MB cap (largest 2.5 MB) — above the cap the engine extracts structurally, not as an analyzer
+parse failures: 0   degraded (regex fallback): 0
+endpoint keys indexed: name + 7959 qualifiedName alias(es). A lane that publishes a file-scoped qualified name and targets that path is measured, not missed.
+ambiguous is counted by DECLARATION here. The kind-count is shown beside it because the fleet's earlier number used it, and the two differ by two orders of magnitude.
+SAMPLE, NOT POPULATION: 2000 of 8879 files. A stride sample truncates each project's symbol table too, so its project-scoped RESOLVED share is biased UP — a name whose collision lives in an unsampled file of the same repository reads unique here. Run with maxFiles 0 for a number about the corpus.
+resolution scope: PER PROJECT (the repository a file belongs to) — production's scope. `parallel-indexer.resolveRelationships` fills `target_symbol_id` only from a project-scoped qualified-name exact match, or from a bare name whose count in THAT project is exactly 1 (`_res_name.cnt = 1`, `WHERE s.project_id = ?`). A name that collides with a declaration in ANOTHER project is not ambiguous to production and is not counted as ambiguous here.
+
+TABLE 1 — PER PROJECT, the scope production resolves in (this is the verdict's):
+type          edges    resolved  collRes  amb(decl)  amb(kind)  unresolved  extOK   ext?    extFAIL  bindOK   bind?   bindFAIL  causeOK  causeFAIL
+----------------------------------------------------------------------------------------------------------------------------------------------------
+calls         15922    6         0         1987       0          4           13923   0       0        2        0       0         0        0
+uses          277567   5969      0         0          0          30249       237368  0       0        3981     0       0         0        0
+contains      57540    57540     54800     0          0          0           0       0       0        0        0       0         0        0
+imports       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+references    1989     0         0         1989       0          0           0       0       0        0        0       0         0        0
+exports       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+extends       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+implements    0        0         0         0          0          0           0       0       0        0        0       0         0        0
+overrides     0        0         0         0          0          0           0       0       0        0        0       0         0        0
+instantiates  0        0         0         0          0          0           0       0       0        0        0       0         0        0
+decorates     0        0         0         0          0          0           0       0       0        0        0       0         0        0
+renders       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+mixes_in      0        0         0         0          0          0           0       0       0        0        0       0         0        0
+part_of       0        0         0         0          0          0           0       0       0        0        0       0         0        0
+---------------------------------------------------------------------------------------------
+TOTAL         353018   63515     54800     3976       0          30253       251291  0       0        3983     0       0         0        0
+collRes = of `resolved`: the target had MORE THAN ONE declaration, so production's tie-break chose the row — the indexer measures 37,318 of 49,729 such picks as WRONG · extOK = external claim the PROJECT CONFIRMS · ext? = claim no check can reach (no identifier owner, and no project fact for it) · extFAIL = claim the project REFUTES, counted against the lane
+bindOK = a target SPELLED as a binding (`<callable>\u0000<binding>`), which no declaration can answer · bind? = a separator with nothing after it · bindFAIL = marked as a binding but spelled so it CAN name a declaration, counted against the lane
+causeOK = bucket 3: the target names nothing here and the edge DECLARED why (a base beyond the run's reach), so it is stated rather than claimed — NEVER folded into resolved · causeFAIL = a declared cause whose own reason does not check out, counted against the lane
+amb(kind) is a SUBSET of amb(decl), printed beside it for comparison: resolved + amb(decl) + unresolved + bindOK + bind? + bindFAIL + extOK + ext? + extFAIL + causeOK + causeFAIL = the edge count, exactly.
+separator tripwire: 0 published key(s) contain `\u0000` of 353018 edges measured (0 required: a declaration name carrying it would make a binding claim unfalsifiable)
+    of those 251291 verified: 29841 by owner lookup in the key space, 221450 against the project's own pubspec files + file list
+EDGES A MARKER SET EXPLAINS — NOT-RESOLVED, PLUS BINDINGS (diagnostic, PER PROJECT scope, up to 5 marker sets per type ordered by amb+unresolved, then any binding-bearing set):
+type          metadata KEYS on the edge                           resolved  amb      unres    extClaim  binding  cause
+--------------------------------------------------------------------------------------------------------------------------
+calleeExpression+embeddedLang+embeddedLineOffset+externalClaimReason+externalReason+externalReceiver+htmlEmbedded+isExternalTarget  2         1987     0        13923     0        0
+calleeExpression+embeddedLang+embeddedLineOffset+htmlEmbedded  4         0        4        0         0        0
+calleeExpression+embeddedLang+embeddedLineOffset+htmlEmbedded+localBinding  0         0        0        0         2        0
+htmlSpecific+resourceType                           0         0        25862    0         0        0
+embeddedLang+embeddedLineOffset+htmlEmbedded+isFieldAccess  0         0        3978     0         0        0
+confidenceReason+htmlSpecific+isNavigation+resourceType  0         0        407      0         0        0
+bareRead+callReceiver+embeddedLang+embeddedLineOffset+htmlEmbedded+isFieldAccess  0         0        2        0         0        0
+bareRead+embeddedLang+embeddedLineOffset+htmlEmbedded+isFieldAccess+localBinding  0         0        0        0         3981     0
+htmlSpecific+idrefKind+idrefList+isIdref            0         1989     0        0         0        0
+--------------------------------------------------------------------------------------------------------------------------
+extClaim = a claim on this marker set the project VERIFIED or that no check can reach · binding = edges on this marker set SPELLED as a binding · cause = edges on this marker set whose analyzer DECLARED why it could not reach the base (bucket 3; never a resolution, and its own column so it cannot be mistaken for one). Grouped by KEY only: a value would split one marker into a signature per symbol it names.
+
+TABLE 2 — PER CORPUS (one pooled key space; NOT the verdict's scope, shown because every earlier dart number in this programme was measured this way):
+type          edges    resolved  amb(decl)  unresolved  extFAIL
+-----------------------------------------------------------------
+calls         15922    0         3984       2           0
+uses          277567   0         5969       30249       0
+contains      57540    57540     0          0           0
+imports       0        0         0          0           0
+references    1989     0         1989       0           0
+exports       0        0         0          0           0
+extends       0        0         0          0           0
+implements    0        0         0          0           0
+overrides     0        0         0          0           0
+instantiates  0        0         0          0           0
+decorates     0        0         0          0           0
+renders       0        0         0          0           0
+mixes_in      0        0         0          0           0
+part_of       0        0         0          0           0
+-----------------------------------------------------------------
+TOTAL         353018   57540     11942      30251       0
+
+BINDING INTENT — the EXACT test beside the count model's upper bound (resolvedAmongCollision):
+  intended = a declaration in the edge's OWN FILE ON the edge's own line answers to the target
+  (exact only where the edge line IS the target symbol's line: contains, exports.)
+  For every other type the edge line is the READ SITE, so a same-file row is sameFileUnproven —
+  not wrong and not right; arbitraryTwin is the file-crossing class in both cases.
+  type          edges    intended  sameFileUnproven arbitraryTwin            nothingAnywhere  noTarget
+  calls         15922    0         6                3978                     11938            0
+  uses          277567   0         5969             0                        271598           0
+  contains      57540    57540     0                0                        0                0
+  references    1989     0         1989             0                        0                0
+  TOTAL         353018   57540     7964             3978                     283536           0
+  INTENT CLOSURE: every row closes — intended+sameFileUnproven+arbitraryTwin+nothingAnywhere+noTarget == edges.
+  COLUMN NAMES SPELL THE MEANING, because a previous name cost a lane 45,967 edges of
+  false alarm: sameFileUnproven = the OWN FILE declares it (line inconclusive here);
+  arbitraryTwin = the OWN FILE DECLARES NOTHING and another file does — THIS is the
+  own-file-absent class; nothingAnywhere = NO FILE IN THE RUN declares it, which is NOT
+  the same question and is two orders of magnitude smaller on nim's calls row.
+  validated against the STORE by validation/m14/fixtures/hcl/tools/store-binding-truth.mts — its
+  own-file+own-line column is this class read off brain_relationship.target_symbol_id.
+CLAIM-CARRYING AMBIGUOUS EDGES — the amb(decl) column is NOT claim-aware. Its claim-carrying
+share, BY CLAIM KIND: 1987 of this lane's 3976 ambiguous edge(s) carry a claim — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 0 CONTRADICTED · 1987 OWN-FILE-SILENT · 0 n/a.
+    owner            VERIFIED 0 · not verified 0 · REFUTED 0 · CONTRADICTED 0 · OWN-FILE-SILENT 1987 · n/a 0
+  ^ 1987 OWN-FILE-SILENT: only ANOTHER file declares the target. **THIS IS NOT A
+    REFUTATION.** css's marker means "THIS FILE declares no --x" (real-css-analyzer.ts:115), and a
+    PER-FILE claim cannot be refuted by another file's declaration — yet the arbiter checked the
+    PROJECT key space and called all 180 of css's ambiguous edges contradicted. Some generic markers
+    are instead about a NAME'S ORIGIN (isStdlib, stdlibModule, nimStdlibModule), which this project
+    declaring a same-named symbol does not falsify either. A per-MARKER scope table would settle it
+    and does not exist, so this class is reported WITH ITS COUNT and NOT as a failure.
+  A CLAIM IS NOT A RESOLUTION: the outcome is deliberately untouched, because an edge can be BOTH
+  ambiguous and file-shaped, and subtracting the claim would HIDE a real collision rather than
+  resolve it. Size the repairable work from the VERIFIED count, not the raw amb(decl) column.
+
+CLAIM-CARRYING RESOLVED EDGES — the tie-break's DISCARDED claims, recorded because they were
+DROPPED. A claim that arrived on a row the OWN FILE already answered is now RECORDED, and it
+moved no count: 2 of this lane's 63515 resolved edge(s) carry a claim the
+tie-break settled — 0 VERIFIED · 0 NOT verified · 0 REFUTED · 2 CONTRADICTED · 0 OWN-FILE-SILENT · 0 n/a.
+    owner            VERIFIED 0 · not verified 0 · REFUTED 0 · CONTRADICTED 2 · OWN-FILE-SILENT 0 · n/a 0
+  A CLAIM IS NOT A RESOLUTION, AND A DISCARDED CLAIM IS NOT A DEFECT: the tie-break IS production's
+  own rule (the own file's declaration is the answer), so the claim is refuted rather than applied.
+  It is counted here so that "how many claim-carrying edges did the name model settle" is READABLE.
+
+AMBIGUOUS / UNRESOLVED TARGETS (worklist; counts sampled per type — don't read a type's absence here as a zero, read TABLE 1):
+  calls
+    amb  replace                                    2 declarations  [module]
+    unres  spec
+    unres  update
+    ^ amb: showing 1 of 1 collected · unres: showing 2 of 2 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  uses
+    unres  Client.styles.css
+    unres  _framework/blazor.webassembly.js
+    unres  _content/Microsoft.AspNetCore.Components.WebAssembly.Authentication/AuthenticationService.js
+    unres  vg
+    ^ amb: showing 0 of 0 collected · unres: showing 4 of 25 collected + **26134 omitted by the cap**. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+  references
+    amb  platform-tags-listbox                      1989 declarations  [class]
+    ^ amb: showing 1 of 1 collected · unres: showing 0 of 0 collected. THIS LIST IS A SAMPLE — read TABLE 1 for the full counts.
+
+VERDICT: FAIL — CLAUSE 1 (every edge resolves, or carries a claim the project verifies) FAILS — 34229 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)  --  3976 ambiguous + 30253 unresolved of 353018 edges, resolved against the file's OWN PROJECT (production's scope)
+  clause 1 FAIL — every edge resolves, or carries a claim the project verifies
+           34229 ambiguous/unresolved + 0 refuted claim(s) + 0 claim(s) no check can reach (ext? 0, bind? 0)
+  clause 2 ok   — every ambiguous/unresolved edge classified by a NAMED cause, with a measured count
+           no edge carries a declared cause (residual 34229)
+  clause 3 ok   — each cause fixed over the SAME population, or ruled with a RUN FALSIFIER
+           no declared cause carries a count, so there is nothing to rule
+  clause 4 ok   — extFAIL / bindFAIL / causeFAIL = 0
+           extFAIL 0 · bindFAIL 0 · causeFAIL 0
+  (the same edges under the pooled corpus key space: 11942 ambiguous + 30251 unresolved — that number is about the CORPUS's name collisions, not about resolution as production performs it)
+instrument self-test: PASS (control fired)
+
+Scope of a PASS: this population, this analyzer digest, resolution only. It does NOT
+say the edges point at the RIGHT declaration — that is differential.ts's question.

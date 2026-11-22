@@ -84,7 +84,7 @@ if (!(pop.admitted > 0)) {
 }
 
 // ── the population: `corpus-entry/relative-path`, resolved against .corpus ──────────────────────
-const CORPUS = resolve(ROOT, ".corpus")
+const CORPUS = process.env.BB_CORPUS_ROOT ? resolve(process.env.BB_CORPUS_ROOT) : resolve(ROOT, ".corpus")
 const allFiles: string[] = []
 for (const r of pop.repositories) {
   // the artifact carries per-repo admitted COUNTS, not paths; the census re-derives the same

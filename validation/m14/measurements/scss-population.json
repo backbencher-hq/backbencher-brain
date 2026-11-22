@@ -1,0 +1,60 @@
+{
+  "language": "scss",
+  "populationRule": "THE ADMITTED SET IS THE GIT-TRACKED SET, NOT THE DISK: per-checkout `git ls-files -z` under `$PWD/.corpus`, the router's extension list {scss} from script/m14/language-extensions.ts (`.sass` is the `sass`/css lanes' — 67 corpus files this analyzer is never given), present in the working tree, <= 1 MiB, dedup by realpath.",
+  "root": ".corpus",
+  "extensions": [
+    "scss"
+  ],
+  "capBytes": 1048576,
+  "tracked": 3491,
+  "admitted": 3490,
+  "repositoriesCarrying": 7,
+  "repositories": [
+    {
+      "repo": "consul",
+      "tracked": 3043,
+      "admitted": 3042
+    },
+    {
+      "repo": "bootstrap",
+      "tracked": 139,
+      "admitted": 139
+    },
+    {
+      "repo": "vault",
+      "tracked": 107,
+      "admitted": 107
+    },
+    {
+      "repo": "nomad",
+      "tracked": 98,
+      "admitted": 98
+    },
+    {
+      "repo": "prettier",
+      "tracked": 95,
+      "admitted": 95
+    },
+    {
+      "repo": "preact",
+      "tracked": 7,
+      "admitted": 7
+    },
+    {
+      "repo": "webpack",
+      "tracked": 2,
+      "admitted": 2
+    }
+  ],
+  "overCap": [
+    {
+      "path": "consul/ui/packages/consul-ui/app/styles/base/icons/debug.scss",
+      "bytes": 1628440
+    }
+  ],
+  "absent": [],
+  "duplicateRealpath": 0,
+  "populationString": "parsed=3490/3490 admitted=3490 exts=scss index=yes",
+  "measuredAt": "2026-11-22T20:19:02.409Z",
+  "note": "PATHS are `corpus-entry/relative-path` (the `.corpus` entries are symlinked checkouts). THE 2 OVER-CAP PATHS ARE CARRIED BY NAME rather than folded into a count: a reader can check them. INDEX=yes is the population's own property, not this artifact's: `.scss` is in src/ast/parallel-indexer.ts PROJECT_INDEX_EXTENSIONS and script/m14/incoming-gate.ts carries an SCSS_DECLARATION_SPEC, so production builds a project index for this language."
+}

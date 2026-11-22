@@ -1,0 +1,469 @@
+{
+  "tool": "json lane census",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "admittedPopulation": 13987,
+  "sampled": 13987,
+  "sampleMethod": "whole admitted population",
+  "perRepoPopulation": {
+    "Argu": 2,
+    "Bolero": 13,
+    "Deedle": 3,
+    "Documenter.jl": 3,
+    "Exposed": 5,
+    "FSharp.Data": 34,
+    "FSharp.Formatting": 3,
+    "FSharpPlus": 4,
+    "FSharpx.Extras": 2,
+    "Fabulous": 262,
+    "Fake": 22,
+    "Falco": 4,
+    "FsAutoComplete": 9,
+    "FsCheck": 2,
+    "FsToolkit.ErrorHandling": 10,
+    "Grace": 66,
+    "Graphs.jl": 1,
+    "PSScriptAnalyzer": 11,
+    "Paket": 21,
+    "Saturn": 6,
+    "afnetworking": 25,
+    "alamofire": 23,
+    "ansible": 174,
+    "apollo-server": 54,
+    "bash-completion": 3,
+    "bootstrap": 12,
+    "boundary": 26,
+    "bulma": 72,
+    "cabal": 25,
+    "caddy": 1,
+    "cargo": 20,
+    "cats-effect": 5,
+    "clj-kondo": 742,
+    "cloogle.org": 2,
+    "consul": 40,
+    "core": 52,
+    "dark": 19,
+    "dart-http": 6,
+    "dart-sdk": 188,
+    "docker": 59,
+    "dplyr": 4,
+    "duckdb": 187,
+    "eastwood": 2,
+    "element-plus": 55,
+    "elixir": 1,
+    "elmish": 9,
+    "equinox": 5,
+    "expecto": 7,
+    "fantomas": 15,
+    "flutter-packages": 173,
+    "fsharp": 19,
+    "geb": 2,
+    "ggplot2": 2,
+    "gh-cli": 88,
+    "ghostty": 28,
+    "giraffe": 5,
+    "go-tools": 2,
+    "gql-federation": 41,
+    "gql-genqlient": 57,
+    "gql-gqlgen": 10,
+    "gql-graphql": 26,
+    "gql-graphql-dotnet": 40,
+    "gql-graphql-eslint": 23,
+    "gql-graphql-mesh": 367,
+    "gql-graphql-php": 6,
+    "gql-graphql-platform": 503,
+    "gql-graphql-tools": 49,
+    "gql-graphql-yoga": 246,
+    "gql-ruby": 12,
+    "gql-saleor": 24,
+    "grails-core": 21,
+    "graphql-java": 304,
+    "graphql-js": 44,
+    "graphql-js-full": 44,
+    "graphql-nim": 1,
+    "hasura-engine": 1598,
+    "helm": 18,
+    "hledger": 1,
+    "jq": 2,
+    "json_jl": 1,
+    "kong": 150,
+    "kotlinx-coroutines": 1,
+    "kubernetes": 1226,
+    "lapis": 1,
+    "lazy.nvim": 3,
+    "lodash": 3,
+    "luvit": 1,
+    "mojo": 6,
+    "mvdan-sh": 1,
+    "nim": 6,
+    "nim-lang-nimble": 259,
+    "nlohmann-json": 3,
+    "nomad": 59,
+    "nvim-lspconfig": 2,
+    "nvim-treesitter": 3,
+    "nvm": 7,
+    "ohmyzsh": 3,
+    "openapi-spec": 15,
+    "otp": 322,
+    "packer": 86,
+    "pb-googleapis": 18,
+    "pb-grpc": 25,
+    "pb-reference": 4,
+    "phoenix": 8,
+    "phpmyadmin": 19,
+    "phpunit": 17,
+    "pico": 2,
+    "postgrest": 8,
+    "powershell": 43,
+    "primer-css": 9,
+    "proxicall": 111,
+    "pyyaml-include": 2,
+    "r-air": 14,
+    "r-cli": 2,
+    "r-pkgdown": 5,
+    "r-rlang": 1,
+    "r-scales": 2,
+    "r-testthat": 3,
+    "r-vctrs": 3,
+    "redis": 465,
+    "redwood": 344,
+    "riverpod": 59,
+    "sass-spec": 3,
+    "scala3": 1,
+    "sdwebimage": 37,
+    "shadcn-svelte": 2370,
+    "shellcheck": 1,
+    "shopify-api-js": 25,
+    "slim": 1,
+    "snacks.nvim": 2,
+    "solidity": 10,
+    "spectre": 3,
+    "suave": 5,
+    "svelte": 458,
+    "swift-nio": 18,
+    "terraform": 420,
+    "terraform-aws-components": 5,
+    "terragrunt": 45,
+    "tflint": 82,
+    "tfsec": 9,
+    "traefik": 168,
+    "tree-sitter-clean": 4,
+    "trouble.nvim": 1,
+    "usethis": 4,
+    "vault": 60,
+    "vega": 446,
+    "vue-core": 33,
+    "vue-element-admin": 2,
+    "wagtail": 30,
+    "water.css": 6,
+    "waypoint": 339,
+    "yq": 1,
+    "zig": 2,
+    "zls": 2
+  },
+  "parseFailures": 0,
+  "parseFailureExamples": [],
+  "filesWithSymbols": 13987,
+  "filesWithAnyEdge": 13481,
+  "symbolsTotal": 4010237,
+  "emptyNameSymbols": 0,
+  "emptyNameExamples": [],
+  "emptyKindSymbols": 0,
+  "unknownKindSymbols": 0,
+  "badKindExamples": [],
+  "relationshipsTotal": 4026775,
+  "unknownEndpointEdges": 0,
+  "unknownEndpointExamples": [],
+  "types": {
+    "calls": {
+      "verdict": "EMITTED",
+      "edges": 263,
+      "files": 99,
+      "examples": [
+        "Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/package.json:16 package.scripts.prepare -[calls]-> package.scripts.build",
+        "Grace/sdk/typescript/grace/package.json:40 package.scripts.smoke -[calls]-> package.scripts.build",
+        "Grace/sdk/typescript/grace/package.json:41 package.scripts.test -[calls]-> package.scripts.build",
+        "apollo-server/package.json:13 package.scripts.pretest -[calls]-> package.scripts.compile",
+        "apollo-server/package.json:16 package.scripts.test:smoke -[calls]-> package.scripts.test:smoke:prepare",
+        "apollo-server/package.json:16 package.scripts.test:smoke -[calls]-> package.scripts.test:smoke:run"
+      ],
+      "resolution": {
+        "bothPct": "100.00%",
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 263,
+        "total": 263
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 0.8,
+        "max": 0.8,
+        "total": 263
+      },
+      "evidenceClass": {
+        "usage_contextual": 263
+      }
+    },
+    "uses": {
+      "verdict": "EMITTED",
+      "edges": 9955,
+      "files": 1041,
+      "examples": [
+        "Fake/docs/package.json:9 package -[uses]-> package.devDependencies.@tailwindcss/typography",
+        "Fake/docs/package.json:10 package -[uses]-> package.devDependencies.autoprefixer",
+        "Fake/docs/package.json:11 package -[uses]-> package.devDependencies.postcss",
+        "Fake/docs/package.json:12 package -[uses]-> package.devDependencies.tailwindcss",
+        "Fake/src/legacy/Samples/WebNpmGrunt/package.json:6 package -[uses]-> package.devDependencies.grunt",
+        "Fake/src/legacy/Samples/WebNpmGrunt/package.json:7 package -[uses]-> package.devDependencies.grunt-cli"
+      ],
+      "resolution": {
+        "bothPct": "100.00%",
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 9955,
+        "total": 9955
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 0.8,
+        "max": 1,
+        "total": 9955
+      },
+      "evidenceClass": {
+        "(absent)": 8467,
+        "usage_contextual": 1488
+      }
+    },
+    "contains": {
+      "verdict": "EMITTED",
+      "edges": 3996250,
+      "files": 13481,
+      "examples": [
+        "Argu/.config/dotnet-tools.json:2 dotnet-tools -[contains]-> dotnet-tools.version",
+        "Argu/.config/dotnet-tools.json:3 dotnet-tools -[contains]-> dotnet-tools.isRoot",
+        "Argu/.config/dotnet-tools.json:4 dotnet-tools -[contains]-> dotnet-tools.tools",
+        "Argu/.config/dotnet-tools.json:5 dotnet-tools.tools -[contains]-> dotnet-tools.tools.fake-cli",
+        "Argu/.config/dotnet-tools.json:6 dotnet-tools.tools.fake-cli -[contains]-> dotnet-tools.tools.fake-cli.version",
+        "Argu/.config/dotnet-tools.json:7 dotnet-tools.tools.fake-cli -[contains]-> dotnet-tools.tools.fake-cli.commands"
+      ],
+      "resolution": {
+        "bothPct": "100.00%",
+        "sourceOnly": 0,
+        "targetOnly": 63,
+        "neither": 0,
+        "both": 3996187,
+        "total": 3996250
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 1,
+        "max": 1,
+        "total": 3996250
+      },
+      "evidenceClass": {
+        "(absent)": 3996250
+      }
+    },
+    "imports": {
+      "verdict": "EMITTED",
+      "edges": 82,
+      "files": 28,
+      "examples": [
+        "docker/vendor/github.com/sigstore/rekor/pkg/types/dsse/dsse_schema.json:9 dsse_schema.oneOf[0].$ref -[imports]-> v0.0.1/dsse_v0_0_1_schema.json",
+        "docker/vendor/github.com/sigstore/rekor/pkg/types/hashedrekord/hashedrekord_schema.json:9 hashedrekord_schema.oneOf[0].$ref -[imports]-> v0.0.1/hashedrekord_v0_0_1_schema.json",
+        "docker/vendor/github.com/sigstore/rekor/pkg/types/intoto/intoto_schema.json:9 intoto_schema.oneOf[0].$ref -[imports]-> v0.0.1/intoto_v0_0_1_schema.json",
+        "docker/vendor/github.com/sigstore/rekor/pkg/types/intoto/intoto_schema.json:12 intoto_schema.oneOf[1].$ref -[imports]-> v0.0.2/intoto_v0_0_2_schema.json",
+        "gql-graphql-mesh/examples/json-schema-example/json-schemas/user.json:27 user.definitions.User.properties.foos.items.$ref -[imports]-> user.json#/definitions/Foo",
+        "gql-graphql-mesh/packages/json-machete/tests/fixtures/Author.json:9 Author.definitions.Author.properties.id.$ref -[imports]-> UUID.json"
+      ],
+      "resolution": {
+        "bothPct": "0.00%",
+        "sourceOnly": 82,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 0,
+        "total": 82
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 1,
+        "max": 1,
+        "total": 82
+      },
+      "evidenceClass": {
+        "structural": 82
+      }
+    },
+    "references": {
+      "verdict": "EMITTED",
+      "edges": 17117,
+      "files": 272,
+      "examples": [
+        "boundary/internal/gen/controller.swagger.json:198 controller.swagger.paths./v1/accounts.get.responses.200.schema.$ref -[references]-> controller.swagger.definitions.controller.api.services.v1.ListAccountsResponse",
+        "boundary/internal/gen/controller.swagger.json:204 controller.swagger.paths./v1/accounts.get.responses.default.schema.$ref -[references]-> controller.swagger.definitions.controller.api.v1.Error",
+        "boundary/internal/gen/controller.swagger.json:250 controller.swagger.paths./v1/accounts.post.responses.200.schema.$ref -[references]-> controller.swagger.definitions.controller.api.resources.accounts.v1.Account",
+        "boundary/internal/gen/controller.swagger.json:256 controller.swagger.paths./v1/accounts.post.responses.default.schema.$ref -[references]-> controller.swagger.definitions.controller.api.v1.Error",
+        "boundary/internal/gen/controller.swagger.json:266 controller.swagger.paths./v1/accounts.post.parameters[0].schema.$ref -[references]-> controller.swagger.definitions.controller.api.resources.accounts.v1.Account",
+        "boundary/internal/gen/controller.swagger.json:283 controller.swagger.paths./v1/accounts/{id}.get.responses.200.schema.$ref -[references]-> controller.swagger.definitions.controller.api.resources.accounts.v1.Account"
+      ],
+      "resolution": {
+        "bothPct": "98.84%",
+        "sourceOnly": 199,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 16918,
+        "total": 17117
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 0.8,
+        "max": 1,
+        "total": 17117
+      },
+      "evidenceClass": {
+        "structural": 17117
+      }
+    },
+    "exports": {
+      "verdict": "EMITTED",
+      "edges": 1200,
+      "files": 446,
+      "examples": [
+        "Grace/sdk/generated/matrix/openapi-generator/typescript-fetch/package.json:10 package -[exports]-> package.main",
+        "Grace/sdk/typescript/grace/package.json:7 package -[exports]-> package.main",
+        "Grace/sdk/typescript/grace/package.json:33 package -[exports]-> package.exports..",
+        "apollo-server/packages/cache-control-types/package.json:6 package -[exports]-> package.main",
+        "apollo-server/packages/cache-control-types/package.json:10 package -[exports]-> package.exports..",
+        "apollo-server/packages/gateway-interface/package.json:6 package -[exports]-> package.main"
+      ],
+      "resolution": {
+        "bothPct": "100.00%",
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 1200,
+        "total": 1200
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 1,
+        "max": 1,
+        "total": 1200
+      },
+      "evidenceClass": {
+        "structural": 1200
+      }
+    },
+    "extends": {
+      "verdict": "EMITTED",
+      "edges": 1780,
+      "files": 119,
+      "examples": [
+        "dart-sdk/third_party/pkg/dap/tool/external_dap_spec/debugAdapterProtocol.json:29 debugAdapterProtocol.definitions.Request -[extends]-> debugAdapterProtocol.definitions.ProtocolMessage",
+        "dart-sdk/third_party/pkg/dap/tool/external_dap_spec/debugAdapterProtocol.json:51 debugAdapterProtocol.definitions.Event -[extends]-> debugAdapterProtocol.definitions.ProtocolMessage",
+        "dart-sdk/third_party/pkg/dap/tool/external_dap_spec/debugAdapterProtocol.json:73 debugAdapterProtocol.definitions.Response -[extends]-> debugAdapterProtocol.definitions.ProtocolMessage",
+        "dart-sdk/third_party/pkg/dap/tool/external_dap_spec/debugAdapterProtocol.json:112 debugAdapterProtocol.definitions.ErrorResponse -[extends]-> debugAdapterProtocol.definitions.Response",
+        "dart-sdk/third_party/pkg/dap/tool/external_dap_spec/debugAdapterProtocol.json:131 debugAdapterProtocol.definitions.CancelRequest -[extends]-> debugAdapterProtocol.definitions.Request",
+        "dart-sdk/third_party/pkg/dap/tool/external_dap_spec/debugAdapterProtocol.json:161 debugAdapterProtocol.definitions.CancelResponse -[extends]-> debugAdapterProtocol.definitions.Response"
+      ],
+      "resolution": {
+        "bothPct": "99.83%",
+        "sourceOnly": 3,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 1777,
+        "total": 1780
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 1,
+        "max": 1,
+        "total": 1780
+      },
+      "evidenceClass": {
+        "structural": 1780
+      }
+    },
+    "implements": {
+      "verdict": "EMITTED",
+      "edges": 113,
+      "files": 1,
+      "examples": [
+        "dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json:2431 lsp_meta_model.structures[0] -[implements]-> lsp_meta_model.structures[162]",
+        "dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json:2435 lsp_meta_model.structures[0] -[implements]-> lsp_meta_model.structures[163]",
+        "dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json:2475 lsp_meta_model.structures[2] -[implements]-> lsp_meta_model.structures[167]",
+        "dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json:2491 lsp_meta_model.structures[3] -[implements]-> lsp_meta_model.structures[162]",
+        "dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json:2495 lsp_meta_model.structures[3] -[implements]-> lsp_meta_model.structures[163]",
+        "dart-sdk/third_party/pkg/language_server_protocol/lsp_meta_model.json:2515 lsp_meta_model.structures[4] -[implements]-> lsp_meta_model.structures[167]"
+      ],
+      "resolution": {
+        "bothPct": "100.00%",
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 113,
+        "total": 113
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 0.9,
+        "max": 0.9,
+        "total": 113
+      },
+      "evidenceClass": {
+        "structural": 113
+      }
+    },
+    "overrides": {
+      "verdict": "EMITTED",
+      "edges": 15,
+      "files": 12,
+      "examples": [
+        "FSharp.Data/tests/FSharp.Data.Tests/Data/DictionaryInference.json:8 DictionaryInference[1].rec2 -[overrides]-> DictionaryInference[1].rec2.1",
+        "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_wrong_2/.dart_tool/package_config.json:8 package_config.packages[0] -[overrides]-> package_config.packages[0].languageVersion",
+        "dart-sdk/pkg/front_end/test/language_versioning/data/package_default_version_is_wrong_3/.dart_tool/package_config.json:9 package_config.packages[0] -[overrides]-> package_config.packages[0].languageVersion",
+        "duckdb/data/json/11152.json:1 11152[3] -[overrides]-> 11152[3].fileSize",
+        "duckdb/data/json/11152.json:1 11152[3] -[overrides]-> 11152[3].totalStreamRespTimeMs",
+        "duckdb/data/json/11152.json:1 11152[3] -[overrides]-> 11152[3].lastSyncDiffMs"
+      ],
+      "resolution": {
+        "bothPct": "100.00%",
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neither": 0,
+        "both": 15,
+        "total": 15
+      },
+      "confidence": {
+        "under07": 0,
+        "under07Pct": "0.00%",
+        "min": 1,
+        "max": 1,
+        "total": 15
+      },
+      "evidenceClass": {
+        "structural": 15
+      }
+    },
+    "instantiates": {
+      "verdict": "NOT-EMITTED",
+      "edges": 0
+    }
+  },
+  "symbolKinds": {
+    "property": 2619448,
+    "class": 1376802,
+    "module": 13987
+  },
+  "heuristicEdgesTotal": 0,
+  "confidentEdgesTotal": 4026775
+}

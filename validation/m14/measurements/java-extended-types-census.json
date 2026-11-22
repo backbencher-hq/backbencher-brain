@@ -1,0 +1,519 @@
+{
+  "generated": "2026-11-22T20:21:36.201Z",
+  "instrument": "script/m14/java-extended-types-census.ts",
+  "rule": "git-tracked ∧ present ∧ ≤1 MiB, extension .java, tree-sitter tree of the SERVED grammar; parsed must equal the window's admitted count or the run exits 3",
+  "population": {
+    "admitted": 11152,
+    "tracked": 11434,
+    "repos": 19,
+    "absentFromDisk": 282,
+    "overCap": 0,
+    "window": [
+      0,
+      11152
+    ],
+    "windowFiles": 11152,
+    "parsed": 11152,
+    "failed": 0,
+    "populationString": "parsed=11152/11152 admitted=11152 exts=java index=no",
+    "wholePopulation": true
+  },
+  "grammar": {
+    "resolvedBy": "src/util/wasm.resolveWasmAsset('tree-sitter-java.wasm')",
+    "wasmPath": "/home/ishaq2321/mcp/backbencher-brain/wasm/tree-sitter-java.wasm",
+    "sha256": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f",
+    "namedTypes": 143,
+    "candidateFamilies": {
+      "decorator": [],
+      "mixin": [],
+      "part-directive": [],
+      "render/component": [
+        "record_pattern_component"
+      ],
+      "template": [
+        "template_expression"
+      ]
+    }
+  },
+  "decorates": {
+    "annotationSites": {
+      "marker_annotation": {
+        "sites": 93612,
+        "files": 8165
+      },
+      "annotation": {
+        "sites": 6401,
+        "files": 1912
+      }
+    },
+    "annotationNameNodeKinds": {
+      "identifier": {
+        "sites": 99867,
+        "files": 8544
+      },
+      "scoped_identifier": {
+        "sites": 146,
+        "files": 52
+      }
+    },
+    "annotatedDeclarationKinds": {
+      "method_declaration": {
+        "sites": 56753,
+        "files": 7480
+      },
+      "formal_parameter": {
+        "sites": 37141,
+        "files": 4341
+      },
+      "field_declaration": {
+        "sites": 2796,
+        "files": 845
+      },
+      "class_declaration": {
+        "sites": 1815,
+        "files": 1183
+      },
+      "annotation_type_declaration": {
+        "sites": 437,
+        "files": 184
+      },
+      "interface_declaration": {
+        "sites": 389,
+        "files": 222
+      },
+      "local_variable_declaration": {
+        "sites": 220,
+        "files": 89
+      },
+      "constructor_declaration": {
+        "sites": 180,
+        "files": 149
+      },
+      "annotated_type": {
+        "sites": 130,
+        "files": 19
+      },
+      "spread_parameter": {
+        "sites": 73,
+        "files": 35
+      },
+      "enum_declaration": {
+        "sites": 15,
+        "files": 12
+      },
+      "element_value_pair": {
+        "sites": 12,
+        "files": 8
+      },
+      "scoped_type_identifier": {
+        "sites": 12,
+        "files": 5
+      },
+      "constant_declaration": {
+        "sites": 8,
+        "files": 7
+      },
+      "record_declaration": {
+        "sites": 6,
+        "files": 6
+      },
+      "element_value_array_initializer": {
+        "sites": 6,
+        "files": 4
+      },
+      "dimensions": {
+        "sites": 5,
+        "files": 2
+      },
+      "module_declaration": {
+        "sites": 4,
+        "files": 4
+      },
+      "annotation_type_element_declaration": {
+        "sites": 3,
+        "files": 2
+      },
+      "type_parameter": {
+        "sites": 2,
+        "files": 1
+      },
+      "wildcard": {
+        "sites": 2,
+        "files": 1
+      },
+      "enhanced_for_statement": {
+        "sites": 1,
+        "files": 1
+      },
+      "enum_constant": {
+        "sites": 1,
+        "files": 1
+      },
+      "package_declaration": {
+        "sites": 1,
+        "files": 1
+      },
+      "ERROR": {
+        "sites": 1,
+        "files": 1
+      }
+    },
+    "annotationArgumentNodeTypes": {
+      "identifier": {
+        "sites": 11794,
+        "files": 1009
+      },
+      "element_value_pair": {
+        "sites": 8850,
+        "files": 835
+      },
+      "annotation_argument_list": {
+        "sites": 6420,
+        "files": 1912
+      },
+      "true": {
+        "sites": 3145,
+        "files": 557
+      },
+      "decimal_integer_literal": {
+        "sites": 2872,
+        "files": 553
+      },
+      "string_fragment": {
+        "sites": 2868,
+        "files": 1112
+      },
+      "string_literal": {
+        "sites": 2855,
+        "files": 1112
+      },
+      "field_access": {
+        "sites": 1346,
+        "files": 470
+      },
+      "false": {
+        "sites": 959,
+        "files": 164
+      },
+      "type_identifier": {
+        "sites": 595,
+        "files": 260
+      },
+      "class_literal": {
+        "sites": 555,
+        "files": 260
+      },
+      "element_value_array_initializer": {
+        "sites": 416,
+        "files": 285
+      },
+      "unary_expression": {
+        "sites": 58,
+        "files": 48
+      },
+      "cast_expression": {
+        "sites": 49,
+        "files": 1
+      },
+      "scoped_type_identifier": {
+        "sites": 44,
+        "files": 32
+      },
+      "integral_type": {
+        "sites": 39,
+        "files": 2
+      },
+      "binary_expression": {
+        "sites": 34,
+        "files": 6
+      },
+      "annotation": {
+        "sites": 19,
+        "files": 9
+      },
+      "escape_sequence": {
+        "sites": 14,
+        "files": 4
+      },
+      "floating_point_type": {
+        "sites": 14,
+        "files": 1
+      },
+      "decimal_floating_point_literal": {
+        "sites": 6,
+        "files": 3
+      },
+      "line_comment": {
+        "sites": 3,
+        "files": 2
+      },
+      "block_comment": {
+        "sites": 1,
+        "files": 1
+      },
+      "scoped_identifier": {
+        "sites": 1,
+        "files": 1
+      },
+      "ternary_expression": {
+        "sites": 1,
+        "files": 1
+      }
+    },
+    "annotationSitesTotal": 100013,
+    "annotationArgumentNodesTotal": 42958,
+    "annotationNamesThatAreNotTypeNames": 0,
+    "annotationArgumentNodesContainingCallsLambdasOrConstructions": 0,
+    "topAnnotationNames": [
+      [
+        "NotNull",
+        {
+          "sites": 38658,
+          "files": 4173
+        }
+      ],
+      [
+        "Override",
+        {
+          "sites": 33498,
+          "files": 5936
+        }
+      ],
+      [
+        "Nullable",
+        {
+          "sites": 12468,
+          "files": 3066
+        }
+      ],
+      [
+        "NonNull",
+        {
+          "sites": 3353,
+          "files": 373
+        }
+      ],
+      [
+        "Property",
+        {
+          "sites": 2925,
+          "files": 527
+        }
+      ],
+      [
+        "Test",
+        {
+          "sites": 2190,
+          "files": 360
+        }
+      ],
+      [
+        "SuppressWarnings",
+        {
+          "sites": 1438,
+          "files": 822
+        }
+      ],
+      [
+        "Internal",
+        {
+          "sites": 411,
+          "files": 331
+        }
+      ],
+      [
+        "PublicApi",
+        {
+          "sites": 339,
+          "files": 323
+        }
+      ],
+      [
+        "Deprecated",
+        {
+          "sites": 325,
+          "files": 147
+        }
+      ],
+      [
+        "Association",
+        {
+          "sites": 307,
+          "files": 89
+        }
+      ],
+      [
+        "NullMarked",
+        {
+          "sites": 241,
+          "files": 239
+        }
+      ],
+      [
+        "Mock",
+        {
+          "sites": 202,
+          "files": 52
+        }
+      ],
+      [
+        "Retention",
+        {
+          "sites": 192,
+          "files": 178
+        }
+      ],
+      [
+        "FunctionalInterface",
+        {
+          "sites": 185,
+          "files": 81
+        }
+      ],
+      [
+        "SerializedName",
+        {
+          "sites": 155,
+          "files": 35
+        }
+      ],
+      [
+        "Target",
+        {
+          "sites": 141,
+          "files": 140
+        }
+      ],
+      [
+        "VisibleForTesting",
+        {
+          "sites": 132,
+          "files": 52
+        }
+      ],
+      [
+        "Nonnull",
+        {
+          "sites": 124,
+          "files": 49
+        }
+      ],
+      [
+        "CanIgnoreReturnValue",
+        {
+          "sites": 119,
+          "files": 4
+        }
+      ],
+      [
+        "ThemeColor",
+        {
+          "sites": 88,
+          "files": 8
+        }
+      ],
+      [
+        "Singleton",
+        {
+          "sites": 88,
+          "files": 88
+        }
+      ],
+      [
+        "Bean",
+        {
+          "sites": 85,
+          "files": 19
+        }
+      ],
+      [
+        "NullUnmarked",
+        {
+          "sites": 78,
+          "files": 77
+        }
+      ],
+      [
+        "CommandLine.Option",
+        {
+          "sites": 75,
+          "files": 23
+        }
+      ]
+    ]
+  },
+  "renders": {
+    "templateShapedNodes": {
+      "template_expression": 0,
+      "string_interpolation": 0
+    },
+    "grammarFamilyHits": [
+      "record_pattern_component"
+    ]
+  },
+  "mixes_in": {
+    "interfaces": 2265,
+    "interfaceMethodsByModifier": {
+      "implicit-abstract": {
+        "sites": 6775,
+        "files": 1429
+      },
+      "default": {
+        "sites": 698,
+        "files": 217
+      },
+      "static": {
+        "sites": 102,
+        "files": 43
+      },
+      "abstract": {
+        "sites": 5,
+        "files": 2
+      },
+      "private": {
+        "sites": 4,
+        "files": 3
+      }
+    },
+    "conformanceClauses": {
+      "super_interfaces": 3786,
+      "extends_interfaces": 628,
+      "superclass": 6049
+    },
+    "grammarFamilyHits": []
+  },
+  "part_of": {
+    "packageDeclarations": 10655,
+    "moduleDeclarations": 15,
+    "moduleDirectives": {
+      "requires": 58,
+      "exports": 27,
+      "opens": 0,
+      "uses": 3,
+      "provides": 6
+    },
+    "grammarFamilyHits": []
+  },
+  "familyHitNotes": {
+    "record_pattern_component": "a RECORD-PATTERN component node (JLS 21 `record_pattern_component`, the `int x` part of `instanceof Point(int x, int y)`), NOT a render component and NOT a part-file directive",
+    "template_expression": "Java 21 STRING TEMPLATE interpolation (`STR.{x}`), a string-shaped expression with no component element and no component name field"
+  },
+  "annotationFamily": {
+    "grammarTypes": [
+      "annotation",
+      "annotation_argument_list",
+      "annotation_type_body",
+      "annotation_type_declaration",
+      "annotation_type_element_declaration",
+      "marker_annotation"
+    ]
+  },
+  "otherCounts": {
+    "annotation_argument_list": 6401,
+    "element_value_pair": 8816,
+    "annotation_type_declaration": 241,
+    "record_pattern": 1,
+    "permits": 18,
+    "defaultInterfaceMethods": 698
+  }
+}

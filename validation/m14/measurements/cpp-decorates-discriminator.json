@@ -1,0 +1,9 @@
+{
+  "files": 21782,
+  "attributeSites": 12417,
+  "sitesWithArgumentList": 7306,
+  "sitesWhoseArgumentCarriesACall": 3180,
+  "sitesWhoseArgumentCallsThroughAPathNotTheMarkerSyntax": 0,
+  "distinctSamples": [],
+  "reading": "THE ANSWERING COUNT IS `sitesWhoseArgumentCallsThroughAPathNotTheMarkerSyntax`. It counts attribute-argument calls whose callee is a PATH (`field_expression`/`qualified_identifier`) rather than an `identifier` — i.e. a callable that would have to RESOLVE rather than the attribute's own marker syntax. ZERO means ZERO APPLIED CALLABLES: the construct `decorates` names does not exist for this language, and the ruling is `ontological` on a WHOLE-POPULATION discriminator rather than on samples."
+}

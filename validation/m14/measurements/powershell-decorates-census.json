@@ -1,0 +1,326 @@
+{
+  "language": "powershell",
+  "instrument": "validation/m14/fixtures/powershell/decorates-census.mts",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "admitted": 1181,
+    "repos": 30,
+    "parsed": 1181,
+    "failed": 0,
+    "samplingMethod": "per-repo git-tracked files, 512 KiB cap, gated on detectLanguageFromPath === powershell; WHOLE admitted set"
+  },
+  "totals": {
+    "attributeSites": 6421,
+    "filesWithAttributes": 421,
+    "distinctAttributeNames": 42,
+    "typeAnnotationSites": 3704,
+    "constraintAttributeSites": 2717,
+    "withArguments": 1883,
+    "attributeArgumentTotal": 2825,
+    "callShapedArgumentSites": 19,
+    "filesWithCallShapedArguments": 11,
+    "staticConstructionSites": 0,
+    "sitesNamingDeclaredCallable": 2,
+    "declaredCallableNames": [
+      "AlphaArgumentCompleter",
+      "Test-PathNotInSettings"
+    ],
+    "sitesNamingDeclaredCallableOwnFile": 2,
+    "sitesNamingDeclaredCallableOwnFileWhich": [
+      "AlphaArgumentCompleter",
+      "Test-PathNotInSettings"
+    ],
+    "attributeNamesThatAreDeclaredCallables": [],
+    "attributeNamesThatAreDeclaredCallablesCount": 0,
+    "attributeNamesAll": [
+      "Alias",
+      "AllowEmptyCollection",
+      "AllowEmptyString",
+      "AllowNull",
+      "ArgumentCompleter",
+      "ArgumentCompletions",
+      "ArgumentCompletionsAttribute",
+      "CmdletBinding",
+      "CompilerGenerated",
+      "CompilerGeneratedAttribute",
+      "DebuggerStepThrough",
+      "Diagnostics.CodeAnalysis.SuppressMessage",
+      "Diagnostics.CodeAnalysis.SuppressMessageAttribute",
+      "DscProperty",
+      "DscResource",
+      "Experimental",
+      "MSFT_1407291.AddressTransformation",
+      "NoRunspaceAffinity",
+      "NumberCompletion",
+      "Obsolete",
+      "OutputType",
+      "PSDefaultValue",
+      "PSTypeName",
+      "Parameter",
+      "SupportsWildcards",
+      "System.Diagnostics.CodeAnalysis.SuppressMessageAttribute",
+      "System.Diagnostics.DebuggerStepThrough",
+      "System.Diagnostics.Tracing.EventSource",
+      "System.Management.Automation.Cmdlet",
+      "System.Management.Automation.Credential",
+      "System.Management.Automation.CredentialAttribute",
+      "System.Management.Automation.Runspaces.Runspace",
+      "ValidateCount",
+      "ValidateLength",
+      "ValidateNotNull",
+      "ValidateNotNullOrEmpty",
+      "ValidateNotNullOrWhiteSpace",
+      "ValidatePattern",
+      "ValidateRange",
+      "ValidateScript",
+      "ValidateSet",
+      "Validateset",
+      "alias",
+      "allowemptycollection",
+      "allowemptystring",
+      "allownull",
+      "cmdletBinding",
+      "cmdletbinding",
+      "parameter",
+      "validateset"
+    ]
+  },
+  "samples": {
+    "callShaped": [
+      {
+        "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+        "line": 170,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "invokation_expression"
+        ],
+        "names": [
+          "$_.GetType()"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "lib/ansible/module_utils/powershell/Ansible.ModuleUtils.WebRequest.psm1",
+        "line": 412,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "invokation_expression"
+        ],
+        "names": [
+          "$_.GetType()"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/module_utils/WebRequest.psm1",
+        "line": 172,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "invokation_expression"
+        ],
+        "names": [
+          "$_.GetType()"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "test/support/windows-integration/collections/ansible_collections/ansible/windows/plugins/module_utils/WebRequest.psm1",
+        "line": 409,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "invokation_expression"
+        ],
+        "names": [
+          "$_.GetType()"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "Tests/Engine/DeadlockTestAssets/complex.psm1",
+        "line": 649,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 1741,
+        "attribute": "ArgumentCompleter",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Get-ChildItem",
+          "Where-Object"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 2123,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 3768,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 3772,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 3776,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 4188,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Split-Path",
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "build.psm1",
+        "line": 4216,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "test/packaging/windows/exe.tests.ps1",
+        "line": 26,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "test/packaging/windows/msi.tests.ps1",
+        "line": 83,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "test/powershell/Language/Parser/ExtensibleCompletion.Tests.ps1",
+        "line": 170,
+        "attribute": "ArgumentCompleter",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "AlphaArgumentCompleter"
+        ],
+        "namesDeclared": [
+          "AlphaArgumentCompleter"
+        ]
+      },
+      {
+        "file": "test/tools/Modules/HelpersCommon/HelpersCommon.psm1",
+        "line": 209,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "tools/ci.psm1",
+        "line": 486,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      },
+      {
+        "file": "tools/install-powershell.ps1",
+        "line": 208,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-PathNotInSettings"
+        ],
+        "namesDeclared": [
+          "Test-PathNotInSettings"
+        ]
+      },
+      {
+        "file": "tools/packaging/packaging.psm1",
+        "line": 4524,
+        "attribute": "ValidateScript",
+        "shapes": [
+          "command"
+        ],
+        "names": [
+          "Test-Path"
+        ],
+        "namesDeclared": []
+      }
+    ]
+  }
+}

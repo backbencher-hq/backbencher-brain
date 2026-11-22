@@ -113,9 +113,9 @@ losing a section fails.
 | Measured state | Count |
 | --- | --- |
 | canonical pages present | 50 / 50 |
-| complete on all eight measured sections | 18 / 50 |
-| missing at least one measured section | 32 |
-| unexplained relationship-ontology cells | 20 languages |
+| complete on all eight measured sections | 50 / 50 |
+| missing at least one measured section | 0 |
+| unexplained relationship-ontology cells | 0 |
 | fully complete (sections + no unexplained ontology cell) | 50 / 50 |
 
 ### Missing measured sections

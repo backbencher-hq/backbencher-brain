@@ -423,13 +423,13 @@
   },
   "coverage": {
     "_implemented_measured": {
-      "_unit": "the whole admitted population: 18997 admitted .yaml/.yml files in 192 repositories (18997 paths, 18970 distinct), walked from the corpus root with symlinked repositories FOLLOWED (199), read from validation/m14/measurements/yaml-emission-census-full.json",
+      "_unit": "the whole admitted population: 18997 admitted YAML files in 192 repositories (18997 paths, 18970 distinct), walked from the corpus root with symlinked repositories FOLLOWED (199), read from validation/m14/measurements/yaml-emission-census-parse-only.json",
       "contains": {
         "edges": 1413388,
         "files": 18509,
         "repos": 192,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       },
       "uses": {
@@ -437,7 +437,7 @@
         "files": 46,
         "repos": 8,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       },
       "references": {
@@ -445,7 +445,7 @@
         "files": 950,
         "repos": 104,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       },
       "imports": {
@@ -453,7 +453,7 @@
         "files": 1696,
         "repos": 171,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       },
       "extends": {
@@ -461,7 +461,7 @@
         "files": 120,
         "repos": 18,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ],
         "forms": {
           "merge_key": 155,
@@ -476,7 +476,7 @@
         "files": 24,
         "repos": 12,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       },
       "calls": {
@@ -484,7 +484,7 @@
         "files": 165,
         "repos": 54,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       },
       "exports": {
@@ -492,7 +492,7 @@
         "files": 68,
         "repos": 7,
         "artifacts": [
-          "validation/m14/measurements/yaml-emission-census-full.json"
+          "validation/m14/measurements/yaml-emission-census-parse-only.json"
         ]
       }
     },
@@ -521,7 +521,7 @@
     "corpusUnexercised": [],
     "_from": "8 implemented + 0 unexercised + 0 gaps = 8 applicable = 10 - 2 grammar-absence exclusions. UPDATED 2026-10-10: `calls` and `exports` moved from `corpusUnexercised` to `implemented` on a whole-population measurement -- see `_corpusUnexercised_retraction`, which keeps the two struck readings. The `6/8` the board read until this revision was an ansible-only sample counted as a corpus statement.",
     "_corpusUnexercised_retraction": {
-      "_why": "This block listed `calls` and `exports` as `corpusUnexercised` until 2026-10-10, on the strength of ONE repository's census (`lane-census.ts` over ansible's 2,076 files: 'calls 0 edges, 0 sites in 2,076 files', 'exports 0 sites'). That is the exact defect `measured._description` warns about in this lane's own words -- 'a sample cannot certify absence and this lane has now been burned twice by assuming it could' -- and the WHOLE ADMITTED POPULATION contradicts it: `calls` 327 edges and `exports` 4,080 edges, both with 0 ambiguous(decl) and 0 unresolved (validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt, 18,364 .yaml/.yml files, 189 repos). The two entries are kept below, RETRACTED, rather than deleted: a declaration that loses a row silently cannot be trusted to have lost only the false ones.",
+      "_why": "This block listed `calls` and `exports` as `corpusUnexercised` until 2026-10-10, on the strength of ONE repository's census (`lane-census.ts` over ansible's 2,076 files: 'calls 0 edges, 0 sites in 2,076 files', 'exports 0 sites'). That is the exact defect `measured._description` warns about in this lane's own words -- 'a sample cannot certify absence and this lane has now been burned twice by assuming it could' -- and the WHOLE ADMITTED POPULATION contradicts it: `calls` 327 edges and `exports` 4,080 edges, both with 0 ambiguous(decl) and 0 unresolved (validation/m14/fixtures/yaml/census-yaml-whole-corpus-after.txt, 18,364 YAML files, 189 repos). The two entries are kept below, RETRACTED, rather than deleted: a declaration that loses a row silently cannot be trusted to have lost only the false ones.",
       "calls": {
         "retracted": "lane-census.ts over ansible (2,076 files) -> 0 edges, 0 sites; the entry also cited YAML-D14 for the same reading",
         "falsifiedBy": "whole admitted population: 327 edges, amb 0, unresolved 0, extOK 327 -- the job-level `uses:` reusable-workflow call (`jobs.<id>.uses: ./.github/workflows/x.yml`), measured on 189 repos"

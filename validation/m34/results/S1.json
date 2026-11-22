@@ -21,10 +21,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "70837e1f93c8b0f04e03a9bedf49ee2e9824408e",
+  "currentCommit": "6351091d3691742cb32cb895767b3d2a39042cb8",
   "verifierCommand": "npx tsx script/m34/verify-install-smoke.ts",
   "evidenceFile": "S1.json",
-  "generatedAt": "2026-11-22T01:38:35.465Z",
+  "generatedAt": "2026-11-22T22:44:45.885Z",
   "limitations": [
     "The install leg needs network access to the npm registry for runtime deps (native modules download prebuilt binaries or compile); an offline run surfaces as a B-check failure, not a silent pass.",
     "The installed binary is invoked as `node <prefix>/bin/bb` rather than via the npm bin shim; PATH shims are a packaging detail that varies by npm version.",

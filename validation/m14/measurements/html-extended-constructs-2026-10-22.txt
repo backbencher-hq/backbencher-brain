@@ -1,0 +1,29 @@
+HTML EXTENDED-CONSTRUCT PROBE
+population: 8879 GIT-TRACKED admitted files (git ls-files · 13 admitted spellings · <= 1048576 bytes)
+root: /home/ishaq2321/bb_tests/repositories
+
+== THE ADMITTED POPULATION ==
+  files parsed                      8879
+  files carrying an embedded block   4643
+  embedded blocks                    13767  {"js":13461,"css":305,"ts":1}
+
+== THE FIVE OPEN TYPES' CONSTRUCTS, OVER THAT POPULATION ==
+  decorates   decorator nodes                     0   in 0 files
+  implements  implements clauses                 0   in 0 files
+  renders     jsx elements                       0   in 0 files
+  mixes_in    mixin clauses                       0   in 0 files
+  part_of     part directives                     0   in 0 files
+
+== THE CLASS-HERITAGE CLAUSES IN THE EMBEDDED SCRIPT (the mixes_in shape distribution) ==
+  class_heritage clauses                        0   in 0 files
+
+== THE NEAR MISS FOR part_of IN HTML'S OWN SOURCE: THE TEMPLATE-LANGUAGE INCLUDE FAMILY ==
+  include/extends/partial directives              1920   in 618 files
+        1265  tag-include
+         320  pug-include
+         251  tag-extends
+          64  pug-extends
+          11  handlebars-style-partial
+           5  tag-import
+           3  tag-from
+           1  html-link-rel-import

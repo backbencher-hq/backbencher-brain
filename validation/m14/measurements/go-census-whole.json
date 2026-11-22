@@ -1,0 +1,867 @@
+{
+  "instrument": "script/m14/go-census.ts",
+  "asks": "the whole-population CONSTRUCT side of the four extended types for the go lane (the ANALYZER-side counts and the eleven-term closure come from the ARM: incoming-gate.ts go go 0)",
+  "generatedAt": "2026-11-22T20:33:22.531Z",
+  "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+  "population": {
+    "rule": "git ls-files inside each real checkout of the corpus root, extension list [go], 1 MiB cap; tracked-but-absent counted and excluded; symlinked directories followed and counted",
+    "paths": 199,
+    "admitted": 49915,
+    "tracked": 49940,
+    "overCap": 8,
+    "absent": 17,
+    "repos": 26,
+    "symlinkedDirsFollowed": 1,
+    "bytes": 448062665,
+    "filesParsed": 49915,
+    "filesFailed": 0,
+    "mode": "whole-population",
+    "strideSample": null,
+    "stride": 1,
+    "sampled": 49915,
+    "countersAreLowerBounds": false,
+    "populationLine": "population: 49915 parsed of 49915 sampled (corpus has 49915 .go files across 26 repos)",
+    "populationString": "parsed=49915/49915 admitted=49915 exts=go index=no"
+  },
+  "grammar": {
+    "servedWasm": "wasm/tree-sitter-go.wasm",
+    "servedSha256": "cc55ee8a3579e03a1b94e5371f92f6a5c92045308ee633c25360ab7789573a08",
+    "totalIds": 217,
+    "countingRule": "THE FLEET'S RULE (FLEET-RULINGS-2026-10-22 §2): the wasm's own named node types as nodeTypeForId reports them for every id the grammar declares (ID INSTANCES, not distinct spellings — `identifier` is declared three times) PLUS the universal ERROR and MISSING pair. The distinct-spelling count is published beside it under its own rule.",
+    "namedTypeIds": 108,
+    "namedTypesPlusUniversalPair": 110,
+    "namedTypeSpellingsDistinct": 104,
+    "durableInventoryArtifact": "validation/m14/measurements/go-grammar-nodes.json",
+    "nodeTypesCited": {
+      "field_declaration": true,
+      "constraint_elem": true,
+      "struct_type": true,
+      "interface_type": true,
+      "call_expression": true,
+      "selector_expression": true,
+      "comment": true,
+      "raw_string_literal": true,
+      "import_spec": true,
+      "var_spec": true,
+      "function_declaration": true,
+      "method_declaration": true
+    }
+  },
+  "counters": {
+    "mixes_in": {
+      "construct": "struct embedding: `field_declaration` with a type and no name (the embedded type's implementation is composed into T's method set; no declared supertype)",
+      "structEmbedding": {
+        "sites": 14318,
+        "files": 6463,
+        "repos": 22,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kong",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "structEmbeddingPointer": {
+        "sites": 3811,
+        "files": 2452,
+        "repos": 20,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "structEmbeddingQualified": {
+        "sites": 7171,
+        "files": 3421,
+        "repos": 22,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kong",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "structEmbeddingGeneric": {
+        "sites": 815,
+        "files": 686,
+        "repos": 7,
+        "repoNames": [
+          "consul",
+          "docker",
+          "gql-gqlgen",
+          "kubernetes",
+          "nomad",
+          "terragrunt",
+          "traefik"
+        ]
+      },
+      "RECONCILIATION": {
+        "question": "does the whole-population construct count equal the ARM's `mixes_in` row count, and if not, what exactly is the difference?",
+        "structEmbeddingNamedTypeDecl": {
+          "sites": 13408,
+          "files": 6351,
+          "repos": 22,
+          "repoNames": [
+            "boundary",
+            "caddy",
+            "consul",
+            "docker",
+            "gh-cli",
+            "go-tools",
+            "gql-genqlient",
+            "gql-gqlgen",
+            "hasura-engine",
+            "helm",
+            "kong",
+            "kubernetes",
+            "mvdan-sh",
+            "nomad",
+            "packer",
+            "terraform",
+            "terragrunt",
+            "tflint",
+            "tfsec",
+            "traefik",
+            "vault",
+            "waypoint"
+          ]
+        },
+        "structEmbeddingAnonymousStruct": {
+          "sites": 910,
+          "files": 186,
+          "repos": 14,
+          "repoNames": [
+            "boundary",
+            "caddy",
+            "consul",
+            "docker",
+            "gh-cli",
+            "go-tools",
+            "gql-genqlient",
+            "gql-gqlgen",
+            "helm",
+            "kubernetes",
+            "nomad",
+            "packer",
+            "terraform",
+            "waypoint"
+          ]
+        },
+        "structEmbeddingUnnameableLeaf": {
+          "sites": 0,
+          "files": 0,
+          "repos": 0,
+          "repoNames": []
+        },
+        "rule": "the analyzer emits one `mixes_in` row per embedded type inside a NAMED type declaration (`type_spec`/`type_alias` is what gives the edge its source); an embedded field inside an anonymous struct type has no declared source and CANNOT be a row. named + anonymous == structEmbedding, exactly."
+      }
+    },
+    "extends": {
+      "construct": "interface embedding: `constraint_elem` holding a plain type reference (interface-superset method-set inclusion; NO implementation is composed, so this half is not mixes_in)",
+      "interfaceEmbedding": {
+        "sites": 2821,
+        "files": 1420,
+        "repos": 21,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint",
+          "yq"
+        ]
+      },
+      "interfaceEmbeddingQualified": {
+        "sites": 992,
+        "files": 602,
+        "repos": 18,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "terraform",
+          "terragrunt",
+          "traefik",
+          "vault",
+          "waypoint",
+          "yq"
+        ]
+      },
+      "interfaceEmbeddingPredeclared": {
+        "sites": 44,
+        "files": 37,
+        "repos": 11,
+        "repoNames": [
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-gqlgen",
+          "hasura-engine",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "terraform",
+          "terragrunt"
+        ]
+      },
+      "RECONCILIATION": {
+        "question": "does the whole-population construct count equal the ARM's `extends` row count, and if not, what exactly is the difference?",
+        "interfaceEmbeddingInInterfaceType": {
+          "sites": 2635,
+          "files": 1306,
+          "repos": 21,
+          "repoNames": [
+            "boundary",
+            "caddy",
+            "consul",
+            "docker",
+            "gh-cli",
+            "go-tools",
+            "gql-genqlient",
+            "gql-gqlgen",
+            "hasura-engine",
+            "helm",
+            "kubernetes",
+            "mvdan-sh",
+            "nomad",
+            "packer",
+            "terraform",
+            "terragrunt",
+            "tfsec",
+            "traefik",
+            "vault",
+            "waypoint",
+            "yq"
+          ]
+        },
+        "interfaceEmbeddingElsewhere": {
+          "sites": 0,
+          "files": 0,
+          "repos": 0,
+          "repoNames": []
+        },
+        "interfaceEmbeddingGeneric": {
+          "sites": 18,
+          "files": 11,
+          "repos": 3,
+          "repoNames": [
+            "go-tools",
+            "kubernetes",
+            "terraform"
+          ]
+        },
+        "interfaceEmbeddingUnnameableLeaf": {
+          "sites": 0,
+          "files": 0,
+          "repos": 0,
+          "repoNames": []
+        },
+        "interfaceEmbeddingNestedInterface": {
+          "sites": 170,
+          "files": 108,
+          "repos": 8,
+          "repoNames": [
+            "caddy",
+            "consul",
+            "docker",
+            "go-tools",
+            "gql-gqlgen",
+            "kubernetes",
+            "nomad",
+            "terraform"
+          ]
+        },
+        "rule": "the analyzer emits one `extends` row per PLAIN TYPE ELEMENT of the type declaration's OWN `interface_type`, and only for the shapes it accepts (`type_identifier`, `qualified_type`). `interfaceEmbeddingInInterfaceType` counts EXACTLY those row-capable sites, so it equals the arm's extends row count. The excluded site shapes are named beside it: generic instantiations (`interfaceEmbeddingGeneric`) and elements of a NESTED anonymous interface type (`interfaceEmbeddingNestedInterface`); their sum overcounts sites that are BOTH (a generic element of a nested interface), which is why the row-capable count is stated directly rather than by subtraction."
+      }
+    },
+    "decorates": {
+      "construct": "ANNOTATIONS, measured as the near-miss class: struct tags and //go: directive comments. The disposition is ONTOLOGICAL: an annotation is passive metadata and a decorator is an applied callable.",
+      "structTagSites": {
+        "sites": 68674,
+        "files": 5298,
+        "repos": 23,
+        "repoNames": [
+          "ansible",
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kong",
+          "kubernetes",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint",
+          "yq"
+        ]
+      },
+      "structTagKeys": 134,
+      "structTagKeyCensus": [
+        {
+          "key": "json",
+          "sites": 56659
+        },
+        {
+          "key": "protobuf",
+          "sites": 19609
+        },
+        {
+          "key": "hcl",
+          "sites": 3279
+        },
+        {
+          "key": "protogen",
+          "sites": 3189
+        },
+        {
+          "key": "mapstructure",
+          "sites": 2919
+        },
+        {
+          "key": "yaml",
+          "sites": 2252
+        },
+        {
+          "key": "gorm",
+          "sites": 1264
+        },
+        {
+          "key": "toml",
+          "sites": 1199
+        },
+        {
+          "key": "class",
+          "sites": 1184
+        },
+        {
+          "key": "database",
+          "sites": 826
+        },
+        {
+          "key": "export",
+          "sites": 796
+        },
+        {
+          "key": "cty",
+          "sites": 594
+        },
+        {
+          "key": "description",
+          "sites": 561
+        },
+        {
+          "key": "protobuf_key",
+          "sites": 512
+        },
+        {
+          "key": "protobuf_val",
+          "sites": 512
+        },
+        {
+          "key": "xml",
+          "sites": 484
+        },
+        {
+          "key": "alias",
+          "sites": 425
+        },
+        {
+          "key": "eventstream",
+          "sites": 404
+        },
+        {
+          "key": "structs",
+          "sites": 392
+        },
+        {
+          "key": "graphql",
+          "sites": 387
+        }
+      ],
+      "CALLABILITY_FALSIFIER_structTagKeysNamingDeclaredFunctionOrMethod": {
+        "sites": 0,
+        "files": 0,
+        "repos": 0,
+        "repoNames": []
+      },
+      "goDirectiveEmbed": {
+        "sites": 303,
+        "files": 194,
+        "repos": 17,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "kubernetes",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "goDirectiveGenerate": {
+        "sites": 652,
+        "files": 387,
+        "repos": 17,
+        "repoNames": [
+          "boundary",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "goDirectiveLinkname": {
+        "sites": 594,
+        "files": 23,
+        "repos": 3,
+        "repoNames": [
+          "docker",
+          "go-tools",
+          "kubernetes"
+        ]
+      },
+      "goDirectiveNoinline": {
+        "sites": 30,
+        "files": 11,
+        "repos": 2,
+        "repoNames": [
+          "docker",
+          "kubernetes"
+        ]
+      },
+      "goDirectiveBuild": {
+        "sites": 5576,
+        "files": 4968,
+        "repos": 19,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "traefik",
+          "vault",
+          "waypoint",
+          "yq"
+        ]
+      },
+      "goDirectiveOther": {
+        "sites": 3596,
+        "files": 97,
+        "repos": 7,
+        "repoNames": [
+          "docker",
+          "go-tools",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "vault"
+        ]
+      }
+    },
+    "part_of": {
+      "construct": "FILE INCLUSION: Go's only file directive is `//go:embed`, which includes file BYTES into an embed.FS/string/[]byte variable. The named file is never compiled and shares no scope, so it is NOT a compilation-unit part; there is no written Go construct whose target is a part file.",
+      "goEmbedSites": {
+        "sites": 303,
+        "files": 194,
+        "repos": 17,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "kubernetes",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "embedTargetsTotal": 518,
+      "embedTargetsGlob": 17,
+      "embedTargetsEndingInGoSourceFile": 47,
+      "embedTargetsLiteralGoSourceFile": 47,
+      "FALSIFIER": {
+        "question": "a Go construct naming another .go file whose DECLARATIONS join this file's scope (compilation-unit inclusion)",
+        "measuredGoSourceTargets": 47,
+        "disposition": "The 47 `.go`-suffixed targets exist and are MEASURED, and they do not refute the ruling: the directive embeds the file's BYTES as data (the sibling `doc.go` pattern), the named file is neither included as source nor made to share the embedder's scope, and `doc.go` is a compilation-unit member of the package by the BUILD SYSTEM's file list, not by this directive. Data inclusion is not compilation-unit inclusion — the yaml `!include` class.",
+        "goTargetSamples": [
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go",
+          "doc.go"
+        ]
+      },
+      "embedTargetSamples": [
+        "schema.sql",
+        "schema_reset.sql",
+        "testdata/one",
+        "testdata/two",
+        "testdata/three",
+        "testdata/hooks/initial",
+        "testdata/hooks/updated",
+        "testdata/one",
+        "testdata/two",
+        "testdata/three",
+        "testdata/invalid/major-version-not-int",
+        "testdata/invalid/minor-version-invalid-separator"
+      ]
+    },
+    "renders": {
+      "construct": "TEMPLATE EXECUTION: a symbol whose body executes an html/template renders that template; the rendered component must be a PUBLISHED package-level template symbol",
+      "htmlTemplateImportingFiles": {
+        "sites": 41,
+        "files": 38,
+        "repos": 10,
+        "repoNames": [
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-gqlgen",
+          "hasura-engine",
+          "kubernetes",
+          "nomad",
+          "terragrunt",
+          "traefik",
+          "vault"
+        ]
+      },
+      "textTemplateImportingFiles": {
+        "sites": 137,
+        "files": 136,
+        "repos": 20,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint"
+        ]
+      },
+      "textTemplateIsTheImpostorClass": true,
+      "templateExecCallSites": {
+        "sites": 630,
+        "files": 285,
+        "repos": 22,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint",
+          "yq"
+        ]
+      },
+      "templatePublishedSymbols": {
+        "sites": 26,
+        "files": 12,
+        "repos": 5,
+        "repoNames": [
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-gqlgen",
+          "kubernetes"
+        ]
+      },
+      "templateExecSitesOnPublishedSymbol": {
+        "sites": 11,
+        "files": 9,
+        "repos": 5,
+        "repoNames": [
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-gqlgen",
+          "kubernetes"
+        ]
+      },
+      "templateExecSitesNotOnPublishedSymbol": {
+        "sites": 619,
+        "files": 276,
+        "repos": 22,
+        "repoNames": [
+          "boundary",
+          "caddy",
+          "consul",
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-genqlient",
+          "gql-gqlgen",
+          "hasura-engine",
+          "helm",
+          "kubernetes",
+          "mvdan-sh",
+          "nomad",
+          "packer",
+          "terraform",
+          "terragrunt",
+          "tflint",
+          "tfsec",
+          "traefik",
+          "vault",
+          "waypoint",
+          "yq"
+        ]
+      },
+      "rendersTruthRowsFromOracle": {
+        "sites": 11,
+        "files": 9,
+        "repos": 5,
+        "repoNames": [
+          "docker",
+          "gh-cli",
+          "go-tools",
+          "gql-gqlgen",
+          "kubernetes"
+        ]
+      },
+      "rendersTruthFiles": 9,
+      "rendersTruthSamples": [
+        {
+          "from": "visWriteHTML",
+          "target": "visTmpl",
+          "file": "vendor/pgregory.net/rapid/vis.go"
+        },
+        {
+          "from": "printFlagsHTML",
+          "target": "tpl",
+          "file": "internal/docs/markdown.go"
+        },
+        {
+          "from": "AssemblyHTML",
+          "target": "asmHeader",
+          "file": "gopls/internal/golang/assembly.go"
+        },
+        {
+          "from": "AssemblyHTML",
+          "target": "asmFooter",
+          "file": "gopls/internal/golang/assembly.go"
+        },
+        {
+          "from": "FreeSymbolsHTML",
+          "target": "freeSymbolsTmpl",
+          "file": "gopls/internal/golang/freesymbols.go"
+        },
+        {
+          "from": "sourceLinkHTML",
+          "target": "sourceLinkTmpl",
+          "file": "gopls/internal/golang/freesymbols.go"
+        },
+        {
+          "from": "parseCode",
+          "target": "codeTemplate",
+          "file": "present/code.go"
+        },
+        {
+          "from": "AltairHandler",
+          "target": "altairPage",
+          "file": "graphql/playground/altair_playground.go"
+        },
+        {
+          "from": "ApolloSandboxHandler",
+          "target": "apolloSandboxPage",
+          "file": "graphql/playground/apollo_sandbox_playground.go"
+        },
+        {
+          "from": "Handler",
+          "target": "page",
+          "file": "graphql/playground/playground.go"
+        },
+        {
+          "from": "getJoinCommand",
+          "target": "joinCommandTemplate",
+          "file": "cmd/kubeadm/app/cmd/util/join.go"
+        }
+      ]
+    }
+  },
+  "notes": [
+    "THIS ARTIFACT IS THE WHOLE ADMITTED POPULATION (no stride).",
+    "THE ANALYZER-SIDE COUNTS ARE NOT HERE, BY DESIGN (brief §2b): the per-type edge counts and the eleven-term closure come from the ARM over the same population. This file never calls analyze(), so the §2b degraded-analyzer trap does not apply to it.",
+    "BOTH EMBEDDING HALVES ARE COUNTED: struct embedding (mixes_in) and interface embedding (extends). The halves are separate constructs with separate stored types; neither may be read as the other.",
+    "THE DECORATES FALSIFIER IS MEASURED, NOT ASSERTED: every struct-tag key over the whole population is checked against the function/method names declared in the same file. A key that named a callable would refute the ontological disposition; the count is the falsifier.",
+    "THE PART_OF FALSIFIER IS MEASURED: every //go:embed target token is classified, and the count naming a .go SOURCE file is the falsifier. Data inclusion is not compilation-unit inclusion.",
+    "THE RENDERS ORACLE IS DRIVEN HERE AT FULL EXTENT: deriveGoRendersTruth (script/m14/go-truth.ts) is the lane's independent truth derivation, and this census is the committed instrument that exercises it over the whole admitted population — the lane gate's 'gated but unexercised' warning is answered by this run.",
+    "NO REGEX over source text: every reading is a node type, a field, a named child, or a stored row. The tree is deleted after each file."
+  ]
+}

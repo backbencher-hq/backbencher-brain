@@ -1,0 +1,5221 @@
+{
+  "instrument": "script/m14/yaml-emission-census.ts",
+  "lane": "yaml",
+  "at": "2026-11-22T21:17:03.845Z",
+  "mode": "full (analyzer + constructs on one tree)",
+  "grammar": {
+    "citationRule": "the sha256 of the BYTES THE REGISTRY SERVES — never a path, never a log line (L-20)",
+    "wasmSha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+    "nodeTypeIds": 301,
+    "namedNodeTypeIds": 161,
+    "namedNodeTypesUnique": 36,
+    "namedNodeTypeNames": [
+      "alias",
+      "alias_name",
+      "anchor",
+      "anchor_name",
+      "block_mapping",
+      "block_mapping_pair",
+      "block_node",
+      "block_scalar",
+      "block_sequence",
+      "block_sequence_item",
+      "boolean_scalar",
+      "comment",
+      "directive_name",
+      "directive_parameter",
+      "document",
+      "double_quote_scalar",
+      "escape_sequence",
+      "float_scalar",
+      "flow_mapping",
+      "flow_node",
+      "flow_pair",
+      "flow_sequence",
+      "integer_scalar",
+      "null_scalar",
+      "plain_scalar",
+      "reserved_directive",
+      "single_quote_scalar",
+      "stream",
+      "string_scalar",
+      "tag",
+      "tag_directive",
+      "tag_handle",
+      "tag_prefix",
+      "timestamp_scalar",
+      "yaml_directive",
+      "yaml_version"
+    ],
+    "positiveControl": {
+      "mustBe": [
+        "block_mapping",
+        "block_mapping_pair",
+        "block_sequence",
+        "block_sequence_item",
+        "alias",
+        "alias_name",
+        "anchor",
+        "anchor_name",
+        "tag",
+        "flow_mapping",
+        "flow_pair",
+        "stream",
+        "document"
+      ],
+      "checked": [
+        {
+          "type": "block_mapping",
+          "present": true
+        },
+        {
+          "type": "block_mapping_pair",
+          "present": true
+        },
+        {
+          "type": "block_sequence",
+          "present": true
+        },
+        {
+          "type": "block_sequence_item",
+          "present": true
+        },
+        {
+          "type": "alias",
+          "present": true
+        },
+        {
+          "type": "alias_name",
+          "present": true
+        },
+        {
+          "type": "anchor",
+          "present": true
+        },
+        {
+          "type": "anchor_name",
+          "present": true
+        },
+        {
+          "type": "tag",
+          "present": true
+        },
+        {
+          "type": "flow_mapping",
+          "present": true
+        },
+        {
+          "type": "flow_pair",
+          "present": true
+        },
+        {
+          "type": "stream",
+          "present": true
+        },
+        {
+          "type": "document",
+          "present": true
+        }
+      ]
+    },
+    "negativeControl": {
+      "mustNotBe": [
+        "call",
+        "call_expression",
+        "function_call",
+        "method_call",
+        "import",
+        "import_statement",
+        "include",
+        "include_statement",
+        "class_declaration",
+        "interface_declaration",
+        "mixin",
+        "mixin_declaration",
+        "part",
+        "part_directive",
+        "decorator",
+        "decorated_definition",
+        "extends",
+        "implements",
+        "template",
+        "render",
+        "override",
+        "new_expression"
+      ],
+      "checked": [
+        {
+          "type": "call",
+          "present": false
+        },
+        {
+          "type": "call_expression",
+          "present": false
+        },
+        {
+          "type": "function_call",
+          "present": false
+        },
+        {
+          "type": "method_call",
+          "present": false
+        },
+        {
+          "type": "import",
+          "present": false
+        },
+        {
+          "type": "import_statement",
+          "present": false
+        },
+        {
+          "type": "include",
+          "present": false
+        },
+        {
+          "type": "include_statement",
+          "present": false
+        },
+        {
+          "type": "class_declaration",
+          "present": false
+        },
+        {
+          "type": "interface_declaration",
+          "present": false
+        },
+        {
+          "type": "mixin",
+          "present": false
+        },
+        {
+          "type": "mixin_declaration",
+          "present": false
+        },
+        {
+          "type": "part",
+          "present": false
+        },
+        {
+          "type": "part_directive",
+          "present": false
+        },
+        {
+          "type": "decorator",
+          "present": false
+        },
+        {
+          "type": "decorated_definition",
+          "present": false
+        },
+        {
+          "type": "extends",
+          "present": false
+        },
+        {
+          "type": "implements",
+          "present": false
+        },
+        {
+          "type": "template",
+          "present": false
+        },
+        {
+          "type": "render",
+          "present": false
+        },
+        {
+          "type": "override",
+          "present": false
+        },
+        {
+          "type": "new_expression",
+          "present": false
+        }
+      ]
+    }
+  },
+  "chunk": {
+    "mode": "single",
+    "files": 18364,
+    "of": 18364
+  },
+  "population": {
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "reposOnDisk": 199,
+    "symlinkedRepoDirsFollowed": 1,
+    "symlinkedDirsFollowedOnDiskWalk": 182,
+    "paths": 18364,
+    "distinctFiles": 18337,
+    "admittedTotal": 18364,
+    "absent": 630,
+    "overCap": 5,
+    "overCapLargest": 2325366,
+    "parsed": 18364,
+    "failed": 0,
+    "degradedToFallback": 0,
+    "constructWalked": 18364,
+    "reposCarryingAnAdmittedFile": 189,
+    "reposWithAdmittedPaths": 189,
+    "perRepoPaths": {
+      "Aqua.jl": 7,
+      "Argu": 3,
+      "Bolero": 2,
+      "DataFrames.jl": 5,
+      "Deedle": 3,
+      "DifferentialEquations.jl": 9,
+      "Documenter.jl": 9,
+      "Exposed": 20,
+      "FSharp.Data": 7,
+      "FSharp.Formatting": 2,
+      "FSharpPlus": 9,
+      "FSharpx.Extras": 1,
+      "Fabulous": 10,
+      "Fake": 7,
+      "Falco": 2,
+      "Flux.jl": 8,
+      "FsAutoComplete": 11,
+      "FsCheck": 1,
+      "FsToolkit.ErrorHandling": 1,
+      "GLM.jl": 8,
+      "Grace": 43,
+      "Graphs.jl": 8,
+      "LanguageServer.jl": 3,
+      "PSScriptAnalyzer": 6,
+      "Paket": 4,
+      "Pkg.jl": 8,
+      "Query.jl": 3,
+      "Saturn": 5,
+      "StaticArrays.jl": 6,
+      "afnetworking": 4,
+      "alamofire": 5,
+      "ansible": 2082,
+      "apollo-server": 9,
+      "bash-completion": 7,
+      "bigints": 3,
+      "bootstrap": 34,
+      "boundary": 36,
+      "buckaroo": 3,
+      "bulma": 19,
+      "cabal": 23,
+      "caddy": 15,
+      "cargo": 10,
+      "cats-effect": 5,
+      "clj-kondo": 11,
+      "clojure": 4,
+      "cloogle.org": 2,
+      "consul": 79,
+      "core": 3,
+      "cython": 16,
+      "dark": 3,
+      "dart-http": 50,
+      "dart-sdk": 912,
+      "dbeaver": 5,
+      "docker": 198,
+      "dom96-jester": 1,
+      "dplyr": 9,
+      "duckdb": 109,
+      "eastwood": 9,
+      "element-plus": 38,
+      "elixir": 20,
+      "elmish": 3,
+      "equinox": 2,
+      "expecto": 6,
+      "fantomas": 8,
+      "flutter-packages": 416,
+      "fmt": 12,
+      "fsharp": 104,
+      "geb": 8,
+      "ggplot2": 9,
+      "gh-cli": 25,
+      "ghostty": 25,
+      "giraffe": 4,
+      "go-tools": 3,
+      "gql-absinthe": 5,
+      "gql-federation": 7,
+      "gql-genqlient": 27,
+      "gql-gqlgen": 138,
+      "gql-graphql": 30,
+      "gql-graphql-core": 7,
+      "gql-graphql-dotnet": 18,
+      "gql-graphql-eslint": 7,
+      "gql-graphql-mesh": 118,
+      "gql-graphql-php": 8,
+      "gql-graphql-platform": 669,
+      "gql-graphql-tools": 9,
+      "gql-graphql-yoga": 15,
+      "gql-ruby": 14,
+      "gql-saleor": 168,
+      "gql-sangria": 14,
+      "grails-core": 274,
+      "graphql-java": 10,
+      "graphql-js": 7,
+      "graphql-js-full": 7,
+      "graphql-nim": 1,
+      "hasura-engine": 2199,
+      "helm": 715,
+      "hledger": 36,
+      "jq": 20,
+      "json_jl": 5,
+      "kong": 525,
+      "kotlinx-coroutines": 6,
+      "kubernetes": 6608,
+      "lapis": 2,
+      "lazy.nvim": 14,
+      "libxslt": 1,
+      "lodash": 8,
+      "lspsaga.nvim": 3,
+      "luarocks": 4,
+      "luvit": 3,
+      "mojo": 10,
+      "mvdan-sh": 2,
+      "nim": 12,
+      "nim-lang-nimble": 8,
+      "nimony": 3,
+      "nimterop": 2,
+      "nlohmann-json": 23,
+      "nomad": 48,
+      "nvim-cmp": 4,
+      "nvim-lspconfig": 9,
+      "nvim-treesitter": 15,
+      "nvm": 19,
+      "ohmyzsh": 14,
+      "openapi-spec": 25,
+      "otp": 40,
+      "packer": 19,
+      "pb-googleapis": 27,
+      "pb-grpc": 2,
+      "pb-reference": 2,
+      "phoenix": 8,
+      "phpmyadmin": 19,
+      "phpunit": 9,
+      "pico": 1,
+      "plenary.nvim": 3,
+      "postgrest": 25,
+      "powershell": 127,
+      "primer-css": 12,
+      "proxicall": 15,
+      "pyyaml-include": 8,
+      "r-Rcpp": 8,
+      "r-air": 15,
+      "r-cli": 9,
+      "r-pkgdown": 17,
+      "r-rlang": 9,
+      "r-scales": 8,
+      "r-testthat": 8,
+      "r-vctrs": 8,
+      "r-withr": 6,
+      "rack": 7,
+      "rake": 9,
+      "rbenv": 4,
+      "rebar3": 6,
+      "redis": 22,
+      "redwood": 31,
+      "requests": 12,
+      "ripgrep": 5,
+      "riverpod": 99,
+      "rocks.nvim": 8,
+      "sass-spec": 15,
+      "scala3": 35,
+      "sdwebimage": 5,
+      "shadcn-svelte": 20,
+      "shellcheck": 4,
+      "shopify-api-js": 13,
+      "slim": 4,
+      "snacks.nvim": 12,
+      "solidity": 16,
+      "spectre": 2,
+      "sqlalchemy": 11,
+      "suave": 3,
+      "svelte": 10,
+      "swift-nio": 21,
+      "terraform": 26,
+      "terraform-aws-components": 94,
+      "terragrunt": 52,
+      "tflint": 15,
+      "tfsec": 28,
+      "traefik": 663,
+      "tree-sitter-clean": 2,
+      "trouble.nvim": 11,
+      "usethis": 12,
+      "vault": 92,
+      "vega": 9,
+      "vue-core": 14,
+      "vue-element-admin": 3,
+      "wagtail": 16,
+      "waypoint": 40,
+      "yq": 43,
+      "zig": 4,
+      "zls": 5
+    },
+    "perRepoDistinctFiles": {
+      "Aqua.jl": 7,
+      "Argu": 3,
+      "Bolero": 2,
+      "DataFrames.jl": 5,
+      "Deedle": 3,
+      "DifferentialEquations.jl": 9,
+      "Documenter.jl": 9,
+      "Exposed": 20,
+      "FSharp.Data": 7,
+      "FSharp.Formatting": 2,
+      "FSharpPlus": 9,
+      "FSharpx.Extras": 1,
+      "Fabulous": 10,
+      "Fake": 7,
+      "Falco": 2,
+      "Flux.jl": 8,
+      "FsAutoComplete": 11,
+      "FsCheck": 1,
+      "FsToolkit.ErrorHandling": 1,
+      "GLM.jl": 8,
+      "Grace": 43,
+      "Graphs.jl": 8,
+      "LanguageServer.jl": 3,
+      "PSScriptAnalyzer": 6,
+      "Paket": 4,
+      "Pkg.jl": 8,
+      "Query.jl": 3,
+      "Saturn": 5,
+      "StaticArrays.jl": 6,
+      "afnetworking": 4,
+      "alamofire": 5,
+      "ansible": 2062,
+      "apollo-server": 9,
+      "bash-completion": 7,
+      "bigints": 3,
+      "bootstrap": 34,
+      "boundary": 36,
+      "buckaroo": 3,
+      "bulma": 19,
+      "cabal": 23,
+      "caddy": 15,
+      "cargo": 10,
+      "cats-effect": 5,
+      "clj-kondo": 11,
+      "clojure": 4,
+      "cloogle.org": 2,
+      "consul": 77,
+      "core": 3,
+      "cython": 16,
+      "dark": 3,
+      "dart-http": 50,
+      "dart-sdk": 912,
+      "dbeaver": 5,
+      "docker": 198,
+      "dom96-jester": 1,
+      "dplyr": 9,
+      "duckdb": 109,
+      "eastwood": 9,
+      "element-plus": 38,
+      "elixir": 20,
+      "elmish": 3,
+      "equinox": 2,
+      "expecto": 6,
+      "fantomas": 8,
+      "flutter-packages": 416,
+      "fmt": 12,
+      "fsharp": 104,
+      "geb": 8,
+      "ggplot2": 9,
+      "gh-cli": 25,
+      "ghostty": 25,
+      "giraffe": 4,
+      "go-tools": 3,
+      "gql-absinthe": 5,
+      "gql-federation": 7,
+      "gql-genqlient": 27,
+      "gql-gqlgen": 138,
+      "gql-graphql": 30,
+      "gql-graphql-core": 7,
+      "gql-graphql-dotnet": 18,
+      "gql-graphql-eslint": 7,
+      "gql-graphql-mesh": 118,
+      "gql-graphql-php": 8,
+      "gql-graphql-platform": 669,
+      "gql-graphql-tools": 9,
+      "gql-graphql-yoga": 15,
+      "gql-ruby": 14,
+      "gql-saleor": 168,
+      "gql-sangria": 14,
+      "grails-core": 274,
+      "graphql-java": 10,
+      "graphql-js": 7,
+      "graphql-js-full": 7,
+      "graphql-nim": 1,
+      "hasura-engine": 2195,
+      "helm": 715,
+      "hledger": 36,
+      "jq": 19,
+      "json_jl": 5,
+      "kong": 525,
+      "kotlinx-coroutines": 6,
+      "kubernetes": 6608,
+      "lapis": 2,
+      "lazy.nvim": 14,
+      "libxslt": 1,
+      "lodash": 8,
+      "lspsaga.nvim": 3,
+      "luarocks": 4,
+      "luvit": 3,
+      "mojo": 10,
+      "mvdan-sh": 2,
+      "nim": 12,
+      "nim-lang-nimble": 8,
+      "nimony": 3,
+      "nimterop": 2,
+      "nlohmann-json": 23,
+      "nomad": 48,
+      "nvim-cmp": 4,
+      "nvim-lspconfig": 9,
+      "nvim-treesitter": 15,
+      "nvm": 19,
+      "ohmyzsh": 14,
+      "openapi-spec": 25,
+      "otp": 40,
+      "packer": 19,
+      "pb-googleapis": 27,
+      "pb-grpc": 2,
+      "pb-reference": 2,
+      "phoenix": 8,
+      "phpmyadmin": 19,
+      "phpunit": 9,
+      "pico": 1,
+      "plenary.nvim": 3,
+      "postgrest": 25,
+      "powershell": 127,
+      "primer-css": 12,
+      "proxicall": 15,
+      "pyyaml-include": 8,
+      "r-Rcpp": 8,
+      "r-air": 15,
+      "r-cli": 9,
+      "r-pkgdown": 17,
+      "r-rlang": 9,
+      "r-scales": 8,
+      "r-testthat": 8,
+      "r-vctrs": 8,
+      "r-withr": 6,
+      "rack": 7,
+      "rake": 9,
+      "rbenv": 4,
+      "rebar3": 6,
+      "redis": 22,
+      "redwood": 31,
+      "requests": 12,
+      "ripgrep": 5,
+      "riverpod": 99,
+      "rocks.nvim": 8,
+      "sass-spec": 15,
+      "scala3": 35,
+      "sdwebimage": 5,
+      "shadcn-svelte": 20,
+      "shellcheck": 4,
+      "shopify-api-js": 13,
+      "slim": 4,
+      "snacks.nvim": 12,
+      "solidity": 16,
+      "spectre": 2,
+      "sqlalchemy": 11,
+      "suave": 3,
+      "svelte": 10,
+      "swift-nio": 21,
+      "terraform": 26,
+      "terraform-aws-components": 94,
+      "terragrunt": 52,
+      "tflint": 15,
+      "tfsec": 28,
+      "traefik": 663,
+      "tree-sitter-clean": 2,
+      "trouble.nvim": 11,
+      "usethis": 12,
+      "vault": 92,
+      "vega": 9,
+      "vue-core": 14,
+      "vue-element-admin": 3,
+      "wagtail": 16,
+      "waypoint": 40,
+      "yq": 43,
+      "zig": 4,
+      "zls": 5
+    },
+    "note": "THREE DENOMINATORS, NEVER MIXED. PATHS = tracked admitted paths (a path is a path even when two paths are one file). DISTINCT FILES = the realpaths behind those paths (the symlink-aware identity). ADMITTED = the files this run PARSED — the denominator every count below is over. The REPO COUNT is the number of repositories CARRYING AN ADMITTED FILE, and it is derivable from the per-repo rows above."
+  },
+  "repoSets": {
+    "perType": {
+      "calls": [
+        "DifferentialEquations.jl",
+        "Exposed",
+        "LanguageServer.jl",
+        "Query.jl",
+        "boundary",
+        "cabal",
+        "clojure",
+        "consul",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "duckdb",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "gql-graphql",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-saleor",
+        "graphql-js",
+        "graphql-js-full",
+        "graphql-nim",
+        "kong",
+        "lazy.nvim",
+        "nomad",
+        "nvim-treesitter",
+        "nvm",
+        "otp",
+        "packer",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "r-air",
+        "rake",
+        "scala3",
+        "shadcn-svelte",
+        "snacks.nvim",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "traefik",
+        "trouble.nvim",
+        "vault",
+        "vue-core",
+        "waypoint"
+      ],
+      "contains": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsCheck",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "LanguageServer.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Query.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "ansible",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "buckaroo",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "cloogle.org",
+        "consul",
+        "core",
+        "cython",
+        "dark",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "eastwood",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "equinox",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "go-tools",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "graphql-nim",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "kotlinx-coroutines",
+        "kubernetes",
+        "lapis",
+        "lazy.nvim",
+        "libxslt",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nimterop",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "pb-googleapis",
+        "pb-grpc",
+        "pb-reference",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "pico",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "pyyaml-include",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "snacks.nvim",
+        "solidity",
+        "spectre",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "trouble.nvim",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "vue-element-admin",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ],
+      "decorates": [],
+      "exports": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "hledger",
+        "kong",
+        "openapi-spec"
+      ],
+      "extends": [
+        "Grace",
+        "PSScriptAnalyzer",
+        "ansible",
+        "cabal",
+        "docker",
+        "equinox",
+        "fsharp",
+        "gql-gqlgen",
+        "gql-graphql-mesh",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "kubernetes",
+        "libxslt",
+        "openapi-spec",
+        "powershell",
+        "pyyaml-include",
+        "yq"
+      ],
+      "implements": [],
+      "imports": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "ansible",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "buckaroo",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "consul",
+        "core",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "lapis",
+        "lazy.nvim",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "pyyaml-include",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "solidity",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ],
+      "instantiates": [],
+      "mixes_in": [],
+      "overrides": [
+        "ansible",
+        "dart-sdk",
+        "docker",
+        "gql-sangria",
+        "helm",
+        "kong",
+        "kubernetes",
+        "redis",
+        "riverpod",
+        "terraform-aws-components",
+        "traefik"
+      ],
+      "part_of": [],
+      "references": [
+        "Argu",
+        "Bolero",
+        "Deedle",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "Fabulous",
+        "FsAutoComplete",
+        "Grace",
+        "PSScriptAnalyzer",
+        "Paket",
+        "ansible",
+        "bigints",
+        "boundary",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "cloogle.org",
+        "consul",
+        "cython",
+        "dark",
+        "dart-http",
+        "dart-sdk",
+        "docker",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "equinox",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "helm",
+        "jq",
+        "kong",
+        "kubernetes",
+        "luarocks",
+        "mvdan-sh",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "pyyaml-include",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-rlang",
+        "r-vctrs",
+        "rack",
+        "rake",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "sass-spec",
+        "scala3",
+        "shellcheck",
+        "solidity",
+        "swift-nio",
+        "terraform",
+        "terragrunt",
+        "traefik",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint"
+      ],
+      "renders": [],
+      "uses": [
+        "Grace",
+        "ansible",
+        "dark",
+        "elixir",
+        "hasura-engine",
+        "powershell",
+        "wagtail"
+      ]
+    },
+    "perMarker": {
+      "declared_type": [
+        "ansible",
+        "gql-graphql-mesh",
+        "gql-saleor",
+        "grails-core",
+        "hasura-engine",
+        "kong",
+        "nlohmann-json"
+      ],
+      "yaml_action_use": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "buckaroo",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "consul",
+        "core",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "lapis",
+        "lazy.nvim",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "solidity",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ],
+      "yaml_action_use_unverified": [
+        "FSharp.Data",
+        "cabal",
+        "duckdb",
+        "elixir",
+        "gh-cli",
+        "gql-graphql-yoga",
+        "kong",
+        "nim-lang-nimble",
+        "nimony",
+        "nomad",
+        "otp",
+        "postgrest",
+        "powershell",
+        "redwood",
+        "sass-spec",
+        "solidity",
+        "terragrunt",
+        "vault"
+      ],
+      "yaml_alias": [
+        "Grace",
+        "ansible",
+        "dark",
+        "elixir",
+        "hasura-engine",
+        "powershell",
+        "wagtail"
+      ],
+      "yaml_config_extends": [
+        "Grace",
+        "PSScriptAnalyzer",
+        "ansible",
+        "cabal",
+        "docker",
+        "fsharp",
+        "gql-gqlgen",
+        "hasura-engine",
+        "kubernetes",
+        "libxslt",
+        "powershell"
+      ],
+      "yaml_depends_on": [
+        "Argu",
+        "Bolero",
+        "Deedle",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "Fabulous",
+        "FsAutoComplete",
+        "Grace",
+        "PSScriptAnalyzer",
+        "Paket",
+        "ansible",
+        "bigints",
+        "boundary",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "cloogle.org",
+        "consul",
+        "cython",
+        "dark",
+        "dart-http",
+        "dart-sdk",
+        "docker",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "equinox",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "jq",
+        "kong",
+        "luarocks",
+        "mvdan-sh",
+        "nim-lang-nimble",
+        "nomad",
+        "nvm",
+        "ohmyzsh",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "pyyaml-include",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-rlang",
+        "r-vctrs",
+        "rack",
+        "rake",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "scala3",
+        "shellcheck",
+        "solidity",
+        "swift-nio",
+        "terraform",
+        "terragrunt",
+        "traefik",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint"
+      ],
+      "yaml_duplicate_key": [
+        "ansible",
+        "dart-sdk",
+        "docker",
+        "gql-sangria",
+        "helm",
+        "kong",
+        "kubernetes",
+        "redis",
+        "riverpod",
+        "terraform-aws-components",
+        "traefik"
+      ],
+      "yaml_extends_file": [
+        "PSScriptAnalyzer",
+        "docker",
+        "fsharp",
+        "hasura-engine",
+        "powershell"
+      ],
+      "yaml_json_pointer": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "gql-sangria",
+        "hasura-engine",
+        "kong",
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "yaml_keyword_include": [
+        "ansible",
+        "dart-http",
+        "dart-sdk",
+        "flutter-packages",
+        "proxicall",
+        "riverpod",
+        "tfsec"
+      ],
+      "yaml_merge": [
+        "Grace",
+        "ansible",
+        "equinox",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "pyyaml-include",
+        "yq"
+      ],
+      "yaml_resource_ref": [
+        "ansible",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "helm",
+        "kubernetes",
+        "traefik"
+      ],
+      "yaml_schema_composition": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "openapi-spec"
+      ],
+      "yaml_schema_publication": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "hledger",
+        "kong",
+        "openapi-spec"
+      ],
+      "yaml_tag_include": [
+        "hasura-engine",
+        "pyyaml-include"
+      ],
+      "yaml_workflow_call": [
+        "DifferentialEquations.jl",
+        "Exposed",
+        "LanguageServer.jl",
+        "Query.jl",
+        "boundary",
+        "cabal",
+        "clojure",
+        "consul",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "duckdb",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "gql-graphql",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-saleor",
+        "graphql-js",
+        "graphql-js-full",
+        "graphql-nim",
+        "kong",
+        "lazy.nvim",
+        "nomad",
+        "nvim-treesitter",
+        "nvm",
+        "otp",
+        "packer",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "r-air",
+        "rake",
+        "scala3",
+        "shadcn-svelte",
+        "snacks.nvim",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "traefik",
+        "trouble.nvim",
+        "vault",
+        "vue-core",
+        "waypoint"
+      ]
+    },
+    "perMarkerType": {
+      "calls | yaml_workflow_call": [
+        "DifferentialEquations.jl",
+        "Exposed",
+        "LanguageServer.jl",
+        "Query.jl",
+        "boundary",
+        "cabal",
+        "clojure",
+        "consul",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "duckdb",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "gql-graphql",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-saleor",
+        "graphql-js",
+        "graphql-js-full",
+        "graphql-nim",
+        "kong",
+        "lazy.nvim",
+        "nomad",
+        "nvim-treesitter",
+        "nvm",
+        "otp",
+        "packer",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "r-air",
+        "rake",
+        "scala3",
+        "shadcn-svelte",
+        "snacks.nvim",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "traefik",
+        "trouble.nvim",
+        "vault",
+        "vue-core",
+        "waypoint"
+      ],
+      "exports | yaml_schema_publication": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "hledger",
+        "kong",
+        "openapi-spec"
+      ],
+      "extends | yaml_config_extends": [
+        "Grace",
+        "PSScriptAnalyzer",
+        "ansible",
+        "cabal",
+        "docker",
+        "fsharp",
+        "gql-gqlgen",
+        "hasura-engine",
+        "kubernetes",
+        "libxslt",
+        "powershell"
+      ],
+      "extends | yaml_merge": [
+        "Grace",
+        "ansible",
+        "equinox",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "pyyaml-include",
+        "yq"
+      ],
+      "extends | yaml_schema_composition": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "openapi-spec"
+      ],
+      "imports | yaml_action_use": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "buckaroo",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "consul",
+        "core",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "lapis",
+        "lazy.nvim",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "solidity",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ],
+      "imports | yaml_extends_file": [
+        "PSScriptAnalyzer",
+        "docker",
+        "fsharp",
+        "hasura-engine",
+        "powershell"
+      ],
+      "imports | yaml_keyword_include": [
+        "ansible",
+        "dart-http",
+        "dart-sdk",
+        "flutter-packages",
+        "proxicall",
+        "riverpod",
+        "tfsec"
+      ],
+      "imports | yaml_tag_include": [
+        "hasura-engine",
+        "pyyaml-include"
+      ],
+      "overrides | yaml_duplicate_key": [
+        "ansible",
+        "dart-sdk",
+        "docker",
+        "gql-sangria",
+        "helm",
+        "kong",
+        "kubernetes",
+        "redis",
+        "riverpod",
+        "terraform-aws-components",
+        "traefik"
+      ],
+      "references | declared_type": [
+        "ansible",
+        "gql-graphql-mesh",
+        "gql-saleor",
+        "grails-core",
+        "hasura-engine",
+        "kong",
+        "nlohmann-json"
+      ],
+      "references | yaml_action_use_unverified": [
+        "FSharp.Data",
+        "cabal",
+        "duckdb",
+        "elixir",
+        "gh-cli",
+        "gql-graphql-yoga",
+        "kong",
+        "nim-lang-nimble",
+        "nimony",
+        "nomad",
+        "otp",
+        "postgrest",
+        "powershell",
+        "redwood",
+        "sass-spec",
+        "solidity",
+        "terragrunt",
+        "vault"
+      ],
+      "references | yaml_depends_on": [
+        "Argu",
+        "Bolero",
+        "Deedle",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "Fabulous",
+        "FsAutoComplete",
+        "Grace",
+        "PSScriptAnalyzer",
+        "Paket",
+        "ansible",
+        "bigints",
+        "boundary",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "cloogle.org",
+        "consul",
+        "cython",
+        "dark",
+        "dart-http",
+        "dart-sdk",
+        "docker",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "equinox",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "jq",
+        "kong",
+        "luarocks",
+        "mvdan-sh",
+        "nim-lang-nimble",
+        "nomad",
+        "nvm",
+        "ohmyzsh",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "pyyaml-include",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-rlang",
+        "r-vctrs",
+        "rack",
+        "rake",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "scala3",
+        "shellcheck",
+        "solidity",
+        "swift-nio",
+        "terraform",
+        "terragrunt",
+        "traefik",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint"
+      ],
+      "references | yaml_json_pointer": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "gql-sangria",
+        "hasura-engine",
+        "kong",
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "references | yaml_resource_ref": [
+        "ansible",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "helm",
+        "kubernetes",
+        "traefik"
+      ],
+      "uses | yaml_alias": [
+        "Grace",
+        "ansible",
+        "dark",
+        "elixir",
+        "hasura-engine",
+        "powershell",
+        "wagtail"
+      ]
+    },
+    "constructs": {
+      "yaml.alias_NOT_a_merge": [
+        "Grace",
+        "ansible",
+        "dark",
+        "elixir",
+        "hasura-engine",
+        "powershell",
+        "sqlalchemy",
+        "wagtail"
+      ],
+      "yaml.alias_node": [
+        "Grace",
+        "ansible",
+        "dark",
+        "elixir",
+        "equinox",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "powershell",
+        "pyyaml-include",
+        "sqlalchemy",
+        "wagtail",
+        "yq"
+      ],
+      "yaml.allOf_key": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "yaml.allOf_with_a_ref": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "openapi-spec"
+      ],
+      "yaml.allOf_without_a_ref": [
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "yaml.alternative_of_key": [
+        "Grace",
+        "flutter-packages",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "hledger",
+        "kong",
+        "kubernetes",
+        "openapi-spec",
+        "traefik"
+      ],
+      "yaml.anchor_node": [
+        "Grace",
+        "ansible",
+        "dark",
+        "elixir",
+        "equinox",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "powershell",
+        "pyyaml-include",
+        "wagtail",
+        "yq"
+      ],
+      "yaml.anyOf_key": [
+        "Grace",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "hledger",
+        "kong",
+        "kubernetes",
+        "openapi-spec",
+        "traefik"
+      ],
+      "yaml.directive": [
+        "mojo"
+      ],
+      "yaml.duplicate_mapping_key": [
+        "ansible",
+        "dart-sdk",
+        "docker",
+        "gql-sangria",
+        "helm",
+        "kubernetes",
+        "redis",
+        "riverpod",
+        "traefik"
+      ],
+      "yaml.extends_key": [
+        "Grace",
+        "PSScriptAnalyzer",
+        "ansible",
+        "cabal",
+        "docker",
+        "fsharp",
+        "gql-gqlgen",
+        "hasura-engine",
+        "kubernetes",
+        "libxslt",
+        "powershell",
+        "terraform-aws-components"
+      ],
+      "yaml.extends_key_SHAPE_azure_template": [
+        "PSScriptAnalyzer",
+        "docker",
+        "fsharp",
+        "powershell"
+      ],
+      "yaml.extends_key_SHAPE_config_preset": [],
+      "yaml.extends_key_SHAPE_docker_compose_service": [
+        "hasura-engine"
+      ],
+      "yaml.extends_key_SHAPE_other_mapping": [],
+      "yaml.extends_key_SHAPE_other_scalar": [
+        "ansible",
+        "docker",
+        "gql-gqlgen",
+        "kubernetes"
+      ],
+      "yaml.extends_key_SHAPE_sibling_dot_name": [
+        "Grace",
+        "cabal",
+        "libxslt",
+        "terraform-aws-components"
+      ],
+      "yaml.implements_key": [
+        "flutter-packages"
+      ],
+      "yaml.include_family_key": [
+        "Aqua.jl",
+        "DataFrames.jl",
+        "Deedle",
+        "Documenter.jl",
+        "FSharp.Data",
+        "Fabulous",
+        "Flux.jl",
+        "FsAutoComplete",
+        "GLM.jl",
+        "LanguageServer.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Query.jl",
+        "StaticArrays.jl",
+        "alamofire",
+        "ansible",
+        "bash-completion",
+        "boundary",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "clj-kondo",
+        "consul",
+        "core",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "ghostty",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-ruby",
+        "gql-saleor",
+        "grails-core",
+        "graphql-java",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "kubernetes",
+        "libxslt",
+        "luarocks",
+        "nim",
+        "nim-lang-nimble",
+        "nimterop",
+        "nlohmann-json",
+        "nomad",
+        "nvm",
+        "phoenix",
+        "phpmyadmin",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "r-Rcpp",
+        "r-air",
+        "r-pkgdown",
+        "rack",
+        "rebar3",
+        "redis",
+        "ripgrep",
+        "riverpod",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "slim",
+        "spectre",
+        "sqlalchemy",
+        "svelte",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tfsec",
+        "traefik",
+        "vault",
+        "vue-core",
+        "wagtail",
+        "waypoint"
+      ],
+      "yaml.include_family_key_OUTSIDE_the_analyzer_closed_set": [
+        "Deedle",
+        "FSharp.Data",
+        "Fabulous",
+        "FsAutoComplete",
+        "LanguageServer.jl",
+        "Paket",
+        "Query.jl",
+        "ansible",
+        "cabal",
+        "consul",
+        "core",
+        "dart-sdk",
+        "docker",
+        "duckdb",
+        "element-plus",
+        "fantomas",
+        "flutter-packages",
+        "fsharp",
+        "gh-cli",
+        "ghostty",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-ruby",
+        "grails-core",
+        "hasura-engine",
+        "helm",
+        "kubernetes",
+        "nlohmann-json",
+        "nomad",
+        "phpmyadmin",
+        "postgrest",
+        "primer-css",
+        "riverpod",
+        "shadcn-svelte",
+        "spectre",
+        "terraform-aws-components",
+        "terragrunt",
+        "traefik",
+        "vault",
+        "vue-core",
+        "wagtail"
+      ],
+      "yaml.include_family_tag": [
+        "hasura-engine",
+        "pyyaml-include"
+      ],
+      "yaml.include_family_tag_OUTSIDE_the_analyzer_closed_set": [],
+      "yaml.include_family_tag_at_a_key_position": [
+        "hasura-engine",
+        "pyyaml-include"
+      ],
+      "yaml.include_family_tag_at_the_document_root": [],
+      "yaml.instantiates_key": [
+        "ansible",
+        "gql-gqlgen"
+      ],
+      "yaml.job_level_uses": [
+        "DifferentialEquations.jl",
+        "Exposed",
+        "LanguageServer.jl",
+        "Query.jl",
+        "boundary",
+        "cabal",
+        "clojure",
+        "consul",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "duckdb",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "gql-graphql",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-saleor",
+        "graphql-js",
+        "graphql-js-full",
+        "graphql-nim",
+        "kong",
+        "lazy.nvim",
+        "nomad",
+        "nvim-treesitter",
+        "nvm",
+        "otp",
+        "packer",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "r-air",
+        "rake",
+        "scala3",
+        "shadcn-svelte",
+        "snacks.nvim",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "traefik",
+        "trouble.nvim",
+        "vault",
+        "vue-core",
+        "waypoint"
+      ],
+      "yaml.json_pointer_ref_key": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "gql-sangria",
+        "hasura-engine",
+        "kong",
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "yaml.merge_alias_direct": [
+        "Grace",
+        "ansible",
+        "equinox",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "pyyaml-include",
+        "yq"
+      ],
+      "yaml.merge_alias_under-a-BLOCK-sequence": [],
+      "yaml.merge_alias_under-a-FLOW-sequence": [
+        "yq"
+      ],
+      "yaml.merge_key": [
+        "Grace",
+        "ansible",
+        "equinox",
+        "gql-ruby",
+        "hasura-engine",
+        "hledger",
+        "pyyaml-include",
+        "yq"
+      ],
+      "yaml.merge_key_with_mapping_target": [],
+      "yaml.merge_key_with_sequence_target": [
+        "yq"
+      ],
+      "yaml.merge_list": [
+        "yq"
+      ],
+      "yaml.merge_list_with_a_separate_base_clause": [],
+      "yaml.merge_sequence_with_aliases": [
+        "yq"
+      ],
+      "yaml.merge_sequence_with_more_than_one_alias": [
+        "yq"
+      ],
+      "yaml.multi_document_stream": [
+        "grails-core",
+        "hasura-engine",
+        "helm",
+        "kubernetes",
+        "traefik",
+        "waypoint",
+        "yq"
+      ],
+      "yaml.non_job_level_uses": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "buckaroo",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "consul",
+        "core",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "lapis",
+        "lazy.nvim",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "solidity",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ],
+      "yaml.oneOf_key": [
+        "Grace",
+        "flutter-packages",
+        "gql-graphql-mesh",
+        "kubernetes",
+        "openapi-spec"
+      ],
+      "yaml.schema_publication_definition": [
+        "Grace",
+        "docker",
+        "gql-graphql-mesh",
+        "hasura-engine",
+        "hledger",
+        "kong",
+        "openapi-spec"
+      ],
+      "yaml.supertype_candidate_key": [
+        "Fabulous",
+        "Grace",
+        "PSScriptAnalyzer",
+        "ansible",
+        "bash-completion",
+        "cabal",
+        "clj-kondo",
+        "consul",
+        "cython",
+        "dbeaver",
+        "docker",
+        "eastwood",
+        "element-plus",
+        "flutter-packages",
+        "fsharp",
+        "ghostty",
+        "gql-gqlgen",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "grails-core",
+        "hasura-engine",
+        "kubernetes",
+        "lazy.nvim",
+        "libxslt",
+        "nomad",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "openapi-spec",
+        "powershell",
+        "shadcn-svelte",
+        "shellcheck",
+        "snacks.nvim",
+        "terraform-aws-components",
+        "traefik",
+        "trouble.nvim",
+        "vault",
+        "vue-core",
+        "yq"
+      ],
+      "yaml.tag_core_schema": [
+        "ansible",
+        "gql-saleor",
+        "grails-core",
+        "nlohmann-json"
+      ],
+      "yaml.tag_local": [
+        "ansible",
+        "bash-completion",
+        "gql-graphql-mesh",
+        "grails-core",
+        "hasura-engine",
+        "kong",
+        "nlohmann-json",
+        "pyyaml-include"
+      ],
+      "yaml.tag_naming_a_declaration_in_the_document": [],
+      "yaml.tag_node": [
+        "ansible",
+        "bash-completion",
+        "gql-graphql-mesh",
+        "gql-saleor",
+        "grails-core",
+        "hasura-engine",
+        "kong",
+        "nlohmann-json",
+        "pyyaml-include"
+      ],
+      "yaml.tag_verbatim": [],
+      "yaml.tag_with_a_call_shaped_argument": [],
+      "yaml.tag_with_a_constructor_argument": [
+        "ansible",
+        "bash-completion",
+        "gql-graphql-mesh",
+        "gql-saleor",
+        "grails-core",
+        "hasura-engine",
+        "kong",
+        "nlohmann-json",
+        "pyyaml-include"
+      ],
+      "yaml.template_component_named_in_a_scalar": [],
+      "yaml.template_component_named_in_the_file_text": [
+        "helm",
+        "terraform-aws-components"
+      ],
+      "yaml.template_interpolation_in_scalar": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "LanguageServer.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Query.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "ansible",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "consul",
+        "core",
+        "cython",
+        "dark",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "go-tools",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "kubernetes",
+        "lapis",
+        "lazy.nvim",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "pyyaml-include",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "solidity",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ],
+      "yaml.uses_key": [
+        "Aqua.jl",
+        "Argu",
+        "Bolero",
+        "DataFrames.jl",
+        "Deedle",
+        "DifferentialEquations.jl",
+        "Documenter.jl",
+        "Exposed",
+        "FSharp.Data",
+        "FSharp.Formatting",
+        "FSharpPlus",
+        "FSharpx.Extras",
+        "Fabulous",
+        "Fake",
+        "Falco",
+        "Flux.jl",
+        "FsAutoComplete",
+        "FsToolkit.ErrorHandling",
+        "GLM.jl",
+        "Grace",
+        "Graphs.jl",
+        "LanguageServer.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "Query.jl",
+        "Saturn",
+        "StaticArrays.jl",
+        "afnetworking",
+        "alamofire",
+        "apollo-server",
+        "bash-completion",
+        "bigints",
+        "bootstrap",
+        "boundary",
+        "buckaroo",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "cats-effect",
+        "clj-kondo",
+        "clojure",
+        "consul",
+        "core",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "dom96-jester",
+        "dplyr",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "elmish",
+        "expecto",
+        "fantomas",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "geb",
+        "ggplot2",
+        "gh-cli",
+        "ghostty",
+        "giraffe",
+        "gql-absinthe",
+        "gql-federation",
+        "gql-genqlient",
+        "gql-gqlgen",
+        "gql-graphql",
+        "gql-graphql-core",
+        "gql-graphql-dotnet",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-graphql-yoga",
+        "gql-ruby",
+        "gql-saleor",
+        "gql-sangria",
+        "grails-core",
+        "graphql-java",
+        "graphql-js",
+        "graphql-js-full",
+        "graphql-nim",
+        "hasura-engine",
+        "helm",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "lapis",
+        "lazy.nvim",
+        "lodash",
+        "lspsaga.nvim",
+        "luarocks",
+        "luvit",
+        "mojo",
+        "mvdan-sh",
+        "nim",
+        "nim-lang-nimble",
+        "nimony",
+        "nlohmann-json",
+        "nomad",
+        "nvim-cmp",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "nvm",
+        "ohmyzsh",
+        "openapi-spec",
+        "otp",
+        "packer",
+        "phoenix",
+        "phpmyadmin",
+        "phpunit",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "primer-css",
+        "proxicall",
+        "r-Rcpp",
+        "r-air",
+        "r-cli",
+        "r-pkgdown",
+        "r-rlang",
+        "r-scales",
+        "r-testthat",
+        "r-vctrs",
+        "r-withr",
+        "rack",
+        "rake",
+        "rbenv",
+        "rebar3",
+        "redis",
+        "redwood",
+        "requests",
+        "ripgrep",
+        "riverpod",
+        "rocks.nvim",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shadcn-svelte",
+        "shellcheck",
+        "shopify-api-js",
+        "slim",
+        "snacks.nvim",
+        "solidity",
+        "sqlalchemy",
+        "suave",
+        "svelte",
+        "swift-nio",
+        "terraform",
+        "terraform-aws-components",
+        "terragrunt",
+        "tflint",
+        "tfsec",
+        "traefik",
+        "tree-sitter-clean",
+        "trouble.nvim",
+        "usethis",
+        "vault",
+        "vega",
+        "vue-core",
+        "wagtail",
+        "waypoint",
+        "yq",
+        "zig",
+        "zls"
+      ]
+    },
+    "includeTagSpellings": {
+      "include": [
+        "hasura-engine",
+        "pyyaml-include"
+      ]
+    },
+    "includeKeySpellings": {
+      "IMPORT_USED": [
+        "vault"
+      ],
+      "INCLUDE_DIR": [
+        "nlohmann-json"
+      ],
+      "Include": [
+        "gql-ruby"
+      ],
+      "import": [
+        "docker",
+        "flutter-packages",
+        "kubernetes",
+        "riverpod"
+      ],
+      "import-export-style": [
+        "cabal"
+      ],
+      "import-fresh": [
+        "consul",
+        "element-plus",
+        "gql-graphql-eslint",
+        "nomad",
+        "vault"
+      ],
+      "import-fresh@3.3.0": [
+        "consul"
+      ],
+      "import-fresh@3.3.1": [
+        "element-plus",
+        "gql-graphql-eslint",
+        "nomad",
+        "vault"
+      ],
+      "import-local": [
+        "vault"
+      ],
+      "import-local@3.2.0": [
+        "vault"
+      ],
+      "import-meta-resolve": [
+        "element-plus",
+        "gql-graphql-eslint",
+        "nomad",
+        "vue-core"
+      ],
+      "import-meta-resolve@3.1.1": [
+        "vue-core"
+      ],
+      "import-meta-resolve@4.1.0": [
+        "gql-graphql-eslint"
+      ],
+      "import-meta-resolve@4.2.0": [
+        "element-plus",
+        "nomad"
+      ],
+      "import-values": [
+        "helm"
+      ],
+      "import-without-cache": [
+        "shadcn-svelte"
+      ],
+      "import-without-cache@0.4.0": [
+        "shadcn-svelte"
+      ],
+      "import_and_role_vars": [
+        "ansible"
+      ],
+      "import_deferred_library_with_load_function": [
+        "dart-sdk"
+      ],
+      "import_directive_after_part_directive": [
+        "dart-sdk"
+      ],
+      "import_error": [
+        "ansible"
+      ],
+      "import_internal_library": [
+        "dart-sdk"
+      ],
+      "import_of_non_library": [
+        "dart-sdk"
+      ],
+      "import_only": [
+        "ansible"
+      ],
+      "import_playbook": [
+        "ansible"
+      ],
+      "import_playbook_role_name": [
+        "ansible"
+      ],
+      "import_redirection": [
+        "ansible"
+      ],
+      "import_role": [
+        "ansible"
+      ],
+      "import_tasks": [
+        "ansible"
+      ],
+      "imports": [
+        "hasura-engine",
+        "phpmyadmin",
+        "postgrest"
+      ],
+      "include": [
+        "Aqua.jl",
+        "DataFrames.jl",
+        "Deedle",
+        "Documenter.jl",
+        "Fabulous",
+        "Flux.jl",
+        "FsAutoComplete",
+        "GLM.jl",
+        "PSScriptAnalyzer",
+        "Paket",
+        "Pkg.jl",
+        "StaticArrays.jl",
+        "alamofire",
+        "ansible",
+        "bash-completion",
+        "boundary",
+        "bulma",
+        "cabal",
+        "caddy",
+        "cargo",
+        "clj-kondo",
+        "consul",
+        "cython",
+        "dart-http",
+        "dart-sdk",
+        "dbeaver",
+        "docker",
+        "duckdb",
+        "element-plus",
+        "elixir",
+        "expecto",
+        "flutter-packages",
+        "fmt",
+        "fsharp",
+        "gh-cli",
+        "ghostty",
+        "gql-graphql-php",
+        "gql-graphql-platform",
+        "gql-graphql-tools",
+        "gql-ruby",
+        "gql-saleor",
+        "grails-core",
+        "graphql-java",
+        "hasura-engine",
+        "hledger",
+        "jq",
+        "json_jl",
+        "kong",
+        "libxslt",
+        "luarocks",
+        "nim",
+        "nim-lang-nimble",
+        "nimterop",
+        "nomad",
+        "nvm",
+        "phoenix",
+        "phpmyadmin",
+        "plenary.nvim",
+        "postgrest",
+        "powershell",
+        "proxicall",
+        "r-Rcpp",
+        "r-air",
+        "r-pkgdown",
+        "rack",
+        "rebar3",
+        "redis",
+        "ripgrep",
+        "riverpod",
+        "sass-spec",
+        "scala3",
+        "sdwebimage",
+        "shellcheck",
+        "slim",
+        "sqlalchemy",
+        "svelte",
+        "terraform",
+        "terragrunt",
+        "tfsec",
+        "traefik",
+        "vault",
+        "wagtail",
+        "waypoint"
+      ],
+      "include-all-compatible-minor-versions": [
+        "LanguageServer.jl",
+        "Query.jl"
+      ],
+      "include-auto-generated": [
+        "docker",
+        "kubernetes"
+      ],
+      "include-hidden-files": [
+        "Deedle",
+        "FSharp.Data",
+        "Fabulous",
+        "FsAutoComplete",
+        "Paket",
+        "fantomas",
+        "fsharp",
+        "gh-cli",
+        "grails-core",
+        "primer-css",
+        "shadcn-svelte",
+        "wagtail"
+      ],
+      "include-interface-regex": [
+        "consul"
+      ],
+      "include-markdown": [
+        "traefik"
+      ],
+      "include-path-searcher": [
+        "consul",
+        "nomad",
+        "vault"
+      ],
+      "include-path-searcher@0.1.0": [
+        "consul",
+        "nomad",
+        "vault"
+      ],
+      "include-pre-releases": [
+        "grails-core"
+      ],
+      "include-prerelease": [
+        "FsAutoComplete"
+      ],
+      "include-rc-versions": [
+        "LanguageServer.jl",
+        "Query.jl"
+      ],
+      "include_aggregate_mounts": [
+        "ansible"
+      ],
+      "include_and_role_vars": [
+        "ansible"
+      ],
+      "include_drafts": [
+        "flutter-packages"
+      ],
+      "include_file_not_found": [
+        "dart-sdk"
+      ],
+      "include_header": [
+        "duckdb"
+      ],
+      "include_in_metadata": [
+        "hasura-engine"
+      ],
+      "include_nested": [
+        "spectre"
+      ],
+      "include_next_playbook": [
+        "ansible"
+      ],
+      "include_only": [
+        "ansible"
+      ],
+      "include_other": [
+        "gql-graphql-mesh"
+      ],
+      "include_role": [
+        "ansible"
+      ],
+      "include_role2_result": [
+        "ansible"
+      ],
+      "include_role_omit": [
+        "ansible"
+      ],
+      "include_role_result": [
+        "ansible"
+      ],
+      "include_sidebar": [
+        "traefik"
+      ],
+      "include_tags": [
+        "terraform-aws-components"
+      ],
+      "include_tasks": [
+        "ansible"
+      ],
+      "include_tasks_result": [
+        "ansible"
+      ],
+      "include_time_in_summary": [
+        "terragrunt"
+      ],
+      "include_vars": [
+        "ansible"
+      ],
+      "included": [
+        "ghostty"
+      ],
+      "included-dirs": [
+        "cabal"
+      ],
+      "included-files": [
+        "cabal"
+      ],
+      "included_file_parse_error": [
+        "dart-sdk"
+      ],
+      "included_file_warning": [
+        "dart-sdk",
+        "riverpod"
+      ],
+      "included_optional_tools": [
+        "core"
+      ],
+      "included_other": [
+        "ansible"
+      ]
+    },
+    "supertypeKeySpellings": {
+      "base": [
+        "ansible",
+        "clj-kondo",
+        "cython",
+        "dbeaver",
+        "eastwood",
+        "ghostty",
+        "grails-core",
+        "lazy.nvim",
+        "nvim-lspconfig",
+        "nvim-treesitter",
+        "openapi-spec",
+        "shellcheck",
+        "snacks.nvim",
+        "terraform-aws-components",
+        "trouble.nvim",
+        "vault",
+        "yq"
+      ],
+      "bases": [
+        "kubernetes"
+      ],
+      "extend": [
+        "consul",
+        "element-plus",
+        "gql-graphql-eslint",
+        "gql-graphql-mesh",
+        "shadcn-svelte",
+        "vault"
+      ],
+      "extended": [
+        "Fabulous",
+        "ansible",
+        "traefik",
+        "vault"
+      ],
+      "extends": [
+        "Grace",
+        "PSScriptAnalyzer",
+        "ansible",
+        "cabal",
+        "docker",
+        "fsharp",
+        "gql-gqlgen",
+        "hasura-engine",
+        "kubernetes",
+        "libxslt",
+        "powershell",
+        "terraform-aws-components"
+      ],
+      "implements": [
+        "flutter-packages"
+      ],
+      "inherit": [
+        "ansible"
+      ],
+      "inherits": [
+        "consul",
+        "element-plus",
+        "gql-graphql-eslint",
+        "nomad",
+        "terraform-aws-components",
+        "vault",
+        "vue-core"
+      ],
+      "superclass": [
+        "bash-completion"
+      ]
+    },
+    "templateComponentNames": {}
+  },
+  "templateComponentNames": {},
+  "perType": {
+    "calls": {
+      "edges": 327,
+      "files": 151,
+      "repos": 52
+    },
+    "contains": {
+      "edges": 1380046,
+      "files": 17896,
+      "repos": 189
+    },
+    "decorates": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "exports": {
+      "edges": 4080,
+      "files": 68,
+      "repos": 7
+    },
+    "extends": {
+      "edges": 1125,
+      "files": 120,
+      "repos": 18
+    },
+    "implements": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "imports": {
+      "edges": 8442,
+      "files": 1662,
+      "repos": 168
+    },
+    "instantiates": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "mixes_in": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "overrides": {
+      "edges": 30,
+      "files": 23,
+      "repos": 11
+    },
+    "part_of": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "references": {
+      "edges": 21414,
+      "files": 877,
+      "repos": 102
+    },
+    "renders": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "uses": {
+      "edges": 165,
+      "files": 45,
+      "repos": 7
+    }
+  },
+  "perMarker": {
+    "declared_type": {
+      "edges": 109,
+      "files": 51,
+      "repos": 7
+    },
+    "yaml_action_use": {
+      "edges": 7383,
+      "files": 1158,
+      "repos": 166
+    },
+    "yaml_action_use_unverified": {
+      "edges": 131,
+      "files": 51,
+      "repos": 18
+    },
+    "yaml_alias": {
+      "edges": 165,
+      "files": 45,
+      "repos": 7
+    },
+    "yaml_config_extends": {
+      "edges": 78,
+      "files": 34,
+      "repos": 11
+    },
+    "yaml_depends_on": {
+      "edges": 1892,
+      "files": 341,
+      "repos": 94
+    },
+    "yaml_duplicate_key": {
+      "edges": 30,
+      "files": 23,
+      "repos": 11
+    },
+    "yaml_extends_file": {
+      "edges": 39,
+      "files": 23,
+      "repos": 5
+    },
+    "yaml_json_pointer": {
+      "edges": 16002,
+      "files": 129,
+      "repos": 8
+    },
+    "yaml_keyword_include": {
+      "edges": 965,
+      "files": 456,
+      "repos": 7
+    },
+    "yaml_merge": {
+      "edges": 155,
+      "files": 25,
+      "repos": 8
+    },
+    "yaml_resource_ref": {
+      "edges": 3280,
+      "files": 306,
+      "repos": 6
+    },
+    "yaml_schema_composition": {
+      "edges": 892,
+      "files": 61,
+      "repos": 4
+    },
+    "yaml_schema_publication": {
+      "edges": 4080,
+      "files": 68,
+      "repos": 7
+    },
+    "yaml_tag_include": {
+      "edges": 55,
+      "files": 25,
+      "repos": 2
+    },
+    "yaml_workflow_call": {
+      "edges": 327,
+      "files": 151,
+      "repos": 52
+    }
+  },
+  "perMarkerType": {
+    "calls | yaml_workflow_call": {
+      "edges": 327,
+      "files": 151,
+      "repos": 52
+    },
+    "exports | yaml_schema_publication": {
+      "edges": 4080,
+      "files": 68,
+      "repos": 7
+    },
+    "extends | yaml_config_extends": {
+      "edges": 78,
+      "files": 34,
+      "repos": 11
+    },
+    "extends | yaml_merge": {
+      "edges": 155,
+      "files": 25,
+      "repos": 8
+    },
+    "extends | yaml_schema_composition": {
+      "edges": 892,
+      "files": 61,
+      "repos": 4
+    },
+    "imports | yaml_action_use": {
+      "edges": 7383,
+      "files": 1158,
+      "repos": 166
+    },
+    "imports | yaml_extends_file": {
+      "edges": 39,
+      "files": 23,
+      "repos": 5
+    },
+    "imports | yaml_keyword_include": {
+      "edges": 965,
+      "files": 456,
+      "repos": 7
+    },
+    "imports | yaml_tag_include": {
+      "edges": 55,
+      "files": 25,
+      "repos": 2
+    },
+    "overrides | yaml_duplicate_key": {
+      "edges": 30,
+      "files": 23,
+      "repos": 11
+    },
+    "references | declared_type": {
+      "edges": 109,
+      "files": 51,
+      "repos": 7
+    },
+    "references | yaml_action_use_unverified": {
+      "edges": 131,
+      "files": 51,
+      "repos": 18
+    },
+    "references | yaml_depends_on": {
+      "edges": 1892,
+      "files": 341,
+      "repos": 94
+    },
+    "references | yaml_json_pointer": {
+      "edges": 16002,
+      "files": 129,
+      "repos": 8
+    },
+    "references | yaml_resource_ref": {
+      "edges": 3280,
+      "files": 306,
+      "repos": 6
+    },
+    "uses | yaml_alias": {
+      "edges": 165,
+      "files": 45,
+      "repos": 7
+    }
+  },
+  "constructs": {
+    "yaml.alias_NOT_a_merge": {
+      "edges": 170,
+      "files": 47,
+      "repos": 8
+    },
+    "yaml.alias_node": {
+      "edges": 325,
+      "files": 56,
+      "repos": 13
+    },
+    "yaml.allOf_key": {
+      "edges": 888,
+      "files": 63,
+      "repos": 5
+    },
+    "yaml.allOf_with_a_ref": {
+      "edges": 884,
+      "files": 61,
+      "repos": 4
+    },
+    "yaml.allOf_without_a_ref": {
+      "edges": 4,
+      "files": 3,
+      "repos": 2
+    },
+    "yaml.alternative_of_key": {
+      "edges": 512,
+      "files": 59,
+      "repos": 9
+    },
+    "yaml.anchor_node": {
+      "edges": 160,
+      "files": 70,
+      "repos": 12
+    },
+    "yaml.anyOf_key": {
+      "edges": 358,
+      "files": 31,
+      "repos": 8
+    },
+    "yaml.directive": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "yaml.duplicate_mapping_key": {
+      "edges": 24,
+      "files": 20,
+      "repos": 9
+    },
+    "yaml.extends_key": {
+      "edges": 79,
+      "files": 35,
+      "repos": 12
+    },
+    "yaml.extends_key_SHAPE_azure_template": {
+      "edges": 16,
+      "files": 16,
+      "repos": 4
+    },
+    "yaml.extends_key_SHAPE_config_preset": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.extends_key_SHAPE_docker_compose_service": {
+      "edges": 23,
+      "files": 7,
+      "repos": 1
+    },
+    "yaml.extends_key_SHAPE_other_mapping": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.extends_key_SHAPE_other_scalar": {
+      "edges": 8,
+      "files": 8,
+      "repos": 4
+    },
+    "yaml.extends_key_SHAPE_sibling_dot_name": {
+      "edges": 32,
+      "files": 4,
+      "repos": 4
+    },
+    "yaml.implements_key": {
+      "edges": 59,
+      "files": 59,
+      "repos": 1
+    },
+    "yaml.include_family_key": {
+      "edges": 1661,
+      "files": 730,
+      "repos": 98
+    },
+    "yaml.include_family_key_OUTSIDE_the_analyzer_closed_set": {
+      "edges": 365,
+      "files": 143,
+      "repos": 41
+    },
+    "yaml.include_family_tag": {
+      "edges": 55,
+      "files": 25,
+      "repos": 2
+    },
+    "yaml.include_family_tag_OUTSIDE_the_analyzer_closed_set": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.include_family_tag_at_a_key_position": {
+      "edges": 55,
+      "files": 25,
+      "repos": 2
+    },
+    "yaml.include_family_tag_at_the_document_root": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.instantiates_key": {
+      "edges": 3,
+      "files": 2,
+      "repos": 2
+    },
+    "yaml.job_level_uses": {
+      "edges": 327,
+      "files": 151,
+      "repos": 52
+    },
+    "yaml.json_pointer_ref_key": {
+      "edges": 16014,
+      "files": 128,
+      "repos": 8
+    },
+    "yaml.merge_alias_direct": {
+      "edges": 153,
+      "files": 25,
+      "repos": 8
+    },
+    "yaml.merge_alias_under-a-BLOCK-sequence": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.merge_alias_under-a-FLOW-sequence": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "yaml.merge_key": {
+      "edges": 154,
+      "files": 25,
+      "repos": 8
+    },
+    "yaml.merge_key_with_mapping_target": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.merge_key_with_sequence_target": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "yaml.merge_list": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "yaml.merge_list_with_a_separate_base_clause": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.merge_sequence_with_aliases": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "yaml.merge_sequence_with_more_than_one_alias": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "yaml.multi_document_stream": {
+      "edges": 561,
+      "files": 561,
+      "repos": 7
+    },
+    "yaml.non_job_level_uses": {
+      "edges": 7515,
+      "files": 1209,
+      "repos": 166
+    },
+    "yaml.oneOf_key": {
+      "edges": 154,
+      "files": 37,
+      "repos": 5
+    },
+    "yaml.schema_publication_definition": {
+      "edges": 4429,
+      "files": 75,
+      "repos": 7
+    },
+    "yaml.supertype_candidate_key": {
+      "edges": 228,
+      "files": 139,
+      "repos": 38
+    },
+    "yaml.tag_core_schema": {
+      "edges": 24,
+      "files": 18,
+      "repos": 4
+    },
+    "yaml.tag_local": {
+      "edges": 143,
+      "files": 60,
+      "repos": 8
+    },
+    "yaml.tag_naming_a_declaration_in_the_document": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.tag_node": {
+      "edges": 167,
+      "files": 77,
+      "repos": 9
+    },
+    "yaml.tag_verbatim": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.tag_with_a_call_shaped_argument": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.tag_with_a_constructor_argument": {
+      "edges": 167,
+      "files": 77,
+      "repos": 9
+    },
+    "yaml.template_component_named_in_a_scalar": {
+      "edges": 0,
+      "files": 0,
+      "repos": 0
+    },
+    "yaml.template_component_named_in_the_file_text": {
+      "edges": 216,
+      "files": 60,
+      "repos": 2
+    },
+    "yaml.template_interpolation_in_scalar": {
+      "edges": 42421,
+      "files": 2557,
+      "repos": 172
+    },
+    "yaml.uses_key": {
+      "edges": 7842,
+      "files": 1279,
+      "repos": 171
+    }
+  },
+  "includeTagSpellings": {
+    "include": {
+      "edges": 55,
+      "files": 25,
+      "repos": 2
+    }
+  },
+  "includeKeySpellings": {
+    "IMPORT_USED": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "INCLUDE_DIR": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "Include": {
+      "edges": 6,
+      "files": 2,
+      "repos": 1
+    },
+    "import": {
+      "edges": 98,
+      "files": 14,
+      "repos": 4
+    },
+    "import-export-style": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import-fresh": {
+      "edges": 9,
+      "files": 5,
+      "repos": 5
+    },
+    "import-fresh@3.3.0": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "import-fresh@3.3.1": {
+      "edges": 8,
+      "files": 4,
+      "repos": 4
+    },
+    "import-local": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import-local@3.2.0": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "import-meta-resolve": {
+      "edges": 5,
+      "files": 4,
+      "repos": 4
+    },
+    "import-meta-resolve@3.1.1": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "import-meta-resolve@4.1.0": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "import-meta-resolve@4.2.0": {
+      "edges": 4,
+      "files": 2,
+      "repos": 2
+    },
+    "import-values": {
+      "edges": 26,
+      "files": 19,
+      "repos": 1
+    },
+    "import-without-cache": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import-without-cache@0.4.0": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "import_and_role_vars": {
+      "edges": 18,
+      "files": 3,
+      "repos": 1
+    },
+    "import_deferred_library_with_load_function": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import_directive_after_part_directive": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import_error": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import_internal_library": {
+      "edges": 5,
+      "files": 5,
+      "repos": 1
+    },
+    "import_of_non_library": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import_only": {
+      "edges": 4,
+      "files": 1,
+      "repos": 1
+    },
+    "import_playbook": {
+      "edges": 34,
+      "files": 8,
+      "repos": 1
+    },
+    "import_playbook_role_name": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import_redirection": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "import_role": {
+      "edges": 88,
+      "files": 49,
+      "repos": 1
+    },
+    "import_tasks": {
+      "edges": 255,
+      "files": 87,
+      "repos": 1
+    },
+    "imports": {
+      "edges": 6,
+      "files": 3,
+      "repos": 3
+    },
+    "include": {
+      "edges": 408,
+      "files": 292,
+      "repos": 83
+    },
+    "include-all-compatible-minor-versions": {
+      "edges": 2,
+      "files": 2,
+      "repos": 2
+    },
+    "include-auto-generated": {
+      "edges": 4,
+      "files": 4,
+      "repos": 2
+    },
+    "include-hidden-files": {
+      "edges": 26,
+      "files": 20,
+      "repos": 12
+    },
+    "include-interface-regex": {
+      "edges": 2,
+      "files": 2,
+      "repos": 1
+    },
+    "include-markdown": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include-path-searcher": {
+      "edges": 3,
+      "files": 3,
+      "repos": 3
+    },
+    "include-path-searcher@0.1.0": {
+      "edges": 6,
+      "files": 3,
+      "repos": 3
+    },
+    "include-pre-releases": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include-prerelease": {
+      "edges": 3,
+      "files": 1,
+      "repos": 1
+    },
+    "include-rc-versions": {
+      "edges": 2,
+      "files": 2,
+      "repos": 2
+    },
+    "include_aggregate_mounts": {
+      "edges": 2,
+      "files": 1,
+      "repos": 1
+    },
+    "include_and_role_vars": {
+      "edges": 18,
+      "files": 3,
+      "repos": 1
+    },
+    "include_drafts": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_file_not_found": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_header": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_in_metadata": {
+      "edges": 45,
+      "files": 13,
+      "repos": 1
+    },
+    "include_nested": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_next_playbook": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_only": {
+      "edges": 4,
+      "files": 1,
+      "repos": 1
+    },
+    "include_other": {
+      "edges": 21,
+      "files": 1,
+      "repos": 1
+    },
+    "include_role": {
+      "edges": 123,
+      "files": 75,
+      "repos": 1
+    },
+    "include_role2_result": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_role_omit": {
+      "edges": 2,
+      "files": 2,
+      "repos": 1
+    },
+    "include_role_result": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_sidebar": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_tags": {
+      "edges": 39,
+      "files": 10,
+      "repos": 1
+    },
+    "include_tasks": {
+      "edges": 290,
+      "files": 135,
+      "repos": 1
+    },
+    "include_tasks_result": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "include_time_in_summary": {
+      "edges": 3,
+      "files": 3,
+      "repos": 1
+    },
+    "include_vars": {
+      "edges": 52,
+      "files": 25,
+      "repos": 1
+    },
+    "included": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "included-dirs": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "included-files": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "included_file_parse_error": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "included_file_warning": {
+      "edges": 2,
+      "files": 2,
+      "repos": 2
+    },
+    "included_optional_tools": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "included_other": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "supertypeKeySpellings": {
+    "base": {
+      "edges": 25,
+      "files": 24,
+      "repos": 17
+    },
+    "bases": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "extend": {
+      "edges": 11,
+      "files": 7,
+      "repos": 6
+    },
+    "extended": {
+      "edges": 14,
+      "files": 8,
+      "repos": 4
+    },
+    "extends": {
+      "edges": 79,
+      "files": 35,
+      "repos": 12
+    },
+    "implements": {
+      "edges": 59,
+      "files": 59,
+      "repos": 1
+    },
+    "inherit": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "inherits": {
+      "edges": 37,
+      "files": 7,
+      "repos": 7
+    },
+    "superclass": {
+      "edges": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "samples": {
+    "IMPORT_USED": [
+      "vault/buf.yaml"
+    ],
+    "INCLUDE_DIR": [
+      "nlohmann-json/.github/workflows/check_amalgamation.yml"
+    ],
+    "Include": [
+      "gql-ruby/.rubocop.yml",
+      "gql-ruby/spec/fixtures/cop/.rubocop.yml"
+    ],
+    "import": [
+      "docker/api/docs/v1.52.yaml",
+      "docker/api/docs/v1.53.yaml",
+      "docker/api/docs/v1.54.yaml",
+      "docker/api/docs/v1.55.yaml",
+      "docker/api/docs/v1.56.yaml"
+    ],
+    "import-export-style": [
+      "cabal/fourmolu.yaml"
+    ],
+    "import-fresh": [
+      "consul/ui/pnpm-lock.yaml",
+      "element-plus/pnpm-lock.yaml",
+      "gql-graphql-eslint/pnpm-lock.yaml",
+      "nomad/pnpm-lock.yaml",
+      "vault/ui/pnpm-lock.yaml"
+    ],
+    "import-fresh@3.3.0": [
+      "consul/ui/pnpm-lock.yaml"
+    ],
+    "import-fresh@3.3.1": [
+      "element-plus/pnpm-lock.yaml",
+      "gql-graphql-eslint/pnpm-lock.yaml",
+      "nomad/pnpm-lock.yaml",
+      "vault/ui/pnpm-lock.yaml"
+    ],
+    "import-local": [
+      "vault/ui/pnpm-lock.yaml"
+    ],
+    "import-local@3.2.0": [
+      "vault/ui/pnpm-lock.yaml"
+    ],
+    "import-meta-resolve": [
+      "element-plus/pnpm-lock.yaml",
+      "gql-graphql-eslint/pnpm-lock.yaml",
+      "nomad/pnpm-lock.yaml",
+      "vue-core/pnpm-lock.yaml"
+    ],
+    "import-meta-resolve@3.1.1": [
+      "vue-core/pnpm-lock.yaml"
+    ],
+    "import-meta-resolve@4.1.0": [
+      "gql-graphql-eslint/pnpm-lock.yaml"
+    ],
+    "import-meta-resolve@4.2.0": [
+      "element-plus/pnpm-lock.yaml",
+      "nomad/pnpm-lock.yaml"
+    ],
+    "import-values": [
+      "helm/internal/chart/v3/lint/rules/testdata/withsubchart/Chart.yaml",
+      "helm/internal/chart/v3/util/testdata/chart-with-import-from-aliased-dependencies/Chart.yaml",
+      "helm/internal/chart/v3/util/testdata/chart-with-import-from-aliased-dependencies/charts/child/Chart.yaml",
+      "helm/internal/chart/v3/util/testdata/import-values-from-enabled-subchart/parent-chart/Chart.yaml",
+      "helm/internal/chart/v3/util/testdata/subpop/Chart.yaml"
+    ],
+    "import-without-cache": [
+      "shadcn-svelte/pnpm-lock.yaml"
+    ],
+    "import-without-cache@0.4.0": [
+      "shadcn-svelte/pnpm-lock.yaml"
+    ],
+    "import_and_role_vars": [
+      "ansible/test/integration/targets/roles/roles/vars_scope/defaults/main.yml",
+      "ansible/test/integration/targets/roles/roles/vars_scope/vars/main.yml",
+      "ansible/test/integration/targets/roles/vars_scope.yml"
+    ],
+    "import_deferred_library_with_load_function": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml"
+    ],
+    "import_directive_after_part_directive": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml"
+    ],
+    "import_error": [
+      "ansible/test/integration/targets/ansible-galaxy-collection/tasks/unsupported_resolvelib.yml"
+    ],
+    "import_internal_library": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml",
+      "dart-sdk/pkg/dart2js_runtime_metrics/analysis_options.yaml",
+      "dart-sdk/pkg/dart_internal/analysis_options.yaml",
+      "dart-sdk/pkg/dynamic_modules/analysis_options.yaml",
+      "dart-sdk/pkg/shadow_sources/analysis_options.yaml"
+    ],
+    "import_of_non_library": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml"
+    ],
+    "import_only": [
+      "ansible/test/integration/targets/roles/vars_scope.yml"
+    ],
+    "import_playbook": [
+      "ansible/test/integration/targets/collections/import_collection_pb.yml",
+      "ansible/test/integration/targets/collections/posix.yml",
+      "ansible/test/integration/targets/include_import/playbook/test_import_playbook.yml",
+      "ansible/test/integration/targets/include_import/playbook/test_import_playbook_tags.yml",
+      "ansible/test/integration/targets/include_import/playbook/test_templated_filenames.yml"
+    ],
+    "import_playbook_role_name": [
+      "ansible/test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    ],
+    "import_redirection": [
+      "ansible/lib/ansible/config/ansible_builtin_runtime.yml"
+    ],
+    "import_role": [
+      "ansible/test/integration/targets/become_su/tasks/main.yml",
+      "ansible/test/integration/targets/cli/test_syntax/syntax_check.yml",
+      "ansible/test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/playbooks/default_collection_playbook.yml",
+      "ansible/test/integration/targets/collections/posix.yml",
+      "ansible/test/integration/targets/connection_ssh/test_ssh_askpass.yml"
+    ],
+    "import_tasks": [
+      "ansible/test/integration/targets/ansible-galaxy-collection-cli/tasks/main.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection/tasks/main.yml",
+      "ansible/test/integration/targets/ansible-galaxy-role/tasks/main.yml",
+      "ansible/test/integration/targets/any_errors_fatal/on_includes.yml",
+      "ansible/test/integration/targets/apt/tasks/main.yml"
+    ],
+    "imports": [
+      "hasura-engine/.hlint.yaml",
+      "phpmyadmin/.scrutinizer.yml",
+      "postgrest/.stylish-haskell.yaml"
+    ],
+    "include": [
+      "Aqua.jl/.github/workflows/test.yml",
+      "DataFrames.jl/.github/workflows/ci.yml",
+      "Deedle/.github/workflows/push-master.yml",
+      "Documenter.jl/.github/workflows/CI.yml",
+      "Documenter.jl/.github/workflows/regression-tests.yml"
+    ],
+    "include-all-compatible-minor-versions": [
+      "LanguageServer.jl/.github/workflows/juliaci.yml",
+      "Query.jl/.github/workflows/juliaci.yml"
+    ],
+    "include-auto-generated": [
+      "docker/vendor/github.com/go-openapi/swag/.mockery.yml",
+      "kubernetes/test/e2e/storage/drivers/csi-test/driver/.mockery.yaml",
+      "kubernetes/test/utils/oidc/handlers/.mockery.yaml",
+      "kubernetes/vendor/github.com/go-openapi/swag/.mockery.yml"
+    ],
+    "include-hidden-files": [
+      "Deedle/.github/workflows/repo-assist.lock.yml",
+      "FSharp.Data/.github/workflows/repo-assist.lock.yml",
+      "Fabulous/.github/workflows/repo-assist.lock.yml",
+      "FsAutoComplete/.github/workflows/repo-assist.lock.yml",
+      "Paket/.github/workflows/repo-assist.lock.yml"
+    ],
+    "include-interface-regex": [
+      "consul/.grpcmocks.yaml",
+      "consul/internal/controller/cache/index/.mockery_v3.yaml"
+    ],
+    "include-markdown": [
+      "traefik/docs/mkdocs.yml"
+    ],
+    "include-path-searcher": [
+      "consul/ui/pnpm-lock.yaml",
+      "nomad/pnpm-lock.yaml",
+      "vault/ui/pnpm-lock.yaml"
+    ],
+    "include-path-searcher@0.1.0": [
+      "consul/ui/pnpm-lock.yaml",
+      "nomad/pnpm-lock.yaml",
+      "vault/ui/pnpm-lock.yaml"
+    ],
+    "include-pre-releases": [
+      "grails-core/.github/release-drafter.yml"
+    ],
+    "include-prerelease": [
+      "FsAutoComplete/.github/workflows/build.yml"
+    ],
+    "include-rc-versions": [
+      "LanguageServer.jl/.github/workflows/juliaci.yml",
+      "Query.jl/.github/workflows/juliaci.yml"
+    ],
+    "include_aggregate_mounts": [
+      "ansible/test/integration/targets/mount_facts/tasks/main.yml"
+    ],
+    "include_and_role_vars": [
+      "ansible/test/integration/targets/roles/roles/vars_scope/defaults/main.yml",
+      "ansible/test/integration/targets/roles/roles/vars_scope/vars/main.yml",
+      "ansible/test/integration/targets/roles/vars_scope.yml"
+    ],
+    "include_drafts": [
+      "flutter-packages/.gemini/config.yaml"
+    ],
+    "include_file_not_found": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml"
+    ],
+    "include_header": [
+      "duckdb/api_spec/v2/options/bridge.yaml"
+    ],
+    "include_in_metadata": [
+      "hasura-engine/cli/internal/metadataobject/cron_triggers/testdata/build_test/t1/metadata/cron_triggers.yaml",
+      "hasura-engine/cli/internal/metadataobject/cron_triggers/testdata/export_test/t1/want.cron_triggers.yaml",
+      "hasura-engine/cli/internal/metadatautil/testdata/json/t1/want.metadata.yaml",
+      "hasura-engine/cli/internal/metadatautil/testdata/json/t2/want.metadata.yaml",
+      "hasura-engine/cli/internal/metadatautil/testdata/yaml/t1/metadata.yaml"
+    ],
+    "include_nested": [
+      "spectre/.scss-lint.yml"
+    ],
+    "include_next_playbook": [
+      "ansible/test/integration/targets/include_import/playbook/playbook3.yml"
+    ],
+    "include_only": [
+      "ansible/test/integration/targets/roles/vars_scope.yml"
+    ],
+    "include_other": [
+      "gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/calendly.yml"
+    ],
+    "include_role": [
+      "ansible/test/integration/targets/ansible-playbook-callbacks/include_role-fail.yml",
+      "ansible/test/integration/targets/any_errors_fatal/50897.yml",
+      "ansible/test/integration/targets/become_su/tasks/main.yml",
+      "ansible/test/integration/targets/become_sudo/tasks/main.yml",
+      "ansible/test/integration/targets/blocks/finalized_task.yml"
+    ],
+    "include_role2_result": [
+      "ansible/test/integration/targets/include_import/apply/roles/include_role2/tasks/main.yml"
+    ],
+    "include_role_omit": [
+      "ansible/test/integration/targets/include_import/include_role_omit/playbook.yml",
+      "ansible/test/integration/targets/include_import/include_role_omit/roles/foo/tasks/main.yml"
+    ],
+    "include_role_result": [
+      "ansible/test/integration/targets/include_import/apply/roles/include_role/tasks/main.yml"
+    ],
+    "include_sidebar": [
+      "traefik/docs/mkdocs.yml"
+    ],
+    "include_tags": [
+      "terraform-aws-components/modules/datadog-monitor/catalog/monitors/aurora.yaml",
+      "terraform-aws-components/modules/datadog-monitor/catalog/monitors/ec2.yaml",
+      "terraform-aws-components/modules/datadog-monitor/catalog/monitors/efs.yaml",
+      "terraform-aws-components/modules/datadog-monitor/catalog/monitors/elb.yaml",
+      "terraform-aws-components/modules/datadog-monitor/catalog/monitors/host.yaml"
+    ],
+    "include_tasks": [
+      "ansible/test/integration/targets/ansiballz_python/tasks/main.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/tasks/download.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/tasks/individual_collection_repo.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/tasks/main.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/tasks/multi_collection_repo_all.yml"
+    ],
+    "include_tasks_result": [
+      "ansible/test/integration/targets/include_import/apply/include_tasks.yml"
+    ],
+    "include_time_in_summary": [
+      "terragrunt/.github/workflows/base-test.yml",
+      "terragrunt/.github/workflows/integration-test.yml",
+      "terragrunt/.github/workflows/oidc-integration-test.yml"
+    ],
+    "include_vars": [
+      "ansible/test/integration/targets/ansible-test-cloud-openshift/tasks/main.yml",
+      "ansible/test/integration/targets/apt/tasks/apt-multiarch.yml",
+      "ansible/test/integration/targets/cron/tasks/main.yml",
+      "ansible/test/integration/targets/fetch/roles/fetch_tests/tasks/setup.yml",
+      "ansible/test/integration/targets/filter_mathstuff/tasks/main.yml"
+    ],
+    "included": [
+      "ghostty/.swiftlint.yml"
+    ],
+    "included-dirs": [
+      "cabal/fix-whitespace.yaml"
+    ],
+    "included-files": [
+      "cabal/fix-whitespace.yaml"
+    ],
+    "included_file_parse_error": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml"
+    ],
+    "included_file_warning": [
+      "dart-sdk/pkg/analysis_server/lib/src/services/correction/error_fix_status.yaml",
+      "riverpod/analysis_options_without_plugins.yaml"
+    ],
+    "included_optional_tools": [
+      "core/.serena/project.yml"
+    ],
+    "included_other": [
+      "ansible/test/integration/targets/include_import/parent_templating/roles/test/tasks/other.yml"
+    ],
+    "shape:plain-yaml": [
+      "Aqua.jl/.github/workflows/DocPreviewCleanup.yml",
+      "Aqua.jl/.github/workflows/TagBot.yml",
+      "Aqua.jl/.github/workflows/docs.yml",
+      "Aqua.jl/.github/workflows/test.yml",
+      "Argu/.github/workflows/build.yml"
+    ],
+    "shape:under-templates/": [
+      "ansible/.azure-pipelines/templates/matrix.yml",
+      "ansible/.azure-pipelines/templates/test.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/templates/git_prefix_name.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/templates/name_and_type.yml",
+      "ansible/test/integration/targets/ansible-galaxy-collection-scm/templates/name_without_type.yml"
+    ],
+    "yaml.alias_NOT_a_merge": [
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Components.OpenAPI.yaml"
+    ],
+    "yaml.alias_node": [
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Components.OpenAPI.yaml"
+    ],
+    "yaml.allOf_key": [
+      "Grace/src/OpenAPI/Approval.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Cache.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Components.OpenAPI.yaml"
+    ],
+    "yaml.allOf_with_a_ref": [
+      "Grace/src/OpenAPI/Approval.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Cache.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Components.OpenAPI.yaml"
+    ],
+    "yaml.allOf_without_a_ref": [
+      "kubernetes/staging/src/k8s.io/apiextensions-apiserver/pkg/apis/testdata/HEAD/apiextensions.k8s.io.v1.CustomResourceDefinition.yaml",
+      "kubernetes/staging/src/k8s.io/apiextensions-apiserver/pkg/apis/testdata/HEAD/apiextensions.k8s.io.v1beta1.CustomResourceDefinition.yaml",
+      "openapi-spec/_archive_/schemas/v3.0/schema.yaml"
+    ],
+    "yaml.alternative_of_key": [
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Grace.OpenAPI.3.1.2.yaml",
+      "Grace/src/OpenAPI/Grace.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Shared.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Shared2.Components.OpenAPI.yaml"
+    ],
+    "yaml.anchor_node": [
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Components.OpenAPI.yaml"
+    ],
+    "yaml.anyOf_key": [
+      "Grace/src/OpenAPI/Grace.OpenAPI.3.1.2.yaml",
+      "Grace/src/OpenAPI/Grace.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Storage.Components.OpenAPI.yaml",
+      "gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/meilisearch.yml",
+      "gql-graphql-mesh/packages/loaders/openapi/tests/fixtures/reprod-9637.yml"
+    ],
+    "yaml.directive": [
+      "mojo/t/mojolicious/yaml_config_lite_app.yml"
+    ],
+    "yaml.duplicate_mapping_key": [
+      "ansible/test/integration/targets/yaml_parsing/playbook.yml",
+      "dart-sdk/pkg/front_end/error_recovery.yaml",
+      "docker/vendor/github.com/bits-and-blooms/bitset/.travis.yml",
+      "gql-sangria/modules/core/src/test/resources/scenarios/execution/Executor.yaml",
+      "helm/internal/chart/v3/lint/rules/testdata/invalidchartfile/Chart.yaml"
+    ],
+    "yaml.extends_key": [
+      "Grace/sdk/generated/matrix/openapi-generator/python/.gitlab-ci.yml",
+      "PSScriptAnalyzer/.pipelines/PSScriptAnalyzer-Official.yml",
+      "ansible/test/lib/ansible_test/_util/controller/sanity/yamllint/config/default.yml",
+      "ansible/test/lib/ansible_test/_util/controller/sanity/yamllint/config/modules.yml",
+      "ansible/test/lib/ansible_test/_util/controller/sanity/yamllint/config/plugins.yml"
+    ],
+    "yaml.extends_key_SHAPE_azure_template": [
+      "PSScriptAnalyzer/.pipelines/PSScriptAnalyzer-Official.yml",
+      "docker/vendor/github.com/Azure/azure-sdk-for-go/sdk/azcore/ci.yml",
+      "fsharp/azure-pipelines.yml",
+      "fsharp/eng/common/core-templates/stages/renovate.yml",
+      "powershell/.pipelines/MSIXBundle-vPack-Official.yml"
+    ],
+    "yaml.extends_key_SHAPE_docker_compose_service": [
+      "hasura-engine/docker-compose.yaml",
+      "hasura-engine/install-manifests/docker-compose-yugabyte/docker-compose.yaml",
+      "hasura-engine/server/lib/api-tests/docker-compose.yaml",
+      "hasura-engine/server/lib/pg-client/docker-compose.yml",
+      "hasura-engine/server/test-manual/postgres-replicas-with-ssl-client-certs/docker-compose.yaml"
+    ],
+    "yaml.extends_key_SHAPE_other_scalar": [
+      "ansible/test/lib/ansible_test/_util/controller/sanity/yamllint/config/default.yml",
+      "ansible/test/lib/ansible_test/_util/controller/sanity/yamllint/config/modules.yml",
+      "ansible/test/lib/ansible_test/_util/controller/sanity/yamllint/config/plugins.yml",
+      "docker/api/validate/yamllint.yaml",
+      "docker/vendor/github.com/tonistiigi/go-csvvalue/.yamllint.yml"
+    ],
+    "yaml.extends_key_SHAPE_sibling_dot_name": [
+      "Grace/sdk/generated/matrix/openapi-generator/python/.gitlab-ci.yml",
+      "cabal/.gitlab-ci.yml",
+      "libxslt/.gitlab-ci.yml",
+      "terraform-aws-components/.github/mergify.yml"
+    ],
+    "yaml.implements_key": [
+      "flutter-packages/packages/camera/camera_android/pubspec.yaml",
+      "flutter-packages/packages/camera/camera_android_camerax/pubspec.yaml",
+      "flutter-packages/packages/camera/camera_avfoundation/pubspec.yaml",
+      "flutter-packages/packages/camera/camera_web/pubspec.yaml",
+      "flutter-packages/packages/camera/camera_windows/pubspec.yaml"
+    ],
+    "yaml.include_family_key": [
+      "Aqua.jl/.github/workflows/test.yml",
+      "DataFrames.jl/.github/workflows/ci.yml",
+      "Deedle/.github/workflows/push-master.yml",
+      "Deedle/.github/workflows/repo-assist.lock.yml",
+      "Documenter.jl/.github/workflows/CI.yml"
+    ],
+    "yaml.include_family_key_OUTSIDE_the_analyzer_closed_set": [
+      "Deedle/.github/workflows/repo-assist.lock.yml",
+      "FSharp.Data/.github/workflows/repo-assist.lock.yml",
+      "Fabulous/.github/workflows/repo-assist.lock.yml",
+      "FsAutoComplete/.github/workflows/build.yml",
+      "FsAutoComplete/.github/workflows/repo-assist.lock.yml"
+    ],
+    "yaml.include_family_tag": [
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/databases.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 3/functions/functions.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 3/tables/tables.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 4/functions/functions.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 4/tables/tables.yaml"
+    ],
+    "yaml.include_family_tag_at_a_key_position": [
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/databases.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 3/functions/functions.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 3/tables/tables.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 4/functions/functions.yaml",
+      "hasura-engine/cli/internal/metadataobject/sources/testdata/build_test/t1/metadata/databases/s 4/tables/tables.yaml"
+    ],
+    "yaml.instantiates_key": [
+      "ansible/test/integration/targets/apt/tasks/hello-traditional.yml",
+      "gql-gqlgen/.golangci.yml"
+    ],
+    "yaml.job_level_uses": [
+      "DifferentialEquations.jl/.github/workflows/DependabotAutoMerge.yml",
+      "DifferentialEquations.jl/.github/workflows/Downgrade.yml",
+      "DifferentialEquations.jl/.github/workflows/FormatCheck.yml",
+      "DifferentialEquations.jl/.github/workflows/RunicSuggestions.yml",
+      "DifferentialEquations.jl/.github/workflows/SpellCheck.yml"
+    ],
+    "yaml.json_pointer_ref_key": [
+      "Grace/src/OpenAPI/Approval.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Approval.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Branch.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Cache.Components.OpenAPI.yaml"
+    ],
+    "yaml.merge_alias_direct": [
+      "Grace/src/OpenAPI/Branch.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Organization.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Owner.Paths.OpenAPI.yaml"
+    ],
+    "yaml.merge_alias_under-a-FLOW-sequence": [
+      "yq/examples/merge-anchor.yaml"
+    ],
+    "yaml.merge_key": [
+      "Grace/src/OpenAPI/Branch.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Diff.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Directory.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Organization.Paths.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Owner.Paths.OpenAPI.yaml"
+    ],
+    "yaml.merge_key_with_sequence_target": [
+      "yq/examples/merge-anchor.yaml"
+    ],
+    "yaml.merge_list": [
+      "yq/examples/merge-anchor.yaml"
+    ],
+    "yaml.merge_sequence_with_aliases": [
+      "yq/examples/merge-anchor.yaml"
+    ],
+    "yaml.merge_sequence_with_more_than_one_alias": [
+      "yq/examples/merge-anchor.yaml"
+    ],
+    "yaml.multi_document_stream": [
+      "grails-core/end-to-end/legacy-commands/grails-app/conf/application.yml",
+      "grails-core/end-to-end/spring-dependency-management/grails-app/conf/application.yml",
+      "grails-core/grails-bootstrap/src/test/resources/grails/config/application.yml",
+      "grails-core/grails-core/src/test/resources/application.yml",
+      "grails-core/grails-core/src/test/resources/config/application.yml"
+    ],
+    "yaml.non_job_level_uses": [
+      "Aqua.jl/.github/workflows/DocPreviewCleanup.yml",
+      "Aqua.jl/.github/workflows/TagBot.yml",
+      "Aqua.jl/.github/workflows/code-style.yml",
+      "Aqua.jl/.github/workflows/docs.yml",
+      "Aqua.jl/.github/workflows/enforce-labels.yml"
+    ],
+    "yaml.oneOf_key": [
+      "Grace/src/OpenAPI/Branch.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Grace.OpenAPI.3.1.2.yaml",
+      "Grace/src/OpenAPI/Grace.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Shared.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Shared2.Components.OpenAPI.yaml"
+    ],
+    "yaml.schema_publication_definition": [
+      "Grace/src/OpenAPI/Grace.OpenAPI.3.1.2.yaml",
+      "Grace/src/OpenAPI/Grace.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Main.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Shared.Components.OpenAPI.yaml",
+      "Grace/src/OpenAPI/Transport.Headers.OpenAPI.yaml"
+    ],
+    "yaml.supertype_candidate_key": [
+      "Fabulous/.github/workflows/pages.yml",
+      "Grace/sdk/generated/matrix/openapi-generator/python/.gitlab-ci.yml",
+      "PSScriptAnalyzer/.pipelines/PSScriptAnalyzer-Official.yml",
+      "ansible/lib/ansible/plugins/filter/log.yml",
+      "ansible/lib/ansible/plugins/filter/root.yml"
+    ],
+    "yaml.tag_core_schema": [
+      "ansible/test/integration/targets/argspec/roles/argspec/tasks/main.yml",
+      "ansible/test/integration/targets/roles_arg_spec/test_complex_role_fails.yml",
+      "ansible/test/integration/targets/set_fact/set_fact_bool_conv_jinja2_native.yml",
+      "ansible/test/integration/targets/template/vars/main.yml",
+      "gql-saleor/saleor/core/tests/cassettes/test_http_client/test_http_client_disallows_private_ip_ranges[http].yaml"
+    ],
+    "yaml.tag_local": [
+      "ansible/test/integration/targets/ansible-galaxy-collection/tasks/init.yml",
+      "ansible/test/integration/targets/ansible-inventory/files/valid_sample.yml",
+      "ansible/test/integration/targets/ansible-inventory/with_untrusted.yml",
+      "ansible/test/integration/targets/ansible-vault/host_vars/myhost.yml",
+      "ansible/test/integration/targets/ansible-vault/host_vars/testhost.yml"
+    ],
+    "yaml.tag_node": [
+      "ansible/test/integration/targets/ansible-galaxy-collection/tasks/init.yml",
+      "ansible/test/integration/targets/ansible-inventory/files/valid_sample.yml",
+      "ansible/test/integration/targets/ansible-inventory/with_untrusted.yml",
+      "ansible/test/integration/targets/ansible-vault/host_vars/myhost.yml",
+      "ansible/test/integration/targets/ansible-vault/host_vars/testhost.yml"
+    ],
+    "yaml.tag_with_a_constructor_argument": [
+      "ansible/test/integration/targets/ansible-galaxy-collection/tasks/init.yml",
+      "ansible/test/integration/targets/ansible-inventory/files/valid_sample.yml",
+      "ansible/test/integration/targets/ansible-inventory/with_untrusted.yml",
+      "ansible/test/integration/targets/ansible-vault/host_vars/myhost.yml",
+      "ansible/test/integration/targets/ansible-vault/host_vars/testhost.yml"
+    ],
+    "yaml.template_component_named_in_the_file_text": [
+      "helm/internal/chart/v3/lint/rules/testdata/albatross/templates/svc.yaml",
+      "helm/internal/chart/v3/lint/rules/testdata/v3-fail/templates/deployment.yaml",
+      "helm/internal/chart/v3/lint/rules/testdata/v3-fail/templates/ingress.yaml",
+      "helm/internal/chart/v3/lint/rules/testdata/v3-fail/templates/service.yaml",
+      "helm/internal/chart/v3/util/testdata/three-level-dependent-chart/umbrella/charts/app1/templates/service.yaml"
+    ],
+    "yaml.template_interpolation_in_scalar": [
+      "Aqua.jl/.github/workflows/DocPreviewCleanup.yml",
+      "Aqua.jl/.github/workflows/TagBot.yml",
+      "Aqua.jl/.github/workflows/docs.yml",
+      "Aqua.jl/.github/workflows/test.yml",
+      "Argu/.github/workflows/build.yml"
+    ],
+    "yaml.uses_key": [
+      "Aqua.jl/.github/workflows/DocPreviewCleanup.yml",
+      "Aqua.jl/.github/workflows/TagBot.yml",
+      "Aqua.jl/.github/workflows/code-style.yml",
+      "Aqua.jl/.github/workflows/docs.yml",
+      "Aqua.jl/.github/workflows/enforce-labels.yml"
+    ]
+  },
+  "templateFileShapes": {
+    "plain-yaml": {
+      "edges": 41260,
+      "files": 2371,
+      "repos": 172
+    },
+    "under-templates/": {
+      "edges": 1161,
+      "files": 186,
+      "repos": 7
+    }
+  },
+  "analyzerClosedIncludeTagSet": [
+    "import",
+    "import_file",
+    "import_playbook",
+    "import_role",
+    "import_tasks",
+    "inc",
+    "include",
+    "include_file",
+    "include_role",
+    "include_tasks",
+    "include_vars"
+  ],
+  "analyzerClosedIncludeKeySet": [
+    "import",
+    "import_playbook",
+    "import_role",
+    "import_tasks",
+    "import_values",
+    "include",
+    "include_role",
+    "include_tasks"
+  ],
+  "parseErrors": [],
+  "countersDeclared": [
+    "yaml.alias_NOT_a_merge",
+    "yaml.alias_node",
+    "yaml.allOf_key",
+    "yaml.allOf_with_a_ref",
+    "yaml.allOf_without_a_ref",
+    "yaml.alternative_of_key",
+    "yaml.anchor_node",
+    "yaml.anyOf_key",
+    "yaml.directive",
+    "yaml.duplicate_mapping_key",
+    "yaml.extends_key",
+    "yaml.extends_key_SHAPE_azure_template",
+    "yaml.extends_key_SHAPE_config_preset",
+    "yaml.extends_key_SHAPE_docker_compose_service",
+    "yaml.extends_key_SHAPE_other_mapping",
+    "yaml.extends_key_SHAPE_other_scalar",
+    "yaml.extends_key_SHAPE_sibling_dot_name",
+    "yaml.implements_key",
+    "yaml.include_family_key",
+    "yaml.include_family_key_OUTSIDE_the_analyzer_closed_set",
+    "yaml.include_family_tag",
+    "yaml.include_family_tag_OUTSIDE_the_analyzer_closed_set",
+    "yaml.include_family_tag_at_a_key_position",
+    "yaml.include_family_tag_at_the_document_root",
+    "yaml.instantiates_key",
+    "yaml.job_level_uses",
+    "yaml.json_pointer_ref_key",
+    "yaml.merge_alias_under-a-BLOCK-sequence",
+    "yaml.merge_alias_direct",
+    "yaml.merge_alias_under-a-FLOW-sequence",
+    "yaml.merge_key",
+    "yaml.merge_key_with_mapping_target",
+    "yaml.merge_key_with_sequence_target",
+    "yaml.merge_list",
+    "yaml.merge_list_with_a_separate_base_clause",
+    "yaml.merge_sequence_with_aliases",
+    "yaml.merge_sequence_with_more_than_one_alias",
+    "yaml.multi_document_stream",
+    "yaml.non_job_level_uses",
+    "yaml.oneOf_key",
+    "yaml.schema_publication_definition",
+    "yaml.supertype_candidate_key",
+    "yaml.tag_core_schema",
+    "yaml.tag_local",
+    "yaml.tag_naming_a_declaration_in_the_document",
+    "yaml.tag_node",
+    "yaml.tag_verbatim",
+    "yaml.tag_with_a_call_shaped_argument",
+    "yaml.tag_with_a_constructor_argument",
+    "yaml.template_component_named_in_a_scalar",
+    "yaml.template_component_named_in_the_file_text",
+    "yaml.template_interpolation_in_scalar",
+    "yaml.uses_key"
+  ],
+  "perTypeBuckets": {
+    "calls": {
+      "resolved": 327,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 327,
+      "unclassed": 0
+    },
+    "uses": {
+      "resolved": 165,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 165,
+      "unclassed": 0
+    },
+    "contains": {
+      "resolved": 1380046,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 1380046,
+      "unclassed": 0
+    },
+    "imports": {
+      "resolved": 8247,
+      "external": 195,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 8442,
+      "unclassed": 0
+    },
+    "references": {
+      "resolved": 19665,
+      "external": 142,
+      "ambiguous": 0,
+      "otherUnresolved": 1607,
+      "edges": 21414,
+      "unclassed": 0
+    },
+    "exports": {
+      "resolved": 4080,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 4080,
+      "unclassed": 0
+    },
+    "extends": {
+      "resolved": 1045,
+      "external": 16,
+      "ambiguous": 0,
+      "otherUnresolved": 64,
+      "edges": 1125,
+      "unclassed": 0
+    },
+    "implements": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 0,
+      "unclassed": 0
+    },
+    "overrides": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 30,
+      "edges": 30,
+      "unclassed": 0
+    },
+    "instantiates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 0,
+      "unclassed": 0
+    },
+    "decorates": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 0,
+      "unclassed": 0
+    },
+    "renders": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 0,
+      "unclassed": 0
+    },
+    "mixes_in": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 0,
+      "unclassed": 0
+    },
+    "part_of": {
+      "resolved": 0,
+      "external": 0,
+      "ambiguous": 0,
+      "otherUnresolved": 0,
+      "edges": 0,
+      "unclassed": 0
+    }
+  },
+  "bucketRule": {
+    "external": "metadata.isExternal === true — a target outside the project",
+    "resolved": "confidence >= 1 and not external — the target is a key or file this lane found",
+    "ambiguous": "always 0 — yaml has no symbol index (index=no), so the analyzer never chooses between two same-named declarations",
+    "otherUnresolved": "confidence < 1 and not external — the analyzer's own heuristic could not bind the target",
+    "unclassed": "always 0, and CHECKED: the four buckets are summed against perType and the run fails if they disagree"
+  },
+  "timing": {
+    "totalMs": 1510523.4792439998,
+    "files": 18364,
+    "meanFileMs": 82.25460026377695
+  }
+}

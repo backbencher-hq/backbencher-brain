@@ -1,0 +1,4041 @@
+{
+ "whatThisIs": "Whole-admitted-population census of brace-directive fences ({directive} info strings) in markdown, read through production parseFile's own published fence symbols — the `part_of` construct census. The grammar exposes the directive name as the info string, so this is an AST read, not a text scan.",
+ "admissionRule": "git ls-files per corpus repository (real checkouts only), basename .md or .markdown, under the engine's 1 MiB FULL-AST cap, UTF-8 readable",
+ "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+ "measuredOn": "2026-11-22T20:59:23.911Z",
+ "execution": {
+  "shards": 4,
+  "lostShards": [],
+  "whyShards": "a single wasm heap aborts after ~8,400 parses (measured: first run lost 9,057 of 17,460 to `Aborted()`, same-process retry recovered 0); each shard is a fresh process",
+  "analyzerSha256First16": "7346cd0d21af86e8"
+ },
+ "population": {
+  "admitted": 17460,
+  "parsed": 17460,
+  "failed": 0,
+  "degraded": 0,
+  "fencedCodeBlocks": 100715,
+  "braceDirectiveFences": 452
+ },
+ "directiveFamily": {
+  "note": 128,
+  "eval-rst": 127,
+  "contents": 112,
+  "warning": 22,
+  "toctree": 21,
+  "code-block": 20,
+  "versionadded": 7,
+  "include": 4,
+  "currentmodule": 4,
+  "versionchanged": 3,
+  "module": 2,
+  "NOTE": 1,
+  "literalinclude": 1
+ },
+ "perRepo": {
+  "wagtail": 452
+ },
+ "optionUse": {
+  "param": 181,
+  "show-inheritance": 54,
+  "no-index": 20,
+  "emphasize-lines": 18,
+  "no-value": 5,
+  "attr": 4,
+  "members": 4,
+  "no-contents-entry": 4,
+  "no-index-entry": 2,
+  "start-after": 2,
+  "end-before": 2,
+  "hidetoc": 1,
+  "exclude-members": 1,
+  "classmethod": 1,
+  "class-doc-from": 1,
+  "value": 1,
+  "examples": 1,
+  "maxdepth": 1,
+  "canonical": 1,
+  "language": 1
+ },
+ "inclusionDirectives": {
+  "total": 5,
+  "splice": 3,
+  "fragmentQuoted": 2,
+  "distinctTargets": 4,
+  "argShapes": {
+   "pathLike": 5,
+   "url": 0,
+   "bareToken": 0,
+   "empty": 0
+  }
+ },
+ "rows": [
+  {
+   "file": "wagtail/docs/advanced_topics/accessibility_considerations.md",
+   "line": 8,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/accessibility_considerations.md",
+   "line": 27,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/accessibility_considerations.md",
+   "line": 314,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-value",
+    "no-value",
+    "no-value",
+    "no-value"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/index.md",
+   "line": 17,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/documents.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/documents.md",
+   "line": 17,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/documents.md",
+   "line": 47,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/rich_text.md",
+   "line": 31,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/streamfield.md",
+   "line": 53,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/custom_base_page_models.md",
+   "line": 7,
+   "directive": "versionadded",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/custom_base_page_models.md",
+   "line": 11,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/custom_base_page_models.md",
+   "line": 40,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/page_editing_interface.md",
+   "line": 159,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/page_editing_interface.md",
+   "line": 168,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/page_editing_interface.md",
+   "line": 224,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/page_editing_interface.md",
+   "line": 356,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/i18n.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/i18n.md",
+   "line": 22,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/i18n.md",
+   "line": 108,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/i18n.md",
+   "line": 127,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/i18n.md",
+   "line": 171,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/i18n.md",
+   "line": 652,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/images/custom_image_model.md",
+   "line": 77,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/images/custom_image_model.md",
+   "line": 91,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index",
+    "no-index-entry",
+    "no-index-entry"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/privacy.md",
+   "line": 11,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/privacy.md",
+   "line": 51,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/client_side_panels.md",
+   "line": 9,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/client_side_panels.md",
+   "line": 27,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/client_side_panels.md",
+   "line": 38,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/client_side_panels.md",
+   "line": 59,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/extending_draftail.md",
+   "line": 145,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/extending_draftail.md",
+   "line": 175,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/extending_draftail.md",
+   "line": 434,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/extending_draftail.md",
+   "line": 515,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/index.md",
+   "line": 1,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "hidetoc"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/index.md",
+   "line": 7,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 75,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 151,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 286,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 319,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 429,
+   "directive": "NOTE",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/tutorial.md",
+   "line": 707,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/frontendcache.md",
+   "line": 150,
+   "directive": "versionchanged",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/frontendcache.md",
+   "line": 206,
+   "directive": "versionchanged",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/frontendcache.md",
+   "line": 290,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/frontendcache.md",
+   "line": 383,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/routablepage.md",
+   "line": 5,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/routablepage.md",
+   "line": 37,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/routablepage.md",
+   "line": 190,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "attr"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/routablepage.md",
+   "line": 229,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/routablepage.md",
+   "line": 249,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/sitemaps.md",
+   "line": 8,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/pages/index.md",
+   "line": 9,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 14,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 23,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 91,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 114,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 246,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 271,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 290,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 325,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 348,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 494,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 502,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/panels.md",
+   "line": 517,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/widget_api.md",
+   "line": 41,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/widget_api.md",
+   "line": 63,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/tables.md",
+   "line": 3,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/tables.md",
+   "line": 14,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "members",
+    "members",
+    "show-inheritance",
+    "members",
+    "exclude-members",
+    "show-inheritance"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/tables.md",
+   "line": 33,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/tables.md",
+   "line": 87,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance",
+    "show-inheritance"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/tables.md",
+   "line": 111,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "members",
+    "show-inheritance",
+    "show-inheritance"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/2.16.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/3.0.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.0.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.8.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.2.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.0.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.0.5.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.1.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.7.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.0.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.0.6.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.1.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.2.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.6.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.md",
+   "line": 199,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.5.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.9.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.1.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.2.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.3.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.4.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/8.0.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/permissions.md",
+   "line": 9,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/permissions.md",
+   "line": 51,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/permissions.md",
+   "line": 65,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/search/searching.md",
+   "line": 29,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/tutorial/customize_homepage.md",
+   "line": 104,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/tutorial/style_your_site.md",
+   "line": 50,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/images.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/pages.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/pages.md",
+   "line": 162,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/pages.md",
+   "line": 170,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/pages.md",
+   "line": 222,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/pages.md",
+   "line": 290,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/streamfield_blocks.md",
+   "line": 36,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/streamfield_blocks.md",
+   "line": 44,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/streamfield_blocks.md",
+   "line": 301,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/overview.md",
+   "line": 208,
+   "directive": "versionadded",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/embeds.md",
+   "line": 317,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/icons.md",
+   "line": 109,
+   "directive": "include",
+   "argument": "../_static/wagtail_icons_table.txt",
+   "options": [],
+   "splice": true,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/images/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/reference_index.md",
+   "line": 85,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/committing.md",
+   "line": 64,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 3,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 16,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 37,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 75,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 98,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 104,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 163,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 177,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 193,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 207,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 226,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 257,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/first_contribution_guide.md",
+   "line": 281,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 136,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 157,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 163,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 191,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 207,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 222,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 450,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 466,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/flyio.md",
+   "line": 483,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/adding_reports.md",
+   "line": 19,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/adding_reports.md",
+   "line": 50,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/adding_reports.md",
+   "line": 104,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/forms.md",
+   "line": 28,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "param",
+    "param",
+    "param",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/rich_text_internals.md",
+   "line": 99,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/rich_text_internals.md",
+   "line": 177,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/rich_text_internals.md",
+   "line": 219,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/rich_text_internals.md",
+   "line": 279,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/rich_text_internals.md",
+   "line": 305,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/integrating_into_django.md",
+   "line": 5,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/index.md",
+   "line": 5,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/searchpromotions.md",
+   "line": 5,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/searchpromotions.md",
+   "line": 67,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "classmethod"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/jinja2.md",
+   "line": 217,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/pages/model_recipes.md",
+   "line": 47,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/permissions.md",
+   "line": 5,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/permissions.md",
+   "line": 17,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/permissions.md",
+   "line": 52,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/permissions.md",
+   "line": 73,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/permissions.md",
+   "line": 105,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 11,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 66,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 84,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 362,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 399,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 411,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "param",
+    "show-inheritance",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 444,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "show-inheritance",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "show-inheritance",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "emphasize-lines",
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/streamfield/blocks.md",
+   "line": 664,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "class-doc-from"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/client.md",
+   "line": 3,
+   "directive": "include",
+   "argument": "../../../client/README.md",
+   "options": [
+    "start-after",
+    "end-before"
+   ],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 1,
+   "directive": "module",
+   "argument": "wagtail.admin.viewsets",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 13,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-value"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 45,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "value"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 65,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "attr",
+    "attr"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 137,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "attr"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 148,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 189,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 233,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 247,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 254,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 272,
+   "directive": "versionadded",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/reference/viewsets.md",
+   "line": 305,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/3.0.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.0.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.5.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.9.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.2.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.0.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.0.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.8.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.0.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.0.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.2.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.7.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.4.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.6.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.3.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.4.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/8.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/images.md",
+   "line": 223,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/images.md",
+   "line": 281,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/images.md",
+   "line": 407,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/images.md",
+   "line": 569,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/search/backends.md",
+   "line": 17,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/snippets/customizing.md",
+   "line": 1,
+   "directive": "currentmodule",
+   "argument": "wagtail.snippets.views.snippets",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/amp.md",
+   "line": 53,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 14,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 30,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 125,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 162,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 211,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 258,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v2/usage.md",
+   "line": 572,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/index.md",
+   "line": 7,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/index.md",
+   "line": 114,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/redirects.md",
+   "line": 26,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/custom_user_models.md",
+   "line": 144,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/custom_document_model.md",
+   "line": 40,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/custom_document_model.md",
+   "line": 54,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/custom_document_model.md",
+   "line": 58,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/custom_document_model.md",
+   "line": 62,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/storing_and_serving.md",
+   "line": 25,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/images/overview.md",
+   "line": 189,
+   "directive": "versionadded",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/multi_site_multi_instance_multi_tenancy.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/streamfield_migrations.md",
+   "line": 207,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/streamfield_migrations.md",
+   "line": 352,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/streamfield_migrations.md",
+   "line": 480,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/testing.md",
+   "line": 216,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/developing.md",
+   "line": 154,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/developing.md",
+   "line": 169,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/security.md",
+   "line": 5,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/security.md",
+   "line": 9,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/index.md",
+   "line": 5,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 57,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 156,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 186,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 209,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 251,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 280,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 298,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 312,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 328,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/admin_views.md",
+   "line": 339,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/extending/generic_views.md",
+   "line": 1,
+   "directive": "currentmodule",
+   "argument": "wagtail.admin.viewsets.model",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/extending/template_components.md",
+   "line": 9,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/template_components.md",
+   "line": 21,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/template_components.md",
+   "line": 25,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/getting_started/quick_install.md",
+   "line": 4,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/forms/customization.md",
+   "line": 952,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/legacy_richtext.md",
+   "line": 3,
+   "directive": "module",
+   "argument": "wagtail.contrib.legacy.richtext",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/reference/pages/queryset_reference.md",
+   "line": 28,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/project_template.md",
+   "line": 97,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/components.md",
+   "line": 18,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/components.md",
+   "line": 24,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-contents-entry"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/components.md",
+   "line": 60,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-contents-entry"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/components.md",
+   "line": 79,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-contents-entry"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/ui/components.md",
+   "line": 116,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-contents-entry"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/2.16.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/3.0.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.0.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.6.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/4.2.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.0.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.1.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.5.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/5.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.0.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.1.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.2.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.2.md",
+   "line": 300,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.3.8.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/6.4.2.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.0.7.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.1.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.2.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.3.1.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.3.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/releases/7.4.md",
+   "line": 5,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/search/index.md",
+   "line": 7,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/snippets/features.md",
+   "line": 252,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 47,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 51,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 117,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 182,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 198,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 221,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 249,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 268,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 301,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 622,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 638,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 669,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/topics/streamfield.md",
+   "line": 719,
+   "directive": "code-block",
+   "argument": "python",
+   "options": [
+    "emphasize-lines"
+   ],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/tutorial/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/django-ninja.md",
+   "line": 5,
+   "directive": "versionadded",
+   "argument": "8.0",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/reference.md",
+   "line": 7,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "examples"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/api/v3/snippets.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/admin_templates.md",
+   "line": 128,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/admin_templates.md",
+   "line": 146,
+   "directive": "include",
+   "argument": "../../_static/wagtail_colors_tables.txt",
+   "options": [],
+   "splice": true,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/customization/index.md",
+   "line": 3,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/documents/custom_document_upload_form.md",
+   "line": 34,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/headless.md",
+   "line": 38,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/images/changing_rich_text_representation.md",
+   "line": 53,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/images/renditions.md",
+   "line": 161,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/streamfield_validation.md",
+   "line": 33,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/advanced_topics/third_party_tutorials.md",
+   "line": 3,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 3,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 128,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 392,
+   "directive": "currentmodule",
+   "argument": "wagtail.admin.viewsets.model",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 400,
+   "directive": "currentmodule",
+   "argument": "None",
+   "options": [],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 428,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 440,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 444,
+   "directive": "warning",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 452,
+   "directive": "note",
+   "argument": "Title's here will not work correctly",
+   "options": [],
+   "splice": false,
+   "argShape": "bareToken"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 508,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 520,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index",
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 562,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 582,
+   "directive": "versionadded",
+   "argument": "2.15",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 594,
+   "directive": "versionadded",
+   "argument": "2.15",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/contributing/documentation_guidelines.md",
+   "line": 598,
+   "directive": "versionchanged",
+   "argument": "2.15",
+   "options": [],
+   "splice": false,
+   "argShape": "pathLike"
+  },
+  {
+   "file": "wagtail/docs/contributing/index.md",
+   "line": 76,
+   "directive": "toctree",
+   "argument": "",
+   "options": [
+    "maxdepth"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/contributing/translations.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/deployment/under_the_hood.md",
+   "line": 64,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/audit_log.md",
+   "line": 12,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/audit_log.md",
+   "line": 18,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "param",
+    "param",
+    "param",
+    "param",
+    "param",
+    "param"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/audit_log.md",
+   "line": 31,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/extending_client_side.md",
+   "line": 5,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/extending_client_side.md",
+   "line": 18,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/index.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/extending/index.md",
+   "line": 14,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/forms/index.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/forms/index.md",
+   "line": 115,
+   "directive": "toctree",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/redirects.md",
+   "line": 5,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/redirects.md",
+   "line": 94,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/redirects.md",
+   "line": 98,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/contrib/simple_translation.md",
+   "line": 12,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/hooks.md",
+   "line": 7,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/hooks.md",
+   "line": 100,
+   "directive": "contents",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/hooks.md",
+   "line": 173,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 3,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 15,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "canonical"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 162,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 166,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 476,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 522,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 566,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 599,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 618,
+   "directive": "note",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 626,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 654,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 683,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 695,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 719,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 757,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 777,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 801,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 819,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 855,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 903,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 931,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 956,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 972,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 994,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1010,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1028,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1047,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1107,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1139,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1164,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1211,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1271,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1305,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1329,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1347,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1368,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1425,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [
+    "no-index"
+   ],
+   "splice": false,
+   "argShape": "empty"
+  },
+  {
+   "file": "wagtail/docs/reference/models.md",
+   "line": 1444,
+   "directive": "eval-rst",
+   "argument": "",
+   "options": [],
+   "splice": false,
+   "argShape": "empty"
+  }
+ ]
+}

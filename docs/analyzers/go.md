@@ -58,7 +58,7 @@
   **basename** `tree-sitter-go.wasm` and finds it in this repo's `wasm/` directory
   (`bbWasmCandidates` puts `<repo>/wasm` first, ahead of the `~/.bb/wasm` cache).
 - Wired bytes, measured 2026-10-02: `wasm/tree-sitter-go.wasm`,
-  sha256 `9963ca89b616eaf04b08a43bc1fb0f07b85395bec313330851f1f1ead2f755b6`, 235,957 B.
+  sha256 `cc55ee8a3579e03a1b94e5371f92f6a5c92045308ee633c25360ab7789573a08`, 212,660 B.
 - **Pin-contract status: NOT registered.** `validation/m14/grammar-pins.json` has lanes for 26
   grammars; `go` is not one of them. An earlier revision of this file called the wasm
   "pinned", which was true only in the loose sense of "a file in `wasm/`". It is not pinned by

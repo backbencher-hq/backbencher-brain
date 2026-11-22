@@ -1,0 +1,143 @@
+==============================================================================
+CENSUS — MATLAB construct sites and per-type EMISSIONS over the WHOLE admitted population
+==============================================================================
+node v24.3.0   workers 2   cores 8
+load at start: 7.65 5.75 6.42
+corpus root: /home/ishaq2321/bb_tests/repositories
+admission: the GATE's predicate — ROUTER TABLE spelling .m AND, for the shared .m, the router's content test (first 65536 B containing 'function ' or 'classdef ' = matlab, else objective-c), SIZE_CAP 1048576 B
+admitted files [0,3) of 3 — the WHOLE admissible population (no stride, no cap)
+excluded from the population: 153 tracked-but-absent/unreadable + 0 over the 1048576 B cap + 256 .m files the router sends to objective-c
+corpus file set: sha256 fe4e4996189ebd91ad3d322430a55869e37495aa8d8696ea35362ae0506cd8dd (3 absolute paths, sorted)
+files walked: 3   tree failures: 0   parseFile failures: 0
+walk wall time: 17374ms
+
+ADMITTED FILES (3):
+  flutter-packages/packages/pigeon/platform_tests/alternate_language_test_plugin/darwin/alternate_language_test_plugin/Sources/alternate_language_test_plugin/CoreTests.gen.m
+  flutter-packages/packages/video_player/video_player_avfoundation/darwin/video_player_avfoundation/Sources/video_player_avfoundation_objc/FVPTextureBasedVideoPlayer.m
+  sdwebimage/SDWebImage/Core/SDWebImageDownloaderOperation.m
+
+ANALYZER EMISSIONS — production parseFile over the population (the `implemented` numbers):
+  calls            1615 edges     3 files
+  uses                0 edges     0 files   (SILENT — no site, no emission)
+  contains            0 edges     0 files   (SILENT — no site, no emission)
+  imports             0 edges     0 files   (SILENT — no site, no emission)
+  references        110 edges     3 files
+  exports             0 edges     0 files   (SILENT — no site, no emission)
+  extends             0 edges     0 files   (SILENT — no site, no emission)
+  implements          0 edges     0 files   (SILENT — no site, no emission)
+  overrides           0 edges     0 files   (SILENT — no site, no emission)
+  instantiates        0 edges     0 files   (SILENT — no site, no emission)
+  decorates           0 edges     0 files   (SILENT — no site, no emission)
+  renders             0 edges     0 files   (SILENT — no site, no emission)
+  mixes_in            0 edges     0 files   (SILENT — no site, no emission)
+  part_of             0 edges     0 files   (SILENT — no site, no emission)
+
+POPULATION SHAPE — what these three files ARE:
+  classdef files                                            0 sites       0 files
+  function files (no classdef, has function)                0 sites       0 files
+  script files (neither classdef nor function file)         3 sites       3 files
+  primary function whose name == file basename              0 sites       0 files
+  local functions (name != basename, not in methods)        0 sites       0 files
+  methods blocks                                            0 sites       0 files
+  properties blocks                                         0 sites       0 files
+  events blocks                                             0 sites       0 files
+  enumeration blocks                                        0 sites       0 files
+  property declarations                                     0 sites       0 files
+  event declarations                                        0 sites       0 files
+  enum entries                                              0 sites       0 files
+  function definitions inside methods blocks                0 sites       0 files
+  arguments validation blocks                               0 sites       0 files
+
+imports — `import` is a COMMAND statement in this grammar (command/command_name nodes):
+  command statements (all names)                           71 sites       3 files
+  command statements named `import`                         9 sites       3 files
+    import ...* (wildcard spelling)                         0 sites       0 files
+    import a.b (dotted spelling)                            9 sites       3 files
+command names (all command statements on the population):
+    
+      import                                   9
+      The                                      6
+      tatic                                    4
+      This                                     3
+      const                                    3
+      nonatomic                                3
+      Copyright                                2
+      NSString                                 2
+      Use                                      2
+      Whether                                  2
+      endif                                    2
+      found                                    2
+      the                                      2
+      value                                    2
+      A                                        1
+      Autogenerated                            1
+      BOOL                                     1
+      NSArray                                  1
+      NSDictionary                             1
+      SDWebImageDownloaderOperationToken       1
+      See                                      1
+      UIImage                                  1
+      copyPixelBuffer                          1
+      decrypt                                  1
+      do                                       1
+      double                                   1
+      each                                     1
+      id                                       1
+      ignore                                   1
+      init                                     1
+      may                                      1
+      modify                                   1
+      other                                    1
+      please                                   1
+      previous                                 1
+      result                                   1
+      returning                                1
+      since                                    1
+      static                                   1
+      use                                      1
+      we                                       1
+
+references — the non-call reference constructs:
+  @handle_operator sites (function handles)                27 sites       2 files
+  ?metaclass_operator sites (class references)             60 sites       2 files
+  `f@SuperClass(...)` superclass qualifiers                23 sites       3 files
+  indirect_access `(...)` sites                             0 sites       0 files
+  field_expression sites (receiver.member)               1038 sites       3 files
+
+exports — the file<->function identity (MATLAB: one primary function per file):
+  primary function name == file basename                    0 sites       0 files
+  local functions (also callable in-file only)              0 sites       0 files
+  files under a +pkg/ folder                                0 sites       0 files
+  files under an @Class/ folder                             0 sites       0 files
+  package folders: (none)
+  @Class folders: (none)
+
+implements / mixes_in — the superclass-list shape (`classdef X < Y & Z`):
+  classes with a superclasses node                          0 sites       0 files
+  superclass entries (one per base, & separates)            0 sites       0 files
+    classes with exactly ONE base                           0 sites       0 files
+    classes with TWO OR MORE bases (& sites)                0 sites       0 files
+    bases spelled `handle` or a mixin class                 0 sites       0 files
+    bases spelled `matlab.mixin.*` (beyond the three common)      0 sites       0 files
+    superclass spellings:: (none)
+
+overrides — candidate sites only (the grammar has no override marker):
+  function definitions inside a classdef WITH superclasses      0 sites       0 files
+
+instantiates — calls whose callee is a class declared IN THE POPULATION:
+  call sites to a declared class name                       0 sites       0 files
+  class names declared: (none)
+
+decorates — PASSIVE METADATA, the near miss (attribute lists):
+  attributes lists (classdef/properties/methods/events/enumeration/arguments)      0 sites       0 files
+  attribute entries                                         0 sites       0 files
+    attribute spellings:: (none)
+
+renders — UI component constructors (App Designer / uifigure family):
+  UI component constructor calls                            0 sites       0 files
+    UI constructor names:: (none)
+  .mlapp files on the corpus tree (never admitted: a ZIP, not source): 0
+
+scoping constructs (not relationship types; recorded so caveats can cite them):
+  global_operator statements                                0 sites       0 files
+  persistent_operator statements                            0 sites       0 files

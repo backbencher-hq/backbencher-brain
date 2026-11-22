@@ -1,0 +1,279 @@
+{
+  "population": {
+    "admitted": 421,
+    "discovered": 421,
+    "parsed": 421,
+    "failed": 0,
+    "walked": 421,
+    "repos": 2,
+    "absent": 0,
+    "overCap": 0,
+    "exts": [
+      "sol"
+    ],
+    "sizeCapBytes": 1048576,
+    "cap": 0,
+    "corpusRoot": "/home/ishaq2321/bb_tests/repositories",
+    "closure": true
+  },
+  "control": {
+    "ok": true,
+    "checked": "closure (whole population)",
+    "detail": "parsed 421 + failed 0 = admitted 421"
+  },
+  "positiveControls": {
+    "modifier_definition": 23,
+    "modifier_invocation": 222,
+    "using_directive": 124,
+    "import_directive": 932,
+    "inheritance_specifier": 595
+  },
+  "declared": {
+    "modifierNames": 20,
+    "modifierDeclarations": 23,
+    "typeNames": 605
+  },
+  "sites": {
+    "import_directive": {
+      "sites": 932,
+      "files": 358,
+      "repos": 2
+    },
+    "inheritance_specifier": {
+      "sites": 595,
+      "files": 283,
+      "repos": 1
+    },
+    "modifier_invocation": {
+      "sites": 222,
+      "files": 89,
+      "repos": 1
+    },
+    "using_directive": {
+      "sites": 124,
+      "files": 76,
+      "repos": 1
+    },
+    "new_expression": {
+      "sites": 89,
+      "files": 37,
+      "repos": 2
+    },
+    "modifier_definition": {
+      "sites": 23,
+      "files": 16,
+      "repos": 1
+    }
+  },
+  "modifierDefinitions": {
+    "onlyEntryPoint": {
+      "sites": 2,
+      "files": 2,
+      "repos": 1
+    },
+    "nonReentrantView": {
+      "sites": 2,
+      "files": 2,
+      "repos": 1
+    },
+    "nonReentrant": {
+      "sites": 2,
+      "files": 2,
+      "repos": 1
+    },
+    "onlyRole": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyOwner": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "restricted": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyAuthorized": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyEntryPointOrSelf": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyModule": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "withHook": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyGovernance": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyRoleOrOpenRole": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyInitializing": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "reinitializer": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "initializer": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "notDelegated": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyProxy": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "onlyTokenBridge": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "whenPaused": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "whenNotPaused": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "modifierInvocations": {
+    "modifier-project · function_definition": {
+      "sites": 109,
+      "files": 41,
+      "repos": 1
+    },
+    "type-project · constructor_definition": {
+      "sites": 78,
+      "files": 50,
+      "repos": 1
+    },
+    "modifier-in-file · function_definition": {
+      "sites": 31,
+      "files": 12,
+      "repos": 1
+    },
+    "modifier-project · constructor_definition": {
+      "sites": 4,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "usingForms": {
+    "library · other:any_source_type · other:any_source_type · library=project:library": {
+      "sites": 53,
+      "files": 34,
+      "repos": 1
+    },
+    "library · primitive · primitive · library=project:library": {
+      "sites": 39,
+      "files": 27,
+      "repos": 1
+    },
+    "library · user-defined · project:struct · library=project:library": {
+      "sites": 23,
+      "files": 17,
+      "repos": 1
+    },
+    "braced · user-defined · in-file:type · fn=unresolved": {
+      "sites": 4,
+      "files": 1,
+      "repos": 1
+    },
+    "library · user-defined · project:interface · library=project:library": {
+      "sites": 3,
+      "files": 3,
+      "repos": 1
+    },
+    "library · user-defined · project:struct+type · library=project:library": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    },
+    "library · other:any_source_type · other:any_source_type · library=in-file:library": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "imports": {
+    "braced · relative · target-admitted": {
+      "sites": 798,
+      "files": 304,
+      "repos": 1
+    },
+    "braced · external-or-non-relative": {
+      "sites": 107,
+      "files": 33,
+      "repos": 1
+    },
+    "braced · relative · target-absent": {
+      "sites": 19,
+      "files": 16,
+      "repos": 1
+    },
+    "plain · relative · target-absent": {
+      "sites": 7,
+      "files": 4,
+      "repos": 1
+    },
+    "namespace · external-or-non-relative": {
+      "sites": 1,
+      "files": 1,
+      "repos": 1
+    }
+  },
+  "callables": {
+    "function": {
+      "sites": 3348,
+      "files": 390,
+      "repos": 2
+    },
+    "constructor": {
+      "sites": 132,
+      "files": 116,
+      "repos": 2
+    },
+    "fallback-receive": {
+      "sites": 11,
+      "files": 11,
+      "repos": 1
+    }
+  },
+  "inheritance": {
+    "sites": 595,
+    "files": 283,
+    "repos": 1
+  },
+  "parseFailures": []
+}

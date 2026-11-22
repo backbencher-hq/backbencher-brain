@@ -1,0 +1,32 @@
+{
+  "instrument": "script/m14/cpp-four-types-census.ts",
+  "population": {
+    "source": "/home/ishaq2321/bb_tests/repositories (git-tracked + extension map + 1 MB cap)",
+    "filesAdmitted": 21782,
+    "filesRead": 21782,
+    "filesFailed": 0
+  },
+  "nearMissCounts": {
+    "decorates": 18307,
+    "renders": 395724,
+    "mixes_in": 8934,
+    "part_of": 84776
+  },
+  "answeringCounts": {
+    "decoratesApplies": 7306,
+    "rendersNamesComponent": 0,
+    "mixesComposes": 7473,
+    "partSharesScope": 44966
+  },
+  "includeTargets": {
+    "total": 84776,
+    "separateModule": 39810,
+    "sharesUnitScope": 44966
+  },
+  "reading": {
+    "decorates": "the NEAR MISS is the attribute site; the ANSWERING count is the attribute that CARRIES AN ARGUMENT LIST (applies a callable) — a marker attribute carries none",
+    "renders": "the NEAR MISS is the template site; the ANSWERING count is a call whose callee NAMES A TYPE ARGUMENT (the C#-lane shape)",
+    "mixes_in": "the NEAR MISS is the base clause; the ANSWERING count is a clause COMPOSING SEVERAL bases into one chain (the `with` shape C++ does not have)",
+    "part_of": "the NEAR MISS is the include; the ANSWERING count is the quoted include (a fragment sharing the unit's scope) vs the angle-bracket include (a separate module's header)"
+  }
+}

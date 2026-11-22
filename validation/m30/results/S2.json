@@ -39,11 +39,11 @@
       "detail": "caught"
     }
   ],
-  "currentCommit": "70837e1f93c8b0f04e03a9bedf49ee2e9824408e",
+  "currentCommit": "6351091d3691742cb32cb895767b3d2a39042cb8",
   "sourceFingerprint": "76699eb7e7846ef780ff5065dadf64c658cc51f30bc1637f8baeb290d1ea4dc1",
   "verifierCommand": "npx tsx script/m30/verify-first-run-hook.ts",
   "evidenceFile": "S2.json",
-  "generatedAt": "2026-11-22T01:33:19.122Z",
+  "generatedAt": "2026-11-22T22:35:35.662Z",
   "limitations": [
     "Pseudo-TTY test uses util-linux `script`; on systems without it the TTY-branch check is skipped (recorded as a limitation, not a pass).",
     "Full interactive wizard keystroke flow under TTY (provider selection through key entry) is covered by S1/S3 verifiers and manual testing, not here.",

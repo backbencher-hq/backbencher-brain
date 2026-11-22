@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Language onboarding is a gated wave, not a one-file patch. The engine ships **53
+        Language onboarding is a gated wave, not a one-file patch. The engine ships **50
         analyzers**, and each one is a claim backed by a grammar pin, fixtures, a docs
         page and — if it is in the LSP launch set — a recorded wave approval. This form
         collects the checklist the gates expect so the work can be scoped before it
