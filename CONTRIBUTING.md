@@ -1,7 +1,7 @@
 # Contributing to Backbencher Brain
 
 Thanks for helping. This is a local-first code-intelligence engine: a CLI, an MCP
-server, an LSP server, and 53 language analyzers over a SQLite index. The rules below
+server, an LSP server, and 50 language analyzers over a SQLite index. The rules below
 exist because the product's claim is evidence, and evidence is what keeps it honest.
 
 - [Five-minute setup](#five-minute-setup)

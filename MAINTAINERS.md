@@ -2,7 +2,7 @@
 Author: Muhammad Ishaq Khan
 
 WHAT THIS DOCUMENT IS — who owns which language analyzer, what that ownership obliges, and how
-a new owner is added. The file that turns "53 analyzers" into a set of named people.
+a new owner is added. The file that turns 50 language analyzers into a set of named people.
 WHO IT IS FOR — anyone considering taking a language, and any reviewer routing a pull request.
 EDIT TOGETHER WHEN THIS CHANGES — CODEOWNERS (review routing), docs/analyzers/<language>.md
 (that language's evidence), CONTRIBUTING.md (the contribution rules this file assumes).
@@ -10,7 +10,7 @@ EDIT TOGETHER WHEN THIS CHANGES — CODEOWNERS (review routing), docs/analyzers/
 
 # Maintainers
 
-Backbencher Brain is 53 language analyzers over one index. Each language is meant to have a
+Backbencher Brain is 50 language analyzers over one index. Each language is meant to have a
 named maintainer who knows that language's grammar and resolver, and who decides what a correct
 relationship looks like for it.
 
