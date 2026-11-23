@@ -8,6 +8,7 @@
   <a href="https://www.npmjs.com/package/@backbencher/brain"><img src="https://img.shields.io/npm/v/@backbencher%2Fbrain.svg" alt="npm version"></a>
   <a href="https://github.com/backbencher-hq/backbencher-brain/actions/workflows/ci.yml"><img src="https://github.com/backbencher-hq/backbencher-brain/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/backbencher-hq/backbencher-brain/blob/main/LICENSE"><img src="https://img.shields.io/github/license/backbencher-hq/backbencher-brain.svg" alt="MIT license"></a>
+  <a href="https://glama.ai/mcp/servers/backbencher-hq/backbencher-brain"><img src="https://glama.ai/mcp/servers/backbencher-hq/backbencher-brain/badges/score.svg" alt="Glama MCP server"></a>
 </p>
 
 **Evidence is the answer.** `bb` is local-first, runtime-agnostic code intelligence: it indexes a repository with
