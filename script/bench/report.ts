@@ -244,6 +244,24 @@ export function levelOne(items: StoreItem[], projectId: string): string {
     lines.push(`| ${arm} | ${median(xs) ?? "—"} | ${xs.length}/${rs.length} | ${median(pre) ?? "—"} |`)
   }
   lines.push("")
+  lines.push("## Cost of the arm (what the tools cost, before they help)", "")
+  lines.push("A success rate alone cannot show a cost. These are the same runs measured in")
+  lines.push("tokens and wall clock, so a tie in correctness can still be a loss.", "")
+  lines.push("| arm | runs | tokens in (median) | tools (median) | wall s (median) | static prefix |", "|---|---|---|---|---|---|")
+  for (const arm of ARMS) {
+    const rs = v.filter((i) => i.record.arm === arm)
+    if (rs.length === 0) { lines.push(`| ${arm} | 0 | — | — | — | — |`); continue }
+    const tin = median(rs.map((i) => i.record.cost.tokens_in)) ?? 0
+    const tools = median(rs.map((i) => i.record.cost.tool_calls)) ?? 0
+    const wall = median(rs.map((i) => i.record.cost.wall_s)) ?? 0
+    const pre = median(rs.map((i) => i.record.discovery.static_prefix_tokens).filter((x): x is number => typeof x === "number")) ?? 0
+    lines.push(`| ${arm} | ${rs.length} | ${tin.toLocaleString("en-US")} | ${tools} | ${wall} | ${pre.toLocaleString("en-US")} |`)
+  }
+  lines.push("")
+  lines.push("> The **static prefix** is the first step's input tokens: the fixed cost of the arm")
+  lines.push("> (system prompt + manual block + tool schemas) before any work happens. It is the")
+  lines.push("> honest answer to \"isn't bb just N tokens of overhead?\"")
+  lines.push("")
   lines.push("## bb adoption (the number that separates product failure from usage failure)", "")
   lines.push("| arm | runs | bb calls (median) | runs with 0 bb calls | refusals | fallbacks |", "|---|---|---|---|---|---|")
   for (const arm of ARMS) {
