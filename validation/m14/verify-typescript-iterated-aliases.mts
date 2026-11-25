@@ -20,13 +20,26 @@ if (baseline || mutation)
             "for (const loop of aliasLoops.get(key) ?? [])",
             "for (const loop of [] as Node[])",
           ],
+          // 2026-11-25: BOTH anchors were stale — the formatter added the parameter
+          // parentheses, the semicolon, and split the spread branch across lines, so neither
+          // injected and the gate failed on a MISSING "APPLIED" rather than on the analyzer.
+          // Re-anchored to the CURRENT text.
           forIn: [
-            'if (!loop.children.some(child => child?.type === "of")) continue',
-            "if (false) continue",
+            'if (!loop.children.some((child) => child?.type === "of")) continue;',
+            "if (false) continue;",
           ],
+          // The replacement must remain VALID JavaScript: `from` stops at the visitOrigin
+          // call, so `to` keeps the branch open and leaves the following `continue;` and `}`
+          // intact. A `to` that truncated the block made the injected file a syntax error,
+          // which the gate reported as a missing "APPLIED" rather than as the mutation it is.
+          // TWO spread sites exist and only ONE is this mutation's target. The object-literal
+          // walker (`{...a}`) and the ITERATED-ELEMENT walker (`[...values]`) both contain
+          // `member.type === "spread_element"`; mutating the first left this gate PASSING,
+          // because the aliases this fixture exercises come through the second. Anchored on
+          // the `if (path[0] === iteratedElement)` branch, which is the one the scenario uses.
           spread: [
-            'if (member.type === "spread_element") visitOrigin(member.namedChild(0), path)',
-            'if (member.type === "spread_element") void member',
+            'if (member.type === "spread_element")\n                visitOrigin(member.namedChild(0), path);',
+            'if (member.type === "spread_element") void member;',
           ],
           index: [
             "path[index] === iteratedElement && isArrayIndex(part)",

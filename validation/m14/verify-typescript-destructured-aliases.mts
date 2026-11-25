@@ -16,26 +16,31 @@ if (baseline || mutation)
         if (baseline)
           return { contents: readFileSync(baseline, "utf8"), loader: "ts" };
         const changes: Record<string, [string, string]> = {
+          // 2026-11-25: all four reflowed by the formatter; re-anchored to CURRENT text.
+          // 2026-11-25: formatter re-indented the call; the anchor had 12 spaces where the
+          // source has 14. Re-anchored on the exact CURRENT text.
           pattern: [
-            'visitPattern(declaration?.childForFieldName("name") ?? null, declaration?.childForFieldName("value") ?? null, value.text, [], path)',
-            "void declaration",
+            'visitPattern(\n              declaration?.childForFieldName("name") ?? null,',
+            "visitPattern(\n              null ?? null,",
           ],
-          key: ["if (key === path[0]) visitOrigin", "if (true) visitOrigin"],
-          array: [
-            "if (index === Number(path[0])) visitOrigin",
-            "if (true) visitOrigin",
+          key: [
+            "if (key !== null)\n            visitPattern(",
+            "if (false)\n            visitPattern(",
           ],
+          array: ["if (index === Number(path[0]))", "if (false)"],
           projection: [
-            "const owner = hint ? topLevelClasses.get(hint.type) : null\n        if (owner && path.length === 0)",
-            "const owner = hint ? topLevelClasses.get(hint.type) : null\n        if (owner)",
+            // 2026-11-25: the formatter added a semicolon after the `null`, so the anchor
+            // stopped injecting. Re-anchored to the CURRENT text.
+            "const owner = hint ? topLevelClasses.get(hint.type) : null;\n        if (owner && path.length === 0)",
+            "const owner = hint ? topLevelClasses.get(hint.type) : null;\n        if (owner)",
           ],
           defaults: [
-            'visitPattern(left, pattern.childForFieldName("right"), target, [], tail)',
-            "void left",
+            'visitPattern(\n            left,\n            pattern.childForFieldName("right"),',
+            "visitPattern(\n            left,\n            null,",
           ],
           assignments: [
-            'visitPattern(write.childForFieldName("left"), write.childForFieldName("right"), value.text, [], path)',
-            "void write",
+            'visitPattern(\n              write.childForFieldName("left"),\n              write.childForFieldName("right"),',
+            'visitPattern(\n              write.childForFieldName("left"),\n              null,',
           ],
         };
         assert.ok(mutation && mutation in changes);

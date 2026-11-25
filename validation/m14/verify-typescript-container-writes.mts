@@ -20,23 +20,21 @@ if (baseline || mutation)
             "for (const write of containerWrites.get(container) ?? [])",
             "for (const write of [] as ContainerWrite[])",
           ],
-          keys: ["part === null || part === path[index]", "true"],
+          // 2026-11-25: reflowed by the formatter; re-anchored to CURRENT text.
+          keys: ["part === null ||", "true ||"],
           aliases: ["containerAliases.get(container) ?? []", "[]"],
           tail: [
-            "[...write.sourcePath, ...path.slice(write.path.length)]",
-            "[]",
+            "...write.sourcePath,\n                  ...path.slice(write.path.length),",
+            "...write.sourcePath,",
           ],
-          dynamic: [
-            "part === null || part === path[index]",
-            "part === path[index]",
-          ],
+          dynamic: ["part === null ||", "false ||"],
           sibling: [
             "activeLength !== undefined && path.length > activeLength",
             "activeLength !== undefined",
           ],
           direct: [
-            'while (base && ["member_expression", "subscript_expression"].includes(base.type)) {\n        base = unwrapAliasValue',
-            "while (false) {\n        base = unwrapAliasValue",
+            'base &&\n        ["member_expression", "subscript_expression"].includes(base.type)',
+            "false",
           ],
           patterns: [
             "collectContainerWrites(left, right, [])",

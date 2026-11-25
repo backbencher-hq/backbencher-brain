@@ -29,18 +29,29 @@ if (mutation)
             "if (this.typeAnnotationNode(n)) {\n          if (annotated)",
             "if (annotated) {\n          if (annotated)",
           ],
+          // 2026-11-25: the formatter reflowed this condition across five lines, so the
+          // single-line anchor stopped matching and the mutation could not be injected —
+          // the gate then failed on `source.includes(before)` rather than on the analyzer.
+          // Re-anchored to the CURRENT text, whitespace included.
           collection: [
-            "if (elementType && !invalidatedBindings.has(bindingKey(declarationScope(n), nameNode.text)))",
+            "if (\n          elementType &&\n          !invalidatedBindings.has(\n            bindingKey(declarationScope(n), nameNode.text),\n          )\n        )",
             "if (elementType)",
           ],
           callable: ["returnTypes.get(scope)?.delete(name)", "void name"],
+          // 2026-11-25: both reflowed by the formatter, so neither injected and the gate
+          // failed on a MISSING "APPLIED" rather than on the analyzer.
           conditional: [
-            '!["statement_block", "program"].includes(statement.parent?.type ?? "")',
+            '!["statement_block", "program"].includes(\n          statement.parent?.type ?? "",\n        )',
             "false",
           ],
+          // TWO `root.type` unwrap sites exist and only ONE is this mutation's target. The
+          // alias walker (aliasFieldOwners) and the RECEIVER-ROOT walker both list
+          // `non_null_expression`; mutating the first left this gate PASSING, because the
+          // fixture's `value!.run()` reaches the receiver through the SECOND. Anchored on the
+          // walker whose list also names `subscript_expression`, which is that one.
           nonnull: [
-            '"as_expression", "non_null_expression"].includes(root.type)',
-            '"as_expression"].includes(root.type)',
+            '"parenthesized_expression",\n        "as_expression",\n        "non_null_expression",',
+            '"parenthesized_expression",\n        "as_expression",',
           ],
         };
         assert.ok(mutation in changes);

@@ -21,8 +21,11 @@ if (mutation)
             'return `${current.startIndex}:${isStatic ? "static" : "instance"}`',
             "return `${current.startIndex}:instance`",
           ],
+          // 2026-11-25: the formatter reflowed this condition onto two lines, so the anchor
+          // stopped injecting and the gate failed on a MISSING "APPLIED" rather than on the
+          // analyzer. Re-anchored to the current text, whitespace included.
           rebound: [
-            'RECEIVER_FUNCTION_SCOPES.has(current.type) && current.type !== "arrow_function"',
+            'RECEIVER_FUNCTION_SCOPES.has(current.type) &&\n        current.type !== "arrow_function"',
             "false",
           ],
         };

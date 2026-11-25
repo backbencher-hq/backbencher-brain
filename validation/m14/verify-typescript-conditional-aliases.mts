@@ -24,13 +24,14 @@ if (baseline || mutation)
             'visitOrigin(value.childForFieldName("consequence"), path)',
             'visitOrigin(value.childForFieldName("condition"), path)',
           ],
+          // 2026-11-25: both reflowed by the formatter, so neither injected.
           logical: [
-            'value.type === "binary_expression" && ["&&", "||", "??"].includes',
-            'value.type === "binary_expression" && [].includes',
+            '["&&", "||", "??"].includes(\n            value.childForFieldName("operator")?.text ?? "",\n          )',
+            "false",
           ],
           assignment: [
-            '              (write.type === "augmented_assignment_expression" && ["&&=", "||=", "??="].includes(write.childForFieldName("operator")?.text ?? ""))',
-            "              false",
+            '(write.type === "augmented_assignment_expression" &&\n            ["&&=", "||=", "??="].includes(',
+            '(write.type === "augmented_assignment_expression" &&\n            false &&',
           ],
           sequence: [
             "visitOrigin(value.namedChild(value.namedChildCount - 1), path)",

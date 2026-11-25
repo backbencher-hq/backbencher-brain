@@ -16,14 +16,16 @@ if (baseline || mutation)
         if (baseline)
           return { contents: readFileSync(baseline, "utf8"), loader: "ts" };
         const changes: Record<string, [string, string]> = {
+          // 2026-11-25: the formatter reflowed both conditions across lines and added
+          // parameter parentheses, so neither anchor injected. Re-anchored to CURRENT text.
           varScope: [
-            'declaration ? this.scopeIdOf(n, n.children.some(child => child?.type === "var")) : bindingScope(n, b)',
-            "declaration ? scopeOf(n) : bindingScope(n, b)",
+            'this.scopeIdOf(\n              n,\n              n.children.some((child) => child?.type === "var"),\n            ),',
+            "this.scopeIdOf(n, false),",
           ],
           existing: [": bindingScope(n, b)", ": scopeOf(n)"],
           repeated: [
-            "if (loops.length > 1 || bindingDeclarations.has(key)) pendingAssignments.push(...loops)",
-            "if (false) pendingAssignments.push(...loops)",
+            "if (loops.length > 1 || bindingDeclarations.has(key))\n        pendingAssignments.push(...loops);",
+            "if (false) pendingAssignments.push(...loops);",
           ],
         };
         assert.ok(mutation && mutation in changes);

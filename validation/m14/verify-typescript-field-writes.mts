@@ -16,22 +16,23 @@ if (baseline || mutation)
         if (baseline)
           return { contents: readFileSync(baseline, "utf8"), loader: "ts" };
         const changes: Record<string, [string, string]> = {
-          thisField: ["classFields.delete(field.key)", "void field.key"],
+          thisField: ["classFields.delete(field.key);", "void field.key;"],
           externalField: [
-            "if (field.owner && !field.isStatic) typeMembers.get(field.owner)?.delete(field.name)",
+            "if (field.owner && !field.isStatic)\n            typeMembers.get(field.owner)?.delete(field.name);",
             "void field.name",
           ],
           owner: [
-            "field.key === `${declaringField(thisOwner, field.name) ?? thisOwner}:${field.name}`",
+            "`${declaringField(thisOwner, field.name) ?? thisOwner}:${field.name}`",
             "true",
           ],
+          // 2026-11-25: reflowed by the formatter; re-anchored to CURRENT text.
           pattern: [
-            'for (const target of fieldWriteTargets(write.childForFieldName("left") ?? write.childForFieldName("argument"))) {',
-            'for (const target of (write.childForFieldName("left")?.type === "member_expression" ? [write.childForFieldName("left")!] : [])) {',
+            'for (const target of fieldWriteTargets(\n        write.childForFieldName("left") ?? write.childForFieldName("argument"),',
+            'for (const target of fieldWriteTargets(\n        write.childForFieldName("left")?.type === "member_expression" ? write.childForFieldName("left") : null,',
           ],
           static: [
-            'const staticOwner = receiver.type === "identifier"',
-            'const staticOwner = false && receiver.type === "identifier"',
+            'const staticOwner =\n          receiver.type === "identifier" &&\n          hint === undefined',
+            "const staticOwner =\n          false &&\n          hint === undefined",
           ],
         };
         assert.ok(mutation && mutation in changes);

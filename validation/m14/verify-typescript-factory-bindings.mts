@@ -20,8 +20,10 @@ if (mutation)
         },
         ({ path }) => {
           const changes: Record<string, [string, string]> = {
+            // 2026-11-25: the formatter reflowed this return across five lines, so the
+            // one-line anchor stopped injecting. Re-anchored to the CURRENT text.
             scope: [
-              "return lookupReceiverFact(facts, returnTypes, this.scopeIdOf(call), callee.text) ?? null",
+              "return (\n      lookupReceiverFact(\n        facts,\n        returnTypes,\n        this.scopeIdOf(call),\n        callee.text,\n      ) ?? null\n    );",
               "for (const values of returnTypes.values()) if (values.has(callee.text)) return values.get(callee.text) ?? null; return null",
             ],
             assignment: [

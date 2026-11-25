@@ -199,15 +199,21 @@ const SOURCE_MUTANTS: Record<
   "typescript/parameterized-heritage-raw-text-target": {
     file: "src/ast/real-typescript-analyzer.ts",
     // CURRENT structural leaf -> the pre-fix RAW SOURCE TEXT (`implements I<T>` -> "I<T>").
-    from: "result.implements.push(TypeScriptAnalysisRunner.heritageBaseName(type.text))",
-    to: "result.implements.push(type.text)",
+    // 2026-11-25: the formatter reflowed this call onto three lines, so the old
+    // single-line anchor stopped matching and the mutant became a SURVIVOR by
+    // ANCHOR-NOT-FOUND — the exact failure this runner's header warns about. The anchor
+    // is now the reflowed text, whitespace included.
+    from: "result.implements.push(\n                TypeScriptAnalysisRunner.heritageBaseName(type.text),\n              );",
+    to: "result.implements.push(\n                type.text,\n              );",
   },
   "typescript/re-export-dependency-not-emitted": {
     file: "src/ast/real-typescript-analyzer.ts",
     // CURRENT: the re-export branch emits an `imports` row per specifier/star. PRE-FIX: nothing was
     // emitted, only the payload entry. The guard makes the branch refuse every re-export.
-    from: "const modulePath = stringContent(sourceNode)\n      if (modulePath.length === 0) return",
-    to: "const modulePath = stringContent(sourceNode)\n      if (modulePath.length >= 0) return",
+    // 2026-11-25: the formatter added the semicolon and re-indented; re-anchored to
+    // the current text after the mutant was reported SURVIVED by ANCHOR NOT FOUND.
+    from: "const modulePath = stringContent(sourceNode);\n        if (modulePath.length === 0) return;",
+    to: "const modulePath = stringContent(sourceNode);\n        if (modulePath.length >= 0) return;",
   },
   "typescript/accessor-named-field-name-lost": {
     file: "src/ast/real-typescript-analyzer.ts",
