@@ -15,7 +15,7 @@
 // A grade is BINARY for the primary endpoint (score 0 or 1). Partial credit exists only
 // in `localization`, and is reported, never averaged into the headline.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, cpSync } from "node:fs"
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, cpSync, symlinkSync } from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
@@ -32,8 +32,12 @@ interface TaskDef {
 }
 interface ProjectDef {
   id: string
-  source: string
+  /** Present only for the committed fixture. */
+  source?: string
   test: string[]
+  /** Present only for a pinned repository. */
+  remote?: string
+  revision?: string
 }
 
 export interface Grade {
@@ -94,33 +98,66 @@ function parsePatchFiles(patch: string): string[] {
     if (!m) continue
     let f = m[1].trim()
     if (f === "/dev/null") continue
-    // --no-index emits full paths; keep the workspace-relative tail.
+    // A submission patch is produced by `git diff --no-index pristine .submission-tree` and
+    // therefore carries ONE of those two roots on every path. The submission itself is the
+    // difference, so BOTH roots collapse to "" and what remains is the workspace-relative
+    // path. `a/` and `b/` prefixes from a normal `git diff` are stripped too.
+    f = f.replace(/^(a|b)\//, "")
+    f = f.replace(/^\.\/?(?:pristine|\.submission-tree)\//, "")
+    f = f.replace(/^(?:pristine|\.submission-tree)\//, "")
+    // Absolute paths (an older runner) still need their workspace tail kept.
     const marker = "/workspace/"
     const i = f.indexOf(marker)
     if (i >= 0) f = f.slice(i + marker.length)
-    else {
-      const j = f.lastIndexOf("/src/")
-      if (j >= 0) f = f.slice(j + 1)
-    }
     out.add(f)
   }
   return [...out]
 }
 
-/** Does a test name satisfy a required assertion? Exact first, then containment, because
- *  a suite may prefix its names with a file or describe() label. Ambiguity is resolved
- *  toward FAILURE: a required test that did not visibly pass is a failure, not a maybe. */
+/**
+ * Does a test name satisfy a required assertion?
+ *
+ * ORDER MATTERS, and getting it wrong produced a false failure on a CORRECT submission:
+ * a required test called `intervalCap` exists and passes, but a DIFFERENT failing test
+ * ("intervalCap should be respected with high concurrency") also CONTAINS that string. A
+ * containment-first check therefore reported `intervalCap` as failed and scored a correct
+ * patch 0. So:
+ *
+ *   1. EXACT name match wins outright -- it decides, in either direction.
+ *   2. Only if no test carries the exact name do we fall back to containment, because a
+ *      suite may decorate a name with a file or describe() label.
+ *   3. Within the containment fallback, a lone passing match is enough; if any matching test
+ *      FAILED and none passed, the assertion fails.
+ */
 function satisfied(required: string, passed: string[], failed: string[]): boolean {
   const norm = (s: string) => s.trim().toLowerCase()
   const r = norm(required)
-  if (failed.some((f) => norm(f) === r || norm(f).includes(r))) return false
-  return passed.some((p) => norm(p) === r || norm(p).includes(r))
+  const exactPassed = passed.some((p) => norm(p) === r)
+  const exactFailed = failed.some((f) => norm(f) === r)
+  if (exactPassed) return true
+  if (exactFailed) return false
+  const loosePassed = passed.filter((p) => norm(p).includes(r))
+  const looseFailed = failed.filter((f) => norm(f).includes(r))
+  if (loosePassed.length === 0 && looseFailed.length === 0) return false
+  return loosePassed.length > 0 && looseFailed.length === 0
 }
 
 export function gradeRun(runDir: string, taskPath: string, projectPath: string, workOut?: string): Grade {
   const task = JSON.parse(readFileSync(taskPath, "utf8")) as TaskDef
   const project = JSON.parse(readFileSync(projectPath, "utf8")) as ProjectDef
-  const projectSrc = path.isAbsolute(project.source) ? project.source : path.resolve(REPO_ROOT, project.source)
+  // A PINNED project has no committed `source` tree: its start state was materialised at run
+  // time and snapshotted into the run directory. Grading from that snapshot is REQUIRED for
+  // correctness, because it is the exact tree the agent began with -- a committed fixture
+  // and a materialised pin are different kinds of starting point.
+  const localPristine = path.join(runDir, "pristine")
+  const projectSrc = project.source
+    ? (path.isAbsolute(project.source) ? project.source : path.resolve(REPO_ROOT, project.source))
+    : existsSync(localPristine)
+      ? localPristine
+      : null
+  if (projectSrc === null) {
+    throw new Error(`grade: project ${project.id} has no "source" and the run has no pristine snapshot; there is no start state to grade against`)
+  }
 
   const patchPath = path.join(runDir, "submission.patch")
   const patch = existsSync(patchPath) ? readFileSync(patchPath, "utf8") : ""
@@ -130,13 +167,58 @@ export function gradeRun(runDir: string, taskPath: string, projectPath: string, 
   // the run's own workspace, which the agent could have left in any state.
   const sandbox = workOut ?? path.join(runDir, ".grade-sandbox")
   rmSync(sandbox, { recursive: true, force: true })
-  cpSync(projectSrc, sandbox, { recursive: true })
+  cpSync(projectSrc, sandbox, {
+    recursive: true,
+    filter: (src) => !src.includes(`${path.sep}node_modules`) && !src.includes(`${path.sep}.git`),
+  })
+  // DEPENDENCIES ARE ENVIRONMENT, NOT SUBMISSION. The pristine snapshot (correctly) has no
+  // node_modules, so a fresh sandbox cannot run the suite at all -- and the run's workspace
+  // is deleted after a run, so its installed tree is gone by grading time. Without a dep
+  // cache, a CORRECT fix scored 0 with "tsx not resolvable": a grader bug that reads exactly
+  // like a product result. So deps are installed ONCE per (project, revision) and shared.
+  const depsDir = project.remote
+    ? path.join(REPO_ROOT, "benchmarks", ".work", "deps", `${project.id}@${(project.revision ?? "").slice(0, 9)}`)
+    : null
+  if (depsDir !== null) {
+    const marker = path.join(depsDir, ".installed")
+    if (!existsSync(marker)) {
+      mkdirSync(depsDir, { recursive: true })
+      cpSync(sandbox, depsDir, { recursive: true, filter: (s) => !s.includes(`${path.sep}node_modules`) })
+      const inst = spawnSync("npm", ["install", "--no-audit", "--no-fund"], {
+        cwd: depsDir,
+        encoding: "utf8",
+        timeout: 900_000,
+        env: { ...process.env, npm_config_cache: path.join(REPO_ROOT, "benchmarks", ".work", "npmcache") },
+      })
+      if ((inst.status ?? 1) !== 0) {
+        throw new Error(`grade: dependency install failed for ${project.id}: ${(inst.stderr ?? "").split("\n").slice(-2).join(" ").slice(0, 300)}`)
+      }
+      writeFileSync(marker, new Date().toISOString() + "\n")
+    }
+    const depsModules = path.join(depsDir, "node_modules")
+    if (existsSync(depsModules)) {
+      try {
+        symlinkSync(depsModules, path.join(sandbox, "node_modules"), "dir")
+      } catch {
+        cpSync(depsModules, path.join(sandbox, "node_modules"), { recursive: true })
+      }
+    }
+  }
+
   let applied = true
   if (patch.trim().length > 0) {
-    // --no-index patches carry absolute paths; normalise to the sandbox.
+    // Rewrite the submission's two roots (`pristine/`, `.submission-tree/`) to `a/` and `b/`
+    // so `patch -p1` finds the files in the sandbox. The previous version rewrote absolute
+    // paths with a regex that only matched the OLD absolute-path format, so a relative patch
+    // (the current, correct format) failed to apply and every run scored 0 with
+    // "patch does not apply" -- a grader bug that reads as a product result.
     const rewritten = patch
       .split("\n")
-      .map((l) => (l.startsWith("--- ") || l.startsWith("+++ ")) ? l.replace(/^((?:---|\+\+\+)\s+)(?:\S*\/)(?=(?:a|b)\/)/, "$1").replace(/(a|b)\/(?:.*\/workspace\/)/, "$1/") : l)
+      .map((l) => {
+        if (l.startsWith("--- ")) return l.replace(/^---\s+.*?\/(pristine|a)\//, "--- a/").replace(/^---\s+(?:pristine|a)\//, "--- a/")
+        if (l.startsWith("+++ ")) return l.replace(/^\+\+\+\s+.*?\/\.submission-tree\//, "+++ b/").replace(/^\+\+\+\s+(?:\.submission-tree|b)\//, "+++ b/")
+        return l
+      })
       .join("\n")
     const pf = path.join(sandbox, ".submission.patch")
     writeFileSync(pf, rewritten)

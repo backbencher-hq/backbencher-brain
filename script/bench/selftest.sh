@@ -255,6 +255,40 @@ R=$($TSX "$WORK/chart.ts" 2>/dev/null | tail -1)
 [ "$R" = "PASSED" ] && ok "negative centered scores are drawn against a declared zero axis" || bad "chart would misrepresent a negative value -> '$R'"
 
 # ─────────────────────────────────────────────────────────────────────────────
+head "10b. grader — exact test names beat substring collisions"
+
+# MEASURED BUG: a required test literally named `intervalCap` passed, but a FAILING test
+# called "intervalCap should be respected..." also contains that string, so a
+# containment-first check scored a CORRECT submission 0. That is the worst possible grader
+# bug: it reads as a product result. This case pins the precedence.
+cat > "$WORK/namecollide.ts" <<TS
+import { gradeRun } from "${ROOT}/script/bench/grade.ts"
+import { mkdirSync, writeFileSync } from "node:fs"
+// A tiny project whose suite has two tests sharing a prefix, one passing one failing.
+const p = process.cwd() + "/benchmarks/.work/selftest/collide"
+mkdirSync(p + "/test", { recursive: true })
+writeFileSync(p + "/package.json", JSON.stringify({ name: "c", type: "module", scripts: { test: "node --test \\"test/*.test.js\\"" } }))
+writeFileSync(p + "/src.js", "export const ok = 1\n")
+writeFileSync(p + "/test/a.test.js", [
+  "import test from 'node:test'",
+  "import assert from 'node:assert/strict'",
+  "test('intervalCap', () => { assert.equal(1,1) })",
+  "test('intervalCap should be respected', () => { assert.equal(1,2) })",
+].join("\\n"))
+const run = p + "-run"
+mkdirSync(run, { recursive: true })
+writeFileSync(run + "/submission.patch", "")
+const task = p + "-task.json"
+writeFileSync(task, JSON.stringify({ id: "n", track: "rewind", prompt: "x", golden: { files: [], patch: "", needle: null }, grade: { must_pass: ["intervalCap"], must_not_break: [] } }))
+const proj = p + "-proj.json"
+writeFileSync(proj, JSON.stringify({ id: "n", source: p, test: ["node --test \\"test/*.test.js\\""] }))
+const g = gradeRun(run, task, proj)
+console.log(g.tests.must_pass.passed === 1 ? "PASSED" : "FAILED")
+TS
+R=$($TSX "$WORK/namecollide.ts" 2>/dev/null | tail -1)
+[ "$R" = "PASSED" ] && ok "an exactly-named passing test is not failed by a failing test that contains it" || bad "substring collision would fail a correct submission -> '$R'"
+
+# ─────────────────────────────────────────────────────────────────────────────
 head "11. the run directory is self-contained enough to publish"
 
 cat > "$WORK/evidence.ts" <<TS

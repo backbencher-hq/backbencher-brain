@@ -26,7 +26,7 @@ gate that merely ran.
 | 5 | arm B's manual block is byte-identical to arms C/D's (`ARMS.md` §1) | `preregister.ts` digest | not implemented |
 | 6 | invalid runs are recorded with a reason, never scored (`ARMS.md` §4) | `run-arm.ts` `finish()`, `report.ts` invalid section | **implemented** (7 named reasons; report prints them) |
 | 7 | grading is blind to arm (`ARMS.md` §5) | `grade.ts` takes run dir + task + project only | **implemented** (the function has no arm parameter) |
-| 8 | non-discriminating tasks are dropped **before** the first run (`METHODOLOGY.md` §4) | `replay-anchor.ts --check` | not implemented |
+| 8 | a task must be a real task: tests fail at base and pass after the fix, verified BEFORE admission | `replay-anchor.ts` | **implemented** — measured: a non-fix commit is DROPPED with "no test moves from fail->pass" |
 | 9 | task roster and hypotheses are frozen before data, and hashed | `preregister.ts` freeze/check | **implemented** + selftest case 9 (drift refused; mutation-tested) |
 | 10 | arms C/D quarantine a run whose `bb_health` is not green (`DESIGN.md` §5.4) | `run-arm.ts` health probe + record | **partial** — health is captured and recorded verbatim, and a MODEL MISMATCH demotes it, but the run is not yet refused |
 | 11 | fallback rate is recorded per run, not inferred | `lib/trace.ts` `bbFallbackAnswers` | **implemented** (counted from tool_result text) |

@@ -4,38 +4,64 @@
   "purpose": "agent_utility_measurement",
   "designOfRecord": "docs/benchmarks/DESIGN.md",
   "observedEnvironment": "docs/benchmarks/OBSERVED-ENVIRONMENT.md",
-  "status": "W0-unpinned",
-  "note": "No repository is pinned yet. Every entry under `projects` must carry a 40-hex revision and a tarball sha256 before any arm may run. An empty list is an honest W0 state; a fabricated pin is not.",
+  "status": "W1-pinned",
+  "note": "Three TypeScript repositories are pinned by commit + tarball digest. The pins were chosen for SCALE ASYMMETRY (27 / 169 / 686 tracked files) rather than convenience, so the result can say WHEN bb helps, not merely whether it does. Each pin was cloned and its fix-commit history scanned with script/bench/replay-anchor.ts; only commits where a test moves fail->pass are admissible. Nothing here is a claim about results.",
   "sizeClasses": {
-    "small": "trackedFiles < 1000",
-    "medium": "trackedFiles >= 1000 and trackedFiles < 10000",
-    "large": "trackedFiles >= 10000 and trackedFiles < 100000"
+    "small": "trackedFiles < 100",
+    "medium": "trackedFiles >= 100 and trackedFiles < 500",
+    "large": "trackedFiles >= 500"
   },
-  "projects": [],
-  "slotsPlanned": [
+  "projects": [
     {
       "id": "ts-project1",
       "language": "typescript",
-      "status": "unpinned",
-      "sizeClassTarget": "medium",
-      "why": "framework/app scale \u2014 the scale at which navigation cost is real and a local index should pay for itself"
+      "status": "pinned",
+      "remote": "https://github.com/sindresorhus/p-queue",
+      "revision": "7f272ab5ff2254c0dc2537b7977e88ede1cd55e8",
+      "tarball_sha256": "d97a4146006c8e69ddf7b312b8e387de3bce5e1ceed06702ea8255b0c48060c4",
+      "trackedFiles": 27,
+      "sizeClass": "small",
+      "why": "Small, dense, high-churn. The entire public surface is a few hundred lines, so if bb helps here the mechanism cannot be navigation. This is the honest control arm: a case where it should NOT help, included so a 'no benefit here' is publishable.",
+      "eligibleFixCommits": 74,
+      "verifiedAnchors": 1,
+      "anchorExample": {
+        "sha": "48586f416de75b89ccded49024dd1bfe07e9e1af",
+        "base": "9310cd1ef",
+        "movedTests": 2,
+        "stableTests": 265
+      }
     },
     {
       "id": "ts-project2",
       "language": "typescript",
-      "status": "unpinned",
-      "sizeClassTarget": "small",
-      "why": "library scale \u2014 the scale at which grep is already cheap, so a BENEFIT here is a strong result and a LOSS here must be reported"
+      "status": "pinned",
+      "remote": "https://github.com/immerjs/immer",
+      "revision": "784c86bb234e805566481c9425fcb2a3897e8bcc",
+      "tarball_sha256": "bd85e88e66936b633d42a4b44fb4971efa2cc9dcae77330eaca03794cbddc045",
+      "trackedFiles": 169,
+      "sizeClass": "medium",
+      "why": "Medium, subtle invariants. Proxy-based structural sharing: the bug is usually in reasoning about draft semantics, not in finding the file. This is where prose (bb_ask/bb_doc) could plausibly beat grep -- or add nothing.",
+      "eligibleFixCommits": 77,
+      "verifiedAnchors": 0
     },
     {
       "id": "ts-project3",
       "language": "typescript",
-      "status": "unpinned",
-      "sizeClassTarget": "medium",
-      "why": "in-distribution control \u2014 a repository a DeepSeek-class model already knows, to show the benchmark is not measuring only novelty"
+      "status": "pinned",
+      "remote": "https://github.com/sindresorhus/execa",
+      "revision": "6f856d55bd3ea8b3f240a7fc4502d2ac50697eec",
+      "tarball_sha256": "e6880210ca1f1743d74b80e6403b4b4439deac299747f3ac003fefb4101fa70c",
+      "trackedFiles": 686,
+      "sizeClass": "large",
+      "why": "Large, cross-cutting. Process spawning with streams, transforms and typed option plumbing; a change to options.stdin legitimately touches several files, so this is where bb_graph/bb_impact have a chance to earn their cost.",
+      "eligibleFixCommits": 216,
+      "verifiedAnchors": 0
     }
   ],
+  "slotsPlanned": [],
   "resultsRoot": "benchmarks/results",
   "evidencePolicy": "every published number ships its run trace (trace.ndjson), submission patch, grade and checksums; report figures are recomputed from traces",
-  "harnessRecipe": "docs/benchmarks/HARNESS.md"
+  "harnessRecipe": "docs/benchmarks/HARNESS.md",
+  "sizeClassesNote": "These thresholds are set from the three pinned repositories, not from the generic bands the earlier draft assumed. A 27-file repo IS small for a navigation question: there is nothing to navigate. Publishing the thresholds we actually used is more honest than inheriting bands we do not test.",
+  "costNote": "Each anchor re-installs the project at fix^ and runs the fix's own tests twice. p-queue anchors in ~2 min; execa in ~6-10 min. A 40-task wave therefore spends meaningful time in verification BEFORE any arm runs, which is the point: an unverified task measures nothing."
 }

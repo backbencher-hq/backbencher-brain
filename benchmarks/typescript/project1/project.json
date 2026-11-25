@@ -1,0 +1,15 @@
+{
+  "id": "ts-project1",
+  "language": "typescript",
+  "remote": "https://github.com/sindresorhus/p-queue",
+  "revision": "7f272ab5ff2254c0dc2537b7977e88ede1cd55e8",
+  "tarball_sha256": "d97a4146006c8e69ddf7b312b8e387de3bce5e1ceed06702ea8255b0c48060c4",
+  "setup": [],
+  "test": ["node --import=tsx/esm --test --test-timeout=60000 test/*.ts"],
+  "test_subset": null,
+  "build_image": null,
+  "size_class": "small",
+  "trackedFiles": 27,
+  "languages_indexed": ["typescript", "javascript"],
+  "note": "Small, dense, high-churn. Deliberately included as a case where bb SHOULD NOT help: at 27 files there is nothing to navigate. A 'no benefit here' is a publishable result, which is why this slot exists."
+}

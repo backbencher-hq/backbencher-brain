@@ -31,6 +31,7 @@ import { buildProfile, runEnv, ARM_SPECS, ARMS, type Arm } from "./lib/profile.t
 import { exec, streamStamped } from "./lib/exec.ts"
 import { readTrace, summarize, discoveryTax, tokenTotals } from "./lib/trace.ts"
 import { scrubFile } from "./lib/scrub.ts"
+import { materializeTask } from "./lib/materialize.ts"
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(HERE, "../..")
@@ -108,6 +109,7 @@ interface TaskDef {
   id: string
   track: string
   project: string
+  origin?: { kind: string; base_revision: string | null; fix_revision: string | null }
   prompt: string
   golden: { files: string[]; patch: string; needle: string | null }
   budget: { max_steps: number; max_tokens: number; max_wall_s: number }
@@ -129,23 +131,30 @@ async function main(): Promise<void> {
   const taskDir = path.dirname(a.task)
   const task = JSON.parse(readFileSync(a.task, "utf8")) as TaskDef
   const fixtureRoot = path.resolve(taskDir, "..")
-  const projectFile = a.fixture ? path.join(fixtureRoot, "project.json") : path.join(fixtureRoot, "..", "project.json")
+  // `fixtureRoot` is the directory holding project.json + tasks/ + prompts/ in BOTH layouts:
+  // script/bench/fixtures/ and benchmarks/<language>/<projectN>/. An earlier version walked
+  // one level up for the non-fixture case and read the LANGUAGE directory instead.
+  const projectFile = path.join(fixtureRoot, "project.json")
   if (!existsSync(projectFile)) throw new Error(`no project.json at ${projectFile}`)
   const project = JSON.parse(readFileSync(projectFile, "utf8")) as ProjectDef
-  // `source` is REPO-relative (it is a pin: one path, shared by every wave). Resolving it
-  // against the fixture root instead would silently work for the fixture and break for
-  // every real project, so it is resolved once, here, against the repo.
-  const projectSrc = path.isAbsolute(project.source)
-    ? project.source
-    : path.resolve(REPO_ROOT, project.source)
+  // `source` exists ONLY for the committed fixture. A pinned project is materialised from a
+  // clone at run time, so there is no committed tree to copy -- and an earlier version that
+  // assumed one threw "path must be of type string" on the first real repository.
+  const projectSrc = project.source
+    ? (path.isAbsolute(project.source) ? project.source : path.resolve(REPO_ROOT, project.source))
+    : null
 
   const runId = `${a.wave}-${task.id}-arm${a.arm}-${a.embeddingArm}-r${a.rep}`
+  const benchmarkRoot = path.join(REPO_ROOT, "benchmarks")
   const waveRoot = path.join(REPO_ROOT, "benchmarks", ".work", a.wave)
   const runDir = path.join(waveRoot, "runs", runId)
   rmSync(runDir, { recursive: true, force: true })
   mkdirSync(runDir, { recursive: true })
   const workDir = path.join(runDir, "workspace")
-  copyDir(projectSrc, workDir)
+  // Created empty here and populated in step 1b. The profile build needs a directory path to
+  // register the bb server against; a nonexistent path would make arm C's server target a
+  // directory that bb then creates, which is not the workspace and would mis-index.
+  mkdirSync(workDir, { recursive: true })
 
   const record: Record<string, unknown> = {
     schemaVersion: 1,
@@ -214,6 +223,52 @@ async function main(): Promise<void> {
   const env = runEnv(profile, {
     BB_DATA_DIR: bbDir,
     ...(a.embeddingArm === "C0" ? { BB_EMBEDDING_DISABLED: "1" } : {}),
+  })
+
+  // ── 1b. workspace: copy a fixture, or materialise a pin at the task's fix^ ────
+  // A FIXTURE project is a committed text tree and is copied. A PINNED project is
+  // materialised from a cache clone -- `benchmarks/` never holds a cloned repository
+  // (SCHEMA.md 1). This happens AFTER the profile because a failure here must be recorded
+  // against an existing run record, and BEFORE indexing because bb indexes what the agent sees.
+  const isPinned = typeof (project as unknown as { remote?: string }).remote === "string"
+  if (isPinned) {
+    const pin = project as unknown as { remote: string; revision: string }
+    const mat = materializeTask({
+      cacheDir: path.join(benchmarkRoot, ".work", "cache"),
+      project: { id: project.id, remote: pin.remote, revision: pin.revision },
+      task: { origin: { base_revision: task.origin?.base_revision ?? null, fix_revision: task.origin?.fix_revision ?? null }, golden: task.golden },
+      // The fix's test files come from the task's own golden file list, so a task cannot
+      // name tests its fix commit does not touch.
+      testFiles: task.golden.files.filter((f) => /(^|\/)(test|tests|__tests__|spec)\/|\.(test|spec)\.[cm]?[jt]sx?$/i.test(f)),
+      dest: workDir,
+    })
+    ;(record as Record<string, unknown>).revision = { base: mat.baseSha, pinned: mat.pinnedSha }
+    const npmInstall = await exec("npm", ["install", "--no-audit", "--no-fund"], {
+      cwd: workDir,
+      env: { ...env, npm_config_cache: path.join(benchmarkRoot, ".work", "npmcache") },
+      timeoutMs: 15 * 60 * 1000,
+    })
+    if (npmInstall.code !== 0) {
+      finish("infra_error", `npm install failed: ${npmInstall.stderr.split("\n").slice(-3).join(" ").slice(0, 300)}`)
+      return
+    }
+  } else {
+    if (projectSrc === null) {
+      finish("infra_error", "project has neither a `source` tree nor a `remote` pin")
+      return
+    }
+    copyDir(projectSrc, workDir)
+  }
+
+  // PRISTINE SNAPSHOT. The submission diff must be against the tree the agent STARTED from,
+  // not against a committed fixture. For a pinned project the start tree is materialised at
+  // run time, so there is nothing on disk to diff against afterwards -- copying it here is
+  // the only way to know what the agent actually changed. node_modules is excluded because
+  // it is environment, not submission.
+  const pristineDir = path.join(runDir, "pristine")
+  cpSync(workDir, pristineDir, {
+    recursive: true,
+    filter: (src) => !src.includes(`${path.sep}node_modules`) && !src.includes(`${path.sep}.git`),
   })
 
   // ── 2/3. index (only arms with bb) ──────────────────────────────────────────
@@ -302,13 +357,27 @@ async function main(): Promise<void> {
 
   // ── 6. evidence ─────────────────────────────────────────────────────────────
   // The submission is whatever the agent left in the tree: diff against the pin.
-  const diff = await exec("git", ["--no-pager", "diff", "--no-index", "--no-color", "--", projectSrc, workDir], {
-    cwd: REPO_ROOT,
+  // `git diff --no-index` accepts NO pathspec (verified: it rejects a `:(exclude)` argument
+  // with a usage error), so exclusion must happen by only giving it clean trees. Without
+  // this, the workspace's installed `node_modules` read as 611 added files and every run
+  // looked like it had rewritten the repository.
+  const subDir = path.join(runDir, ".submission-tree")
+  rmSync(subDir, { recursive: true, force: true })
+  cpSync(workDir, subDir, {
+    recursive: true,
+    filter: (src) => !src.includes(`${path.sep}node_modules`) && !src.includes(`${path.sep}.git`),
+  })
+  // RELATIVE paths, run from the run directory. With absolute paths the patch header embeds
+  // the operator's home directory and the run id, which makes the artifact unreadable and
+  // breaks path normalisation. Relative also means grade.ts can strip a fixed prefix.
+  const diff = await exec("git", ["--no-pager", "diff", "--no-index", "--no-color", "--", "pristine", ".submission-tree"], {
+    cwd: runDir,
     env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null" } as Record<string, string>,
     timeoutMs: 120_000,
   })
   const patchPath = path.join(runDir, "submission.patch")
   writeFileSync(patchPath, diff.stdout)
+  rmSync(subDir, { recursive: true, force: true })
   const filesChanged = new Set<string>()
   let linesAdded = 0
   let linesRemoved = 0

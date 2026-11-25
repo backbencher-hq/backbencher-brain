@@ -1,0 +1,79 @@
+{
+  "id": "t1-rewind-48586f4",
+  "track": "rewind",
+  "project": "ts-project1",
+  "origin": {
+    "kind": "history",
+    "base_revision": "9310cd1ef1e4dc48ea5e637f340d7d470c8f4b8a",
+    "fix_revision": "48586f416de75b89ccded49024dd1bfe07e9e1af",
+    "inject_seed": null
+  },
+  "prompt": "prompts/t1-rewind-48586f4.md",
+  "golden": {
+    "files": [
+      "source/index.ts"
+    ],
+    "patch": "golden/t1-rewind-48586f4.patch",
+    "needle": null
+  },
+  "stratification": "hot",
+  "budget": {
+    "max_steps": 80,
+    "max_tokens": 400000,
+    "max_wall_s": 900
+  },
+  "grade": {
+    "must_pass": [
+      "timeout up to the maximum timer delay is accepted, and a larger one is rejected instead of timing out at once",
+      "setting an invalid `timeout` on the queue throws and keeps the previous value"
+    ],
+    "must_not_break": [
+      "clear interval on pause",
+      "many waiters do not cause a listener leak warning",
+      "should be an event target",
+      "should emit active event per item",
+      "should emit idle event when idle",
+      "should emit empty event when empty",
+      "should emit add event when adding task",
+      "should emit next event when completing task",
+      "should emit completed / error events",
+      "should verify timeout overrides passed to add",
+      "should reject when signal is aborted while task is waiting in queue",
+      "abort with custom reason forwards the reason",
+      "abort works on a paused queue without unpausing",
+      "aborting multiple queued tasks with same AbortController",
+      "aborting a queued task with explicit id removes the correct task",
+      "aborting a queued task removes it from a custom queue class by id",
+      "aborting a queued task with duplicate id removes the correct task",
+      "abort listener for queued task is cleaned up when the task starts running",
+      "aborting a queued task emits correct events",
+      "onError does not reject when a queued task is aborted",
+      "clear() removes queued abort listeners",
+      "clear() removes queued abort listeners for shared signals",
+      "clear() lets the same signal be reused without stale queued listeners",
+      "clear() keeps the running task abort listener while removing queued ones",
+      "clear() only leaves the running task affected when a shared signal aborts later",
+      "clear() does not accumulate abort listeners across repeated discard cycles",
+      "should pass AbortSignal instance to job",
+      "aborting multiple jobs at the same time",
+      "abort listener is removed when job is completed",
+      "pending promises counted fast enough",
+      "pending promises with abortions counted fast enough",
+      "intervalCap",
+      "consumed interval is remembered between idle states",
+      "consumed interval is updated on time, even between idle states",
+      ".setPriority() - execute a promise before planned",
+      "interval should be maintained when using await between adds (issue \\#182)",
+      "task added in a fresh window runs immediately after queue went idle mid-window (issue \\#251)",
+      "fresh window after idle still enforces the cap for the following task (issue \\#251)",
+      "carryoverIntervalCount does not break the fresh window after idle mid-window (issue \\#251)",
+      "task added after going idle but before the boundary still waits for the current window (issue \\#251)"
+    ]
+  },
+  "anchor": {
+    "verified": true,
+    "moved_tests": 2,
+    "stable_tests": 265,
+    "test_command": "node --import=tsx/esm --test --test-timeout=60000 test/*.ts"
+  }
+}

@@ -89,3 +89,28 @@ successfully invokes bb in arm A/B must be `invalid`/`bb-leak` — never a score
 > `script/bench/report.ts` accepts — **without reading the source**.
 
 That is the test. If it needs a conversation with us, W0 is not done.
+
+---
+
+## W1 preflight — what running one real repository changed
+
+The first run against a **pinned** repository (p-queue, 27 files) found six defects that the
+fixture could never have exposed, because the fixture has no clone, no dependency tree and
+no multi-file statuses:
+
+| # | defect | how it read | fix |
+|---|---|---|---|
+| 1 | `project.source` assumed on every project | `path must be of type string` crash | fixtures carry `source`; pins carry `remote` |
+| 2 | submission diff ran over the workspace including `node_modules` | **611 files changed** on a one-file fix | filtered copy for the diff (`--no-index` rejects pathspecs) |
+| 3 | diff paths were absolute | patch embedded the operator's home directory | relative diff from the run directory |
+| 4 | sandbox had no `node_modules` | a **correct** fix scored 0 ("tsx not resolvable") | per-pin dependency cache, symlinked into the sandbox |
+| 5 | `git diff --no-index` given a pathspec | silent usage error | excluded noise by building clean trees instead |
+| 6 | test-name matching tried containment before exact | a required test `intervalCap` **passed** but was reported failed because a *different* failing test contained that string — a **correct submission scored 0** | exact match decides first; containment only as fallback |
+
+Defect 6 is the most dangerous class in this whole project: a grader bug that produces a
+plausible product result. It is now a selftest case (`10b`) and it was mutation-tested —
+restoring containment-first turns that check red.
+
+**Result of that run:** arm A (no bb) solved the p-queue `timeout` setter bug and graded
+**1.0**. That is the baseline doing real work on a real repository, which is exactly what a
+benchmark needs before it can claim anything about the arm WITH bb.
