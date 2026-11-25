@@ -76,7 +76,7 @@ unless the base resolves in-file, so the row is read off two declarations; the o
   (`tsx-renders` 12/12, `decorator-emission` 7/7, `renders-imported-binding` 3/3)
 - 16 `verify-typescript-*.mts` compiler-backed gates pass (`tsc` 5.9.3); 14 mutants registered
 - Whole-population: corpus manifest `validation/m14/instruments/typescript/corpus-manifest.json`
-  (default root **17,350 admitted files / 41 repos**, population digest `4bd7bba5441c5344`; the
+  (default root **17,366 admitted files / 41 repos**, population digest `177ba0b25576a1fd`; the
   `.corpus` FARM is gone and the two roots are different populations, which the gate prints);
   arm log + regenerated declaration under `validation/m14/measurements/` and
   `validation/m14/instruments/typescript/`

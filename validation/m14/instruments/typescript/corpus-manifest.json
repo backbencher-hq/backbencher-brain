@@ -11,30 +11,20 @@
   "admissionRule": {
     "source": "script/m14/ts-corpus.ts admitCorpus — the gate's own rule, imported rather than re-implemented",
     "tracked": "git ls-files",
-    "extensions": [
-      ".ts",
-      ".tsx",
-      ".mts",
-      ".cts"
-    ],
+    "extensions": [".ts", ".tsx", ".mts", ".cts"],
     "sizeCap": 1048576
   },
-  "generatedAt": "2026-11-18T06:28:41.573Z",
+  "generatedAt": "2026-11-25T22:14:50.087Z",
   "totals": {
     "repos": 41,
     "reposSeen": 199,
     "reposNotGit": 0,
-    "admitted": 17350,
+    "admitted": 17366,
     "overCap": 1,
     "absent": 0,
     "overCapLargest": 3053665,
-    "populationDigest": "4bd7bba5441c534460c5ac1e23fbc38c0c1f682c04b172bcb1be7c6bee4410ec",
-    "extensions": [
-      ".ts",
-      ".tsx",
-      ".mts",
-      ".cts"
-    ],
+    "populationDigest": "177ba0b25576a1fdf2e261328154642a16c33c9d20cc0df4f50c7261087e2243",
+    "extensions": [".ts", ".tsx", ".mts", ".cts"],
     "sizeCap": 1048576
   },
   "repos": [
@@ -184,9 +174,9 @@
     },
     {
       "repo": "proxicall",
-      "gitHead": "3b6ebd409f1b1d235776cd72d3ad0809992ed060",
-      "trackedTsFamily": 739,
-      "admitted": 739
+      "gitHead": "f2df660454ddf7ef620709acc70e6504e84b5822",
+      "trackedTsFamily": 755,
+      "admitted": 755
     },
     {
       "repo": "r-air",
@@ -287,14 +277,9 @@
   ],
   "selfCorpus": {
     "path": "/home/ishaq2321/mcp/backbencher-brain",
-    "gitHead": "6fc6dcec846c09729c98da22e621effb0744e890",
-    "trackedTsFamily": 6825,
-    "extensions": [
-      ".ts",
-      ".tsx",
-      ".mts",
-      ".cts"
-    ],
+    "gitHead": "f225fd0a925c683f72023d40bbb881fccb52efaa",
+    "trackedTsFamily": 6882,
+    "extensions": [".ts", ".tsx", ".mts", ".cts"],
     "note": "the owner authorised this repository as a corpus; a self-corpus arm records the HEAD it measured"
   }
 }

@@ -1,76 +1,76 @@
 {
   "meta": {
     "lane": "typescript",
-    "written": "2026-11-18",
+    "written": "2026-11-25",
     "author": "Muhammad Ishaq Khan",
-    "parsed": 17350,
-    "sample": 17350,
-    "corpusTotal": 17350,
+    "parsed": 17366,
+    "sample": 17366,
+    "corpusTotal": 17366,
     "repos": 41,
     "extensions": ".ts,.tsx,.mts,.cts",
-    "populationString": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
-    "populationLine": "population: 17350 parsed of 17350 sampled (corpus has 17350 .ts,tsx,mts,cts files across 41 repos; stride sample)",
-    "armLog": "validation/m14/measurements/typescript-arm-accessorfix-2026-11-18.log",
-    "armLogSha256": "c2294cace8c6597fe04f2b6f486c9b3837592d144daee4dd8d1af3b573adbb73",
+    "populationString": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
+    "populationLine": "population: 17366 parsed of 17366 sampled (corpus has 17366 .ts,tsx,mts,cts files across 41 repos; stride sample)",
+    "armLog": "validation/m14/measurements/typescript-arm-c9-2026-11-25.log",
+    "armLogSha256": "fb3837158481aa5c8fc06ec92015be88671e252f6d6d66c80686f0d5792b77b6",
     "instrument": "script/m14/incoming-gate.ts (the shared arm) over the population rule in script/m14/ts-corpus.ts",
     "command": "BB_CORPUS_ROOT=$HOME/bb_tests/repositories bun run script/m14/incoming-gate.ts typescript .ts,.tsx,.mts,.cts 0 --index",
     "grammar": "b75fa34cfde954d15429b39062d217e6fa99b425a0c3f1aaedd082116dd20335 — THE SERVED TYPESCRIPT BUILD, measured by calling the resolver and hashing the file it logs as wasmPath (no path is cited here: a path is how this lane got it wrong twice).",
-    "analyzerSha256": "56e5aaaea7642163cb2df73fcb3bf2b268a0248e8359e706c457b167bd031cd2",
+    "analyzerSha256": "2cd7828c9cccbc3e8b086c2c6f7f484b92c8c5a123dac6f47fafcfccf805b7de",
     "arbiterSha256": "c28704de18d215496e095550680caeb99eb91f04c7ac11bdd1a53a8b2d01884c"
   },
   "types": {
     "calls": {
-      "edges": 526773,
-      "resolved": 140250,
-      "external": 158416,
-      "ambiguous": 62835,
-      "otherUnresolved": 165272,
+      "edges": 527769,
+      "resolved": 140402,
+      "external": 158912,
+      "ambiguous": 62701,
+      "otherUnresolved": 165754,
       "unclassed": 0
     },
     "uses": {
-      "edges": 62736,
-      "resolved": 56233,
+      "edges": 62785,
+      "resolved": 56277,
       "external": 0,
       "ambiguous": 192,
-      "otherUnresolved": 6311,
+      "otherUnresolved": 6316,
       "unclassed": 0
     },
     "contains": {
-      "edges": 91687,
-      "resolved": 91687,
+      "edges": 91740,
+      "resolved": 91740,
       "external": 0,
       "ambiguous": 0,
       "otherUnresolved": 0,
       "unclassed": 0
     },
     "imports": {
-      "edges": 107896,
-      "resolved": 45336,
-      "external": 39001,
+      "edges": 107968,
+      "resolved": 45341,
+      "external": 39067,
       "ambiguous": 10577,
-      "otherUnresolved": 12982,
+      "otherUnresolved": 12983,
       "unclassed": 0
     },
     "references": {
-      "edges": 122060,
-      "resolved": 68291,
-      "external": 15893,
+      "edges": 122152,
+      "resolved": 68333,
+      "external": 15922,
       "ambiguous": 4344,
-      "otherUnresolved": 33532,
+      "otherUnresolved": 33553,
       "unclassed": 0
     },
     "exports": {
-      "edges": 40619,
-      "resolved": 37986,
+      "edges": 40652,
+      "resolved": 38019,
       "external": 832,
       "ambiguous": 545,
       "otherUnresolved": 1256,
       "unclassed": 0
     },
     "extends": {
-      "edges": 3327,
+      "edges": 3329,
       "resolved": 1740,
-      "external": 193,
+      "external": 195,
       "ambiguous": 66,
       "otherUnresolved": 1328,
       "unclassed": 0
@@ -92,11 +92,11 @@
       "unclassed": 0
     },
     "instantiates": {
-      "edges": 16886,
-      "resolved": 10058,
+      "edges": 16903,
+      "resolved": 10064,
       "external": 0,
       "ambiguous": 2783,
-      "otherUnresolved": 4045,
+      "otherUnresolved": 4056,
       "unclassed": 0
     },
     "decorates": {
@@ -108,11 +108,11 @@
       "unclassed": 0
     },
     "renders": {
-      "edges": 17553,
-      "resolved": 5762,
+      "edges": 17578,
+      "resolved": 5769,
       "external": 0,
       "ambiguous": 1962,
-      "otherUnresolved": 9829,
+      "otherUnresolved": 9847,
       "unclassed": 0
     },
     "mixes_in": {
@@ -133,20 +133,20 @@
     }
   },
   "totals": {
-    "edges": 992659,
-    "resolved": 458133,
-    "external": 214351,
-    "ambiguous": 83489,
-    "otherUnresolved": 236686,
-    "collRes": 72220,
-    "ambKind": 52370,
+    "edges": 993998,
+    "resolved": 458475,
+    "external": 214944,
+    "ambiguous": 83355,
+    "otherUnresolved": 237224,
+    "collRes": 72258,
+    "ambKind": 52295,
     "unclassed": 0,
-    "perType": "calls 526773/140250 · uses 62736/56233 · contains 91687/91687 · imports 107896/45336 · references 122060/68291 · exports 40619/37986 · extends 3327/1740 · implements 275/185 · overrides 677/481 · instantiates 16886/10058 · decorates 2119/122 · renders 17553/5762 · mixes_in 2/2 · part_of 49/0"
+    "perType": "calls 527769/140402 · uses 62785/56277 · contains 91740/91740 · imports 107968/45341 · references 122152/68333 · exports 40652/38019 · extends 3329/1740 · implements 275/185 · overrides 677/481 · instantiates 16903/10064 · decorates 2119/122 · renders 17578/5769 · mixes_in 2/2 · part_of 49/0"
   },
   "causeRulings": {
     "directory-level-ambiguity": {
       "name": "directory-level-ambiguity — two files in one directory declaring the same name",
-      "population": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
+      "population": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
       "from": "MEASURED by the arm: `collRes` is the share of `resolved` where the target had more than one declaration and production's tie-break chose one. It is reported beside `resolved` and never folded into it.",
       "falsifier": {
         "what": "directory-level-ambiguity — two files in one directory declaring the same name",
@@ -156,7 +156,7 @@
     },
     "declaration-merging": {
       "name": "declaration-merging — `interface X extends Y` merging a mixin's members onto a class",
-      "population": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
+      "population": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
       "from": "the construct census (script/m14/ts-mixin-sites.ts, whole admitted population 17,350 files / 41 repos) counts 2,421 class heritage clauses and 3,267 extends clauses, of which 2 are CALL-SHAPED (the mixin application). They publish as `extends`, which is what the plain ones are; the near miss is that they compose MEMBERS, and `mixes_in` is reserved for the call-shaped application — measured 2 sites and the analyzer publishes 2 `mixes_in` edges (this replaces an earlier census that read 0 because it required `Name(` and missed a generic callee).",
       "falsifier": {
         "what": "declaration-merging — `interface X extends Y` merging a mixin's members onto a class",
@@ -166,7 +166,7 @@
     },
     "mixin-shape": {
       "name": "mixin-shape — `class X extends Mixin(Base) {}`",
-      "population": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
+      "population": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
       "from": "2 call-shaped heritage clauses over 17,350 files / 41 repos (2,421 class heritage clauses, 0 bases named `*mixin*`). The type is IMPLEMENTED and corpus-EXERCISED: the census counts 2 sites and the analyzer publishes 2 `mixes_in` edges (arm TABLE 1, both resolved); the fixture also proves the edge fires on the minimal shape.",
       "falsifier": {
         "what": "mixin-shape — `class X extends Mixin(Base) {}`",
@@ -176,7 +176,7 @@
     },
     "reference-directive": {
       "name": "reference-directive — `/// <reference path|types|lib=\"…\" />`",
-      "population": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
+      "population": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
       "from": "50 directive SITES over 17,350 files / 41 repos (by role and target shape in the census log). The STOCK grammar lexes them as comments, so this lane PATCHED the grammar — the served build is b75fa34c…, which exposes a single atomic `reference_directive` NODE — and proved the swap behaviourally (script/m14/ts-partof-grammar-proof.ts, 8 conditions). The analyzer emits `part_of` from that node's own fixed spelling by a character walk, never from a comment's text; 50 sites minus one repeated (file, role, target) triple is the 49 rows the arm publishes.",
       "falsifier": {
         "what": "reference-directive — `/// <reference path|types|lib=\"…\" />`",
@@ -186,7 +186,7 @@
     },
     "grammar-swap-safety": {
       "name": "grammar-swap-safety — the R2 build replaces the served build",
-      "population": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
+      "population": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
       "from": "the fixture suite reads 123 pass / 0 fail on the patched build, and the swap preserves the PREVIOUS served build at script/m14/ts-grammar-patch/tree-sitter-typescript-served.wasm (8515404d…) so every earlier number remains re-measurable; the proof checks the stock copy, the served copy, and engine.ts's digest table together.",
       "falsifier": {
         "what": "grammar-swap-safety — the R2 build replaces the served build",
@@ -196,7 +196,7 @@
     },
     "no-regex-resolution": {
       "name": "no-regex-resolution — a relation may not be resolved by matching text",
-      "population": "parsed=17350/17350 admitted=17350 exts=.ts,.tsx,.mts,.cts index=yes",
+      "population": "parsed=17366/17366 admitted=17366 exts=.ts,.tsx,.mts,.cts index=yes",
       "from": "every relation in this analyzer is read from a node: `part_of` from the patched grammar's `reference_directive` NODE (its role/target unwrapped from the node's own fixed spelling by a character walk — the pinned build exposes one atomic token, not fields), `mixes_in` from the extends clause's expression TYPE, `extends` from the heritage base name. HEAD contains 0 regex literals — and the falsifier FIRED before it was true: Release 0.1.4 (f5325a909) reintroduced four, the lane's own counter and the fleet gate both exited 1, and the fix (2026-11-17) is character walks. The falsifier stays armed: the run below is an AST census, never a text scan.",
       "falsifier": {
         "what": "no-regex-resolution — a relation may not be resolved by matching text",
@@ -216,9 +216,9 @@
     "`mixes_in` IS IMPLEMENTED AND EXERCISED: 2 edges, both resolved (the vault UI's `class X extends baseResourceFactory<Mount>()`). The lane's first census reported 0 and was WRONG — its pattern required `Name(` and missed a GENERIC callee. The falsifier written into the measurement is what caught it, and the corrected figure is one file of the corpus rather than a pattern."
   ],
   "_derivation": {
-    "from": "the arm's own report, sha256 c2294cace8c6597fe04f2b6f486c9b3837592d144daee4dd8d1af3b573adbb73",
+    "from": "the arm's own report, sha256 fb3837158481aa5c8fc06ec92015be88671e252f6d6d66c80686f0d5792b77b6",
     "rule": "TABLE 1's per-type row → the five buckets; closure checked per type against that type's edge count; a row that does not close is a REFUSAL",
     "generator": "script/m14/ts-declaration.ts"
   },
-  "_sha256_of_this_file_body": "5fe5e089d04c82db79e1e1a0eeeebda84909aec737808e78f4a5a87e150bb9b6"
+  "_sha256_of_this_file_body": "584ebe52fa99169fed700636cf640bbde32c3733f737f17221de2c4faa1ad8ab"
 }
