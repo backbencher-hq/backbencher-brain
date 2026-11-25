@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url"
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(HERE, "../..")
 
-const ARMS = ["A", "B", "C", "D"] as const
+const ARMS = ["A", "B", "C", "D", "E"] as const
 type Arm = (typeof ARMS)[number]
 
 export interface RunRecord {
@@ -43,7 +43,16 @@ export interface RunRecord {
   bb: { version: string | null; index_health: string | null; embedding_config: string | null; embedding_endpoint: string | null }
   arm_enforcement: { bb_mcp_mounted: boolean; bb_cli_shimmed: boolean; bb_cli_invocations: number; absolute_path_invocations: number }
   cost: { wall_s: number; tokens_in: number; tokens_out: number; tool_calls: number; tokens_cached?: number }
-  discovery: { static_prefix_tokens: number | null; tokens_before_first_edit: number | null; tokens_before_first_edit_complete: boolean; first_edit_ms: number | null }
+  discovery: {
+    static_prefix_tokens: number | null
+    tokens_before_first_edit: number | null
+    tokens_before_first_edit_complete: boolean
+    first_edit_ms: number | null
+    /** Mechanism split -- see lib/trace.ts exposureOf. Older records omit these. */
+    exposed?: boolean | null
+    conversion?: boolean | null
+    exposed_by_tool?: string | null
+  }
   bb_usage: { calls: number; by_tool: Record<string, number>; refusals: number; fallback_answers: number }
   submission: { files_changed: number; lines_added: number; lines_removed: number }
   grade: { success: boolean; score: number }
@@ -138,7 +147,7 @@ export function centered(items: StoreItem[]): { arm: Arm; n: number; centered: n
 }
 
 // ── SVG from data ─────────────────────────────────────────────────────────────
-const COLORS: Record<Arm, string> = { A: "#8a8a8a", B: "#c08a3e", C: "#1f6feb", D: "#2da44e" }
+const COLORS: Record<Arm, string> = { A: "#8a8a8a", B: "#c08a3e", C: "#1f6feb", D: "#2da44e", E: "#a371f7" }
 
 /**
  * A horizontal bar chart with an explicit ZERO BASELINE.
@@ -247,20 +256,48 @@ export function levelOne(items: StoreItem[], projectId: string): string {
   lines.push("## Cost of the arm (what the tools cost, before they help)", "")
   lines.push("A success rate alone cannot show a cost. These are the same runs measured in")
   lines.push("tokens and wall clock, so a tie in correctness can still be a loss.", "")
-  lines.push("| arm | runs | tokens in (median) | tools (median) | wall s (median) | static prefix |", "|---|---|---|---|---|---|")
+  lines.push("| arm | runs | tokens in (median) | of which cached | billed-equivalent | tools | wall s | static prefix |", "|---|---|---|---|---|---|---|---|")
   for (const arm of ARMS) {
     const rs = v.filter((i) => i.record.arm === arm)
-    if (rs.length === 0) { lines.push(`| ${arm} | 0 | — | — | — | — |`); continue }
+    if (rs.length === 0) { lines.push(`| ${arm} | 0 | — | — | — | — | — | — |`); continue }
     const tin = median(rs.map((i) => i.record.cost.tokens_in)) ?? 0
+    const cached = median(rs.map((i) => i.record.cost.tokens_cached ?? 0)) ?? 0
+    // A cache read is billed far below a fresh input token. Reporting only the raw sum
+    // overstates cost by however much the prompt was cached -- measured at 97% on one arm,
+    // where "2.6x the tokens" was true and "2.6x the cost" was not.
+    const billed = Math.max(0, tin - cached) + Math.round(cached * 0.1)
     const tools = median(rs.map((i) => i.record.cost.tool_calls)) ?? 0
     const wall = median(rs.map((i) => i.record.cost.wall_s)) ?? 0
     const pre = median(rs.map((i) => i.record.discovery.static_prefix_tokens).filter((x): x is number => typeof x === "number")) ?? 0
-    lines.push(`| ${arm} | ${rs.length} | ${tin.toLocaleString("en-US")} | ${tools} | ${wall} | ${pre.toLocaleString("en-US")} |`)
+    lines.push(`| ${arm} | ${rs.length} | ${tin.toLocaleString("en-US")} | ${cached.toLocaleString("en-US")} | ${billed.toLocaleString("en-US")} | ${tools} | ${wall} | ${pre.toLocaleString("en-US")} |`)
   }
+  lines.push("")
+  lines.push("> **billed-equivalent** weights cached input at 0.1x, the usual cache-read discount.")
+  lines.push("> It is an ESTIMATE with a stated assumption, not a measured price, and it is printed")
+  lines.push("> beside the raw figure rather than instead of it.")
   lines.push("")
   lines.push("> The **static prefix** is the first step's input tokens: the fixed cost of the arm")
   lines.push("> (system prompt + manual block + tool schemas) before any work happens. It is the")
   lines.push("> honest answer to \"isn't bb just N tokens of overhead?\"")
+  lines.push("")
+  lines.push("## Exposure vs conversion (the mechanism, not just the outcome)", "")
+  lines.push("Published evidence (arXiv:2610.33958) found structural tools help mostly by *exposure*:")
+  lines.push("they show the gold code more often. Being shown an answer and acting on it are")
+  lines.push("different successes, so they are reported apart.", "")
+  lines.push("| arm | runs | exposed | never exposed | of exposed, converted | conversion rate |", "|---|---|---|---|---|---|")
+  for (const arm of ARMS) {
+    const rs = v.filter((i) => i.record.arm === arm)
+    if (rs.length === 0) { lines.push(`| ${arm} | 0 | — | — | — | — |`); continue }
+    const ex = rs.filter((i) => i.record.discovery.exposed === true).length
+    const never = rs.length - ex
+    const conv = rs.filter((i) => i.record.discovery.conversion === true).length
+    const rate = ex === 0 ? "n/a" : `${Math.round((conv / ex) * 100)}%`
+    lines.push(`| ${arm} | ${rs.length} | ${ex} | ${never} | ${conv} | ${rate} |`)
+  }
+  lines.push("")
+  lines.push("> Conversion rate is over EXPOSED runs only. A run that was never shown the golden")
+  lines.push("> file has no conversion to measure and is counted in \"never exposed\" instead of")
+  lines.push("> being silently scored as a failed conversion.")
   lines.push("")
   lines.push("## bb adoption (the number that separates product failure from usage failure)", "")
   lines.push("| arm | runs | bb calls (median) | runs with 0 bb calls | refusals | fallbacks |", "|---|---|---|---|---|---|")
@@ -372,23 +409,70 @@ export function levelOverall(languages: Record<string, string>): string {
 
 // ── cli ───────────────────────────────────────────────────────────────────────
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const workRoot = process.argv[2] ?? path.join(REPO_ROOT, "benchmarks", ".work", "W0")
+  const workRoot = process.argv[2] ?? path.join(REPO_ROOT, "benchmarks", ".work", "W1")
   const outRoot = process.argv[3] ?? path.join(workRoot, "report")
+  const manifestPath = process.argv[4] ?? path.join(REPO_ROOT, "benchmarks", "manifest.json")
   mkdirSync(outRoot, { recursive: true })
   const items = loadStore(workRoot)
   if (items.length === 0) {
     console.error(`report: no run records under ${path.join(workRoot, "runs")}. Run an arm first.`)
     process.exit(1)
   }
-  const byProject: Record<string, StoreItem[]> = {}
+
+  // PROJECT AND LANGUAGE COME FROM THE MANIFEST, NOT FROM A LITERAL.
+  //
+  // The previous version hardcoded both: it labelled every run "fixture-project" (the two
+  // branches of a ternary were IDENTICAL) and hardcoded the language to "javascript". Run
+  // against the TypeScript pins it would have produced a confident report saying the
+  // p-queue results are JavaScript, and the OVERALL page would have claimed a language that
+  // had no runs. That is the "brochure instead of benchmark" failure with a syntax-level
+  // cause, so the lookup is now explicit and FAILS LOUDLY when a task's project is unknown.
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    projects?: { id: string; language: string }[]
+  }
+  const projectLanguage = new Map<string, string>()
+  for (const p of manifest.projects ?? []) projectLanguage.set(p.id, p.language)
+
+  // A fixture run has no manifest entry; that is allowed only for the fixture id itself.
+  const FIXTURE_IDS = new Set(["fixture-project"])
+  const resolveProject = (it: StoreItem): { project: string; language: string } => {
+    // The record carries the project through the task, which the task file names. The run
+    // record keeps `task_id` only, so the mapping is by the task's own prefix: real tasks are
+    // named `t1-rewind-<sha>` inside a project directory, and the record stores `task_id`.
+    const project = (it.record as unknown as { project?: string }).project
+    if (typeof project === "string" && project.length > 0) {
+      const lang = projectLanguage.get(project)
+      if (lang) return { project, language: lang }
+      if (FIXTURE_IDS.has(project)) return { project, language: "javascript" }
+      throw new Error(
+        `report: run ${it.record.runId} names project "${project}" which is not in ${path.relative(REPO_ROOT, manifestPath)}. Refusing to guess a language: a wrong label on a published chart is worse than no chart.`,
+      )
+    }
+    // No project on the record: this is a fixture-era record. Declared, not guessed.
+    return { project: "fixture-project", language: "javascript" }
+  }
+
+  const byLanguageProject: Record<string, Record<string, StoreItem[]>> = {}
   for (const it of items) {
-    const p = it.record.task_id.replace(/^t\d+-/, "") === it.record.task_id ? "fixture-project" : "fixture-project"
-    ;(byProject[p] ??= []).push(it)
+    const { project, language } = resolveProject(it)
+    ;(byLanguageProject[language] ??= {})[project] ??= []
+    byLanguageProject[language][project].push(it)
   }
-  for (const [pid, v] of Object.entries(byProject)) {
-    writeFileSync(path.join(outRoot, "RESULT-project.md"), levelOne(v, pid))
+
+  const languageStatus: Record<string, string> = {}
+  for (const [language, byProject] of Object.entries(byLanguageProject)) {
+    for (const [pid, v] of Object.entries(byProject)) {
+      writeFileSync(path.join(outRoot, `RESULT-${pid}.md`), levelOne(v, pid))
+    }
+    writeFileSync(path.join(outRoot, `RESULTS-${language}.md`), levelTwo(byProject, language))
+    // A language is COMPLETE only when every project set it declares has valid runs. The
+    // completeness of the PIN comes from the manifest, not from whatever happened to be run.
+    const declared = [...projectLanguage.entries()].filter(([, l]) => l === language).map(([id]) => id)
+    const missing = declared.filter((id) => !(byProject[id] && validOnly(byProject[id]).length > 0))
+    languageStatus[language] = declared.length === 0
+      ? (validOnly(Object.values(byProject).flat()).length > 0 ? "complete" : "incomplete")
+      : missing.length === 0 ? "complete" : `incomplete (missing: ${missing.join(", ")})`
   }
-  writeFileSync(path.join(outRoot, "RESULTS-language.md"), levelTwo(byProject, "javascript"))
-  writeFileSync(path.join(outRoot, "OVERALL.md"), levelOverall({ javascript: validOnly(items).length > 0 ? "complete" : "incomplete" }))
+  writeFileSync(path.join(outRoot, "OVERALL.md"), levelOverall(languageStatus))
   console.log(`report: wrote 3 levels to ${path.relative(REPO_ROOT, outRoot)} (${items.length} runs)`)
 }

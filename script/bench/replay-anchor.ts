@@ -216,6 +216,17 @@ function detectTestCommand(dir: string, depth = 0, seen = new Set<string>()): st
   return null
 }
 
+/**
+ * The model's knowledge cutoff. A task whose fix landed BEFORE this date may be in the
+ * model's training data, so a solve proves memory rather than tooling.
+ *
+ * Published protocol: arXiv:2611.17388 evaluates only PRs created after a locked cutoff T0
+ * ("strict zero-leakage isolation"). Centering -- subtracting the no-tool baseline -- is a
+ * weaker defence: it only removes tasks the baseline ALREADY solves, and a model that
+ * half-remembers a fix still benefits from a hint. So the cutoff is enforced at admission.
+ */
+export const DEFAULT_MODEL_CUTOFF = "2025-06-01"
+
 export interface AnchorResult {
   ok: boolean
   /** Why it was dropped, when !ok. */
@@ -227,6 +238,12 @@ export interface AnchorResult {
   base: string
   testFiles: string[]
   sourceFiles: string[]
+  /** Commit date of the fix, ISO day. */
+  fixDate: string | null
+  /** Model cutoff the anchor was checked against. */
+  modelCutoff: string
+  /** True when fixDate >= modelCutoff, i.e. post-cutoff and therefore not memorisable. */
+  postCutoff: boolean
   /** Test names that fail at base and pass after the fix. */
   movedTests: string[]
   /** Tests that pass at base too (pass-to-pass, used for regression). */
@@ -252,15 +269,19 @@ function runTests(dir: string, command: string): { names: Map<string, boolean>; 
  * installs dependencies twice (base tests, then fixed source) and asserts the failing set
  * moves. Expensive on purpose -- a task admitted without this is a guess.
  */
-export function anchor(repo: string, sha: string, opts: { work: string; install?: boolean }): AnchorResult {
+export function anchor(repo: string, sha: string, opts: { work: string; install?: boolean; modelCutoff?: string }): AnchorResult {
   const fixSha = git(repo, ["rev-parse", `${sha}^{commit}`]).out.trim()
   const base = git(repo, ["rev-parse", `${fixSha}^`]).out.trim()
+  const modelCutoff = opts.modelCutoff ?? DEFAULT_MODEL_CUTOFF
+  const fixDate = git(repo, ["log", "-1", "--format=%cs", fixSha]).out.trim() || null
+  const postCutoff = fixDate !== null && fixDate >= modelCutoff
   const files = changedFiles(repo, sha)
   const testFiles = files.filter((f) => TEST_RE.test(f))
   const sourceFiles = files.filter((f) => SOURCE_RE.test(f) && !TEST_RE.test(f))
 
   const fail = (reason: string, extra: Partial<AnchorResult> = {}): AnchorResult => ({
-    ok: false, reason, sha, fixSha, base, testFiles, sourceFiles, movedTests: [], stableTests: [],
+    ok: false, reason, sha, fixSha, base, fixDate, modelCutoff, postCutoff,
+    testFiles, sourceFiles, movedTests: [], stableTests: [],
     testCommand: null, sourceDiff: "", promptBody: "", ...extra,
   })
 
@@ -324,7 +345,7 @@ export function anchor(repo: string, sha: string, opts: { work: string; install?
     "",
   ].join("\n")
 
-  return { ok: true, reason: null, sha, fixSha, base, testFiles, sourceFiles, movedTests: moved, stableTests: stable, testCommand: cmd, sourceDiff, promptBody }
+  return { ok: true, reason: null, sha, fixSha, base, fixDate, modelCutoff, postCutoff, testFiles, sourceFiles, movedTests: moved, stableTests: stable, testCommand: cmd, sourceDiff, promptBody }
 }
 
 /** Emit the task + project files for a verified anchor. */
@@ -348,6 +369,11 @@ export function emit(results: { anchor: AnchorResult; projectId: string; taskId:
     // Provenance a reader can re-derive: the anchor property was MEASURED, not asserted.
     anchor: {
       verified: true,
+      fix_date: a.fixDate,
+      model_cutoff: a.modelCutoff,
+      // Post-cutoff tasks are the only ones that can show tool value rather than memory.
+      // A pre-cutoff task is ADMITTED but flagged, so a report can separate the two.
+      post_cutoff: a.postCutoff,
       moved_tests: a.movedTests.length,
       stable_tests: a.stableTests.length,
       test_command: a.testCommand,
@@ -382,7 +408,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.error(`DROPPED ${shaArg}: ${r.reason}`)
       process.exit(1)
     }
-    console.log(`ANCHORED ${shaArg.slice(0, 9)}: base=${r.base.slice(0, 9)} moved=${r.movedTests.length} stable=${r.stableTests.length} src=${r.sourceFiles.length}`)
+    const cut = r.postCutoff ? "POST-cutoff" : `PRE-cutoff (fix ${r.fixDate} < model ${r.modelCutoff})`
+    console.log(`ANCHORED ${shaArg.slice(0, 9)}: base=${r.base.slice(0, 9)} moved=${r.movedTests.length} stable=${r.stableTests.length} src=${r.sourceFiles.length} [${cut}]`)
+    if (!r.postCutoff) {
+      // Not a refusal: a pre-cutoff task is still a real task. But it must be FLAGGED at
+      // admission, because a wave that quietly fills up with pre-cutoff tasks is measuring
+      // memorised fixes and would be unable to tell anyone.
+      console.error(`  WARNING: fix date ${r.fixDate} is before the model cutoff ${r.modelCutoff}; this task can be solved from memory. It is admitted and flagged, not silently pooled with post-cutoff tasks.`)
+    }
     for (const m of r.movedTests.slice(0, 6)) console.log(`  + ${m}`)
     if (mode === "anchor" && outDir) {
       const projIdx = process.argv.indexOf("--project")

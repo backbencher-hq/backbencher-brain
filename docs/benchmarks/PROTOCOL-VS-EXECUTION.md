@@ -45,10 +45,10 @@ gate that merely ran.
 | 24 | arms A/B cannot reach the bb CLI; an invocation is `invalid`/`bb-leak` (`HARNESS.md` §4a) | `lib/profile.ts` shim + `run-arm.ts` scan | **implemented** + selftest case 3, mutation-tested (shim removed ⇒ `REACHED:0.1.5`) |
 | 25 | `arm_enforcement` recorded on every run | `run-arm.ts` | **implemented** (mounted / shimmed / invocation counts) |
 | 26 | the trace has no timestamps; the runner stamps arrival and marks it an upper bound | `lib/exec.ts` `streamStamped` | **implemented** (labelled in every record and table) |
-| 32 | a **placebo arm** (tools return random entities) is run, so a C-vs-A gain is attributed to content rather than to tool presence (`PRIOR-WORK.md` §1) | new arm `E` in `lib/profile.ts` + `ARMS.md` | not implemented — **required control, missing from the four-arm matrix** |
-| 33 | the headline reports **C0 and C2** both, because published evidence attributes the gain to the embedding index, which C0 disables (`PRIOR-WORK.md` §1) | `EMBEDDINGS.md` + `report.ts` | not implemented — C0-alone headline is now **under question** |
-| 34 | every task records a **training-cutoff check** (`fix_commit_date > model_cutoff`), the published zero-leakage protocol (`PRIOR-WORK.md` §2) | `replay-anchor.ts` + preregistration | not implemented — we currently rely on centering, which is inference not isolation |
-| 35 | **exposure** (was the golden file ever shown to the agent) is reported separately from **conversion** (did it act on it) (`PRIOR-WORK.md` §1.4) | `report.ts` + trace scan | not implemented |
+| 32 | a **placebo arm E** (tools return unrelated content) is run, so a C-vs-A gain is attributed to content rather than to tool presence (`PRIOR-WORK.md` §1) | `lib/placebo-proxy.ts` + `ARM_SPECS.E` | **implemented** — arm E live, probe proves the rewrite fired; selftest 10d, mutation-tested |
+| 33 | the headline reports **C0 and C2** both, because published evidence attributes the gain to the embedding index which C0 disables (`PRIOR-WORK.md` §1) | `EMBEDDINGS.md` + `report.ts` | **partial** — the report records and prints the embedder per arm, but the co-headline rule is a protocol statement, not yet enforced by a gate |
+| 34 | every task records a **training-cutoff check** (`fix_commit_date > model_cutoff`), the published zero-leakage protocol (`PRIOR-WORK.md` §2) | `replay-anchor.ts` | **implemented** — `anchor` records `fix_date`/`model_cutoff`/`post_cutoff` per task and WARNS at admission on a pre-cutoff fix |
+| 35 | **exposure** (was the golden file ever shown) is reported separately from **conversion** (did it act on it) (`PRIOR-WORK.md` §1.4) | `lib/trace.ts` `exposureOf()` + `report.ts` | **implemented** — `conversion: null` when never exposed, so it cannot read as a failed conversion |
 | 27 | the discovery tax is measured in **tokens**, not ms | `lib/trace.ts` `discoveryTax()` | **implemented** — the naive "tokens before first tool call" was measured to be structurally impossible (tool_call precedes step_end) |
 | 28 | every C/D run records the embedder config and `bb_setup_show` verbatim (`EMBEDDINGS.md` §8) | `run-arm.ts` | **partial** — `embedding_arm` + `embedding_config` are recorded per run and the health output is stored verbatim; `bb setup show` is not captured yet |
 | 29 | a lexical fallback in a C2 run is `invalid`, not scored | `run-arm.ts` invalid gate | **implemented** (from `bbFallbackAnswers`) |
@@ -64,3 +64,7 @@ gate that merely ran.
 
 A row that is silently dropped from this table is a regression of the benchmark itself,
 not a cleanup.
+
+| 36 | a record may not contradict its own `grade.json` or `trace.ndjson` | `verify-record.ts` | **implemented** — retroactively caught all four recorded contradictions; selftest 10c, mutation-tested |
+| 37 | a turn that did not end `completed` is `infra_error`, never a scored failure | `run-arm.ts` `finalReason` gate | **implemented** — the harness reported the reason and the runner used to ignore it |
+| 38 | expected-but-unmeasured fields are DECLARED per run, not left null | `run-arm.ts` `unrecorded[]` | **implemented** — 10 fields named rather than silently absent |

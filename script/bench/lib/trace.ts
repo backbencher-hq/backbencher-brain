@@ -243,6 +243,91 @@ const EDIT_TOOLS = /^(edit|write|apply_patch|str_replace|create_file|mcp__bb__bb
  * @param events  the run's trace
  * @param golden  basenames of the files the task expects to be edited (may be empty)
  */
+/**
+ * EXPOSURE vs CONVERSION -- the mechanism test.
+ *
+ * Published evidence (arXiv:2610.33958) found that structural tools help mostly by
+ * EXPOSURE: they show the gold code more often. They do not make the model reason better.
+ * The study also found CONVERSION varies by model size -- being shown the answer and acting
+ * on it are different successes (0.09 / 0.24 / 0.40 at 1.7B / 4B / 32B).
+ *
+ * So "bb helped" must be split, or the claim has no mechanism:
+ *   exposure   = did any tool output mention the golden file at all, before the edit?
+ *   conversion = after being exposed, did the agent edit that file?
+ *
+ * A tool that raises exposure but not conversion is a retrieval win with no task win, and a
+ * report that shows only the task win hides it.
+ */
+export interface Exposure {
+  /** True when a tool RESULT mentioned a golden file's basename or path. */
+  exposed: boolean
+  /** Step index of the first exposing result, or null. */
+  exposedAtStep: number | null
+  /** Arrival ms of that result (upper bound), or null. */
+  exposedAtMs: number | null
+  /** Did the agent then edit a golden file (conversion), independently of success? */
+  editedGolden: boolean
+  /** conversion = editedGolden && exposed. Null when never exposed (undefined, not zero). */
+  conversion: boolean | null
+  /** Which tool produced the first exposure. */
+  byTool: string | null
+}
+
+export function exposureOf(events: TraceEvent[], golden: string[]): Exposure {
+  const bases = golden.map((g) => g.split("/").pop() ?? g).filter((b) => b.length > 1)
+  if (bases.length === 0) {
+    return { exposed: false, exposedAtStep: null, exposedAtMs: null, editedGolden: false, conversion: null, byTool: null }
+  }
+  let step = -1
+  let exposed = false
+  let exposedAtStep: number | null = null
+  let exposedAtMs: number | null = null
+  let byTool: string | null = null
+  let editedGolden = false
+  const callTool = new Map<string, string>()
+  for (const e of events) {
+    switch (e.type) {
+      case "status":
+        if (e.phase === "step_start") step++
+        break
+      case "tool_call": {
+        const callId = typeof e.callId === "string" ? e.callId : ""
+        const tool = typeof e.tool === "string" ? e.tool : ""
+        callTool.set(callId, tool)
+        // An EDIT by the agent to a golden file counts as conversion, not exposure.
+        const isEdit = /^(edit|write|apply_patch|str_replace)$/.test(tool)
+        const text = JSON.stringify(e.input ?? "")
+        if (isEdit && bases.some((b) => text.includes(b))) editedGolden = true
+        break
+      }
+      case "tool_result": {
+        if (exposed) break
+        const callId = typeof e.callId === "string" ? e.callId : ""
+        const result = typeof e.result === "string" ? e.result : ""
+        if (bases.some((b) => result.includes(b))) {
+          exposed = true
+          exposedAtStep = step
+          exposedAtMs = typeof e._t_ms === "number" ? e._t_ms : null
+          byTool = callTool.get(callId) ?? null
+        }
+        break
+      }
+      default:
+        break
+    }
+  }
+  return {
+    exposed,
+    exposedAtStep,
+    exposedAtMs,
+    editedGolden,
+    // Undefined (null) when never exposed: "did not act on what it was shown" is a
+    // statement about a showing that did not happen, and must not read as a failed conversion.
+    conversion: exposed ? editedGolden : null,
+    byTool,
+  }
+}
+
 export function discoveryTax(events: TraceEvent[], golden: string[]): DiscoveryTax {
   // Map every tool_call to the step it happened in, so usage (emitted at step_end) can be
   // attributed. A step's usage is reported at its end, and includes the step's own work.

@@ -290,6 +290,28 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const g = gradeRun(path.resolve(runDir), path.resolve(taskPath), path.resolve(projectPath))
   mkdirSync(path.resolve(runDir), { recursive: true })
   writeFileSync(path.join(path.resolve(runDir), "grade.json"), JSON.stringify(g, null, 2) + "\n")
+
+  // BACK-FILL the run record. It is written before grading exists, so its `grade` block
+  // starts as a placeholder -- and an earlier version never updated it, leaving records that
+  // contradicted their own evidence (arm A's record said score 0 while grade.json said 1).
+  // Anything reading the record got the wrong answer; only report.ts hid it by preferring
+  // grade.json. The record is now reconciled at the moment grading happens.
+  const recordPath = path.join(path.resolve(runDir), "run-record.json")
+  if (existsSync(recordPath)) {
+    const rec = JSON.parse(readFileSync(recordPath, "utf8")) as Record<string, unknown>
+    rec.grade = {
+      grade_path: "grade.json",
+      success: g.success,
+      score: g.score,
+      reason: g.reason,
+      localization: g.golden.localization,
+      tests_passed: g.tests.must_pass.passed,
+      tests_required: g.tests.must_pass.ran,
+      regressions: g.tests.must_not_break.failures.length,
+      graded_at: new Date().toISOString(),
+    }
+    writeFileSync(recordPath, JSON.stringify(rec, null, 2) + "\n")
+  }
   console.log(`graded: ${g.task_id} success=${g.success} score=${g.score} (${g.reason})`)
   process.exit(0)
 }

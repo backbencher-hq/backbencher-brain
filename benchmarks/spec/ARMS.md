@@ -48,6 +48,37 @@ measures the *documented* experience, C measures the *bare* experience.
 
 ---
 
+## 1a · Arm E — the placebo (required control)
+
+Arm E is arm C with the retrieval arguments scrambled: the same 16 tools, the same manual
+block, the same real bb server, but every task-bearing argument (`query`, `symbol`, `target`)
+is replaced by the fixed token `__bench_placebo__`. bb answers with real, schema-correct,
+entirely unrelated output.
+
+**Why it is not optional.** Without E, a C-vs-A difference cannot be attributed to *content*.
+A model handed 16 tools may try harder, restructure its search, or spend its budget
+differently — none of which is bb being useful. Published evidence (arXiv:2610.33958) used a
+placebo arm and found the gain came from *what the tools returned*, not from *having them*,
+and that random output actively **harmed** two small models.
+
+**The three comparisons, and what each answers:**
+
+| comparison | question |
+|---|---|
+| C vs A | did mounting bb change the outcome? (the product effect) |
+| **C vs E** | did the **content** do it, or just the presence of tools? |
+| E vs A | does irrelevant tool output help or hurt? |
+
+**Declared limitation.** This is an *argument-randomised* placebo, not a random-entity
+placebo. Fabricating schema-correct random entities for twelve differently-shaped tools would
+make the proxy a second implementation of bb whose fidelity we could not claim. The
+`placebo_mode` field records which variant ran so the two are never conflated.
+
+**The failure this control can suffer, and its guard.** An arm labelled E whose proxy
+injected nothing is arm C wearing a label, and would fake a content effect. The runner
+therefore asks the probe for a symbol that exists, then marks the run `invalid` if any tool
+*result* contains it. `arm_enforcement.placebo_injected` records the outcome.
+
 ## 2 · Embedding sub-arms
 
 Applied to arms C and D (bb tool calls are what can hit a provider). Each run records

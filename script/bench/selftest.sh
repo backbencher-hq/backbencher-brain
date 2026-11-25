@@ -289,6 +289,77 @@ R=$($TSX "$WORK/namecollide.ts" 2>/dev/null | tail -1)
 [ "$R" = "PASSED" ] && ok "an exactly-named passing test is not failed by a failing test that contains it" || bad "substring collision would fail a correct submission -> '$R'"
 
 # ─────────────────────────────────────────────────────────────────────────────
+head "10c. verify-record — the record must not contradict its own evidence"
+
+# MEASURED BUG: a record said score=0 while grade.json said 1, because grading wrote one and
+# never updated the other. Anything reading the record got the wrong answer. This case pins
+# the contradiction check.
+cat > "$WORK/vr.ts" <<TS
+import { verifyRun } from "${ROOT}/script/bench/verify-record.ts"
+import { mkdirSync, writeFileSync } from "node:fs"
+const root = process.cwd() + "/benchmarks/.work/selftest/vr"
+const mk = (name: string, rec: any, grade?: any) => {
+  const d = root + "/" + name
+  mkdirSync(d, { recursive: true })
+  writeFileSync(d + "/trace.ndjson", JSON.stringify({ type: "final" }) + "\n")
+  writeFileSync(d + "/run-record.json", JSON.stringify(rec))
+  if (grade) writeFileSync(d + "/grade.json", JSON.stringify(grade))
+  return verifyRun(d)
+}
+const base = {
+  schemaVersion: 1, wave: "t", runId: "r", task_id: "t1", project: "p", arm: "A",
+  status: "valid", invalid_reason: null,
+  arm_enforcement: { bb_mcp_mounted: false, bb_cli_shimmed: true, bb_cli_invocations: 0, placebo_mode: null },
+  cost: { tokens_in: 10, tokens_cached: 5, tool_calls: 1, tool_call_ms: 5 },
+  discovery: { exposed: true, conversion: true, static_prefix_tokens: 3, tokens_before_first_edit: 5 },
+  grade: { success: true, score: 1, grade_path: "grade.json" },
+  evidence: { trace_path: "trace.ndjson", trace_lines: 1, trace_sha256: "x" },
+  bb_usage: { calls: 0, by_tool: {}, refusals: 0 },
+  unrecorded: [],
+}
+const errs = (f: any[]) => f.filter((x) => x.severity === "error").map((x) => x.code)
+
+// 1. a consistent record must pass
+const good = mk("good", base, { success: true, score: 1 })
+// 2. a record contradicting its grade must FAIL
+const bad = mk("bad", { ...base, grade: { success: false, score: 0, grade_path: "grade.json" } }, { success: true, score: 1 })
+// 3. arm A with the CLI leak must FAIL
+const leak = mk("leak", { ...base, arm_enforcement: { ...base.arm_enforcement, bb_cli_invocations: 2 } }, { success: true, score: 1 })
+// 4. arm E without a recorded placebo must FAIL
+const e = mk("e", { ...base, arm: "E", arm_enforcement: { ...base.arm_enforcement, bb_mcp_mounted: true, placebo_mode: null } }, { success: true, score: 1 })
+// 5. conversion without exposure must FAIL
+const conv = mk("conv", { ...base, discovery: { ...base.discovery, exposed: false, conversion: true } }, { success: true, score: 1 })
+
+const ok = errs(good).length === 0
+  && errs(bad).includes("grade-mismatch")
+  && errs(leak).includes("bb-leak")
+  && errs(e).includes("placebo-not-recorded")
+  && errs(conv).includes("conversion-without-exposure")
+console.log(ok ? "PASSED" : "FAILED " + JSON.stringify({ good: errs(good), bad: errs(bad), leak: errs(leak), e: errs(e), conv: errs(conv) }))
+TS
+R=$($TSX "$WORK/vr.ts" 2>/dev/null | tail -1)
+[ "$R" = "PASSED" ] && ok "verify-record accepts a truthful record and rejects grade mismatch, bb-leak, unlabelled placebo and impossible conversion" || bad "verify-record gate -> '$R'"
+
+# ─────────────────────────────────────────────────────────────────────────────
+head "10d. placebo — arm E must scramble task arguments and leave real tools alone"
+
+cat > "$WORK/pl.ts" <<TS
+import { placeboRewrite } from "${ROOT}/script/bench/lib/placebo-proxy.ts"
+const s = (n: string, a: any) => placeboRewrite({ name: n, arguments: a }) as any
+const search = s("mcp__bb__bb_search", { query: "the timeout setter" })
+const graph = s("mcp__bb__bb_graph", { symbol: "PQueue" })
+const health = s("mcp__bb__bb_health", {})
+const index = s("mcp__bb__bb_index", { path: "src" })
+const ok = search.injected && search.params.arguments.query === "__bench_placebo__"
+  && graph.injected && graph.params.arguments.symbol === "__bench_placebo__"
+  && !health.injected && !index.injected
+  && search.params.arguments.mode === undefined
+console.log(ok ? "PASSED" : "FAILED")
+TS
+R=$($TSX "$WORK/pl.ts" 2>/dev/null | tail -1)
+[ "$R" = "PASSED" ] && ok "placebo rewrites retrieval arguments and leaves bb_health/bb_index untouched" || bad "placebo rewrite -> '$R'"
+
+# ─────────────────────────────────────────────────────────────────────────────
 head "11. the run directory is self-contained enough to publish"
 
 cat > "$WORK/evidence.ts" <<TS

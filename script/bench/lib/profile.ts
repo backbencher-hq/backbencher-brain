@@ -26,10 +26,13 @@ import { mkdirSync, writeFileSync, cpSync, existsSync, rmSync, symlinkSync } fro
 import path from "node:path"
 import os from "node:os"
 
-/** The arms. A and B have no bb server; C and D do. See benchmarks/spec/ARMS.md. */
-export type Arm = "A" | "B" | "C" | "D"
+/** Absolute path of the placebo proxy, resolved next to this file. */
+const PLACEBO_ENTRY = path.join(import.meta.dirname ?? ".", "placebo-proxy.ts")
 
-export const ARMS: readonly Arm[] = ["A", "B", "C", "D"] as const
+/** The arms. A and B have no bb server; C and D do. See benchmarks/spec/ARMS.md. */
+export type Arm = "A" | "B" | "C" | "D" | "E"
+
+export const ARMS: readonly Arm[] = ["A", "B", "C", "D", "E"] as const
 
 export interface ArmSpec {
   arm: Arm
@@ -39,13 +42,24 @@ export interface ArmSpec {
   manualBlock: boolean
   /** Are the published bb skills + AGENTS.md onboard section present? */
   skills: boolean
+  /**
+   * PLACEBO. The server is mounted and answers, but every task-bearing argument is
+   * rewritten so the returned content is unrelated to the task. This is the presentation
+   * control that separates "the tools return useful things" from "having tools changes
+   * behaviour" -- without it a C-vs-A gain cannot be attributed to content at all.
+   * See docs/benchmarks/PRIOR-WORK.md 1 and lib/placebo-proxy.ts.
+   */
+  placebo: boolean
 }
 
 export const ARM_SPECS: Record<Arm, ArmSpec> = {
-  A: { arm: "A", bbMcp: false, manualBlock: false, skills: false },
-  B: { arm: "B", bbMcp: false, manualBlock: true, skills: false },
-  C: { arm: "C", bbMcp: true, manualBlock: true, skills: false },
-  D: { arm: "D", bbMcp: true, manualBlock: true, skills: true },
+  A: { arm: "A", bbMcp: false, manualBlock: false, skills: false, placebo: false },
+  B: { arm: "B", bbMcp: false, manualBlock: true, skills: false, placebo: false },
+  C: { arm: "C", bbMcp: true, manualBlock: true, skills: false, placebo: false },
+  D: { arm: "D", bbMcp: true, manualBlock: true, skills: true, placebo: false },
+  // E is C with the arguments scrambled. Same manual block, same 16 tools, same server --
+  // only the CONTENT of the answers stops being about the task.
+  E: { arm: "E", bbMcp: true, manualBlock: true, skills: false, placebo: true },
 }
 
 export interface ProfileOptions {
@@ -170,14 +184,23 @@ export function buildProfile(opts: ProfileOptions): BuiltProfile {
         "profile: arm C/D needs a bb binary but none was found. Pass --bb-bin or set BENCH_BB_BIN. Refusing to build an arm that silently has no bb tools.",
       )
     }
+    // Arm E launches the PROXY, which forwards to the same bb binary. The proxy is a
+    // separate process so the arm's serverName stays `bb` and its tool surface is identical
+    // -- the agent must not be able to tell E from C, or the control is meaningless.
+    const command = spec.placebo
+      ? (process.env.BENCH_TSX ?? "npx")
+      : bbBin
+    const args = spec.placebo
+      ? ["tsx", PLACEBO_ENTRY, bbBin, path.resolve(projectDir)]
+      : ["mcp", "--dir", path.resolve(projectDir)]
     rows.push(`- insert:
     - id: mcp-bb
       name: '@deepseek-ai/dsh-mcp-client'
       config:
         serverName: bb
         transport: stdio
-        command: ${JSON.stringify(bbBin)}
-        args: [ 'mcp', '--dir', ${JSON.stringify(path.resolve(projectDir))} ]
+        command: ${JSON.stringify(command)}
+        args: [ ${args.map((a) => JSON.stringify(a)).join(", ")} ]
         toolCallTimeoutMs: 120000
         failOnStartupError: true`)
   }

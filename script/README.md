@@ -24,7 +24,9 @@ probes that print numbers), **fixtures**, and the **curation sources** for gener
 - `script/bench/` — the **agent-utility** benchmark harness (does an agent with bb do more correct coding work
   than the same agent without it). It is neither a gate nor a product measurement: it measures the *agent*, and
   its design of record is `docs/benchmarks/DESIGN.md`. Its own negative test is `script/bench/selftest.sh`
-  (cancel-arm must score ~0, golden-arm ~1.0) — a benchmark that has never gone red is not a benchmark.
+  (20 checks; cancel-arm scores ~0, golden-arm ~1.0, and each failure mode it must catch is mutation-tested —
+  a benchmark that has never gone red is not a benchmark). `script/bench/verify-record.ts` is the
+  evidence-integrity gate: a run record may not contradict its own `grade.json` or `trace.ndjson`.
 - `script/lib/` — shared harnesses used by more than one gate.
 - `script/git-hooks/`, `script/fixtures/` — hook installers and shared fixtures.
 

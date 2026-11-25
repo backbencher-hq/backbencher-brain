@@ -29,7 +29,7 @@ import { createHash } from "node:crypto"
 import { fileURLToPath } from "node:url"
 import { buildProfile, runEnv, ARM_SPECS, ARMS, type Arm } from "./lib/profile.ts"
 import { exec, streamStamped } from "./lib/exec.ts"
-import { readTrace, summarize, discoveryTax, tokenTotals } from "./lib/trace.ts"
+import { readTrace, summarize, discoveryTax, tokenTotals, exposureOf } from "./lib/trace.ts"
 import { scrubFile } from "./lib/scrub.ts"
 import { materializeTask } from "./lib/materialize.ts"
 
@@ -161,28 +161,38 @@ async function main(): Promise<void> {
     wave: a.wave,
     runId,
     task_id: task.id,
+    // The project this run belongs to. report.ts maps it to a language via the manifest and
+    // REFUSES to guess; without this field every report fell back to a hardcoded literal.
+    project: task.project,
     arm: a.arm,
     embedding_arm: a.embeddingArm,
     repetition: a.rep,
     status: "valid",
     invalid_reason: null,
-    model: { provider: a.provider, model: a.model, temperature: 0, context_window: null, quantization: null },
-    harness: { kind: "dsh-headless", version: null, commit: null },
+    // Only values we can actually establish. A key that is always null reads as "not
+    // applicable" when the truth is "not implemented", which is the failure mode the ledger
+    // exists to prevent -- so unknown fields are OMITTED and named in `unrecorded` below.
+    model: { provider: a.provider, model: a.model, temperature: 0 },
+    harness: { kind: "dsh-headless" },
     bb: {
       version: null,
       index_health: null,
       index_health_verbatim: null,
       embedding_config: a.embeddingArm === "C0" ? "local-word-vectors-v3:50" : null,
-      embedding_endpoint: null,
       embedding_warmup: false,
     },
     arm_enforcement: {
       bb_mcp_mounted: spec.bbMcp,
+      placebo_mode: spec.placebo ? "argument-randomised" : null,
+      placebo_injected: null,
       bb_cli_shimmed: false,
       bb_cli_invocations: 0,
       absolute_path_invocations: 0,
     },
-    memory: { ram_total_gb: Math.round(os.totalmem() / 1024 ** 3 * 10) / 10, ram_available_gb_at_start: null, peak_rss_index_mb: null, peak_rss_agent_mb: null },
+    // Peak RSS of the CHILD index process is not obtainable portably here, and the runner's
+    // own figure is not the index's. Recording only what is measured; the gap is named in
+    // `unrecorded` so a reader is never told a null means "not applicable".
+    memory: { ram_total_gb: Math.round(os.totalmem() / 1024 ** 3 * 10) / 10, ram_available_gb_at_start: Math.round(os.freemem() / 1024 ** 3 * 10) / 10, peak_rss_index_mb: null },
     concurrency: a.concurrency,
     cost: { wall_s: 0, tokens_in: 0, tokens_out: 0, tool_calls: 0, tool_call_bytes: 0, tool_call_ms: 0 },
     discovery: {
@@ -193,12 +203,32 @@ async function main(): Promise<void> {
       first_edit_step: null,
       first_edit_ms: null,
       measured_on: "tokens-primary; ms is runner-arrival (upper bound)",
+      exposed: null,
+      exposed_at_step: null,
+      exposed_at_ms: null,
+      exposed_by_tool: null,
+      edited_golden: null,
+      conversion: null,
     },
     bb_usage: { calls: 0, by_tool: {}, refusals: 0, fallback_answers: 0, fallback_rate: 0 },
     submission: { diff_path: null, files_changed: 0, lines_added: 0, lines_removed: 0 },
     grade: { grade_path: null, success: false, score: 0 },
     evidence: null,
     timing: { source: "runner-arrival", resolution_ms: 1 },
+    // Fields a reader might expect and which this harness does NOT measure. Declared so an
+    // absent key cannot be misread as a null measurement.
+    unrecorded: [
+      "harness.version",
+      "harness.commit",
+      "model.context_window",
+      "model.quantization",
+      "memory.peak_rss_agent_mb",
+      "memory.peak_rss_index_child_mb",
+      "bb.embedding_endpoint",
+      "bb_setup_show_verbatim",
+      "index_build_ms",
+      "index_symbol_count",
+    ],
   }
 
   const finish = (status: string, reason: string | null): void => {
@@ -302,6 +332,12 @@ async function main(): Promise<void> {
     ? "Use the bb_search tool to look up the symbol `subtotal`. Answer with only the file path it reports. Do not use any other tool."
     : "Answer with only the word: READY. Do not use any tool."
 
+  // The placebo probe asks for a symbol that EXISTS and then asserts the answer did NOT
+  // find it. If arm E returned `subtotal`, the proxy did not inject and E is really C wearing
+  // a label -- the single most dangerous way this control could silently fail, because the
+  // record would still say `arm: E`. */
+  const PROBE_SYMBOL = "subtotal"
+
   const runTurn = async (prompt: string, label: string) => {
     const tracePath = path.join(runDir, `${label}.ndjson`)
     writeFileSync(tracePath, "")
@@ -329,11 +365,24 @@ async function main(): Promise<void> {
     const events = readTrace(probe.tracePath)
     const s = summarize(events)
     if (spec.bbMcp) {
-      // C/D must have CALLED a bb tool and got a non-error answer.
+      // C/D/E must have CALLED a bb tool and got a non-error answer.
       const ok = s.bbCallCount > 0 && s.bbRefusals === 0
       if (!ok) {
         finish("invalid", `probe: arm ${a.arm} has bb mounted but made ${s.bbCallCount} bb call(s) with ${s.bbRefusals} refusal(s) — the server did not load, so this run would measure an agent WITHOUT the tools`)
         return
+      }
+      if (spec.placebo) {
+        // The placebo must actually have removed the answer.
+        const traceText = readFileSync(probe.tracePath, "utf8")
+        if (traceText.includes(`"${PROBE_SYMBOL}"`) && /subtotal/.test(traceText)) {
+          // The probe prompt itself mentions the symbol, so look only at tool RESULTS.
+          const found = s.toolCalls.some((c) => (c.result?.result ?? "").includes(PROBE_SYMBOL))
+          if (found) {
+            finish("invalid", `placebo: arm E returned a result for "${PROBE_SYMBOL}", so the argument rewrite did not take effect. This arm is arm C wearing an E label and would fake a content effect.`)
+            return
+          }
+        }
+        ;(record.arm_enforcement as Record<string, unknown>).placebo_injected = true
       }
     } else {
       // A/B must have touched no bb tool.
@@ -414,6 +463,38 @@ async function main(): Promise<void> {
   const cost = record.cost as Record<string, unknown>
   cost.wall_s = Math.round(measured.res.ms / 100) / 10
   cost.tool_calls = s.toolCalls.length
+  // Per-tool wall time, derived from call->result arrival deltas. This field existed and was
+  // ALWAYS ZERO because nothing assigned it; the data was in the trace all along (measured:
+  // 98 calls, median 39 ms, max 42.8 s). Arrival deltas are an UPPER BOUND, same caveat as
+  // every other ms figure here.
+  const callAt = new Map<string, number>()
+  for (const c of s.toolCalls) if (c.atMs !== null) callAt.set(c.callId, c.atMs)
+  const resultAt = new Map<string, number>()
+  for (const e of events) {
+    if (e.type === "tool_result" && typeof e.callId === "string" && typeof e._t_ms === "number") {
+      resultAt.set(e.callId, e._t_ms)
+    }
+  }
+  const durations: number[] = []
+  const perTool: Record<string, number[]> = {}
+  for (const c of s.toolCalls) {
+    const a = callAt.get(c.callId)
+    const b = resultAt.get(c.callId)
+    if (a === undefined || b === undefined || b < a) continue
+    const d = b - a
+    durations.push(d)
+    ;(perTool[c.tool] ??= []).push(d)
+  }
+  const med = (xs: number[]): number => {
+    if (xs.length === 0) return 0
+    const q = [...xs].sort((x, y) => x - y)
+    const m = Math.floor(q.length / 2)
+    return q.length % 2 ? q[m] : Math.round((q[m - 1] + q[m]) / 2)
+  }
+  cost.tool_call_ms = durations.reduce((x, y) => x + y, 0)
+  cost.tool_ms_median = med(durations)
+  cost.tool_ms_max = durations.length ? Math.max(...durations) : 0
+  cost.tool_ms_by_tool = Object.fromEntries(Object.entries(perTool).map(([k, v]) => [k, { calls: v.length, median: med(v), max: Math.max(...v) }]))
   cost.tool_call_bytes = s.toolResultBytes
 
   // DISCOVERY TAX. Tokens are the primary measure (the trace has no harness timestamps);
@@ -428,6 +509,14 @@ async function main(): Promise<void> {
   disc.first_edit_step = tax.firstGoldenEditStep
   disc.first_edit_ms = tax.firstGoldenEditMs
   disc.measured_on = "tokens-primary; ms is runner-arrival (upper bound)"
+  // The mechanism split. See lib/trace.ts exposureOf and PRIOR-WORK.md 1.4.
+  const exp = exposureOf(events, task.golden.files)
+  disc.exposed = exp.exposed
+  disc.exposed_at_step = exp.exposedAtStep
+  disc.exposed_at_ms = exp.exposedAtMs
+  disc.exposed_by_tool = exp.byTool
+  disc.edited_golden = exp.editedGolden
+  disc.conversion = exp.conversion
   ;(record.cost as Record<string, unknown>).tokens_in = totals.input ?? 0
   ;(record.cost as Record<string, unknown>).tokens_out = totals.output ?? 0
   ;(record.cost as Record<string, unknown>).tokens_cached = totals.cacheRead ?? 0
@@ -441,6 +530,17 @@ async function main(): Promise<void> {
 
   // ── invalidity gates, in the order they must be checked ─────────────────────
   if (measured.res.timedOut) { finish("invalid", "budget: wall clock exceeded"); return }
+  // The harness reports WHY a turn ended and the runner used to ignore it, so a crashed or
+  // aborted turn was recorded as `valid` and scored as a failure of the ARM rather than of
+  // the infrastructure. Only `completed` is a valid measurement.
+  if (s.finalReason !== null && s.finalReason !== "completed") {
+    finish("infra_error", `turn ended with reason "${s.finalReason}" (not completed); this is not a measurement of the arm`)
+    return
+  }
+  if (s.finalReason === null) {
+    finish("infra_error", "no terminal final event in the trace; the run did not finish")
+    return
+  }
   if (!spec.bbMcp && (bbCliInvocations > 0 || absInvocations > 0)) {
     finish("invalid", `bb-leak: arm ${a.arm} invoked the bb CLI ${bbCliInvocations} time(s) (${absInvocations} by absolute path); the control arm was not a control`)
     return
