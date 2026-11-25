@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "name": "W0-fixture",
+  "createdAt": "2026-11-25T07:39:34.332Z",
+  "digest": "0d31adedd2ffcd431a2f1ae4bf29d8c83c1233983aa77988f1cf0b70e63226c6",
+  "parts": [
+    {
+      "path": "script/bench/fixtures/golden-discount.patch",
+      "sha256": "df7198a61777ac4a6d7af71d8c5939e0c5a587359dba68cde80bbd28342c81d3"
+    },
+    {
+      "path": "script/bench/fixtures/proj/package.json",
+      "sha256": "67fa5a0330531792bec72920263d2c57642647108966eff9c3a39075dbdf5ce9"
+    },
+    {
+      "path": "script/bench/fixtures/project.json",
+      "sha256": "5bc28df4ea5e498ec0b8212b9981daef48085674b6ccee0dc68aa3764ddb085a"
+    },
+    {
+      "path": "script/bench/fixtures/prompts/t1-rewind-001.md",
+      "sha256": "30687a608526c4b80573330129b08c6e1d3b46857186df16f7513f7fd07959be"
+    },
+    {
+      "path": "script/bench/fixtures/tasks/t1-rewind-001.json",
+      "sha256": "bd62b25cf006b1251fe81a468a7e658ca2051bbf6d5626ce47eb99670fb95749"
+    }
+  ]
+}

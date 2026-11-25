@@ -4,6 +4,12 @@
 `DESIGN.md` §10 has *demonstrated* it can go red. No benchmark number is published in W0.
 The deliverable is a trustworthy instrument, not a result.
 
+**DONE (2026-11-25).** `selftest.sh` is green at **17 checks**, and three of them were
+mutation-tested — the bb shim, the chart's zero axis and the preregistration drift gate
+were each broken deliberately and each turned its check red. Two real runs (arm A and arm
+C) were executed end to end against the fixture and graded correctly. See
+`PROTOCOL-VS-EXECUTION.md` for the per-row state (22 implemented, 6 partial, 3 not).
+
 **Author:** one author (lead). This is deliberate — see `DESIGN.md` §12.1: compute fans
 out, the instrument converges. A harness whose runner, grader and reporter disagree about a
 schema produces plausible numbers that are not evidence.
@@ -34,6 +40,32 @@ schema produces plausible numbers that are not evidence.
 | 6 | **Preregistrar** — digest + refusal on drift | no post-hoc hypothesis moving |
 | 7 | **Selftest** — the 8 cases | the instrument can go red |
 | 8 | **Docs reconciliation** — `PROTOCOL-VS-EXECUTION.md` rows flip to `implemented` **only** where a selftest case covers them | the ledger stops being aspirational |
+
+### What W0 actually found (things the plan did not anticipate)
+
+1. **The trace has no `token-before-first-tool-call` measure.** Measured: the harness emits
+   `tool_call` *before* the `step_end` that reports that step's usage, so a prefix
+   measurement is structurally impossible, not merely missing. The discovery tax was
+   redefined as *tokens burned before the first edit to a golden file*, plus the first
+   step's input tokens as the arm's fixed prefix cost.
+2. **The fixture's test command must be a shell string.** `project.test` is a list of
+   command strings; an earlier grader executed element 0 as a binary name and every test
+   "failed" silently. Caught by grading a known-good submission and expecting 1.0.
+3. **Chart bars needed a zero baseline.** Centered success is signed; a left-anchored
+   negative bar claims the opposite of the measurement. That is now a selftest case.
+4. **JSON, not YAML.** No YAML parser dependency exists in this repo, and adding one to
+   read three fixture files is not a trade this project makes. `SCHEMA.md` §1 says so.
+
+### What W0 did NOT finish (and why the ledger says so)
+
+- `replay-anchor.ts` (dropping non-discriminating tasks before a run) — needs a pinned
+  repository to be meaningful; W0 has only the fixture.
+- Container-level network isolation — the trace scan detects installers/network calls and
+  marks the run `invalid`, but does not *prevent* the call. A determined agent is detected,
+  not blocked.
+- `bb setup show` capture, child-process peak RSS, and automated concurrency drift re-runs.
+
+None of these block W1; all are named rather than implied.
 
 ## The eight selftest cases (from `DESIGN.md` §10)
 

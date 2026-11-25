@@ -600,7 +600,7 @@ benchmarks/                        reader-facing DATASET + contracts (tracked, t
   spec/SCHEMA.md                   task, project, run-record and grade schemas
   spec/PREREGISTRATION-<date>.md   hypotheses + critical values, committed BEFORE data
   typescript/project1/             one slot = one pinned repo + its tasks
-    project.yml                    pin, build cmd, test subset
+    project.json                   pin, build cmd, test subset
     tasks/t1-rewind-001.yaml       Track 1 replay tasks
     tasks/t2-multifile-001.yaml
     tasks/t3-comprehension-001.yaml
@@ -679,7 +679,7 @@ things without forking the harness:
 |---|---|
 | **their own model** | `spec/ARMS.md` model row + the DSH provider block; the run record stores provider/model/context-window/quantisation |
 | **their own harness** | `script/bench/run-arm.ts` speaks one contract: receive a prompt on stdin, emit a JSON trace (tool calls, bytes, latency per call, final diff). Any agent CLI that can be wrapped in that contract is a legal harness |
-| **their own codebase** | `benchmarks/<lang>/<projectN>/project.yml` + tasks; `manifest.json` gets their pin |
+| **their own codebase** | `benchmarks/<lang>/<projectN>/project.json` + tasks; `manifest.json` gets their pin |
 
 And the published report must carry, in a header nobody may edit:
 `bb version`, `dsh version`, model id, embedding config, harness commit, machine

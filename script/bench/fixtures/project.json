@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-project",
+  "language": "javascript",
+  "build_image": null,
+  "note": "W0 fixture only. This is NOT a benchmark project: it is a tiny, deterministic repository whose sole job is to let the harness, the grader and selftest.sh be proven before any pinned real repository is involved. Real project slots live at benchmarks/<language>/projectN/ and are listed in benchmarks/manifest.json.",
+  "source": "script/bench/fixtures/proj",
+  "setup": [],
+  "test": ["node --test \"test/*.test.js\""],
+  "test_subset": null,
+  "size_class": "small",
+  "languages_indexed": ["javascript"]
+}

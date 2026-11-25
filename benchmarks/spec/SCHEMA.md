@@ -9,52 +9,62 @@ is the contract.
 
 ---
 
-## 1 · `project.yml` — one pinned repository
+## 1 · `project.json` — one pinned repository
 
-```yaml
-id: ts-project1                 # unique inside the wave
-language: typescript
-remote: https://github.com/<org>/<repo>
-revision: <40-hex>              # the commit every run starts from
-tarball_sha256: <64-hex>        # sha256 of a `git archive` at that revision
-setup:  [ "<cmd>", … ]          # runs offline, from the pinned base image
-test:   [ "<cmd>", … ]          # full suite; used for pass-to-pass (regressions)
-test_subset: tasks/tests.txt    # the list of tests the golden fix must move
-build_image: bench-<lang>:<ver> # the prebuilt image, no installers inside
-size_class: small|medium|large  # tracked files, same classes as validation/m11
-languages_indexed: [ typescript, javascript ]   # what bb will index
+> **Format is JSON, not YAML.** The task says YAML in `DESIGN.md`; the implementation uses
+> JSON because this repository has no YAML parser dependency and adding one to read three
+> fixture files is not a trade this project makes. Committed with the harness, and named
+> here so the two cannot drift.
+
+```jsonc
+// benchmarks/<language>/<project>/project.json
+{
+  "id": "ts-project1",              // unique inside the wave
+  "language": "typescript",
+  "remote": "https://github.com/<org>/<repo>",
+  "revision": "<40-hex>",           // the commit every run starts from
+  "tarball_sha256": "<64-hex>",     // sha256 of `git archive` at that revision
+  "setup":  ["<cmd>"],              // runs offline, from the pinned base image
+  "test":   ["<cmd>"],              // full suite; used for pass-to-pass
+  "test_subset": "tasks/tests.txt", // tests the golden fix must move
+  "build_image": "bench-<lang>:<ver>",
+  "size_class": "small|medium|large",
+  "languages_indexed": ["typescript", "javascript"]
+}
 ```
 
 Rules: `revision` is a commit, never a tag or branch. `setup` and `test` must succeed
 in the image with networking disabled, otherwise the project is not eligible for a
 wave.
 
-## 2 · `tasks/<id>.yaml` — one task
+## 2 · `tasks/<id>.json` — one task
 
-```yaml
-id: t1-rewind-001
-track: rewind                    # rewind | multifile | comprehension | inject
-project: ts-project1
-language: typescript
-origin:
-  kind: history                  # history | inject | authored
-  base_revision: <40-hex>        # the commit the agent starts from
-  fix_revision: <40-hex|null>    # the real fix commit (null for inject/authored)
-  inject_seed: <int|null>        # for kind: inject
-prompt: tasks/t1-rewind-001.md   # the exact text the agent sees (hashed)
-manual_block: std|none           # arms B/C/D get `std`; arm A gets `none`
-golden:
-  files: [ "src/a.ts", "src/b.ts" ]        # expected edit set
-  test_diff: tasks/t1-rewind-001.patch     # derived at run time, `git apply --check`ed
-  needle: null                             # comprehension track only
-stratification: hot|cold           # pre-registered, per task, from the fix's module
-budget:
-  max_steps: 80
-  max_tokens: 400000
-  max_wall_s: 900
-grade:
-  must_pass:  [ "t1-rewind-001" ]  # test names
-  must_not_break: all              # pass-to-pass set = test_subset
+```jsonc
+// benchmarks/<language>/<project>/tasks/t1-rewind-001.json
+{
+  "id": "t1-rewind-001",
+  "track": "rewind",                 // rewind | multifile | comprehension | inject
+  "project": "ts-project1",
+  "language": "typescript",
+  "origin": {
+    "kind": "history",               // history | inject | authored
+    "base_revision": "<40-hex>",     // the commit the agent starts from
+    "fix_revision": "<40-hex|null>",  // the real fix commit (null for inject/authored)
+    "inject_seed": null
+  },
+  "prompt": "prompts/t1-rewind-001.md",  // exact text the agent sees (hashed)
+  "golden": {
+    "files": ["src/a.ts", "src/b.ts"],
+    "patch": "golden/t1-rewind-001.patch", // derived at run time, --check'ed
+    "needle": null                        // comprehension track only
+  },
+  "stratification": "hot",           // pre-registered hot|cold
+  "budget": { "max_steps": 80, "max_tokens": 400000, "max_wall_s": 900 },
+  "grade": {
+    "must_pass": ["t1-rewind-001"],
+    "must_not_break": ["<pass-to-pass test names>"]
+  }
+}
 ```
 
 ## 3 · `run-record.json` — one execution of one arm on one task

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "t1-rewind-001",
+  "track": "rewind",
+  "project": "fixture-project",
+  "language": "javascript",
+  "origin": {
+    "kind": "authored",
+    "base_revision": null,
+    "fix_revision": null,
+    "inject_seed": null
+  },
+  "prompt": "prompts/t1-rewind-001.md",
+  "golden": {
+    "files": ["src/cart.js"],
+    "patch": "golden-discount.patch",
+    "needle": null
+  },
+  "stratification": "hot",
+  "budget": {
+    "max_steps": 40,
+    "max_tokens": 200000,
+    "max_wall_s": 600
+  },
+  "grade": {
+    "must_pass": ["10% discount applies when a line has qty >= 10", "total subtracts the discount"],
+    "must_not_break": ["no discount below the threshold"]
+  }
+}

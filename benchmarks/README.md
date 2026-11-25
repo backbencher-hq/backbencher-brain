@@ -33,8 +33,8 @@ benchmarks/
   manifest.json        every pinned repository: remote, revision, tarball sha256
   spec/                ARMS.md · SCHEMA.md · PREREGISTRATION-W1-draft.md
   typescript/project{1,2,3}/
-    project.yml        pin, build command, test subset
-    tasks/             t1-rewind-* · t2-multifile-* · t3-comprehension-* · t4-inject-*
+    project.json       pin, build command, test subset
+    tasks/             t1-rewind-*.json · t2-multifile-* · t3-comprehension-* · t4-inject-*
   results/             PUBLISHED: per-project, per-language, OVERALL + every run's
                        trace.ndjson, submission.patch, grade.json, checksums
 ```

@@ -1,0 +1,18 @@
+diff --git a/src/cart.js b/src/cart.js
+index a0058dd..f332674 100644
+--- a/src/cart.js
++++ b/src/cart.js
+@@ -3,9 +3,11 @@ export function subtotal(items) {
+   return items.reduce((sum, it) => sum + it.price * it.qty, 0)
+ }
+ 
+-// BUG (W0 fixture): ignores quantity discounts entirely.
++// A line with qty >= 10 gets a 10% discount on that line.
+ export function discount(items) {
+-  return 0
++  return items.reduce((sum, it) => {
++    return sum + (it.qty >= 10 ? it.price * it.qty * 0.1 : 0)
++  }, 0)
+ }
+ 
+ export function total(items) {

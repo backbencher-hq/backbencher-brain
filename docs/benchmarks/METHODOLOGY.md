@@ -72,7 +72,7 @@ have never run.
 
 ## 4 · Replace the codebase
 
-Add `benchmarks/<language>/<project>/project.yml` + `tasks/`, register the pin in
+Add `benchmarks/<language>/<project>/project.json` + `tasks/`, register the pin in
 `manifest.json`, and run. Requirements that are not negotiable, because they are what
 makes a run gradeable:
 

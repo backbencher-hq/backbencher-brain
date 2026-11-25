@@ -114,7 +114,7 @@ is that a reader can check our number with a different harness rather than trust
 ### 3.3 Plug in your own codebase
 
 ```yaml
-# benchmarks/<language>/<project>/project.yml
+# benchmarks/<language>/<project>/project.json
 id: ts-project9
 language: typescript
 remote: https://github.com/<you>/<repo>
