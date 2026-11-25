@@ -38,12 +38,14 @@ code (a public JS library in the model's training data) reports the model's memo
 not bb's value.
 
 > Provenance note: the centering / pass-to-pass / container-isolation conventions used
-> here are community practice in the `SWE-bench`-family agent evaluations, not
-> citations verified in this repository. **Web search was unavailable when this
-> document was written** (`web_search` returned an HTTP 402 from the configured
-> provider), so no external result is quoted as fact anywhere in this file. Any
-> figure in this document is either measured here (see `OBSERVED-ENVIRONMENT.md`) or
-> explicitly marked as an assumption.
+> here are community practice in the `SWE-bench`-family agent evaluations. External work
+> is now **verified and cited** in [`PRIOR-WORK.md`](./PRIOR-WORK.md) — found through the
+> arXiv API after `web_search` returned HTTP 402. Two consequences are recorded there and
+> in risk 0 below: a pre-registered study (arXiv:2610.33958) found that the **embedding
+> index, not the code graph, carries the gain**, which bears directly on this benchmark's
+> headline arm; and that study's **placebo arm** is a required control this matrix initially
+> lacked. Any figure in this document is either measured here
+> (see `OBSERVED-ENVIRONMENT.md`) or explicitly marked as an assumption.
 
 **Secondary endpoints, all required, no cherry-picking:**
 
@@ -747,6 +749,14 @@ published.
 
 Listed here so they cannot be discovered later and treated as bad luck:
 
+0. **A published study already answers a version of this question, and one of its findings
+   contradicts our headline arm.** arXiv:2610.33958 (pre-registered, 170,500 episodes, 9
+   models) found that the **embedding index carries the gain and the code graph does not**
+   — and headline arm C0 runs with `BB_EMBEDDING_DISABLED=1`. It also found a **placebo arm**
+   is required to attribute a gain to content rather than to tool presence, which this
+   matrix lacks. Both corrections are in `PRIOR-WORK.md` §1 and §7. Recorded as risk 0
+   because a benchmark that discovers prior work *after* collecting data looks fitted to
+   its result.
 1. **Contamination** — public JS libraries are in the training set. Mitigated by
    centering + the two-unseen-one-known rule; never fully removed.
 1a. **The control arm can use the product.** *Confirmed by probe, not theorised.* With the

@@ -43,6 +43,7 @@ machine-local directories are ignored; they are not repository content.
 | run the benchmark yourself, or check one of our published runs | [`benchmarks/HARNESS.md`](./benchmarks/HARNESS.md) then [`benchmarks/METHODOLOGY.md`](./benchmarks/METHODOLOGY.md) |
 | build the harness (the current wave) | [`benchmarks/W0-PLAN.md`](./benchmarks/W0-PLAN.md) |
 | configure the embedder a benchmark run must record | [`benchmarks/EMBEDDINGS.md`](./benchmarks/EMBEDDINGS.md) |
+| see what published work already says (and must be cited) | [`benchmarks/PRIOR-WORK.md`](./benchmarks/PRIOR-WORK.md) |
 | use the IDE extension (VS Code, Cursor, Antigravity, Windsurf, Zed, Helix, JetBrains) | [`IDE-PROGRAM-STATUS.md`](./IDE-PROGRAM-STATUS.md) for the current evidence-backed state; [`IDE-LAUNCH-TEST-PLAN.md`](./IDE-LAUNCH-TEST-PLAN.md) for the gates and the human test pass |
 
 ## Indexing
