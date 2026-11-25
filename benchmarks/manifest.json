@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "milestone": "benchmarks",
+  "purpose": "agent_utility_measurement",
+  "designOfRecord": "docs/benchmarks/DESIGN.md",
+  "observedEnvironment": "docs/benchmarks/OBSERVED-ENVIRONMENT.md",
+  "status": "W0-unpinned",
+  "note": "No repository is pinned yet. Every entry under `projects` must carry a 40-hex revision and a tarball sha256 before any arm may run. An empty list is an honest W0 state; a fabricated pin is not.",
+  "sizeClasses": {
+    "small": "trackedFiles < 1000",
+    "medium": "trackedFiles >= 1000 and trackedFiles < 10000",
+    "large": "trackedFiles >= 10000 and trackedFiles < 100000"
+  },
+  "projects": [],
+  "slotsPlanned": [
+    {
+      "id": "ts-project1",
+      "language": "typescript",
+      "status": "unpinned",
+      "sizeClassTarget": "medium",
+      "why": "framework/app scale \u2014 the scale at which navigation cost is real and a local index should pay for itself"
+    },
+    {
+      "id": "ts-project2",
+      "language": "typescript",
+      "status": "unpinned",
+      "sizeClassTarget": "small",
+      "why": "library scale \u2014 the scale at which grep is already cheap, so a BENEFIT here is a strong result and a LOSS here must be reported"
+    },
+    {
+      "id": "ts-project3",
+      "language": "typescript",
+      "status": "unpinned",
+      "sizeClassTarget": "medium",
+      "why": "in-distribution control \u2014 a repository a DeepSeek-class model already knows, to show the benchmark is not measuring only novelty"
+    }
+  ],
+  "resultsRoot": "benchmarks/results",
+  "evidencePolicy": "every published number ships its run trace (trace.ndjson), submission patch, grade and checksums; report figures are recomputed from traces",
+  "harnessRecipe": "docs/benchmarks/HARNESS.md"
+}

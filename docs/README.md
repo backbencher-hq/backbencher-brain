@@ -20,6 +20,7 @@ in one place, instead of a README in every directory that can drift from the cod
 | `wasm/` | The pinned Tree-sitter WASM artifacts the engine loads; digest pins live in `src/ast/engine.ts`. |
 | `bin/` | The `bb` launcher; `dist/` is build output (ignored), and the compiled path is what npm/Node runs. |
 | `test/` | Harness suites and fixtures that are not part of the gate suite (CLI surface, indexing lifecycle, demo fixtures): [`../test/README.md`](../test/README.md). |
+| `benchmarks/` | The **agent-utility** dataset: pinned repositories, task definitions, the arm/manual contract, and the published results **with their run transcripts**, for measuring whether an agent with bb does more correct coding work than the same agent without it. Design of record: [`benchmarks/DESIGN.md`](./benchmarks/DESIGN.md); the verified harness recipe and its failure traps: [`benchmarks/HARNESS.md`](./benchmarks/HARNESS.md); observed environment and version pins: [`benchmarks/OBSERVED-ENVIRONMENT.md`](./benchmarks/OBSERVED-ENVIRONMENT.md); results: [`../benchmarks/results/`](../benchmarks/results/). Not to be confused with `script/`/`validation/`, which prove the *analyzers*, not the *agent benefit*. |
 | `plans/` | Small machine-readable plan inputs still read by milestone instruments (for example the M11 corpus plan). |
 
 `node_modules/`, `dist/`, local worktrees and other
@@ -38,6 +39,9 @@ machine-local directories are ignored; they are not repository content.
 | look up a tool | [`tools/`](./tools/) (one page per tool), or [`data/public-tools.json`](./data/public-tools.json) for machine-readable contracts |
 | understand the module layout | [`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`GRAPH_ENGINE.md`](./GRAPH_ENGINE.md) |
 | read an analyzer's contract | [`analyzers/README.md`](./analyzers/README.md) — one canonical page per analyzer |
+| prove the **agent** benefit (does bb help an agent, not just the analyzer) | [`benchmarks/DESIGN.md`](./benchmarks/DESIGN.md) — arms, endpoints, three report levels, transcripts-as-evidence, pre-registration, and what the benchmark may not claim |
+| run the benchmark yourself, or check one of our published runs | [`benchmarks/HARNESS.md`](./benchmarks/HARNESS.md) then [`benchmarks/METHODOLOGY.md`](./benchmarks/METHODOLOGY.md) |
+| build the harness (the current wave) | [`benchmarks/W0-PLAN.md`](./benchmarks/W0-PLAN.md) |
 | use the IDE extension (VS Code, Cursor, Antigravity, Windsurf, Zed, Helix, JetBrains) | [`IDE-PROGRAM-STATUS.md`](./IDE-PROGRAM-STATUS.md) for the current evidence-backed state; [`IDE-LAUNCH-TEST-PLAN.md`](./IDE-LAUNCH-TEST-PLAN.md) for the gates and the human test pass |
 
 ## Indexing

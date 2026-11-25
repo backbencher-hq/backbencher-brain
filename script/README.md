@@ -21,6 +21,10 @@ probes that print numbers), **fixtures**, and the **curation sources** for gener
   generated output. `script/verify-tool-docs.ts` is the gate.
 - `script/perf/` — bounded measurement probes (latency, phases, storage). They print figures; they are not
   gates unless the file says so.
+- `script/bench/` — the **agent-utility** benchmark harness (does an agent with bb do more correct coding work
+  than the same agent without it). It is neither a gate nor a product measurement: it measures the *agent*, and
+  its design of record is `docs/benchmarks/DESIGN.md`. Its own negative test is `script/bench/selftest.sh`
+  (cancel-arm must score ~0, golden-arm ~1.0) — a benchmark that has never gone red is not a benchmark.
 - `script/lib/` — shared harnesses used by more than one gate.
 - `script/git-hooks/`, `script/fixtures/` — hook installers and shared fixtures.
 

@@ -166,3 +166,8 @@ validation/tools/**/work/t2-*/
 # that is wiped between shell invocations, so a clone there cannot be measured twice. Ignored
 # rather than deleted so validation/cpp-audit/census.json stays reproducible.
 /.cpp-corpus/
+
+# Benchmark WORKING directories — never committed. The runner builds the disposable DSH
+# home, the bb data dir, the per-run workspaces and the bb PATH shim under here.
+# Published evidence is NOT here: it lives under benchmarks/results/**/runs/ and IS tracked.
+benchmarks/.work/
