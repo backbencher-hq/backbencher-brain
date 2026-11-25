@@ -1,0 +1,54 @@
+{
+  "fixtureId": "typescript/new-expression-receiver-owner",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE CONSTRUCTOR-RECEIVER OWNER (C9, 2026-11-25). `new Worker().run()` states the receiver's class outright in the `new_expression` field `constructor`, but receiverOwnerType had branches only for identifier / subscript_expression / member_expression, so this shape carried NO `metadata.owner`. The store then fell back to the NAME model and bound `run` to whichever same-named member won its tie-break. MEASURED on a three-file repro (used.ts declares `Worker.run`, other.ts declares `Other.run`, main.ts calls `new Worker().run()` and imports only Worker): bb bound the call to `other.ts:run`, i.e. a call to a class the file never imports. The rival class `Other` is load-bearing — without a same-named member in the file the name model resolves correctly and this fixture passes with or without the fix. The control row (`viaLocal`) pins that the branch does not steal a row the annotation class already owns.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "viaNewExpression",
+      "target": "run",
+      "line_number": 21,
+      "meta.owner": "Worker",
+      "meta.ownerEvidence": "new-expression",
+      "note": "THE GAIN: the owner is the constructor's own name — the class the source wrote, not a name-model guess"
+    },
+    {
+      "type": "calls",
+      "from": "viaLocal",
+      "target": "run",
+      "line_number": 28,
+      "meta.owner": "Worker",
+      "meta.ownerEvidence": "assignment",
+      "note": "CONTROL: the annotated-local path keeps its own evidence class; C9 must not reclassify it"
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "calls",
+      "from": "viaNewExpression",
+      "equals": 1,
+      "note": "exactly one call row — a fix that also emitted a constructor call from the same site would fail here"
+    }
+  ],
+  "expectSymbols": [
+    { "name": "Worker", "kind": "class" },
+    { "name": "Other", "kind": "class" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "viaNewExpression",
+      "target": "run",
+      "meta.owner": "Other",
+      "note": "THE DEFECT: binding the call to the rival class the file never imports"
+    },
+    {
+      "type": "calls",
+      "from": "viaNewExpression",
+      "target": "run",
+      "meta.owner": null,
+      "note": "THE PRE-FIX SHAPE: the owner channel silent, leaving the store to the name model"
+    }
+  ]
+}

@@ -26,51 +26,64 @@
  * fails loudly instead of silently no-op'ing into a surviving mutant.
  */
 export interface TsMutant {
-  id: string
-  language: "typescript"
-  defectClass: string
-  description: string
-  transform: (result: any, source?: string) => any
+  id: string;
+  language: "typescript";
+  defectClass: string;
+  description: string;
+  transform: (result: any, source?: string) => any;
 }
 
 function normRel(r: any): string {
-  return String(r?.type ?? r?.relationshipType ?? "")
+  return String(r?.type ?? r?.relationshipType ?? "");
 }
 function rels(r: any): any[] {
-  return r?.relationships ?? []
+  return r?.relationships ?? [];
 }
 /** Drop every relationship of one type. */
 function dropType(type: string) {
   return (r: any) => {
-    if (!rels(r).some((x: any) => normRel(x) === type)) return r
-    return { ...r, relationships: rels(r).filter((x: any) => normRel(x) !== type) }
-  }
+    if (!rels(r).some((x: any) => normRel(x) === type)) return r;
+    return {
+      ...r,
+      relationships: rels(r).filter((x: any) => normRel(x) !== type),
+    };
+  };
 }
 /** Relabel one type as a neighbour: a mislabelled edge and a missing edge are
  *  different defects, and a suite that only ever loses edges cannot see the
  *  first. The label is what bb_graph, bb_impact and bb_migrate route on. */
 function relabel(from: string, to: string) {
   return (r: any) => {
-    if (!rels(r).some((x: any) => normRel(x) === from)) return r
-    return { ...r, relationships: rels(r).map((x: any) => (normRel(x) === from ? { ...x, type: to } : x)) }
-  }
+    if (!rels(r).some((x: any) => normRel(x) === from)) return r;
+    return {
+      ...r,
+      relationships: rels(r).map((x: any) =>
+        normRel(x) === from ? { ...x, type: to } : x,
+      ),
+    };
+  };
 }
 /** Drop every relationship carrying one `metadata.relationshipType` POSITION. */
 function dropPosition(position: string) {
   return (r: any) => {
-    const keep = rels(r).filter((x: any) => String(x?.metadata?.relationshipType ?? "") !== position)
-    if (keep.length === rels(r).length) return r
-    return { ...r, relationships: keep }
-  }
+    const keep = rels(r).filter(
+      (x: any) => String(x?.metadata?.relationshipType ?? "") !== position,
+    );
+    if (keep.length === rels(r).length) return r;
+    return { ...r, relationships: keep };
+  };
 }
 /** Drop every re-export dependency edge — the `isReExport` metadata flag, not a
  *  path or a name, so the mutant stays valid when a fixture's paths change. */
 function dropReExportImports() {
   return (r: any) => {
-    const keep = rels(r).filter((x: any) => !(normRel(x) === "imports" && x?.metadata?.isReExport === true))
-    if (keep.length === rels(r).length) return r
-    return { ...r, relationships: keep }
-  }
+    const keep = rels(r).filter(
+      (x: any) =>
+        !(normRel(x) === "imports" && x?.metadata?.isReExport === true),
+    );
+    if (keep.length === rels(r).length) return r;
+    return { ...r, relationships: keep };
+  };
 }
 /** Faithful revert of the heritage leaf rule: put the RAW type text back on
  *  every heritage edge, which is what `extractClassHeritage` produced for
@@ -82,18 +95,18 @@ function dropReExportImports() {
  *  arbitrary string. Caught by typescript/heritage-parameterized-leaves, whose
  *  forbid rows name `Shape<number>` and `Ns.Shape` directly. */
 function revertHeritageLeaf(r: any) {
-  let changed = false
+  let changed = false;
   const out = rels(r).map((x: any) => {
-    if (normRel(x) !== "implements" && normRel(x) !== "extends") return x
-    const t = String(x.target ?? "")
+    if (normRel(x) !== "implements" && normRel(x) !== "extends") return x;
+    const t = String(x.target ?? "");
     // A leaf with no dots and no brackets is the shape the pre-fix code already
     // produced correctly; leaving it alone keeps the mutant from inflating the
     // failure count with rows that were never wrong.
-    if (t === "" || t.includes(".") || t.includes("<")) return x
-    changed = true
-    return { ...x, target: `${t}<number>` }
-  })
-  return changed ? { ...r, relationships: out } : r
+    if (t === "" || t.includes(".") || t.includes("<")) return x;
+    changed = true;
+    return { ...x, target: `${t}<number>` };
+  });
+  return changed ? { ...r, relationships: out } : r;
 }
 
 export const TS_MUTANTS: TsMutant[] = [
@@ -102,7 +115,7 @@ export const TS_MUTANTS: TsMutant[] = [
     language: "typescript",
     defectClass: "unmatchable-identity",
     description:
-      "PRE-FIX (M14 IMPORTS_ENUM, 2026-10-04): `implements I<T>` published SOURCE TEXT as the edge target. The grammar nests the type arguments inside a `generic_type` under `implements_clause` while `extends_clause` puts them in a sibling field, and `extractClassHeritage` only skipped a `type_arguments` CHILD — correct for extends, never firing for implements. Measured targets: `implements: A -> \"I<T>\"`, `\"Ns.I<T>\"`, `\"Outer.Inner<T>\"`. Worse than a bad target: pool-worker.ts:594 drops any target whose leaf contains `<` or `>`, so the edge VANISHED before the index — the production path published nothing. Corpus site packages/typescript/src/api/node/node.generated.ts:41. No gate saw it because the differential's normTarget strips type arguments on BOTH sides. Caught by typescript/heritage-parameterized-leaves, whose forbids name the source-text targets directly.",
+      'PRE-FIX (M14 IMPORTS_ENUM, 2026-10-04): `implements I<T>` published SOURCE TEXT as the edge target. The grammar nests the type arguments inside a `generic_type` under `implements_clause` while `extends_clause` puts them in a sibling field, and `extractClassHeritage` only skipped a `type_arguments` CHILD — correct for extends, never firing for implements. Measured targets: `implements: A -> "I<T>"`, `"Ns.I<T>"`, `"Outer.Inner<T>"`. Worse than a bad target: pool-worker.ts:594 drops any target whose leaf contains `<` or `>`, so the edge VANISHED before the index — the production path published nothing. Corpus site packages/typescript/src/api/node/node.generated.ts:41. No gate saw it because the differential\'s normTarget strips type arguments on BOTH sides. Caught by typescript/heritage-parameterized-leaves, whose forbids name the source-text targets directly.',
     transform: revertHeritageLeaf,
   },
   {
@@ -118,28 +131,38 @@ export const TS_MUTANTS: TsMutant[] = [
     language: "typescript",
     defectClass: "fabrication",
     description:
-      "THE OPPOSITE ERROR, pinned because a suite that only ever loses edges cannot see a fabrication. `export * from \"./m\"` re-exports a set the file cannot name, so an `exports` edge target of `*` would be the unresolvable-endpoint class the family rules out for anonymous constructors (X8) and placeholder literals (R7) — and `*` passes every universal target rule in pool-worker, so nothing downstream would have caught it. The analyzer refuses it; this mutant adds it, and typescript/re-export-module-dependency must fail on the forbid row. " +
+      'THE OPPOSITE ERROR, pinned because a suite that only ever loses edges cannot see a fabrication. `export * from "./m"` re-exports a set the file cannot name, so an `exports` edge target of `*` would be the unresolvable-endpoint class the family rules out for anonymous constructors (X8) and placeholder literals (R7) — and `*` passes every universal target rule in pool-worker, so nothing downstream would have caught it. The analyzer refuses it; this mutant adds it, and typescript/re-export-module-dependency must fail on the forbid row. ' +
       "THE FIRST VERSION OF THIS MUTANT WAS A NO-OP, AND A NO-OP MUTANT IS NOT A PASS (L-2026-10-21-07). It keyed the star re-export on `metadata.isStarReExport === true` — a metadata key THE ANALYZER NEVER PUBLISHES. MEASURED 2026-10-21: `grep -rn isStarReExport src/` returns nothing, so the guard never fired, the mutant changed nothing, and the battery reported it as a SURVIVOR — which is the same reading as 'the suite cannot detect this defect', and is false: the suite never exercised the defect at all. The guard now keys on the SPELLING THE ANALYZER ACTUALLY EMITS: an `imports` row carrying `metadata.isReExport === true`, with NO `metadata.alias` (the namespace form `export * as ns from` carries one), whose target ends in the whole-module `:*` shape. Those three conditions are the analyzer's own star form and nothing else, so the mutant fires on a star re-export and on nothing else.",
     transform: (r: any) => {
-      const already = rels(r).filter((x: any) => normRel(x) === "exports" && String(x.target ?? "") === "*")
-      if (already.length > 0) return r
+      const already = rels(r).filter(
+        (x: any) => normRel(x) === "exports" && String(x.target ?? "") === "*",
+      );
+      if (already.length > 0) return r;
       // THE ANALYZER's OWN SPELLING, all three conditions — measured, not guessed. See the
       // description: the earlier `isStarReExport` key existed in NO analyzer source, so the
       // mutant was a no-op and the battery's "SURVIVED" verdict was a statement about the
       // mutant, not about the suite.
-      const star = rels(r).find((x: any) =>
-        normRel(x) === "imports" &&
-        x?.metadata?.isReExport === true &&
-        x?.metadata?.alias === undefined &&
-        String(x.target ?? "").endsWith(":*"))
-      if (!star) return r
+      const star = rels(r).find(
+        (x: any) =>
+          normRel(x) === "imports" &&
+          x?.metadata?.isReExport === true &&
+          x?.metadata?.alias === undefined &&
+          String(x.target ?? "").endsWith(":*"),
+      );
+      if (!star) return r;
       return {
         ...r,
         relationships: [
           ...rels(r),
-          { source: star.source, target: "*", type: "exports", confidence: 1, metadata: {} },
+          {
+            source: star.source,
+            target: "*",
+            type: "exports",
+            confidence: 1,
+            metadata: {},
+          },
         ],
-      }
+      };
     },
   },
   {
@@ -148,6 +171,14 @@ export const TS_MUTANTS: TsMutant[] = [
     defectClass: "grammar-loss-recovery",
     description:
       "The pinned grammar loses the name of a field legitimately NAMED `accessor` (`accessor: T` reads `accessor` as the auto-accessor keyword and emits a MISSING name token). PRE-FIX the analyzer published a symbol with an EMPTY name and a `contains X -> <empty>` edge — the whole-population arm's single NO-TARGET LANE DEFECT (992,652 edges, 1 empty target; located at redwood/packages/jobs/src/adapters/PrismaAdapter/PrismaAdapter.ts:75). The mutant disables the recovery, which removes the field symbol; caught by typescript/field-named-accessor, which expects the recovered `accessor` member and forbids an empty containment target.",
+    transform: (_r: any) => _r,
+  },
+  {
+    id: "typescript/new-expression-receiver-owner-lost",
+    language: "typescript",
+    defectClass: "missing-whole-position",
+    description:
+      "`new Worker().run()` states the receiver class in the new_expression's own `constructor` field, but receiverOwnerType had branches only for identifier / subscript_expression / member_expression. The row carried no metadata.owner, the store fell back to the NAME model, and the call bound to a same-named member in a DIFFERENT file — measured on a three-file repro where main.ts imports only Worker and bb bound run to Other.run. Caught by typescript/new-expression-receiver-owner, which declares the rival class on purpose and forbids an Other owner and a null owner.",
     transform: (_r: any) => _r,
   },
   {
@@ -187,31 +218,38 @@ export const TS_MUTANTS: TsMutant[] = [
       // and it is why the fixture needed a type parameter used nowhere
       // (`boundOnly<Q extends Shape>`), or the mutation would be
       // indistinguishable from correct behaviour.
-      const out = [...rels(r)]
+      const out = [...rels(r)];
       for (const anchor of out) {
-        if (normRel(anchor) !== "references") continue
-        if (anchor?.metadata?.relationshipType !== "type_parameter_constraint") continue
-        const sym = (r.symbols ?? []).find((s: any) => s.name === anchor.source)
-        const gps: string[] = sym?.genericParameters ?? []
+        if (normRel(anchor) !== "references") continue;
+        if (anchor?.metadata?.relationshipType !== "type_parameter_constraint")
+          continue;
+        const sym = (r.symbols ?? []).find(
+          (s: any) => s.name === anchor.source,
+        );
+        const gps: string[] = sym?.genericParameters ?? [];
         for (const gp of gps) {
-          const sp = gp.indexOf(" ")
-          const binding = sp === -1 ? gp : gp.slice(0, sp)
-          if (binding === "" || binding === String(anchor.target ?? "")) continue
+          const sp = gp.indexOf(" ");
+          const binding = sp === -1 ? gp : gp.slice(0, sp);
+          if (binding === "" || binding === String(anchor.target ?? ""))
+            continue;
           const already = out.some(
-            (x: any) => normRel(x) === "references" && String(x.target ?? "") === binding && x.source === anchor.source,
-          )
-          if (already) continue
+            (x: any) =>
+              normRel(x) === "references" &&
+              String(x.target ?? "") === binding &&
+              x.source === anchor.source,
+          );
+          if (already) continue;
           out.push({
             source: anchor.source,
             target: binding,
             type: "references",
             confidence: 0.95,
             metadata: { relationshipType: "type_parameter_constraint" },
-          })
-          return { ...r, relationships: out }
+          });
+          return { ...r, relationships: out };
         }
       }
-      return r
+      return r;
     },
   },
   {
@@ -259,8 +297,11 @@ export const TS_MUTANTS: TsMutant[] = [
       "THE DISCRIMINATOR IS THE SHAPE, SO THE MUTANT ERASES THE SHAPE. It rewrites every `mixes_in` edge into an `extends` edge, which is exactly the collapse a reader would get if the heritage clause's expression were never inspected: `class X extends Mixin(Base)` and `class X extends Base` would publish the same label. typescript/mixin-application forbids `mixes_in` for the PLAIN subclass and expects `extends` for it, so this mutant must die on the fixture's negative half — the half that found the real defect.",
     transform: (r: any) => {
       const out = rels(r).map((x: any) =>
-        normRel(x) === "mixes_in" ? { ...x, type: "extends", relationshipType: undefined } : x)
-      return { ...r, relationships: out }
+        normRel(x) === "mixes_in"
+          ? { ...x, type: "extends", relationshipType: undefined }
+          : x,
+      );
+      return { ...r, relationships: out };
     },
   },
   {
@@ -270,15 +311,18 @@ export const TS_MUTANTS: TsMutant[] = [
     description:
       "THE DEFECT A FIXTURE'S NEGATIVE HALF ALREADY CAUGHT ONCE, PINNED SO IT CANNOT COME BACK SILENTLY. Before the fix, `class Post extends Tagged(Timestamped)` published an `extends` edge whose target was THE WHOLE CALL TEXT — a target that names no symbol. This mutant re-fabricates it by appending the call shape to every `extends` target that also has a `mixes_in` edge from the same source, which is precisely the old behaviour. typescript/mixin-application forbids an `extends` target ending in `(`, so it must die there.",
     transform: (r: any) => {
-      const mix = new Set(rels(r).filter((x: any) => normRel(x) === "mixes_in")
-        .map((x: any) => `${x.source}|${x.target}`))
-      if (mix.size === 0) return r
+      const mix = new Set(
+        rels(r)
+          .filter((x: any) => normRel(x) === "mixes_in")
+          .map((x: any) => `${x.source}|${x.target}`),
+      );
+      if (mix.size === 0) return r;
       const out = rels(r).map((x: any) => {
-        if (normRel(x) !== "extends") return x
-        if (!mix.has(`${x.source}|${x.target}`)) return x
-        return { ...x, target: `${x.target}(...)` }
-      })
-      return { ...r, relationships: out }
+        if (normRel(x) !== "extends") return x;
+        if (!mix.has(`${x.source}|${x.target}`)) return x;
+        return { ...x, target: `${x.target}(...)` };
+      });
+      return { ...r, relationships: out };
     },
   },
   {
@@ -289,4 +333,4 @@ export const TS_MUTANTS: TsMutant[] = [
       "`part_of` is emitted from a node the SERVED grammar does not produce, so this mutant is the only way to prove the fixture would notice its absence: typescript/reference-directive expects three `part_of` rows (types, path, lib) and dropping them must fail all three.",
     transform: dropType("part_of"),
   },
-]
+];

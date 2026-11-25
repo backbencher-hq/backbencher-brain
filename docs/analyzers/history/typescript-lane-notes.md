@@ -89,3 +89,58 @@ unless the base resolves in-file, so the row is read off two declarations; the o
   population and **0 call-shaped heritage (mixin) sites**
 - Self-corpus: this repository is an authorised corpus (`ts-self-corpus-probe.ts`), 6,816 tracked
   `.ts`-family files at the manifest's recorded HEAD
+
+## C9 — the constructor receiver, and the three instruments that could not see it (2026-11-25)
+
+**The defect, reported from outside the lane.** A three-file project:
+
+```
+used.ts:   export class Worker { run() {} }
+other.ts:  export class Other  { run() {} }
+main.ts:   import { Worker } from "./used"
+           export function f() { return new Worker().run() }
+```
+
+bb bound `f -> run` to **`other.ts`** — a class `main.ts` never imports. The row carried
+`calleeExpression: "new Worker().run"`, so the analyzer had the right class in hand and
+simply never told the store.
+
+**The cause.** `receiverOwnerType` had branches for `identifier`, `subscript_expression`
+and `member_expression`, and **none for `new_expression`**. The grammar puts the class in
+the `new_expression`'s own `constructor` field — the type is _stated_, not inferred — so the
+row arrived with no `metadata.owner`, and `src/ast/member-owner-resolution.ts` (the channel
+that withdraws a name binding and re-resolves inside the owner) had nothing to walk. The
+store fell back to the name model, which chose between two `run` members by tie-break.
+
+**Why nothing caught it — three independent reasons, and each one alone was sufficient:**
+
+1. **The wall probe shelved the shape by construction.** `ts-receiver-wall-probe.ts` files a
+   receiver ending in `)` into W0, "a call result or a literal receiver — outside the
+   partition". `new Worker().run` ends in `)` exactly like `foo().run`, so the one instrument
+   built to find unowned member calls classified this class as _not its question_. The `new `
+   prefix is now excluded from that test, so a constructor receiver enters the partition.
+2. **The fixtures pin names, never declarations.** 126 `calls` pins across the lane, and
+   **0** with a file-qualified target. A fixture says `calls f -> run`; it cannot say _which_
+   `run`. Every existing fixture would pass whether the binding were right or wrong.
+3. **The differential compares names too.** Its match key is `(label, from, target)` and its
+   TS oracle derives `from: "(expr)"`. Measured on the repro: truth says
+   `calls (expr) -> run`, the analyzer says `calls f -> run`, and the two MATCH. The
+   differential can see a missing edge, a fabricated edge or a wrong label; it structurally
+   cannot see an edge attached to the wrong declaration of the right name.
+
+**The fix.** A C9 branch in `receiverOwnerType` reading the `new_expression`'s `constructor`
+field and emitting `{ type, evidence: "new-expression" }`. Negative cases checked: a
+call-result receiver (`a.make().run()`) still carries no owner, and a cast-wrapped
+`(new B() as any).go()` is still an honest gap rather than a guess.
+
+**Measured.** 138 call sites in the first 4,000 corpus files. The repro now binds to
+`src/used.ts:run` (was `src/other.ts:run`), verified end-to-end through `bb index` +
+`bb_graph`, not only through the analyzer. Fixture
+`validation/m14/fixtures/typescript/new-expression-receiver-owner.ts` declares a rival
+`Other.run` on purpose — without it the fixture passes with or without the fix — and fails
+when C9 is disabled. Mutant `new-expression-receiver-owner-lost` (15/15 caught).
+
+**The lesson worth keeping.** Three instruments agreed the lane was clean because all three
+asked the same question — _is the name there?_ — and none asked _is it the right
+declaration?_ The wall probe was the closest, and it had a hardcoded exemption for the exact
+shape. A lane whose only resolution evidence is name equality has no evidence about binding.

@@ -28,16 +28,26 @@
  *
  * Usage: bun run script/m14/ts-mutants-run.ts [--only <id-substring>]
  */
-import { spawnSync } from "node:child_process"
-import { readdirSync, readFileSync, writeFileSync } from "node:fs"
-import * as path from "node:path"
-import { TS_MUTANTS, type TsMutant } from "./ts-mutants"
-import { fileURLToPath } from "node:url"
+import { spawnSync } from "node:child_process";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import * as path from "node:path";
+import { TS_MUTANTS, type TsMutant } from "./ts-mutants";
+import { fileURLToPath } from "node:url";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
-const FIXTURE_DIR = path.join(ROOT, "validation", "m14", "fixtures", "typescript")
-const onlyIdx = process.argv.indexOf("--only")
-const only = onlyIdx >= 0 ? process.argv[onlyIdx + 1] : null
+const ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+);
+const FIXTURE_DIR = path.join(
+  ROOT,
+  "validation",
+  "m14",
+  "fixtures",
+  "typescript",
+);
+const onlyIdx = process.argv.indexOf("--only");
+const only = onlyIdx >= 0 ? process.argv[onlyIdx + 1] : null;
 
 // ---------------------------------------------------------------------------
 // The pin rule, the same one script/m14/run-fixtures.ts applies: an `expect`
@@ -46,9 +56,16 @@ const only = onlyIdx >= 0 ? process.argv[onlyIdx + 1] : null
 // so only the keys this file actually compares are listed, and each one is a key
 // the shared runner also allowlists.
 // ---------------------------------------------------------------------------
-type Row = Record<string, any>
-type Entry = Row & { confidence?: number }
-const DOC_KEYS = new Set(["note", "comment", "rationale", "fixtureId", "language", "authoredBeforeAnalyzerRun"])
+type Row = Record<string, any>;
+type Entry = Row & { confidence?: number };
+const DOC_KEYS = new Set([
+  "note",
+  "comment",
+  "rationale",
+  "fixtureId",
+  "language",
+  "authoredBeforeAnalyzerRun",
+]);
 
 function normRel(r: any): Row {
   return {
@@ -57,81 +74,124 @@ function normRel(r: any): Row {
     target: String(r?.target ?? r?.to ?? r?.toSymbol ?? ""),
     line_number: r?.line_number ?? null,
     metadata: r?.metadata ?? {},
-  }
+  };
 }
 
 function rowMatches(actual: Entry, want: Row): boolean {
   for (const [k, v] of Object.entries(want)) {
-    if (DOC_KEYS.has(k)) continue
+    if (DOC_KEYS.has(k)) continue;
     if (k.startsWith("meta.")) {
-      const got = (actual.metadata as any)?.[k.slice(5)]
-      if (v === null) { if (got !== undefined && got !== null) return false; continue }
-      if (got !== v) return false
-      continue
+      const got = (actual.metadata as any)?.[k.slice(5)];
+      if (v === null) {
+        if (got !== undefined && got !== null) return false;
+        continue;
+      }
+      if (got !== v) return false;
+      continue;
     }
     if (k === "line_number") {
-      if (v === null) { if (actual.line_number !== undefined && actual.line_number !== null) return false; continue }
-      if (actual.line_number !== v) return false
-      continue
+      if (v === null) {
+        if (actual.line_number !== undefined && actual.line_number !== null)
+          return false;
+        continue;
+      }
+      if (actual.line_number !== v) return false;
+      continue;
     }
     // `from`/`to` are the shared runner's aliases for `source`/`target`; both
     // spellings appear in expectation rows across the lanes, so both are read.
-    const canon = k === "from" ? "source" : k === "to" ? "target" : k
+    const canon = k === "from" ? "source" : k === "to" ? "target" : k;
     if (canon === "type" || canon === "source" || canon === "target") {
-      if (actual[canon] !== v) return false
-      continue
+      if (actual[canon] !== v) return false;
+      continue;
     }
     // `confidence`/`confidenceMin`/`confidenceMax` and `*EndsWith` are the shared
     // runner's remaining relationship constraints. Read them with the SAME rule
     // it uses (run-fixtures.ts:344-357) so the two mechanisms cannot disagree.
-    if (k === "confidence") { if (actual.confidence !== v) return false; continue }
-    if (k === "confidenceMin") { if (!(typeof actual.confidence === "number" && actual.confidence >= v)) return false; continue }
-    if (k === "confidenceMax") { if (!(typeof actual.confidence === "number" && actual.confidence <= v)) return false; continue }
+    if (k === "confidence") {
+      if (actual.confidence !== v) return false;
+      continue;
+    }
+    if (k === "confidenceMin") {
+      if (!(typeof actual.confidence === "number" && actual.confidence >= v))
+        return false;
+      continue;
+    }
+    if (k === "confidenceMax") {
+      if (!(typeof actual.confidence === "number" && actual.confidence <= v))
+        return false;
+      continue;
+    }
     if (k.endsWith("EndsWith")) {
-      const field = k.slice(0, -"EndsWith".length)
-      const aliases: Record<string, string[]> = { target: ["target", "to", "toSymbol"], from: ["from", "source", "fromSymbol"] }
-      const vals = (aliases[field] ?? [field]).map((a) => (actual as any)[a]).filter((x) => typeof x === "string")
-      if (!vals.some((x) => x.endsWith(v))) return false
-      continue
+      const field = k.slice(0, -"EndsWith".length);
+      const aliases: Record<string, string[]> = {
+        target: ["target", "to", "toSymbol"],
+        from: ["from", "source", "fromSymbol"],
+      };
+      const vals = (aliases[field] ?? [field])
+        .map((a) => (actual as any)[a])
+        .filter((x) => typeof x === "string");
+      if (!vals.some((x) => x.endsWith(v))) return false;
+      continue;
     }
     // A key this comparator does not implement would make the row vacuously
     // false (expect) or vacuously true (forbid). Refusing is the honest answer.
-    throw new Error(`ts-mutants-run does not implement constraint key "${k}" — refusing to score the row`)
+    throw new Error(
+      `ts-mutants-run does not implement constraint key "${k}" — refusing to score the row`,
+    );
   }
-  return true
+  return true;
 }
 
 function checkPins(result: any, exp: any): string[] {
-  const problems: string[] = []
-  const rels: Entry[] = (result?.relationships ?? []).map((r: any) => ({ ...normRel(r), confidence: r?.confidence }))
+  const problems: string[] = [];
+  const rels: Entry[] = (result?.relationships ?? []).map((r: any) => ({
+    ...normRel(r),
+    confidence: r?.confidence,
+  }));
   for (const want of exp.expectRelationships ?? []) {
-    if (!rels.some((r) => rowMatches(r, want))) problems.push(`missing expected ${want.type}:${want.source}->${want.target}`)
+    if (!rels.some((r) => rowMatches(r, want)))
+      problems.push(
+        `missing expected ${want.type}:${want.source}->${want.target}`,
+      );
   }
   for (const want of exp.forbidRelationships ?? []) {
-    const hit = rels.find((r) => rowMatches(r, want))
-    if (hit) problems.push(`forbidden present ${want.type}:${want.source}->${want.target}`)
+    const hit = rels.find((r) => rowMatches(r, want));
+    if (hit)
+      problems.push(
+        `forbidden present ${want.type}:${want.source}->${want.target}`,
+      );
   }
-  const syms = result?.symbols ?? []
+  const syms = result?.symbols ?? [];
   for (const want of exp.expectSymbols ?? []) {
-    const ok = syms.some((s: any) => s.name === want.name && (want.kind === undefined || String(s.kind) === want.kind))
-    if (!ok) problems.push(`missing symbol ${want.name}:${want.kind ?? "?"}`)
+    const ok = syms.some(
+      (s: any) =>
+        s.name === want.name &&
+        (want.kind === undefined || String(s.kind) === want.kind),
+    );
+    if (!ok) problems.push(`missing symbol ${want.name}:${want.kind ?? "?"}`);
   }
-  return problems
+  return problems;
 }
 
 function loadFixtures(): { fixture: string; exp: any }[] {
   return readdirSync(FIXTURE_DIR)
     .filter((f) => f.endsWith(".expectation.json"))
     .map((f) => ({
-      fixture: f.endsWith(".expectation.json") ? f.slice(0, -".expectation.json".length) : f,
+      fixture: f.endsWith(".expectation.json")
+        ? f.slice(0, -".expectation.json".length)
+        : f,
       exp: JSON.parse(readFileSync(path.join(FIXTURE_DIR, f), "utf8")),
-    }))
+    }));
 }
 
 // ---------------------------------------------------------------------------
 // SOURCE mutants: edit, run the REAL shared runner, restore.
 // ---------------------------------------------------------------------------
-const SOURCE_MUTANTS: Record<string, { file: string; from: string; to: string }> = {
+const SOURCE_MUTANTS: Record<
+  string,
+  { file: string; from: string; to: string }
+> = {
   // 2026-11-18: ALL FOUR ANCHORS WERE STALE and the mutants were surviving as "ANCHOR NOT FOUND"
   // — the exact defect this runner's header names ("a rename that stops the mutant matching is
   // exactly how a mutant survives unnoticed"). Re-anchored against the CURRENT source; each one
@@ -157,8 +217,16 @@ const SOURCE_MUTANTS: Record<string, { file: string; from: string; to: string }>
     // `contains X -> ""` edge resulted — the whole-population arm's single NO-TARGET LANE DEFECT.
     // `fieldDeclaresAccessorName(node) === false` is exactly the pre-fix behaviour: the written
     // name is never recovered, so the fixture's expected `accessor` member disappears.
-    from: 'const accessorNamed = fieldDeclaresAccessorName(node)',
-    to: 'const accessorNamed = false && fieldDeclaresAccessorName(node)',
+    from: "const accessorNamed = fieldDeclaresAccessorName(node)",
+    to: "const accessorNamed = false && fieldDeclaresAccessorName(node)",
+  },
+  "typescript/new-expression-receiver-owner-lost": {
+    file: "src/ast/real-typescript-analyzer.ts",
+    // Revert C9: the constructor-receiver branch stops firing, so `new Worker().run()`
+    // carries no owner and the store falls back to the NAME model — which is exactly the
+    // measured defect (the call bound to Other.run in a file the caller never imports).
+    from: 'if (object.type === "new_expression") {',
+    to: 'if (object.type === "new_expression" && false) {',
   },
   "typescript/type-predicate-position-dropped": {
     file: "src/ast/real-typescript-analyzer.ts",
@@ -170,100 +238,154 @@ const SOURCE_MUTANTS: Record<string, { file: string; from: string; to: string }>
     from: 'case "constraint": {\n          emit(resolveOwner(n), [n], "type_parameter_constraint")',
     to: 'case "constraint_DISABLED": {\n          emit(resolveOwner(n), [n], "type_parameter_constraint")',
   },
-}
+};
 
 function runSharedRunner(): { fail: number; firstProblem: string } {
-  const r = spawnSync(process.execPath, [
-    path.join(ROOT, "script", "m14", "run-fixtures.ts"),
-    "--lang",
-    "typescript",
-  ], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`
-  const m = out.split("\n").find((l) => l.startsWith("summary: "))
-  if (!m) return { fail: -1, firstProblem: `runner produced no summary line: ${out.slice(-400)}` }
-  const parsed = JSON.parse(m.slice("summary: ".length))
-  const t = parsed.typescript ?? {}
-  const detail = out.split("\n").find((l) => l.includes("forbidden relationship present") || l.includes("expected relationship") || l.includes("missing symbol"))
-  return { fail: Number(t.fail ?? 0), firstProblem: (detail ?? "").trim().slice(0, 170) }
+  const r = spawnSync(
+    process.execPath,
+    [
+      path.join(ROOT, "script", "m14", "run-fixtures.ts"),
+      "--lang",
+      "typescript",
+    ],
+    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  const out = `${r.stdout ?? ""}${r.stderr ?? ""}`;
+  const m = out.split("\n").find((l) => l.startsWith("summary: "));
+  if (!m)
+    return {
+      fail: -1,
+      firstProblem: `runner produced no summary line: ${out.slice(-400)}`,
+    };
+  const parsed = JSON.parse(m.slice("summary: ".length));
+  const t = parsed.typescript ?? {};
+  const detail = out
+    .split("\n")
+    .find(
+      (l) =>
+        l.includes("forbidden relationship present") ||
+        l.includes("expected relationship") ||
+        l.includes("missing symbol"),
+    );
+  return {
+    fail: Number(t.fail ?? 0),
+    firstProblem: (detail ?? "").trim().slice(0, 170),
+  };
 }
 
 function runSourceMutant(m: TsMutant): { caught: boolean; detail: string } {
-  const src = SOURCE_MUTANTS[m.id]
-  const abs = path.join(ROOT, src.file)
-  const original = readFileSync(abs, "utf8")
+  const src = SOURCE_MUTANTS[m.id];
+  const abs = path.join(ROOT, src.file);
+  const original = readFileSync(abs, "utf8");
   if (!original.includes(src.from)) {
-    return { caught: false, detail: `ANCHOR NOT FOUND in ${src.file}: the mutant cannot be injected, which is itself a survivor` }
+    return {
+      caught: false,
+      detail: `ANCHOR NOT FOUND in ${src.file}: the mutant cannot be injected, which is itself a survivor`,
+    };
   }
-  writeFileSync(abs, original.replace(src.from, src.to))
-  let r: { fail: number; firstProblem: string }
+  writeFileSync(abs, original.replace(src.from, src.to));
+  let r: { fail: number; firstProblem: string };
   try {
-    r = runSharedRunner()
+    r = runSharedRunner();
   } finally {
-    writeFileSync(abs, original)
+    writeFileSync(abs, original);
   }
-  if (r.fail < 0) return { caught: false, detail: r.firstProblem }
+  if (r.fail < 0) return { caught: false, detail: r.firstProblem };
   return r.fail > 0
-    ? { caught: true, detail: `${r.fail} fixture(s) failed in the shared runner; first: ${r.firstProblem}` }
-    : { caught: false, detail: `${r.fail} fixture(s) failed — SURVIVOR` }
+    ? {
+        caught: true,
+        detail: `${r.fail} fixture(s) failed in the shared runner; first: ${r.firstProblem}`,
+      }
+    : { caught: false, detail: `${r.fail} fixture(s) failed — SURVIVOR` };
 }
 
 // ---------------------------------------------------------------------------
 // RESULT mutants: apply in process, check against the same pins.
 // ---------------------------------------------------------------------------
-async function runResultMutant(m: TsMutant): Promise<{ caught: boolean; detail: string }> {
-  const { getParser } = await import("../../src/ast/engine")
-  const mod: any = await import("../../src/ast/real-typescript-analyzer")
-  const Cls = Object.values(mod).find((v: any) => typeof v === "function" && String(v.name).endsWith("Analyzer")) as any
-  const parser = await getParser("typescript")
-  const fixtures = loadFixtures()
-  let broken = 0
-  let first = ""
+async function runResultMutant(
+  m: TsMutant,
+): Promise<{ caught: boolean; detail: string }> {
+  const { getParser } = await import("../../src/ast/engine");
+  const mod: any = await import("../../src/ast/real-typescript-analyzer");
+  const Cls = Object.values(mod).find(
+    (v: any) => typeof v === "function" && String(v.name).endsWith("Analyzer"),
+  ) as any;
+  const parser = await getParser("typescript");
+  const fixtures = loadFixtures();
+  let broken = 0;
+  let first = "";
   for (const f of fixtures) {
-    const abs = path.join(FIXTURE_DIR, `${f.fixture}.ts`)
-    let content: string
-    try { content = readFileSync(abs, "utf8") } catch { continue }
-    let base: any
+    const abs = path.join(FIXTURE_DIR, `${f.fixture}.ts`);
+    let content: string;
     try {
-      const tree = await parser.parse(content)
-      if (!tree) throw new Error("parser.parse returned no tree (null result)")
-      base = new Cls().analyze(tree.rootNode, content, abs)
-    } catch { continue }
-    const baseProblems = checkPins(base, f.exp)
+      content = readFileSync(abs, "utf8");
+    } catch {
+      continue;
+    }
+    let base: any;
+    try {
+      const tree = await parser.parse(content);
+      if (!tree) throw new Error("parser.parse returned no tree (null result)");
+      base = new Cls().analyze(tree.rootNode, content, abs);
+    } catch {
+      continue;
+    }
+    const baseProblems = checkPins(base, f.exp);
     if (baseProblems.length > 0) {
       // A pin that does not hold BEFORE the mutation is a broken fixture, not a
       // caught mutant. Reporting it as caught would be a false positive.
-      first ||= `${f.fixture}: pin already broken before mutation (${baseProblems[0]})`
-      broken++
-      continue
+      first ||= `${f.fixture}: pin already broken before mutation (${baseProblems[0]})`;
+      broken++;
+      continue;
     }
-    let mutated: any
-    try { mutated = m.transform(base, content) } catch (e) {
-      first ||= `${f.fixture}: transform threw ${String(e).slice(0, 90)}`
-      broken++
-      continue
+    let mutated: any;
+    try {
+      mutated = m.transform(base, content);
+    } catch (e) {
+      first ||= `${f.fixture}: transform threw ${String(e).slice(0, 90)}`;
+      broken++;
+      continue;
     }
-    const after = checkPins(mutated, f.exp)
-    if (after.length > 0) { broken++; first ||= `${f.fixture}: ${after[0]}` }
+    const after = checkPins(mutated, f.exp);
+    if (after.length > 0) {
+      broken++;
+      first ||= `${f.fixture}: ${after[0]}`;
+    }
   }
   return broken > 0
-    ? { caught: true, detail: `${broken} fixture pin(s) broken by the mutation; first: ${first}` }
-    : { caught: false, detail: `no fixture pin broken — SURVIVOR` }
+    ? {
+        caught: true,
+        detail: `${broken} fixture pin(s) broken by the mutation; first: ${first}`,
+      }
+    : { caught: false, detail: `no fixture pin broken — SURVIVOR` };
 }
 
-const selected: TsMutant[] = TS_MUTANTS.filter((m) => !only || m.id.includes(only))
+const selected: TsMutant[] = TS_MUTANTS.filter(
+  (m) => !only || m.id.includes(only),
+);
 if (only && selected.length === 0) {
-  console.error(`--only ${only} matched 0 of ${TS_MUTANTS.length} mutants — nothing was verified`)
-  process.exit(6)
+  console.error(
+    `--only ${only} matched 0 of ${TS_MUTANTS.length} mutants — nothing was verified`,
+  );
+  process.exit(6);
 }
 
-console.log(`typescript lane mutants — ${selected.length} of ${TS_MUTANTS.length}`)
-console.log(`fixtures read: ${loadFixtures().length}\n`)
+console.log(
+  `typescript lane mutants — ${selected.length} of ${TS_MUTANTS.length}`,
+);
+console.log(`fixtures read: ${loadFixtures().length}\n`);
 
-let survived = 0
+let survived = 0;
 for (const m of selected) {
-  const r = SOURCE_MUTANTS[m.id] ? runSourceMutant(m) : await runResultMutant(m)
-  if (!r.caught) survived++
-  console.log(`${r.caught ? "CAUGHT  " : "SURVIVED"} ${m.id}\n        ${r.detail}`)
+  const r = SOURCE_MUTANTS[m.id]
+    ? runSourceMutant(m)
+    : await runResultMutant(m);
+  if (!r.caught) survived++;
+  console.log(
+    `${r.caught ? "CAUGHT  " : "SURVIVED"} ${m.id}\n        ${r.detail}`,
+  );
 }
-console.log(`\n${selected.length - survived}/${selected.length} mutants caught - ${survived} survived`)
-if (survived > 0) process.exit(1)
+console.log(
+  `\n${selected.length - survived}/${selected.length} mutants caught - ${survived} survived`,
+);
+if (survived > 0) process.exit(1);
