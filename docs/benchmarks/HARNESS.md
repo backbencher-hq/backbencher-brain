@@ -232,6 +232,22 @@ workspace → `$WS`) and **must not** contain `.credentials.yaml`, `freepi-insta
 API keys or the install secret. The runner scans for those strings and refuses to publish
 a run whose trace contains them.
 
+## 6a · The embedder is part of the arm (and was verified)
+
+Arms C/D need an embedder configured **before** indexing, or the index is built in a
+different space than the queries run in. The full recipe — the `bb.json`, the verification
+gate, the coverage-by-kind rule and the RAM ceiling — is [`EMBEDDINGS.md`](./EMBEDDINGS.md).
+
+The two facts from that page that a runner must enforce:
+
+1. **`bb_ask` must report `method=vector` with the intended model.** A
+   `keyword-fallback` answer means the run measured the lexical path; it is
+   `invalid`/`embedding`, not a scored run.
+2. **Indexing with a local embedder can exhaust the machine.** Observed on this box: a
+   lodash-sized index with `nomic-embed-text` resident, while swap was already ~8 GB in
+   use, **hung the workstation** and required a restart. The runner's `--concurrency`
+   exists for this reason and is recorded per run.
+
 ## 7 · What this recipe does NOT establish
 
 - **Reproducibility across FreePi accounts.** FreePi is an ad-supported free tier with

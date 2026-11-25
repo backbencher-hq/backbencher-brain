@@ -43,6 +43,10 @@ it going red.
 | 25 | `arm_enforcement` (mcp mounted, CLI shimmed, invocation counts) is recorded on every run (`HARNESS.md` §4a) | `run-arm.ts` | not implemented |
 | 26 | the trace carries no harness timestamps, so the runner stamps arrival time and marks it an **upper bound** (`HARNESS.md` §5a) | `run-arm.ts` + `report.ts` labelling | not implemented — gap confirmed in `json-stream.ts` |
 | 27 | the primary discovery-tax measure is **tokens**, not ms (`DESIGN.md` §1) | `report.ts` | not implemented |
+| 28 | every C/D run records the embedder and its config, and `bb_setup_show` verbatim (`EMBEDDINGS.md` §8) | `run-arm.ts` | not implemented |
+| 29 | a `bb_ask` answering `method=keyword-fallback` in a C2 run is `invalid`, not scored (`EMBEDDINGS.md` §4) | `run-arm.ts` trace scan | not implemented |
+| 30 | coverage is judged over **embeddable kinds**, and a `BACKFILL PENDING` warning is recorded verbatim rather than treated as failure (`EMBEDDINGS.md` §5) | `run-arm.ts` + `report.ts` | **behaviour verified** in `brain-index-health.ts:840-850`; recording not implemented |
+| 31 | `--concurrency` is recorded, and a wave whose latency drifts >2× reference is re-run rather than published (`DESIGN.md` §12.1) | `run-arm.ts` + `report.ts` | not implemented |
 
 ## How a row is retired
 

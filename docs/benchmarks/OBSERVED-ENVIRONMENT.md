@@ -30,7 +30,9 @@ line are cited. This page exists so that no design decision in
 | swap | 19.9 GB total — **7.9 GB in use**, so the machine is already leaning on swap |
 | GPU | none — `nvidia-smi` absent |
 | local model runner | `ollama` 0.40.6 at `/usr/local/bin/ollama`; vLLM/llama.cpp absent |
-| ollama models pulled | **exactly one**: `hf.co/DreamFast/qwen3-4b-heretic:Q4_K_M` (7.3 GB, a *generation* model — not an embedder) |
+| ollama models pulled | `nomic-embed-text:latest` (**274 MB, 768-dim embedder** — pulled for this benchmark) and `hf.co/DreamFast/qwen3-4b-heretic:Q4_K_M` (7.3 GB, a *generation* model) |
+| ollama `/v1` endpoint | **OpenAI-compatible and working** — returns 768 dims, unit norm. So bb needs **no code change** to use it |
+| benchmark embedder, verified | `nomic-embed-text` @ `http://127.0.0.1:11434/v1`, via a project `bb.json`; `bb setup show` → `Winner: project`, `bb index` → `embeddings: nomic-embed-text (768d)`, `bb_ask` → `method=vector` |
 
 **The RAM pressure is real and permanent** — the desktop owns it, and closing windows only
 frees it until the next window opens. But it is not bb's: see §2a.
