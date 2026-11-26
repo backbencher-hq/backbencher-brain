@@ -8504,8 +8504,22 @@ class TypeScriptAnalysisRunner {
           }
         }
         // The direct identifier receiver is handled by the ordinary owner path.
+        //
+        // NODE IDENTITY BY `.id`, NEVER BY WRAPPER EQUALITY (2026-11-25). web-tree-sitter
+        // returns a FRESH wrapper object per node access, so `value === receiver` is false
+        // even when both describe the SAME node — measured: `root.namedChild(0) ===
+        // root.namedChild(0)` is false while both `.id`s are equal. The comparison never
+        // fired, so the receiver's own hint was always looked up instead of skipped.
+        //
+        // MEASURED INERT ON THE CORPUS: 1,579 files, 41,549 calls, 2,054 carrying an owner —
+        // identical before and after. The branch only reaches a same-node receiver, and in
+        // that case the lookup it performs returns the same hint the skip was meant to
+        // avoid, so no row moves. Kept because the dead comparison is a trap for the next
+        // reader: it READS as a guard and guards nothing.
         const hint =
-          value === receiver
+          (value.id !== undefined && receiver.id !== undefined
+            ? value.id === receiver.id
+            : value.startIndex === receiver.startIndex && value.type === receiver.type)
             ? null
             : lookupLocalInScope(
                 scopedFacts,

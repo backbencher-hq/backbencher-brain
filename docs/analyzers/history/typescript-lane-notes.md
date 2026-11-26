@@ -144,3 +144,28 @@ when C9 is disabled. Mutant `new-expression-receiver-owner-lost` (15/15 caught).
 asked the same question — _is the name there?_ — and none asked _is it the right
 declaration?_ The wall probe was the closest, and it had a hardcoded exemption for the exact
 shape. A lane whose only resolution evidence is name equality has no evidence about binding.
+
+### The dead comparison the hygiene gate caught
+
+`aliasFieldOwners` contained `value === receiver` — a guard meant to skip the direct
+receiver before doing a local lookup. web-tree-sitter returns a FRESH wrapper per node
+access, so that comparison is false even for the same node; measured on the pinned
+grammar, `root.namedChild(0) === root.namedChild(0)` is `false` while both `.id`s are
+equal. The branch never fired.
+
+It is now compared by `.id`, with a span/type fallback, and it is recorded as MEASURED
+INERT: 1,579 files, 41,549 calls, 2,054 carrying an owner, identical before and after.
+The lookup it was guarding returns the same hint the skip was meant to avoid, so no row
+moves. It is kept — not because it changes an answer, but because a guard that READS as
+one and guards nothing is a trap for the next reader.
+
+Two things made this visible only now, and both are worth keeping in mind:
+
+  * the analyzer-hygiene gate's bare-node rule had to be tightened to resolve a name to
+    its NEAREST declaration before it stopped convicting innocent string literals and
+    started seeing this;
+  * the eleven gates that read `payload.callers` were reading a retired flat envelope
+    (`boundedResult` has returned `{summary, data}` since the tool-wave refactor), so
+    they threw on `undefined` before asserting anything. They had been BLIND, not
+    passing. A lane's own "32/32" is worth nothing if the healthiest-looking instrument
+    is one that never runs its assertion.
