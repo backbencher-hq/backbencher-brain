@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.2.3 — the JavaScript and TypeScript receivers, and an answer that names its project
+
+Two lines of work, both verified on the tree that ships.
+
+### JavaScript / TypeScript: a member call is never resolved by tie-break
+
+Fifteen commits close the receiver and binding defects in the two analyzers that most
+projects actually use. The theme is that a name match is not a resolution:
+
+- **the receiver is typed or withdrawn** — a member call is never resolved by letting a tie
+  break choose among candidates; when the receiver's type cannot be established the edge is
+  withdrawn and counted instead of guessed;
+- **the constructor receiver** — three instruments could not see it, and the edge it was
+  producing was wrong;
+- **the wrapped receiver** — a cast that is not a wrapper was being read as one, producing
+  one more misbinding;
+- **a guard that read as a guard and guarded nothing** — the arm re-run now names the
+  analyzer that ships;
+- **the differential states the bound it cannot cross**, rather than implying coverage it
+  does not have.
+
+Two commits in this set are rep**airs rather than features**, and are the reason the others
+are trustworthy: a hook had reformatted `real-typescript-analyzer.ts` wholesale (3,134
+semicolon lines back to 34), and a store census gate had passed with the feature deleted.
+Both are recorded because a gate that passes on a deleted feature is worse than no gate.
+
+32 of 32 JavaScript/TypeScript verification gates pass on this tree.
+
+### MCP: every answer declares the project it answered about
+
+`bb` can be started with `--dir X` while the caller works in Y. It then answered about X with
+no warning, and a symbol that exists only in Y came back as `totalMatches=0` — which reads
+exactly like "that symbol does not exist". Measured: a server pointed at one project answered
+`no results for "alphaOnlySymbol"` with nothing saying which project it had consulted.
+
+Every answer now names its project: JSON answers gain a top-level `project` field, text
+answers gain a trailing `[project] <root>` line beside the existing `[match-set]`. Nothing is
+re-rooted — the silent wrong answer is made visible, which is the part that matters.
+
+A JSON **array** payload is left byte-identical: it has no place for a `project` field, and
+breaking a well-formed answer while adding provenance would be the one thing this must never
+do. The suite asserts the payload shape, not only the wording: object gains `project` and
+stays parseable, array is unchanged, double-stamping does not double the line.
+
+### Not in this release
+
+The benchmarking campaign (13 commits in `benchmarks/`) is **in progress and deliberately
+excluded**. It ships no files: `package.json#files` covers `dist/ wasm/ bin/ docs/ README
+CHANGELOG grammars/`, and `benchmarks/` is not among them. Its commits are in history because
+work is committed as it lands, not because this release claims it.
+
+### Verified before tagging
+
+`tsc --noEmit` clean, `npm run build` clean, `npm test` green (46/46, 15/15, 21/21),
+`npm run verify:fast` 22 gates exit 0, and 32/32 JavaScript/TypeScript gates — all run in an
+isolated worktree at the tagged commit, not on a dirty shared checkout.
+
 ## 0.2.2 — the closure record, 50 lanes, and the first-run fixes
 
 This release publishes the corrected completion record for the fleet. The previous
