@@ -1,0 +1,9 @@
+{
+  "description": "A .js file using Flow type annotations WITHOUT any @flow pragma still parses clean under the TypeScript fallback, so its declarations are published rather than lost to error recovery.",
+  "expectSymbols": [
+    { "name": "scale" },
+    { "name": "Counter" },
+    { "name": "bump", "ownerName": "Counter" },
+    { "name": "count", "ownerName": "Counter" }
+  ]
+}

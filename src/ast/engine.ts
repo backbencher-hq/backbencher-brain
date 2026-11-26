@@ -2981,18 +2981,39 @@ export const getCachedParser = ASTEngine.getCachedParser
  * FOUR GATES, each of which exists to stop this being a general-purpose language switch:
  *   1. the file is `javascript` (never `.ts`/`.tsx` — those already use the TS grammar);
  *   2. the primary parse FAILED — a clean parse is never second-guessed;
- *   3. the source DECLARES FLOW in its head — an ordinary broken `.js` is not silently reparsed;
+ *   3. the source DECLARES FLOW in its head, OR carries Flow syntax with NO pragma at all — see
+ *      "THE PRAGMA IS NOT ALWAYS THERE" below;
  *   4. the fallback tree must parse CLEAN — a failure is never traded for a different failure.
  *
- * `BB_JS_FLOW_FALLBACK=0` disables it. That kill-switch is a MEASUREMENT CONTROL, not a feature flag:
- * a fallback that cannot be turned off cannot be A/B measured, and production never sets it.
+ * THE PRAGMA IS NOT ALWAYS THERE (measured 2026-11-25, `validation/m14/verification/
+ * JAVASCRIPT-REMAINING-WORK.md`). Gate 3 originally required `@flow` in the head, which is what the
+ * 96% measurement above justified — but it silently gave up on the 4% and, more importantly, on a
+ * whole class the original measurement could not see: a `.js` file whose types are written WITHOUT
+ * any pragma. Measured on React: **71 files fail the JS grammar, carry no `@flow`, and yet 22 of them
+ * parse CLEAN under the TypeScript grammar (29 more under TSX)**. The trigger is not exotic — it is a
+ * plain parameter annotation, `eventType: string,` inside `function dispatchEvent(node, eventType:
+ * string)`, which is exactly what breaks `packages/internal-test-utils/ReactInternalTestUtils.js`.
+ * A file like that is not "an ordinary broken `.js`"; it is Flow without its declaration.
+ *
+ * WHY THIS IS STILL NOT A GENERAL-PURPOSE LANGUAGE SWITCH, even with gate 3 relaxed: the fallback
+ * tree must parse **CLEAN** (gate 4). An ordinary broken file — unbalanced braces, a truncated
+ * paste — fails the TypeScript grammar too, so it keeps its error-recovery tree exactly as before.
+ * The only files that change owner are ones the JS grammar cannot read and the TypeScript grammar
+ * can, which is a typed-superset file by definition. Measured on the two corpora the differential
+ * pins: **zero rows changed** (hashes `1aa48514c0dab17a` / `494e1b94766e8ade`, byte-identical).
+ *
+ * `BB_JS_FLOW_FALLBACK=0` disables the whole fallback; `BB_JS_PRAGMALESS_FALLBACK=0` disables ONLY
+ * the pragma-less half, so the two populations stay separately measurable. Both are MEASUREMENT
+ * CONTROLS, not feature flags: a fallback that cannot be turned off cannot be A/B measured, and
+ * production never sets either.
  */
 export async function maybeFlowFallback(language: string, content: string, tree: Tree): Promise<Tree> {
   if (language !== "javascript") return tree
   if (!tree?.rootNode?.hasError) return tree
   if (process.env.BB_JS_FLOW_FALLBACK === "0") return tree
   const head = content.length > 400 ? content.slice(0, 400) : content
-  if (!head.includes("@flow") && !head.includes("@noflow")) return tree
+  const declaresFlow = head.includes("@flow") || head.includes("@noflow")
+  if (!declaresFlow && process.env.BB_JS_PRAGMALESS_FALLBACK === "0") return tree
   for (const fallbackLanguage of ["typescript", "tsx"] as const) {
     try {
       const fbParser = await getParser(fallbackLanguage)
