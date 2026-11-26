@@ -109,5 +109,28 @@ guard(suite, async () => {
     `answer did not name ${path.basename(beta)}: ${betaHit.slice(0, 300)}`,
   )
 
+  suite.section("the payload stays machine-readable")
+  // A well-formed answer must never be broken while declaring provenance: an array payload
+  // has no place for a `project` field, and appending a text line would make it unparseable
+  // for a caller that asked for a list.
+  {
+    const { stampProvenance } = await import("../../src/mcp/server.ts")
+    const asObj = stampProvenance({ content: [{ type: "text", text: JSON.stringify({ totalMatches: 0 }) }] }, "/tmp/x")
+    let objOk = false
+    try {
+      const p = JSON.parse(asObj.content[0].text)
+      objOk = p.project === "/tmp/x" && p.totalMatches === 0
+    } catch {}
+    suite.check("a JSON object answer gains `project` and stays parseable", objOk, asObj.content[0].text.slice(0, 160))
+
+    const arrayPayload = "[1,2,3]"
+    const asArr = stampProvenance({ content: [{ type: "text", text: arrayPayload }] }, "/tmp/x")
+    suite.check("a JSON ARRAY answer is left untouched", asArr.content[0].text === arrayPayload, asArr.content[0].text.slice(0, 120))
+
+    const once = stampProvenance({ content: [{ type: "text", text: "hello" }] }, "/tmp/x")
+    const twice = stampProvenance(once, "/tmp/x")
+    suite.check("stamping is idempotent (no doubled [project] line)", twice.content[0].text === once.content[0].text, twice.content[0].text)
+  }
+
   suite.finish()
 })

@@ -156,6 +156,12 @@ export function stampProvenance(
         } catch {
           // Not JSON after all: fall through to the text form.
         }
+      } else if (trimmed.startsWith("[")) {
+        // A JSON ARRAY is still JSON. Appending a text line would make the payload
+        // unparseable for a caller that asked for a list — the one thing this function must
+        // never do is break a well-formed answer while adding provenance. Arrays carry no
+        // place for a `project` field, so they are left exactly as they are.
+        return part
       }
       if (/^\[project\] /m.test(text)) return part
       return { ...part, text: `${text}\n[project] ${root}` }
@@ -192,7 +198,7 @@ export async function startMcpServer(projectPath: string): Promise<void> {
       const notIndexed = await indexRequirementRefusal(context, descriptor, argumentsObject)
       if (notIndexed !== null) return { content: [{ type: "text", text: notIndexed }], isError: true }
       const result = await handler(argumentsObject, context)
-      return result
+      return stampProvenance(result, context.projectPath)
     } catch (error: any) {
       return { content: [{ type: "text", text: `error: ${error?.message ?? String(error)}` }], isError: true }
     }
