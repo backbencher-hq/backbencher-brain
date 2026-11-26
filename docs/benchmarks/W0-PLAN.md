@@ -1,7 +1,7 @@
 # W0 — build the instrument
 
 **Goal:** by the end of W0, `script/bench/selftest.sh` is green and every negative case in
-`DESIGN.md` §10 has *demonstrated* it can go red. No benchmark number is published in W0.
+`DESIGN.md` §10 has _demonstrated_ it can go red. No benchmark number is published in W0.
 The deliverable is a trustworthy instrument, not a result.
 
 **DONE (2026-11-25).** `selftest.sh` is green at **17 checks**, and three of them were
@@ -22,7 +22,7 @@ schema produces plausible numbers that are not evidence.
 3. `report.ts` builds all three levels from the run store and emits SVG + data tables.
 4. `preregister.ts` computes a digest over tasks + prompts + manual block + arm spec, and
    **refuses** if any of them changed since the committed digest.
-5. `selftest.sh` is green, and each of its 8 cases has been *seen* to fail when its
+5. `selftest.sh` is green, and each of its 8 cases has been _seen_ to fail when its
    property is broken.
 6. The bb-leak hole (`HARNESS.md` §4a) is closed by construction and proved closed.
 
@@ -30,23 +30,23 @@ schema produces plausible numbers that are not evidence.
 
 ## Build order (each step depends on the one above)
 
-| # | step | proves |
-|---|---|---|
-| 1 | **Profile generator** — builds per-arm `DSH_HOME` from a template: freepi plugin copied, install secret seeded, model **pinned**, `mcp-bb` present only for C/D, `bb` PATH shim present only for A/B | arms are real; no `auto` model; no credential in the repo |
-| 2 | **Probe turn** — one cheap turn per run asserting arm identity (`HARNESS.md` §5) | the silent no-tools failure cannot pass |
-| 3 | **Runner** — workspace copy from pin → index → agent → trace with arrival stamps → record | one reproducible run |
-| 4 | **Grader** — suite subset + golden + needle, blind | a submission becomes a score |
-| 5 | **Reporter** — 3 levels, SVG from data, condition headers, trace recomputation | the number is checkable |
-| 6 | **Preregistrar** — digest + refusal on drift | no post-hoc hypothesis moving |
-| 7 | **Selftest** — the 8 cases | the instrument can go red |
-| 8 | **Docs reconciliation** — `PROTOCOL-VS-EXECUTION.md` rows flip to `implemented` **only** where a selftest case covers them | the ledger stops being aspirational |
+| #   | step                                                                                                                                                                                                 | proves                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 1   | **Profile generator** — builds per-arm `DSH_HOME` from a template: freepi plugin copied, install secret seeded, model **pinned**, `mcp-bb` present only for C/D, `bb` PATH shim present only for A/B | arms are real; no `auto` model; no credential in the repo |
+| 2   | **Probe turn** — one cheap turn per run asserting arm identity (`HARNESS.md` §5)                                                                                                                     | the silent no-tools failure cannot pass                   |
+| 3   | **Runner** — workspace copy from pin → index → agent → trace with arrival stamps → record                                                                                                            | one reproducible run                                      |
+| 4   | **Grader** — suite subset + golden + needle, blind                                                                                                                                                   | a submission becomes a score                              |
+| 5   | **Reporter** — 3 levels, SVG from data, condition headers, trace recomputation                                                                                                                       | the number is checkable                                   |
+| 6   | **Preregistrar** — digest + refusal on drift                                                                                                                                                         | no post-hoc hypothesis moving                             |
+| 7   | **Selftest** — the 8 cases                                                                                                                                                                           | the instrument can go red                                 |
+| 8   | **Docs reconciliation** — `PROTOCOL-VS-EXECUTION.md` rows flip to `implemented` **only** where a selftest case covers them                                                                           | the ledger stops being aspirational                       |
 
 ### What W0 actually found (things the plan did not anticipate)
 
 1. **The trace has no `token-before-first-tool-call` measure.** Measured: the harness emits
-   `tool_call` *before* the `step_end` that reports that step's usage, so a prefix
+   `tool_call` _before_ the `step_end` that reports that step's usage, so a prefix
    measurement is structurally impossible, not merely missing. The discovery tax was
-   redefined as *tokens burned before the first edit to a golden file*, plus the first
+   redefined as _tokens burned before the first edit to a golden file_, plus the first
    step's input tokens as the arm's fixed prefix cost.
 2. **The fixture's test command must be a shell string.** `project.test` is a list of
    command strings; an earlier grader executed element 0 as a binary name and every test
@@ -61,7 +61,7 @@ schema produces plausible numbers that are not evidence.
 - `replay-anchor.ts` (dropping non-discriminating tasks before a run) — needs a pinned
   repository to be meaningful; W0 has only the fixture.
 - Container-level network isolation — the trace scan detects installers/network calls and
-  marks the run `invalid`, but does not *prevent* the call. A determined agent is detected,
+  marks the run `invalid`, but does not _prevent_ the call. A determined agent is detected,
   not blocked.
 - `bb setup show` capture, child-process peak RSS, and automated concurrency drift re-runs.
 
@@ -82,7 +82,7 @@ successfully invokes bb in arm A/B must be `invalid`/`bb-leak` — never a score
 - No second language.
 - No `results/` entry — an empty `results/` is the honest state.
 
-## Definition of done for the *instrument*
+## Definition of done for the _instrument_
 
 > A stranger can clone the repo, read `docs/benchmarks/HARNESS.md`, swap in their own
 > model and codebase, run `script/bench/run-arm.ts`, and get a `run-record.json` that
@@ -98,14 +98,14 @@ The first run against a **pinned** repository (p-queue, 27 files) found six defe
 fixture could never have exposed, because the fixture has no clone, no dependency tree and
 no multi-file statuses:
 
-| # | defect | how it read | fix |
-|---|---|---|---|
-| 1 | `project.source` assumed on every project | `path must be of type string` crash | fixtures carry `source`; pins carry `remote` |
-| 2 | submission diff ran over the workspace including `node_modules` | **611 files changed** on a one-file fix | filtered copy for the diff (`--no-index` rejects pathspecs) |
-| 3 | diff paths were absolute | patch embedded the operator's home directory | relative diff from the run directory |
-| 4 | sandbox had no `node_modules` | a **correct** fix scored 0 ("tsx not resolvable") | per-pin dependency cache, symlinked into the sandbox |
-| 5 | `git diff --no-index` given a pathspec | silent usage error | excluded noise by building clean trees instead |
-| 6 | test-name matching tried containment before exact | a required test `intervalCap` **passed** but was reported failed because a *different* failing test contained that string — a **correct submission scored 0** | exact match decides first; containment only as fallback |
+| #   | defect                                                          | how it read                                                                                                                                                   | fix                                                         |
+| --- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | `project.source` assumed on every project                       | `path must be of type string` crash                                                                                                                           | fixtures carry `source`; pins carry `remote`                |
+| 2   | submission diff ran over the workspace including `node_modules` | **611 files changed** on a one-file fix                                                                                                                       | filtered copy for the diff (`--no-index` rejects pathspecs) |
+| 3   | diff paths were absolute                                        | patch embedded the operator's home directory                                                                                                                  | relative diff from the run directory                        |
+| 4   | sandbox had no `node_modules`                                   | a **correct** fix scored 0 ("tsx not resolvable")                                                                                                             | per-pin dependency cache, symlinked into the sandbox        |
+| 5   | `git diff --no-index` given a pathspec                          | silent usage error                                                                                                                                            | excluded noise by building clean trees instead              |
+| 6   | test-name matching tried containment before exact               | a required test `intervalCap` **passed** but was reported failed because a _different_ failing test contained that string — a **correct submission scored 0** | exact match decides first; containment only as fallback     |
 
 Defect 6 is the most dangerous class in this whole project: a grader bug that produces a
 plausible product result. It is now a selftest case (`10b`) and it was mutation-tested —
@@ -114,3 +114,47 @@ restoring containment-first turns that check red.
 **Result of that run:** arm A (no bb) solved the p-queue `timeout` setter bug and graded
 **1.0**. That is the baseline doing real work on a real repository, which is exactly what a
 benchmark needs before it can claim anything about the arm WITH bb.
+
+---
+
+## The golden gate — the defect that would have invalidated a whole wave
+
+Arm A of a real pinned task once fetched the actual upstream fix commit with `curl` and was
+correctly marked `invalid`. That was the harness working. What came next was not.
+
+Re-running with a network-free arm, **all five arms scored 0 on a task that had previously
+been solved**. Four arms failing identically is the signature of a broken task, not of four
+bad agents, so I bisected it. The cause was a two-part asymmetry:
+
+1. `replay-anchor.ts` proves a task by **overlaying the fix's own tests** on the base tree,
+   then asserts they fail at base and pass after the source fix. That is the right proof.
+2. `grade.ts` then graded submissions against the **base** tests.
+
+When a fix changes its own tests, those two are not the same measurement, and grading against
+base can be **impossible**: p-queue `48586f4`'s test patched in the assertion _"The setter does
+not validate, so the next `.add()` rejects instead"_ — which the fix deliberately inverts. The
+base assertion therefore demands the behaviour the fix removes. **The golden patch itself
+scored 0.**
+
+Nothing checked that. Six tasks were admitted, five of them unpassable by their own reference
+fix, and the failure mode reads exactly like "the agents are bad at this task".
+
+Fixed:
+
+- the anchor now emits `golden/<id>.tests.patch`, and the grader applies it to the sandbox
+  before running the suite — reproducing the tree the anchor verified;
+- `check-golden.ts` runs the reference patch through the real grader with no agent involved;
+- `selftest.sh` case `10g` asserts every pinned task's golden scores 1.0.
+
+Two more defects surfaced while fixing that one:
+
+| defect                                                                                                | how it read                                                                                                                                      | fix                                         |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| the grader's dependency cache was keyed by the **project pin**, but tasks run at the fix's **parent** | `ERR_MODULE_NOT_FOUND: eventemitter3` — the golden "failed" because `node_modules` was installed for a different dependency tree                 | key the cache by the task's `base_revision` |
+| `must_not_break` was silently `slice(0, 40)`                                                          | every task showed exactly 40 stability checks; immer and execa each verified 660–790, so "did not break anything" was graded on ~5% of the suite | store the full set                          |
+
+Result: **12 of 12** p-queue and immer tasks now pass their own golden gate (execa pending,
+its suite takes ~700s per run so anchors are slow).
+
+The lesson recorded in the code: _a task its own fix cannot pass is not a task, and "four arms
+failed identically" is evidence about the task, not about the arms._

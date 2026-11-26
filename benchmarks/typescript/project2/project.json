@@ -1,0 +1,16 @@
+{
+  "id": "ts-project2",
+  "language": "typescript",
+  "remote": "https://github.com/immerjs/immer",
+  "revision": "784c86bb234e805566481c9425fcb2a3897e8bcc",
+  "tarball_sha256": "bd85e88e66936b63cbdd1bd8ede27e1d3d9b0bb4fbf72cfd64a7bb85ca7a7ff5",
+  "setup": [],
+  "test": ["npx vitest run --reporter=tap"],
+  "test_subset": null,
+  "build_image": null,
+  "size_class": "medium",
+  "trackedFiles": 169,
+  "languages_indexed": ["typescript"],
+  "npm_install_flags": ["--legacy-peer-deps"],
+  "note": "Immutable drafts with subtle invariants. Medium size: enough symbols for graph traversal to matter, few enough that a careful reader could still find things by hand. Its devDependencies pin incompatible vitest majors, so --legacy-peer-deps is required (recorded here, not hidden in a shell)."
+}

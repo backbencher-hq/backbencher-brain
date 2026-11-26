@@ -1,0 +1,17 @@
+{
+  "id": "ts-project3",
+  "language": "typescript",
+  "remote": "https://github.com/sindresorhus/execa",
+  "revision": "6f856d55bd3ea8b3f240a7fc4502d2ac50697eec",
+  "tarball_sha256": "e6880210ca1f1743bd4bd0f89b9c5a1bb0f1e1cf31c46c2c58ceb6ba6dbd05b9",
+  "setup": [],
+  "test": [
+    "node --test --test-concurrency=1 --test-timeout=240000 \"test/!(fixtures|helpers)/*.js\""
+  ],
+  "test_subset": null,
+  "build_image": null,
+  "size_class": "large",
+  "trackedFiles": 686,
+  "languages_indexed": ["typescript", "javascript"],
+  "note": "Large and cross-cutting. This is the slot where navigation SHOULD pay: 686 files, and the fixes span option plumbing that no single grep finds. Its suite takes ~700s, so the anchor timeout was raised to accommodate it."
+}

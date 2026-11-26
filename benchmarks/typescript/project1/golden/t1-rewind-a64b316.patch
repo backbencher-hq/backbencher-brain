@@ -1,0 +1,121 @@
+diff --git a/source/index.ts b/source/index.ts
+index a1dbca3..3f47edd 100644
+--- a/source/index.ts
++++ b/source/index.ts
+@@ -63,6 +63,8 @@ export default class PQueue<QueueType extends Queue<RunFunction, EnqueueOptionsT
+ 		timeout?: number;
+ 	}>();
+ 
++	readonly #queueAbortListenerCleanupFunctions = new Set<() => void>();
++
+ 	/**
+ 	Get or set the default timeout for all tasks. Can be changed at runtime.
+ 
+@@ -452,7 +454,11 @@ export default class PQueue<QueueType extends Queue<RunFunction, EnqueueOptionsT
+ 			// Create a unique symbol for tracking this task
+ 			const taskSymbol = Symbol(`task-${options.id}`);
+ 
+-			this.#queue.enqueue(async () => {
++			let cleanupQueueAbortHandler = () => undefined;
++			const run = async () => {
++				// Task is now running — remove the queued-state abort listener
++				cleanupQueueAbortHandler();
++
+ 				this.#pending++;
+ 
+ 				// Track this running task
+@@ -522,7 +528,44 @@ export default class PQueue<QueueType extends Queue<RunFunction, EnqueueOptionsT
+ 						this.#next();
+ 					});
+ 				}
+-			}, options);
++			};
++
++			this.#queue.enqueue(run, options);
++
++			const removeQueuedTask = () => {
++				if (this.#queue instanceof PriorityQueue) {
++					this.#queue.remove(run);
++					return;
++				}
++
++				this.#queue.remove?.(options.id!); // Intentionally best-effort: queued abort removal is only supported for queue classes that implement `.remove()`.
++			};
++
++			// Handle abort while task is waiting in the queue
++			if (options.signal) {
++				const {signal} = options;
++
++				const queueAbortHandler = () => {
++					cleanupQueueAbortHandler();
++					removeQueuedTask();
++					reject(signal.reason);
++					this.#tryToStartAnother();
++					this.emit('next');
++				};
++
++				cleanupQueueAbortHandler = () => {
++					signal.removeEventListener('abort', queueAbortHandler);
++					this.#queueAbortListenerCleanupFunctions.delete(cleanupQueueAbortHandler);
++				};
++
++				if (signal.aborted) {
++					queueAbortHandler();
++					return;
++				}
++
++				signal.addEventListener('abort', queueAbortHandler, {once: true});
++				this.#queueAbortListenerCleanupFunctions.add(cleanupQueueAbortHandler);
++			}
+ 
+ 			this.emit('add');
+ 
+@@ -571,6 +614,10 @@ export default class PQueue<QueueType extends Queue<RunFunction, EnqueueOptionsT
+ 	Clear the queue.
+ 	*/
+ 	clear(): void {
++		for (const cleanupQueueAbortHandler of this.#queueAbortListenerCleanupFunctions) {
++			cleanupQueueAbortHandler();
++		}
++
+ 		this.#queue = new this.#queueClass();
+ 
+ 		// Clear interval timer since queue is now empty (consistent with #tryToStartAnother)
+diff --git a/source/priority-queue.ts b/source/priority-queue.ts
+index aace793..93ec7e1 100644
+--- a/source/priority-queue.ts
++++ b/source/priority-queue.ts
+@@ -40,6 +40,22 @@ export default class PriorityQueue implements Queue<RunFunction, PriorityQueueOp
+ 		this.enqueue(item!.run, {priority, id});
+ 	}
+ 
++	remove(id: string): void;
++	remove(run: RunFunction): void;
++	remove(idOrRun: string | RunFunction): void {
++		const index = this.#queue.findIndex((element: Readonly<PriorityQueueOptions & {run: RunFunction}>) => {
++			if (typeof idOrRun === 'string') {
++				return element.id === idOrRun;
++			}
++
++			return element.run === idOrRun;
++		});
++
++		if (index !== -1) {
++			this.#queue.splice(index, 1);
++		}
++	}
++
+ 	dequeue(): RunFunction | undefined {
+ 		const item = this.#queue.shift();
+ 		return item?.run;
+diff --git a/source/queue.ts b/source/queue.ts
+index 459d29b..3492eb5 100644
+--- a/source/queue.ts
++++ b/source/queue.ts
+@@ -6,4 +6,6 @@ export type Queue<Element, Options> = {
+ 	dequeue: () => Element | undefined;
+ 	enqueue: (run: Element, options?: Partial<Options>) => void;
+ 	setPriority: (id: string, priority: number) => void;
++	// TODO: Make this required in the next major version.
++	remove?: (id: string) => void;
+ };

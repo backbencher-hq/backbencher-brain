@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "why": "Tests OBSERVED to disagree between identical runs on this machine. They cannot grade a submission, because their own outcome is not reproducible: a correct fix scores 0 whenever the box is loaded. Each entry names the evidence, not a guess.",
+  "rule": "A test matching any pattern is excluded from BOTH must_pass and must_not_break, and recorded in the task's anchor.unstable_tests. Excluding a timing test is not admitting weakness; grading someone on a coin flip is.",
+  "patterns": [
+    {
+      "match": "interval should be maintained when using await between adds",
+      "evidence": "Failed in the golden gate on 6/6 p-queue tasks after passing in the anchor's two runs; passes 5/5 when run alone. Depends on wall-clock scheduling between awaits."
+    },
+    {
+      "match": "intervalCap should be respected with high concurrency",
+      "evidence": "Moved into must_pass for a TIMEOUT fix that cannot affect interval caps; passed 5/5 alone, failed under concurrent anchor load."
+    },
+    {
+      "match": "task added in a fresh window runs immediately after queue went idle mid-window",
+      "evidence": "Disagreed across identical runs during the golden gate."
+    },
+    {
+      "match": "fresh window after idle still enforces the cap for the following task",
+      "evidence": "Disagreed across identical runs during the golden gate."
+    },
+    {
+      "match": "carryoverIntervalCount does not break the fresh window after idle mid-window",
+      "evidence": "Disagreed across identical runs during the golden gate."
+    },
+    {
+      "match": "task added after going idle but before the boundary still waits for the current window",
+      "evidence": "Disagreed across identical runs during the golden gate."
+    },
+    {
+      "match": "strict mode multiple complete intervals",
+      "evidence": "Disagreed across identical runs during the golden gate."
+    },
+    {
+      "match": "pending promises counted fast enough",
+      "evidence": "Name states its own timing dependence; measured disagreement under load."
+    },
+    {
+      "match": "pending promises with abortions counted fast enough",
+      "evidence": "Name states its own timing dependence; measured disagreement under load."
+    },
+    {
+      "match": "rate-limit with high concurrency",
+      "evidence": "Concurrency-sensitive; excluded on the same evidence as the interval tests."
+    },
+    {
+      "match": ".onPendingZero() - high concurrency",
+      "evidence": "Concurrency-sensitive; excluded on the same evidence as the interval tests."
+    }
+  ]
+}

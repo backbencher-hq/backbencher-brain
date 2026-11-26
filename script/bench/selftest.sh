@@ -360,6 +360,70 @@ R=$($TSX "$WORK/pl.ts" 2>/dev/null | tail -1)
 [ "$R" = "PASSED" ] && ok "placebo rewrites retrieval arguments and leaves bb_health/bb_index untouched" || bad "placebo rewrite -> '$R'"
 
 # ─────────────────────────────────────────────────────────────────────────────
+head "10e. skills — a control arm must not inherit the global skill catalog"
+
+# MEASURED LEAK CLASS: DSH reads skills from a GLOBAL agents home (~/.agents/skills). This
+# machine has the nine published bb skills installed there. Without a per-arm agents home,
+# arms A/B/C would load them and arm D would differ from C by nothing.
+# This case asserts the profile builder isolates it: D gets the real set, everyone else zero.
+cat > "$WORK/sk.ts" <<TS
+import { buildProfile } from "${ROOT}/script/bench/lib/profile.ts"
+import { rmSync } from "node:fs"
+const root = process.cwd() + "/benchmarks/.work/selftest/sk"
+rmSync(root, { recursive: true, force: true })
+const out: Record<string, number> = {}
+for (const arm of ["A", "B", "C", "D", "E"] as const) {
+  const p = buildProfile({ waveRoot: root, arm, projectDir: root, provider: "p", model: "m" })
+  out[arm] = p.skillsInstalled
+}
+const ok = out.A === 0 && out.B === 0 && out.C === 0 && out.E === 0 && out.D > 0
+console.log(ok ? "PASSED" : "FAILED " + JSON.stringify(out))
+TS
+R=$($TSX "$WORK/sk.ts" 2>/dev/null | tail -1)
+[ "$R" = "PASSED" ] && ok "only arm D receives the published bb skills; A/B/C/E are isolated from the global catalog" || bad "skills leak -> '$R'"
+
+# ─────────────────────────────────────────────────────────────────────────────
+head "10f. manual block — generated from the tool surface, and drift is detected"
+
+# The block is identical across B/C/D/E; if it silently drifts it keeps them byte-identical
+# to each other while describing a bb that no longer exists. `check` must notice.
+if npx tsx "$ROOT/script/bench/manual-block.ts" check >/dev/null 2>&1; then
+  ok "the committed manual block matches a fresh render of the current tool surface"
+else
+  bad "manual block has drifted from the tool surface (run: manual-block.ts write)"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+head "10g. golden — the reference fix MUST score 1.0 on its own task"
+
+# THE GATE THAT WAS MISSING, and the most expensive defect in the whole project.
+#
+# A task whose golden patch cannot pass is not a task. This was never checked, and it shipped:
+# p-queue 48586f4 scored 0 for every one of five arms, because the fix also changes its OWN
+# test to expect the new behaviour, while the grader graded against the BASE test which
+# demands the old one. Four arms failing identically looked like four agents being bad at the
+# task. It took a manual bisect to find, and it would have invalidated an entire wave.
+#
+# This case is cheap (one task, no agent) and it makes the whole class impossible.
+GOLDEN_OK=0
+GOLDEN_N=0
+for TF in "$ROOT"/benchmarks/typescript/*/tasks/*.json; do
+  [ -f "$TF" ] || continue
+  GOLDEN_N=$((GOLDEN_N + 1))
+  PROJ="$(dirname "$(dirname "$TF")")/project.json"
+  OUT=$($TSX "$ROOT/script/bench/check-golden.ts" "$TF" "$PROJ" 2>&1 | tail -1)
+  case "$OUT" in
+    PASS*) ;;
+    *) bad "golden does not pass its own task: $(basename "$TF") -> $OUT"; GOLDEN_OK=1 ;;
+  esac
+done
+if [ "$GOLDEN_N" -eq 0 ]; then
+  skip "no pinned tasks yet, nothing to check"
+elif [ "$GOLDEN_OK" -eq 0 ]; then
+  ok "all $GOLDEN_N pinned task(s): the golden patch scores 1.0 (a task its own fix cannot pass is not a task)"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 head "11. the run directory is self-contained enough to publish"
 
 cat > "$WORK/evidence.ts" <<TS

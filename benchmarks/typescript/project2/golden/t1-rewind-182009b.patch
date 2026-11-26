@@ -1,0 +1,16 @@
+diff --git a/src/core/immerClass.ts b/src/core/immerClass.ts
+index 2922f61..1083dcf 100644
+--- a/src/core/immerClass.ts
++++ b/src/core/immerClass.ts
+@@ -55,8 +55,9 @@ export class Immer implements ProducersFns {
+ 		useStrictIteration?: boolean
+ 	}) {
+ 		if (isBoolean(config?.autoFreeze)) this.setAutoFreeze(config!.autoFreeze)
+-		if (isBoolean(config?.useStrictShallowCopy))
+-			this.setUseStrictShallowCopy(config!.useStrictShallowCopy)
++		const strictShallowCopy = config?.useStrictShallowCopy
++		if (isBoolean(strictShallowCopy) || strictShallowCopy === "class_only")
++			this.setUseStrictShallowCopy(strictShallowCopy)
+ 		if (isBoolean(config?.useStrictIteration))
+ 			this.setUseStrictIteration(config!.useStrictIteration)
+ 	}
