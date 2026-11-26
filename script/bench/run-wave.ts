@@ -143,7 +143,7 @@ async function main(): Promise<void> {
       const cell = queue.shift();
       if (!cell) return;
       const label = `${path.basename(cell.task, ".json")} arm=${cell.arm}`;
-      const runArgs = [
+      const runArgs: string[] = [
         path.join(HERE, "run-arm.ts"),
         "--task",
         cell.task,
@@ -157,7 +157,19 @@ async function main(): Promise<void> {
         String(cell.rep),
       ];
       if (fixture) runArgs.push("--fixture");
-      const r = await run(TSX, runArgs);
+      let r = await run(TSX, runArgs);
+      // RETRY A RETRYABLE PROVIDER FAILURE, ONCE.
+      //
+      // The FreePi provider intermittently refuses a session with FREEPI_ADS_REQUIRED while the
+      // identical profile answers normally moments later. That is a transient condition, and the
+      // only correct responses are "retry" or "report it as retryable" -- never "score it as the
+      // arm being bad". Measured: a wave at --jobs 2 failed every cell in ~7s this way, then a
+      // single run of the same profile succeeded immediately.
+      if (/RETRYABLE|FREEPI_ADS_REQUIRED|rate.?limit/i.test(r.out)) {
+        console.log(`  retry ${label} (transient provider failure)`);
+        await new Promise((res) => setTimeout(res, 15_000));
+        r = await run(TSX, runArgs);
+      }
       if (r.code !== 0) {
         failed++;
         failures.push(`${label}: run-arm exited ${r.code}`);

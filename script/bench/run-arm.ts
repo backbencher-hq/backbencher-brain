@@ -607,11 +607,34 @@ async function main(): Promise<void> {
     const s = summarize(events);
     if (spec.bbMcp) {
       // C/D/E must have CALLED a bb tool and got a non-error answer.
-      const ok = s.bbCallCount > 0 && s.bbRefusals === 0;
+      // AT LEAST ONE SUCCESSFUL ANSWER, not "zero errors".
+      //
+      // The probe's job is to prove the server LOADED and ANSWERS. Requiring zero refusals
+      // conflates that with "the agent never made a bad call" -- and measured, an agent that
+      // passed an unsupported regex to `bb_search` produced one error alongside four good
+      // answers, and the run was thrown away as "the server did not load". Five calls, four of
+      // them answered from real index data, is conclusive proof the server is up.
+      //
+      // Refusals are still RECORDED (bb.refusals in the record) because a tool surface that
+      // errors on ordinary input is worth seeing -- but it is not the same defect as a dead
+      // server, and the two must not share a verdict.
+      const answered = s.bbCallCount - s.bbRefusals;
+      const ok = answered > 0;
       if (!ok) {
+        // DISTINGUISH A DEAD PROVIDER FROM A DEAD MCP SERVER.
+        //
+        // Both produce "0 bb calls", and the message used to assert the server was at fault.
+        // Measured: a probe turn that died on FREEPI_ADS_REQUIRED -- the provider refusing the
+        // session before any MCP tool could run -- was reported as "the server did not load",
+        // which sends a reader to debug the wrong component entirely, and would invite someone
+        // to "fix" a healthy MCP server.
+        const cause =
+          s.finalReason !== null && s.finalReason !== "completed"
+            ? `the PROBE TURN ITSELF did not complete (reason "${s.finalReason}"${providerNote(s)}), so no tool call could happen. This is NOT evidence about the MCP server.`
+            : `the server did not load, so this run would measure an agent WITHOUT the tools`;
         finish(
           "invalid",
-          `probe: arm ${a.arm} has bb mounted but made ${s.bbCallCount} bb call(s) with ${s.bbRefusals} refusal(s) — the server did not load, so this run would measure an agent WITHOUT the tools`,
+          `probe: arm ${a.arm} made ${s.bbCallCount} bb call(s) and NONE of them produced an answer (${s.bbRefusals} refusal(s)) — ${cause}`,
         );
         return;
       }
@@ -828,6 +851,30 @@ async function main(): Promise<void> {
   // The harness reports WHY a turn ended and the runner used to ignore it, so a crashed or
   // aborted turn was recorded as `valid` and scored as a failure of the ARM rather than of
   // the infrastructure. Only `completed` is a valid measurement.
+
+/**
+ * Name a KNOWN provider failure so the record says what to do about it.
+ *
+ * Measured: a wave launched at concurrency 2 failed every cell in ~7s with
+ * `FREEPI_ADS_REQUIRED` ("Open this session in the DeepSeek Harness window with the FreePi bar
+ * showing, then retry") while the identical profile, run alone, answered normally. That is a
+ * TRANSIENT provider/session condition, not a property of the arm -- and a run record that says
+ * only "turn ended with error" invites a reader to conclude the arm is bad.
+ *
+ * These are still `infra_error` (not scored), but they are labelled retryable, because the
+ * correct response to a retryable failure is to retry it, never to record it as a result.
+ */
+function providerNote(s: { finalReason: string | null; providerError?: string | null }): string {
+  const code = s.providerError ?? "";
+  if (/FREEPI_ADS_REQUIRED/i.test(code)) {
+    return " -- RETRYABLE: the provider requires an interactive FreePi session (FREEPI_ADS_REQUIRED). Seen when several arms run at once; a single run of the same profile succeeds. Retry at lower concurrency rather than counting this against the arm."
+  }
+  if (/rate.?limit|429/i.test(code)) {
+    return " -- RETRYABLE: provider rate limit. Lower --jobs and retry."
+  }
+  return code.length > 0 ? ` (provider error: ${code.slice(0, 200)})` : ""
+}
+
   // ── BENCHMARK-CONTAMINATION GATE ────────────────────────────────────────────
   //
   // An agent that reaches the harness's own files is not solving the task. This is checked
@@ -857,7 +904,7 @@ async function main(): Promise<void> {
   if (s.finalReason !== null && s.finalReason !== "completed") {
     finish(
       "infra_error",
-      `turn ended with reason "${s.finalReason}" (not completed); this is not a measurement of the arm`,
+      `turn ended with reason "${s.finalReason}" (not completed); this is not a measurement of the arm${providerNote(s)}`,
     );
     return;
   }

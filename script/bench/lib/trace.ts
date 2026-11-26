@@ -71,6 +71,8 @@ export interface TraceSummary {
   finalText: string
   /** Reason from the terminal `final` event. */
   finalReason: string | null
+  /** The provider/runtime error code and message, when the turn did not complete. */
+  providerError: string | null
   turnStartMs: number | null
   firstToolCallMs: number | null
 }
@@ -111,6 +113,7 @@ export function summarize(events: TraceEvent[]): TraceSummary {
   let cwd: string | null = null
   let finalText = ""
   let finalReason: string | null = null
+  let providerError: string | null = null
   let inputTokens = 0
   let outputTokens = 0
   let anyTokens = false
@@ -130,6 +133,22 @@ export function summarize(events: TraceEvent[]): TraceSummary {
         break
       case "status": {
         if (e.phase === "turn_start" && turnStartMs === null) turnStartMs = t
+        // THE PROVIDER'S OWN ERROR CODE.
+        //
+        // The difference between "the arm failed" and "the provider refused" is the difference
+        // between a result and no result. A turn that dies on FREEPI_ADS_REQUIRED in 7 seconds
+        // used to record only "turn ended with reason error" and read exactly like a bad arm.
+        //
+        // It is a STATUS PHASE (`type:"status", phase:"turn_end"`), NOT an event type of its
+        // own -- which is why the first attempt at this captured nothing.
+        if (e.phase === "turn_end") {
+          const r = e.reason as Record<string, unknown> | undefined
+          const err = r?.error as Record<string, unknown> | undefined
+          if (err) {
+            const parts = [err.code, err.message].filter((x): x is string => typeof x === "string")
+            if (parts.length > 0) providerError = parts.join(": ")
+          }
+        }
         if (e.phase === "step_end") {
           const u = e.usage as Record<string, unknown> | undefined
           const inT = num(u?.inputTokens)
@@ -199,6 +218,7 @@ export function summarize(events: TraceEvent[]): TraceSummary {
     usageComplete,
     finalText,
     finalReason,
+    providerError,
     turnStartMs,
     firstToolCallMs,
   }
