@@ -795,6 +795,71 @@ function leadingIdentifierOf(text: string): string {
   return text.slice(0, end);
 }
 
+/** THE LOCAL NAMES THIS FILE BINDS THROUGH AN `import`, so a receiver root that came from
+ *  another file is recognisable as one this pass cannot type. Read from the tree rather than
+ *  from the engine's import map because the map is filled by a LATER pass
+ *  (`publishImportedBindingEvidence`), and a receiver fact computed before it would silently
+ *  see an empty set — the same order-dependence that makes hidden instance state a trap here.
+ *
+ *  Both specifier shapes count: `import { w }` / `import { x as w }` bind a value name, and
+ *  `import * as ns` binds the namespace. Type-only specifiers are included because a receiver
+ *  root is a VALUE position; an `import type { T }` can never appear there, so counting it
+ *  costs nothing and keeps the rule one line. */
+function importedValueBindingNames(root: Node): Set<string> {
+  const names = new Set<string>();
+  const walk = (node: Node | null): void => {
+    if (!node) return;
+    if (node.type === "type_only_import" || node.type === "import_statement") {
+      // fall through to the children; `import type` marks the SPECIFIER, not the statement
+    }
+    if (node.type === "import_specifier" || node.type === "namespace_import") {
+      const alias = node.childForFieldName("alias");
+      const name = node.childForFieldName("name") ?? node.namedChild(0);
+      if (alias?.text) names.add(alias.text);
+      else if (name?.text && name.text !== "*") names.add(name.text);
+    }
+    for (let i = 0; i < node.namedChildCount; i++) walk(node.namedChild(i));
+  };
+  walk(root);
+  return names;
+}
+
+/** STRIP THE WRAPPERS THAT DO NOT CHANGE A RECEIVER'S TYPE, so a receiver is typed by
+ *  what it actually IS rather than by the syntax wrapped around it.
+ *
+ *  `receiverOwnerType` branches on the receiver node's own `type`, and these three
+ *  wrappers each hid the node underneath: `(new Worker()).run()` and
+ *  `(new Worker() as Worker).run()` both arrive as a `parenthesized_expression` /
+ *  `as_expression`, matched no branch, and emitted NO owner — so the store fell back to
+ *  the NAME model and bound `run` to a same-named member in a file the caller never
+ *  imports. MEASURED on a three-file repro: both bound to `other.ts:run` while the call
+ *  names `Worker`.
+ *
+ *  `non_null_expression` (`w!.run()`) is included for the same reason: the `!` asserts a
+ *  value is present, it does not change its type. Unlike the two above, that shape DID
+ *  already carry `typescriptUnresolvedReceiver` and so was withdrawn rather than
+ *  mis-bound — it becomes resolvable (and correct) through this unwrap.
+ *
+ *  Only the OUTERMOST chain is stripped, and only when a child exists: a cast to a
+ *  DIFFERENT type (`(new Worker() as any).run()`) unwraps to `new Worker()` and is
+ *  therefore reported as Worker — which is what the source wrote, and is why the cast
+ *  and the parenthesis are treated identically here. */
+function unwrapReceiverWrapper(node: Node | null | undefined): Node | null {
+  let current = node ?? null;
+  // `as_expression` is DELIBERATELY ABSENT. A parenthesis and a `!` are wrappers that do not
+  // change what the receiver IS; a cast is a STATEMENT of its type, and stripping it would
+  // throw that statement away and re-derive the type from the operand — which for
+  // `(value as Alpha).run()` against `let value: unknown` is exactly backwards. The cast is
+  // handled where a stated type belongs: as its own owner evidence (`castTypeName`).
+  while (
+    current &&
+    ["parenthesized_expression", "non_null_expression"].includes(current.type)
+  ) {
+    current = current.namedChild(0);
+  }
+  return current;
+}
+
 /** The CONTENT of a quoted-string node's own text, when that text is ONE complete
  *  quoted literal. Replaces `/^(['"])([^\\\r\n]*)\1$/` + `slice(1, -1)`.
  *
@@ -3600,6 +3665,7 @@ class TypeScriptAnalysisRunner {
       symbols,
       exports,
       receiverFacts,
+      importedValueBindingNames(rootNode),
     );
 
     // PHASE 5: Add containment relationships
@@ -6965,6 +7031,7 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
     exports: ASTEngine.ExportInfo[],
     receiverFacts: ReceiverFacts,
+    importedNames: Set<string>,
   ): void {
     // 1. Extract inheritance (extends) relationships from classes
     this.extractInheritanceRelationships(symbols, relationships);
@@ -6973,7 +7040,13 @@ class TypeScriptAnalysisRunner {
     this.extractImplementsRelationships(symbols, relationships);
 
     // 3. Extract call relationships (and, in the same walk, instantiations)
-    this.extractCallRelationships(node, relationships, symbols, receiverFacts);
+    this.extractCallRelationships(
+      node,
+      relationships,
+      symbols,
+      receiverFacts,
+      importedNames,
+    );
 
     // 4. Extract usage/reference relationships
     this.extractUsageRelationships(node, relationships, symbols, receiverFacts);
@@ -9146,7 +9219,9 @@ class TypeScriptAnalysisRunner {
     scope: number,
   ): { type: string; evidence: string } | undefined {
     if (callee.type !== "member_expression") return undefined;
-    const object = callee.childForFieldName("object") ?? callee.namedChild(0);
+    const object = unwrapReceiverWrapper(
+      callee.childForFieldName("object") ?? callee.namedChild(0),
+    );
     if (!object) return undefined;
     if (object.type === "identifier") {
       // THE SCOPED LOOKUP. The binding of this name VISIBLE FROM THE ROW'S OWN SCOPE — a name
@@ -9199,6 +9274,14 @@ class TypeScriptAnalysisRunner {
     // model, which binds `run` to whichever same-named member won its tie-break — MEASURED on a
     // three-file repro: `new Worker().run()` in main.ts bound to `Other.run` in another file,
     // because `Worker` and `Other` both declare `run` and nothing withdrew the name binding.
+    // C10 THE CAST RECEIVER — `(x as Widget).m()`: the source STATES the type outright.
+    // The cast is the strongest same-line evidence there is, so it is read as the owner
+    // rather than unwrapped away (a cast is not a wrapper).
+    if (object.type === "as_expression" || object.type === "type_assertion") {
+      const cast = this.castTypeName(object);
+      if (cast) return { type: cast, evidence: "cast" };
+      return undefined;
+    }
     if (object.type === "new_expression") {
       const ctor =
         object.childForFieldName("constructor") ?? object.namedChild(0);
@@ -9283,6 +9366,18 @@ class TypeScriptAnalysisRunner {
   }
 
   /** An unknown local receiver must not fall back to a file-wide method-name guess. */
+  /** Does this file bind the receiver root through an `import`? A plain `import { w }` or
+   *  `import * as ns` names a VALUE whose type the declaration states in ANOTHER file, so this
+   *  pass cannot type it — same conclusion as a local binding with no stated type, and the row
+   *  must be withdrawn rather than allowed to tie-break by name. */
+  private hasImportedReceiverBinding(callee: Node, importedNames: Set<string>): boolean {
+    if (callee.type !== "member_expression") return false;
+    const root = unwrapReceiverWrapper(
+      callee.childForFieldName("object") ?? callee.namedChild(0),
+    );
+    return root?.type === "identifier" && importedNames.has(root.text);
+  }
+
   private hasLocalReceiverBinding(
     callee: Node,
     facts: ReceiverFacts,
@@ -9325,6 +9420,7 @@ class TypeScriptAnalysisRunner {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
     receiverFacts: ReceiverFacts,
+    importedNames: Set<string>,
   ): void {
     // PERF: `ancestorInDecorator` is threaded rather than recomputed per node.
     // See `inDecoratorPosition`: web-tree-sitter's `.parent` is a WASM descendant
@@ -9477,12 +9573,22 @@ class TypeScriptAnalysisRunner {
                         ownerEvidence: ownerHint.evidence,
                       }
                     : {}),
+                  // AN IMPORTED VALUE BINDING IS ALSO A RECEIVER WE CANNOT TYPE, and it must be
+                  // WITHDRAWN rather than left to the name model (2026-11-25). `import { w } from
+                  // "./used"; w.run()` states no type: the declaration lives in another file, so
+                  // this pass has no member set to resolve inside. Without the flag the row fell
+                  // to the store's tie-break and bound to a same-named member in a THIRD file —
+                  // MEASURED: `workerInstance.run()` bound to `other.ts:run` when the import
+                  // names `used.ts`. `hasLocalReceiverBinding` covers names this FILE binds; a
+                  // name bound by an `import` is bound here too, so it belongs under the same
+                  // withdrawal (the two are one question: does this file bind the name?).
                   ...(!ownerHint &&
-                  this.hasLocalReceiverBinding(
+                  (this.hasLocalReceiverBinding(
                     callee,
                     receiverTypes,
                     this.scopeIdOf(callee),
-                  )
+                  ) ||
+                    this.hasImportedReceiverBinding(callee, importedNames))
                     ? { typescriptUnresolvedReceiver: true }
                     : {}),
                   // WHICH WRAPPER THE LEAF WAS REDUCED THROUGH, recorded only when there was

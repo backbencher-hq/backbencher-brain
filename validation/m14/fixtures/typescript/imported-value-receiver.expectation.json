@@ -1,0 +1,36 @@
+{
+  "fixtureId": "typescript/imported-value-receiver",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE IMPORTED VALUE RECEIVER (2026-11-25). A receiver root this file binds through `import` names a VALUE whose type the DECLARING file states; this pass sees the binding but not the declaration, so it has no member set to resolve `run` inside. The honest answer is to WITHDRAW the row via `typescriptUnresolvedReceiver`, which makes the store drop the name binding. Without it the row fell to the store's tie-break and bound to a SAME-NAMED member in a third file — MEASURED on a three-file repro: `workerInstance.run()`, imported from a file where the value is a `Worker`, bound to `other.ts:run`, a class the caller never imports and whose `run` the value cannot be. The import specifier here resolves to nothing on disk, which is exactly the shape under test: a binding whose type is NOT in this file. `Other` is load-bearing — it makes `run` ambiguous so the name model has something wrong to pick. The pin is `owner: null` PLUS the withdrawal flag: null alone would also pass a row that simply never resolved, which is why the flag is asserted separately.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "viaImportedValue",
+      "target": "run",
+      "line_number": 26,
+      "meta.owner": null,
+      "meta.typescriptUnresolvedReceiver": true,
+      "note": "THE CONTRACT: no owner, and the explicit withdrawal that tells the store not to tie-break by name"
+    }
+  ],
+  "expectSymbols": [
+    { "name": "Other", "kind": "class" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "viaImportedValue",
+      "target": "run",
+      "meta.owner": "Other",
+      "note": "THE DEFECT: a cross-file misbinding to a class the caller never imports"
+    },
+    {
+      "type": "calls",
+      "from": "viaImportedValue",
+      "target": "run",
+      "meta.typescriptUnresolvedReceiver": false,
+      "note": "THE PRE-FIX SHAPE: no withdrawal, so the store's name model decides the binding"
+    }
+  ]
+}

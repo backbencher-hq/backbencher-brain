@@ -155,7 +155,12 @@ const unsupported = new Set([
   "callableLogical",
   "lateNested",
   "forVar",
-  "lateUnknown",
+  // 2026-11-25: `lateUnknown` REMOVED from this set. Its source is
+  // `let value: unknown; value = new Alpha(); (value as Alpha).run()` — the CAST states Alpha,
+  // so TypeScript's own checker (the oracle below) resolves the member to `Alpha.run` and the
+  // analyzer now agrees. Keeping it here pinned the OLD limitation as the expectation: the gate
+  // asserted `owner: null` while the correct answer was `Alpha`, so a correct analyzer failed.
+  // This gate is now STRICTER, not looser — the scenario is judged against tsc instead of exempted.
 ]);
 const visit = (node: ts.Node): void => {
   if (

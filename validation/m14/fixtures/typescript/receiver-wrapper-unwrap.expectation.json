@@ -1,0 +1,59 @@
+{
+  "fixtureId": "typescript/receiver-wrapper-unwrap",
+  "language": "typescript",
+  "authoredBeforeAnalyzerRun": false,
+  "rationale": "THE WRAPPED RECEIVER (C10, 2026-11-25). receiverOwnerType branches on the receiver node's own `type`, so a parenthesis (`(new Worker()).run()`) and a non-null assertion (`w!.run()`) each hid the node underneath: neither matched a branch, neither carried `metadata.owner`, and both fell to the store's NAME model. MEASURED on a three-file repro: `(new Worker()).run()` bound to `other.ts:run` while the caller imports only `Worker`. The rival `Other.run` is load-bearing — without a same-named member in the file the name model resolves correctly and this fixture passes with or without the fix. A CAST is pinned separately and with its own evidence class: `(value as Worker).run()` STATES the type, so the analyzer must report `cast` rather than unwrap the cast away and re-derive the type from `value: unknown`.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "viaParenthesizedNew",
+      "target": "run",
+      "line_number": 24,
+      "meta.owner": "Worker",
+      "note": "THE GAIN: the parenthesis is stripped, so the new_expression underneath states the owner"
+    },
+    {
+      "type": "calls",
+      "from": "viaNonNull",
+      "target": "run",
+      "line_number": 28,
+      "meta.owner": "Worker",
+      "note": "THE GAIN: `!` asserts presence, it does not change the type, so the parameter's type survives"
+    },
+    {
+      "type": "calls",
+      "from": "viaCast",
+      "target": "run",
+      "line_number": 32,
+      "meta.owner": "Worker",
+      "note": "CONTROL/GUARD: a cast is a STATED type; unwrapping it would re-derive from `unknown` and lose it"
+    }
+  ],
+  "expectSymbols": [
+    { "name": "Worker", "kind": "class" },
+    { "name": "Other", "kind": "class" }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "viaParenthesizedNew",
+      "target": "run",
+      "meta.owner": "Other",
+      "note": "THE DEFECT: binding to the rival class the file never imports"
+    },
+    {
+      "type": "calls",
+      "from": "viaNonNull",
+      "target": "run",
+      "meta.owner": null,
+      "note": "THE PRE-FIX SHAPE: no owner at all, leaving the store to the name model"
+    },
+    {
+      "type": "calls",
+      "from": "viaCast",
+      "target": "run",
+      "meta.ownerEvidence": "new-expression",
+      "note": "A cast must NOT be re-derived as an instantiation; its evidence class is `cast`"
+    }
+  ]
+}

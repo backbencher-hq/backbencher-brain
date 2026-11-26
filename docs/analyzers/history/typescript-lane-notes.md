@@ -169,3 +169,47 @@ Two things made this visible only now, and both are worth keeping in mind:
     they threw on `undefined` before asserting anything. They had been BLIND, not
     passing. A lane's own "32/32" is worth nothing if the healthiest-looking instrument
     is one that never runs its assertion.
+
+## C10 — the wrapped receiver, and the two more misbindings it uncovered
+
+After C9 was fixed the obvious question was whether the same class of defect existed in
+other receiver shapes. It did — two more, plus a third that is a different question:
+
+**The wrappers (same defect as C9).** `receiverOwnerType` branches on the receiver node's
+own `type`, and a parenthesis or a `!` HIDED the node underneath. `(new Worker()).run()` and
+`w!.run()` matched no branch, carried no `owner`, and fell to the store's NAME model. On the
+three-file matrix both bound to `other.ts:run` — `(new Worker()).run()` from a file importing
+only `Worker`. A parenthesis and a `!` are wrappers: they do not change what the receiver IS,
+so they are now stripped before typing.
+
+**The cast is a different thing, and getting it wrong is easy.** The first fix unwrapped
+`as_expression` along with the other two. That is backwards: a cast STATES a type, so
+unwrapping it throws the statement away and re-derives from the operand — for
+`let value: unknown; value = new Alpha(); (value as Alpha).run()` it loses `Alpha` entirely.
+The `verify-typescript-receiver-writes` gate caught this immediately, and its message was
+what told me which way round the rule goes. A cast is now read as the owner it states, with
+its own evidence class (`cast`), and the gate's `lateUnknown` scenario — which it had
+EXEMPTED as unsupported — is now judged against tsc, so that gate is stricter than before,
+not looser.
+
+**The imported value receiver (a third class, not a wrapper problem).** `import { w } from
+"./used"; w.run()` binds a name whose declaring type is in ANOTHER file, so this pass has no
+member set to resolve inside. It was not withdrawn, so it tie-broke by name and bound to a
+THIRD file (`other.ts`, while the import names `used.ts`). Withdrawal now covers imported
+bindings as well as file-local ones — the two are one question: does this file bind the
+receiver root?
+
+**The 11-shape matrix, after.** 8 resolve to the right declaration; 3 are honestly withdrawn
+(`w!.run()` and the promise case resolve; the imported instances decline). **Zero wrong-file
+bindings.**
+
+**Why the matrix was worth building.** Every one of these shares the C9 root cause — the name
+model answers any receiver the owner channel does not, and a wrong-file binding is
+indistinguishable from a right one by name. The lane now has a fixture for each shape
+(`receiver-wrapper-unwrap`, `imported-value-receiver`) and three more mutants
+(`receiver-wrapper-not-unwrapped`, `cast-receiver-not-stated`,
+`imported-receiver-not-withdrawn`), all caught.
+
+Measured on the 1,737-file stride after C10: 51,199 calls, 2,960 carrying an owner, 8,393
+explicitly withdrawn. Evidence classes now include `cast` 240 and `new-expression` 148 —
+rows that previously fell to the name model.

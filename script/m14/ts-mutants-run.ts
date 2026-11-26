@@ -234,6 +234,30 @@ const SOURCE_MUTANTS: Record<
     from: 'if (object.type === "new_expression") {',
     to: 'if (object.type === "new_expression" && false) {',
   },
+  "typescript/receiver-wrapper-not-unwrapped": {
+    file: "src/ast/real-typescript-analyzer.ts",
+    // Revert C10: the receiver wrapper stops being stripped, so `(new Worker()).run()` and
+    // `w!.run()` arrive as parenthesized_expression / non_null_expression, match no branch,
+    // carry no owner, and fall to the store's NAME model (measured: bound to a rival class
+    // in a file the caller never imports).
+    from: "const object = unwrapReceiverWrapper(",
+    to: "const object = (n: Node) => (n)(",
+  },
+  "typescript/cast-receiver-not-stated": {
+    file: "src/ast/real-typescript-analyzer.ts",
+    // Revert the cast branch: a cast receiver stops stating its type and falls through to the
+    // name model, instead of being read as the explicit type the source wrote.
+    from: 'if (object.type === "as_expression" || object.type === "type_assertion") {',
+    to: 'if ((object.type === "as_expression" || object.type === "type_assertion") && false) {',
+  },
+  "typescript/imported-receiver-not-withdrawn": {
+    file: "src/ast/real-typescript-analyzer.ts",
+    // Revert the imported-binding withdrawal: a receiver bound by `import { w }` stops being
+    // withdrawn, so the row falls to the store's tie-break and can bind to a same-named member
+    // in ANOTHER file (measured: bound to a third file while the import names used.ts).
+    from: "this.hasImportedReceiverBinding(callee, importedNames))",
+    to: "false)",
+  },
   "typescript/type-predicate-position-dropped": {
     file: "src/ast/real-typescript-analyzer.ts",
     from: 'case "type_predicate": {',

@@ -182,6 +182,30 @@ export const TS_MUTANTS: TsMutant[] = [
     transform: (_r: any) => _r,
   },
   {
+    id: "typescript/receiver-wrapper-not-unwrapped",
+    language: "typescript",
+    defectClass: "missing-whole-position",
+    description:
+      "`receiverOwnerType` branches on the receiver node's own type, so a parenthesis or a `!` hid the node underneath: `(new Worker()).run()` and `w!.run()` matched no branch and carried no metadata.owner, leaving the store's NAME model to bind `run` to a same-named member in a file the caller never imports. Caught by typescript/receiver-wrapper-unwrap, which declares the rival class on purpose and forbids both an Other owner and a null owner.",
+    transform: (_r: any) => _r,
+  },
+  {
+    id: "typescript/cast-receiver-not-stated",
+    language: "typescript",
+    defectClass: "missing-whole-position",
+    description:
+      "A cast STATES a receiver's type: `(value as Worker).run()` against `let value: unknown` must report Worker with evidence `cast`. Without the branch the cast receiver carried no owner and the name model decided the binding, and unwrapping the cast (the obvious-looking mistake) re-derives from the `unknown` operand and loses the statement entirely.",
+    transform: (_r: any) => _r,
+  },
+  {
+    id: "typescript/imported-receiver-not-withdrawn",
+    language: "typescript",
+    defectClass: "wrong-owner-binding",
+    description:
+      "`import { w } from ./used; w.run()` states no type — the declaration is in another file, so this pass has no member set to resolve inside. Without the withdrawal the row fell to the store's tie-break and bound to a same-named member in a THIRD file (measured: workerInstance.run bound to other.ts while the import names used.ts). Caught by typescript/receiver-wrapper-unwrap.",
+    transform: (_r: any) => _r,
+  },
+  {
     id: "typescript/type-predicate-position-dropped",
     language: "typescript",
     defectClass: "missing-whole-position",
