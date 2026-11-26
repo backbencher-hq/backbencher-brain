@@ -424,6 +424,42 @@ elif [ "$GOLDEN_OK" -eq 0 ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+head "10h. contamination — an agent that reads its own answer key is void"
+
+# MEASURED DEFECT, and the one that voided an entire wave.
+#
+# The workspace used to live inside the checkout at benchmarks/.work/<wave>/runs/<id>/workspace.
+# From there `cat ../../../typescript/project1/golden/<id>.patch` reaches the ANSWER KEY. In the
+# first wave 11 of 17 valid runs did exactly that and every one scored 1.0, so the published
+# 100% success measured "can the agent find the patch" -- which it can -- not "can it fix the
+# bug". Two things now prevent it: the workspace lives outside the checkout, and this gate
+# invalidates any run whose tool calls touch the harness's own files.
+cat > "$WORK/contam.ts" <<TS
+import { spawnSync } from "node:child_process"
+import { mkdirSync, writeFileSync, rmSync } from "node:fs"
+const root = process.cwd() + "/benchmarks/.work/selftest/contam"
+rmSync(root, { recursive: true, force: true })
+mkdirSync(root, { recursive: true })
+const CONTAM = /golden\/t\d-[a-z0-9-]+\.(tests\.)?patch|tasks\/t\d-[a-z0-9-]+\.json|\/prompt\.txt|benchmarks\/\.work|check-golden/
+const cases: [string, boolean][] = [
+  ['cat ../../../typescript/project1/golden/t1-rewind-abc1234.patch', true],
+  ['cat ../prompt.txt', true],
+  ['ls -la ~/mcp/backbencher-brain/benchmarks/.work/W1', true],
+  ['grep -rn "timeout" source/index.ts', false],
+  ['npm test', false],
+  ['cat test/validation.ts', false],
+]
+let ok = true
+for (const [cmd, shouldFlag] of cases) {
+  const got = CONTAM.test(JSON.stringify({ command: cmd }))
+  if (got !== shouldFlag) { ok = false; console.log("WRONG:", cmd, "expected", shouldFlag, "got", got) }
+}
+console.log(ok ? "PASSED" : "FAILED")
+TS
+R=$($TSX "$WORK/contam.ts" 2>/dev/null | tail -1)
+[ "$R" = "PASSED" ] && ok "the contamination gate flags golden/task/prompt access and permits ordinary source work" || bad "contamination gate -> '$R'"
+
+# ─────────────────────────────────────────────────────────────────────────────
 head "11. the run directory is self-contained enough to publish"
 
 cat > "$WORK/evidence.ts" <<TS

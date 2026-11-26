@@ -60,6 +60,22 @@ import { digestOf } from "./manual-block.ts";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../..");
 
+/**
+ * Where agent workspaces live. Deliberately NOT under REPO_ROOT.
+ *
+ * The first wave put workspaces inside `benchmarks/.work/`, so an agent could walk up to the
+ * task's own `golden/*.patch`; 11 of 17 valid runs read the answer key and scored 1.0.
+ * A separate root means there is no relative path from the workspace to the benchmark.
+ * `BENCH_WORKSPACES` is overridable for CI, and defaults to a sibling of the checkout.
+ */
+const BENCH_WORKSPACES =
+  process.env.BENCH_WORKSPACES ??
+  path.resolve(
+    REPO_ROOT,
+    "..",
+    `.bench-workspaces-${path.basename(REPO_ROOT)}`,
+  );
+
 // ── args ───────────────────────────────────────────────────────────────────────
 interface Args {
   task: string;
@@ -181,9 +197,26 @@ async function main(): Promise<void> {
   const benchmarkRoot = path.join(REPO_ROOT, "benchmarks");
   const waveRoot = path.join(REPO_ROOT, "benchmarks", ".work", a.wave);
   const runDir = path.join(waveRoot, "runs", runId);
+  // Where the agent actually works. OUTSIDE the repo checkout, so `../..` from the workspace
+  // cannot reach the benchmark's own files. See the comment at `workDir` below.
+  const workRoot = path.join(BENCH_WORKSPACES, runId);
   rmSync(runDir, { recursive: true, force: true });
+  rmSync(workRoot, { recursive: true, force: true });
+  mkdirSync(workRoot, { recursive: true });
   mkdirSync(runDir, { recursive: true });
-  const workDir = path.join(runDir, "workspace");
+  // THE WORKSPACE MUST NOT BE INSIDE THE REPO.
+  //
+  // It used to be `benchmarks/.work/<wave>/runs/<id>/workspace`, i.e. nested inside the
+  // checkout that holds the tasks, the golden patches and the prompts. An agent working in
+  // that directory can reach its own ANSWER KEY with `cat ../../../typescript/project1/
+  // golden/<id>.patch`, and 11 of 17 valid runs in the first wave did exactly that -- then
+  // scored 1.0. The measurements were void: they measured "can the agent find the patch",
+  // which it can, not "can it fix the bug".
+  //
+  // The fix is isolation by LOCATION, not by instruction: the workspace now lives in a
+  // sibling directory that contains nothing but this run. The prompt cannot be trusted to
+  // enforce this, and a hidden path is not a boundary.
+  const workDir = path.join(workRoot, "workspace");
   // Created empty here and populated in step 1b. The profile build needs a directory path to
   // register the bb server against; a nonexistent path would make arm C's server target a
   // directory that bb then creates, which is not the workspace and would mis-index.
@@ -769,6 +802,32 @@ async function main(): Promise<void> {
   // The harness reports WHY a turn ended and the runner used to ignore it, so a crashed or
   // aborted turn was recorded as `valid` and scored as a failure of the ARM rather than of
   // the infrastructure. Only `completed` is a valid measurement.
+  // ── BENCHMARK-CONTAMINATION GATE ────────────────────────────────────────────
+  //
+  // An agent that reaches the harness's own files is not solving the task. This is checked
+  // from the trace, not from where the workspace happens to be, because location isolation is
+  // a mitigation and this is the measurement: if a tool call mentions the golden patch, the
+  // task file, the prompt, or the wave directory, the run is VOID.
+  //
+  // Measured in the first wave: 11 of 17 valid runs read `golden/<id>.patch` -- the answer
+  // key -- and every one scored 1.0. The number was real, the measurement was not, and only
+  // reading the traces revealed it.
+  {
+    const CONTAMINATING =
+      /golden\/t\d-[a-z0-9-]+\.(tests\.)?patch|tasks\/t\d-[a-z0-9-]+\.json|\/prompt\.txt|benchmarks\/\.work|check-golden/;
+    const touched: string[] = [];
+    for (const c of s.toolCalls) {
+      const payload = JSON.stringify(c.input ?? "");
+      if (CONTAMINATING.test(payload)) touched.push(payload.slice(0, 140));
+    }
+    if (touched.length > 0) {
+      finish(
+        "invalid",
+        `benchmark-contamination: the agent touched the harness's own files (${touched.length} call(s)); first: ${touched[0]}. The workspace must be outside the checkout and no run may read its own golden patch.`,
+      );
+      return;
+    }
+  }
   if (s.finalReason !== null && s.finalReason !== "completed") {
     finish(
       "infra_error",
