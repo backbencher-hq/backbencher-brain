@@ -149,3 +149,54 @@ doc-truth **PASS** · witnesses **PASS** · analyzer regex **0**.
 One scripts typecheck error exists and is **not this lane's**: `script/m14/c-k1-loss-probe.ts` embeds
 an absolute path that the public-tree scrub (`72703613b`) removed, so it cannot resolve `src/ast/engine`.
 Confirmed by `git log` on that file — untouched by me.
+
+
+---
+
+# THE GATE ITSELF WAS BLIND — and how that was found
+
+Everything above was measured with `store-resolution-census.mts`. It reported PASS, and then I asked
+the only question that makes a gate a gate: **does it FAIL when the thing it measures is removed?**
+
+It did not. Deleting the withdrawal from the analyzer entirely left the census GREEN, because the
+assertion was `withdrawnBound === 0` — and a population of zero makes that true. Same for
+`landedElsewhere === 0`: remove the owner channel and there are no owner rows to land wrongly. Three
+checks, all vacuously true on an absent feature.
+
+**This is the same failure mode the TypeScript lane warned about** (its eleven gates that read a retired
+envelope and threw before comparing anything), and the same one I hit in the `assertions: [...]` fixture
+earlier in this campaign. It is the default outcome of writing a gate against output you have already
+seen and liked.
+
+## The repair
+
+Non-vacuity is now ASSERTED, not assumed — a population of zero is a FAILURE:
+
+```
+withdrawn === 0        -> FAIL "the withdrawal channel is absent, so 'still bound 0' is vacuous"
+owned === 0            -> FAIL "the owner channel is absent"
+landedInOwner === 0    -> FAIL "the owner pass landed nothing — vacuous"
+```
+
+## Mutation-tested, both directions, exit code taken from `bun` (not from the pipe)
+
+| mutant | census result |
+|---|---|
+| withdrawal deleted from the analyzer | **EXIT 1** — "no unresolved-receiver rows at all … vacuous" |
+| `new_expression` owner branch disabled | **EXIT 1** — "no owner-carrying rows — the owner channel is absent" |
+| unmutated | **EXIT 0** on preact (250 files) and nomad (250 files) |
+
+Run twice, byte-identical output — the census is deterministic, not sampling noise. Wired as
+`bun run audit:js-store-census`.
+
+## What is therefore established, and what is not
+
+**Established:** on two corpora, with the gate proven to fail when either channel is removed, the store
+binds no unresolved-receiver row by name, lands no owner row outside its stated owner, and misbinds no
+row the insert-time ranking claims first.
+
+**Not established, and I will not claim it:** `metadata.owner` is a bare type NAME. The check proves
+each landed row is a member of *some* symbol with that name, not the one in the calling file. The
+three-file repro proves the file-local case exactly; a corpus cannot, because the owner does not carry
+its file. A file-qualified owner (or an owner symbol id) would close that, and would also sharpen the
+channel — that is the next real increment, not a formality.

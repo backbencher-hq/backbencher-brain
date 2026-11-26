@@ -135,7 +135,8 @@
     "verify:tools": "bun run script/verify-tools.ts",
     "verify:language-matrix": "bun run script/verify-language-tool-matrix.ts",
     "verify:doc-surface": "bun run script/verify-doc-tool-surface.ts",
-    "verify:dist": "node_modules/.bin/tsx script/verify-dist-integrity.ts"
+    "verify:dist": "node_modules/.bin/tsx script/verify-dist-integrity.ts",
+    "audit:js-store-census": "bun validation/m14/fixtures/javascript/store-resolution-census.mts --repo=$PWD/.corpus/preact --files=250"
   },
   "dependencies": {
     "@backbencher/brain": "^0.1.5",

@@ -174,7 +174,12 @@ function assert(cond: boolean, msg: string) { if (!cond) { console.error(`ASSERT
     return { rel, abs, src }
   })
   const r = await census(files, "THREE-FILE REPRO (the reported defect)")
+  // NON-VACUOUS ASSERTIONS. `withdrawnBound === 0` is TRUE when there are zero withdrawn rows, so the
+  // first draft of this check certified an ABSENT feature — mutation-testing the analyzer (deleting the
+  // withdrawal entirely) left it green. A gate must fail when its population disappears.
+  if (r.withdrawn === 0) { console.error("FAIL: no unresolved-receiver rows at all — the withdrawal channel is absent, so 'still bound 0' is vacuous"); process.exitCode = 1 }
   if (r.withdrawnBound !== 0) { console.error("FAIL: an unresolved-receiver row is still name-bound"); process.exitCode = 1 }
+  if (r.owned === 0) { console.error("FAIL: no owner-carrying rows — the owner channel is absent"); process.exitCode = 1 }
   if (r.ownerResolved === 0) { console.error("FAIL: the owner pass re-resolved nothing"); process.exitCode = 1 }
   if (!r.rowCountStable) { console.error("FAIL: the census mutated the row count"); process.exitCode = 1 }
   console.log(process.exitCode ? "REPRO: FAIL" : "REPRO: PASS")
@@ -196,6 +201,10 @@ if (MAX !== 0) {
     picked.push({ rel, abs, src })
   }
   const r = await census(picked, `CORPUS ${path.basename(REPO)} (${picked.length} files)`)
+  if (r.withdrawn === 0) { console.error("FAIL: no unresolved-receiver rows in the corpus — vacuous"); process.exitCode = 1 }
   if (r.withdrawnBound !== 0) { console.error(`FAIL: ${r.withdrawnBound} unresolved-receiver rows are still name-bound`); process.exitCode = 1 }
+  if (r.landedElsewhere !== 0) { console.error(`FAIL: ${r.landedElsewhere} owner rows landed outside their stated owner`); process.exitCode = 1 }
+  if (r.landedInOwner === 0) { console.error("FAIL: the owner pass landed nothing in the corpus — vacuous"); process.exitCode = 1 }
+  if (r.rankedElsewhere !== 0) { console.error(`FAIL: ${r.rankedElsewhere} pre-pass ranking bindings are misbound`); process.exitCode = 1 }
   if (!r.rowCountStable) { console.error("FAIL: the census mutated the row count"); process.exitCode = 1 }
 }
