@@ -133,6 +133,8 @@ async function main(): Promise<void> {
 
   let done = 0;
   let failed = 0;
+  let skipped = 0;
+  const skippedReasons: string[] = [];
   const queue = [...cells];
   const failures: string[] = [];
 
@@ -177,11 +179,29 @@ async function main(): Promise<void> {
         );
       if (!line) {
         failed++;
-        failures.push(`${label}: no status line`);
+        failures.push(
+          `${label}: no status line (the runner produced no verdict, so it died)`,
+        );
         done++;
         continue;
       }
       const runId = line.split(/\s+/)[1];
+      // AN INVALID RUN IS A RESULT OF THE WAVE, NOT A FAILURE OF IT.
+      //
+      // The first real wave counted 13 correctly-invalidated runs as harness failures: two
+      // fetched the upstream fix commit with curl (contamination), three crashed, three found
+      // the bb server unmounted. Every one is the instrument WORKING. Counting them as
+      // failures would pressure a future run into relaxing the invalidity gates, which is the
+      // opposite of what they exist for. Counted, named, and skipped for grading.
+      if (!line.startsWith("valid:")) {
+        skipped++;
+        skippedReasons.push(
+          `${label}: ${line.replace(/^\S+:\s*/, "").slice(0, 150)}`,
+        );
+        done++;
+        console.log(`  skip ${label} -> ${runId} [${done}/${cells.length}]`);
+        continue;
+      }
       const runDir = path.join(waveRoot, "runs", runId);
       const g = await run(TSX, [
         path.join(HERE, "grade.ts"),
@@ -223,7 +243,13 @@ async function main(): Promise<void> {
     ),
   );
 
-  console.log(`\nrun-wave: ${done} cell(s), ${failed} failure(s)`);
+  console.log(
+    `\nrun-wave: ${done} cell(s), ${failed} failure(s), ${skipped} correctly invalidated`,
+  );
+  if (skippedReasons.length > 0) {
+    console.log("invalidated (excluded from results, each with its reason):");
+    for (const s of skippedReasons) console.log(`  - ${s}`);
+  }
   if (failures.length > 0) {
     console.error("failures:");
     for (const f of failures) console.error(`  - ${f}`);

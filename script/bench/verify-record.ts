@@ -263,10 +263,19 @@ export function verifyRun(runDir: string): Finding[] {
   // ── 4. evidence must be present, hashed and INSIDE the run directory ────────
   const ev = rec.evidence ?? {};
   if (!ev.trace_path) {
-    err(
-      "trace-missing",
-      "no trace_path; a run without its transcript is not evidence",
-    );
+    // EVIDENCE IS REQUIRED FOR A VALID RUN ONLY.
+    //
+    // An invalidated run is the instrument refusing to score something: it may have died
+    // before a trace existed. Demanding a transcript from a run we already rejected inverts
+    // the point of rejecting it -- and it made the first real wave report 13 "errors" that
+    // were all correctly handled. The requirement that matters is the converse: anything
+    // SCORED must be citable.
+    if (rec.status === "valid") {
+      err(
+        "trace-missing",
+        "a valid run has no trace_path; a scored run without its transcript is not evidence",
+      );
+    }
   } else {
     if (ev.trace_path.includes("..")) {
       err(

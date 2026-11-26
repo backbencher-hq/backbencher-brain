@@ -291,6 +291,20 @@ async function main(): Promise<void> {
   const finish = (status: string, reason: string | null): void => {
     record.status = status;
     record.invalid_reason = reason;
+    // PRINT THE VERDICT, always -- not only on success.
+    //
+    // `finish` used to write the record silently and only the valid path logged a line. So an
+    // invalid run produced NO output, run-wave saw "no status line", and 13 of 30 cells in the
+    // first real wave were reported as harness failures when they were correctly invalidated
+    // runs (2 fetched the upstream fix with curl, 3 crashed, 3 found the bb server unmounted).
+    // A driver cannot tell "produced no verdict" from "the process died" without this.
+    const line =
+      status === "valid"
+        ? `valid: ${record.runId}`
+        : `${status}: ${record.runId}`;
+    console.log(
+      `${line}  status=${status}${reason ? `  reason=${reason}` : ""}`,
+    );
     writeFileSync(
       path.join(runDir, "run-record.json"),
       JSON.stringify(record, null, 2) + "\n",
