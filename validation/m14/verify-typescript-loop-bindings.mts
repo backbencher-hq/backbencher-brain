@@ -24,8 +24,8 @@ if (baseline || mutation)
           ],
           existing: [": bindingScope(n, b)", ": scopeOf(n)"],
           repeated: [
-            "if (loops.length > 1 || bindingDeclarations.has(key))\n        pendingAssignments.push(...loops);",
-            "if (false) pendingAssignments.push(...loops);",
+            "if (loops.length > 1 || bindingDeclarations.has(key))\n        pendingAssignments.push(...loops)",
+            "if (false) pendingAssignments.push(...loops)",
           ],
         };
         assert.ok(mutation && mutation in changes);

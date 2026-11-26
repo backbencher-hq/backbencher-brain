@@ -16,9 +16,10 @@ if (baseline || mutation)
         if (baseline)
           return { contents: readFileSync(baseline, "utf8"), loader: "ts" };
         const changes: Record<string, [string, string]> = {
-          thisField: ["classFields.delete(field.key);", "void field.key;"],
+          // 2026-11-25 (2nd): semi:false restored; anchored without semicolons.
+          thisField: ["classFields.delete(field.key)", "void field.key"],
           externalField: [
-            "if (field.owner && !field.isStatic)\n            typeMembers.get(field.owner)?.delete(field.name);",
+            "if (field.owner && !field.isStatic)\n            typeMembers.get(field.owner)?.delete(field.name)",
             "void field.name",
           ],
           owner: [

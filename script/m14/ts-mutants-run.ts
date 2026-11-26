@@ -203,8 +203,11 @@ const SOURCE_MUTANTS: Record<
     // single-line anchor stopped matching and the mutant became a SURVIVOR by
     // ANCHOR-NOT-FOUND — the exact failure this runner's header warns about. The anchor
     // is now the reflowed text, whitespace included.
-    from: "result.implements.push(\n                TypeScriptAnalysisRunner.heritageBaseName(type.text),\n              );",
-    to: "result.implements.push(\n                type.text,\n              );",
+    // 2026-11-25 (2nd re-anchor): the hook-pollution repair restored this file to the
+    // repo's semi:false / no-trailing-comma style, which dropped the trailing comma and
+    // semicolon this anchor had picked up. Anchored WITHOUT them so it survives either style.
+    from: "TypeScriptAnalysisRunner.heritageBaseName(type.text)",
+    to: "type.text",
   },
   "typescript/re-export-dependency-not-emitted": {
     file: "src/ast/real-typescript-analyzer.ts",
@@ -212,8 +215,11 @@ const SOURCE_MUTANTS: Record<
     // emitted, only the payload entry. The guard makes the branch refuse every re-export.
     // 2026-11-25: the formatter added the semicolon and re-indented; re-anchored to
     // the current text after the mutant was reported SURVIVED by ANCHOR NOT FOUND.
-    from: "const modulePath = stringContent(sourceNode);\n        if (modulePath.length === 0) return;",
-    to: "const modulePath = stringContent(sourceNode);\n        if (modulePath.length >= 0) return;",
+    // 2026-11-25 (2nd re-anchor): the restore to semi:false dropped the semicolons this
+    // anchor carried. Anchored WITHOUT them, and on the statement pair rather than the
+    // exact indentation, so a style change cannot break the injection again.
+    from: "if (modulePath.length === 0) return",
+    to: "if (modulePath.length >= 0) return",
   },
   "typescript/accessor-named-field-name-lost": {
     file: "src/ast/real-typescript-analyzer.ts",

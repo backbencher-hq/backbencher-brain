@@ -25,8 +25,8 @@ if (baseline || mutation)
           // injected and the gate failed on a MISSING "APPLIED" rather than on the analyzer.
           // Re-anchored to the CURRENT text.
           forIn: [
-            'if (!loop.children.some((child) => child?.type === "of")) continue;',
-            "if (false) continue;",
+            'if (!loop.children.some((child) => child?.type === "of")) continue',
+            "if (false) continue",
           ],
           // The replacement must remain VALID JavaScript: `from` stops at the visitOrigin
           // call, so `to` keeps the branch open and leaves the following `continue;` and `}`
@@ -38,8 +38,8 @@ if (baseline || mutation)
           // because the aliases this fixture exercises come through the second. Anchored on
           // the `if (path[0] === iteratedElement)` branch, which is the one the scenario uses.
           spread: [
-            'if (member.type === "spread_element")\n                visitOrigin(member.namedChild(0), path);',
-            'if (member.type === "spread_element") void member;',
+            'if (member.type === "spread_element")\n                visitOrigin(member.namedChild(0), path)',
+            'if (member.type === "spread_element") void member',
           ],
           index: [
             "path[index] === iteratedElement && isArrayIndex(part)",

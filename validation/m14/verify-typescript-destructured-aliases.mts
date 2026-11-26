@@ -31,8 +31,10 @@ if (baseline || mutation)
           projection: [
             // 2026-11-25: the formatter added a semicolon after the `null`, so the anchor
             // stopped injecting. Re-anchored to the CURRENT text.
-            "const owner = hint ? topLevelClasses.get(hint.type) : null;\n        if (owner && path.length === 0)",
-            "const owner = hint ? topLevelClasses.get(hint.type) : null;\n        if (owner)",
+            // 2026-11-25 (2nd): the hook-pollution repair restored semi:false, dropping the
+            // semicolons this anchor had picked up. Anchored WITHOUT them.
+            "const owner = hint ? topLevelClasses.get(hint.type) : null\n        if (owner && path.length === 0)",
+            "const owner = hint ? topLevelClasses.get(hint.type) : null\n        if (owner)",
           ],
           defaults: [
             'visitPattern(\n            left,\n            pattern.childForFieldName("right"),',

@@ -23,7 +23,8 @@ if (mutation)
             // 2026-11-25: the formatter reflowed this return across five lines, so the
             // one-line anchor stopped injecting. Re-anchored to the CURRENT text.
             scope: [
-              "return (\n      lookupReceiverFact(\n        facts,\n        returnTypes,\n        this.scopeIdOf(call),\n        callee.text,\n      ) ?? null\n    );",
+              // 2026-11-25 (2nd): semi:false restored; re-anchored without the trailing semicolon.
+              "return (\n      lookupReceiverFact(\n        facts,\n        returnTypes,\n        this.scopeIdOf(call),\n        callee.text,\n      ) ?? null\n    )",
               "for (const values of returnTypes.values()) if (values.has(callee.text)) return values.get(callee.text) ?? null; return null",
             ],
             assignment: [
