@@ -1,0 +1,51 @@
+{
+  "description": "A member call's receiver is TYPED, so the store resolves inside the stated class and the name model's tie-break cannot pick a rival class the file never imports. `Widget.run` and `Other.run` are declared here so a name-only bind has a rival to pick wrongly.",
+  "expectRelationships": [
+    {
+      "type": "calls",
+      "from": "viaNew",
+      "target": "run",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "new"
+    },
+    {
+      "type": "calls",
+      "from": "viaParens",
+      "target": "run",
+      "meta.owner": "Widget",
+      "meta.ownerEvidence": "new"
+    },
+    {
+      "type": "calls",
+      "from": "viaLocal",
+      "target": "run",
+      "meta.owner": "Widget"
+    },
+    {
+      "type": "calls",
+      "from": "rivalIsNeverOwner",
+      "target": "run",
+      "meta.owner": "Other"
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "calls",
+      "from": "viaNew",
+      "target": "run",
+      "meta.owner": "Other"
+    },
+    {
+      "type": "calls",
+      "from": "viaParens",
+      "target": "run",
+      "meta.owner": "Other"
+    },
+    {
+      "type": "calls",
+      "from": "viaLocal",
+      "target": "run",
+      "meta.owner": "Other"
+    }
+  ]
+}

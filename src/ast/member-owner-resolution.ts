@@ -64,9 +64,9 @@
  */
 
 /** Kinds a class-like declaration can be, for the owner lookup. */
-import { createPhpMemberResolver } from "./php-member-dispatch"
+import { createPhpMemberResolver } from "./php-member-dispatch";
 
-const CLASS_LIKE = ["class", "interface", "trait", "enum"] as const
+const CLASS_LIKE = ["class", "interface", "trait", "enum"] as const;
 
 /**
  * The kind filter, MIRRORED from `validation/m14/fixtures/php/reason-census.mts`'s `FILTER_KINDS`
@@ -80,22 +80,29 @@ const CLASS_LIKE = ["class", "interface", "trait", "enum"] as const
  */
 const FILTER_KINDS: Record<string, Set<string>> = {
   calls: new Set(["function", "method", "constructor"]),
-  uses: new Set(["function", "method", "property", "constant", "enum_member", "variable"]),
-}
+  uses: new Set([
+    "function",
+    "method",
+    "property",
+    "constant",
+    "enum_member",
+    "variable",
+  ]),
+};
 const PHP_MEMBER_KINDS = {
   callable: new Set(["method"]),
   property: new Set(["property"]),
   constant: new Set(["constant", "enum_member"]),
-}
+};
 
 /** Ancestors are walked breadth-first; the M60 override retarget measured depth 14 on scala. */
-const MAX_DEPTH = 16
+const MAX_DEPTH = 16;
 
 export type MemberOwnerResolutionResult = {
   /** Unresolved `calls`/`uses` rows carrying an owner — the pass's whole input. */
-  scanned: number
+  scanned: number;
   /** Resolved because the owner itself declares the member. */
-  ownerResolved: number
+  ownerResolved: number;
   /**
    * Of `ownerResolved`, the number that resolved over a SET of same-kind candidates that are the
    * SAME member published more than once (python's `x: T` annotation beside `self.x = ...`, or a
@@ -103,24 +110,24 @@ export type MemberOwnerResolutionResult = {
    * from "the class declares the member exactly once", and folding it in would hide how much of
    * the owner channel is answering a duplicate rather than a unique declaration.
    */
-  sameKindDuplicateResolved: number
+  sameKindDuplicateResolved: number;
   /** Resolved because exactly one resolvable ancestor declares the member. */
-  inheritedResolved: number
+  inheritedResolved: number;
   /** Resolved in total (the two above). */
-  resolved: number
+  resolved: number;
   /** The owner name names no class-like symbol in this project. */
-  ownerNotInPopulation: number
+  ownerNotInPopulation: number;
   /** The owner name names MORE than one symbol — the channel is a guess, so it declines. */
-  ownerAmbiguous: number
+  ownerAmbiguous: number;
   /** The owner and no resolvable ancestor declares the name in the kinds the type can point at. */
-  notDeclared: number
+  notDeclared: number;
   /** More than one declaration in the owner+ancestor chain: declined, never picked between. */
-  ambiguousInChain: number
+  ambiguousInChain: number;
   /** Reconciliation only: rows whose stored target actually changed. */
-  reconciledChanges?: number
+  reconciledChanges?: number;
   /** PHP member syntax whose receiver supplies no declaration identity. */
-  unknownReceiverWithdrawn?: number
-}
+  unknownReceiverWithdrawn?: number;
+};
 
 /**
  * The owner channel's CLAIM over the rows that state their own receiver.
@@ -174,7 +181,7 @@ export function claimOwnerCarryingTargets(
   rawDb: any,
   projectId: string,
 ): MemberOwnerResolutionResult & { withdrawn: number } {
-  const withdrawnIds: string[] = []
+  const withdrawnIds: string[] = [];
   try {
     // The LIKE is a PREFILTER that the index can answer cheaply; the test is the parsed key below.
     // It cannot match `ownerKind` (whose key text is `"ownerKind":`), and a literal `"owner":`
@@ -185,26 +192,30 @@ export function claimOwnerCarryingTargets(
           WHERE project_id = ? AND relationship_type IN ('calls','uses')
             AND target_symbol_id IS NOT NULL AND metadata IS NOT NULL AND metadata LIKE '%"owner":%'`,
       )
-      .all(projectId) as any[]
+      .all(projectId) as any[];
     for (const r of candidates) {
-      let owner = ""
+      let owner = "";
       try {
-        const parsed = JSON.parse(String(r?.metadata ?? "{}"))
-        if (parsed && typeof parsed === "object" && typeof (parsed as any).owner === "string") {
-          owner = (parsed as any).owner
+        const parsed = JSON.parse(String(r?.metadata ?? "{}"));
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          typeof (parsed as any).owner === "string"
+        ) {
+          owner = (parsed as any).owner;
         }
       } catch {
         // Unparseable metadata is not a receiver: the row keeps the binding it has.
       }
-      if (!owner) continue
-      withdrawnIds.push(String(r.id))
+      if (!owner) continue;
+      withdrawnIds.push(String(r.id));
     }
     if (withdrawnIds.length > 0) {
       const clear = rawDb.prepare(
         `UPDATE brain_relationship SET target_symbol_id = NULL, is_cross_file = 0
           WHERE id = ? AND target_symbol_id IS NOT NULL`,
-      )
-      for (const id of withdrawnIds) clear.run(id)
+      );
+      for (const id of withdrawnIds) clear.run(id);
     }
   } catch {
     // A withdrawal that throws mid-way leaves the rows it already cleared unresolved, and the pass
@@ -212,11 +223,15 @@ export function claimOwnerCarryingTargets(
     // that a failure leaves everything as it was, and saying so would be the kind of comment that
     // stops the next reader from checking.
   }
-  const out = resolveMemberTargetsByOwner(rawDb, projectId)
-  return { ...out, withdrawn: withdrawnIds.length }
+  const out = resolveMemberTargetsByOwner(rawDb, projectId);
+  return { ...out, withdrawn: withdrawnIds.length };
 }
 
-export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts: { reconcile?: boolean } = {}): MemberOwnerResolutionResult {
+export function resolveMemberTargetsByOwner(
+  rawDb: any,
+  projectId: string,
+  opts: { reconcile?: boolean } = {},
+): MemberOwnerResolutionResult {
   const out: MemberOwnerResolutionResult = {
     scanned: 0,
     ownerResolved: 0,
@@ -227,101 +242,139 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
     ownerAmbiguous: 0,
     notDeclared: 0,
     ambiguousInChain: 0,
-  }
+  };
   try {
     // A method/property spelling on an untyped receiver cannot identify a
     // declaration, even when the project has only one same-named candidate.
     // Retain the edge and spelling, but withdraw any generic name binding.
-    const unknown = rawDb.prepare(`
+    const unknown = rawDb
+      .prepare(
+        `
       SELECT id, metadata FROM brain_relationship WHERE project_id = ?
         AND relationship_type IN ('calls','uses') AND target_symbol_id IS NOT NULL
-        AND (metadata LIKE '%"phpMemberReference":true%' OR metadata LIKE '%"typescriptUnresolvedReceiver":true%')
-    `).all(projectId) as Array<{ id: string; metadata: string }>
-    let unknownWithdrawn = 0
+        AND (metadata LIKE '%"phpMemberReference":true%' OR metadata LIKE '%"typescriptUnresolvedReceiver":true%'
+             OR metadata LIKE '%"javascriptUnresolvedReceiver":true%')
+    `,
+      )
+      .all(projectId) as Array<{ id: string; metadata: string }>;
+    let unknownWithdrawn = 0;
     const withdrawUnknown = rawDb.prepare(`UPDATE brain_relationship
       SET target_symbol_id = NULL, is_cross_file = 0, is_cross_language = 0, bridge_mechanism = NULL
-      WHERE id = ?`)
+      WHERE id = ?`);
     for (const row of unknown) {
-      let metadata: Record<string, unknown>
-      try { metadata = JSON.parse(row.metadata) } catch { continue }
-      const unknownPhp = metadata.phpSpecific === true && metadata.phpMemberReference === true &&
-        !(typeof metadata.ownerIdentity === "string" && metadata.ownerIdentity.length > 0)
-      if (!unknownPhp && metadata.typescriptUnresolvedReceiver !== true) continue
-      withdrawUnknown.run(row.id)
-      unknownWithdrawn++
+      let metadata: Record<string, unknown>;
+      try {
+        metadata = JSON.parse(row.metadata);
+      } catch {
+        continue;
+      }
+      const unknownPhp =
+        metadata.phpSpecific === true &&
+        metadata.phpMemberReference === true &&
+        !(
+          typeof metadata.ownerIdentity === "string" &&
+          metadata.ownerIdentity.length > 0
+        );
+      const unknownJs = metadata.javascriptUnresolvedReceiver === true;
+      if (
+        !unknownPhp &&
+        metadata.typescriptUnresolvedReceiver !== true &&
+        !unknownJs
+      )
+        continue;
+      withdrawUnknown.run(row.id);
+      unknownWithdrawn++;
     }
-    out.unknownReceiverWithdrawn = unknownWithdrawn
-    if (opts.reconcile) out.reconciledChanges = unknownWithdrawn
+    out.unknownReceiverWithdrawn = unknownWithdrawn;
+    if (opts.reconcile) out.reconciledChanges = unknownWithdrawn;
     // ---- the class-like symbols, by name, with their own heritage statement ------------------
-    const byName = new Map<string, string[]>()
-    const phpByIdentity = new Map<string, string[]>()
-    const phpClassIds = new Set<string>()
-    const canonicalHeritageIds = new Set<string>()
-    const superTypesById = new Map<string, string[]>()
-    const classLikeIds = new Set<string>()
+    const byName = new Map<string, string[]>();
+    const phpByIdentity = new Map<string, string[]>();
+    const phpClassIds = new Set<string>();
+    const canonicalHeritageIds = new Set<string>();
+    const superTypesById = new Map<string, string[]>();
+    const classLikeIds = new Set<string>();
     for (const row of rawDb
       .prepare(
         `SELECT id, name, qualified_name, super_types, annotations FROM brain_symbol
           WHERE project_id = ? AND symbol_type IN (${CLASS_LIKE.map(() => "?").join(", ")})`,
       )
       .all(projectId, ...CLASS_LIKE) as any[]) {
-      const id = String(row?.id ?? "")
-      const name = String(row?.name ?? "")
-      if (!id || !name) continue
-      classLikeIds.add(id)
-      const list = byName.get(name) ?? (byName.set(name, []), byName.get(name)!)
-      list.push(id)
-      let heritage = row.super_types
+      const id = String(row?.id ?? "");
+      const name = String(row?.name ?? "");
+      if (!id || !name) continue;
+      classLikeIds.add(id);
+      const list =
+        byName.get(name) ?? (byName.set(name, []), byName.get(name)!);
+      list.push(id);
+      let heritage = row.super_types;
       try {
-        const metadata = JSON.parse(String(row.annotations ?? "{}"))
+        const metadata = JSON.parse(String(row.annotations ?? "{}"));
         if (metadata.phpSpecific === true) {
-          phpClassIds.add(id)
-          const identity = String(metadata.fqn ?? row.qualified_name ?? name).replace(/^\\/, "").toLowerCase()
-          const declarations = phpByIdentity.get(identity) ?? []
-          declarations.push(id)
-          phpByIdentity.set(identity, declarations)
+          phpClassIds.add(id);
+          const identity = String(metadata.fqn ?? row.qualified_name ?? name)
+            .replace(/^\\/, "")
+            .toLowerCase();
+          const declarations = phpByIdentity.get(identity) ?? [];
+          declarations.push(id);
+          phpByIdentity.set(identity, declarations);
           if (Array.isArray(metadata.superTypeIdentities)) {
-            canonicalHeritageIds.add(id)
-            heritage = JSON.stringify(metadata.superTypeIdentities)
+            canonicalHeritageIds.add(id);
+            heritage = JSON.stringify(metadata.superTypeIdentities);
           }
         }
-      } catch { /* Legacy symbols keep their stored hierarchy. */ }
+      } catch {
+        /* Legacy symbols keep their stored hierarchy. */
+      }
       if (heritage) {
         try {
-          const parsed = JSON.parse(heritage)
+          const parsed = JSON.parse(heritage);
           if (Array.isArray(parsed)) {
-            const names = parsed.filter((x): x is string => typeof x === "string" && x.length > 0)
-            if (names.length) superTypesById.set(id, names)
+            const names = parsed.filter(
+              (x): x is string => typeof x === "string" && x.length > 0,
+            );
+            if (names.length) superTypesById.set(id, names);
           }
         } catch {
           // A malformed payload is not a hierarchy: the symbol simply has no ancestors to walk.
         }
       }
     }
-    if (byName.size === 0) return out
+    if (byName.size === 0) return out;
 
     // ---- members, keyed by the declaration that owns them -------------------------------------
-    const membersByOwner = new Map<string, Map<string, { id: string; kind: string }[]>>()
+    const membersByOwner = new Map<
+      string,
+      Map<string, { id: string; kind: string }[]>
+    >();
     for (const row of rawDb
       .prepare(
         `SELECT id, name, symbol_type, owner_symbol_id FROM brain_symbol
           WHERE project_id = ? AND owner_symbol_id IS NOT NULL AND owner_symbol_id != ''`,
       )
       .all(projectId) as any[]) {
-      const id = String(row?.id ?? "")
-      const name = String(row?.name ?? "")
-      const owner = String(row?.owner_symbol_id ?? "")
-      if (!id || !name || !owner) continue
-      let byMember = membersByOwner.get(owner)
-      if (!byMember) { byMember = new Map(); membersByOwner.set(owner, byMember) }
-      const list = byMember.get(name) ?? (byMember.set(name, []), byMember.get(name)!)
-      list.push({ id, kind: String(row?.symbol_type ?? "") })
+      const id = String(row?.id ?? "");
+      const name = String(row?.name ?? "");
+      const owner = String(row?.owner_symbol_id ?? "");
+      if (!id || !name || !owner) continue;
+      let byMember = membersByOwner.get(owner);
+      if (!byMember) {
+        byMember = new Map();
+        membersByOwner.set(owner, byMember);
+      }
+      const list =
+        byMember.get(name) ?? (byMember.set(name, []), byMember.get(name)!);
+      list.push({ id, kind: String(row?.symbol_type ?? "") });
       // PHP methods are case insensitive; properties and constants retain case.
-      if (phpClassIds.has(owner) && row.symbol_type === "method" && name !== name.toLowerCase()) {
-        const folded = name.toLowerCase()
-        const methods = byMember.get(folded) ?? []
-        methods.push({ id, kind: "method" })
-        byMember.set(folded, methods)
+      if (
+        phpClassIds.has(owner) &&
+        row.symbol_type === "method" &&
+        name !== name.toLowerCase()
+      ) {
+        const folded = name.toLowerCase();
+        const methods = byMember.get(folded) ?? [];
+        methods.push({ id, kind: "method" });
+        byMember.set(folded, methods);
       }
     }
 
@@ -334,42 +387,46 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
      */
     const parentByName = (name: string, canonical = false): string | null => {
       if (canonical) {
-        const ids = phpByIdentity.get(name.replace(/^\\/, "").toLowerCase())
-        return ids?.length === 1 ? ids[0]! : null
+        const ids = phpByIdentity.get(name.replace(/^\\/, "").toLowerCase());
+        return ids?.length === 1 ? ids[0]! : null;
       }
-      const leaf = name.includes("\\") ? name.slice(name.lastIndexOf("\\") + 1) : name
+      const leaf = name.includes("\\")
+        ? name.slice(name.lastIndexOf("\\") + 1)
+        : name;
       for (const key of name === leaf ? [name] : [name, leaf]) {
-        const ids = byName.get(key)
-        if (ids && ids.length === 1) return ids[0]!
+        const ids = byName.get(key);
+        if (ids && ids.length === 1) return ids[0]!;
       }
-      return null
-    }
+      return null;
+    };
 
-    const ancestorCache = new Map<string, string[]>()
+    const ancestorCache = new Map<string, string[]>();
     const ancestorsOf = (id: string): string[] => {
-      const hit = ancestorCache.get(id)
-      if (hit) return hit
-      const seen = new Set<string>()
-      const outIds: string[] = []
-      let frontier = (superTypesById.get(id) ?? []).map(name => parentByName(name, canonicalHeritageIds.has(id))).filter((x): x is string => !!x)
-      let depth = 0
+      const hit = ancestorCache.get(id);
+      if (hit) return hit;
+      const seen = new Set<string>();
+      const outIds: string[] = [];
+      let frontier = (superTypesById.get(id) ?? [])
+        .map((name) => parentByName(name, canonicalHeritageIds.has(id)))
+        .filter((x): x is string => !!x);
+      let depth = 0;
       while (frontier.length && depth < MAX_DEPTH) {
-        const next: string[] = []
+        const next: string[] = [];
         for (const pid of frontier) {
-          if (pid === id || seen.has(pid)) continue
-          seen.add(pid)
-          outIds.push(pid)
+          if (pid === id || seen.has(pid)) continue;
+          seen.add(pid);
+          outIds.push(pid);
           for (const pname of superTypesById.get(pid) ?? []) {
-            const gp = parentByName(pname, canonicalHeritageIds.has(pid))
-            if (gp && gp !== id && !seen.has(gp)) next.push(gp)
+            const gp = parentByName(pname, canonicalHeritageIds.has(pid));
+            if (gp && gp !== id && !seen.has(gp)) next.push(gp);
           }
         }
-        frontier = next
-        depth++
+        frontier = next;
+        depth++;
       }
-      ancestorCache.set(id, outIds)
-      return outIds
-    }
+      ancestorCache.set(id, outIds);
+      return outIds;
+    };
 
     // ---- the work -----------------------------------------------------------------------------
     const rows = rawDb
@@ -388,7 +445,7 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
             AND r.metadata IS NOT NULL AND r.metadata LIKE '%"owner":%'
             AND r.target_external IS NOT NULL AND r.target_external != ''`,
       )
-      .all(projectId) as any[]
+      .all(projectId) as any[];
 
     const update = rawDb.prepare(
       `UPDATE brain_relationship
@@ -397,31 +454,34 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
                                    != (SELECT file_id FROM brain_symbol WHERE id = brain_relationship.source_symbol_id)
                                    THEN 1 ELSE 0 END
         WHERE id = ? ${opts.reconcile ? "" : "AND target_symbol_id IS NULL"}`,
-    )
-    const consideredResolved = new Set<string>()
-    const phpMember = createPhpMemberResolver(rawDb, projectId)
-    const resolvedRows = new Set<string>()
-    let reconciledChanges = unknownWithdrawn
+    );
+    const consideredResolved = new Set<string>();
+    const phpMember = createPhpMemberResolver(rawDb, projectId);
+    const resolvedRows = new Set<string>();
+    let reconciledChanges = unknownWithdrawn;
     const bind = (row: any, target: string): void => {
-      resolvedRows.add(String(row.id))
-      if (opts.reconcile && row.target_symbol_id === target) return
-      update.run(target, target, row.id)
-      reconciledChanges++
-    }
+      resolvedRows.add(String(row.id));
+      if (opts.reconcile && row.target_symbol_id === target) return;
+      update.run(target, target, row.id);
+      reconciledChanges++;
+    };
 
     for (const row of rows) {
       const metadata = (() => {
         try {
-          const parsed = JSON.parse(String(row?.metadata ?? "{}"))
-          return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {}
+          const parsed = JSON.parse(String(row?.metadata ?? "{}"));
+          return parsed && typeof parsed === "object"
+            ? (parsed as Record<string, unknown>)
+            : {};
         } catch {
-          return {}
+          return {};
         }
-      })()
-      const owner = typeof metadata.owner === "string" ? metadata.owner : ""
-      if (!owner) continue // no declared receiver: not this pass's input, by the analyzer's design
-      if (opts.reconcile && row.target_symbol_id) consideredResolved.add(String(row.id))
-      out.scanned++
+      })();
+      const owner = typeof metadata.owner === "string" ? metadata.owner : "";
+      if (!owner) continue; // no declared receiver: not this pass's input, by the analyzer's design
+      if (opts.reconcile && row.target_symbol_id)
+        consideredResolved.add(String(row.id));
+      out.scanned++;
 
       // Rule 0, and it is asked before any name lookup: when the receiver's name IS the name of the
       // declaration the source belongs to, the receiver is that declaration — an identity the store
@@ -430,22 +490,44 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
       // published the same spelling for both (`$this->`/`self::`/`static::` — for `parent::` and
       // `C::` it publishes the BASE or the OTHER class, and those fall through to the name lookup,
       // which is exactly where an ambiguous spelling has to decline).
-      let ownerId: string | null = null
-      const srcOwnerId = String(row.source_owner_id ?? "")
-      const identity = typeof metadata.ownerIdentity === "string" ? metadata.ownerIdentity : ""
+      let ownerId: string | null = null;
+      const srcOwnerId = String(row.source_owner_id ?? "");
+      const identity =
+        typeof metadata.ownerIdentity === "string"
+          ? metadata.ownerIdentity
+          : "";
       if (metadata.phpSpecific === true && identity) {
-        const ids = phpByIdentity.get(identity.replace(/^\\/, "").toLowerCase())
-        if (!ids?.length) { out.ownerNotInPopulation++; continue }
-        if (ids.length !== 1) { out.ownerAmbiguous++; continue }
-        ownerId = ids[0]!
-      } else if (srcOwnerId && srcOwnerId !== "" && classLikeIds.has(srcOwnerId) && String(row.source_owner_name ?? "") === owner) {
-        ownerId = srcOwnerId
+        const ids = phpByIdentity.get(
+          identity.replace(/^\\/, "").toLowerCase(),
+        );
+        if (!ids?.length) {
+          out.ownerNotInPopulation++;
+          continue;
+        }
+        if (ids.length !== 1) {
+          out.ownerAmbiguous++;
+          continue;
+        }
+        ownerId = ids[0]!;
+      } else if (
+        srcOwnerId &&
+        srcOwnerId !== "" &&
+        classLikeIds.has(srcOwnerId) &&
+        String(row.source_owner_name ?? "") === owner
+      ) {
+        ownerId = srcOwnerId;
       } else {
-        const ownerIds = byName.get(owner)
-        if (!ownerIds || ownerIds.length === 0) { out.ownerNotInPopulation++; continue }
+        const ownerIds = byName.get(owner);
+        if (!ownerIds || ownerIds.length === 0) {
+          out.ownerNotInPopulation++;
+          continue;
+        }
         // Rule 1: a name that identifies two classes makes the owner channel a guess.
-        if (ownerIds.length > 1) { out.ownerAmbiguous++; continue }
-        ownerId = ownerIds[0]!
+        if (ownerIds.length > 1) {
+          out.ownerAmbiguous++;
+          continue;
+        }
+        ownerId = ownerIds[0]!;
       }
 
       // THE TARGET MAY BE OWNER-QUALIFIED (`Owner.member`), and the lookup below is keyed by the
@@ -468,48 +550,62 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
       // incoming gate cannot see (it does not model this pass at all). A qualified target whose owner
       // does not declare the member therefore stays NULL and is counted with the other not-declared
       // rows.
-      const rawTarget = String(row.target_external)
-      const dot = rawTarget.lastIndexOf(".")
-      const qualified = dot > 0
-      const target = qualified ? rawTarget.slice(dot + 1) : rawTarget
-      const allowed = metadata.phpSpecific === true
-        ? (row.relationship_type === "calls" || metadata.isTearOff === true ? PHP_MEMBER_KINDS.callable
-          : metadata.isConstFetch === true ? PHP_MEMBER_KINDS.constant
-          : metadata.isMemberRead === true ? PHP_MEMBER_KINDS.property
-          : FILTER_KINDS[String(row.relationship_type)])
-        : FILTER_KINDS[String(row.relationship_type)]
+      const rawTarget = String(row.target_external);
+      const dot = rawTarget.lastIndexOf(".");
+      const qualified = dot > 0;
+      const target = qualified ? rawTarget.slice(dot + 1) : rawTarget;
+      const allowed =
+        metadata.phpSpecific === true
+          ? row.relationship_type === "calls" || metadata.isTearOff === true
+            ? PHP_MEMBER_KINDS.callable
+            : metadata.isConstFetch === true
+              ? PHP_MEMBER_KINDS.constant
+              : metadata.isMemberRead === true
+                ? PHP_MEMBER_KINDS.property
+                : FILTER_KINDS[String(row.relationship_type)]
+          : FILTER_KINDS[String(row.relationship_type)];
       if (metadata.phpSpecific === true && phpClassIds.has(ownerId)) {
-        const kind = row.relationship_type === "calls" || metadata.isTearOff === true ? "method"
-          : metadata.isConstFetch === true ? "constant" : metadata.isMemberRead === true ? "property" : undefined
+        const kind =
+          row.relationship_type === "calls" || metadata.isTearOff === true
+            ? "method"
+            : metadata.isConstFetch === true
+              ? "constant"
+              : metadata.isMemberRead === true
+                ? "property"
+                : undefined;
         if (kind) {
-          const result = phpMember(ownerId, target, kind)
+          const result = phpMember(ownerId, target, kind);
           if (result.status === "found") {
-            bind(row, result.member.id)
-            if (result.member.owner === ownerId) out.ownerResolved++
-            else out.inheritedResolved++
-            out.resolved++
-          } else if (result.status === "unknown") out.ambiguousInChain++
-          else out.notDeclared++
-          continue
+            bind(row, result.member.id);
+            if (result.member.owner === ownerId) out.ownerResolved++;
+            else out.inheritedResolved++;
+            out.resolved++;
+          } else if (result.status === "unknown") out.ambiguousInChain++;
+          else out.notDeclared++;
+          continue;
         }
       }
       const membersOf = (id: string): { id: string; kind: string }[] => {
-        const members = membersByOwner.get(id)
-        const candidates = [...(members?.get(target) ?? [])]
+        const members = membersByOwner.get(id);
+        const candidates = [...(members?.get(target) ?? [])];
         if (phpClassIds.has(id) && target !== target.toLowerCase()) {
           for (const method of members?.get(target.toLowerCase()) ?? []) {
-            if (method.kind === "method" && !candidates.some(candidate => candidate.id === method.id)) candidates.push(method)
+            if (
+              method.kind === "method" &&
+              !candidates.some((candidate) => candidate.id === method.id)
+            )
+              candidates.push(method);
           }
         }
-        return candidates.filter((m) => !allowed || allowed.has(m.kind))
-      }
+        return candidates.filter((m) => !allowed || allowed.has(m.kind));
+      };
 
-      const direct = membersOf(ownerId)
+      const direct = membersOf(ownerId);
       if (direct.length === 1) {
-        bind(row, direct[0]!.id)
-        out.ownerResolved++
-        out.resolved++
-        continue
+        bind(row, direct[0]!.id);
+        out.ownerResolved++;
+        out.resolved++;
+        continue;
       }
       if (direct.length > 1) {
         // A Java class legally declares several methods with the SAME name
@@ -518,13 +614,19 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
         // for Python overload stubs) cannot choose among Java overloads.
         // The Java call payload currently carries arity, not a compiler-
         // resolved signature, so abstain rather than invent a concrete target.
-        if (row.relationship_type === "calls" &&
-            typeof metadata.javaCallExpression === "string" &&
-            direct.every(member => member.kind === "method")) {
-          rawDb.prepare("UPDATE brain_relationship SET metadata = ? WHERE id = ?")
-            .run(JSON.stringify({ ...metadata, javaOverloadAmbiguous: true }), row.id)
-          out.ambiguousInChain++
-          continue
+        if (
+          row.relationship_type === "calls" &&
+          typeof metadata.javaCallExpression === "string" &&
+          direct.every((member) => member.kind === "method")
+        ) {
+          rawDb
+            .prepare("UPDATE brain_relationship SET metadata = ? WHERE id = ?")
+            .run(
+              JSON.stringify({ ...metadata, javaOverloadAmbiguous: true }),
+              row.id,
+            );
+          out.ambiguousInChain++;
+          continue;
         }
         // SAME-KIND candidates are ONE member, and the rule is a fact about the CANDIDATES rather
         // than about a language. A language can publish two symbols for a single member — python's
@@ -542,50 +644,59 @@ export function resolveMemberTargetsByOwner(rawDb: any, projectId: string, opts:
         // php cannot reach the same-kind branch for a single class (it forbids two properties or
         // two methods of one name) and python's whole admitted corpus reaches it on ~1,700 rows,
         // which is why this is stated as a rule about the candidates and not as a language switch.
-        const kinds = new Set(direct.map((m) => m.kind))
+        const kinds = new Set(direct.map((m) => m.kind));
         if (kinds.size === 1) {
-          let pick = direct[0]!
-          for (const m of direct) if (m.id < pick.id) pick = m
-          bind(row, pick.id)
-          out.sameKindDuplicateResolved++
-          out.ownerResolved++
-          out.resolved++
-          continue
+          let pick = direct[0]!;
+          for (const m of direct) if (m.id < pick.id) pick = m;
+          bind(row, pick.id);
+          out.sameKindDuplicateResolved++;
+          out.ownerResolved++;
+          out.resolved++;
+          continue;
         }
-        out.ambiguousInChain++
-        continue
+        out.ambiguousInChain++;
+        continue;
       }
-      if (qualified) { out.notDeclared++; continue }
+      if (qualified) {
+        out.notDeclared++;
+        continue;
+      }
 
       // Rule 2: nothing in the owner itself — the member is inherited or foreign. BARE targets only:
       // a qualified one has already been answered above, or declined.
-      const chain = ancestorsOf(ownerId)
-      if (chain.length === 0) { out.notDeclared++; continue }
-      const inherited = new Map<string, { id: string; kind: string }>()
-      for (const ancId of chain) for (const m of membersOf(ancId)) inherited.set(m.id, m)
+      const chain = ancestorsOf(ownerId);
+      if (chain.length === 0) {
+        out.notDeclared++;
+        continue;
+      }
+      const inherited = new Map<string, { id: string; kind: string }>();
+      for (const ancId of chain)
+        for (const m of membersOf(ancId)) inherited.set(m.id, m);
       if (inherited.size === 1) {
-        const only = [...inherited.values()][0]!
-        bind(row, only.id)
-        out.inheritedResolved++
-        out.resolved++
+        const only = [...inherited.values()][0]!;
+        bind(row, only.id);
+        out.inheritedResolved++;
+        out.resolved++;
       } else if (inherited.size === 0) {
-        out.notDeclared++
+        out.notDeclared++;
       } else {
-        out.ambiguousInChain++
+        out.ambiguousInChain++;
       }
     }
     if (opts.reconcile) {
-      const clear = rawDb.prepare("UPDATE brain_relationship SET target_symbol_id = NULL, is_cross_file = 0 WHERE id = ?")
+      const clear = rawDb.prepare(
+        "UPDATE brain_relationship SET target_symbol_id = NULL, is_cross_file = 0 WHERE id = ?",
+      );
       for (const id of consideredResolved) {
-        if (resolvedRows.has(id)) continue
-        clear.run(id)
-        reconciledChanges++
+        if (resolvedRows.has(id)) continue;
+        clear.run(id);
+        reconciledChanges++;
       }
-      out.reconciledChanges = reconciledChanges
+      out.reconciledChanges = reconciledChanges;
     }
   } catch {
     // Keep successful decisions if a later lookup fails. Unprocessed rows keep
     // their prior binding; this best-effort pass does not roll earlier writes back.
   }
-  return out
+  return out;
 }
