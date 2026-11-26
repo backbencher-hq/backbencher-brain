@@ -1,5 +1,6 @@
 // Universal MCP server on brain-core. Stdio transport with explicit read,
 // index-mutation, and source-mutation tool metadata.
+import { resolve } from "node:path"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
@@ -99,6 +100,67 @@ async function indexRequirementRefusal(
   const blocked = descriptor.modes.filter((m) => !free.includes(m))
   const names = (modes: readonly string[]): string => modes.map((m) => `\`${m}\``).join(", ")
   return `${notIndexed} ${descriptor.name} needs that index for ${names(blocked)}; ${names(free)} ${free.length === 1 ? "does" : "do"} not need an index and ${free.length === 1 ? "works" : "work"} now.`
+}
+
+/**
+ * Declare WHICH PROJECT every answer came from.
+ *
+ * THE DEFECT THIS FIXES. bb can be told `--dir X` while the caller is working in Y. It then
+ * answers about X: no error, no warning, and a query for a symbol that exists only in Y comes
+ * back as `totalMatches=0` -- which reads exactly like "that symbol does not exist".
+ *
+ * Measured on this machine: an MCP server launched with `--dir /home/ishaq2321/ProxiCall`
+ * answered `bb_search runArm` with zero matches, while the same binary at backbencher-brain
+ * returned 6. An agent (and a human) can spend hours concluding the tool is useless when it
+ * has been answering about a different repository the whole time.
+ *
+ * A "no results" that really means "wrong repository" is the most dangerous shape of wrong
+ * answer: confident, well-formed, and it tells the caller to stop looking. So every answer
+ * now names its project, in the same machine-readable style the tools already use:
+ *
+ *   * JSON answers get a top-level `project` field (they are objects by contract);
+ *   * text answers get a trailing `[project] <root>` line, beside the existing `[match-set]`.
+ *
+ * This does not RE-ROOT anything. Declaring provenance is the part that turns a silent wrong
+ * answer into a visible one; choosing to re-root instead would be a larger design change and
+ * would be wrong for callers who legitimately serve a project they are not sitting in.
+ */
+export function stampProvenance(
+  result: { content: Array<{ type: "text"; text: string }>; isError?: boolean },
+  projectPath: string,
+): { content: Array<{ type: "text"; text: string }>; isError?: boolean } {
+  // Resolved so two spellings of one directory (trailing slash, `..`, symlink) compare equal.
+  const root = (() => {
+    try {
+      return resolve(projectPath)
+    } catch {
+      return projectPath
+    }
+  })()
+  return {
+    ...result,
+    content: result.content.map((part) => {
+      const text = part.text ?? ""
+      // JSON answers: an object at top level. `bb_health` answers as prose key:value lines and
+      // already names the project; stretching this to guess at every format would be worse
+      // than leaving those alone.
+      const trimmed = text.trim()
+      if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+        try {
+          const parsed = JSON.parse(trimmed) as Record<string, unknown>
+          if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+            if ("project" in parsed) return part
+            parsed.project = root
+            return { ...part, text: JSON.stringify(parsed, null, 2) }
+          }
+        } catch {
+          // Not JSON after all: fall through to the text form.
+        }
+      }
+      if (/^\[project\] /m.test(text)) return part
+      return { ...part, text: `${text}\n[project] ${root}` }
+    }),
+  }
 }
 
 export async function startMcpServer(projectPath: string): Promise<void> {
