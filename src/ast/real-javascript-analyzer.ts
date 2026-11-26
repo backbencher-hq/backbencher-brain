@@ -877,29 +877,56 @@ type ReceiverType = { type: string; evidence: ReceiverEvidence };
  * node underneath, matched no branch, and emitted NO owner — so the store fell back to the NAME
  * model, which binds a member by bare name. When two files declare the same member the ranking's
  * tie-break picks one, and it can be a class the calling file never imports. That is the defect
- * the TypeScript lane fixed in f87e44662; JavaScript had the same three causes (measured here,
- * not assumed — see `validation/m14/verification/JAVASCRIPT-RECEIVER-OWNER.md`).
+ * the TypeScript lane fixed in f87e44662; JavaScript had the same causes.
  *
- *   parenthesized_expression   `(new Worker()).run()`   — the parenthesis states nothing
+ *   parenthesized_expression   `(new Widget()).run()`   — the parenthesis states nothing
  *   non_null_expression        `w!.run()`               — the `!` asserts presence, not type
  *
  * `as_expression` is DELIBERATELY ABSENT, and that is the trap worth naming: a cast STATES the
  * receiver's type, so stripping it would throw that statement away and re-derive the type from the
  * operand. `(x as Widget).m()` must be read as Widget, not as whatever `x` was declared as.
- *
- * Only the outermost chain is stripped, so nested parens collapse one at a time.
  */
+function unwrapReceiver(node: Node | null | undefined): Node | null {
+  let current = node ?? null;
+  while (
+    current &&
+    (current.type === "parenthesized_expression" ||
+      current.type === "non_null_expression")
+  ) {
+    const inner = current.namedChild(0);
+    if (!inner) break;
+    current = inner;
+  }
+  return current;
+}
+
+/** The class a cast names, from `(x as Widget)` / `<Widget>x`. */
+function castTypeName(node: Node): string | null {
+  if (
+    node.type !== "as_expression" &&
+    node.type !== "type_assertion" &&
+    node.type !== "satisfies_expression"
+  )
+    return null;
+  const left = node.childForFieldName("left") ?? node.namedChild(0);
+  const right =
+    node.childForFieldName("right") ??
+    (left ? node.children?.find((c: any) => c && c !== left) : null);
+  if (!right) return null;
+  if (right.type === "identifier" || right.type === "type_identifier")
+    return right.text;
+  return null;
+}
+
 /**
  * WHICH UNTYPED RECEIVER SHAPES ARE WITHDRAWN RATHER THAN LEFT TO THE NAME MODEL.
  *
  * A member name on an untyped receiver cannot identify a declaration, so the row keeps its
- * spelling and the store withdraws the generic name binding. `member-owner-resolution.ts`
- * reads `javascriptUnresolvedReceiver` for exactly this (the `typescriptUnresolvedReceiver` and
+ * spelling and the store withdraws the generic name binding. `member-owner-resolution.ts` reads
+ * `javascriptUnresolvedReceiver` for exactly this (the `typescriptUnresolvedReceiver` and
  * `phpMemberReference` keys are its existing vocabulary).
  *
- * These are the receiver forms that are a VALUE of unknown type by construction: a local binding,
- * an imported binding (whose type lives in another file), a call result, an index, a conditional.
- * A `new_expression`, a `this` and a cast are NOT here — those state a type and are typed above.
+ * A `new_expression`, a `this` and a cast are NOT here — those state a type and are typed below.
  */
 const JS_WITHDRAWAL_RECEIVER_TYPES = new Set([
   "identifier",
@@ -923,38 +950,6 @@ function isPlainIdentifier(text: string): boolean {
     return false;
   }
   return true;
-}
-
-function unwrapReceiver(node: Node | null | undefined): Node | null {
-  let current = node ?? null;
-  while (
-    current &&
-    (current.type === "parenthesized_expression" ||
-      current.type === "non_null_expression")
-  ) {
-    const inner = current.namedChild(0);
-    if (!inner) break;
-    current = inner;
-  }
-  return current;
-}
-
-/** The class a cast names, from `(x as Widget)` / `<Widget>x` (Flow/TS-as-expression). */
-function castTypeName(node: Node): string | null {
-  if (
-    node.type !== "as_expression" &&
-    node.type !== "type_assertion" &&
-    node.type !== "satisfies_expression"
-  )
-    return null;
-  const left = node.childForFieldName("left") ?? node.namedChild(0);
-  const right =
-    node.childForFieldName("right") ??
-    (left ? node.children?.find((c: any) => c && c !== left) : null);
-  if (!right) return null;
-  if (right.type === "identifier" || right.type === "type_identifier")
-    return right.text;
-  return null;
 }
 
 /**
@@ -3918,7 +3913,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                       const object = fn.childForFieldName("object");
                       if (!object) return {};
                       let recv: ReceiverType | undefined;
-                      // TYPE THE RECEIVER, NOT THE SYNTAX AROUND IT. `(new Worker()).run()` arrives as a
+                      // TYPE THE RECEIVER, NOT THE SYNTAX AROUND IT. `(new Widget()).run()` arrives as a
                       // parenthesized_expression and `w!.run()` as a non_null_expression; branching on the
                       // wrapper matches no arm below and emits no owner, which hands the row to the name
                       // model. Strip first. A CAST is not stripped (see `unwrapReceiver`) — it is read as
@@ -3926,13 +3921,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                       const stripped = unwrapReceiver(object) ?? object;
                       const castType =
                         castTypeName(object) ?? castTypeName(stripped);
-                      if (castType) {
-                        // `(x as Widget).m()` — the cast STATES the type; believe the statement.
-                        recv = { type: castType, evidence: "cast" };
-                      }
+                      if (castType) recv = { type: castType, evidence: "cast" };
                       if (!recv && stripped.type === "new_expression") {
-                        // `new Worker().run()` — the class is literally in the constructor field, which is
-                        // the strongest evidence this lane can have: the syntax names it.
+                        // `new Widget().run()` — the class is literally in the constructor field, the
+                        // strongest evidence this lane can have: the syntax names it.
                         const ctor = stripped.childForFieldName("constructor");
                         if (ctor) {
                           const ctorName =
