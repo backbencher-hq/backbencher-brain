@@ -55,6 +55,13 @@ Two fixes, both landed:
    `benchmark-contamination`. Checked against this wave's own traces the gate flags 18 of 27,
    so it catches the class rather than the instance. Selftest `10h` mutation-tests it.
 
+Both are verified on a live run, not just in principle: a clean arm-C run from the relocated
+workspace made 32 tool calls with **0 contamination hits**, and there is no relative path from
+`/tmp/bench-workspaces-backbencher-brain/<runId>/workspace` to `benchmarks/` at all. Note the
+root had to move to the temp dir because this session's sandbox makes the checkout's parent
+read-only; `run-arm` now probes for a writable location outside the repo and **refuses to run**
+rather than quietly falling back inside it.
+
 The cost and adoption numbers below still stand: reading the patch does not change what a turn
 costs, and a contaminated run also made 0 bb calls. They are reported because adoption is what
 this wave can actually support.

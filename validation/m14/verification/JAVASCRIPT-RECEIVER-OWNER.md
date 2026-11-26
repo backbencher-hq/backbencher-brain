@@ -43,11 +43,11 @@ coverage of NAMES, and this defect is a defect of WHICH declaration a name binds
 which is the "blind, not passing" failure. Rewritten in the harness's real dialect
 (`expectRelationships` / `forbidRelationships` with `meta.<key>`), and then **mutation-tested**:
 
-| mutant                                           | result                                          |
-| ------------------------------------------------ | ----------------------------------------------- |
-| `new_expression` owner branch disabled           | `FAIL javascript/receiver-owner-rival` ✔ killed |
+| mutant | result |
+|---|---|
+| `new_expression` owner branch disabled | `FAIL javascript/receiver-owner-rival` ✔ killed |
 | wrapper stripping disabled (`stripped = object`) | `FAIL javascript/receiver-owner-rival` ✔ killed |
-| withdrawal disabled                              | survivor — not asserted by any fixture          |
+| withdrawal disabled | survivor — not asserted by any fixture |
 
 The surviving mutant is recorded rather than hidden: withdrawal is a CROSS-FILE property
 (`import { shared } from "./x"` → `shared.run()`), and this harness's fixtures are single files, so the
@@ -55,10 +55,10 @@ case needs a store-level census, not a fixture.
 
 ## Measured population (member calls on `calls`/`uses`, by channel)
 
-| corpus             | member calls | owner      | withdrawn      | claimed   |
-| ------------------ | ------------ | ---------- | -------------- | --------- |
-| preact (207 files) | 7,111        | 473 — 6.7% | 6,578 — 92.5%  | **99.2%** |
-| nomad (967 files)  | 19,294       | 830 — 4.3% | 17,375 — 90.1% | **94.4%** |
+| corpus | member calls | owner | withdrawn | claimed |
+|---|---|---|---|---|
+| preact (207 files) | 7,111 | 473 — 6.7% | 6,578 — 92.5% | **99.2%** |
+| nomad (967 files) | 19,294 | 830 — 4.3% | 17,375 — 90.1% | **94.4%** |
 
 Evidence mix after the fix — preact `{this 278, jsdoc 169, new 26}`, nomad
 `{this 675, new 129, assignment 18, class-static 5, jsdoc 3}`. The `new` counts are the rows this

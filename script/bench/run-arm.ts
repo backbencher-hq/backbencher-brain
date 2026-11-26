@@ -68,13 +68,39 @@ const REPO_ROOT = path.resolve(HERE, "../..");
  * A separate root means there is no relative path from the workspace to the benchmark.
  * `BENCH_WORKSPACES` is overridable for CI, and defaults to a sibling of the checkout.
  */
-const BENCH_WORKSPACES =
-  process.env.BENCH_WORKSPACES ??
-  path.resolve(
-    REPO_ROOT,
-    "..",
-    `.bench-workspaces-${path.basename(REPO_ROOT)}`,
+const BENCH_WORKSPACES = (() => {
+  if (process.env.BENCH_WORKSPACES)
+    return path.resolve(process.env.BENCH_WORKSPACES);
+  // A sibling of the checkout is the nicest location (same filesystem, easy to inspect), but it
+  // is NOT always writable: this session runs under a workspace-write sandbox, so the checkout's
+  // PARENT is read-only. Probe candidates in order and use the first that accepts a directory.
+  //
+  // Failing loudly rather than falling back to a path inside the repo is deliberate: the whole
+  // point of this constant is that the agent's workspace must not be able to reach the golden
+  // patch, and "could not create an isolated workspace" must never quietly become "run it
+  // inside the checkout anyway".
+  const candidates = [
+    path.resolve(
+      REPO_ROOT,
+      "..",
+      `.bench-workspaces-${path.basename(REPO_ROOT)}`,
+    ),
+    path.join(os.tmpdir(), `bench-workspaces-${path.basename(REPO_ROOT)}`),
+  ];
+  for (const c of candidates) {
+    try {
+      mkdirSync(c, { recursive: true });
+      return c;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(
+    `run-arm: no writable workspace root outside the checkout. The agent's workspace MUST NOT ` +
+      `be inside the repo (it could read its own golden patch). Tried: ${candidates.join(", ")}. ` +
+      `Set BENCH_WORKSPACES to a writable directory outside the repo.`,
   );
+})();
 
 // ── args ───────────────────────────────────────────────────────────────────────
 interface Args {
